@@ -121,6 +121,14 @@ namespace GourmetProject.Game.UI.Battle
         [FormerlySerializedAs("_boardEditSkipButton")]
         [SerializeField] private Button _boardEditActionButton;
 
+        [Header("Reward Table Edit Shell")]
+        [Tooltip("领奖餐桌格编辑期间软隐藏时间轴；组件固定在 BattleForm prefab 上，不在运行时生成。")]
+        [SerializeField] private CanvasGroup _rewardTableEditActionAxisGroup;
+        [Tooltip("领奖餐桌格编辑期间软隐藏左侧 Battle HUD；组件固定在 BattleForm prefab 上。")]
+        [SerializeField] private CanvasGroup _rewardTableEditLeftColumnGroup;
+        [Tooltip("领奖餐桌格编辑期间软隐藏右侧 Battle HUD；组件固定在 BattleForm prefab 上。")]
+        [SerializeField] private CanvasGroup _rewardTableEditRightColumnGroup;
+
         [Header("Right Column - Items")]
         [SerializeField] private BattleItemsColumn _itemsColumn;
 
@@ -142,13 +150,16 @@ namespace GourmetProject.Game.UI.Battle
         private Action<bool> _afterRewardTableEdit;
         private bool _rewardTableEditActive;
         private GameplayView _rewardTableEditRootView = GameplayView.None;
-        private CanvasGroup _rewardTableEditAxisGroup;
-        private float _rewardTableEditCenterAlpha;
-        private bool _rewardTableEditCenterInteractable;
-        private bool _rewardTableEditCenterBlocksRaycasts;
-        private float _rewardTableEditAxisAlpha;
-        private bool _rewardTableEditAxisInteractable;
-        private bool _rewardTableEditAxisBlocksRaycasts;
+        private CanvasGroupSnapshot _rewardTableEditCenterSnapshot;
+        private CanvasGroupSnapshot _rewardTableEditAxisSnapshot;
+        private CanvasGroupSnapshot _rewardTableEditLeftColumnSnapshot;
+        private CanvasGroupSnapshot _rewardTableEditRightColumnSnapshot;
+        private bool _rewardTableEditFoodBattlePanelActive;
+        private bool _rewardTableEditFoodBarActive;
+        private ServingOutletView _rewardTableEditServingOutlet;
+        private bool _rewardTableEditServingOutletActive;
+        private FoodDiscardBinView _rewardTableEditFoodDiscardBin;
+        private bool _rewardTableEditFoodDiscardBinActive;
         private bool _rewardTableEditBackdropActive;
         private Transform _boardEditOriginalParent;
         private int _boardEditOriginalSiblingIndex;
@@ -173,6 +184,52 @@ namespace GourmetProject.Game.UI.Battle
         private InspectionNavigationContext _inspectionNavigation;
         private TableViewCoordinator _tableCoordinator;
         private GameplayPageRouter _pageRouter;
+
+        private struct CanvasGroupSnapshot
+        {
+            private CanvasGroup _group;
+            private float _alpha;
+            private bool _interactable;
+            private bool _blocksRaycasts;
+
+            public void Capture(CanvasGroup group)
+            {
+                _group = group;
+                if (_group == null)
+                {
+                    return;
+                }
+
+                _alpha = _group.alpha;
+                _interactable = _group.interactable;
+                _blocksRaycasts = _group.blocksRaycasts;
+            }
+
+            public void Hide()
+            {
+                if (_group == null)
+                {
+                    return;
+                }
+
+                _group.alpha = 0f;
+                _group.interactable = false;
+                _group.blocksRaycasts = false;
+            }
+
+            public void Restore()
+            {
+                if (_group == null)
+                {
+                    return;
+                }
+
+                _group.alpha = _alpha;
+                _group.interactable = _interactable;
+                _group.blocksRaycasts = _blocksRaycasts;
+                _group = null;
+            }
+        }
         private ShopPageCoordinator _shopPage;
         private RecipeBookCoordinator _recipeBookPage;
         private RewardPageCoordinator _rewardPage;
@@ -1137,6 +1194,7 @@ namespace GourmetProject.Game.UI.Battle
             PrepareRewardItemSelectionFly(choice, kind, sourceCard);
         void IRewardPageHost.PlayRandomizedItemFlys(IReadOnlyList<RandomizedItemResult> results) => PlayRandomizedItemFlys(results);
 
+        GameplayView IEventPageHost.CurrentView => _current;
         EventPagePanel IEventPageHost.EventPagePanel => _eventPagePanel;
         void IEventPageHost.SwitchTo(GameplayView view, Action buildCenter, Action onShown) => SwitchTo(view, buildCenter, onShown);
         void IEventPageHost.OpenEventRecipeDishDelete(
@@ -1367,45 +1425,43 @@ namespace GourmetProject.Game.UI.Battle
                 _backdrop.SetActive(false);
             }
 
-            if (_center != null)
-            {
-                _center.alpha = 0f;
-                _center.interactable = false;
-                _center.blocksRaycasts = false;
-            }
-
-            if (_rewardTableEditAxisGroup != null)
-            {
-                _rewardTableEditAxisGroup.alpha = 0f;
-                _rewardTableEditAxisGroup.interactable = false;
-                _rewardTableEditAxisGroup.blocksRaycasts = false;
-            }
+            HideRewardTableEditShell();
 
             ChildReady?.Invoke();
         }
 
         private void CaptureRewardTableEditShell()
         {
-            if (_center != null)
+            if (_rewardTableEditActionAxisGroup == null && _actionAxisBar != null)
             {
-                _rewardTableEditCenterAlpha = _center.alpha;
-                _rewardTableEditCenterInteractable = _center.interactable;
-                _rewardTableEditCenterBlocksRaycasts = _center.blocksRaycasts;
+                _rewardTableEditActionAxisGroup = _actionAxisBar.GetComponent<CanvasGroup>();
             }
 
-            if (_actionAxisBar != null)
+            if (_rewardTableEditLeftColumnGroup == null && _infoColumn != null)
             {
-                _rewardTableEditAxisGroup = _actionAxisBar.GetComponent<CanvasGroup>();
-                if (_rewardTableEditAxisGroup == null)
-                {
-                    _rewardTableEditAxisGroup = _actionAxisBar.gameObject.AddComponent<CanvasGroup>();
-                }
-
-                _rewardTableEditAxisAlpha = _rewardTableEditAxisGroup.alpha;
-                _rewardTableEditAxisInteractable = _rewardTableEditAxisGroup.interactable;
-                _rewardTableEditAxisBlocksRaycasts = _rewardTableEditAxisGroup.blocksRaycasts;
+                _rewardTableEditLeftColumnGroup = _infoColumn.GetComponent<CanvasGroup>();
             }
 
+            if (_rewardTableEditRightColumnGroup == null && _itemsColumn != null)
+            {
+                _rewardTableEditRightColumnGroup = _itemsColumn.GetComponent<CanvasGroup>();
+            }
+
+            _rewardTableEditCenterSnapshot.Capture(_center);
+            _rewardTableEditAxisSnapshot.Capture(_rewardTableEditActionAxisGroup);
+            _rewardTableEditLeftColumnSnapshot.Capture(_rewardTableEditLeftColumnGroup);
+            _rewardTableEditRightColumnSnapshot.Capture(_rewardTableEditRightColumnGroup);
+
+            _rewardTableEditFoodBattlePanelActive = _foodBattlePanel != null
+                && _foodBattlePanel.activeSelf;
+            _rewardTableEditFoodBarActive = _foodBar != null
+                && _foodBar.gameObject.activeSelf;
+            _rewardTableEditServingOutlet = ResolveServingOutlet();
+            _rewardTableEditServingOutletActive = _rewardTableEditServingOutlet != null
+                && _rewardTableEditServingOutlet.gameObject.activeSelf;
+            _rewardTableEditFoodDiscardBin = ResolveFoodDiscardBin();
+            _rewardTableEditFoodDiscardBinActive = _rewardTableEditFoodDiscardBin != null
+                && _rewardTableEditFoodDiscardBin.gameObject.activeSelf;
             _rewardTableEditBackdropActive = _backdrop != null && _backdrop.activeSelf;
 
             RectTransform boardRect = _boardEditPanel != null
@@ -1423,6 +1479,18 @@ namespace GourmetProject.Game.UI.Battle
             _boardEditOriginalPosition = boardRect.anchoredPosition;
             _boardEditOriginalSize = boardRect.sizeDelta;
             _boardEditOriginalPivot = boardRect.pivot;
+        }
+
+        private void HideRewardTableEditShell()
+        {
+            _rewardTableEditCenterSnapshot.Hide();
+            _rewardTableEditAxisSnapshot.Hide();
+            _rewardTableEditLeftColumnSnapshot.Hide();
+            _rewardTableEditRightColumnSnapshot.Hide();
+
+            // 出菜口和垃圾桶在世界 Canvas 上，不属于 Center，必须单独关闭。
+            SetFoodBattlePanelVisible(false);
+            HideAllTips();
         }
 
         private void MoveBoardEditPanelToTransientLayer()
@@ -1485,19 +1553,21 @@ namespace GourmetProject.Game.UI.Battle
 
         private void RestoreRewardTableEditShell()
         {
-            if (_center != null)
+            _rewardTableEditCenterSnapshot.Restore();
+            _rewardTableEditAxisSnapshot.Restore();
+            _rewardTableEditLeftColumnSnapshot.Restore();
+            _rewardTableEditRightColumnSnapshot.Restore();
+
+            if (_foodBattlePanel != null)
             {
-                _center.alpha = _rewardTableEditCenterAlpha;
-                _center.interactable = _rewardTableEditCenterInteractable;
-                _center.blocksRaycasts = _rewardTableEditCenterBlocksRaycasts;
+                _foodBattlePanel.SetActive(_rewardTableEditFoodBattlePanelActive);
             }
 
-            if (_rewardTableEditAxisGroup != null)
-            {
-                _rewardTableEditAxisGroup.alpha = _rewardTableEditAxisAlpha;
-                _rewardTableEditAxisGroup.interactable = _rewardTableEditAxisInteractable;
-                _rewardTableEditAxisGroup.blocksRaycasts = _rewardTableEditAxisBlocksRaycasts;
-            }
+            _foodBar?.SetVisible(_rewardTableEditFoodBarActive);
+            _rewardTableEditServingOutlet?.SetVisible(_rewardTableEditServingOutletActive);
+            _rewardTableEditFoodDiscardBin?.SetVisible(_rewardTableEditFoodDiscardBinActive);
+            _rewardTableEditServingOutlet = null;
+            _rewardTableEditFoodDiscardBin = null;
 
             if (_backdrop != null)
             {

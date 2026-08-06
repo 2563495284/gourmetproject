@@ -90,6 +90,24 @@ namespace GourmetProject.Game.Orchestration
 
         public ActionExecutionContext CurrentBattleActionContext { get; private set; }
 
+        /// <summary>
+        /// 立即进入指定事件的正常交互流程，不消耗天数或行动次数。
+        /// 供开发者工具从空闲的行动选择页触发事件；完成后返回行动选择。
+        /// </summary>
+        public bool ExecuteEventImmediately(string eventId)
+        {
+            cfg.GameEvent ev = string.IsNullOrWhiteSpace(eventId)
+                ? null
+                : _run?.Tables?.TbEvent.GetOrDefault(eventId);
+            if (ev == null)
+            {
+                return false;
+            }
+
+            ResolveEvent(ev, PromptNextAction);
+            return true;
+        }
+
         /// <summary>删除尚未开始执行的节点；到期节点每轮动态重扫，无需维护队列快照。</summary>
         public bool RemoveTimelineNode(string nodeId)
         {
