@@ -27,9 +27,18 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 worldPos,
             string text,
             float? rise = null,
-            float? duration = null)
+            float? duration = null,
+            float visualScale = 1f)
         {
-            SpawnEffect(prefab, parent, worldPos, string.Empty, text, rise, duration);
+            SpawnEffect(
+                prefab,
+                parent,
+                worldPos,
+                string.Empty,
+                text,
+                rise,
+                duration,
+                visualScale: visualScale);
         }
 
         public static void SpawnEffect(
@@ -41,7 +50,8 @@ namespace GourmetProject.Game.Presentation.Battle
             float? rise = null,
             float? duration = null,
             Color? effectColor = null,
-            float delay = 0f)
+            float delay = 0f,
+            float visualScale = 1f)
         {
             if (prefab == null)
             {
@@ -51,8 +61,16 @@ namespace GourmetProject.Game.Presentation.Battle
 
             FloatingTextView view = Instantiate(prefab, parent);
             view.transform.position = worldPos;
+            float safeScale = Mathf.Max(0.0001f, visualScale);
+            view.transform.localScale *= safeScale;
             view._sortingOrder = WorldLabelSorting.NextOrder();
-            view.PlayEffect(sourceName, effectText, rise, duration, effectColor, delay);
+            view.PlayEffect(
+                sourceName,
+                effectText,
+                (rise ?? view._rise) * safeScale,
+                duration,
+                effectColor,
+                delay);
         }
 
         private void PlayEffect(

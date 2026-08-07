@@ -9,20 +9,55 @@ namespace GourmetProject.Game.UI.Meta
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class RecipeWarehouseItemFrameGraphic : MaskableGraphic
     {
+        private static readonly Color NormalFill =
+            new Color(0.8f, 0.68f, 0.42f, 0.025f);
+        private static readonly Color HighlightedFill =
+            new Color(0.96f, 0.72f, 0.24f, 0.12f);
+        private static readonly Color NormalBorder =
+            new Color(0.96f, 0.72f, 0.24f, 1f);
+        private static readonly Color CannotPlaceFill =
+            new Color(0.92f, 0.18f, 0.16f, 0.10f);
+        private static readonly Color CannotPlaceBorder =
+            new Color(0.96f, 0.20f, 0.18f, 1f);
+
         private Color _fillColor;
         private Color _borderColor;
         private float _borderWidth = 2f;
 
-        public void Configure(bool highlighted, bool clickable)
+        internal Color FillColor => _fillColor;
+
+        internal Color BorderColor => _borderColor;
+
+        public void Configure(
+            bool highlighted,
+            bool clickable,
+            bool cannotPlace = false)
         {
-            _fillColor = highlighted
-                ? new Color(0.96f, 0.72f, 0.24f, 0.12f)
-                : new Color(0.8f, 0.68f, 0.42f, 0.025f);
-            float borderAlpha = highlighted ? 0.95f : (clickable ? 0.42f : 0.2f);
-            _borderColor = new Color(0.96f, 0.72f, 0.24f, borderAlpha);
+            if (cannotPlace)
+            {
+                _fillColor = CannotPlaceFill;
+                _borderColor = WithAlpha(
+                    CannotPlaceBorder,
+                    highlighted ? 1f : 0.92f);
+            }
+            else
+            {
+                _fillColor = highlighted ? HighlightedFill : NormalFill;
+                float borderAlpha = highlighted
+                    ? 0.95f
+                    : (clickable ? 0.42f : 0.2f);
+                _borderColor = WithAlpha(NormalBorder, borderAlpha);
+            }
+
             _borderWidth = highlighted ? 3f : 2f;
             raycastTarget = false;
             SetVerticesDirty();
+        }
+
+        private static Color WithAlpha(Color color, float alpha)
+        {
+            color.a = alpha;
+            return color;
         }
 
         protected override void OnPopulateMesh(VertexHelper vh)

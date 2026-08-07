@@ -13,6 +13,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private DishValueBadgeView _badge;
         private DishInstance _instance;
         private Vector3 _baseScale = Vector3.one;
+        private float _visualScale = 1f;
         private float? _valueOverride;
         private bool _flying;
         private int _sortingOrderOffset;
@@ -44,6 +45,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 _baseScale = _badge.transform.localScale;
             }
 
+            _visualScale = DiningTableLayout.VisualScaleForCellSize(cellSize);
+            _badge.transform.DOKill(false);
+            _badge.transform.localScale = ScaledBaseScale;
+
             float badgeTopExtent = _badge.TopExtent
                 * Mathf.Abs(_badge.transform.localScale.y);
             _badge.transform.localPosition =
@@ -54,6 +59,11 @@ namespace GourmetProject.Game.Presentation.Battle
                     badgeTopExtent);
             ApplySorting();
             Refresh();
+        }
+
+        internal void SetDimmed(bool dimmed)
+        {
+            _badge?.SetDimmed(dimmed);
         }
 
         internal void Refresh()
@@ -96,14 +106,16 @@ namespace GourmetProject.Game.Presentation.Battle
 
             Transform badgeTransform = _badge.transform;
             badgeTransform.DOKill(false);
-            badgeTransform.localScale = _baseScale;
+            badgeTransform.localScale = ScaledBaseScale;
             badgeTransform.DOPunchScale(
-                    Vector3.one * scale,
+                    Vector3.one * (scale * _visualScale),
                     duration,
                     1,
                     0.45f)
                 .SetLink(_badge.gameObject);
         }
+
+        private Vector3 ScaledBaseScale => _baseScale * _visualScale;
 
         private void ApplySorting()
         {

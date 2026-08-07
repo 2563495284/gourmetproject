@@ -7,7 +7,6 @@ using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Meta;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Battle.Pages
 {
@@ -36,10 +35,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
         RecipeReadonlyBookView RecipeReadonlyBookView { get; }
 
         EventPagePanel EventPagePanel { get; }
-
-        GameObject BoardEditPanel { get; }
-
-        Button BoardEditActionButton { get; }
 
         bool ActionAxisVisible { get; }
 
@@ -180,8 +175,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         internal static bool IsWorldView(GameplayView view)
         {
-            return view == GameplayView.Food
-                || view == GameplayView.TableEdit;
+            return view == GameplayView.Food;
         }
 
         public void HideHud()
@@ -194,8 +188,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
             SetActive(_host.ShopPanel, false);
             SetActive(_host.RecipeReadonlyBookView, false);
             SetActive(_host.EventPagePanel, false);
-            SetActive(_host.BoardEditPanel, false);
-
             _host.SetFoodBattlePanelVisible(false);
 
             if (_host.HudFrame != null)
@@ -232,14 +224,12 @@ namespace GourmetProject.Game.UI.Battle.Pages
             bool shop = view == GameplayView.Shop;
             bool recipeSelection = view == GameplayView.RecipeSelection;
             bool eventPage = view == GameplayView.Event;
-            bool worldView = view == GameplayView.Food || view == GameplayView.TableEdit;
+            bool worldView = view == GameplayView.Food;
 
             SetActive(_host.ActionSelectionPanel, actionSelect);
             SetActive(_host.ShopPanel, shop);
             SetActive(_host.RecipeReadonlyBookView, recipeSelection);
             SetActive(_host.EventPagePanel, eventPage);
-
-            SetActive(_host.BoardEditPanel, view == GameplayView.TableEdit);
 
             _host.SetActionAxisVisible(actionSelect || shop || eventPage);
             _host.SetFoodBattlePanelVisible(view == GameplayView.Food);

@@ -61,15 +61,4 @@ namespace GourmetProject.Game.UI.Battle.States
         }
     }
 
-    /// <summary>餐桌编辑态：世界空间碎片拖拽，中部无标题。</summary>
-    internal sealed class TableEditState : IGameplayViewState
-    {
-        public GameplayView Kind => GameplayView.TableEdit;
-
-        public void Enter(IBattleViewHost host, Action buildCenter)
-        {
-            buildCenter?.Invoke();
-        }
-    }
-
 }

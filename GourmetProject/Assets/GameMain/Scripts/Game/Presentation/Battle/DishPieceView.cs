@@ -570,6 +570,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public void SetActiveItemTargetDimmed(bool dimmed)
         {
             EnsureRefs();
+            _dishValueBadgePresenter?.SetDimmed(dimmed);
             if (_spriteRenderer == null)
             {
                 return;

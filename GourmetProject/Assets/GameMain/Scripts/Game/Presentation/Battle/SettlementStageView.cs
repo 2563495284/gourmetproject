@@ -25,6 +25,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private IReadOnlyDictionary<int, DishPieceView> _dishViews;
         private DiningTableCoordinateMapper _mapper;
         private Transform _fxRoot;
+        private float _visualScale = 1f;
         private GameObject _groupSpotlight;
         private GameObject _groupLabel;
         private SettlementEffectGroup _resultHitSoundGroup;
@@ -32,12 +33,14 @@ namespace GourmetProject.Game.Presentation.Battle
         public void Configure(
             IReadOnlyDictionary<int, DishPieceView> dishViews,
             DiningTableCoordinateMapper mapper,
-            Transform fxRoot)
+            Transform fxRoot,
+            float visualScale = 1f)
         {
             ClearImmediate();
             _dishViews = dishViews;
             _mapper = mapper;
             _fxRoot = fxRoot != null ? fxRoot : transform;
+            _visualScale = Mathf.Max(0.0001f, visualScale);
         }
 
         internal void PlayTransientEffect(
@@ -48,7 +51,8 @@ namespace GourmetProject.Game.Presentation.Battle
             Color theme,
             float duration,
             float delay,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            float visualScale = 1f)
         {
             _ = PlayTransientEffectAsync(
                 parent,
@@ -58,7 +62,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 theme,
                 duration,
                 delay,
-                cancellationToken);
+                cancellationToken,
+                visualScale);
         }
 
         private async Awaitable PlayTransientEffectAsync(
@@ -69,7 +74,8 @@ namespace GourmetProject.Game.Presentation.Battle
             Color theme,
             float duration,
             float delay,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            float visualScale)
         {
             try
             {
@@ -85,7 +91,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     theme,
                     duration,
                     cancellationToken,
-                    parentOverride: parent);
+                    parentOverride: parent,
+                    visualScaleOverride: visualScale);
             }
             catch (OperationCanceledException)
             {
@@ -110,7 +117,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             Vector3 anchor = view != null
-                ? view.DishValueBadgeWorldPosition + Vector3.down * 0.42f
+                ? view.DishValueBadgeWorldPosition
+                    + Vector3.down * (0.42f * _visualScale)
                 : _mapper.Center;
             await SpawnLabelAsync(
                 anchor,
@@ -144,8 +152,9 @@ namespace GourmetProject.Game.Presentation.Battle
             Color theme = ThemeFor(group.Trace, group.Source);
             DishPieceView actor = TryGetDish(group.ActorDishInstanceId);
             Vector3 anchor = actor != null
-                ? actor.WorldBounds.center + Vector3.up * (actor.WorldBounds.extents.y + 0.42f)
-                : _mapper.Center + Vector3.up * 0.72f;
+                ? actor.WorldBounds.center
+                    + Vector3.up * (actor.WorldBounds.extents.y + 0.42f * _visualScale)
+                : _mapper.Center + Vector3.up * (0.72f * _visualScale);
             SpawnSpotlight(actor != null ? actor.WorldBounds : default, anchor, theme);
 
             if (actor != null && !actorAlreadyIntroduced)
@@ -203,7 +212,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 await SpawnLabelAsync(
-                    _mapper.Center + Vector3.up * 0.45f,
+                    _mapper.Center + Vector3.up * (0.45f * _visualScale),
                     "甜蜜传递",
                     $"{sourceName} 的技能由 {executorName} 执行",
                     theme,
@@ -213,7 +222,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             Vector3 sourceAnchor = source.WorldBounds.center
-                + Vector3.up * (source.WorldBounds.extents.y + 0.42f);
+                + Vector3.up * (source.WorldBounds.extents.y + 0.42f * _visualScale);
             await SpawnLabelAsync(
                 sourceAnchor,
                 "技能来源",
@@ -230,7 +239,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     source.WorldBounds.center,
                     executor.WorldBounds.center,
                     travelDuration,
-                    cancellationToken);
+                    cancellationToken,
+                    visualScale: _visualScale);
                 source.SetSettlementFocus(SweetTransferSourceBrightness);
             }
 
@@ -243,7 +253,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 durationScale: Mathf.Max(0.05f, executorDuration / 0.34f));
 
             Vector3 executorAnchor = executor.WorldBounds.center
-                + Vector3.up * (executor.WorldBounds.extents.y + 0.42f);
+                + Vector3.up * (executor.WorldBounds.extents.y + 0.42f * _visualScale);
             await SpawnLabelAsync(
                 executorAnchor,
                 context.IsSelfTransfer ? "自身执行" : "接收并执行",
@@ -276,7 +286,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 buffOwner.WorldBounds.center,
                 duration,
                 cancellationToken,
-                theme);
+                theme,
+                _visualScale);
             await PlayFeedbackSafelyAsync(
                 buffOwner,
                 SettlementDishFeedbackKind.GenericSkillTriggered,
@@ -305,7 +316,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 _fxRoot,
                 source.WorldBounds.center,
                 duration,
-                cancellationToken);
+                cancellationToken,
+                _visualScale);
         }
 
         internal async Awaitable ShowScopeAsync(
@@ -362,12 +374,14 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             Vector3 anchor = target != null
-                ? target.DishValueBadgeWorldPosition + Vector3.down * 0.42f
-                : _mapper.Center + Vector3.up * 0.20f;
+                ? target.DishValueBadgeWorldPosition
+                    + Vector3.down * (0.42f * _visualScale)
+                : _mapper.Center + Vector3.up * (0.20f * _visualScale);
             if (stackCount > 1)
             {
                 float centeredIndex = stackIndex - (stackCount - 1) * 0.5f;
-                anchor += Vector3.up * (centeredIndex * 0.54f);
+                anchor += Vector3.up
+                    * (centeredIndex * 0.54f * _visualScale);
             }
             await SpawnLabelAsync(
                 anchor,
@@ -435,9 +449,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
             }
 
-            Vector3 center = _mapper.Center + Vector3.up * 0.35f;
+            Vector3 center = _mapper.Center
+                + Vector3.up * (0.35f * _visualScale);
             GameObject ring = CreateSprite("FinaleTableRing", center, new Color(1f, 0.72f, 0.16f, 0.42f), -4);
-            ring.transform.localScale = Vector3.one * 0.28f;
+            ring.transform.localScale = Vector3.one
+                * (0.28f * _visualScale);
             SpriteRenderer renderer = ring.GetComponent<SpriteRenderer>();
             Color initial = renderer.color;
             Tween ringTween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), t =>
@@ -448,7 +464,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     }
 
                     float eased = Mathf.SmoothStep(0f, 1f, t);
-                    ring.transform.localScale = Vector3.one * Mathf.Lerp(0.28f, 6.2f, eased);
+                    ring.transform.localScale = Vector3.one
+                        * (Mathf.Lerp(0.28f, 6.2f, eased) * _visualScale);
                     Color color = initial;
                     color.a *= 1f - eased;
                     renderer.color = color;
@@ -457,7 +474,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 .SetLink(ring);
 
             Awaitable labelTask = SpawnLabelAsync(
-                center + Vector3.up * 0.62f,
+                center + Vector3.up * (0.62f * _visualScale),
                 "本桌结算",
                 $"总分  {total}",
                 new Color(1f, 0.62f, 0.10f, 1f),
@@ -546,8 +563,10 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 center = bounds.size.sqrMagnitude > 0.0001f ? bounds.center : fallback;
             _groupSpotlight = CreateSprite("SettlementSpotlight", center, WithAlpha(theme, 0.20f), -6);
             Vector2 size = bounds.size.sqrMagnitude > 0.0001f
-                ? new Vector2(Mathf.Max(1.2f, bounds.size.x * 1.45f), Mathf.Max(1.2f, bounds.size.y * 1.45f))
-                : Vector2.one * 1.8f;
+                ? new Vector2(
+                    Mathf.Max(1.2f * _visualScale, bounds.size.x * 1.45f),
+                    Mathf.Max(1.2f * _visualScale, bounds.size.y * 1.45f))
+                : Vector2.one * (1.8f * _visualScale);
             _groupSpotlight.transform.localScale = new Vector3(size.x, size.y, 1f);
         }
 
@@ -573,7 +592,8 @@ namespace GourmetProject.Game.Presentation.Battle
             CancellationToken cancellationToken,
             bool holdUntilCleared = false,
             bool finalStamp = false,
-            Transform parentOverride = null)
+            Transform parentOverride = null,
+            float visualScaleOverride = -1f)
         {
             GameObject root = new("SettlementStageLabel");
             root.transform.SetParent(parentOverride != null ? parentOverride : _fxRoot, worldPositionStays: true);
@@ -613,8 +633,16 @@ namespace GourmetProject.Game.Presentation.Battle
             Color backgroundColor = background.color;
             Color headerColor = headerText.color;
             Color bodyColor = bodyText.color;
-            Vector3 targetScale = Vector3.one;
-            root.transform.localScale = new Vector3(0.80f, 0.80f, 1f);
+            float visualScale = visualScaleOverride > 0f
+                ? visualScaleOverride
+                : _visualScale;
+            Vector3 targetScale = new Vector3(
+                visualScale,
+                visualScale,
+                1f);
+            root.transform.localScale = Vector3.Scale(
+                targetScale,
+                new Vector3(0.80f, 0.80f, 1f));
             float animationDuration = Mathf.Max(0.0001f, duration);
 
             Tween tween = DOVirtual.Float(0f, 1f, animationDuration, t =>
@@ -629,7 +657,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     root.transform.localScale = Vector3.Scale(
                         targetScale,
                         new Vector3(0.80f + enter * 0.20f + pulse, 0.80f + enter * 0.20f + pulse, 1f));
-                    root.transform.position = anchor + Vector3.up * (0.10f * enter);
+                    root.transform.position = anchor
+                        + Vector3.up * (0.10f * visualScale * enter);
 
                     float alpha = holdUntilCleared ? 1f : Mathf.Clamp01((1f - t) / 0.24f);
                     background.color = WithAlpha(backgroundColor, alpha);

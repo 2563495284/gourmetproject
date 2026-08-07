@@ -205,7 +205,6 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 case GameplayView.ActionSelect:
                 case GameplayView.Shop:
                 case GameplayView.Food:
-                case GameplayView.TableEdit:
                     _host.SwitchTo(returnView);
                     break;
                 default:
