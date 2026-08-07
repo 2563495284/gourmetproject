@@ -28,8 +28,26 @@ namespace GourmetProject.Game.Procedure
             base.OnEnter(procedureOwner);
 
             EnsureUIGroups();
-            GameApp.UI.OpenUIForm(UIForms.MainMenu, UIForms.GroupDefault);
-            Log.Info("ProcedureMenu entered: main menu opened.", Tag);
+            MetaProgressSaveData progress = MetaProgressPersistence.Load();
+            if (OpeningComicProgress.ShouldPlay(progress))
+            {
+                MoveTransitionGroupToFront();
+                int serialId = GameApp.UI.OpenUIForm(UIForms.OpeningComic, UIForms.GroupTransition);
+                if (serialId <= 0)
+                {
+                    Log.Error("ProcedureMenu: failed to request opening comic, falling back to main menu.", Tag);
+                    GameApp.UI.OpenUIForm(UIForms.MainMenu, UIForms.GroupDefault);
+                }
+                else
+                {
+                    Log.Info("ProcedureMenu entered: first-run opening comic requested.", Tag);
+                }
+            }
+            else
+            {
+                GameApp.UI.OpenUIForm(UIForms.MainMenu, UIForms.GroupDefault);
+                Log.Info("ProcedureMenu entered: opening comic already completed, main menu opened.", Tag);
+            }
         }
 
         protected override void OnUpdate(IFsm<IProcedureManager> procedureOwner, float elapseSeconds, float realElapseSeconds)
@@ -89,6 +107,15 @@ namespace GourmetProject.Game.Procedure
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
+        }
+
+        private static void MoveTransitionGroupToFront()
+        {
+            var transitionGroup = GameApp.UI.GetUIGroup(UIForms.GroupTransition);
+            if (transitionGroup?.Helper is Component helper)
+            {
+                helper.transform.SetAsLastSibling();
+            }
         }
     }
 }

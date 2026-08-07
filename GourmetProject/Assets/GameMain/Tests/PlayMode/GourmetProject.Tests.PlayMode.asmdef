@@ -6,7 +6,8 @@
         "GourmetProject.Config",
         "GourmetProject.Gameplay",
         "GourmetProject.Core",
-        "GourmetProject.Runtime"
+        "GourmetProject.Runtime",
+        "UnityGameFramework.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
