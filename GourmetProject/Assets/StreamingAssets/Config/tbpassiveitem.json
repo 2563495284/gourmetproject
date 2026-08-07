@@ -22,11 +22,11 @@
   {
     "id": "item_gold_random",
     "name": "陶瓷招财猫",
-    "desc": "获得20～140金币",
+    "desc": "获得30～200金币",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0,
-    "effectParam": "range:20,140",
+    "effectParam": "range:30,200",
     "baseWeight": 300,
     "hiddenRange": {
       "min": 10,
@@ -42,10 +42,10 @@
   {
     "id": "item_gold_meal_bonus",
     "name": "柜台小费罐",
-    "desc": "接下来10次日常营业\n额外获得10金币",
+    "desc": "接下来10次日常营业\n额外获得15金币",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 10,
+    "effectValue": 15,
     "effectParam": "meals:10",
     "baseWeight": 300,
     "hiddenRange": {
@@ -62,10 +62,10 @@
   {
     "id": "item_gold_boss",
     "name": "金边奖杯",
-    "desc": "完成下次星级评鉴\n额外+90金币",
+    "desc": "完成下次星级评鉴\n额外+120金币",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 90,
+    "effectValue": 120,
     "effectParam": "",
     "baseWeight": 300,
     "hiddenRange": {
@@ -322,10 +322,10 @@
   {
     "id": "item_discount_fragment_festival",
     "name": "宴会桌模型",
-    "desc": "餐桌格价格-25%",
+    "desc": "餐桌格价格-30%",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 0.25,
+    "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 300,
     "hiddenRange": {
@@ -342,10 +342,10 @@
   {
     "id": "item_discount_active_festival",
     "name": "金边强化券",
-    "desc": "强化箱价格-25%",
+    "desc": "强化箱价格-30%",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 0.25,
+    "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -362,10 +362,10 @@
   {
     "id": "item_discount_adjust_festival",
     "name": "烫金调整单",
-    "desc": "调整单价格-25%",
+    "desc": "调整单价格-30%",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 0.25,
+    "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -382,10 +382,10 @@
   {
     "id": "item_discount_passive_festival",
     "name": "多层展柜",
-    "desc": "装饰品价格-25%",
+    "desc": "装饰品价格-30%",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 0.25,
+    "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -402,10 +402,10 @@
   {
     "id": "item_discount_remove_festival",
     "name": "可擦食谱板",
-    "desc": "删除食物价格-25%",
+    "desc": "删除食物价格-30%",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 0.25,
+    "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 300,
     "hiddenRange": {
@@ -442,10 +442,10 @@
   {
     "id": "item_heart_flat_all",
     "name": "暖心壁灯",
-    "desc": "结算开始\n每拥有1颗红心\n所有食物分数+5",
+    "desc": "结算开始\n每拥有1颗红心\n所有食物分数+10",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 5,
+    "effectValue": 10,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -462,10 +462,10 @@
   {
     "id": "item_empty_heart_mult_all",
     "name": "裂纹心形镜",
-    "desc": "结算开始\n每拥有1个空红心\n所有食物倍率+0.1",
+    "desc": "结算开始\n每拥有1个空红心\n所有食物倍率+0.3",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 0.1,
+    "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -502,10 +502,10 @@
   {
     "id": "item_req_normal_down",
     "name": "家常菜挂画",
-    "desc": "日常营业\n目标美味值-20%",
+    "desc": "日常营业\n目标美味值-25%",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": -0.2,
+    "effectValue": -0.25,
     "effectParam": "",
     "baseWeight": 300,
     "hiddenRange": {
@@ -522,10 +522,10 @@
   {
     "id": "item_req_super_down",
     "name": "红格桌布",
-    "desc": "火热营业\n目标美味值-20%",
+    "desc": "火热营业\n目标美味值-25%",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": -0.2,
+    "effectValue": -0.25,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -542,10 +542,10 @@
   {
     "id": "item_req_feast_down",
     "name": "金边证书框",
-    "desc": "星级评鉴\n目标美味值-15%",
+    "desc": "星级评鉴\n目标美味值-20%",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": -0.15,
+    "effectValue": -0.2,
     "effectParam": "",
     "baseWeight": 30,
     "hiddenRange": {
@@ -562,10 +562,10 @@
   {
     "id": "item_count_le_mult",
     "name": "素色桌旗",
-    "desc": "结算开始\n若食物数量≤15\n所有食物倍率×1.2",
+    "desc": "结算开始\n若食物数量≤15\n所有食物倍率×1.5",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 1.2,
+    "effectValue": 1.5,
     "effectParam": "lte:15",
     "baseWeight": 100,
     "hiddenRange": {
@@ -582,10 +582,10 @@
   {
     "id": "item_count_ge_mult",
     "name": "多层餐盘架",
-    "desc": "结算开始\n若食物数量≥25\n所有食物倍率×1.2",
+    "desc": "结算开始\n若食物数量≥25\n所有食物倍率×1.5",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 1.2,
+    "effectValue": 1.5,
     "effectParam": "gte:25",
     "baseWeight": 30,
     "hiddenRange": {
@@ -602,10 +602,10 @@
   {
     "id": "item_perma_flat_all",
     "name": "青花调味罐",
-    "desc": "获得时\n所有食物分数永久+5",
+    "desc": "获得时\n所有食物分数永久+10",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 5,
+    "effectValue": 10,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -622,10 +622,10 @@
   {
     "id": "item_perma_flat_all_plus",
     "name": "成套调味罐",
-    "desc": "获得时\n所有食物分数永久+10",
+    "desc": "获得时\n所有食物分数永久+30",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 10,
+    "effectValue": 30,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -682,10 +682,10 @@
   {
     "id": "item_interest_cap",
     "name": "聚宝盆摆件",
-    "desc": "利息上限扩展到100金币",
+    "desc": "利息上限扩展到150金币",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 100,
+    "effectValue": 150,
     "effectParam": "",
     "baseWeight": 30,
     "hiddenRange": {
@@ -702,11 +702,11 @@
   {
     "id": "item_loan",
     "name": "挂账记录板",
-    "desc": "获得100金币\n将失去200金币的节点行动\n添加至本周末尾",
+    "desc": "获得150金币\n将失去300金币的节点行动\n添加至本周末尾",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 100,
-    "effectParam": "repay:200",
+    "effectValue": 150,
+    "effectParam": "repay:300",
     "baseWeight": 100,
     "hiddenRange": {
       "min": 20,
@@ -782,10 +782,10 @@
   {
     "id": "item_every3_next_mult",
     "name": "木制节拍器",
-    "desc": "每上菜3个食物后\n下个食物倍率+0.5",
+    "desc": "每上菜3个食物后\n下个食物倍率+1",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 0.5,
+    "effectValue": 1,
     "effectParam": "every:3",
     "baseWeight": 100,
     "hiddenRange": {
@@ -802,10 +802,10 @@
   {
     "id": "item_first_+2",
     "name": "迎客灯笼",
-    "desc": "结算开始\n首个上菜的食物\n倍率+1",
+    "desc": "结算开始\n首个上菜的食物\n倍率+3",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 1,
+    "effectValue": 3,
     "effectParam": "index:1",
     "baseWeight": 300,
     "hiddenRange": {
@@ -822,10 +822,10 @@
   {
     "id": "item_last_+2",
     "name": "餐后茶具",
-    "desc": "结算开始\n最后上菜的食物\n倍率+1",
+    "desc": "结算开始\n最后上菜的食物\n倍率+3",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 1,
+    "effectValue": 3,
     "effectParam": "index:-1",
     "baseWeight": 300,
     "hiddenRange": {
@@ -882,10 +882,10 @@
   {
     "id": "item_gold_on_active",
     "name": "皮面账单夹",
-    "desc": "使用消耗品时\n获得5金币",
+    "desc": "使用消耗品时\n获得10金币",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 5,
+    "effectValue": 10,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -902,10 +902,10 @@
   {
     "id": "item_block_active",
     "name": "封条备品柜",
-    "desc": "无法再使用消耗品\n立即获得300金币",
+    "desc": "无法再使用消耗品\n立即获得400金币",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 300,
+    "effectValue": 400,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -942,10 +942,10 @@
   {
     "id": "item_flavor_remove_gold",
     "name": "复古台秤",
-    "desc": "移除1个食物的风味\n获得90金币",
+    "desc": "移除1个食物的风味\n获得100金币",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 90,
+    "effectValue": 100,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -1002,10 +1002,10 @@
   {
     "id": "item_celltag_enhance",
     "name": "拼花砖壁饰",
-    "desc": "为2个餐桌格\n强化随机材质",
+    "desc": "为3个餐桌格\n强化随机材质",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 2,
+    "effectValue": 3,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -1022,10 +1022,10 @@
   {
     "id": "item_lucky_guarantee",
     "name": "四叶草标本框",
-    "desc": "经历4个事件后\n下个事件一定为奖励",
+    "desc": "经历3个事件后\n下个事件一定为奖励",
     "quality": 2,
     "specialTags": 0,
-    "effectValue": 4,
+    "effectValue": 3,
     "effectParam": "",
     "baseWeight": 30,
     "hiddenRange": {
@@ -1042,10 +1042,10 @@
   {
     "id": "item_lucky_chance",
     "name": "四叶草福袋",
-    "desc": "事件行动中\n奖励事件随机权重+20%",
+    "desc": "事件行动中\n奖励事件随机权重+40%",
     "quality": 2,
     "specialTags": 0,
-    "effectValue": 0.2,
+    "effectValue": 0.4,
     "effectParam": "",
     "baseWeight": 30,
     "hiddenRange": {
@@ -1062,10 +1062,10 @@
   {
     "id": "item_more_events",
     "name": "街角路牌",
-    "desc": "事件行动大组\n随机权重+20%",
+    "desc": "事件行动大组\n随机权重+40%",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 0.2,
+    "effectValue": 0.4,
     "effectParam": "",
     "baseWeight": 300,
     "hiddenRange": {
@@ -1085,7 +1085,7 @@
     "desc": "更容易遇见火热营业",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 0.5,
+    "effectValue": 1,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -1105,7 +1105,7 @@
     "desc": "抽奖机更容易中奖",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 0.2,
+    "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -1133,7 +1133,7 @@
       "max": 80
     },
     "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 5,
+    "dishHiddenOffset": 10,
     "passiveItemHiddenOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
@@ -1155,7 +1155,7 @@
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 5,
+    "fragmentHiddenOffset": 10,
     "termId": "",
     "price": 80
   },
@@ -1174,7 +1174,7 @@
     },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 5,
+    "passiveItemHiddenOffset": 10,
     "fragmentHiddenOffset": 0,
     "termId": "",
     "price": 80
@@ -1282,27 +1282,7 @@
   {
     "id": "item_extra_food_choice",
     "name": "点心展示架",
-    "desc": "每6次日常营业\n额外获得3选1食物",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 0,
-    "effectParam": "every:6",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 80
-  },
-  {
-    "id": "item_extra_item_choice",
-    "name": "杂货展示架",
-    "desc": "每4次火热营业\n额外获得3选1装饰品",
+    "desc": "每4次日常营业\n额外获得3选1食物",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0,
@@ -1320,12 +1300,32 @@
     "price": 80
   },
   {
+    "id": "item_extra_item_choice",
+    "name": "杂货展示架",
+    "desc": "每2次火热营业\n额外获得3选1装饰品",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 0,
+    "effectParam": "every:2",
+    "baseWeight": 100,
+    "hiddenRange": {
+      "min": 20,
+      "max": 80
+    },
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "passiveItemHiddenOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 80
+  },
+  {
     "id": "item_copy_food",
     "name": "双盖餐盘",
-    "desc": "获得时\n随机复制1个已有食物",
+    "desc": "获得时\n随机复制3个已有食物",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 1,
+    "effectValue": 3,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -1362,10 +1362,10 @@
   {
     "id": "item_discard_negative_gold",
     "name": "旧餐具寄卖架",
-    "desc": "丢弃所有诅咒装饰品\n每丢弃一个获得30金币",
+    "desc": "丢弃所有诅咒装饰品\n每丢弃一个获得40金币",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 30,
+    "effectValue": 40,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -1622,10 +1622,10 @@
   {
     "id": "item_count_as_all",
     "name": "九格拼盘",
-    "desc": "所有食物额外被视为2个食物",
+    "desc": "所有食物额外被视为3个食物",
     "quality": 3,
     "specialTags": 0,
-    "effectValue": 2,
+    "effectValue": 3,
     "effectParam": "",
     "baseWeight": 10,
     "hiddenRange": {
@@ -1642,10 +1642,10 @@
   {
     "id": "item_transfer_target_mult",
     "name": "大号糖果盘",
-    "desc": "甜蜜传递时\n每个被传递方倍率+0.1",
+    "desc": "甜蜜传递时\n每个被传递方倍率+0.2",
     "quality": 2,
     "specialTags": 0,
-    "effectValue": 0.1,
+    "effectValue": 0.2,
     "effectParam": "",
     "baseWeight": 10,
     "hiddenRange": {
@@ -1662,10 +1662,10 @@
   {
     "id": "item_transfer_source_mult",
     "name": "长嘴糖浆壶",
-    "desc": "甜蜜传递时\n传递方每成功传递1个目标\n倍率+0.1",
+    "desc": "甜蜜传递时\n传递方每成功传递1个目标\n倍率+0.2",
     "quality": 2,
     "specialTags": 0,
-    "effectValue": 0.1,
+    "effectValue": 0.2,
     "effectParam": "",
     "baseWeight": 10,
     "hiddenRange": {
@@ -1682,10 +1682,10 @@
   {
     "id": "item_skill_count_mult",
     "name": "主厨刀架",
-    "desc": "结算结束\n每个食物每有1个技能\n自身倍率+0.2",
+    "desc": "结算结束\n每个食物每有1个技能\n自身倍率+1",
     "quality": 2,
     "specialTags": 0,
-    "effectValue": 0.2,
+    "effectValue": 1,
     "effectParam": "",
     "baseWeight": 100,
     "hiddenRange": {
@@ -1702,10 +1702,10 @@
   {
     "id": "item_gold_on_transfer",
     "name": "黄铜传菜铃",
-    "desc": "累计甜蜜传递10次后\n获得10金币",
+    "desc": "累计甜蜜传递10次后\n获得15金币",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 10,
+    "effectValue": 15,
     "effectParam": "count:10",
     "baseWeight": 100,
     "hiddenRange": {

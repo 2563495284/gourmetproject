@@ -595,7 +595,7 @@
     "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
-      1.5
+      1.3
     ],
     "actionParam": [
       "when:transfer;resultscope:ColumnAndSelf"
@@ -617,7 +617,7 @@
     "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
-      15
+      10
     ],
     "actionParam": [],
     "isPassive": false,
