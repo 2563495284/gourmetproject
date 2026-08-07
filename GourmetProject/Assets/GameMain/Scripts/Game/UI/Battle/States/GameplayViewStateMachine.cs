@@ -51,7 +51,6 @@ namespace GourmetProject.Game.UI.Battle.States
             Register(new RecipeSelectionState());
             Register(new EventState());
             Register(new FoodState());
-            Register(new TableEditState());
         }
 
         private void Register(IGameplayViewState state)

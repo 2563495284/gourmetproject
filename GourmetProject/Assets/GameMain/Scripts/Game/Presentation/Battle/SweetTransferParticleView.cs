@@ -19,6 +19,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _arrivalRadius = 0.36f;
 
         private Tween _tween;
+        private float _visualScale = 1f;
 
         public static async Awaitable PlayAsync(
             SweetTransferParticleView prefab,
@@ -27,7 +28,8 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 end,
             float duration,
             CancellationToken cancellationToken,
-            Color? colorOverride = null)
+            Color? colorOverride = null,
+            float visualScale = 1f)
         {
             if (prefab == null)
             {
@@ -41,6 +43,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     view._color = colorOverride.Value;
                 }
+
+                view._visualScale = Mathf.Max(0.0001f, visualScale);
 
                 await view.PlayInternalAsync(start, end, duration, cancellationToken);
             }
@@ -58,7 +62,8 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform parent,
             Vector3 anchor,
             float duration,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            float visualScale = 1f)
         {
             if (prefab == null)
             {
@@ -68,6 +73,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SweetTransferParticleView view = Instantiate(prefab, parent);
             try
             {
+                view._visualScale = Mathf.Max(0.0001f, visualScale);
                 await view.PlayFailureInternalAsync(anchor, duration, cancellationToken);
             }
             finally
@@ -94,6 +100,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
             BattleSorting.Apply(_renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText - 1);
             transform.position = anchor;
+            float size = _size * _visualScale;
 
             var fadingDots = new List<SpriteRenderer>();
             for (int i = 0; i < Mathf.Max(5, _arrivalDotCount / 2); i++)
@@ -105,9 +112,9 @@ namespace GourmetProject.Game.Presentation.Battle
             _tween = DOVirtual.Float(0f, 1f, safeDuration, progress =>
                 {
                     float t = Mathf.Clamp01(progress);
-                    float recoil = Mathf.Sin(t * Mathf.PI * 5f) * (1f - t) * _size * 0.22f;
+                    float recoil = Mathf.Sin(t * Mathf.PI * 5f) * (1f - t) * size * 0.22f;
                     transform.position = anchor + Vector3.right * recoil;
-                    transform.localScale = Vector3.one * _size * Mathf.Lerp(1.05f, 0.08f, t * t);
+                    transform.localScale = Vector3.one * size * Mathf.Lerp(1.05f, 0.08f, t * t);
                     Color core = _color;
                     core.a *= 1f - t;
                     _renderer.color = core;
@@ -115,7 +122,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     for (int i = 0; i < fadingDots.Count; i++)
                     {
                         float angle = Mathf.PI * 2f * i / Mathf.Max(1, fadingDots.Count);
-                        float radius = Mathf.Sin(t * Mathf.PI) * _size * 1.25f;
+                        float radius = Mathf.Sin(t * Mathf.PI) * size * 1.25f;
                         SpriteRenderer dot = fadingDots[i];
                         dot.transform.position = anchor
                             + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
@@ -161,11 +168,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 arrivalDots.Add(dot);
             }
 
+            float size = _size * _visualScale;
             transform.position = start;
-            transform.localScale = Vector3.one * (_size * 0.55f);
+            transform.localScale = Vector3.one * (size * 0.55f);
             float distance = Vector2.Distance(start, end);
             Vector3 control = (start + end) * 0.5f
-                + Vector3.up * Mathf.Max(_minimumArcHeight, distance * _arcHeightPerUnit);
+                + Vector3.up * Mathf.Max(
+                    _minimumArcHeight * _visualScale,
+                    distance * _arcHeightPerUnit);
 
             _tween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), progress =>
                 {
@@ -179,7 +189,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     transform.position = Bezier(start, control, end, travel);
 
                     float pulse = Mathf.Sin(travel * Mathf.PI);
-                    transform.localScale = Vector3.one * (_size * Mathf.Lerp(0.55f, 1.22f, pulse));
+                    transform.localScale = Vector3.one * (size * Mathf.Lerp(0.55f, 1.22f, pulse));
 
                     float fadeIn = Mathf.Clamp01(travel / 0.12f);
                     float fadeOut = Mathf.Clamp01((0.88f - t) / 0.10f);
@@ -211,7 +221,10 @@ namespace GourmetProject.Game.Presentation.Battle
                     }
 
                     float arrival = Mathf.Clamp01((t - 0.70f) / 0.30f);
-                    float radius = Mathf.Lerp(_size * 0.18f, Mathf.Max(_size, _arrivalRadius), arrival);
+                    float radius = Mathf.Lerp(
+                        size * 0.18f,
+                        Mathf.Max(size, _arrivalRadius * _visualScale),
+                        arrival);
                     float ringAlpha = Mathf.Sin(arrival * Mathf.PI) * 0.82f;
                     for (int i = 0; i < arrivalDots.Count; i++)
                     {

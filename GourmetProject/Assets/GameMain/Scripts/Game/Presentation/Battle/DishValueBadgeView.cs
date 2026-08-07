@@ -14,6 +14,14 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private string _sortingLayer = BattleSorting.Fx;
         private int _sortingOrder = BattleSorting.OrderFloatingText;
+        private bool _dimmed;
+        private Color _backgroundColorBeforeDim;
+        private Color _iconColorBeforeDim;
+        private Color _textColorBeforeDim;
+
+        internal float CurrentAlpha => _valueText != null
+            ? _valueText.color.a
+            : (_background != null ? _background.color.a : 1f);
 
         /// <summary>Badge 根节点到最高可见 Sprite 边缘的本地距离。</summary>
         public float TopExtent
@@ -43,6 +51,59 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplySortingOrder();
         }
 
+        public void SetDimmed(bool dimmed)
+        {
+            if (_dimmed == dimmed)
+            {
+                return;
+            }
+
+            _dimmed = dimmed;
+            if (dimmed)
+            {
+                if (_background != null)
+                {
+                    _backgroundColorBeforeDim = _background.color;
+                    _background.color = WithAlphaMultiplier(
+                        _backgroundColorBeforeDim,
+                        0.5f);
+                }
+
+                if (_icon != null)
+                {
+                    _iconColorBeforeDim = _icon.color;
+                    _icon.color = WithAlphaMultiplier(
+                        _iconColorBeforeDim,
+                        0.5f);
+                }
+
+                if (_valueText != null)
+                {
+                    _textColorBeforeDim = _valueText.color;
+                    _valueText.color = WithAlphaMultiplier(
+                        _textColorBeforeDim,
+                        0.5f);
+                }
+
+                return;
+            }
+
+            if (_background != null)
+            {
+                _background.color = _backgroundColorBeforeDim;
+            }
+
+            if (_icon != null)
+            {
+                _icon.color = _iconColorBeforeDim;
+            }
+
+            if (_valueText != null)
+            {
+                _valueText.color = _textColorBeforeDim;
+            }
+        }
+
         private void ApplySortingOrder()
         {
             if (_valueText != null)
@@ -69,6 +130,17 @@ namespace GourmetProject.Game.Presentation.Battle
             return spriteTransform.localPosition.y
                 + renderer.sprite.bounds.max.y
                 * Mathf.Abs(spriteTransform.localScale.y);
+        }
+
+        private static Color WithAlphaMultiplier(Color color, float multiplier)
+        {
+            color.a *= multiplier;
+            return color;
+        }
+
+        private void OnDisable()
+        {
+            SetDimmed(false);
         }
     }
 }

@@ -61,6 +61,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _dishFloatingVerticalOffset = -0.45f;
 
         private float _currentSettlementSpeed = 1f;
+        private float _visualScale = 1f;
         private bool _settlementAccelerationEnabled;
         private SettlementStageView _stage;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -94,7 +95,8 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 worldPos,
             string text,
             float? rise = null,
-            float? duration = null)
+            float? duration = null,
+            float visualScale = 1f)
         {
             FloatingTextView.Spawn(
                 _settlementEffectLabelPrefab,
@@ -102,7 +104,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 worldPos,
                 text,
                 rise,
-                duration);
+                duration,
+                visualScale);
         }
 
         public void PlayFloatingEffect(
@@ -113,7 +116,8 @@ namespace GourmetProject.Game.Presentation.Battle
             Color effectColor,
             float? rise = null,
             float? duration = null,
-            float delay = 0f)
+            float delay = 0f,
+            float visualScale = 1f)
         {
             EnsureStage();
             _stage.PlayTransientEffect(
@@ -124,7 +128,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 effectColor,
                 duration ?? 0.78f,
                 delay,
-                destroyCancellationToken);
+                destroyCancellationToken,
+                visualScale);
         }
 
         public async Awaitable PlayAsync(
@@ -140,6 +145,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Action<string> onPassiveTriggered,
             Action<SettlementBeatSignal> onBeat,
             SettlementBaselineSnapshot baselineSnapshot,
+            float visualScale,
             CancellationToken cancellationToken)
         {
             if (result == null)
@@ -148,6 +154,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             renderScore?.Invoke(0);
+            _visualScale = Mathf.Max(0.0001f, visualScale);
             SettlementPresentationPlan plan = SettlementPresentationPlan.Build(result);
             var playback = new SettlementPlaybackState(plan.ResultBeatCount, null);
             var ledger = new SettlementRunningLedger(result.DishScores, baselineSnapshot);
@@ -165,7 +172,7 @@ namespace GourmetProject.Game.Presentation.Battle
             BeginSettlementSpeed();
             scoreFire?.Hide();
             EnsureStage();
-            _stage.Configure(dishViews, mapper, fxRoot);
+            _stage.Configure(dishViews, mapper, fxRoot, _visualScale);
 
             try
             {
@@ -696,7 +703,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue.SourceName,
                     cue.Text,
                     cue.Rise,
-                    ScaleSettlementDuration(cue.Duration));
+                    ScaleSettlementDuration(cue.Duration),
+                    visualScale: _visualScale);
             }
 
             await view.PlaySettlementFeedbackAsync(cue.FeedbackKind, cancellationToken);
@@ -785,7 +793,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         cue.SourceName,
                         cue.Text,
                         cue.Rise,
-                        ScaleSettlementDuration(cue.Duration));
+                        ScaleSettlementDuration(cue.Duration),
+                        visualScale: _visualScale);
                 }
 
                 _ = PlayFeedbackSafelyAsync(view, cue.FeedbackKind, cancellationToken);
@@ -1047,7 +1056,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 source.WorldBounds.center,
                 receiver.WorldBounds.center,
                 ScaleSettlementDuration(SweetTransferParticleDuration),
-                cancellationToken);
+                cancellationToken,
+                visualScale: _visualScale);
         }
 
         private static void ApplySweetTransferBuffMarkers(
@@ -1431,11 +1441,15 @@ namespace GourmetProject.Game.Presentation.Battle
                 FloatingTextView.SpawnEffect(
                     _settlementEffectLabelPrefab,
                     fxRoot,
-                    center + new Vector3(0f, 0.72f, 0f),
+                    center + new Vector3(
+                        0f,
+                        0.72f * _visualScale,
+                        0f),
                     "结算",
                     $"总分 {total}",
                     FinalScorePopupRise,
-                    ScaleSettlementDuration(FinalScorePopupDuration));
+                    ScaleSettlementDuration(FinalScorePopupDuration),
+                    visualScale: _visualScale);
             }
 
             await Awaitable.WaitForSecondsAsync(ScaleSettlementDuration(FinalScorePopupHold), cancellationToken);
@@ -1461,7 +1475,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 EmitReveal(onReveal, cue);
                 if (fxRoot != null)
                 {
-                    Vector3 offset = new(0f, 0.52f + SourceCueStackOffset * i, 0f);
+                    Vector3 offset = new(
+                        0f,
+                        (0.52f + SourceCueStackOffset * i) * _visualScale,
+                        0f);
                     FloatingTextView.SpawnEffect(
                         _settlementEffectLabelPrefab,
                         fxRoot,
@@ -1469,7 +1486,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         cue.SourceName,
                         cue.Text,
                         cue.Rise,
-                        ScaleSettlementDuration(cue.Duration));
+                        ScaleSettlementDuration(cue.Duration),
+                        visualScale: _visualScale);
                 }
 
                 await Awaitable.WaitForSecondsAsync(ScaleSettlementDuration(FinalCueInterval), cancellationToken);
@@ -2469,7 +2487,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private Vector3 DishFloatingAnchor(Vector3 dishValueAnchor, DiningTableCoordinateMapper mapper)
         {
-            Vector3 offset = new(0f, _dishFloatingVerticalOffset, 0f);
+            Vector3 offset = new(
+                0f,
+                _dishFloatingVerticalOffset * _visualScale,
+                0f);
             if (mapper.Root != null)
             {
                 offset = mapper.Root.TransformVector(offset);

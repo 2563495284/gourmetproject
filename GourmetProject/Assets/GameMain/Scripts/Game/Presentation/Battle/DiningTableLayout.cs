@@ -35,6 +35,14 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float SideMargin = 2.6f;
         private const float TopMargin = 1.7f;
 
+        /// <summary>
+        /// 餐桌附属世界表现的统一缩放比例。最大单格尺寸为 1，超大餐桌随单格尺寸同比缩小。
+        /// </summary>
+        public static float VisualScaleForCellSize(float cellSize)
+        {
+            return Mathf.Clamp01(cellSize / MaxCellSize);
+        }
+
         /// <summary>按正交相机求视口半宽/半高，无有效相机时回退到 16:9 参考值。</summary>
         public static void ResolveViewport(Camera camera, out float halfW, out float halfH)
         {

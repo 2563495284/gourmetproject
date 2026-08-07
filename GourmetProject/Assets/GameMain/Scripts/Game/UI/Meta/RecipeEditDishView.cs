@@ -56,6 +56,7 @@ namespace GourmetProject.Game.UI.Meta
         private DishIconPreviewMode _previewMode;
         private int? _deliciousnessOverride;
         private bool _warehouseClickable;
+        private bool _cannotPlace;
         private bool _suppressClick;
         private Tween _failureTween;
         private RectTransform _failureFeedbackRect;
@@ -139,8 +140,8 @@ namespace GourmetProject.Game.UI.Meta
                 }
             }
 
-            ConfigureWarehouseStyle();
             ConfigureBattleStatus(battleStatus);
+            ConfigureWarehouseStyle();
             EnsureButton();
             if (_button != null)
             {
@@ -604,11 +605,15 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            _warehouseHighlight.Configure(highlighted, _warehouseClickable);
+            _warehouseHighlight.Configure(
+                highlighted,
+                _warehouseClickable,
+                _cannotPlace);
         }
 
         private void ConfigureBattleStatus(BattleRecipeEntryStatus? status)
         {
+            _cannotPlace = status == BattleRecipeEntryStatus.CannotPlace;
             ResolveDishPreview();
             EnsureBattleStatusVisuals();
 

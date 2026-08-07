@@ -801,6 +801,12 @@ namespace GourmetProject.Game.UI.Battle
                 return false;
             }
 
+            if (_host.IsTableFragmentEditActive)
+            {
+                reason = "餐桌碎片编辑期间不能使用消耗品。";
+                return false;
+            }
+
             if (_host.IsActiveItemUseBlocked)
             {
                 reason = "当前奖励流程中不能使用消耗品。";
@@ -901,7 +907,6 @@ namespace GourmetProject.Game.UI.Battle
             {
                 GameplayView.Shop => ActiveUseContextKind.Shop,
                 GameplayView.RecipeSelection => ActiveUseContextKind.Shop,
-                GameplayView.TableEdit => ActiveUseContextKind.Shop,
                 GameplayView.ActionSelect => ActiveUseContextKind.ActionSelect,
                 GameplayView.Event => ActiveUseContextKind.Event,
                 _ => ActiveUseContextKind.Reward,

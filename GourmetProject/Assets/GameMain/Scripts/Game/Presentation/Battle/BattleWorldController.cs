@@ -42,6 +42,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private const int TemporaryAreaSortingStride = 20;
         private const int PassiveSlotCapacity = 10;
         private const int PassiveSlotColumns = 2;
+        private const float ServeTriggerCueDuration = 0.88f;
+        private const string TastingDebuffId = "debuff_tasting";
         // 回退视口半宽/半高（16:9 参考：orthographicSize 5.4）。
         private const float FallbackHalfW = 9.6f;
         private const float FallbackHalfH = 5.4f;
@@ -77,6 +79,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         // 按餐桌尺寸自适应的单格世界尺寸与餐桌中心，BuildTable 中计算。
         private float _cellSize = MaxCellSize;
+        private float _tableVisualScale = 1f;
         private Vector3 _boardCenter = new Vector3(0f, 0.15f, 0f);
         private float _halfW = FallbackHalfW;
         private float _halfH = FallbackHalfH;
@@ -138,6 +141,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<bool> _preparedDishDiscardHoverChanged;
         private bool _outletHoveringDiscard;
         private bool _activeItemDishesDimmed;
+        private bool _serveTriggerCuePlaybackActive;
         private Action _stateChanged;
         private CancellationTokenSource _presentationCts;
         private Tween _tableViewFadeTween;
@@ -1457,10 +1461,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 Bounds bounds = piece.WorldBounds;
                 button.transform.position = new Vector3(
                     bounds.center.x,
-                    bounds.min.y - Mathf.Max(0.28f, _cellSize * 0.38f),
+                    bounds.min.y - _cellSize * 0.38f,
                     -0.2f);
                 button.transform.localRotation = Quaternion.identity;
-                button.transform.localScale = Vector3.one * 0.72f;
+                button.transform.localScale = Vector3.one
+                    * (0.72f * _tableVisualScale);
                 button.gameObject.SetActive(visible && piece != _movingPiece);
             }
 
@@ -1929,101 +1934,124 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _pendingServeTriggerCues.Add(cue);
-            _serveTriggerCueSink?.Invoke(cue);
         }
 
         private void PlayPendingServeTriggerCues()
         {
-            if (_pendingServeTriggerCues.Count == 0)
+            if (_pendingServeTriggerCues.Count == 0
+                || _serveTriggerCuePlaybackActive)
+            {
+                return;
+            }
+
+            _ = PlayPendingServeTriggerCuesSafelyAsync(GetPresentationToken());
+        }
+
+        private async Awaitable PlayPendingServeTriggerCuesSafelyAsync(
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                await DrainServeTriggerCueQueueAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // 页面切换或对象销毁会取消表现；队列由初始化/销毁流程统一清理。
+            }
+        }
+
+        private void PlayServeTriggerCue(ServeTriggerCue cue)
+        {
+            if (cue == null)
             {
                 return;
             }
 
             RefreshDishValueBadges();
-            var cues = new List<ServeTriggerCue>(_pendingServeTriggerCues);
-            _pendingServeTriggerCues.Clear();
-            var stackByDish = new Dictionary<int, int>();
-            for (int cueIndex = 0; cueIndex < cues.Count; cueIndex++)
+            _serveTriggerCueSink?.Invoke(cue);
+
+            DishPieceView view = null;
+            if (cue.DishId > 0)
             {
-                ServeTriggerCue cue = cues[cueIndex];
-                DishPieceView view = null;
-                if (cue.DishId > 0)
+                _dishViewsById.TryGetValue(cue.DishId, out view);
+                if (view == null)
                 {
-                    _dishViewsById.TryGetValue(cue.DishId, out view);
-                    if (view == null)
-                    {
-                        _temporaryAreaViewsById.TryGetValue(cue.DishId, out view);
-                    }
+                    _temporaryAreaViewsById.TryGetValue(cue.DishId, out view);
                 }
+            }
 
-                if (view == null || _sequencer == null)
-                {
-                    continue;
-                }
+            if (view == null || _sequencer == null)
+            {
+                return;
+            }
 
-                stackByDish.TryGetValue(cue.DishId, out int stackIndex);
-                stackByDish[cue.DishId] = stackIndex + 1;
-                Color color = cue.PresentationKind switch
-                {
-                    ServeCuePresentationKind.Cancel => new Color(0.66f, 0.69f, 0.74f, 1f),
-                    ServeCuePresentationKind.Penalty => new Color(1f, 0.43f, 0.38f, 1f),
-                    _ => new Color(1f, 0.86f, 0.32f, 1f),
-                };
-                Vector3 position = view.WorldBounds.center
-                    + new Vector3(0f, _cellSize * (0.35f + 0.18f * stackIndex), 0f);
-                _sequencer.PlayFloatingEffect(
-                    _fxRoot != null ? _fxRoot : transform,
-                    position,
-                    cue.SourceName,
-                    cue.Text,
-                    color,
-                    0.55f,
-                    0.78f,
-                    cueIndex * 0.08f);
+            Vector3 position = view.WorldBounds.center
+                + new Vector3(0f, _cellSize * 0.35f, 0f);
+            _sequencer.PlayFloatingEffect(
+                _fxRoot != null ? _fxRoot : transform,
+                position,
+                cue.SourceName,
+                cue.Text,
+                ServeTriggerCueColor(cue),
+                0.55f,
+                0.78f,
+                visualScale: _tableVisualScale);
 
-                void PlayDishFeedback()
-                {
-                    if (view == null)
-                    {
-                        return;
-                    }
-
-                    if (cue.PresentationKind == ServeCuePresentationKind.Gain)
-                    {
-                        view.PunchDishValueBadge(1.18f, 0.18f);
-                        _ = view.PlayDeliciousnessGainFeedbackAsync(GetPresentationToken());
-                    }
-                    else
-                    {
-                        view.PunchDishValueBadge(0.88f, 0.18f);
-                        view.PlayScopeAffectedShake(0.75f);
-                    }
-                }
-
-                float feedbackDelay = cueIndex * 0.08f;
-                if (feedbackDelay <= 0f)
-                {
-                    PlayDishFeedback();
-                }
-                else
-                {
-                    DOVirtual.DelayedCall(feedbackDelay, PlayDishFeedback)
-                        .SetUpdate(true)
-                        .SetLink(view.gameObject);
-                }
+            if (cue.PresentationKind == ServeCuePresentationKind.Gain)
+            {
+                view.PunchDishValueBadge(1.18f, 0.18f);
+                _ = view.PlayDeliciousnessGainFeedbackAsync(GetPresentationToken());
+            }
+            else
+            {
+                view.PunchDishValueBadge(0.88f, 0.18f);
+                view.PlayScopeAffectedShake(0.75f);
             }
         }
 
         public async Awaitable PlayPendingServeTriggerCuesAsync(CancellationToken cancellationToken)
         {
-            int cueCount = _pendingServeTriggerCues.Count;
-            PlayPendingServeTriggerCues();
-            if (cueCount <= 0)
+            await DrainServeTriggerCueQueueAsync(cancellationToken);
+        }
+
+        private async Awaitable DrainServeTriggerCueQueueAsync(
+            CancellationToken cancellationToken)
+        {
+            while (_serveTriggerCuePlaybackActive)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Awaitable.NextFrameAsync(cancellationToken);
+            }
+
+            if (_pendingServeTriggerCues.Count == 0)
             {
                 return;
             }
 
-            float duration = 0.88f + Mathf.Max(0, cueCount - 1) * 0.08f;
+            _serveTriggerCuePlaybackActive = true;
+            try
+            {
+                while (_pendingServeTriggerCues.Count > 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    ServeTriggerCue cue = _pendingServeTriggerCues[0];
+                    _pendingServeTriggerCues.RemoveAt(0);
+                    PlayServeTriggerCue(cue);
+                    await WaitUnscaledAsync(
+                        ServeTriggerCueDuration,
+                        cancellationToken);
+                }
+            }
+            finally
+            {
+                _serveTriggerCuePlaybackActive = false;
+            }
+        }
+
+        private static async Awaitable WaitUnscaledAsync(
+            float duration,
+            CancellationToken cancellationToken)
+        {
             float elapsed = 0f;
             while (elapsed < duration)
             {
@@ -2031,6 +2059,31 @@ namespace GourmetProject.Game.Presentation.Battle
                 await Awaitable.NextFrameAsync(cancellationToken);
                 elapsed += Time.unscaledDeltaTime;
             }
+        }
+
+        internal static Color ServeTriggerCueColor(ServeTriggerCue cue)
+        {
+            if (cue != null
+                && cue.SourceKind == ServeCueSourceKind.BossDebuff
+                && string.Equals(
+                    cue.SourceId,
+                    TastingDebuffId,
+                    StringComparison.Ordinal))
+            {
+                return new Color(1f, 0.43f, 0.38f, 1f);
+            }
+
+            if (cue == null)
+            {
+                return new Color(1f, 0.86f, 0.32f, 1f);
+            }
+
+            return cue.PresentationKind switch
+            {
+                ServeCuePresentationKind.Cancel => new Color(0.66f, 0.69f, 0.74f, 1f),
+                ServeCuePresentationKind.Penalty => new Color(1f, 0.43f, 0.38f, 1f),
+                _ => new Color(1f, 0.86f, 0.32f, 1f),
+            };
         }
 
         private void BeginMovableDishDrag(DishPieceView piece, Vector2 screenPoint)
@@ -2785,6 +2838,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 ? boardAreaPlacement
                 : DiningTableLayout.Compute(_halfW, _halfH, board, FoodTableBottomMargin);
             _cellSize = placement.CellSize;
+            _tableVisualScale = DiningTableLayout.VisualScaleForCellSize(
+                _cellSize);
             _boardCenter = placement.Position;
 
             // 局部空间：餐桌以 DiningTableView.transform 为局部帧（BoardRoot），世界摆放/居中由其 transform 决定。
@@ -3341,6 +3396,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     onPassiveTriggered,
                     onBeat,
                     baselineSnapshot,
+                    _tableVisualScale,
                     token);
             }
             catch (OperationCanceledException)

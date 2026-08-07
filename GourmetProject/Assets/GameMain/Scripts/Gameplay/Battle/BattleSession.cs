@@ -694,6 +694,9 @@ namespace GourmetProject.Gameplay.Battle
             // Boss recipe-entry state must be visible as soon as the dish reaches the outlet,
             // so outlet/preplacement tips describe the dish that will actually be served.
             ApplyPreparedEntryFlags(instance, entry);
+            // Recipe-owned permanent score modifiers are part of the prepared dish itself.
+            // Apply them before the outlet preview binds, then never apply them again on preplacement.
+            ApplyPlacementEntryModifiers(instance, entry);
             instance.SetSourceRecipeIndex(slotIndex, entry.SourceDishIndex);
             PreparedServe = new PreparedServeDish(
                 slotIndex,
@@ -822,7 +825,6 @@ namespace GourmetProject.Gameplay.Battle
             PreparedServe = null;
             DishInstance instance = prepared.Dish;
             instance.Relocate(placement);
-            ApplyPlacementEntryModifiers(instance, prepared.Entry);
             DiningTable.Place(instance);
             _pendingDishPlacements[instance.Id] = new PendingDishPlacement(
                 instance,

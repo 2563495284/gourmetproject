@@ -124,6 +124,7 @@ namespace GourmetProject.Game.UI.Battle.View
             BattleSession session,
             GameplayView current,
             BattleInspectionView inspection,
+            bool tableFragmentEditActive,
             BattleWorldController world)
         {
             if (run == null)
@@ -132,7 +133,6 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             bool canOpenInspection = current != GameplayView.None
-                && current != GameplayView.TableEdit
                 && current != GameplayView.RecipeSelection;
 
             _recipeInspectionAvailable = CanOpenRecipeInspection(current)
@@ -152,7 +152,12 @@ namespace GourmetProject.Game.UI.Battle.View
                 if (_viewTableCountText != null)
                 {
                     _viewTableCountText.gameObject.SetActive(true);
-                    _viewTableCountText.text = ResolveTableCellCount(run, session, current, inspection, world).ToString();
+                    _viewTableCountText.text = ResolveTableCellCount(
+                        run,
+                        session,
+                        inspection,
+                        tableFragmentEditActive,
+                        world).ToString();
                 }
             }
 
@@ -226,7 +231,6 @@ namespace GourmetProject.Game.UI.Battle.View
         internal static bool CanOpenRecipeInspection(GameplayView current)
         {
             return current != GameplayView.None
-                && current != GameplayView.TableEdit
                 && current != GameplayView.RecipeSelection;
         }
 
@@ -325,12 +329,12 @@ namespace GourmetProject.Game.UI.Battle.View
         private static int ResolveTableCellCount(
             GameRun run,
             BattleSession session,
-            GameplayView current,
             BattleInspectionView inspection,
+            bool tableFragmentEditActive,
             BattleWorldController world)
         {
             // 餐桌查看/编辑页以当前世界表现为准；它可能包含尚未提交的编辑预览。
-            if ((current == GameplayView.TableEdit || inspection == BattleInspectionView.Table)
+            if ((tableFragmentEditActive || inspection == BattleInspectionView.Table)
                 && world != null
                 && world.ActiveTable != null)
             {
