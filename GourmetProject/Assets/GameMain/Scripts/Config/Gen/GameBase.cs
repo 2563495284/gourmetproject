@@ -31,7 +31,6 @@ public sealed partial class GameBase : Luban.BeanBase
         { var __json0 = _buf["fragmentPackPrices"]; if(!__json0.IsArray) { throw new SerializationException(); } FragmentPackPrices = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  FragmentPackPrices.Add(__v0); }   }
         { var __json0 = _buf["deleteDishPrices"]; if(!__json0.IsArray) { throw new SerializationException(); } DeleteDishPrices = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  DeleteDishPrices.Add(__v0); }   }
         { if(!_buf["shopPriceFluctuationPct"].IsNumber) { throw new SerializationException(); }  ShopPriceFluctuationPct = _buf["shopPriceFluctuationPct"]; }
-        { if(!_buf["actionChoiceCount"].IsNumber) { throw new SerializationException(); }  ActionChoiceCount = _buf["actionChoiceCount"]; }
         { if(!_buf["hiddenScoreDistanceFloor"].IsNumber) { throw new SerializationException(); }  HiddenScoreDistanceFloor = _buf["hiddenScoreDistanceFloor"]; }
         { if(!_buf["minimumRandomWeight"].IsNumber) { throw new SerializationException(); }  MinimumRandomWeight = _buf["minimumRandomWeight"]; }
         { if(!_buf["defaultRandomWeight"].IsNumber) { throw new SerializationException(); }  DefaultRandomWeight = _buf["defaultRandomWeight"]; }
@@ -110,10 +109,6 @@ public sealed partial class GameBase : Luban.BeanBase
     /// 商店食物/消耗品/装饰品基础价格随机浮动比例
     /// </summary>
     public readonly float ShopPriceFluctuationPct;
-    /// <summary>
-    /// 行动随机候选数量
-    /// </summary>
-    public readonly int ActionChoiceCount;
     /// <summary>
     /// 隐藏分距离加权下限（食物/装饰品和消耗品/碎片随机池共用）
     /// </summary>
@@ -199,7 +194,6 @@ public sealed partial class GameBase : Luban.BeanBase
         + "fragmentPackPrices:" + Luban.StringUtil.CollectionToString(FragmentPackPrices) + ","
         + "deleteDishPrices:" + Luban.StringUtil.CollectionToString(DeleteDishPrices) + ","
         + "shopPriceFluctuationPct:" + ShopPriceFluctuationPct + ","
-        + "actionChoiceCount:" + ActionChoiceCount + ","
         + "hiddenScoreDistanceFloor:" + HiddenScoreDistanceFloor + ","
         + "minimumRandomWeight:" + MinimumRandomWeight + ","
         + "defaultRandomWeight:" + DefaultRandomWeight + ","

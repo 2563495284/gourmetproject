@@ -63,11 +63,11 @@
     "branchPageText": ""
   },
   {
-    "id": "opt_recipe_page_cover",
+    "id": "opt_recipe_page_body",
     "eventId": "ev_ancestral_recipe_page",
     "parentId": "",
-    "text": "我不是来看你变魔术的",
-    "resultText": "“我是来吃饭的，不是来看你变魔术的，要装神弄鬼你回法国”",
+    "text": "尝尝沙拉",
+    "resultText": "你发现沙拉别有一番滋味，调料方式出乎意料",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -84,11 +84,11 @@
     "branchPageText": ""
   },
   {
-    "id": "opt_recipe_page_body",
+    "id": "opt_recipe_page_cover",
     "eventId": "ev_ancestral_recipe_page",
     "parentId": "",
-    "text": "尝尝沙拉",
-    "resultText": "你发现沙拉别有一番滋味，调料方式出乎意料",
+    "text": "我不是来看你变魔术的",
+    "resultText": "“我是来吃饭的，不是来看你变魔术的，要装神弄鬼你回法国”",
     "condition": "",
     "conditionText": "",
     "effectTypes": [

@@ -13,49 +13,49 @@ using Luban.SimpleJSON;
 
 namespace cfg
 {
-public sealed partial class ActionLargeGroup : Luban.BeanBase
+public sealed partial class ActionCategoryRule : Luban.BeanBase
 {
-    public ActionLargeGroup(JSONNode _buf) 
+    public ActionCategoryRule(JSONNode _buf) 
     {
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
+        { if(!_buf["category"].IsNumber) { throw new SerializationException(); }  Category = (ActionRandomCategory)_buf["category"].AsInt; }
         { var __json0 = _buf["fallbackWeights"]; if(!__json0.IsArray) { throw new SerializationException(); } FallbackWeights = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  FallbackWeights.Add(__v0); }   }
         { var __json0 = _buf["minGuaranteeCounts"]; if(!__json0.IsArray) { throw new SerializationException(); } MinGuaranteeCounts = new System.Collections.Generic.List<System.Collections.Generic.List<int>>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { System.Collections.Generic.List<int> __v0;  { var __json1 = __e0; if(!__json1.IsArray) { throw new SerializationException(); } __v0 = new System.Collections.Generic.List<int>(__json1.Count); foreach(JSONNode __e1 in __json1.Children) { int __v1;  { if(!__e1.IsNumber) { throw new SerializationException(); }  __v1 = __e1; }  __v0.Add(__v1); }   }  MinGuaranteeCounts.Add(__v0); }   }
         { var __json0 = _buf["maxGuaranteeCounts"]; if(!__json0.IsArray) { throw new SerializationException(); } MaxGuaranteeCounts = new System.Collections.Generic.List<System.Collections.Generic.List<int>>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { System.Collections.Generic.List<int> __v0;  { var __json1 = __e0; if(!__json1.IsArray) { throw new SerializationException(); } __v0 = new System.Collections.Generic.List<int>(__json1.Count); foreach(JSONNode __e1 in __json1.Children) { int __v1;  { if(!__e1.IsNumber) { throw new SerializationException(); }  __v1 = __e1; }  __v0.Add(__v1); }   }  MaxGuaranteeCounts.Add(__v0); }   }
-        { var __json0 = _buf["smallGroupIds"]; if(!__json0.IsArray) { throw new SerializationException(); } SmallGroupIds = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  SmallGroupIds.Add(__v0); }   }
     }
 
-    public static ActionLargeGroup DeserializeActionLargeGroup(JSONNode _buf)
+    public static ActionCategoryRule DeserializeActionCategoryRule(JSONNode _buf)
     {
-        return new ActionLargeGroup(_buf);
+        return new ActionCategoryRule(_buf);
     }
 
     /// <summary>
-    /// 大组ID
+    /// 规则ID
     /// </summary>
     public readonly string Id;
     /// <summary>
-    /// 大组名
+    /// 类别名
     /// </summary>
     public readonly string Name;
     /// <summary>
-    /// 随机权重（按周逐行配置）
+    /// 随机类别
+    /// </summary>
+    public readonly ActionRandomCategory Category;
+    /// <summary>
+    /// 每周随机权重
     /// </summary>
     public readonly System.Collections.Generic.List<float> FallbackWeights;
     /// <summary>
-    /// 最小保底累计次数（按周逐行；每格按行动用|分隔；-1=不限）
+    /// 每周逐候选卡累计下保底；格内用|分隔；-1=不限
     /// </summary>
     public readonly System.Collections.Generic.List<System.Collections.Generic.List<int>> MinGuaranteeCounts;
     /// <summary>
-    /// 最大保底累计次数（按周逐行；每格按行动用|分隔；-1=不限）
+    /// 每周逐候选卡累计上保底；格内用|分隔；-1=不限
     /// </summary>
     public readonly System.Collections.Generic.List<System.Collections.Generic.List<int>> MaxGuaranteeCounts;
-    /// <summary>
-    /// 包含的小组ID列表→small_group.id
-    /// </summary>
-    public readonly System.Collections.Generic.List<string> SmallGroupIds;
    
-    public const int __ID__ = 1904667386;
+    public const int __ID__ = -1166276976;
     public override int GetTypeId() => __ID__;
 
     public  void ResolveRef(Tables tables)
@@ -67,10 +67,10 @@ public sealed partial class ActionLargeGroup : Luban.BeanBase
         return "{ "
         + "id:" + Id + ","
         + "name:" + Name + ","
+        + "category:" + Category + ","
         + "fallbackWeights:" + Luban.StringUtil.CollectionToString(FallbackWeights) + ","
         + "minGuaranteeCounts:" + Luban.StringUtil.CollectionToString(MinGuaranteeCounts) + ","
         + "maxGuaranteeCounts:" + Luban.StringUtil.CollectionToString(MaxGuaranteeCounts) + ","
-        + "smallGroupIds:" + Luban.StringUtil.CollectionToString(SmallGroupIds) + ","
         + "}";
     }
 }

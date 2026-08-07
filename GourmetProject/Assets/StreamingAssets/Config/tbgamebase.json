@@ -25,7 +25,6 @@
       80
     ],
     "shopPriceFluctuationPct": 0.2,
-    "actionChoiceCount": 3,
     "hiddenScoreDistanceFloor": 100,
     "minimumRandomWeight": 1,
     "defaultRandomWeight": 1,

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "count_2",
+    "choiceCount": 2,
+    "weeklyWeights": [
+      3,
+      2,
+      2,
+      1
+    ]
+  },
+  {
+    "id": "count_3",
+    "choiceCount": 3,
+    "weeklyWeights": [
+      1,
+      1,
+      1,
+      1
+    ]
+  }
+]

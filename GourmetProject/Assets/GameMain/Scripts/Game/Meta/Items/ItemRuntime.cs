@@ -393,11 +393,11 @@ namespace GourmetProject.Game.Meta
         /// <summary>遇到事件的额外概率（累加）。</summary>
         public float MoreEventsBonus() => SumFloat(m => m.MoreEventsBonus());
 
-        /// <summary>包含 Event 行动的大组权重增幅（累加）。</summary>
+        /// <summary>事件类别的权重与上下保底目标增幅（累加）。</summary>
         public float EventActionLargeGroupWeightBonus() =>
             SumFloat(m => m.EventActionLargeGroupWeightBonus());
 
-        /// <summary>包含 Super 行动的大组权重增幅（累加）。</summary>
+        /// <summary>火热类别的权重与上下保底目标增幅（累加）。</summary>
         public float SuperActionLargeGroupWeightBonus() =>
             SumFloat(m => m.SuperActionLargeGroupWeightBonus());
 
