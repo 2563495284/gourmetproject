@@ -184,7 +184,7 @@
   {
     "id": "act_interest",
     "name": "收取利息",
-    "desc": "满3金币收获1金币\n最多收获50金币",
+    "desc": "满4金币收获1金币\n最多收获50金币",
     "behavior": 5,
     "foodId": "",
     "effectType": 0,

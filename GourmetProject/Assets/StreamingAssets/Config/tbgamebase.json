@@ -1,8 +1,8 @@
 [
   {
-    "initialGold": 50,
+    "initialGold": 20,
     "initialInterestCap": 50,
-    "interestThreshold": 3,
+    "interestThreshold": 4,
     "interestGoldPer": 1,
     "initialActionRerollCount": 0,
     "baseActiveSlots": 4,
