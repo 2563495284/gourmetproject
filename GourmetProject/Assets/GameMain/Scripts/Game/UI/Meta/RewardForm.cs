@@ -335,13 +335,13 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            _titleText.text = _genericMode && !string.IsNullOrEmpty(_genericRewardTitle)
-                ? _genericRewardTitle
-                : "奖励";
-            // 时间轴模型下发奖不再推进周；底部只保留「继续行动」出口。
+            _titleText.text = "奖励";
+            // _titleText.text = _genericMode && !string.IsNullOrEmpty(_genericRewardTitle)
+            //     ? _genericRewardTitle
+            //     : "奖励";
             _continueButton.gameObject.SetActive(true);
 
-            SetButtonLabel(_continueButton, _genericMode ? "完成" : "继续行动");
+            SetButtonLabel(_continueButton, "放弃");
 
             RebuildRewardRows();
         }
@@ -1693,19 +1693,19 @@ namespace GourmetProject.Game.UI.Meta
                 case cfg.RewardKind.ActiveItemGrant:
                 case cfg.RewardKind.ActiveItemStrengthen:
                 case cfg.RewardKind.ActiveItemAdjust:
-                {
-                    cfg.ItemKind kind = IsActiveItemReward(choice.Kind) ? cfg.ItemKind.Active : cfg.ItemKind.Passive;
-                    ItemDefinition item = ItemDefinition.Get(_run?.Tables ?? GameApp.Config.Tables, choice.Id, kind);
-                    Sprite icon = RunItemSlotView.LoadIcon(item);
-                    if (icon != null)
                     {
-                        return icon;
-                    }
+                        cfg.ItemKind kind = IsActiveItemReward(choice.Kind) ? cfg.ItemKind.Active : cfg.ItemKind.Passive;
+                        ItemDefinition item = ItemDefinition.Get(_run?.Tables ?? GameApp.Config.Tables, choice.Id, kind);
+                        Sprite icon = RunItemSlotView.LoadIcon(item);
+                        if (icon != null)
+                        {
+                            return icon;
+                        }
 
-                    return Resources.Load<Sprite>(IsActiveItemReward(choice.Kind)
-                        ? "Sprites/UI/card_action_food_active"
-                        : "Sprites/UI/card_action_food_passive");
-                }
+                        return Resources.Load<Sprite>(IsActiveItemReward(choice.Kind)
+                            ? "Sprites/UI/card_action_food_active"
+                            : "Sprites/UI/card_action_food_passive");
+                    }
                 default:
                     return null;
             }
