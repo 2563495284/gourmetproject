@@ -706,7 +706,7 @@
     "quality": 0,
     "specialTags": 0,
     "effectValue": 150,
-    "effectParam": "repay:300",
+    "effectParam": "act_loan_repay",
     "baseWeight": 100,
     "hiddenRange": {
       "min": 20,

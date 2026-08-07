@@ -230,7 +230,7 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
-    /// <summary>高利贷：获得时发钱，并把还款行动追加到本周末。</summary>
+    /// <summary>高利贷：获得时发钱，并把 effectParam 指定的还款行动追加到本周末。</summary>
     [Preserve]
     [PassiveItemModel("item_loan")]
     public sealed class LoanModel : PassiveItemModel
@@ -243,26 +243,32 @@ namespace GourmetProject.Game.Meta.Passives
             }
 
             int grant = System.Math.Max(0, (int)Value);
-            int repayment = PassiveParam.ParseInt(Param, "repay", 0);
-            cfg.GameAction repaymentAction = Run.Tables.TbAction.GetOrDefault("act_loan_repay");
+            string repaymentActionId = Param.Trim();
+            cfg.GameAction repaymentAction = Run.Tables.TbAction.GetOrDefault(repaymentActionId);
             if (grant <= 0
-                || repayment <= 0
+                || string.IsNullOrEmpty(repaymentActionId)
                 || repaymentAction == null
                 || repaymentAction.Behavior != cfg.ActionBehavior.Effect
                 || repaymentAction.EffectType != cfg.EffectType.GainGold
-                || System.Math.Abs(repaymentAction.EffectValue + repayment) > 0.0001f)
+                || repaymentAction.EffectValue >= 0f)
             {
                 return;
             }
 
             // 先确认还款节点确实落轴，再发放本金；无时间轴/节点落点失败时不会白拿金币。
-            if (string.IsNullOrEmpty(Run.AddWeekEndAnchoredTimelineNode("act_loan_repay", ItemId)))
+            TimelineMutationResult timelineResult = PassiveTimelineMutationService.AddWeekEndNode(
+                Run,
+                Def.Name,
+                repaymentActionId,
+                ItemId);
+            if (!timelineResult.Changed)
             {
                 return;
             }
 
             Run.Gold += grant;
             MarkIconUsed();
+            PassiveMutationPresenter.ShowTimeline(Run, timelineResult);
         }
     }
 

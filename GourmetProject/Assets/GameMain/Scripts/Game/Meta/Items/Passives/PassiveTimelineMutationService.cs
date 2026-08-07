@@ -21,6 +21,19 @@ namespace GourmetProject.Game.Meta.Passives
             return result;
         }
 
+        public static TimelineMutationResult AddWeekEndNode(
+            GameRun run,
+            string title,
+            string actionId,
+            string sourceItemId)
+        {
+            var result = Begin(run, title);
+            result.Changed = run != null
+                && !string.IsNullOrEmpty(run.AddWeekEndAnchoredTimelineNode(actionId, sourceItemId));
+            End(run, result);
+            return result;
+        }
+
         public static TimelineMutationResult Randomize(GameRun run, string title, IRandomStream rng)
         {
             var result = Begin(run, title);

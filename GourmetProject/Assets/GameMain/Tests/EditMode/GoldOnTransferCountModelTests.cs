@@ -94,4 +94,108 @@ namespace GourmetProject.Tests.EditMode
             field.SetValue(target, value);
         }
     }
+
+    public sealed class LoanModelTests
+    {
+        [Test]
+        public void OnAcquired_UsesEffectParamAsRepaymentActionId()
+        {
+            const string repaymentActionId = "act_configured_repayment";
+            (GameRun run, LoanModel model) = CreateBoundModel(repaymentActionId, -200f);
+
+            model.OnAcquired();
+
+            Assert.That(run.Gold, Is.EqualTo(150));
+            Assert.That(run.RuntimeTimelineNodes, Has.Count.EqualTo(1));
+            Assert.That(run.RuntimeTimelineNodes[0].ActionId, Is.EqualTo(repaymentActionId));
+            Assert.That(run.RuntimeTimelineNodes[0].SourceItemId, Is.EqualTo("item_loan"));
+            Assert.That(run.RuntimeTimelineNodes[0].WeekEndAnchored, Is.True);
+            Assert.That(run.RuntimeTimelineNodes[0].Day, Is.EqualTo(7));
+            Assert.That(model.IsIconUsed, Is.True);
+        }
+
+        [Test]
+        public void OnAcquired_RejectsNonNegativeGoldAction()
+        {
+            (GameRun run, LoanModel model) = CreateBoundModel("act_invalid_repayment", 200f);
+
+            model.OnAcquired();
+
+            Assert.That(run.Gold, Is.Zero);
+            Assert.That(run.RuntimeTimelineNodes, Is.Empty);
+            Assert.That(model.IsIconUsed, Is.False);
+        }
+
+        private static (GameRun Run, LoanModel Model) CreateBoundModel(
+            string repaymentActionId,
+            float repaymentGold)
+        {
+            cfg.TbAction actions = CreateActions(repaymentActionId, repaymentGold);
+
+#pragma warning disable SYSLIB0050
+            var tables = (cfg.Tables)FormatterServices.GetUninitializedObject(typeof(cfg.Tables));
+            var run = (GameRun)FormatterServices.GetUninitializedObject(typeof(GameRun));
+#pragma warning restore SYSLIB0050
+
+            SetPrivateField(tables, "<TbAction>k__BackingField", actions);
+            SetPrivateField(run, "_tables", tables);
+            SetPrivateField(run, "_runtimeTimelineNodes", new List<RuntimeTimelineNode>());
+
+            var state = new RunItemState("item_loan", 1);
+            SetPrivateField(run, "_items", new List<RunItemState> { state });
+            run.CurrentTimelineId = "timeline_test";
+            run.TimelineLengthDays = 7f;
+            run.CurrentDay = 1f;
+
+            ItemDefinition definition = ItemDefinition.From(new cfg.PassiveItem(JSON.Parse(
+                "{"
+                + "\"id\":\"item_loan\","
+                + "\"name\":\"挂账记录板\","
+                + "\"desc\":\"测试\","
+                + "\"quality\":0,"
+                + "\"specialTags\":0,"
+                + "\"effectValue\":150,"
+                + $"\"effectParam\":\"{repaymentActionId}\","
+                + "\"baseWeight\":100,"
+                + "\"hiddenRange\":{\"min\":20,\"max\":80},"
+                + "\"targetScoreHiddenOffset\":0,"
+                + "\"dishHiddenOffset\":0,"
+                + "\"passiveItemHiddenOffset\":0,"
+                + "\"fragmentHiddenOffset\":0,"
+                + "\"termId\":\"\","
+                + "\"price\":40}")));
+
+            var model = new LoanModel();
+            state.Model = model;
+            model.Bind(run, definition, state);
+            return (run, model);
+        }
+
+        private static cfg.TbAction CreateActions(string actionId, float effectValue)
+        {
+            string json = "[{"
+                + $"\"id\":\"{actionId}\","
+                + "\"name\":\"还款\","
+                + "\"desc\":\"测试\","
+                + "\"behavior\":6,"
+                + "\"foodId\":\"\","
+                + "\"effectType\":1,"
+                + $"\"effectValue\":{effectValue.ToString(System.Globalization.CultureInfo.InvariantCulture)},"
+                + "\"effectParam\":\"\","
+                + "\"minCostDays\":0,"
+                + "\"maxCostDays\":0,"
+                + "\"rewardTitle\":\"\","
+                + "\"rewardDesc\":\"\"}]";
+            return new cfg.TbAction(JSON.Parse(json));
+        }
+
+        private static void SetPrivateField(object target, string fieldName, object value)
+        {
+            FieldInfo field = target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, fieldName);
+            field.SetValue(target, value);
+        }
+    }
 }
