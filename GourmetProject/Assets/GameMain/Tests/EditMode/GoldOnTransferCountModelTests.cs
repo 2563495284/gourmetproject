@@ -198,4 +198,78 @@ namespace GourmetProject.Tests.EditMode
             field.SetValue(target, value);
         }
     }
+
+    public sealed class TimelineMutationSnapshotTests
+    {
+        [Test]
+        public void EnsureLengthAtLeast_CapturesLengthAndAnchoredNodeMovement()
+        {
+            GameRun run = CreateRun(new RuntimeTimelineNode(
+                "node_end",
+                "timeline_test",
+                7,
+                "act_interest",
+                "item_loan",
+                true));
+
+            TimelineMutationResult result = PassiveTimelineMutationService.EnsureLengthAtLeast(
+                run,
+                "第八日启程",
+                8);
+
+            Assert.That(result.Changed, Is.True);
+            Assert.That(result.BeforeLengthDays, Is.EqualTo(7f));
+            Assert.That(result.AfterLengthDays, Is.EqualTo(8f));
+            Assert.That(result.Before, Has.Count.EqualTo(1));
+            Assert.That(result.Before[0].Day, Is.EqualTo(7));
+            Assert.That(result.After[0].Day, Is.EqualTo(8));
+            Assert.That(run.RuntimeTimelineNodes[0].Day, Is.EqualTo(8));
+        }
+
+        [Test]
+        public void RemoveNode_CapturesExitAndPermanentlyRemovesRuntimeNode()
+        {
+            GameRun run = CreateRun(new RuntimeTimelineNode(
+                "node_skip",
+                "timeline_test",
+                3,
+                "act_interest"));
+
+            TimelineMutationResult result = PassiveTimelineMutationService.RemoveNode(
+                run,
+                "停业整顿",
+                "node_skip");
+
+            Assert.That(result.Changed, Is.True);
+            Assert.That(result.Before, Has.Count.EqualTo(1));
+            Assert.That(result.Before[0].Id, Is.EqualTo("node_skip"));
+            Assert.That(result.After, Is.Empty);
+            Assert.That(run.RuntimeTimelineNodes, Is.Empty);
+            Assert.That(run.TriggeredNodeIds, Does.Not.Contain("node_skip"));
+        }
+
+        private static GameRun CreateRun(params RuntimeTimelineNode[] nodes)
+        {
+#pragma warning disable SYSLIB0050
+            var run = (GameRun)FormatterServices.GetUninitializedObject(typeof(GameRun));
+#pragma warning restore SYSLIB0050
+            SetPrivateField(run, "_runtimeTimelineNodes", new List<RuntimeTimelineNode>(nodes));
+            SetPrivateField(run, "_triggeredNodeIds", new List<string>());
+            SetPrivateField(run, "_pendingExtraTimelineNodeIds", new List<string>());
+            run.CurrentTimelineId = "timeline_test";
+            run.TimelineLengthDays = 7f;
+            run.CurrentDay = 1f;
+            run.SetWeekIndex(2);
+            return run;
+        }
+
+        private static void SetPrivateField(object target, string fieldName, object value)
+        {
+            FieldInfo field = target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, fieldName);
+            field.SetValue(target, value);
+        }
+    }
 }

@@ -131,12 +131,14 @@ namespace GourmetProject.Game.UI.Meta
             RecipeBookSlot slot,
             BattleRecipeEntryStatus? battleStatus = null,
             bool skillsDisabled = false,
-            bool excludedFromScore = false)
+            bool excludedFromScore = false,
+            bool initiallyHidden = false)
         {
             Slot = slot;
             BattleStatus = battleStatus;
             SkillsDisabled = skillsDisabled;
             ExcludedFromScore = excludedFromScore;
+            InitiallyHidden = initiallyHidden;
         }
 
         public RecipeBookSlot Slot { get; }
@@ -147,5 +149,7 @@ namespace GourmetProject.Game.UI.Meta
         public bool SkillsDisabled { get; }
 
         public bool ExcludedFromScore { get; }
+
+        public bool InitiallyHidden { get; }
     }
 }

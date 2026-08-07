@@ -32,7 +32,6 @@ using GourmetProject.Game.UI.Battle.States;
 using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Game.Meta.Passives;
 using UnityEngine.Serialization;
-using TMPro;
 
 namespace GourmetProject.Game.UI.Battle
 {
@@ -55,6 +54,8 @@ namespace GourmetProject.Game.UI.Battle
     {
         private const string Tag = "Battle";
         private const float RandomizedItemFlyDuration = 0.42f;
+        private const float RecipeCopySpriteSize = 112f;
+        private const float RecipeCopyCenterMargin = 64f;
         private enum FoodTipsHoverOwner
         {
             None,
@@ -165,10 +166,11 @@ namespace GourmetProject.Game.UI.Battle
         private readonly HashSet<ShopPurchaseFlyView> _activeShopPurchaseFlys = new();
         private int? _battleMusicSerialId;
         private cfg.BossDebuff _currentBossDebuff;
-        private BossDebuffPresentationView _bossPresentation;
+        [SerializeField] private BossDebuffPresentationView _bossPresentation;
         private BossDialogueShuffleBag _bossDialogueBag;
         private CancellationTokenSource _bossPresentationCts;
         private bool _bossDiscardRevealPending;
+        private readonly HashSet<ShopPurchaseFlyView> _bossRecipeCopyFlys = new();
         private cfg.TimelineNode _currentTimelineNodeCard;
         private int? _currentTimelineNodeInterestMaxGain;
         private Action _currentTimelineNodePick;
@@ -188,9 +190,23 @@ namespace GourmetProject.Game.UI.Battle
         private int _displayedCakeLayers;
         private int? _pendingSettlementCakeLayers;
         private int _pendingSettlementCakeLayerBonus;
-        [SerializeField] private GameObject _passiveOverlayRoot;
-        [SerializeField] private TMP_Text _passiveOverlayText;
-        private Sequence _passiveOverlaySeq;
+        private readonly Queue<PassivePresentationWork> _passivePresentationQueue = new();
+        private PassivePresentationWork _activePassivePresentation;
+        private Sequence _passivePresentationDelay;
+        private CanvasGroup _passivePresentationInputBlocker;
+        private int _passivePresentationVersion;
+        private CanvasGroup _passiveFlavorMutationPage;
+        private RectTransform _passiveFlavorMutationContent;
+        private readonly List<RecipeEditDishView> _passiveFlavorMutationDishes = new();
+        private readonly List<RecipeMutationEntry> _passiveFlavorMutationEntries = new();
+        private readonly HashSet<ShopPurchaseFlyView> _passiveFlavorMutationFlys = new();
+        private readonly HashSet<ShopPurchaseFlyView> _passiveRecipeCopyFlys = new();
+
+        private sealed class PassivePresentationWork
+        {
+            public Action<Action> Start;
+            public Action Cancel;
+        }
 
         public GameRun Run => _run;
         public BattleSession Session => _session;
@@ -228,6 +244,7 @@ namespace GourmetProject.Game.UI.Battle
             base.OnInit(userData);
 
             EnsureCenterTransitionCover();
+            EnsurePassivePresentationInputBlocker();
             EnsureRewardSubflowLayer();
             _inspectionLayer?.Initialize();
             _fragmentEditLayer?.Initialize();
@@ -236,10 +253,10 @@ namespace GourmetProject.Game.UI.Battle
             _inspectionLayer?.TablePanel?.Bind(OnExitTableViewClicked);
             _cakeLayerBuffHud = GetComponent<CakeLayerBuffHud>();
             _foodBar?.Bind(OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
-            _bossPresentation = GetComponent<BossDebuffPresentationView>();
             if (_bossPresentation == null)
             {
-                _bossPresentation = gameObject.AddComponent<BossDebuffPresentationView>();
+                throw new MissingReferenceException(
+                    "BattleForm requires the nested BossDebuffPresentationOverlay prefab reference.");
             }
             _bossPresentation.EnsureBuilt();
 
@@ -309,6 +326,7 @@ namespace GourmetProject.Game.UI.Battle
             _fragmentEditCoordinator?.ForceClose();
             _settlementReveal = null;
             _loop = null;
+            CancelPassivePresentations();
             _activeItemUse?.Dispose();
             _rewardPeekOnly = false;
             _deck?.KillAllTweens();
@@ -347,6 +365,7 @@ namespace GourmetProject.Game.UI.Battle
         internal bool IsActiveItemUseBlocked
             => _rewardPeekOnly
                 || HasPendingBattleRewardLifecycle
+                || _activePassivePresentation != null
                 || _fragmentEditCoordinator?.IsActive == true;
 
         /// <summary>进入（或继续）一周：随机/沿用时间轴后开始行动循环。</summary>
@@ -779,10 +798,55 @@ namespace GourmetProject.Game.UI.Battle
             }, PlayShowCardsWhenReady);
         }
 
-        public void ShowTimelineNodeSkipped(cfg.TimelineNode node, Action onDone)
+        public void ShowTimelineNodeSkipped(
+            cfg.TimelineNode node,
+            TimelineMutationResult result,
+            Action onDone)
         {
-            string actionName = ActionName(node?.ActionId);
-            ShowPassiveOverlay("停业整顿", $"跳过节点：{actionName}", 0.9f, onDone);
+            bool continued = false;
+            void ContinueOnce()
+            {
+                if (continued)
+                {
+                    return;
+                }
+
+                continued = true;
+                onDone?.Invoke();
+            }
+
+            QueueTimelineMutation(result, ContinueOnce, () => continued = true);
+        }
+
+        public void PlayTimelineAdvance(
+            float fromDay,
+            float toDay,
+            string arrivingNodeId,
+            Action onDone)
+        {
+            if (_axisBinder == null || _run == null)
+            {
+                onDone?.Invoke();
+                return;
+            }
+
+            SetActionAxisVisible(true);
+            _axisBinder.PlayAdvance(_run, fromDay, toDay, arrivingNodeId, onDone);
+        }
+
+        public void PlayTimelineNodeCue(
+            string nodeId,
+            TimelinePresentationCueKind kind,
+            Action onDone)
+        {
+            if (_axisBinder == null || _run == null || string.IsNullOrEmpty(nodeId))
+            {
+                onDone?.Invoke();
+                return;
+            }
+
+            SetActionAxisVisible(true);
+            _axisBinder.PlayNodeCue(_run, nodeId, kind, onDone);
         }
 
         public void ShowPassiveRecipeMutation(RecipeMutationResult result)
@@ -792,7 +856,153 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            ShowPassiveOverlay(result.Title, BuildRecipeMutationText(result), 1.4f, () => RefreshPersistent());
+            if (string.Equals(
+                    result.SourceItemId,
+                    "item_copy_food",
+                    StringComparison.Ordinal))
+            {
+                ShowPassiveRecipeCopyMutation(result);
+                return;
+            }
+
+            if (result.SourceItemId?.StartsWith(
+                    "item_flavor_",
+                    StringComparison.Ordinal) == true)
+            {
+                ShowPassiveFlavorMutation(result);
+                return;
+            }
+
+            IReadOnlyList<RecipeReadonlyDishEntry> beforeEntries = BuildRecipeMutationEntries(result, before: true);
+            IReadOnlyList<RecipeReadonlyDishEntry> afterEntries = BuildRecipeMutationEntries(result, before: false);
+            BattleInspectionView restoreView = ActiveInspectionView;
+            DiningTable restoreTable = restoreView == BattleInspectionView.Table
+                ? BuildTablePresentationSnapshot(null, before: false)
+                : null;
+
+            EnqueuePassivePresentation(done =>
+            {
+                bool opened = _inspectionCoordinator?.ShowPassiveRecipe(beforeEntries, () =>
+                {
+                    RecipeReadonlyBookView recipe = _inspectionLayer?.RecipeView;
+                    DelayPassivePresentation(1f, () =>
+                    {
+                        if (recipe == null)
+                        {
+                            WaitPassiveHold(() => RestorePassiveInspection(
+                                restoreView,
+                                afterEntries,
+                                restoreTable,
+                                done));
+                            return;
+                        }
+
+                        recipe.PlayPassiveMutation(result, afterEntries, () =>
+                            WaitPassiveHold(() => RestorePassiveInspection(
+                                restoreView,
+                                afterEntries,
+                                restoreTable,
+                                done)));
+                    });
+                }) == true;
+
+                if (!opened)
+                {
+                    RefreshPersistent();
+                    done();
+                }
+            });
+        }
+
+        private void ShowPassiveRecipeCopyMutation(RecipeMutationResult result)
+        {
+            EnqueuePassivePresentation(done =>
+            {
+                Canvas canvas = GetComponentInParent<Canvas>();
+                RectTransform layer = canvas != null
+                    ? canvas.transform as RectTransform
+                    : transform.root as RectTransform;
+                RectTransform target = _infoColumn?.ViewRecipeButtonRect;
+                var dishIds = new List<string>();
+                int initialRecipeCount = _run?.RecipeEntries.Count ?? 0;
+                foreach (RecipeMutationEntry entry in result.Entries)
+                {
+                    if (entry?.After == null || string.IsNullOrEmpty(entry.After.DishId))
+                    {
+                        continue;
+                    }
+
+                    dishIds.Add(entry.After.DishId);
+                    initialRecipeCount = Mathf.Min(initialRecipeCount, entry.DishIndex);
+                }
+
+                Canvas.ForceUpdateCanvases();
+                if (layer == null
+                    || target == null
+                    || dishIds.Count == 0
+                    || _run == null
+                    || GameApp.Random == null
+                    || !TryGetRectInLayer(target, layer, out RectSnapshot targetRect))
+                {
+                    FinishPassiveRecipeCopyMutation(done);
+                    return;
+                }
+
+                _infoColumn.SetRecipeCountPresentationOverride(initialRecipeCount);
+                RefreshPersistent();
+                IRandomStream cosmetic = GameApp.Random.Cosmetic(
+                    $"passive_copy_food_w{_run.WeekIndex}_s{_run.RunActionStepIndex}_c{initialRecipeCount}");
+                bool started = PlayRecipeCopyFlys(
+                    dishIds,
+                    layer,
+                    targetRect.Center,
+                    cosmetic,
+                    arrived =>
+                    {
+                        _infoColumn?.SetRecipeCountPresentationOverride(
+                            initialRecipeCount + arrived);
+                        RefreshPersistent();
+                    },
+                    () => FinishPassiveRecipeCopyMutation(done),
+                    _passiveRecipeCopyFlys);
+                if (!started)
+                {
+                    FinishPassiveRecipeCopyMutation(done);
+                }
+            }, CancelPassiveRecipeCopyMutation);
+        }
+
+        private void FinishPassiveRecipeCopyMutation(Action onComplete)
+        {
+            _infoColumn?.SetRecipeCountPresentationOverride(null);
+            RefreshPersistent();
+            onComplete?.Invoke();
+        }
+
+        private void CancelPassiveRecipeCopyMutation()
+        {
+            CancelRecipeCopyFlys(_passiveRecipeCopyFlys);
+            _infoColumn?.SetRecipeCountPresentationOverride(null);
+            RefreshPersistent();
+        }
+
+        private void ShowPassiveFlavorMutation(RecipeMutationResult result)
+        {
+            EnqueuePassivePresentation(done =>
+            {
+                if (!OpenPassiveFlavorMutationPage(result))
+                {
+                    ClosePassiveFlavorMutationPage();
+                    RefreshPersistent();
+                    done();
+                    return;
+                }
+
+                DelayPassivePresentation(1f, () =>
+                    PlayPassiveFlavorTransforms(() =>
+                        WaitPassiveHold(() =>
+                            FlyPassiveFlavorDishesToRecipe(done))));
+            }, ClosePassiveFlavorMutationPage);
         }
 
         public void ShowPassiveCellMutation(CellMutationResult result)
@@ -802,29 +1012,31 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_fragmentEditCoordinator?.IsActive == true)
-            {
-                ShowPassiveOverlay(result.Title, BuildCellMutationText(result), 1.2f, () => RefreshPersistent());
-                return;
-            }
+            DiningTable beforeTable = BuildTablePresentationSnapshot(result, before: true);
+            DiningTable afterTable = BuildTablePresentationSnapshot(result, before: false);
+            BattleInspectionView restoreView = ActiveInspectionView;
+            IReadOnlyList<RecipeReadonlyDishEntry> restoreRecipe = restoreView == BattleInspectionView.Recipe
+                ? BuildCurrentRecipeEntries()
+                : null;
 
-            _world = _world ?? BattleWorldController.Instance;
-            _world?.SetTableArea(_boardArea);
-            bool opened = false;
-            if (_inspectionCoordinator != null && !_inspectionCoordinator.IsTableVisible)
+            EnqueuePassivePresentation(done =>
             {
-                _inspectionCoordinator.OpenTable();
-                opened = true;
-            }
+                _world = _world ?? BattleWorldController.Instance;
+                _world?.SetTableArea(_boardArea);
+                bool opened = _inspectionCoordinator?.ShowPassiveTable(beforeTable, () =>
+                    DelayPassivePresentation(1f, () =>
+                        PlayPassiveCellMutations(result, () =>
+                            WaitPassiveHold(() => RestorePassiveInspection(
+                                restoreView,
+                                restoreRecipe,
+                                afterTable,
+                                done))))) == true;
 
-            ShowPassiveOverlay(result.Title, BuildCellMutationText(result), 1.2f, () =>
-            {
-                if (opened && _inspectionCoordinator != null && _inspectionCoordinator.IsTableVisible)
+                if (!opened)
                 {
-                    _inspectionCoordinator.Close();
+                    RefreshPersistent();
+                    done();
                 }
-
-                RefreshPersistent();
             });
         }
 
@@ -835,15 +1047,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            bool restoreVisible = _current == GameplayView.ActionSelect || _current == GameplayView.Shop;
-            SetActionAxisVisible(true);
-            RebuildActionAxis();
-            ShowPassiveOverlay(result.Title, BuildTimelineMutationText(result), 1.2f, () =>
-            {
-                SetActionAxisVisible(restoreVisible);
-                RebuildActionAxis();
-                RefreshPersistent();
-            });
+            QueueTimelineMutation(result, null, null);
         }
 
         // —— 中部态切换中枢（淡入淡出调度 + 派发给状态机）——
@@ -2502,6 +2706,7 @@ namespace GourmetProject.Game.UI.Battle
         private void HideHud()
         {
             _rewardPeekOnly = false;
+            CancelPassivePresentations();
             _inspectionCoordinator?.ForceClose();
             _rewardPage?.CloseRewardPages();
             _fragmentEditCoordinator?.ForceClose();
@@ -2543,117 +2748,697 @@ namespace GourmetProject.Game.UI.Battle
             OpenRecipeInspect(0);
         }
 
-        private string BuildRecipeMutationText(RecipeMutationResult result)
+        private bool OpenPassiveFlavorMutationPage(RecipeMutationResult result)
         {
-            var lines = new List<string>();
-            foreach (RecipeMutationEntry entry in result.Entries)
+            EnsurePassiveFlavorMutationPage();
+            ClosePassiveFlavorMutationDishes();
+            if (_passiveFlavorMutationPage == null
+                || _passiveFlavorMutationContent == null
+                || result == null)
             {
-                string before = DescribeDishSnapshot(entry.Before);
-                string after = DescribeDishSnapshot(entry.After);
-                lines.Add($"食谱{entry.BookIndex + 1}-{entry.DishIndex + 1}: {before}  ->  {after}");
+                return false;
             }
 
-            return string.Join("\n", lines);
-        }
-
-        private string BuildCellMutationText(CellMutationResult result)
-        {
-            var lines = new List<string>();
-            foreach (CellMutationEntry entry in result.Entries)
+            RecipeReadonlyBookView previewFactory =
+                _inspectionLayer?.RecipeView ?? _recipeReadonlyBookView;
+            if (previewFactory == null || _run == null)
             {
-                string materialName = MaterialName(entry.MaterialId);
-                lines.Add($"格子 ({entry.Pos.X},{entry.Pos.Y}) 获得标签：{materialName}");
+                return false;
             }
 
-            return string.Join("\n", lines);
-        }
-
-        private string BuildTimelineMutationText(TimelineMutationResult result)
-        {
-            return $"时间轴已变化：{result.Before.Count} 个节点 -> {result.After.Count} 个节点";
-        }
-
-        private string DescribeDishSnapshot(RecipeDishSnapshot snapshot)
-        {
-            if (snapshot == null || string.IsNullOrEmpty(snapshot.DishId))
+            for (int i = 0; i < result.Entries.Count; i++)
             {
-                return "空";
+                RecipeMutationEntry entry = result.Entries[i];
+                if (entry?.Before == null
+                    || entry.After == null
+                    || string.IsNullOrEmpty(entry.Before.DishId)
+                    || string.IsNullOrEmpty(entry.After.DishId))
+                {
+                    continue;
+                }
+
+                RecipeEditDishView dish = previewFactory.CreatePassiveMutationPreview(
+                    _passiveFlavorMutationContent,
+                    _run,
+                    entry.Before,
+                    _passiveFlavorMutationDishes.Count);
+                if (dish == null)
+                {
+                    continue;
+                }
+
+                _passiveFlavorMutationDishes.Add(dish);
+                _passiveFlavorMutationEntries.Add(entry);
             }
 
-            DishDef dish = _run?.Database.GetDish(snapshot.DishId);
-            string name = dish != null ? dish.Name : snapshot.DishId;
-            string flavors = snapshot.FlavorIds != null && snapshot.FlavorIds.Count > 0
-                ? string.Join("+", FlavorNames(snapshot.FlavorIds))
-                : "无风味";
-            string skills = snapshot.SkillIds != null && snapshot.SkillIds.Count > 0
-                ? $"技能{snapshot.SkillIds.Count}"
-                : "无技能";
-            string mult = snapshot.ScoreMultiplier > 0f && Mathf.Abs(snapshot.ScoreMultiplier - 1f) > 0.0001f
-                ? $" x{snapshot.ScoreMultiplier:0.##}"
-                : string.Empty;
-            string score = Mathf.Abs(snapshot.ScoreFlatBonus) > 0.0001f
-                ? $", 美味+{snapshot.ScoreFlatBonus:0.##}"
-                : string.Empty;
-            return $"{name} [{flavors}, {skills}{score}{mult}]";
-        }
-
-        private List<string> FlavorNames(IReadOnlyList<string> flavorIds)
-        {
-            var names = new List<string>();
-            foreach (string flavorId in flavorIds)
+            if (_passiveFlavorMutationDishes.Count == 0)
             {
-                GourmetProject.Gameplay.Model.FlavorDef flavor = _run?.Database.GetFlavor(flavorId);
-                names.Add(flavor != null ? flavor.Name : flavorId);
+                return false;
             }
 
-            return names;
-        }
-
-        private string MaterialName(string materialId)
-        {
-            GourmetProject.Gameplay.Model.MaterialDef material = _run?.Database.GetMaterial(materialId);
-            return material != null ? material.Name : materialId;
-        }
-
-        private string ActionName(string actionId)
-        {
-            cfg.GameAction action = _run?.Tables.TbAction.GetOrDefault(actionId);
-            return action != null ? action.Name : actionId;
-        }
-
-        private void ShowPassiveOverlay(string title, string body, float duration, Action onDone = null)
-        {
-            EnsurePassiveOverlay();
-            if (_passiveOverlayRoot == null || _passiveOverlayText == null)
+            const float cardSize = 140f;
+            const float cardSpacing = 44f;
+            float totalWidth = cardSize * _passiveFlavorMutationDishes.Count
+                + cardSpacing * Mathf.Max(0, _passiveFlavorMutationDishes.Count - 1);
+            RectTransform pageRect = _passiveFlavorMutationPage.transform as RectTransform;
+            float availableWidth = Mathf.Max(1f, (pageRect?.rect.width ?? totalWidth) - 80f);
+            float scale = Mathf.Min(1.35f, availableWidth / totalWidth);
+            float stride = (cardSize + cardSpacing) * scale;
+            float firstX = -stride * (_passiveFlavorMutationDishes.Count - 1) * 0.5f;
+            for (int i = 0; i < _passiveFlavorMutationDishes.Count; i++)
             {
-                onDone?.Invoke();
+                RectTransform rect = _passiveFlavorMutationDishes[i].transform as RectTransform;
+                if (rect == null)
+                {
+                    continue;
+                }
+
+                rect.anchorMin = new Vector2(0.5f, 0.5f);
+                rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.anchoredPosition = new Vector2(firstX + stride * i, 0f);
+                rect.localScale = Vector3.one * scale;
+                rect.localRotation = Quaternion.identity;
+            }
+
+            _passiveFlavorMutationPage.alpha = 1f;
+            _passiveFlavorMutationPage.interactable = false;
+            _passiveFlavorMutationPage.blocksRaycasts = false;
+            _passiveFlavorMutationPage.gameObject.SetActive(true);
+            _passiveFlavorMutationPage.transform.SetAsLastSibling();
+            SetPassivePresentationInputLocked(true);
+            Canvas.ForceUpdateCanvases();
+            return true;
+        }
+
+        private void PlayPassiveFlavorTransforms(Action onComplete)
+        {
+            int count = Mathf.Min(
+                _passiveFlavorMutationDishes.Count,
+                _passiveFlavorMutationEntries.Count);
+            if (count == 0)
+            {
+                onComplete?.Invoke();
                 return;
             }
 
-            _passiveOverlaySeq?.Kill();
-            _passiveOverlayText.text = string.IsNullOrEmpty(body) ? title : $"{title}\n{body}";
-            var group = _passiveOverlayRoot.GetComponent<CanvasGroup>();
-            group.alpha = 0f;
-            _passiveOverlayRoot.SetActive(true);
-            _passiveOverlaySeq = DOTween.Sequence()
-                .Append(DOTween.To(() => group.alpha, value => group.alpha = value, 1f, 0.18f))
-                .AppendInterval(Mathf.Max(0.1f, duration))
-                .Append(DOTween.To(() => group.alpha, value => group.alpha = value, 0f, 0.18f))
+            int remaining = count;
+            void CompleteOne()
+            {
+                remaining--;
+                if (remaining == 0)
+                {
+                    onComplete?.Invoke();
+                }
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                RecipeEditDishView dish = _passiveFlavorMutationDishes[i];
+                RecipeDishSnapshot after = _passiveFlavorMutationEntries[i].After;
+                DishDef def = _run?.Database.GetDish(after?.DishId);
+                if (dish == null || after == null || def == null)
+                {
+                    CompleteOne();
+                    continue;
+                }
+
+                int displayValue = (int)DishScore.CeilContribution(
+                    def.Deliciousness + after.ScoreFlatBonus,
+                    after.ScoreMultiplier);
+                dish.PlayPassiveFlavorTransform(
+                    def,
+                    after.FlavorIds,
+                    displayValue,
+                    CompleteOne);
+            }
+        }
+
+        private void FlyPassiveFlavorDishesToRecipe(Action onComplete)
+        {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            RectTransform layer = canvas != null
+                ? canvas.transform as RectTransform
+                : transform.root as RectTransform;
+            RectTransform target = _infoColumn?.ViewRecipeButtonRect;
+            Canvas.ForceUpdateCanvases();
+            if (layer == null
+                || target == null
+                || !TryGetRectInLayer(target, layer, out RectSnapshot end))
+            {
+                FinishPassiveFlavorMutationPage(onComplete);
+                return;
+            }
+
+            int remaining = 0;
+            bool scheduling = true;
+            void CompleteOne(ShopPurchaseFlyView completedFly)
+            {
+                _passiveFlavorMutationFlys.Remove(completedFly);
+                UnregisterShopPurchaseFly(completedFly);
+                remaining--;
+                if (!scheduling && remaining == 0)
+                {
+                    FinishPassiveFlavorMutationPage(onComplete);
+                }
+            }
+
+            foreach (RecipeEditDishView dish in _passiveFlavorMutationDishes)
+            {
+                RectTransform source = dish?.PassiveMutationFlySource;
+                if (source == null
+                    || !TryGetRectInLayer(source, layer, out RectSnapshot start))
+                {
+                    continue;
+                }
+
+                RenderTexture texture = dish.CapturePassiveMutationFlyTexture();
+                if (texture == null)
+                {
+                    continue;
+                }
+
+                ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
+                if (fly == null)
+                {
+                    ReleasePurchaseTexture(texture);
+                    continue;
+                }
+
+                dish.gameObject.SetActive(false);
+                remaining++;
+                _passiveFlavorMutationFlys.Add(fly);
+                RegisterShopPurchaseFly(fly);
+                ShopPurchaseFlyView capturedFly = fly;
+                bool flightCompleted = false;
+                void CompleteFlight()
+                {
+                    if (flightCompleted)
+                    {
+                        return;
+                    }
+
+                    flightCompleted = true;
+                    CompleteOne(capturedFly);
+                }
+
+                try
+                {
+                    fly.PlayFood(
+                        start.Center,
+                        start.Size,
+                        end.Center,
+                        texture,
+                        null,
+                        CompleteFlight);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception, fly);
+                    fly.Cancel();
+                    CompleteFlight();
+                }
+            }
+
+            scheduling = false;
+            if (remaining == 0)
+            {
+                FinishPassiveFlavorMutationPage(onComplete);
+            }
+        }
+
+        private void FinishPassiveFlavorMutationPage(Action onComplete)
+        {
+            ClosePassiveFlavorMutationPage();
+            RefreshPersistent();
+            onComplete?.Invoke();
+        }
+
+        private void EnsurePassiveFlavorMutationPage()
+        {
+            if (_passiveFlavorMutationPage != null || _center == null)
+            {
+                return;
+            }
+
+            var page = new GameObject(
+                "PassiveFlavorMutationPage",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(CanvasGroup));
+            RectTransform pageRect = page.GetComponent<RectTransform>();
+            pageRect.SetParent(_center.transform, false);
+            pageRect.anchorMin = Vector2.zero;
+            pageRect.anchorMax = Vector2.one;
+            pageRect.offsetMin = Vector2.zero;
+            pageRect.offsetMax = Vector2.zero;
+            Image background = page.GetComponent<Image>();
+            background.color = new Color(0.075f, 0.05f, 0.03f, 0.96f);
+            background.raycastTarget = false;
+            _passiveFlavorMutationPage = page.GetComponent<CanvasGroup>();
+
+            var content = new GameObject(
+                "Dishes",
+                typeof(RectTransform));
+            _passiveFlavorMutationContent = content.GetComponent<RectTransform>();
+            _passiveFlavorMutationContent.SetParent(pageRect, false);
+            _passiveFlavorMutationContent.anchorMin = Vector2.zero;
+            _passiveFlavorMutationContent.anchorMax = Vector2.one;
+            _passiveFlavorMutationContent.offsetMin = Vector2.zero;
+            _passiveFlavorMutationContent.offsetMax = Vector2.zero;
+            page.SetActive(false);
+        }
+
+        private void ClosePassiveFlavorMutationPage()
+        {
+            if (_passiveFlavorMutationFlys.Count > 0)
+            {
+                var flys = new List<ShopPurchaseFlyView>(_passiveFlavorMutationFlys);
+                _passiveFlavorMutationFlys.Clear();
+                foreach (ShopPurchaseFlyView fly in flys)
+                {
+                    UnregisterShopPurchaseFly(fly);
+                    fly?.Cancel();
+                }
+            }
+
+            ClosePassiveFlavorMutationDishes();
+            if (_passiveFlavorMutationPage != null)
+            {
+                _passiveFlavorMutationPage.gameObject.SetActive(false);
+            }
+        }
+
+        private void ClosePassiveFlavorMutationDishes()
+        {
+            foreach (RecipeEditDishView dish in _passiveFlavorMutationDishes)
+            {
+                if (dish != null)
+                {
+                    dish.gameObject.SetActive(false);
+                    Destroy(dish.gameObject);
+                }
+            }
+
+            _passiveFlavorMutationDishes.Clear();
+            _passiveFlavorMutationEntries.Clear();
+        }
+
+        private void EnqueuePassivePresentation(Action<Action> start, Action cancel = null)
+        {
+            if (start == null)
+            {
+                cancel?.Invoke();
+                return;
+            }
+
+            _passivePresentationQueue.Enqueue(new PassivePresentationWork
+            {
+                Start = start,
+                Cancel = cancel,
+            });
+            if (_activePassivePresentation == null)
+            {
+                StartNextPassivePresentation();
+            }
+        }
+
+        private void StartNextPassivePresentation()
+        {
+            if (_passivePresentationQueue.Count == 0)
+            {
+                _activePassivePresentation = null;
+                SetPassivePresentationInputLocked(false);
+                return;
+            }
+
+            _activePassivePresentation = _passivePresentationQueue.Dequeue();
+            SetPassivePresentationInputLocked(true);
+            int version = ++_passivePresentationVersion;
+            bool completed = false;
+            _activePassivePresentation.Start(() =>
+            {
+                if (completed || version != _passivePresentationVersion)
+                {
+                    return;
+                }
+
+                completed = true;
+                _passivePresentationDelay = null;
+                _activePassivePresentation = null;
+                StartNextPassivePresentation();
+            });
+        }
+
+        private void CancelPassivePresentations()
+        {
+            _passivePresentationVersion++;
+            _passivePresentationDelay?.Kill();
+            _passivePresentationDelay = null;
+            _activePassivePresentation?.Cancel?.Invoke();
+            _activePassivePresentation = null;
+            while (_passivePresentationQueue.Count > 0)
+            {
+                _passivePresentationQueue.Dequeue().Cancel?.Invoke();
+            }
+
+            SetPassivePresentationInputLocked(false);
+        }
+
+        private void DelayPassivePresentation(float seconds, Action onComplete)
+        {
+            _passivePresentationDelay?.Kill();
+            _passivePresentationDelay = DOTween.Sequence()
+                .SetUpdate(true)
+                .AppendInterval(Mathf.Max(0f, seconds))
                 .OnComplete(() =>
                 {
-                    _passiveOverlayRoot.SetActive(false);
-                    onDone?.Invoke();
+                    _passivePresentationDelay = null;
+                    onComplete?.Invoke();
                 });
         }
 
-        private void EnsurePassiveOverlay()
+        private void WaitPassiveHold(Action onComplete)
         {
-            if (_passiveOverlayRoot != null)
+            DelayPassivePresentation(2f, onComplete);
+        }
+
+        private void EnsurePassivePresentationInputBlocker()
+        {
+            if (_passivePresentationInputBlocker != null)
             {
                 return;
             }
 
-            Debug.LogError($"{nameof(BattleForm)} 缺少 PassiveMutationOverlay 预置引用。", this);
+            Transform parent = _hudFrame != null ? _hudFrame.transform : transform;
+            var blocker = new GameObject(
+                "PassivePresentationInputBlocker",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image),
+                typeof(CanvasGroup));
+            RectTransform rect = blocker.GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            Image image = blocker.GetComponent<Image>();
+            image.color = Color.clear;
+            image.raycastTarget = true;
+            _passivePresentationInputBlocker = blocker.GetComponent<CanvasGroup>();
+            blocker.SetActive(false);
+        }
+
+        private void SetPassivePresentationInputLocked(bool locked)
+        {
+            EnsurePassivePresentationInputBlocker();
+            if (_passivePresentationInputBlocker == null)
+            {
+                return;
+            }
+
+            GameObject blocker = _passivePresentationInputBlocker.gameObject;
+            blocker.SetActive(locked);
+            _passivePresentationInputBlocker.alpha = 1f;
+            _passivePresentationInputBlocker.interactable = locked;
+            _passivePresentationInputBlocker.blocksRaycasts = locked;
+            if (locked)
+            {
+                blocker.transform.SetAsLastSibling();
+                HideAllTips();
+            }
+        }
+
+        private void QueueTimelineMutation(
+            TimelineMutationResult result,
+            Action onFinished,
+            Action onCancelled)
+        {
+            if (result == null || !result.Changed)
+            {
+                onFinished?.Invoke();
+                return;
+            }
+
+            bool restoreAxisVisible = _actionAxisBar != null && _actionAxisBar.gameObject.activeSelf;
+            EnqueuePassivePresentation(done =>
+            {
+                if (result.BeforeWeekIndex != result.AfterWeekIndex)
+                {
+                    _infoColumn?.PlayWeekIndexChange(
+                        _run,
+                        result.BeforeWeekIndex,
+                        result.AfterWeekIndex,
+                        () => WaitPassiveHold(() =>
+                        {
+                            RefreshPersistent();
+                            done();
+                            onFinished?.Invoke();
+                        }));
+                    if (_infoColumn == null)
+                    {
+                        WaitPassiveHold(() =>
+                        {
+                            done();
+                            onFinished?.Invoke();
+                        });
+                    }
+
+                    return;
+                }
+
+                SetActionAxisVisible(true);
+                void FinishTimelineMutation()
+                {
+                    WaitPassiveHold(() =>
+                    {
+                        SetActionAxisVisible(restoreAxisVisible);
+                        RebuildActionAxis();
+                        RefreshPersistent();
+                        done();
+                        onFinished?.Invoke();
+                    });
+                }
+
+                if (_axisBinder != null)
+                {
+                    _axisBinder.PlayMutation(
+                        _run,
+                        result,
+                        _currentTimelineNodeCard?.Id,
+                        FinishTimelineMutation);
+                }
+                else
+                {
+                    FinishTimelineMutation();
+                }
+            }, onCancelled);
+        }
+
+        private void RestorePassiveInspection(
+            BattleInspectionView restoreView,
+            IReadOnlyList<RecipeReadonlyDishEntry> recipeEntries,
+            DiningTable table,
+            Action onRestored)
+        {
+            if (_inspectionCoordinator == null)
+            {
+                RefreshPersistent();
+                onRestored?.Invoke();
+                return;
+            }
+
+            switch (restoreView)
+            {
+                case BattleInspectionView.Recipe:
+                    if (_inspectionCoordinator.ShowPassiveRecipe(recipeEntries, onRestored))
+                    {
+                        return;
+                    }
+                    break;
+                case BattleInspectionView.Table:
+                    if (_inspectionCoordinator.ShowPassiveTable(table, onRestored))
+                    {
+                        return;
+                    }
+                    break;
+                default:
+                    _inspectionCoordinator.Close(onRestored);
+                    return;
+            }
+
+            RefreshPersistent();
+            onRestored?.Invoke();
+        }
+
+        private void PlayPassiveCellMutations(CellMutationResult result, Action onComplete)
+        {
+            if (result == null || result.Entries.Count == 0 || _world == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            int remaining = result.Entries.Count;
+            void CompleteOne()
+            {
+                remaining--;
+                if (remaining == 0)
+                {
+                    onComplete?.Invoke();
+                }
+            }
+
+            foreach (CellMutationEntry entry in result.Entries)
+            {
+                if (!_world.PlayActiveItemCellMaterialApplied(entry.Pos, entry.MaterialId, CompleteOne))
+                {
+                    CompleteOne();
+                }
+            }
+        }
+
+        private IReadOnlyList<RecipeReadonlyDishEntry> BuildCurrentRecipeEntries()
+        {
+            var entries = new List<RecipeReadonlyDishEntry>(_run?.RecipeEntries.Count ?? 0);
+            if (_run?.RecipeEntries == null)
+            {
+                return entries;
+            }
+
+            foreach (RecipeBookSlot slot in _run.RecipeEntries)
+            {
+                entries.Add(new RecipeReadonlyDishEntry(slot.Clone()));
+            }
+
+            return entries;
+        }
+
+        private IReadOnlyList<RecipeReadonlyDishEntry> BuildRecipeMutationEntries(
+            RecipeMutationResult result,
+            bool before)
+        {
+            var mutations = new Dictionary<int, RecipeMutationEntry>();
+            foreach (RecipeMutationEntry entry in result.Entries)
+            {
+                if (entry.BookIndex == 0)
+                {
+                    mutations[entry.DishIndex] = entry;
+                }
+            }
+
+            var entries = new List<RecipeReadonlyDishEntry>(_run?.RecipeEntries.Count ?? 0);
+            for (int i = 0; i < (_run?.RecipeEntries.Count ?? 0); i++)
+            {
+                if (!mutations.TryGetValue(i, out RecipeMutationEntry mutation))
+                {
+                    entries.Add(new RecipeReadonlyDishEntry(_run.RecipeEntries[i].Clone()));
+                    continue;
+                }
+
+                RecipeDishSnapshot snapshot = before ? mutation.Before : mutation.After;
+                bool hidden = before && (snapshot == null || string.IsNullOrEmpty(snapshot.DishId));
+                if (hidden)
+                {
+                    snapshot = mutation.After;
+                }
+
+                entries.Add(new RecipeReadonlyDishEntry(
+                    RecipeSlotFromSnapshot(snapshot),
+                    initiallyHidden: hidden));
+            }
+
+            return entries;
+        }
+
+        private RecipeBookSlot RecipeSlotFromSnapshot(RecipeDishSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return new RecipeBookSlot(string.Empty);
+            }
+
+            var slot = new RecipeBookSlot(snapshot.DishId);
+            DishDef dish = _run?.Database.GetDish(snapshot.DishId);
+            bool skippedBaseFlavor = false;
+            if (snapshot.FlavorIds != null)
+            {
+                foreach (string flavorId in snapshot.FlavorIds)
+                {
+                    if (!skippedBaseFlavor
+                        && dish != null
+                        && !string.IsNullOrEmpty(dish.FlavorId)
+                        && flavorId == dish.FlavorId)
+                    {
+                        skippedBaseFlavor = true;
+                        continue;
+                    }
+
+                    slot.AddFlavor(flavorId);
+                }
+            }
+
+            var baseSkills = new HashSet<string>(dish?.SkillIds ?? Array.Empty<string>());
+            if (snapshot.SkillIds != null)
+            {
+                foreach (string skillId in snapshot.SkillIds)
+                {
+                    if (!baseSkills.Contains(skillId))
+                    {
+                        slot.AddExtraSkill(skillId);
+                    }
+                }
+            }
+
+            slot.RestoreScoreFlatBonus(snapshot.ScoreFlatBonus);
+            slot.RestoreScoreMultiplier(snapshot.ScoreMultiplier);
+            return slot;
+        }
+
+        private DiningTable BuildTablePresentationSnapshot(CellMutationResult result, bool before)
+        {
+            DiningTable source = _run?.BuildTablePreviewFromFragments();
+            if (source == null)
+            {
+                return null;
+            }
+
+            var overrides = new Dictionary<GridPos, IReadOnlyList<string>>();
+            if (result != null)
+            {
+                foreach (CellMutationEntry entry in result.Entries)
+                {
+                    overrides[entry.Pos] = before
+                        ? entry.BeforeMaterialIds
+                        : entry.AfterMaterialIds;
+                }
+            }
+
+            List<GridPos> cells = source.ExistingCells();
+            var materials = new Dictionary<GridPos, IReadOnlyList<string>>();
+            foreach (GridPos cell in cells)
+            {
+                IReadOnlyList<string> values = overrides.TryGetValue(cell, out IReadOnlyList<string> replacement)
+                    ? replacement
+                    : source.MaterialsAt(cell);
+                if (values != null && values.Count > 0)
+                {
+                    materials[cell] = new List<string>(values);
+                }
+            }
+
+            var snapshot = new DiningTable(source.Width, source.Height, cells, materials);
+            foreach (GridPos cell in cells)
+            {
+                if (source.IsDisabled(cell))
+                {
+                    snapshot.SetDisabled(cell, true);
+                }
+            }
+
+            return snapshot;
         }
 
         private void OnViewTableClicked()
@@ -3064,6 +3849,8 @@ namespace GourmetProject.Game.UI.Battle
                 ? canvas.worldCamera
                 : null;
             if (layer == null
+                || _run == null
+                || GameApp.Random == null
                 || _servingOutlet == null
                 || !_servingOutlet.TryGetRecipeInfoButtonScreenPoint(out Vector2 targetScreenPoint)
                 || !RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -3078,51 +3865,184 @@ namespace GourmetProject.Game.UI.Battle
 
             IRandomStream cosmetic = GameApp.Random.Cosmetic(
                 $"boss_gluttony_{_activeBattleKey}_{plan.DebuffId}");
+            bool finished = false;
+            bool started = PlayRecipeCopyFlys(
+                plan.DuplicatedDishIds,
+                layer,
+                recipeInfoButtonCenter,
+                cosmetic,
+                arrived =>
+                {
+                    _servingOutlet?.SetRecipeCountPresentationOverride(
+                        plan.InitialRecipeEntryCount + arrived);
+                    RefreshFoodActions();
+                },
+                () => finished = true,
+                _bossRecipeCopyFlys);
+            if (!started)
+            {
+                return;
+            }
+
+            while (!finished)
+            {
+                token.ThrowIfCancellationRequested();
+                await Awaitable.NextFrameAsync(token);
+            }
+        }
+
+        private bool PlayRecipeCopyFlys(
+            IReadOnlyList<string> dishIds,
+            RectTransform layer,
+            Vector2 targetCenter,
+            IRandomStream cosmetic,
+            Action<int> onArrived,
+            Action onFinished,
+            HashSet<ShopPurchaseFlyView> ownedFlys)
+        {
+            RectTransform centerRect = _center != null
+                ? _center.transform as RectTransform
+                : null;
+            if (dishIds == null
+                || dishIds.Count == 0
+                || layer == null
+                || cosmetic == null
+                || _run == null
+                || centerRect == null
+                || !TryGetRectInLayer(centerRect, layer, out RectSnapshot centerArea))
+            {
+                return false;
+            }
+
             var spriteProvider = new DishSpriteProvider();
             int arrived = 0;
             int finished = 0;
-            int total = plan.DuplicatedDishIds.Count;
-            foreach (string dishId in plan.DuplicatedDishIds)
+            int total = dishIds.Count;
+            bool scheduling = true;
+            bool allFinished = false;
+
+            void CompleteArrival()
             {
-                token.ThrowIfCancellationRequested();
+                arrived++;
+                onArrived?.Invoke(arrived);
+            }
+
+            void CompleteFlight(ShopPurchaseFlyView completedFly)
+            {
+                if (completedFly != null)
+                {
+                    ownedFlys?.Remove(completedFly);
+                    UnregisterShopPurchaseFly(completedFly);
+                }
+
+                finished++;
+                if (!scheduling && finished >= total && !allFinished)
+                {
+                    allFinished = true;
+                    onFinished?.Invoke();
+                }
+            }
+
+            foreach (string dishId in dishIds)
+            {
                 ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
                 if (fly == null)
                 {
-                    arrived++;
-                    finished++;
+                    CompleteArrival();
+                    CompleteFlight(null);
                     continue;
                 }
 
                 RegisterShopPurchaseFly(fly);
-                float marginX = Mathf.Min(110f, layer.rect.width * 0.15f);
-                float marginY = Mathf.Min(90f, layer.rect.height * 0.15f);
-                Vector2 start = new Vector2(
-                    cosmetic.Range(layer.rect.xMin + marginX, layer.rect.xMax - marginX),
-                    cosmetic.Range(layer.rect.yMin + marginY, layer.rect.yMax - marginY));
+                ownedFlys?.Add(fly);
+                ShopPurchaseFlyView capturedFly = fly;
+                bool flightArrived = false;
+                bool flightFinished = false;
+                void ArriveOnce()
+                {
+                    if (flightArrived)
+                    {
+                        return;
+                    }
+
+                    flightArrived = true;
+                    CompleteArrival();
+                }
+
+                void FinishOnce()
+                {
+                    if (flightFinished)
+                    {
+                        return;
+                    }
+
+                    flightFinished = true;
+                    CompleteFlight(capturedFly);
+                }
+
+                Vector2 start = RandomPointInRecipeCopyCenter(centerArea, cosmetic);
                 Sprite sprite = spriteProvider.Get(_run.Database.GetDish(dishId));
-                fly.PlayFoodSprite(
-                    start,
-                    new Vector2(112f, 112f),
-                    recipeInfoButtonCenter,
-                    sprite,
-                    () =>
-                    {
-                        arrived++;
-                        _servingOutlet?.SetRecipeCountPresentationOverride(
-                            plan.InitialRecipeEntryCount + arrived);
-                        RefreshFoodActions();
-                    },
-                    () =>
-                    {
-                        finished++;
-                        UnregisterShopPurchaseFly(fly);
-                    });
+                try
+                {
+                    fly.PlayFoodSprite(
+                        start,
+                        Vector2.one * RecipeCopySpriteSize,
+                        targetCenter,
+                        sprite,
+                        ArriveOnce,
+                        FinishOnce);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception, fly);
+                    fly.Cancel();
+                    ArriveOnce();
+                    FinishOnce();
+                }
             }
 
-            while (finished < total)
+            scheduling = false;
+            if (finished >= total && !allFinished)
             {
-                token.ThrowIfCancellationRequested();
-                await Awaitable.NextFrameAsync(token);
+                allFinished = true;
+                onFinished?.Invoke();
+            }
+
+            return true;
+        }
+
+        private static Vector2 RandomPointInRecipeCopyCenter(
+            RectSnapshot centerArea,
+            IRandomStream cosmetic)
+        {
+            float halfWidth = Mathf.Max(
+                0f,
+                centerArea.Size.x * 0.5f - RecipeCopyCenterMargin);
+            float halfHeight = Mathf.Max(
+                0f,
+                centerArea.Size.y * 0.5f - RecipeCopyCenterMargin);
+            float x = halfWidth > 0f
+                ? cosmetic.Range(centerArea.Center.x - halfWidth, centerArea.Center.x + halfWidth)
+                : centerArea.Center.x;
+            float y = halfHeight > 0f
+                ? cosmetic.Range(centerArea.Center.y - halfHeight, centerArea.Center.y + halfHeight)
+                : centerArea.Center.y;
+            return new Vector2(x, y);
+        }
+
+        private void CancelRecipeCopyFlys(HashSet<ShopPurchaseFlyView> ownedFlys)
+        {
+            if (ownedFlys == null || ownedFlys.Count == 0)
+            {
+                return;
+            }
+
+            var flys = new List<ShopPurchaseFlyView>(ownedFlys);
+            ownedFlys.Clear();
+            foreach (ShopPurchaseFlyView fly in flys)
+            {
+                UnregisterShopPurchaseFly(fly);
+                fly?.Cancel();
             }
         }
 
@@ -3171,6 +4091,7 @@ namespace GourmetProject.Game.UI.Battle
             _bossDialogueBag = null;
             _bossDiscardRevealPending = false;
             _bossPresentation?.CancelCurrent();
+            CancelRecipeCopyFlys(_bossRecipeCopyFlys);
             (_world ?? BattleWorldController.Instance)?.SetBossPresentationBusy(false);
             _servingOutlet?.SetRecipeCountPresentationOverride(null);
         }

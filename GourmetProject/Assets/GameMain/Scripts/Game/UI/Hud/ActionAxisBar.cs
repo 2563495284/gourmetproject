@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using DG.Tweening;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -52,8 +54,17 @@ namespace GourmetProject.Game.UI.Hud
         private readonly Dictionary<string, TimelineNodeBubbleView> _nodeBubbles =
             new Dictionary<string, TimelineNodeBubbleView>();
         private readonly Dictionary<string, int> _nodeDays = new Dictionary<string, int>();
+        private readonly Dictionary<string, string> _nodeActionIds = new Dictionary<string, string>();
         private readonly HashSet<int> _validAddDays = new HashSet<int>();
         private readonly HashSet<string> _targetableNodeIds = new HashSet<string>();
+        private readonly Queue<PresentationWork> _presentationQueue = new Queue<PresentationWork>();
+
+        private sealed class PresentationWork
+        {
+            public TimelinePresentationCue Cue;
+            public float Speed;
+            public Action OnComplete;
+        }
 
         private GameRun _run;
         private Action<cfg.TimelineNode, GameObject> _onNodeCreated;
@@ -71,10 +82,57 @@ namespace GourmetProject.Game.UI.Hud
         private string _presentedExecutingNodeId;
         private bool _hasBuiltNodes;
         private bool _commitInProgress;
+        private IReadOnlyList<RuntimeTimelineNodeSnapshot> _presentationNodes;
+        private float _presentationLengthDays;
+        private TimelineAxisViewState _viewState;
+        private Image _elapsedRail;
+        private float _displayedDay;
+        private bool _presentationBusy;
+        private bool _completingPresentation;
+        private PresentationWork _activePresentation;
+        private Tween _presentationTween;
 
         public TimelineAxisSelectionMode SelectionMode => _selectionMode;
         public bool HasPreview => _previewBubble != null;
         public int PreviewDay => _hoveredPreviewDay;
+        public float DisplayedDay => _displayedDay;
+        public bool IsPresenting => _presentationBusy || _presentationQueue.Count > 0;
+        public bool HasActivePresentationTweens
+        {
+            get
+            {
+                if (_presentationTween?.IsActive() ?? false)
+                {
+                    return true;
+                }
+
+                foreach (TimelineDayNodeGroupView group in _dayGroups.Values)
+                {
+                    if (group != null && group.IsAnimating)
+                    {
+                        return true;
+                    }
+                }
+
+                foreach (TimelineNodeBubbleView bubble in _nodeBubbles.Values)
+                {
+                    if (bubble != null && bubble.IsAnimating)
+                    {
+                        return true;
+                    }
+                }
+
+                foreach (Image dot in _dayDots.Values)
+                {
+                    if (dot != null && DOTween.IsTweening(dot.rectTransform))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
 
         public TimelineDayNodeGroupView GetDayGroup(int day)
         {
@@ -86,15 +144,10 @@ namespace GourmetProject.Game.UI.Hud
             Action<cfg.TimelineNode, GameObject> onNodeCreated = null,
             string executingNodeId = null)
         {
+            _presentationNodes = null;
+            _presentationLengthDays = 0f;
             bool timelineChanged = _run != run
                 || !string.Equals(_builtTimelineId, run?.CurrentTimelineId, StringComparison.Ordinal);
-            _run = run;
-            _presentedExecutingNodeId = executingNodeId ?? string.Empty;
-            if (onNodeCreated != null)
-            {
-                _onNodeCreated = onNodeCreated;
-            }
-
             if (timelineChanged)
             {
                 ClearPreview(animate: false);
@@ -103,10 +156,478 @@ namespace GourmetProject.Game.UI.Hud
                 _hasBuiltNodes = false;
             }
 
+            BindState(
+                CreateState(run, null, run?.TimelineLengthDays ?? 1f, run?.CurrentDay ?? 0f, executingNodeId),
+                run,
+                onNodeCreated,
+                animate: _hasBuiltNodes && !timelineChanged);
+        }
+
+        public void BuildPresentation(
+            GameRun run,
+            IReadOnlyList<RuntimeTimelineNodeSnapshot> nodes,
+            float lengthDays,
+            Action<cfg.TimelineNode, GameObject> onNodeCreated = null,
+            string executingNodeId = null,
+            bool animate = false)
+        {
+            _presentationNodes = nodes ?? Array.Empty<RuntimeTimelineNodeSnapshot>();
+            _presentationLengthDays = Mathf.Max(1f, lengthDays);
+
+            if (!animate)
+            {
+                ClearPreview(animate: false);
+                ClearGroups();
+                _builtTimelineId = run?.CurrentTimelineId;
+                _hasBuiltNodes = false;
+            }
+
+            BindState(
+                CreateState(run, _presentationNodes, _presentationLengthDays, run?.CurrentDay ?? 0f, executingNodeId),
+                run,
+                onNodeCreated,
+                animate);
+        }
+
+        public void BindState(
+            TimelineAxisViewState state,
+            GameRun run = null,
+            Action<cfg.TimelineNode, GameObject> onNodeCreated = null,
+            bool animate = false,
+            float animationSpeed = 1f)
+        {
+            if (state == null)
+            {
+                return;
+            }
+
+            _run = run;
+            _viewState = state.Clone();
+            _viewState.LengthDays = Mathf.Max(1f, _viewState.LengthDays);
+            _displayedDay = Mathf.Clamp(_viewState.CurrentDay, 0f, _viewState.LengthDays);
+            _presentedExecutingNodeId = string.Empty;
+            if (onNodeCreated != null)
+            {
+                _onNodeCreated = onNodeCreated;
+            }
+
             RebuildAxisChrome();
-            ReconcileNodeGroups(animate: _hasBuiltNodes && !timelineChanged);
-            _hasBuiltNodes = run != null;
+            ReconcileNodeGroups(animate, animationSpeed);
+            _hasBuiltNodes = true;
             ApplySelectionMode();
+        }
+
+        public void PlayCue(
+            TimelinePresentationCue cue,
+            Action onComplete = null,
+            float speed = 1f)
+        {
+            if (cue == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            _presentationQueue.Enqueue(new PresentationWork
+            {
+                Cue = cue,
+                Speed = Mathf.Max(0.05f, speed),
+                OnComplete = onComplete,
+            });
+            if (_completingPresentation)
+            {
+                return;
+            }
+
+            PlayNextCue();
+        }
+
+        public void CompletePresentation()
+        {
+            if (_completingPresentation)
+            {
+                return;
+            }
+
+            _completingPresentation = true;
+            _presentationTween?.Kill(complete: false);
+            _presentationTween = null;
+            foreach (TimelineNodeBubbleView bubble in _nodeBubbles.Values)
+            {
+                bubble?.CompletePresentation();
+            }
+
+            PresentationWork active = _activePresentation;
+            _activePresentation = null;
+            _presentationBusy = false;
+            try
+            {
+                CompleteWork(active);
+                while (_presentationQueue.Count > 0)
+                {
+                    CompleteWork(_presentationQueue.Dequeue());
+                }
+            }
+            finally
+            {
+                _completingPresentation = false;
+            }
+        }
+
+        private void CompleteWork(PresentationWork work)
+        {
+            if (work == null)
+            {
+                return;
+            }
+
+            if (work.Cue?.TargetState != null)
+            {
+                BindState(work.Cue.TargetState, _run, _onNodeCreated, animate: false);
+            }
+
+            work.OnComplete?.Invoke();
+        }
+
+        /// <summary>中断所有表现而不触发表现回调；页面销毁或实验室重置时使用。</summary>
+        public void CancelPresentation()
+        {
+            AbortPresentation();
+        }
+
+        private void PlayNextCue()
+        {
+            if (_presentationBusy || _presentationQueue.Count == 0)
+            {
+                return;
+            }
+
+            _presentationBusy = true;
+            _activePresentation = _presentationQueue.Dequeue();
+            TimelinePresentationCue cue = _activePresentation.Cue;
+            switch (cue.Kind)
+            {
+                case TimelinePresentationCueKind.Advance:
+                    PlayAdvance(cue, _activePresentation.Speed);
+                    break;
+                case TimelinePresentationCueKind.TriggerStart:
+                    PlayNodeCue(cue, start: true);
+                    break;
+                case TimelinePresentationCueKind.TriggerComplete:
+                    PlayNodeCue(cue, start: false);
+                    break;
+                case TimelinePresentationCueKind.Remove:
+                case TimelinePresentationCueKind.Skip:
+                    PlayRemovalCue(cue);
+                    break;
+                case TimelinePresentationCueKind.Replace:
+                    if (_nodeBubbles.TryGetValue(cue.NodeId, out TimelineNodeBubbleView changed)
+                        && changed != null)
+                    {
+                        changed.PlayChange(
+                            FinishActiveCue,
+                            _activePresentation.Speed,
+                            () => ApplyTargetState(cue, animate: false));
+                    }
+                    else
+                    {
+                        ApplyTargetState(cue, animate: false);
+                        FinishActiveCue();
+                    }
+                    break;
+                case TimelinePresentationCueKind.Add:
+                case TimelinePresentationCueKind.Move:
+                    ApplyTargetState(cue, animate: true, _activePresentation.Speed);
+                    _presentationTween = DOVirtual.DelayedCall(
+                            0.38f / _activePresentation.Speed,
+                            FinishActiveCue,
+                            ignoreTimeScale: true)
+                        .SetTarget(this);
+                    break;
+                case TimelinePresentationCueKind.Resize:
+                    PlayResize(cue, _activePresentation.Speed);
+                    break;
+                default:
+                    ApplyTargetState(cue, animate: true, _activePresentation.Speed);
+                    FinishActiveCue();
+                    break;
+            }
+        }
+
+        private void PlayAdvance(TimelinePresentationCue cue, float speed)
+        {
+            float length = Mathf.Max(1f, cue.TargetState?.LengthDays ?? _viewState?.LengthDays ?? 1f);
+            float start = Mathf.Clamp(cue.FromDay, 0f, length);
+            float target = Mathf.Clamp(cue.ToDay, 0f, length);
+            if (Mathf.Abs(_displayedDay - start) > TimelineMath.Epsilon)
+            {
+                start = _displayedDay;
+            }
+
+            float distance = Mathf.Abs(target - start);
+            float duration = Mathf.Clamp(0.38f + 0.18f * distance, 0.45f, 1.10f) / speed;
+            int lastWholeDay = Mathf.FloorToInt(start + TimelineMath.Epsilon);
+            _presentationTween = DOTween.To(
+                    () => start,
+                    value =>
+                    {
+                        _displayedDay = value;
+                        UpdateProgressVisual(value, length);
+                        int wholeDay = Mathf.FloorToInt(value + TimelineMath.Epsilon);
+                        if (wholeDay > lastWholeDay)
+                        {
+                            for (int day = lastWholeDay + 1; day <= wholeDay; day++)
+                            {
+                                PulseDayDot(day, speed);
+                            }
+
+                            lastWholeDay = wholeDay;
+                        }
+                    },
+                    target,
+                    duration)
+                .SetEase(Ease.InOutCubic)
+                .SetUpdate(true)
+                .SetTarget(this)
+                .OnComplete(() =>
+                {
+                    _displayedDay = target;
+                    if (cue.TargetState != null)
+                    {
+                        _viewState = cue.TargetState.Clone();
+                        _viewState.CurrentDay = target;
+                    }
+
+                    UpdateProgressVisual(target, length);
+                    bool landedOnWholeDay = distance > TimelineMath.Epsilon
+                        && Mathf.Abs(target - Mathf.Round(target)) <= TimelineMath.Epsilon;
+                    if (landedOnWholeDay)
+                    {
+                        _presentationTween = DOVirtual.DelayedCall(
+                                0.12f / speed,
+                                FinishActiveCue,
+                                ignoreTimeScale: true)
+                            .SetTarget(this);
+                    }
+                    else
+                    {
+                        FinishActiveCue();
+                    }
+                });
+        }
+
+        private void PlayNodeCue(TimelinePresentationCue cue, bool start)
+        {
+            if (start)
+            {
+                ApplyTargetState(cue, animate: false);
+            }
+
+            if (!_nodeBubbles.TryGetValue(cue.NodeId ?? string.Empty, out TimelineNodeBubbleView bubble)
+                || bubble == null)
+            {
+                if (!start)
+                {
+                    ApplyTargetState(cue, animate: false);
+                }
+
+                FinishActiveCue();
+                return;
+            }
+
+            Action finished = () =>
+            {
+                if (!start)
+                {
+                    ApplyTargetState(cue, animate: false);
+                }
+
+                FinishActiveCue();
+            };
+            if (start)
+            {
+                bubble.PlayTriggerStart(finished, _activePresentation.Speed);
+            }
+            else
+            {
+                bubble.PlayTriggerComplete(finished, _activePresentation.Speed);
+            }
+        }
+
+        private void PlayResize(TimelinePresentationCue cue, float speed)
+        {
+            if (cue?.TargetState == null)
+            {
+                FinishActiveCue();
+                return;
+            }
+
+            float fromLength = Mathf.Max(1f, _viewState?.LengthDays ?? cue.FromDay);
+            float toLength = Mathf.Max(1f, cue.TargetState.LengthDays);
+            TimelineAxisViewState target = cue.TargetState.Clone();
+            BindState(target, _run, _onNodeCreated, animate: false);
+            float currentDay = Mathf.Clamp(target.CurrentDay, 0f, toLength);
+
+            void ApplyLength(float displayLength)
+            {
+                displayLength = Mathf.Max(1f, displayLength);
+                foreach (KeyValuePair<int, Image> pair in _dayDots)
+                {
+                    if (pair.Value == null
+                        || !(pair.Value.transform.parent is RectTransform hit))
+                    {
+                        continue;
+                    }
+
+                    float x = Mathf.Clamp01(pair.Key / displayLength);
+                    hit.anchorMin = new Vector2(x, hit.anchorMin.y);
+                    hit.anchorMax = new Vector2(x, hit.anchorMax.y);
+                }
+
+                foreach (KeyValuePair<int, TimelineDayNodeGroupView> pair in _dayGroups)
+                {
+                    pair.Value?.SetAxisPosition(
+                        Mathf.Clamp01(pair.Key / displayLength),
+                        animate: false);
+                }
+
+                UpdateProgressVisual(currentDay, displayLength);
+            }
+
+            ApplyLength(fromLength);
+            float displayedLength = fromLength;
+            _presentationTween = DOTween.To(
+                    () => displayedLength,
+                    value =>
+                    {
+                        displayedLength = value;
+                        ApplyLength(value);
+                    },
+                    toLength,
+                    0.38f / Mathf.Max(0.05f, speed))
+                .SetEase(Ease.InOutCubic)
+                .SetUpdate(true)
+                .SetTarget(this)
+                .OnComplete(() =>
+                {
+                    BindState(target, _run, _onNodeCreated, animate: false);
+                    FinishActiveCue();
+                });
+        }
+
+        private void PlayRemovalCue(TimelinePresentationCue cue)
+        {
+            if (!_nodeBubbles.TryGetValue(cue.NodeId ?? string.Empty, out TimelineNodeBubbleView bubble)
+                || bubble == null)
+            {
+                ApplyTargetState(cue, animate: false);
+                FinishActiveCue();
+                return;
+            }
+
+            Action finished = () =>
+            {
+                ApplyTargetState(cue, animate: false);
+                FinishActiveCue();
+            };
+            if (cue.Kind == TimelinePresentationCueKind.Skip)
+            {
+                bubble.PlaySkip(finished, _activePresentation.Speed);
+            }
+            else
+            {
+                bubble.PlayRemove(finished, _activePresentation.Speed);
+            }
+        }
+
+        private void ApplyTargetState(
+            TimelinePresentationCue cue,
+            bool animate,
+            float animationSpeed = 1f)
+        {
+            if (cue?.TargetState != null)
+            {
+                BindState(cue.TargetState, _run, _onNodeCreated, animate, animationSpeed);
+            }
+        }
+
+        private void FinishActiveCue()
+        {
+            if (!_presentationBusy)
+            {
+                return;
+            }
+
+            _presentationTween = null;
+            PresentationWork finished = _activePresentation;
+            _activePresentation = null;
+            _presentationBusy = false;
+            finished?.OnComplete?.Invoke();
+            PlayNextCue();
+        }
+
+        internal static TimelineAxisViewState CreateState(
+            GameRun run,
+            IReadOnlyList<RuntimeTimelineNodeSnapshot> snapshots,
+            float lengthDays,
+            float currentDay,
+            string executingNodeId)
+        {
+            var state = new TimelineAxisViewState
+            {
+                LengthDays = Mathf.Max(1f, lengthDays),
+                CurrentDay = Mathf.Max(0f, currentDay),
+            };
+            if (run == null)
+            {
+                return state;
+            }
+
+            if (snapshots != null)
+            {
+                foreach (RuntimeTimelineNodeSnapshot snapshot in snapshots)
+                {
+                    AddStateNode(run, state, snapshot?.Id, snapshot?.Day ?? 0, snapshot?.ActionId, executingNodeId);
+                }
+
+                return state;
+            }
+
+            foreach (cfg.TimelineNode node in TimelineService.GetNodes(run))
+            {
+                if (node != null)
+                {
+                    AddStateNode(run, state, node.Id, node.Day, node.ActionId, executingNodeId);
+                }
+            }
+
+            return state;
+        }
+
+        private static void AddStateNode(
+            GameRun run,
+            TimelineAxisViewState state,
+            string id,
+            int day,
+            string actionId,
+            string executingNodeId)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return;
+            }
+
+            cfg.GameAction action = run.Tables?.TbAction.GetOrDefault(actionId);
+            state.Nodes.Add(new TimelineAxisNodeState
+            {
+                Id = id,
+                Day = day,
+                ActionId = actionId ?? string.Empty,
+                Kind = ActionDisplay.KindOf(run.Tables, action),
+                Completed = run.IsNodeTriggered(id),
+                Executing = run.IsTimelineNodeExecutionInProgress(id)
+                    || string.Equals(id, executingNodeId, StringComparison.Ordinal),
+            });
         }
 
         public bool BeginAddDaySelection(
@@ -257,15 +778,15 @@ namespace GourmetProject.Game.UI.Hud
         private void RebuildAxisChrome()
         {
             ClearAxisChrome();
-            if (_run == null || _container == null)
+            if (_viewState == null || _container == null)
             {
                 return;
             }
 
             _whiteSprite ??= Resources.Load<Sprite>("Sprites/UI/white");
-            float length = Mathf.Max(1f, _run.TimelineLengthDays);
+            float length = Mathf.Max(1f, _viewState.LengthDays);
             int wholeDays = Mathf.Max(1, Mathf.FloorToInt(length + TimelineMath.Epsilon));
-            float ratio = Mathf.Clamp01(_run.CurrentDay / length);
+            float ratio = Mathf.Clamp01(_displayedDay / length);
 
             BuildRail(ratio);
             BuildDayPoints(wholeDays, length);
@@ -286,15 +807,15 @@ namespace GourmetProject.Game.UI.Hud
             baseRail.raycastTarget = false;
             baseRail.transform.SetAsFirstSibling();
 
-            Image elapsed = CreateImage("AxisElapsed", _container, _whiteSprite);
-            elapsed.rectTransform.anchorMin = new Vector2(0f, 0.27f);
-            elapsed.rectTransform.anchorMax = new Vector2(ratio, 0.27f);
-            elapsed.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            elapsed.rectTransform.sizeDelta = new Vector2(0f, 7f);
-            elapsed.rectTransform.anchoredPosition = Vector2.zero;
-            elapsed.color = _fillColor;
-            elapsed.raycastTarget = false;
-            elapsed.transform.SetSiblingIndex(1);
+            _elapsedRail = CreateImage("AxisElapsed", _container, _whiteSprite);
+            _elapsedRail.rectTransform.anchorMin = new Vector2(0f, 0.27f);
+            _elapsedRail.rectTransform.anchorMax = new Vector2(ratio, 0.27f);
+            _elapsedRail.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            _elapsedRail.rectTransform.sizeDelta = new Vector2(0f, 7f);
+            _elapsedRail.rectTransform.anchoredPosition = Vector2.zero;
+            _elapsedRail.color = _fillColor;
+            _elapsedRail.raycastTarget = false;
+            _elapsedRail.transform.SetSiblingIndex(1);
         }
 
         private void BuildDayPoints(int wholeDays, float length)
@@ -319,7 +840,7 @@ namespace GourmetProject.Game.UI.Hud
                     new Vector2(0.5f, 0.5f),
                     new Vector2(0.5f, 0.5f),
                     new Vector2(14f, 14f));
-                dot.color = day <= _run.CurrentDay + TimelineMath.Epsilon ? _fillColor : _tickColor;
+                dot.color = day <= _displayedDay + TimelineMath.Epsilon ? _fillColor : _tickColor;
                 dot.raycastTarget = false;
                 Outline outline = dot.gameObject.AddComponent<Outline>();
                 outline.effectColor = new Color(0.25f, 0.14f, 0.07f, 0.50f);
@@ -363,19 +884,19 @@ namespace GourmetProject.Game.UI.Hud
             }
         }
 
-        private void ReconcileNodeGroups(bool animate)
+        private void ReconcileNodeGroups(bool animate, float animationSpeed = 1f)
         {
-            if (_run == null || _container == null)
+            if (_viewState == null || _container == null)
             {
                 return;
             }
 
-            float length = Mathf.Max(1f, _run.TimelineLengthDays);
-            List<cfg.TimelineNode> nodes = TimelineService.GetNodes(_run);
+            float length = Mathf.Max(1f, _viewState.LengthDays);
+            IReadOnlyList<TimelineAxisNodeState> nodes = _viewState.Nodes;
             var liveIds = new HashSet<string>();
             var orderByDay = new Dictionary<int, List<string>>();
 
-            foreach (cfg.TimelineNode node in nodes)
+            foreach (TimelineAxisNodeState node in nodes)
             {
                 if (node == null || string.IsNullOrEmpty(node.Id))
                 {
@@ -391,7 +912,39 @@ namespace GourmetProject.Game.UI.Hud
 
                 order.Add(node.Id);
                 TimelineDayNodeGroupView group =
-                    GetOrCreateDayGroup(node.Day, Mathf.Clamp01(node.Day / length));
+                    GetOrCreateDayGroup(
+                        node.Day,
+                        Mathf.Clamp01(node.Day / length),
+                        animate,
+                        animationSpeed);
+                bool moved = false;
+                TimelineNodeBubbleView movedBubble = null;
+                if (_nodeDays.TryGetValue(node.Id, out int previousDay)
+                    && previousDay != node.Day)
+                {
+                    if (_dayGroups.TryGetValue(previousDay, out TimelineDayNodeGroupView previousGroup))
+                    {
+                        moved = previousGroup.Extract(
+                            node.Id,
+                            animate,
+                            out movedBubble,
+                            animationSpeed);
+                    }
+
+                    if (moved)
+                    {
+                        group.Add(
+                            node.Id,
+                            movedBubble,
+                            preview: false,
+                            animate: animate,
+                            preserveWorldPosition: true,
+                            speed: animationSpeed);
+                        _nodeBubbles[node.Id] = movedBubble;
+                        _nodeDays[node.Id] = node.Day;
+                    }
+                }
+
                 bool isNew = !_nodeBubbles.TryGetValue(node.Id, out TimelineNodeBubbleView bubble)
                     || bubble == null;
                 if (isNew)
@@ -406,28 +959,38 @@ namespace GourmetProject.Game.UI.Hud
                     _nodeDays[node.Id] = node.Day;
                 }
 
-                cfg.GameAction action = TimelineService.NodeAction(_run, node);
-                ActionDisplayKind kind = ActionDisplay.KindOf(_run.Tables, action);
-                bool executing = _run.IsTimelineNodeExecutionInProgress(node.Id)
-                    || string.Equals(
-                        node.Id,
-                        _presentedExecutingNodeId,
-                        StringComparison.Ordinal);
+                _nodeActionIds.TryGetValue(node.Id, out string previousActionId);
+                ActionDisplayKind kind = node.Kind;
                 bubble.Bind(
                     NodeSprite(kind),
-                    _run.IsNodeTriggered(node.Id),
-                    executing,
+                    node.Completed,
+                    node.Executing,
                     kind == ActionDisplayKind.Boss,
                     preview: false,
                     negative: kind == ActionDisplayKind.Negative);
+                _nodeActionIds[node.Id] = node.ActionId ?? string.Empty;
                 if (isNew)
                 {
-                    group.Add(node.Id, bubble, preview: false, animate);
+                    group.Add(
+                        node.Id,
+                        bubble,
+                        preview: false,
+                        animate,
+                        speed: animationSpeed);
                     if (_selectionMode != TimelineAxisSelectionMode.DeleteNode
                         && _selectionMode != TimelineAxisSelectionMode.ExecuteNode)
                     {
-                        _onNodeCreated?.Invoke(node, bubble.gameObject);
+                        cfg.TimelineNode runtimeNode = _run != null
+                            ? TimelineService.GetNode(_run, node.Id)
+                            : null;
+                        _onNodeCreated?.Invoke(runtimeNode, bubble.gameObject);
                     }
+                }
+                else if (!moved
+                    && animate
+                    && !string.Equals(previousActionId, node.ActionId, StringComparison.Ordinal))
+                {
+                    bubble.PlayChange(speed: animationSpeed);
                 }
             }
 
@@ -450,13 +1013,14 @@ namespace GourmetProject.Game.UI.Hud
 
                 _nodeBubbles.Remove(removedId);
                 _nodeDays.Remove(removedId);
+                _nodeActionIds.Remove(removedId);
             }
 
             foreach (KeyValuePair<int, List<string>> pair in orderByDay)
             {
                 if (_dayGroups.TryGetValue(pair.Key, out TimelineDayNodeGroupView group))
                 {
-                    group.SetOrder(pair.Value, animate);
+                    group.SetOrder(pair.Value, animate, animationSpeed);
                 }
             }
 
@@ -612,11 +1176,16 @@ namespace GourmetProject.Game.UI.Hud
             _previewGroup = null;
         }
 
-        private TimelineDayNodeGroupView GetOrCreateDayGroup(int day, float axisX)
+        private TimelineDayNodeGroupView GetOrCreateDayGroup(
+            int day,
+            float axisX,
+            bool animate = false,
+            float animationSpeed = 1f)
         {
             if (_dayGroups.TryGetValue(day, out TimelineDayNodeGroupView existing)
                 && existing != null)
             {
+                existing.SetAxisPosition(axisX, animate, animationSpeed);
                 return existing;
             }
 
@@ -734,11 +1303,53 @@ namespace GourmetProject.Game.UI.Hud
                 new Vector2(0f, _positionMarker.anchoredPosition.y);
         }
 
+        private void UpdateProgressVisual(float day, float length)
+        {
+            float ratio = Mathf.Clamp01(day / Mathf.Max(1f, length));
+            if (_elapsedRail != null)
+            {
+                RectTransform elapsed = _elapsedRail.rectTransform;
+                elapsed.anchorMax = new Vector2(ratio, elapsed.anchorMax.y);
+            }
+
+            PositionMarker(ratio);
+            foreach (KeyValuePair<int, Image> pair in _dayDots)
+            {
+                if (pair.Value != null)
+                {
+                    pair.Value.color = pair.Key <= day + TimelineMath.Epsilon
+                        ? _fillColor
+                        : _tickColor;
+                }
+            }
+
+            RefreshCurrentDay();
+        }
+
+        private void PulseDayDot(int day, float speed)
+        {
+            if (!_dayDots.TryGetValue(day, out Image dot) || dot == null)
+            {
+                return;
+            }
+
+            dot.rectTransform.DOKill();
+            dot.rectTransform.localScale = Vector3.one;
+            dot.rectTransform
+                .DOPunchScale(
+                    new Vector3(0.28f, -0.18f, 0f),
+                    0.12f / Mathf.Max(0.05f, speed),
+                    4,
+                    0.45f)
+                .SetUpdate(true)
+                .SetTarget(dot.rectTransform);
+        }
+
         private void RefreshCurrentDay()
         {
             if (_currentDayText != null)
             {
-                float currentDay = Mathf.Max(0f, _run.CurrentDay);
+                float currentDay = Mathf.Max(0f, _displayedDay);
                 _currentDayText.text =
                     $"第{currentDay.ToString("0.#", CultureInfo.InvariantCulture)}天";
             }
@@ -754,6 +1365,14 @@ namespace GourmetProject.Game.UI.Hud
 
         private void ClearAxisChrome()
         {
+            foreach (Image dot in _dayDots.Values)
+            {
+                if (dot != null)
+                {
+                    dot.rectTransform.DOKill(complete: false);
+                }
+            }
+
             foreach (GameObject go in _axisSpawned)
             {
                 if (go != null)
@@ -764,6 +1383,7 @@ namespace GourmetProject.Game.UI.Hud
 
             _axisSpawned.Clear();
             _dayDots.Clear();
+            _elapsedRail = null;
         }
 
         private void ClearGroups()
@@ -779,6 +1399,7 @@ namespace GourmetProject.Game.UI.Hud
             _dayGroups.Clear();
             _nodeBubbles.Clear();
             _nodeDays.Clear();
+            _nodeActionIds.Clear();
             _previewBubble = null;
             _previewGroup = null;
             _hoveredPreviewDay = -1;
@@ -840,8 +1461,41 @@ namespace GourmetProject.Game.UI.Hud
             };
         }
 
+        private void OnDisable()
+        {
+            AbortPresentation(convergeToFinalState: true);
+        }
+
+        private void AbortPresentation(bool convergeToFinalState = false)
+        {
+            TimelineAxisViewState finalState = _activePresentation?.Cue?.TargetState;
+            if (convergeToFinalState)
+            {
+                foreach (PresentationWork work in _presentationQueue)
+                {
+                    finalState = work.Cue?.TargetState ?? finalState;
+                }
+            }
+
+            _presentationTween?.Kill(complete: false);
+            _presentationTween = null;
+            _presentationQueue.Clear();
+            _activePresentation = null;
+            _presentationBusy = false;
+            foreach (TimelineNodeBubbleView bubble in _nodeBubbles.Values)
+            {
+                bubble?.CompletePresentation();
+            }
+
+            if (convergeToFinalState && finalState != null)
+            {
+                BindState(finalState, _run, _onNodeCreated, animate: false);
+            }
+        }
+
         private void OnDestroy()
         {
+            AbortPresentation();
             ClearPreview(animate: false);
             ClearAxisChrome();
             ClearGroups();

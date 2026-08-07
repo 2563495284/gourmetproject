@@ -86,7 +86,9 @@ namespace GourmetProject.Game.UI.Widgets
         private const float TransformOutDuration = 0.2f;
         private const float TransformHoldDuration = 0.5f;
         private const float PrefabGridSize = 3f;
-        private static readonly Color TransformFlashColor = new(1.85f, 1.85f, 1.85f, 1f);
+        private static readonly int BrightnessId = Shader.PropertyToID("_Brightness");
+        private static readonly int BoingId = Shader.PropertyToID("_Boing");
+        private static readonly int EdgeClampPointId = Shader.PropertyToID("_EdgeClampPoint");
 
         [SerializeField] private RawImage _targetImage;
         [SerializeField] private AspectRatioFitter _aspectRatioFitter;
@@ -97,6 +99,8 @@ namespace GourmetProject.Game.UI.Widgets
 
         private RenderTexture _renderTexture;
         private Sequence _transformSequence;
+        private Material _transformMaterial;
+        private Material _materialBeforeTransform;
         private RectTransform _displaySizeTarget;
         private DishIconPreviewMode _mode;
         private DishDef _boundDish;
@@ -303,45 +307,61 @@ namespace GourmetProject.Game.UI.Widgets
                 return;
             }
 
-            Transform target = transform;
-            _targetImage.color = Color.white;
+            if (!BeginTransformMaterial())
+            {
+                Transform target = transform;
+                _transformSequence = DOTween.Sequence()
+                    .Append(target.DOPunchScale(
+                        Vector3.one * 0.08f,
+                        0.24f,
+                        vibrato: 6,
+                        elasticity: 0.6f))
+                    .InsertCallback(TransformInDuration, () => Bind(
+                        dish,
+                        deliciousnessOverride: deliciousnessOverride,
+                        flavorIds: flavorIds,
+                        mode: _mode))
+                    .AppendInterval(TransformHoldDuration)
+                    .SetUpdate(true)
+                    .SetLink(gameObject)
+                    .OnComplete(() =>
+                    {
+                        _transformSequence = null;
+                        onComplete?.Invoke();
+                    });
+                return;
+            }
+
+            ApplyTransformEffect(0f);
             _transformSequence = DOTween.Sequence()
-                .Append(target.DOPunchScale(Vector3.one * 0.08f, 0.24f, vibrato: 6, elasticity: 0.6f))
-                .InsertCallback(TransformInDuration, () =>
+                .Append(DOTween.To(
+                        () => 0f,
+                        ApplyTransformEffect,
+                        1f,
+                        TransformInDuration)
+                    .SetEase(Ease.OutQuad))
+                .AppendCallback(() =>
                 {
                     Bind(
                         dish,
                         deliciousnessOverride: deliciousnessOverride,
                         flavorIds: flavorIds,
                         mode: _mode);
-                    if (_targetImage != null)
-                    {
-                        _targetImage.color = TransformFlashColor;
-                    }
+                    ApplyTransformEffect(1f);
                 })
-                .Insert(
-                    TransformInDuration,
-                    DOVirtual.Float(
-                            0f,
-                            1f,
-                            TransformOutDuration,
-                            progress =>
-                            {
-                                if (_targetImage != null)
-                                {
-                                    _targetImage.color = Color.Lerp(
-                                        TransformFlashColor,
-                                        Color.white,
-                                        progress);
-                                }
-                            })
-                        .SetEase(Ease.InOutQuad))
+                .Append(DOTween.To(
+                        () => 1f,
+                        ApplyTransformEffect,
+                        0f,
+                        TransformOutDuration)
+                    .SetEase(Ease.InOutQuad))
                 .AppendInterval(TransformHoldDuration)
                 .SetUpdate(true)
                 .SetLink(gameObject)
                 .OnComplete(() =>
                 {
                     _transformSequence = null;
+                    EndTransformMaterial();
                     onComplete?.Invoke();
                 });
         }
@@ -368,17 +388,76 @@ namespace GourmetProject.Game.UI.Widgets
         {
             KillTransformSequence();
             ReleaseTexture();
+            if (_transformMaterial != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(_transformMaterial);
+                }
+                else
+                {
+                    DestroyImmediate(_transformMaterial);
+                }
+
+                _transformMaterial = null;
+            }
         }
 
         private void KillTransformSequence()
         {
-            if (_transformSequence == null)
+            if (_transformSequence != null)
+            {
+                _transformSequence.Kill();
+                _transformSequence = null;
+            }
+
+            EndTransformMaterial();
+        }
+
+        private bool BeginTransformMaterial()
+        {
+            Material source = SpriteRenderStyle.SpriteTransformMaterial;
+            if (_targetImage == null || source == null)
+            {
+                return false;
+            }
+
+            if (_transformMaterial == null)
+            {
+                _transformMaterial = new Material(source)
+                {
+                    name = $"{name}_SpriteTransform",
+                    hideFlags = HideFlags.DontSave,
+                };
+            }
+
+            _materialBeforeTransform = _targetImage.material;
+            _targetImage.material = _transformMaterial;
+            return true;
+        }
+
+        private void ApplyTransformEffect(float amount)
+        {
+            if (_transformMaterial == null)
             {
                 return;
             }
 
-            _transformSequence.Kill();
-            _transformSequence = null;
+            float t = Mathf.Clamp01(amount);
+            _transformMaterial.SetFloat(BrightnessId, t);
+            _transformMaterial.SetVector(BoingId, new Vector4(0.2f * t, -0.14f * t, 0f, 0f));
+            _transformMaterial.SetVector(EdgeClampPointId, new Vector4(0.24f, 0.24f, 0f, 0f));
+        }
+
+        private void EndTransformMaterial()
+        {
+            if (_targetImage != null && _targetImage.material == _transformMaterial)
+            {
+                _targetImage.material = _materialBeforeTransform;
+            }
+
+            _materialBeforeTransform = null;
+            ApplyTransformEffect(0f);
         }
 
         private void EnsureRefs()

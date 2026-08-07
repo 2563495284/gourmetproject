@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI;
 using GourmetProject.Game.UI.Common;
+using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
@@ -33,7 +35,21 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>时间轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
         void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick);
 
-        void ShowTimelineNodeSkipped(cfg.TimelineNode node, Action onDone);
+        void ShowTimelineNodeSkipped(
+            cfg.TimelineNode node,
+            TimelineMutationResult result,
+            Action onDone);
+
+        void PlayTimelineAdvance(
+            float fromDay,
+            float toDay,
+            string arrivingNodeId,
+            Action onDone);
+
+        void PlayTimelineNodeCue(
+            string nodeId,
+            TimelinePresentationCueKind kind,
+            Action onDone);
 
         void StartBattle(
             int requiredScore,
@@ -81,6 +97,9 @@ namespace GourmetProject.Game.Orchestration
         private Action _beforeBattleReward;
         private Action _afterShop;
         private bool _currentBattleIsBoss;
+        private bool _timelinePresentationActive;
+        private float _timelinePresentationCursor;
+        private float _timelinePresentationTarget;
 
         public WeekLoopController(GameRun run, IWeekLoopView view)
         {
@@ -293,9 +312,9 @@ namespace GourmetProject.Game.Orchestration
             return () =>
             {
                 _run.ClearPendingActionExecution();
-                ActionExecutor.Commit(_run, context);
+                float previousDay = ActionExecutor.Commit(_run, context);
                 RunPersistence.Save(_run);
-                ResolveNodes(PromptNextAction);
+                ResolveNodes(PromptNextAction, previousDay);
             };
         }
 
@@ -379,8 +398,7 @@ namespace GourmetProject.Game.Orchestration
                 return false;
             }
 
-            _afterNodes = onDone;
-            ProcessNextNode();
+            ResolveNodes(onDone);
             return true;
         }
 
@@ -389,10 +407,11 @@ namespace GourmetProject.Game.Orchestration
         {
             if (choice == null)
             {
+                float previousDay = _run.CurrentDay;
                 TimelineService.AdvanceDays(_run, 1f);
                 _run.AdvanceActionStep();
                 RunPersistence.Save(_run);
-                ResolveNodes(PromptNextAction);
+                ResolveNodes(PromptNextAction, previousDay);
                 return;
             }
 
@@ -426,8 +445,9 @@ namespace GourmetProject.Game.Orchestration
 
             void CommitAndResolveNodes()
             {
+                float previousDay = _run.CurrentDay;
                 Commit();
-                ResolveNodes(PromptNextAction);
+                ResolveNodes(PromptNextAction, previousDay);
             }
 
             DispatchOutcome(outcome, context, CommitAndResolveNodes);
@@ -849,9 +869,15 @@ namespace GourmetProject.Game.Orchestration
             return currentDay.ToString("0.0", CultureInfo.InvariantCulture);
         }
 
-        private void ResolveNodes(Action onDone)
+        private void ResolveNodes(Action onDone, float? presentationFromDay = null)
         {
             _afterNodes = onDone;
+            _timelinePresentationTarget = _run?.CurrentDay ?? 0f;
+            _timelinePresentationCursor = presentationFromDay.HasValue
+                ? System.Math.Max(0f, presentationFromDay.Value)
+                : _timelinePresentationTarget;
+            _timelinePresentationActive = presentationFromDay.HasValue
+                && _timelinePresentationTarget > _timelinePresentationCursor + TimelineMath.Epsilon;
             ProcessNextNode();
         }
 
@@ -862,10 +888,31 @@ namespace GourmetProject.Game.Orchestration
             cfg.TimelineNode node = TimelineService.GetNextDueUntriggeredNode(_run);
             if (node == null)
             {
-                RunPersistence.Save(_run);
-                Action cb = _afterNodes;
-                _afterNodes = null;
-                cb?.Invoke();
+                FinishTimelineNodeSequence();
+                return;
+            }
+
+            if (_timelinePresentationActive
+                && node.Day > _timelinePresentationCursor + TimelineMath.Epsilon)
+            {
+                float fromDay = _timelinePresentationCursor;
+                _timelinePresentationCursor = node.Day;
+                _view.PlayTimelineAdvance(
+                    fromDay,
+                    node.Day,
+                    node.Id,
+                    Once(() => ProcessArrivedNode(node)));
+                return;
+            }
+
+            ProcessArrivedNode(node);
+        }
+
+        private void ProcessArrivedNode(cfg.TimelineNode node)
+        {
+            if (node == null || TimelineService.GetNode(_run, node.Id) == null)
+            {
+                ProcessNextNode();
                 return;
             }
 
@@ -873,6 +920,26 @@ namespace GourmetProject.Game.Orchestration
             if (action == null)
             {
                 _run.MarkNodeTriggered(node.Id);
+                _view.PlayTimelineNodeCue(
+                    node.Id,
+                    TimelinePresentationCueKind.TriggerStart,
+                    Once(() => _view.PlayTimelineNodeCue(
+                        node.Id,
+                        TimelinePresentationCueKind.TriggerComplete,
+                        Once(ProcessNextNode))));
+                return;
+            }
+
+            _view.PlayTimelineNodeCue(
+                node.Id,
+                TimelinePresentationCueKind.TriggerStart,
+                Once(() => ProcessTriggeredNode(node, action)));
+        }
+
+        private void ProcessTriggeredNode(cfg.TimelineNode node, cfg.GameAction action)
+        {
+            if (node == null || action == null)
+            {
                 ProcessNextNode();
                 return;
             }
@@ -880,14 +947,47 @@ namespace GourmetProject.Game.Orchestration
             var itemRuntime = new ItemRuntime(_run);
             if (itemRuntime.TryConsumeTimelineSkip(action.Behavior))
             {
-                _run.MarkNodeTriggered(node.Id);
+                TimelineMutationResult mutation = PassiveTimelineMutationService.SkipNode(
+                    _run,
+                    "停业整顿",
+                    node.Id);
+                if (!mutation.Changed)
+                {
+                    _run.MarkNodeTriggered(node.Id);
+                    RunPersistence.Save(_run);
+                    ProcessNextNode();
+                    return;
+                }
+
                 RunPersistence.Save(_run);
-                _view.ShowTimelineNodeSkipped(node, ProcessNextNode);
+                _view.ShowTimelineNodeSkipped(node, mutation, ProcessNextNode);
                 return;
             }
 
             // 节点即「放置来源的原子行动」：先展示放置行动卡，玩家点击后走与普通行动完全相同的执行路径。
             _view.ShowTimelineNodeCard(node, InterestMaxGain(), () => ExecutePlacedAction(node, action));
+        }
+
+        private void FinishTimelineNodeSequence()
+        {
+            if (_timelinePresentationActive
+                && _timelinePresentationTarget > _timelinePresentationCursor + TimelineMath.Epsilon)
+            {
+                float fromDay = _timelinePresentationCursor;
+                _timelinePresentationCursor = _timelinePresentationTarget;
+                _view.PlayTimelineAdvance(
+                    fromDay,
+                    _timelinePresentationTarget,
+                    null,
+                    Once(FinishTimelineNodeSequence));
+                return;
+            }
+
+            _timelinePresentationActive = false;
+            RunPersistence.Save(_run);
+            Action cb = _afterNodes;
+            _afterNodes = null;
+            cb?.Invoke();
         }
 
         public bool ForceExecuteExtraTimelineNode(string nodeId)
@@ -946,26 +1046,37 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            var context = new ActionExecutionContext(action)
-            {
-                SourceKey = node.Id,
-                TargetScoreDayOverride = FoodService.IsBossAction(_run?.Tables, action) ? (float?)node.Day : null,
-                IsExtraTimelineExecution = true,
-            };
-            IRandomStream rng = GameApp.Random.DomainStream(
-                SeedDomains.Effect,
-                $"extra_node_w{_run.WeekIndex}_{node.Id}_{action.Id}");
-            ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
-            DispatchOutcome(
-                outcome,
-                context,
-                () =>
+            _view.PlayTimelineNodeCue(
+                node.Id,
+                TimelinePresentationCueKind.TriggerStart,
+                Once(() =>
                 {
-                    _run.ClearPendingActionExecution();
-                    RunPersistence.Save(_run);
-                    onDone?.Invoke();
-                },
-                () => _run.ClearPendingActionExecution());
+                    var context = new ActionExecutionContext(action)
+                    {
+                        SourceKey = node.Id,
+                        TargetScoreDayOverride = FoodService.IsBossAction(_run?.Tables, action)
+                            ? (float?)node.Day
+                            : null,
+                        IsExtraTimelineExecution = true,
+                    };
+                    IRandomStream rng = GameApp.Random.DomainStream(
+                        SeedDomains.Effect,
+                        $"extra_node_w{_run.WeekIndex}_{node.Id}_{action.Id}");
+                    ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
+                    DispatchOutcome(
+                        outcome,
+                        context,
+                        () =>
+                        {
+                            _run.ClearPendingActionExecution();
+                            RunPersistence.Save(_run);
+                            _view.PlayTimelineNodeCue(
+                                node.Id,
+                                TimelinePresentationCueKind.TriggerComplete,
+                                Once(onDone));
+                        },
+                        () => _run.ClearPendingActionExecution());
+                }));
         }
 
         /// <summary>放置行动执行：与普通行动共用 <see cref="ActionExecutor"/> 与 <see cref="DispatchOutcome"/>，节点不消耗天数/步数。</summary>
@@ -1029,7 +1140,10 @@ namespace GourmetProject.Game.Orchestration
 
             _run.MarkNodeTriggered(node.Id);
             RunPersistence.Save(_run);
-            onNodeDone?.Invoke();
+            _view.PlayTimelineNodeCue(
+                node.Id,
+                TimelinePresentationCueKind.TriggerComplete,
+                Once(onNodeDone));
         }
 
         private void ContinueRecoveredTimelineNodePass(ActionExecutionContext context)
@@ -1045,7 +1159,10 @@ namespace GourmetProject.Game.Orchestration
             if (context.IsExtraTimelineExecution)
             {
                 RunPersistence.Save(_run);
-                DrainPendingExtraNodes(PromptNextAction);
+                _view.PlayTimelineNodeCue(
+                    context.SourceKey,
+                    TimelinePresentationCueKind.TriggerComplete,
+                    Once(() => DrainPendingExtraNodes(PromptNextAction)));
                 return;
             }
 
@@ -1065,7 +1182,32 @@ namespace GourmetProject.Game.Orchestration
             }
 
             RunPersistence.Save(_run);
-            DrainPendingExtraNodes(PromptNextAction);
+            if (node != null)
+            {
+                _view.PlayTimelineNodeCue(
+                    node.Id,
+                    TimelinePresentationCueKind.TriggerComplete,
+                    Once(() => DrainPendingExtraNodes(PromptNextAction)));
+            }
+            else
+            {
+                DrainPendingExtraNodes(PromptNextAction);
+            }
+        }
+
+        private static Action Once(Action callback)
+        {
+            bool invoked = false;
+            return () =>
+            {
+                if (invoked)
+                {
+                    return;
+                }
+
+                invoked = true;
+                callback?.Invoke();
+            };
         }
 
         private int InterestMaxGain()

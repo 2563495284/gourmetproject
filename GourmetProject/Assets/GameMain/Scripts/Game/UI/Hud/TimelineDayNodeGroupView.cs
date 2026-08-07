@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -35,9 +36,11 @@ namespace GourmetProject.Game.UI.Hud
         private bool _destructiveTarget;
         private string _hoveredId;
         private Action<string> _onTarget;
+        private Tween _axisTween;
 
         public int Day { get; private set; }
         public int NodeCount => _entries.Count - (_entries.Exists(entry => entry.Preview) ? 1 : 0);
+        public bool IsAnimating => _axisTween?.IsActive() ?? false;
 
         public void Initialize(int day, float axisX)
         {
@@ -57,7 +60,44 @@ namespace GourmetProject.Game.UI.Hud
             _hitArea.raycastTarget = false;
         }
 
-        public void Add(string id, TimelineNodeBubbleView bubble, bool preview, bool animate)
+        public void SetAxisPosition(float axisX, bool animate, float speed = 1f)
+        {
+            if (_rect == null)
+            {
+                return;
+            }
+
+            axisX = Mathf.Clamp01(axisX);
+            _axisTween?.Kill();
+            if (!animate || !gameObject.activeInHierarchy)
+            {
+                _rect.anchorMin = new Vector2(axisX, _rect.anchorMin.y);
+                _rect.anchorMax = new Vector2(axisX, _rect.anchorMax.y);
+                return;
+            }
+
+            float start = _rect.anchorMin.x;
+            _axisTween = DOTween.To(
+                    () => start,
+                    value =>
+                    {
+                        _rect.anchorMin = new Vector2(value, _rect.anchorMin.y);
+                        _rect.anchorMax = new Vector2(value, _rect.anchorMax.y);
+                    },
+                    axisX,
+                    0.20f / Mathf.Max(0.05f, speed))
+                .SetEase(Ease.OutCubic)
+                .SetUpdate(true)
+                .SetTarget(_rect);
+        }
+
+        public void Add(
+            string id,
+            TimelineNodeBubbleView bubble,
+            bool preview,
+            bool animate,
+            bool preserveWorldPosition = false,
+            float speed = 1f)
         {
             if (bubble == null || string.IsNullOrEmpty(id))
             {
@@ -65,7 +105,7 @@ namespace GourmetProject.Game.UI.Hud
             }
 
             Remove(id, animate: false);
-            bubble.transform.SetParent(_rect, false);
+            bubble.transform.SetParent(_rect, preserveWorldPosition);
             bubble.gameObject.name = preview ? "NodeBubble_Preview" : $"NodeBubble_{id}";
             bubble.SetRaycastEnabled(!_nodeTargetMode && !preview);
             _entries.Add(new Entry
@@ -74,14 +114,36 @@ namespace GourmetProject.Game.UI.Hud
                 Bubble = bubble,
                 Preview = preview,
             });
-            Layout(animate);
-            if (animate)
+            Layout(animate, preserveWorldPosition ? id : null, speed);
+            if (animate && !preserveWorldPosition)
             {
-                bubble.PlayEnter();
+                bubble.PlayEnter(speed);
             }
         }
 
-        public void SetOrder(IReadOnlyList<string> orderedNodeIds, bool animate)
+        public bool Extract(
+            string id,
+            bool animate,
+            out TimelineNodeBubbleView bubble,
+            float speed = 1f)
+        {
+            int index = _entries.FindIndex(entry => entry.Id == id);
+            if (index < 0)
+            {
+                bubble = null;
+                return false;
+            }
+
+            bubble = _entries[index].Bubble;
+            _entries.RemoveAt(index);
+            Layout(animate, speed: speed);
+            return bubble != null;
+        }
+
+        public void SetOrder(
+            IReadOnlyList<string> orderedNodeIds,
+            bool animate,
+            float speed = 1f)
         {
             if (orderedNodeIds == null)
             {
@@ -105,7 +167,7 @@ namespace GourmetProject.Game.UI.Hud
                 int bi = order.TryGetValue(b.Id, out int bv) ? bv : int.MaxValue;
                 return ai != bi ? ai.CompareTo(bi) : string.CompareOrdinal(a.Id, b.Id);
             });
-            Layout(animate);
+            Layout(animate, speed: speed);
         }
 
         public bool Remove(string id, bool animate)
@@ -123,13 +185,21 @@ namespace GourmetProject.Game.UI.Hud
             {
                 if (animate && bubble.gameObject.activeInHierarchy)
                 {
-                    bubble.PlayExit(() =>
+                    Action destroy = () =>
                     {
                         if (bubble != null)
                         {
                             Destroy(bubble.gameObject);
                         }
-                    });
+                    };
+                    if (id == PreviewId)
+                    {
+                        bubble.PlayExit(destroy);
+                    }
+                    else
+                    {
+                        bubble.PlayRemove(destroy);
+                    }
                 }
                 else
                 {
@@ -207,7 +277,10 @@ namespace GourmetProject.Game.UI.Hud
             RestoreSiblingOrder();
         }
 
-        public void Layout(bool animate)
+        public void Layout(
+            bool animate,
+            string arcingNodeId = null,
+            float speed = 1f)
         {
             int count = _entries.Count;
             for (int i = 0; i < count; i++)
@@ -220,7 +293,13 @@ namespace GourmetProject.Game.UI.Hud
 
                 TimelineNodeFanPose pose = TimelineNodeFanLayout.Calculate(i, count);
                 _entries[i].Pose = pose;
-                bubble.SetLayout(_rect, pose.Position, pose.Angle, animate);
+                bubble.SetLayout(
+                    _rect,
+                    pose.Position,
+                    pose.Angle,
+                    animate,
+                    _entries[i].Id == arcingNodeId,
+                    speed);
                 bubble.transform.SetSiblingIndex(i);
             }
         }
@@ -329,6 +408,11 @@ namespace GourmetProject.Game.UI.Hud
                     _entries[i].Bubble.transform.SetSiblingIndex(i);
                 }
             }
+        }
+
+        private void OnDestroy()
+        {
+            _axisTween?.Kill();
         }
     }
 }

@@ -21,6 +21,7 @@ namespace GourmetProject.Game.UI
 
         // 玩法界面。
         public const string Battle = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
+        public const string TimelineLab = "Assets/GameMain/Content/Prefabs/UI/TimelinePresentationLabForm.prefab";
 
         // 时间轴节点 / 装饰品和消耗品 hover Tips（同为 View，配合 TipHoverTrigger 悬停显示）。
         public const string TimelineNodeTip = "Assets/GameMain/Content/Prefabs/UI/TipsView/TimelineNodeTipView.prefab";

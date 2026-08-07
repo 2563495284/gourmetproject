@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Game.UI.Widgets;
@@ -255,6 +256,117 @@ namespace GourmetProject.Game.UI.Meta
             return true;
         }
 
+        internal void PlayPassiveMutation(
+            RecipeMutationResult result,
+            IReadOnlyList<RecipeReadonlyDishEntry> afterEntries,
+            Action onComplete)
+        {
+            if (result == null || !result.HasChanges)
+            {
+                ApplyPassiveMutationEntries(afterEntries);
+                onComplete?.Invoke();
+                return;
+            }
+
+            var animations = new List<Action<Action>>();
+            foreach (RecipeMutationEntry entry in result.Entries)
+            {
+                RecipeEditDishView dish = FindDish(entry.BookIndex, entry.DishIndex);
+                if (dish == null || entry.After == null || string.IsNullOrEmpty(entry.After.DishId))
+                {
+                    continue;
+                }
+
+                if (entry.Before == null || string.IsNullOrEmpty(entry.Before.DishId))
+                {
+                    animations.Add(done => dish.PlayPassiveMutationAppear(done));
+                    continue;
+                }
+
+                DishDef def = Database?.GetDish(entry.After.DishId);
+                if (def != null)
+                {
+                    animations.Add(done => dish.PlayFlavorTransform(def, entry.After.FlavorIds, done));
+                }
+            }
+
+            if (animations.Count == 0)
+            {
+                ApplyPassiveMutationEntries(afterEntries);
+                onComplete?.Invoke();
+                return;
+            }
+
+            int remaining = animations.Count;
+            foreach (Action<Action> animation in animations)
+            {
+                animation(() =>
+                {
+                    remaining--;
+                    if (remaining == 0)
+                    {
+                        ApplyPassiveMutationEntries(afterEntries);
+                        onComplete?.Invoke();
+                    }
+                });
+            }
+        }
+
+        internal RecipeEditDishView CreatePassiveMutationPreview(
+            RectTransform parent,
+            GameRun run,
+            RecipeDishSnapshot snapshot,
+            int displayIndex)
+        {
+            if (parent == null
+                || run == null
+                || snapshot == null
+                || string.IsNullOrEmpty(snapshot.DishId)
+                || _dishPrefab == null)
+            {
+                return null;
+            }
+
+            DishDef def = run.Database?.GetDish(snapshot.DishId);
+            if (def == null)
+            {
+                return null;
+            }
+
+            var scoreSlot = new RecipeBookSlot(snapshot.DishId);
+            scoreSlot.RestoreScoreFlatBonus(snapshot.ScoreFlatBonus);
+            scoreSlot.RestoreScoreMultiplier(snapshot.ScoreMultiplier);
+
+            RecipeEditDishView dish = Instantiate(_dishPrefab, parent);
+            dish.gameObject.name = $"PassiveFlavorDish_{displayIndex + 1}";
+            dish.Bind(
+                def.Name,
+                def.Shape == null
+                    ? string.Empty
+                    : $"{def.Shape.Width}x{def.Shape.Height}",
+                0,
+                displayIndex,
+                false,
+                null,
+                def,
+                null,
+                null,
+                null,
+                null,
+                snapshot.FlavorIds,
+                DishIconPreviewMode.Warehouse,
+                null,
+                ResolveRecipeDishDisplayValue(def, scoreSlot));
+            return dish;
+        }
+
+        private void ApplyPassiveMutationEntries(IReadOnlyList<RecipeReadonlyDishEntry> entries)
+        {
+            _readonlyEntries = entries;
+            _readonlySlots = BuildReadonlySlots(entries);
+            RebuildWarehouseForCurrentState();
+        }
+
         private void EnsureWired()
         {
             if (_wired)
@@ -390,6 +502,10 @@ namespace GourmetProject.Game.UI.Meta
                 DishIconPreviewMode.Warehouse,
                 BattleStatusFor(bookIndex, dishIndex),
                 ResolveRecipeDishDisplayValue(def, slot));
+            if (ReadonlyEntryFor(bookIndex, dishIndex)?.InitiallyHidden == true)
+            {
+                dish.PreparePassiveMutationHidden();
+            }
             _spawnedDishes.Add(dish);
         }
 

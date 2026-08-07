@@ -18,15 +18,23 @@ namespace GourmetProject.Game.Meta.Passives
 
         protected void FinishRecipe(RecipeMutationResult result)
         {
+            if (result != null)
+            {
+                result.SourceItemId = ItemId;
+            }
+
             MarkIconUsed();
-            RunPersistence.Save(Run);
             PassiveMutationPresenter.ShowRecipe(Run, result);
         }
 
         protected void FinishCells(CellMutationResult result)
         {
+            if (result != null)
+            {
+                result.SourceItemId = ItemId;
+            }
+
             MarkIconUsed();
-            RunPersistence.Save(Run);
             PassiveMutationPresenter.ShowCells(Run, result);
         }
     }

@@ -49,7 +49,13 @@
 ## Forbidden Patterns
 
 <!-- Add patterns that should never appear in this project's codebase -->
-- [None configured yet — add as architectural decisions are made]
+- **Runtime-built visual UI hierarchies are forbidden.** User-facing uGUI structure, layout, text,
+  images, effects, and designer-tunable assets must live in a Scene or Prefab and be wired through
+  serialized references. Runtime code must not use `new GameObject` / `AddComponent` to reconstruct
+  a fixed visual hierarchy or silently repair a missing Prefab binding; missing required bindings
+  must fail clearly. Runtime instantiation is allowed only for genuinely data-driven repeated content
+  when cloning a serialized Prefab, and `new GameObject` remains allowed for non-visual services,
+  isolated render infrastructure, Editor builders, and tests.
 
 ## Allowed Libraries / Addons
 
