@@ -9,7 +9,7 @@ namespace GourmetProject.Game.Meta
 {
     /// <summary>
     /// 日常行动生成：行动数洗牌袋 → 逐卡抽类别 → 营业类别逐卡抽奖励 → 定位唯一行动。
-    /// 类别与奖励均按本周累计候选卡次数执行下保底、上保底和常规权重；重掷会生成全新行动组。
+    /// 类别与奖励均先按本周累计上限屏蔽，再执行下保底和常规权重；重掷会生成全新行动组。
     /// </summary>
     public static class ActionScheduleService
     {
@@ -56,7 +56,8 @@ namespace GourmetProject.Game.Meta
                     categoryRules,
                     rewardRules,
                     usedRewards,
-                    eventUsed);
+                    eventUsed,
+                    candidateIndex);
                 if (legalCategories.Count == 0)
                 {
                     LogConfigurationError(
@@ -97,7 +98,8 @@ namespace GourmetProject.Game.Meta
                         catalog,
                         categoryRule.Category,
                         rewardRules,
-                        usedRewards);
+                        usedRewards,
+                        candidateIndex);
                     cfg.ActionRewardRule rewardRule = PickRewardRule(
                         run,
                         legalRewards,
@@ -285,6 +287,7 @@ namespace GourmetProject.Game.Meta
                 }
 
                 ValidateWeights(rule.Id, rule.FallbackWeights);
+                ValidateGuaranteeBounds(rule.Id, rule.MinGuaranteeCounts, rule.MaxGuaranteeCounts);
                 result.Add(rule);
             }
 
@@ -314,6 +317,7 @@ namespace GourmetProject.Game.Meta
                 }
 
                 ValidateWeights(rule.Id, rule.FallbackWeights);
+                ValidateGuaranteeBounds(rule.Id, rule.MinGuaranteeCounts, rule.MaxGuaranteeCounts);
                 result.Add(rule);
             }
 
@@ -397,11 +401,17 @@ namespace GourmetProject.Game.Meta
             IReadOnlyList<cfg.ActionCategoryRule> categoryRules,
             IReadOnlyList<cfg.ActionRewardRule> rewardRules,
             IReadOnlyDictionary<cfg.ActionRandomCategory, HashSet<cfg.RewardKind>> usedRewards,
-            bool eventUsed)
+            bool eventUsed,
+            int candidateIndex)
         {
             var result = new List<cfg.ActionCategoryRule>();
             foreach (cfg.ActionCategoryRule rule in categoryRules)
             {
+                if (!IsBelowCategoryMaximum(run, rule, candidateIndex))
+                {
+                    continue;
+                }
+
                 if (rule.Category == cfg.ActionRandomCategory.Event)
                 {
                     if (!eventUsed
@@ -413,7 +423,13 @@ namespace GourmetProject.Game.Meta
                     continue;
                 }
 
-                if (FindLegalRewards(run, catalog, rule.Category, rewardRules, usedRewards).Count > 0)
+                if (FindLegalRewards(
+                        run,
+                        catalog,
+                        rule.Category,
+                        rewardRules,
+                        usedRewards,
+                        candidateIndex).Count > 0)
                 {
                     result.Add(rule);
                 }
@@ -427,13 +443,19 @@ namespace GourmetProject.Game.Meta
             ActionCatalog catalog,
             cfg.ActionRandomCategory category,
             IReadOnlyList<cfg.ActionRewardRule> rewardRules,
-            IReadOnlyDictionary<cfg.ActionRandomCategory, HashSet<cfg.RewardKind>> usedRewards)
+            IReadOnlyDictionary<cfg.ActionRandomCategory, HashSet<cfg.RewardKind>> usedRewards,
+            int candidateIndex)
         {
             var result = new List<cfg.ActionRewardRule>();
             usedRewards.TryGetValue(category, out HashSet<cfg.RewardKind> used);
             foreach (cfg.ActionRewardRule rule in rewardRules)
             {
                 if (used != null && used.Contains(rule.RewardKind))
+                {
+                    continue;
+                }
+
+                if (!IsBelowRewardMaximum(run, rule, candidateIndex))
                 {
                     continue;
                 }
@@ -455,19 +477,10 @@ namespace GourmetProject.Game.Meta
             int candidateIndex,
             IRandomStream rng)
         {
-            List<cfg.ActionCategoryRule> candidates = FindCategoryGuaranteeCandidates(
+            List<cfg.ActionCategoryRule> candidates = FindCategoryMinimumCandidates(
                 run,
                 legal,
-                candidateIndex,
-                useMinimum: true);
-            if (candidates.Count == 0)
-            {
-                candidates = FindCategoryGuaranteeCandidates(
-                    run,
-                    legal,
-                    candidateIndex,
-                    useMinimum: false);
-            }
+                candidateIndex);
             if (candidates.Count == 0)
             {
                 candidates.AddRange(legal);
@@ -489,19 +502,10 @@ namespace GourmetProject.Game.Meta
             int candidateIndex,
             IRandomStream rng)
         {
-            List<cfg.ActionRewardRule> candidates = FindRewardGuaranteeCandidates(
+            List<cfg.ActionRewardRule> candidates = FindRewardMinimumCandidates(
                 run,
                 legal,
-                candidateIndex,
-                useMinimum: true);
-            if (candidates.Count == 0)
-            {
-                candidates = FindRewardGuaranteeCandidates(
-                    run,
-                    legal,
-                    candidateIndex,
-                    useMinimum: false);
-            }
+                candidateIndex);
             if (candidates.Count == 0)
             {
                 candidates.AddRange(legal);
@@ -516,19 +520,19 @@ namespace GourmetProject.Game.Meta
             return PickWeighted(candidates, weights, rng, "reward_zero_weights");
         }
 
-        private static List<cfg.ActionCategoryRule> FindCategoryGuaranteeCandidates(
+        private static List<cfg.ActionCategoryRule> FindCategoryMinimumCandidates(
             GameRun run,
             IReadOnlyList<cfg.ActionCategoryRule> rules,
-            int candidateIndex,
-            bool useMinimum)
+            int candidateIndex)
         {
             var result = new List<cfg.ActionCategoryRule>();
             foreach (cfg.ActionCategoryRule rule in rules)
             {
-                IReadOnlyList<List<int>> bounds = useMinimum
-                    ? rule.MinGuaranteeCounts
-                    : rule.MaxGuaranteeCounts;
-                if (!TryGetGuarantee(bounds, run.WeekIndex, candidateIndex, out int target))
+                if (!TryGetGuarantee(
+                        rule.MinGuaranteeCounts,
+                        run.WeekIndex,
+                        candidateIndex,
+                        out int target))
                 {
                     continue;
                 }
@@ -543,19 +547,19 @@ namespace GourmetProject.Game.Meta
             return result;
         }
 
-        private static List<cfg.ActionRewardRule> FindRewardGuaranteeCandidates(
+        private static List<cfg.ActionRewardRule> FindRewardMinimumCandidates(
             GameRun run,
             IReadOnlyList<cfg.ActionRewardRule> rules,
-            int candidateIndex,
-            bool useMinimum)
+            int candidateIndex)
         {
             var result = new List<cfg.ActionRewardRule>();
             foreach (cfg.ActionRewardRule rule in rules)
             {
-                IReadOnlyList<List<int>> bounds = useMinimum
-                    ? rule.MinGuaranteeCounts
-                    : rule.MaxGuaranteeCounts;
-                if (TryGetGuarantee(bounds, run.WeekIndex, candidateIndex, out int target)
+                if (TryGetGuarantee(
+                        rule.MinGuaranteeCounts,
+                        run.WeekIndex,
+                        candidateIndex,
+                        out int target)
                     && run.GetActionRewardCount(rule.RewardKind) < target)
                 {
                     result.Add(rule);
@@ -563,6 +567,37 @@ namespace GourmetProject.Game.Meta
             }
 
             return result;
+        }
+
+        private static bool IsBelowCategoryMaximum(
+            GameRun run,
+            cfg.ActionCategoryRule rule,
+            int candidateIndex)
+        {
+            if (!TryGetGuarantee(
+                    rule.MaxGuaranteeCounts,
+                    run.WeekIndex,
+                    candidateIndex,
+                    out int maximum))
+            {
+                return true;
+            }
+
+            maximum = ApplyCategoryGuaranteeBonus(maximum, CategoryBonus(run, rule.Category));
+            return run.GetActionCategoryCount(rule.Category) < maximum;
+        }
+
+        private static bool IsBelowRewardMaximum(
+            GameRun run,
+            cfg.ActionRewardRule rule,
+            int candidateIndex)
+        {
+            return !TryGetGuarantee(
+                       rule.MaxGuaranteeCounts,
+                       run.WeekIndex,
+                       candidateIndex,
+                       out int maximum)
+                   || run.GetActionRewardCount(rule.RewardKind) < maximum;
         }
 
         internal static bool TryGetGuarantee(
@@ -760,6 +795,39 @@ namespace GourmetProject.Game.Meta
                     LogConfigurationError(
                         $"invalid_weight_{id}_{i}",
                         $"行动随机规则 {id} 的第 {i + 1} 周权重必须有限且非负。");
+                }
+            }
+        }
+
+        private static void ValidateGuaranteeBounds(
+            string id,
+            IReadOnlyList<List<int>> minimums,
+            IReadOnlyList<List<int>> maximums)
+        {
+            int weekCount = Math.Max(minimums?.Count ?? 0, maximums?.Count ?? 0);
+            for (int week = 0; week < weekCount; week++)
+            {
+                IReadOnlyList<int> minRow = minimums != null && week < minimums.Count
+                    ? minimums[week]
+                    : null;
+                IReadOnlyList<int> maxRow = maximums != null && week < maximums.Count
+                    ? maximums[week]
+                    : null;
+                int candidateCount = Math.Max(minRow?.Count ?? 0, maxRow?.Count ?? 0);
+                for (int candidate = 0; candidate < candidateCount; candidate++)
+                {
+                    int minimum = minRow != null && candidate < minRow.Count
+                        ? minRow[candidate]
+                        : -1;
+                    int maximum = maxRow != null && candidate < maxRow.Count
+                        ? maxRow[candidate]
+                        : -1;
+                    if (minimum >= 0 && maximum >= 0 && minimum > maximum)
+                    {
+                        LogConfigurationError(
+                            $"invalid_guarantee_bounds_{id}_{week}_{candidate}",
+                            $"行动随机规则 {id} 第 {week + 1} 周第 {candidate + 1} 张候选卡的下保底 {minimum} 不能大于上限 {maximum}。");
+                    }
                 }
             }
         }

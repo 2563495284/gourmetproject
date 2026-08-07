@@ -59,7 +59,7 @@
 <body>
   <header>
     <h1>日常行动随机 GM</h1>
-    <p class="hint">按新规则展示行动数洗牌袋、逐卡类别/奖励保底阶段和本周累计次数；事件奖励固定为“未知”。</p>
+    <p class="hint">按新规则展示行动数洗牌袋、逐卡类别/奖励上下限和本周累计次数；上保底达到后屏蔽，事件奖励固定为“未知”。</p>
   </header>
   <main>
     <section class="toolbar">
@@ -69,7 +69,7 @@
       <label>火热类别增幅（%）<input id="hotBonus" type="number" step="1" value="0"></label>
       <label>批量局数<select id="batchCount"><option>1000</option><option selected>10000</option><option>100000</option></select></label>
       <button id="reload" class="secondary">重新读取配置</button>
-      <label class="wide">自动读取失败时选择 Config 目录<input id="files" type="file" multiple webkitdirectory></label>
+      <label class="wide">自动读取失败时选择 GourmetProject/Assets/StreamingAssets/Config 目录<input id="files" type="file" multiple webkitdirectory></label>
     </section>
     <section id="configStatus" class="status">正在读取配置……</section>
     <div class="tabs">
@@ -77,7 +77,7 @@
       <button id="batchTab">批量分布</button>
     </div>
     <section id="singlePanel" class="panel">
-      <div class="panel-head"><div><h2>逐组明细</h2><small>组内屏蔽先于保底；重跑等同新开局。</small></div><button id="runSingle">按当前参数重跑</button></div>
+      <div class="panel-head"><div><h2>逐组明细</h2><small>组内重复与累计上限屏蔽先于下保底；重跑等同新开局。</small></div><button id="runSingle">按当前参数重跑</button></div>
       <div id="singleStatus" class="status">配置加载后自动生成。</div>
       <div id="singleOutput"></div>
     </section>
@@ -91,6 +91,7 @@
   <script>
   "use strict";
   const DIR="../../Assets/StreamingAssets/Config/";
+  const CONFIG_HINT="GourmetProject/Assets/StreamingAssets/Config";
   const FILES=["tbaction","tbfood","tbactionchoicecountrule","tbactioncategoryrule","tbactionrewardrule"];
   const CATEGORY={Daily:1,Hot:2,Event:3};
   const CATEGORY_NAME={1:"日常",2:"火热",3:"事件"};
@@ -139,18 +140,19 @@
   function validate(t){
     diagnostics=[];
     if(t.eventActions.length!==1)addDiag(`事件随机池需要 1 个行动壳，当前 ${t.eventActions.length} 个。`);
-    const cats=new Set();for(const rule of t.categoryRules){if(cats.has(+rule.category))addDiag(`类别规则重复：${rule.category}`);cats.add(+rule.category);validateWeights(rule);}
-    const rewards=new Set();for(const rule of t.rewardRules){if(rewards.has(+rule.rewardKind))addDiag(`奖励规则重复：${rule.rewardKind}`);rewards.add(+rule.rewardKind);validateWeights(rule);}
+    const cats=new Set();for(const rule of t.categoryRules){if(cats.has(+rule.category))addDiag(`类别规则重复：${rule.category}`);cats.add(+rule.category);validateWeights(rule);validateGuarantees(rule);}
+    const rewards=new Set();for(const rule of t.rewardRules){if(rewards.has(+rule.rewardKind))addDiag(`奖励规则重复：${rule.rewardKind}`);rewards.add(+rule.rewardKind);validateWeights(rule);validateGuarantees(rule);}
     const counts=new Set();for(const rule of t.countRules){if(counts.has(+rule.choiceCount))addDiag(`行动数规则重复：${rule.choiceCount}`);counts.add(+rule.choiceCount);if(![2,3].includes(+rule.choiceCount))addDiag(`行动数只能为 2/3：${rule.choiceCount}`);if((rule.weeklyWeights||[]).some(v=>!Number.isInteger(+v)||+v<0))addDiag(`行动数票数必须为非负整数：${rule.id}`);}
     for(const category of [CATEGORY.Daily,CATEGORY.Hot])for(const reward of rewards){const n=t.mappingCount.get(`${category}:${reward}`)||0;if(n!==1)addDiag(`${CATEGORY_NAME[category]} + ${REWARD_NAME[reward]||reward} 映射了 ${n} 个行动。`);}
   }
   function validateWeights(rule){for(const value of rule.fallbackWeights||[])if(!Number.isFinite(+value)||+value<0)addDiag(`${rule.id} 存在非法权重 ${value}`);}
+  function validateGuarantees(rule){const mins=rule.minGuaranteeCounts||[],maxs=rule.maxGuaranteeCounts||[],weeks=Math.max(mins.length,maxs.length);for(let week=0;week<weeks;week++){const minRow=mins[week]||[],maxRow=maxs[week]||[],cards=Math.max(minRow.length,maxRow.length);for(let card=0;card<cards;card++){const min=Number(minRow[card]),max=Number(maxRow[card]);if(Number.isFinite(min)&&min>=0&&Number.isFinite(max)&&max>=0&&min>max)addDiag(`${rule.id} 第 ${week+1} 周第 ${card+1} 张：下保底 ${min} 大于上限 ${max}`);}}}
   function newWeekState(week){return{week,bag:[],candidate:0,serial:0,categoryCounts:new Map(),rewardCounts:new Map()};}
   function refillBag(state,rng){state.bag=[];for(const rule of tables.countRules){const tickets=weekly(rule.weeklyWeights,state.week,0);if(!Number.isInteger(tickets)||tickets<0)continue;for(let i=0;i<tickets;i++)state.bag.push(+rule.choiceCount);}rng.shuffle(state.bag);}
-  function legalRewards(category,used){return tables.rewardRules.filter(rule=>!used.has(+rule.rewardKind)&&(tables.mappingCount.get(`${category}:${+rule.rewardKind}`)||0)===1);}
+  function belowMaximum(rule,count,week,index,bonus=0){const maximum=guarantee(rule,"maxGuaranteeCounts",week,index,bonus);return maximum===null||count<maximum;}
+  function legalRewards(category,used,state){return tables.rewardRules.filter(rule=>!used.has(+rule.rewardKind)&&belowMaximum(rule,state.rewardCounts.get(+rule.rewardKind)||0,state.week,state.candidate)&&(tables.mappingCount.get(`${category}:${+rule.rewardKind}`)||0)===1);}
   function choose(rules,countFn,week,index,rng,bonusFn=()=>0){
     let candidates=rules.filter(rule=>{const target=guarantee(rule,"minGuaranteeCounts",week,index,bonusFn(rule));return target!==null&&countFn(rule)<target;});let phase="下保底";
-    if(!candidates.length){candidates=rules.filter(rule=>{const target=guarantee(rule,"maxGuaranteeCounts",week,index,bonusFn(rule));return target!==null&&countFn(rule)<target;});phase="上保底";}
     if(!candidates.length){candidates=[...rules];phase="自由权重";}
     if(!candidates.length)return null;
     const weights=candidates.map(rule=>Math.max(0,weekly(rule.fallbackWeights,week,0))*Math.max(0,1+bonusFn(rule)));
@@ -162,11 +164,11 @@
     const bagBefore=[...state.bag],choiceCount=state.bag.pop();state.serial++;
     const cards=[],usedRewards=new Map([[CATEGORY.Daily,new Set()],[CATEGORY.Hot,new Set()]]);let eventUsed=false;
     for(let slot=0;slot<choiceCount;slot++){
-      const legalCategories=tables.categoryRules.filter(rule=>{const c=+rule.category;if(c===CATEGORY.Event)return !eventUsed&&tables.eventActions.length===1;return legalRewards(c,usedRewards.get(c)||new Set()).length>0;});
+      const legalCategories=tables.categoryRules.filter(rule=>{const c=+rule.category;if(!belowMaximum(rule,state.categoryCounts.get(c)||0,state.week,state.candidate,bonusFor(c)))return false;if(c===CATEGORY.Event)return !eventUsed&&tables.eventActions.length===1;return legalRewards(c,usedRewards.get(c)||new Set(),state).length>0;});
       const categoryPick=choose(legalCategories,r=>state.categoryCounts.get(+r.category)||0,state.week,state.candidate,rng,r=>bonusFor(+r.category));if(!categoryPick)break;
       const category=+categoryPick.selected.category,categoryBefore=state.categoryCounts.get(category)||0;let rewardPick=null,reward=null,action=null,rewardBefore=null;
       if(category===CATEGORY.Event){eventUsed=true;action=tables.eventActions[0];}
-      else{const legal=legalRewards(category,usedRewards.get(category));rewardPick=choose(legal,r=>state.rewardCounts.get(+r.rewardKind)||0,state.week,state.candidate,rng);if(!rewardPick)break;reward=+rewardPick.selected.rewardKind;rewardBefore=state.rewardCounts.get(reward)||0;usedRewards.get(category).add(reward);action=tables.actionMap.get(`${category}:${reward}`);}
+      else{const legal=legalRewards(category,usedRewards.get(category),state);rewardPick=choose(legal,r=>state.rewardCounts.get(+r.rewardKind)||0,state.week,state.candidate,rng);if(!rewardPick)break;reward=+rewardPick.selected.rewardKind;rewardBefore=state.rewardCounts.get(reward)||0;usedRewards.get(category).add(reward);action=tables.actionMap.get(`${category}:${reward}`);}
       if(!action)break;
       cards.push({slot:slot+1,index:state.candidate+1,category,categoryBefore,categoryPick,reward,rewardBefore,rewardPick,action});
       state.categoryCounts.set(category,categoryBefore+1);if(reward!==null)state.rewardCounts.set(reward,rewardBefore+1);state.candidate++;
@@ -188,7 +190,9 @@
   async function runBatch(){if(!tables)return;const runs=Math.max(1,+$("batchCount").value||1000),groups=Math.max(1,Math.min(200,+$("groupsPerWeek").value||10)),stats=emptyStats(),masterSeed=$("seed").value;$("runBatch").disabled=true;for(let runIndex=0;runIndex<runs;runIndex++){const weeks=simulate(`${masterSeed}#${runIndex}`,groups,true);weeks.forEach((week,i)=>{const st=stats[i];for(const group of week.groups){st.groups++;inc(st.counts,group.choiceCount);for(const card of group.cards){st.cards++;inc(st.categories,card.category);if(card.reward!==null)inc(st.rewards,card.reward);}}});if(runIndex%250===0){$("progress").style.width=`${100*runIndex/runs}%`;$("batchStatus").textContent=`已完成 ${runIndex.toLocaleString()} / ${runs.toLocaleString()} 局`;await new Promise(resolve=>setTimeout(resolve,0));}}$("progress").style.width="100%";$("batchStatus").className="status ok";$("batchStatus").textContent=`完成 ${runs.toLocaleString()} 局。`;$("batchOutput").innerHTML=stats.map((s,i)=>`<section class="week"><h3>第 ${i+1} 周</h3><div class="summary"><div class="card"><strong>${s.groups.toLocaleString()}</strong><small>行动组</small></div><div class="card"><strong>${s.cards.toLocaleString()}</strong><small>候选卡</small></div></div><h3>行动数</h3>${bars(s.counts,{2:"2 张",3:"3 张"},s.groups)}<h3 style="margin-top:14px">类别</h3>${bars(s.categories,CATEGORY_NAME,s.cards)}<h3 style="margin-top:14px">五种营业奖励</h3>${bars(s.rewards,REWARD_NAME,Array.from(s.rewards.values()).reduce((a,b)=>a+b,0))}</section>`).join("");$("runBatch").disabled=false;}
   async function loadFetch(){const raw={};for(const name of FILES){const response=await fetch(`${DIR}${name}.json`,{cache:"no-store"});if(!response.ok)throw new Error(`${name}.json: HTTP ${response.status}`);raw[name]=await response.json();}tables=buildTables(raw);loaded();}
   function loaded(){const kind=diagnostics.length?"":" ok";$("configStatus").className=`status${kind}`;$("configStatus").innerHTML=`已读取 ${FILES.length} 张表。行动映射 ${tables.actionMap.size} 个，事件壳 ${tables.eventActions.length} 个。${diagnostics.length?` 有 ${diagnostics.length} 条配置诊断。`:" 配置校验通过。"}`;renderSingle();}
-  async function loadFiles(fileList){try{const raw={};for(const file of fileList){const base=file.name.replace(/\.json$/i,"");if(FILES.includes(base))raw[base]=JSON.parse(await file.text());}const missing=FILES.filter(name=>!raw[name]);if(missing.length)throw new Error(`缺少：${missing.join(", ")}.json`);tables=buildTables(raw);loaded();}catch(error){$("configStatus").className="status error";$("configStatus").textContent=error.message;}}
+  function selectedFilePath(file){return String(file?.webkitRelativePath||file?.name||"").replaceAll("\\","/");}
+  function selectedFileKey(file){const leaf=selectedFilePath(file).split("/").pop().trim().toLowerCase();return leaf.endsWith(".json")?leaf.slice(0,-5):"";}
+  async function loadFiles(fileList){try{const files=Array.from(fileList||[]),raw={},matched=[];for(const file of files){const key=selectedFileKey(file);if(!FILES.includes(key))continue;raw[key]=JSON.parse(await file.text());matched.push(selectedFilePath(file));}const missing=FILES.filter(name=>!raw[name]);if(missing.length){const examples=files.slice(0,5).map(selectedFilePath).filter(Boolean).join("、")||"无";throw new Error(`所选目录不正确：扫描 ${files.length} 个文件，只识别到 ${matched.length} 张目标表。缺少 ${missing.map(name=>`${name}.json`).join("、")}。请选择 ${CONFIG_HINT}；当前文件示例：${examples}`);}tables=buildTables(raw);loaded();}catch(error){$("configStatus").className="status error";$("configStatus").textContent=error.message;}}
   function selectTab(single){$("singlePanel").classList.toggle("hidden",!single);$("batchPanel").classList.toggle("hidden",single);$("singleTab").classList.toggle("active",single);$("batchTab").classList.toggle("active",!single);}
   $("singleTab").onclick=()=>selectTab(true);$("batchTab").onclick=()=>selectTab(false);$("runSingle").onclick=renderSingle;$("runBatch").onclick=runBatch;$("reload").onclick=()=>loadFetch().catch(error=>{$("configStatus").className="status error";$("configStatus").textContent=`自动读取失败：${error.message}`;});$("files").onchange=e=>loadFiles(e.target.files);loadFetch().catch(error=>{$("configStatus").className="status error";$("configStatus").textContent=`自动读取失败：${error.message}。请手动选择 Config 目录。`;});
   </script>

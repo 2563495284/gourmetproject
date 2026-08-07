@@ -29,22 +29,28 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void ChoiceCountBag_UsesTwoTwoThreeTickets_AndReloadsAfterEmpty()
+        public void ChoiceCountBag_UsesConfiguredTickets_AndReloadsAfterEmpty()
         {
             GameRun run = CreateRun();
             var rng = new Xoshiro256SS(101UL);
+            int[] expectedBag = _tables.TbActionChoiceCountRule.DataList
+                .SelectMany(rule => Enumerable.Repeat(rule.ChoiceCount, rule.WeeklyWeights[0]))
+                .OrderBy(count => count)
+                .ToArray();
 
-            int[] firstBag = Enumerable.Range(0, 3)
+            int[] firstBag = Enumerable.Range(0, expectedBag.Length)
                 .Select(_ => ActionScheduleService.GenerateChoices(run, rng).Count)
                 .OrderBy(count => count)
                 .ToArray();
 
-            Assert.That(firstBag, Is.EqualTo(new[] { 2, 2, 3 }));
+            Assert.That(firstBag, Is.EqualTo(expectedBag));
             Assert.That(run.ToSaveData().ActionRandomState.RemainingChoiceCounts, Is.Empty);
 
-            List<ActionChoice> fourth = ActionScheduleService.GenerateChoices(run, rng);
-            Assert.That(fourth.Count, Is.EqualTo(2).Or.EqualTo(3));
-            Assert.That(run.ToSaveData().ActionRandomState.RemainingChoiceCounts, Has.Count.EqualTo(2));
+            List<ActionChoice> next = ActionScheduleService.GenerateChoices(run, rng);
+            Assert.That(expectedBag, Does.Contain(next.Count));
+            Assert.That(
+                run.ToSaveData().ActionRandomState.RemainingChoiceCounts,
+                Has.Count.EqualTo(expectedBag.Length - 1));
         }
 
         [Test]
@@ -56,10 +62,12 @@ namespace GourmetProject.Tests.EditMode
             List<ActionChoice> first = ActionScheduleService.GenerateChoices(run, rng);
             List<ActionChoice> rerolled = ActionScheduleService.RerollChoices(run, rng);
             ActionRandomStateSaveData state = run.ToSaveData().ActionRandomState;
+            int ticketCount = _tables.TbActionChoiceCountRule.DataList
+                .Sum(rule => rule.WeeklyWeights[0]);
 
             Assert.That(state.GroupSerial, Is.EqualTo(2));
             Assert.That(state.CandidateIndex, Is.EqualTo(first.Count + rerolled.Count));
-            Assert.That(state.RemainingChoiceCounts, Has.Count.EqualTo(1));
+            Assert.That(state.RemainingChoiceCounts, Has.Count.EqualTo(ticketCount - 2));
             Assert.That(rerolled.All(choice => choice.ActionGroupId == "action_w1_g2"), Is.True);
         }
 
@@ -177,18 +185,16 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void MinimumGuarantee_PrecedesMaximum_ForCategoryAndReward()
+        public void MinimumGuarantee_ForcesCategoryAndRewardWithinUpperLimits()
         {
             cfg.Tables tables = CreateTables((name, root) =>
             {
                 if (name == "tbactioncategoryrule")
                 {
                     root[0]["minGuaranteeCounts"] = JSON.Parse("[[1],[-1],[-1],[-1]]");
-                    root[1]["maxGuaranteeCounts"] = JSON.Parse("[[1],[-1],[-1],[-1]]");
                 }
                 else if (name == "tbactionrewardrule")
                 {
-                    root[0]["maxGuaranteeCounts"] = JSON.Parse("[[1],[-1],[-1],[-1]]");
                     root[2]["minGuaranteeCounts"] = JSON.Parse("[[1],[-1],[-1],[-1]]");
                 }
             });
@@ -199,6 +205,70 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(TryResolveFoodChoice(tables, first, out cfg.ActionRandomCategory category, out cfg.RewardKind reward), Is.True);
             Assert.That(category, Is.EqualTo(cfg.ActionRandomCategory.Daily));
             Assert.That(reward, Is.EqualTo(cfg.RewardKind.PassiveItemChoice));
+        }
+
+        [Test]
+        public void MaximumGuarantee_MasksCategoryAndRewardAtZeroLimit()
+        {
+            cfg.Tables tables = CreateTables((name, root) =>
+            {
+                if (name == "tbactioncategoryrule")
+                {
+                    root[0]["fallbackWeights"] = JSON.Parse("[100]");
+                    root[0]["maxGuaranteeCounts"] = JSON.Parse("[[0]]");
+                    root[1]["fallbackWeights"] = JSON.Parse("[1]");
+                    root[2]["fallbackWeights"] = JSON.Parse("[0]");
+                }
+                else if (name == "tbactionrewardrule")
+                {
+                    root[0]["fallbackWeights"] = JSON.Parse("[100]");
+                    root[0]["maxGuaranteeCounts"] = JSON.Parse("[[0]]");
+                    root[1]["fallbackWeights"] = JSON.Parse("[0]");
+                    root[2]["fallbackWeights"] = JSON.Parse("[1]");
+                    root[3]["fallbackWeights"] = JSON.Parse("[0]");
+                    root[4]["fallbackWeights"] = JSON.Parse("[0]");
+                }
+            });
+            GameRun run = CreateRun(tables);
+
+            ActionChoice first = ActionScheduleService.GenerateChoices(run, new Xoshiro256SS(818UL))[0];
+
+            Assert.That(TryResolveFoodChoice(tables, first, out cfg.ActionRandomCategory category, out cfg.RewardKind reward), Is.True);
+            Assert.That(category, Is.EqualTo(cfg.ActionRandomCategory.Hot));
+            Assert.That(reward, Is.EqualTo(cfg.RewardKind.PassiveItemChoice));
+        }
+
+        [Test]
+        public void MaximumGuarantee_AllowsUntilLimitThenMasksLaterGroups()
+        {
+            cfg.Tables tables = CreateTables((name, root) =>
+            {
+                if (name == "tbactionchoicecountrule")
+                {
+                    root[0]["weeklyWeights"] = JSON.Parse("[1]");
+                    root[1]["weeklyWeights"] = JSON.Parse("[0]");
+                }
+                else if (name == "tbactioncategoryrule")
+                {
+                    root[0]["fallbackWeights"] = JSON.Parse("[1]");
+                    root[1]["fallbackWeights"] = JSON.Parse("[0]");
+                    root[2]["fallbackWeights"] = JSON.Parse("[0]");
+                }
+                else if (name == "tbactionrewardrule")
+                {
+                    root[2]["fallbackWeights"] = JSON.Parse("[1]");
+                    root[2]["minGuaranteeCounts"] = JSON.Parse("[[1,1,1]]");
+                    root[2]["maxGuaranteeCounts"] = JSON.Parse("[[1,1,1]]");
+                }
+            });
+            GameRun run = CreateRun(tables);
+            var rng = new Xoshiro256SS(828UL);
+
+            List<ActionChoice> firstGroup = ActionScheduleService.GenerateChoices(run, rng);
+            List<ActionChoice> secondGroup = ActionScheduleService.GenerateChoices(run, rng);
+
+            Assert.That(ResolveReward(tables, firstGroup[0]), Is.EqualTo(cfg.RewardKind.PassiveItemChoice));
+            Assert.That(ResolveReward(tables, secondGroup[0]), Is.Not.EqualTo(cfg.RewardKind.PassiveItemChoice));
         }
 
         [Test]
