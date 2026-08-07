@@ -78,9 +78,7 @@ namespace GourmetProject.Game.Meta
         public int HighestCurrentDay;
         public int HighestRunActionStepIndex;
         public int TotalBossDefeats;
-        /// <summary>
-        /// 旧版开场漫画完成标记，仅用于迁移到应用级 PlayerPrefs；新代码不再写入此字段。
-        /// </summary>
+        /// <summary>旧版开场漫画完成标记，仅用于迁移到总档的 GuideProgress 分区。</summary>
         public int OpeningComicCompletedVersion;
         public List<string> DefeatedBossIds = new List<string>();
         public List<string> SeenEventIds = new List<string>();

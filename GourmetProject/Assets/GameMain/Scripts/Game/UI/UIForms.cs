@@ -1,3 +1,5 @@
+using GourmetProject.Game.Save;
+
 namespace GourmetProject.Game.UI
 {
     /// <summary>
@@ -30,7 +32,7 @@ namespace GourmetProject.Game.UI
         public const string Result = "Assets/GameMain/Content/Prefabs/UI/ResultForm.prefab";
         public const string HeartBreak = "Assets/GameMain/Content/Prefabs/UI/HeartBreakForm.prefab";
 
-        // 主存档槽位：用于判断“开始游戏 / 继续游戏”。
-        public const string GameSaveSlot = "slot0";
+        // 玩家总档槽位。保留此别名供旧调用兼容；新持久化代码统一经 GameSavePersistence 访问。
+        public const string GameSaveSlot = GameSavePersistence.Slot;
     }
 }

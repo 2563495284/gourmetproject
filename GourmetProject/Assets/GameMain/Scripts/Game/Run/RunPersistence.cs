@@ -1,20 +1,15 @@
-using GourmetProject.Game.UI;
-using GourmetProject.Game.UI.Battle;
-using GourmetProject.Game.UI.Common;
-using GourmetProject.Game.UI.Menu;
-using GourmetProject.Game.UI.Meta;
-using GourmetProject.Game.UI.Widgets;
+using GourmetProject.Core.Save;
+using GourmetProject.Game.Adapter;
+using GourmetProject.Game.Save;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Runtime;
 using Log = GourmetProject.Core.Diagnostics.Log;
-using GourmetProject.Game.Adapter;
-using GourmetProject.Game.Meta;
 
 namespace GourmetProject.Game.Run
 {
     /// <summary>
     /// 运行存档读写：把 <see cref="GameRun"/> 与存档槽位、随机种子初始化串起来。
-    /// 存档槽位沿用 <see cref="UIForms.GameSaveSlot"/>，与经营方向选择界面的存档入口判定一致。
+    /// 单局数据是玩家总档中的一个可清空分区。
     /// </summary>
     public static class RunPersistence
     {
@@ -26,13 +21,8 @@ namespace GourmetProject.Game.Run
         {
             get
             {
-                if (!GameApp.Save.Has(UIForms.GameSaveSlot))
-                {
-                    return false;
-                }
-
-                return GameApp.Save.TryLoad(UIForms.GameSaveSlot, out RunSaveData data)
-                    && data != null
+                RunSaveData data = GameSavePersistence.Load().Run;
+                return data != null
                     && IsActionRandomRuleVersionCompatible(data.ActionRandomRuleVersion);
             }
         }
@@ -47,7 +37,9 @@ namespace GourmetProject.Game.Run
             RunSaveData data = run.ToSaveData();
             data.ActionRandomRuleVersion = CurrentActionRandomRuleVersion;
             data.RandomSnapshot = GameApp.Random.Capture();
-            GameApp.Save.Save(UIForms.GameSaveSlot, data);
+            GameSaveData root = GameSavePersistence.Load();
+            root.Run = data;
+            GameSavePersistence.Save(root);
             Log.Info($"Run saved. week={run.WeekIndex}, gold={run.Gold}.", Tag);
         }
 
@@ -59,13 +51,26 @@ namespace GourmetProject.Game.Run
 
         public static void Delete()
         {
-            GameApp.Save.Delete(UIForms.GameSaveSlot);
+            Delete(GameApp.Save);
+        }
+
+        internal static void Delete(ISaveService save)
+        {
+            if (save == null)
+            {
+                return;
+            }
+
+            GameSaveData root = GameSavePersistence.Load(save);
+            root.Run = null;
+            GameSavePersistence.Save(save, root);
         }
 
         /// <summary>读取存档并重建运行（同时按种子初始化随机）。失败返回 null。</summary>
         public static GameRun TryLoad()
         {
-            if (!GameApp.Save.TryLoad(UIForms.GameSaveSlot, out RunSaveData data) || data == null)
+            RunSaveData data = GameSavePersistence.Load().Run;
+            if (data == null)
             {
                 return null;
             }
