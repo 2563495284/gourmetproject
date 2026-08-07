@@ -88,10 +88,6 @@ public partial class TbGameBase
     /// </summary>
      public float ShopPriceFluctuationPct => _data.ShopPriceFluctuationPct;
     /// <summary>
-    /// 行动随机候选数量
-    /// </summary>
-     public int ActionChoiceCount => _data.ActionChoiceCount;
-    /// <summary>
     /// 隐藏分距离加权下限（食物/装饰品和消耗品/碎片随机池共用）
     /// </summary>
      public int HiddenScoreDistanceFloor => _data.HiddenScoreDistanceFloor;

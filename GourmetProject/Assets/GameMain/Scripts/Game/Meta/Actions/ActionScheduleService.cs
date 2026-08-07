@@ -3,20 +3,21 @@ using System.Collections.Generic;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Run;
 using GourmetProject.Runtime;
+using Log = GourmetProject.Core.Diagnostics.Log;
 
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 整局行动组序列（大组）与本次 n 选一（大组→小组）生成。
-    /// - 大组间：逐行动检查本周累计次数。先从未达到 minGuaranteeCounts 的大组中按当周权重抽取；
-    ///   全部达到下限后，再从未达到 maxGuaranteeCounts 的大组中抽取；均无候选时完全按权重放回随机。
-    /// - 上下限按「周 → 周内行动序号」配置，未配置、负数或越界均表示不限制；累计次数每周独立。
-    /// - 大组→小组：按 <see cref="cfg.ActionSmallGroup.Weight"/> 选 1 个小组。
-    /// - 小组：固定成员，经可用性过滤后即本次 n 选一。
+    /// 日常行动生成：行动数洗牌袋 → 逐卡抽类别 → 营业类别逐卡抽奖励 → 定位唯一行动。
+    /// 类别与奖励均按本周累计候选卡次数执行下保底、上保底和常规权重；重掷会生成全新行动组。
     /// </summary>
     public static class ActionScheduleService
     {
-        public static List<ActionChoice> GenerateChoices(GameRun run, IRandomStream rng, int count = 0)
+        private const string LogTag = "ActionSchedule";
+        private static readonly HashSet<string> LoggedConfigurationErrors =
+            new HashSet<string>(StringComparer.Ordinal);
+
+        public static List<ActionChoice> GenerateChoices(GameRun run, IRandomStream rng)
         {
             var result = new List<ActionChoice>();
             if (run == null || rng == null)
@@ -24,262 +25,550 @@ namespace GourmetProject.Game.Meta
                 return result;
             }
 
-            // LuckyEventChance/LuckyEventGuarantee 作用于「抽事件」层；MoreEvents 作用于大组层，
-            // 在下方完成 min/max 保底候选筛选后再修正包含 Event 行动的大组权重。
-
-            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
-            int maxChoiceCount = ActionRandomService.ChoiceCount(run);
-            if (count <= 0)
+            cfg.Tables tables = run.Tables ?? GameApp.Config?.Tables;
+            if (tables == null)
             {
-                count = maxChoiceCount;
+                LogConfigurationError("missing_tables", "行动随机失败：配置表未加载。");
+                return result;
             }
 
-            string largeId = EnsureCurrentGroup(run, rng);
-            cfg.ActionLargeGroup large = string.IsNullOrEmpty(largeId) ? null : tables.TbActionLargeGroup.GetOrDefault(largeId);
-            if (large == null)
+            ActionCatalog catalog = BuildCatalog(run, tables);
+            List<cfg.ActionCategoryRule> categoryRules = BuildCategoryRules(tables);
+            List<cfg.ActionRewardRule> rewardRules = BuildRewardRules(tables);
+            ValidateRequiredMappings(catalog, categoryRules, rewardRules);
+
+            if (!TryTakeChoiceCount(run, tables, rng, out int choiceCount))
             {
                 return result;
             }
 
-            cfg.ActionSmallGroup small = PickSmall(tables, large, rng);
-            if (small == null)
-            {
-                return result;
-            }
+            int groupSerial = run.BeginActionRandomGroup();
+            string actionGroupId = $"action_w{run.WeekIndex}_g{groupSerial}";
+            var usedRewards = new Dictionary<cfg.ActionRandomCategory, HashSet<cfg.RewardKind>>();
+            bool eventUsed = false;
 
-            int limit = Math.Min(count, maxChoiceCount);
-            foreach (string actionId in small.ActionIds)
+            for (int slot = 0; slot < choiceCount; slot++)
             {
-                if (result.Count >= limit)
+                int candidateIndex = run.ActionRandomCandidateIndex;
+                List<cfg.ActionCategoryRule> legalCategories = FindLegalCategories(
+                    run,
+                    catalog,
+                    categoryRules,
+                    rewardRules,
+                    usedRewards,
+                    eventUsed);
+                if (legalCategories.Count == 0)
+                {
+                    LogConfigurationError(
+                        "no_legal_category",
+                        "行动随机提前结束：当前行动组已没有可用的类别或奖励组合。");
+                    break;
+                }
+
+                cfg.ActionCategoryRule categoryRule = PickCategoryRule(
+                    run,
+                    legalCategories,
+                    candidateIndex,
+                    rng);
+                if (categoryRule == null)
                 {
                     break;
                 }
 
-                cfg.GameAction action = tables.TbAction.GetOrDefault(actionId);
-                if (!ActionRandomService.IsAvailable(run, action))
+                cfg.GameAction action;
+                cfg.RewardKind? rewardKind = null;
+                if (categoryRule.Category == cfg.ActionRandomCategory.Event)
                 {
-                    continue;
+                    action = catalog.EventAction;
+                    if (!ActionRandomService.IsAvailable(run, action))
+                    {
+                        LogConfigurationError(
+                            "event_became_unavailable",
+                            "事件行动在类别抽取后变为不可用，本张候选卡未计数。");
+                        break;
+                    }
+
+                    eventUsed = true;
+                }
+                else
+                {
+                    List<cfg.ActionRewardRule> legalRewards = FindLegalRewards(
+                        run,
+                        catalog,
+                        categoryRule.Category,
+                        rewardRules,
+                        usedRewards);
+                    cfg.ActionRewardRule rewardRule = PickRewardRule(
+                        run,
+                        legalRewards,
+                        candidateIndex,
+                        rng);
+                    if (rewardRule == null
+                        || !catalog.TryGetAction(categoryRule.Category, rewardRule.RewardKind, out action)
+                        || !ActionRandomService.IsAvailable(run, action))
+                    {
+                        LogConfigurationError(
+                            $"missing_selected_action_{categoryRule.Category}_{rewardRule?.RewardKind}",
+                            $"类别 {categoryRule.Category} 的已选奖励无法定位可用行动，本张候选卡未计数。");
+                        break;
+                    }
+
+                    rewardKind = rewardRule.RewardKind;
+                    GetOrCreateUsedRewardSet(usedRewards, categoryRule.Category).Add(rewardRule.RewardKind);
                 }
 
                 float costDays = run.SnapshotDailyActionCost(RollCostDays(action, rng));
                 result.Add(new ActionChoice(
                     action,
-                    large.Id,
+                    actionGroupId,
                     run.ActionStepIndex,
                     run.RunActionStepIndex,
                     costDays,
                     timelineStopChance: run.SnapshotTimelineStopChance()));
+                run.RecordRandomAction(categoryRule.Category, rewardKind);
+                FlashCategoryBonus(run, categoryRule.Category);
             }
 
             return result;
         }
 
-        /// <summary>
-        /// 「行动调整单」重掷：保留上一批里的 星级评鉴行动（Boss 不可重掷），其余用新 rng 重新生成填满。
-        /// 当前小组池不含 星级评鉴行动，Boss 过滤为防御性逻辑（未来若加 Boss 小组仍正确）。
-        /// </summary>
-        public static List<ActionChoice> RerollChoices(GameRun run, IRandomStream rng, IReadOnlyList<ActionChoice> previous)
+        /// <summary>行动调整单重掷：不保留旧候选，直接生成并累计一组全新候选。</summary>
+        public static List<ActionChoice> RerollChoices(GameRun run, IRandomStream rng)
         {
-            var result = new List<ActionChoice>();
-            if (run == null || rng == null)
+            return GenerateChoices(run, rng);
+        }
+
+        private static bool TryTakeChoiceCount(
+            GameRun run,
+            cfg.Tables tables,
+            IRandomStream rng,
+            out int choiceCount)
+        {
+            if (run.TryTakeActionChoiceCount(out choiceCount))
             {
-                return result;
+                return choiceCount > 0;
             }
 
-            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
-            int maxChoiceCount = ActionRandomService.ChoiceCount(run);
-
-            if (previous != null)
+            var bag = new List<int>();
+            var seenChoiceCounts = new HashSet<int>();
+            foreach (cfg.ActionChoiceCountRule rule in tables.TbActionChoiceCountRule.DataList)
             {
-                foreach (ActionChoice choice in previous)
+                if (rule == null || !seenChoiceCounts.Add(rule.ChoiceCount))
                 {
-                    if (choice != null && choice.IsValid && IsBossAction(tables, choice.Action))
+                    LogConfigurationError(
+                        $"duplicate_choice_count_{rule?.ChoiceCount}",
+                        $"行动数规则重复：{rule?.ChoiceCount}。");
+                    continue;
+                }
+
+                if (rule.ChoiceCount < 2 || rule.ChoiceCount > 3)
+                {
+                    LogConfigurationError(
+                        $"invalid_choice_count_{rule.ChoiceCount}",
+                        $"行动数只能配置为 2 或 3，当前为 {rule.ChoiceCount}。");
+                    continue;
+                }
+
+                int tickets = WeeklyInt(rule.WeeklyWeights, run.WeekIndex, 0);
+                if (tickets < 0)
+                {
+                    LogConfigurationError(
+                        $"negative_choice_weight_{rule.Id}_{run.WeekIndex}",
+                        $"行动数规则 {rule.Id} 的第 {run.WeekIndex} 周票数不能为负数。");
+                    continue;
+                }
+
+                for (int i = 0; i < tickets; i++)
+                {
+                    bag.Add(rule.ChoiceCount);
+                }
+            }
+
+            if (bag.Count == 0)
+            {
+                LogConfigurationError(
+                    $"empty_choice_bag_week_{run.WeekIndex}",
+                    $"第 {run.WeekIndex} 周行动数洗牌袋没有任何票。");
+                choiceCount = 0;
+                return false;
+            }
+
+            rng.Shuffle(bag);
+            run.ReplaceActionChoiceCountBag(bag);
+            return run.TryTakeActionChoiceCount(out choiceCount) && choiceCount > 0;
+        }
+
+        private static ActionCatalog BuildCatalog(GameRun run, cfg.Tables tables)
+        {
+            var catalog = new ActionCatalog();
+            foreach (cfg.GameAction action in tables.TbAction.DataList)
+            {
+                if (action == null)
+                {
+                    continue;
+                }
+
+                if (action.Behavior == cfg.ActionBehavior.Event)
+                {
+                    catalog.EventShellCount++;
+                    if (catalog.EventAction == null)
                     {
-                        result.Add(choice);
+                        catalog.EventAction = action;
+                    }
+                    continue;
+                }
+
+                if (action.Behavior != cfg.ActionBehavior.Food)
+                {
+                    continue;
+                }
+
+                cfg.Food food = FoodService.Resolve(tables, action);
+                if (food == null || food.ActionKind == cfg.FoodActionKind.Feast)
+                {
+                    continue;
+                }
+
+                cfg.ActionRandomCategory category;
+                switch (food.ActionKind)
+                {
+                    case cfg.FoodActionKind.Normal:
+                        category = cfg.ActionRandomCategory.Daily;
+                        break;
+                    case cfg.FoodActionKind.Super:
+                        category = cfg.ActionRandomCategory.Hot;
+                        break;
+                    default:
+                        continue;
+                }
+
+                catalog.Add(category, food.RewardKind, action);
+            }
+
+            if (catalog.EventShellCount != 1)
+            {
+                LogConfigurationError(
+                    $"event_shell_count_{catalog.EventShellCount}",
+                    $"事件随机池必须恰好有一个行动壳，当前为 {catalog.EventShellCount} 个。");
+                catalog.EventAction = null;
+            }
+            else if (!ActionRandomService.IsAvailable(run, catalog.EventAction))
+            {
+                // 事件池可能因前置条件暂时为空；行动壳配置仍然有效，只在本次生成中屏蔽。
+            }
+
+            return catalog;
+        }
+
+        private static List<cfg.ActionCategoryRule> BuildCategoryRules(cfg.Tables tables)
+        {
+            var result = new List<cfg.ActionCategoryRule>();
+            var seen = new HashSet<cfg.ActionRandomCategory>();
+            foreach (cfg.ActionCategoryRule rule in tables.TbActionCategoryRule.DataList)
+            {
+                if (rule == null || !seen.Add(rule.Category))
+                {
+                    LogConfigurationError(
+                        $"duplicate_category_rule_{rule?.Category}",
+                        $"行动类别规则重复：{rule?.Category}。");
+                    continue;
+                }
+
+                if (rule.Category != cfg.ActionRandomCategory.Daily
+                    && rule.Category != cfg.ActionRandomCategory.Hot
+                    && rule.Category != cfg.ActionRandomCategory.Event)
+                {
+                    LogConfigurationError(
+                        $"invalid_category_rule_{rule.Category}",
+                        $"行动类别规则包含未知类别：{rule.Category}。");
+                    continue;
+                }
+
+                ValidateWeights(rule.Id, rule.FallbackWeights);
+                result.Add(rule);
+            }
+
+            return result;
+        }
+
+        private static List<cfg.ActionRewardRule> BuildRewardRules(cfg.Tables tables)
+        {
+            var result = new List<cfg.ActionRewardRule>();
+            var seen = new HashSet<cfg.RewardKind>();
+            foreach (cfg.ActionRewardRule rule in tables.TbActionRewardRule.DataList)
+            {
+                if (rule == null || !seen.Add(rule.RewardKind))
+                {
+                    LogConfigurationError(
+                        $"duplicate_reward_rule_{rule?.RewardKind}",
+                        $"行动奖励规则重复：{rule?.RewardKind}。");
+                    continue;
+                }
+
+                if (!IsDailyReward(rule.RewardKind))
+                {
+                    LogConfigurationError(
+                        $"invalid_reward_rule_{rule.RewardKind}",
+                        $"行动奖励规则只允许五种营业奖励，当前为 {rule.RewardKind}。");
+                    continue;
+                }
+
+                ValidateWeights(rule.Id, rule.FallbackWeights);
+                result.Add(rule);
+            }
+
+            return result;
+        }
+
+        private static void ValidateRequiredMappings(
+            ActionCatalog catalog,
+            IReadOnlyList<cfg.ActionCategoryRule> categoryRules,
+            IReadOnlyList<cfg.ActionRewardRule> rewardRules)
+        {
+            var configuredCategories = new HashSet<cfg.ActionRandomCategory>();
+            foreach (cfg.ActionCategoryRule rule in categoryRules)
+            {
+                configuredCategories.Add(rule.Category);
+            }
+
+            ValidateRequiredCategory(configuredCategories, cfg.ActionRandomCategory.Daily);
+            ValidateRequiredCategory(configuredCategories, cfg.ActionRandomCategory.Hot);
+            ValidateRequiredCategory(configuredCategories, cfg.ActionRandomCategory.Event);
+
+            var configuredRewards = new HashSet<cfg.RewardKind>();
+            foreach (cfg.ActionRewardRule rule in rewardRules)
+            {
+                configuredRewards.Add(rule.RewardKind);
+            }
+
+            ValidateRequiredReward(configuredRewards, cfg.RewardKind.PassiveItemChoice);
+            ValidateRequiredReward(configuredRewards, cfg.RewardKind.FragmentChoice);
+            ValidateRequiredReward(configuredRewards, cfg.RewardKind.ActiveItemStrengthen);
+            ValidateRequiredReward(configuredRewards, cfg.RewardKind.ActiveItemAdjust);
+            ValidateRequiredReward(configuredRewards, cfg.RewardKind.Gold);
+
+            foreach (cfg.ActionCategoryRule categoryRule in categoryRules)
+            {
+                if (categoryRule.Category == cfg.ActionRandomCategory.Event)
+                {
+                    continue;
+                }
+
+                foreach (cfg.ActionRewardRule rewardRule in rewardRules)
+                {
+                    int count = catalog.GetMappingCount(categoryRule.Category, rewardRule.RewardKind);
+                    if (count != 1)
+                    {
+                        LogConfigurationError(
+                            $"action_mapping_{categoryRule.Category}_{rewardRule.RewardKind}_{count}",
+                            $"{categoryRule.Category} + {rewardRule.RewardKind} 必须恰好映射一个行动，当前为 {count} 个。");
                     }
                 }
             }
+        }
 
-            if (result.Count >= maxChoiceCount)
+        private static void ValidateRequiredCategory(
+            ISet<cfg.ActionRandomCategory> configured,
+            cfg.ActionRandomCategory category)
+        {
+            if (!configured.Contains(category))
             {
-                return result;
+                LogConfigurationError(
+                    $"missing_category_rule_{category}",
+                    $"行动类别规则缺少 {category}。");
             }
+        }
 
-            foreach (ActionChoice choice in GenerateChoices(run, rng, maxChoiceCount))
+        private static void ValidateRequiredReward(
+            ISet<cfg.RewardKind> configured,
+            cfg.RewardKind rewardKind)
+        {
+            if (!configured.Contains(rewardKind))
             {
-                if (result.Count >= maxChoiceCount)
-                {
-                    break;
-                }
+                LogConfigurationError(
+                    $"missing_reward_rule_{rewardKind}",
+                    $"行动奖励规则缺少 {rewardKind}。");
+            }
+        }
 
-                if (choice == null || !choice.IsValid || IsBossAction(tables, choice.Action))
+        private static List<cfg.ActionCategoryRule> FindLegalCategories(
+            GameRun run,
+            ActionCatalog catalog,
+            IReadOnlyList<cfg.ActionCategoryRule> categoryRules,
+            IReadOnlyList<cfg.ActionRewardRule> rewardRules,
+            IReadOnlyDictionary<cfg.ActionRandomCategory, HashSet<cfg.RewardKind>> usedRewards,
+            bool eventUsed)
+        {
+            var result = new List<cfg.ActionCategoryRule>();
+            foreach (cfg.ActionCategoryRule rule in categoryRules)
+            {
+                if (rule.Category == cfg.ActionRandomCategory.Event)
                 {
+                    if (!eventUsed
+                        && catalog.EventAction != null
+                        && ActionRandomService.IsAvailable(run, catalog.EventAction))
+                    {
+                        result.Add(rule);
+                    }
                     continue;
                 }
 
-                result.Add(choice);
+                if (FindLegalRewards(run, catalog, rule.Category, rewardRules, usedRewards).Count > 0)
+                {
+                    result.Add(rule);
+                }
             }
 
             return result;
         }
 
-        private static bool IsBossAction(cfg.Tables tables, cfg.GameAction action)
+        private static List<cfg.ActionRewardRule> FindLegalRewards(
+            GameRun run,
+            ActionCatalog catalog,
+            cfg.ActionRandomCategory category,
+            IReadOnlyList<cfg.ActionRewardRule> rewardRules,
+            IReadOnlyDictionary<cfg.ActionRandomCategory, HashSet<cfg.RewardKind>> usedRewards)
         {
-            return FoodService.IsBossAction(tables, action);
-        }
-
-        private static cfg.ActionSmallGroup PickSmall(cfg.Tables tables, cfg.ActionLargeGroup large, IRandomStream rng)
-        {
-            var smalls = new List<cfg.ActionSmallGroup>();
-            var weights = new List<float>();
-            foreach (string smallGroupId in large.SmallGroupIds)
+            var result = new List<cfg.ActionRewardRule>();
+            usedRewards.TryGetValue(category, out HashSet<cfg.RewardKind> used);
+            foreach (cfg.ActionRewardRule rule in rewardRules)
             {
-                cfg.ActionSmallGroup small = tables.TbActionSmallGroup.GetOrDefault(smallGroupId);
-                if (small != null)
+                if (used != null && used.Contains(rule.RewardKind))
                 {
-                    smalls.Add(small);
-                    float defaultWeight = Math.Max(float.Epsilon, tables.TbGameBase.DefaultRandomWeight);
-                    weights.Add(small.Weight > 0f ? small.Weight : defaultWeight);
+                    continue;
+                }
+
+                if (catalog.GetMappingCount(category, rule.RewardKind) == 1
+                    && catalog.TryGetAction(category, rule.RewardKind, out cfg.GameAction action)
+                    && ActionRandomService.IsAvailable(run, action))
+                {
+                    result.Add(rule);
                 }
             }
 
-            if (smalls.Count == 0)
-            {
-                return null;
-            }
-
-            return smalls[rng.WeightedPickIndex(weights)];
+            return result;
         }
 
-        /// <summary>
-        /// 保证当前整局行动步（<see cref="GameRun.RunActionStepIndex"/>）对应的大组已生成并返回。
-        /// 同一步重复进入或重掷只读取已保存序列，不会重复抽取或重复计数。
-        /// </summary>
-        public static string EnsureCurrentGroup(GameRun run, IRandomStream rng)
+        private static cfg.ActionCategoryRule PickCategoryRule(
+            GameRun run,
+            IReadOnlyList<cfg.ActionCategoryRule> legal,
+            int candidateIndex,
+            IRandomStream rng)
         {
-            if (run == null || rng == null)
-            {
-                return string.Empty;
-            }
-
-            while (run.ActionGroupSequence.Count <= run.RunActionStepIndex)
-            {
-                int nextRunStep = run.ActionGroupSequence.Count;
-                run.AppendActionGroup(PickLargeGroup(run, rng, nextRunStep));
-            }
-
-            return run.ActionGroupSequence[run.RunActionStepIndex];
-        }
-
-        private static string PickLargeGroup(GameRun run, IRandomStream rng, int nextRunStep)
-        {
-            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
-            var groups = new List<cfg.ActionLargeGroup>();
-            foreach (cfg.ActionLargeGroup group in tables.TbActionLargeGroup.DataList)
-            {
-                if (group != null)
-                {
-                    groups.Add(group);
-                }
-            }
-
-            if (groups.Count == 0)
-            {
-                return string.Empty;
-            }
-
-            int weekStartRunStep = Math.Max(0, run.RunActionStepIndex - run.ActionStepIndex);
-            int weekActionIndex = Math.Max(0, nextRunStep - weekStartRunStep);
-            Dictionary<string, int> counts = CountGroups(
-                run.ActionGroupSequence,
-                weekStartRunStep,
-                nextRunStep);
-
-            List<cfg.ActionLargeGroup> candidates = FindBelowGuarantee(
-                groups,
-                counts,
-                run.WeekIndex,
-                weekActionIndex,
+            List<cfg.ActionCategoryRule> candidates = FindCategoryGuaranteeCandidates(
+                run,
+                legal,
+                candidateIndex,
                 useMinimum: true);
             if (candidates.Count == 0)
             {
-                candidates = FindBelowGuarantee(
-                    groups,
-                    counts,
-                    run.WeekIndex,
-                    weekActionIndex,
+                candidates = FindCategoryGuaranteeCandidates(
+                    run,
+                    legal,
+                    candidateIndex,
                     useMinimum: false);
             }
-
             if (candidates.Count == 0)
             {
-                candidates = groups;
+                candidates.AddRange(legal);
             }
 
-            return PickWeightedByFallback(run, candidates, rng);
+            var weights = new List<float>(candidates.Count);
+            foreach (cfg.ActionCategoryRule rule in candidates)
+            {
+                float weight = WeeklyFloat(rule.FallbackWeights, run.WeekIndex, 0f);
+                weights.Add(ApplyCategoryWeightBonus(weight, CategoryBonus(run, rule.Category)));
+            }
+
+            return PickWeighted(candidates, weights, rng, "category_zero_weights");
         }
 
-        private static Dictionary<string, int> CountGroups(
-            IReadOnlyList<string> sequence,
-            int startInclusive,
-            int endExclusive)
+        private static cfg.ActionRewardRule PickRewardRule(
+            GameRun run,
+            IReadOnlyList<cfg.ActionRewardRule> legal,
+            int candidateIndex,
+            IRandomStream rng)
         {
-            var counts = new Dictionary<string, int>(StringComparer.Ordinal);
-            if (sequence == null)
+            List<cfg.ActionRewardRule> candidates = FindRewardGuaranteeCandidates(
+                run,
+                legal,
+                candidateIndex,
+                useMinimum: true);
+            if (candidates.Count == 0)
             {
-                return counts;
+                candidates = FindRewardGuaranteeCandidates(
+                    run,
+                    legal,
+                    candidateIndex,
+                    useMinimum: false);
+            }
+            if (candidates.Count == 0)
+            {
+                candidates.AddRange(legal);
             }
 
-            int start = Math.Max(0, startInclusive);
-            int end = Math.Min(Math.Max(start, endExclusive), sequence.Count);
-            for (int index = start; index < end; index++)
+            var weights = new List<float>(candidates.Count);
+            foreach (cfg.ActionRewardRule rule in candidates)
             {
-                string groupId = sequence[index];
-                if (string.IsNullOrEmpty(groupId))
-                {
-                    continue;
-                }
-
-                counts.TryGetValue(groupId, out int count);
-                counts[groupId] = count + 1;
+                weights.Add(WeeklyFloat(rule.FallbackWeights, run.WeekIndex, 0f));
             }
 
-            return counts;
+            return PickWeighted(candidates, weights, rng, "reward_zero_weights");
         }
 
-        private static List<cfg.ActionLargeGroup> FindBelowGuarantee(
-            IReadOnlyList<cfg.ActionLargeGroup> groups,
-            IReadOnlyDictionary<string, int> counts,
-            int weekIndex,
-            int weekActionIndex,
+        private static List<cfg.ActionCategoryRule> FindCategoryGuaranteeCandidates(
+            GameRun run,
+            IReadOnlyList<cfg.ActionCategoryRule> rules,
+            int candidateIndex,
             bool useMinimum)
         {
-            var candidates = new List<cfg.ActionLargeGroup>();
-            foreach (cfg.ActionLargeGroup group in groups)
+            var result = new List<cfg.ActionCategoryRule>();
+            foreach (cfg.ActionCategoryRule rule in rules)
             {
                 IReadOnlyList<List<int>> bounds = useMinimum
-                    ? group.MinGuaranteeCounts
-                    : group.MaxGuaranteeCounts;
-                if (!TryGetGuarantee(bounds, weekIndex, weekActionIndex, out int target))
+                    ? rule.MinGuaranteeCounts
+                    : rule.MaxGuaranteeCounts;
+                if (!TryGetGuarantee(bounds, run.WeekIndex, candidateIndex, out int target))
                 {
                     continue;
                 }
 
-                counts.TryGetValue(group.Id, out int current);
-                if (current < target)
+                target = ApplyCategoryGuaranteeBonus(target, CategoryBonus(run, rule.Category));
+                if (run.GetActionCategoryCount(rule.Category) < target)
                 {
-                    candidates.Add(group);
+                    result.Add(rule);
                 }
             }
 
-            return candidates;
+            return result;
         }
 
-        /// <summary>周或行动索引越界、值为负数都表示该位置未配置；上下限不沿用末项。</summary>
-        private static bool TryGetGuarantee(
+        private static List<cfg.ActionRewardRule> FindRewardGuaranteeCandidates(
+            GameRun run,
+            IReadOnlyList<cfg.ActionRewardRule> rules,
+            int candidateIndex,
+            bool useMinimum)
+        {
+            var result = new List<cfg.ActionRewardRule>();
+            foreach (cfg.ActionRewardRule rule in rules)
+            {
+                IReadOnlyList<List<int>> bounds = useMinimum
+                    ? rule.MinGuaranteeCounts
+                    : rule.MaxGuaranteeCounts;
+                if (TryGetGuarantee(bounds, run.WeekIndex, candidateIndex, out int target)
+                    && run.GetActionRewardCount(rule.RewardKind) < target)
+                {
+                    result.Add(rule);
+                }
+            }
+
+            return result;
+        }
+
+        internal static bool TryGetGuarantee(
             IReadOnlyList<List<int>> bounds,
             int weekIndex,
-            int weekActionIndex,
+            int candidateIndex,
             out int value)
         {
             value = 0;
@@ -294,176 +583,190 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            IReadOnlyList<int> actions = bounds[week];
-            if (actions == null || weekActionIndex < 0 || weekActionIndex >= actions.Count)
+            IReadOnlyList<int> candidates = bounds[week];
+            if (candidates == null || candidateIndex < 0 || candidateIndex >= candidates.Count)
             {
                 return false;
             }
 
-            value = actions[weekActionIndex];
+            value = candidates[candidateIndex];
             return value >= 0;
         }
 
-        private static string PickWeightedByFallback(GameRun run, List<cfg.ActionLargeGroup> groups, IRandomStream rng)
+        internal static float ApplyCategoryWeightBonus(float baseWeight, float bonus)
         {
-            if (groups.Count == 0)
+            if (!(baseWeight > 0f) || !IsFinite(baseWeight))
             {
-                return string.Empty;
+                return 0f;
             }
 
-            if (groups.Count == 1)
+            float multiplier = IsFinite(bonus) ? Math.Max(0f, 1f + bonus) : 1f;
+            float adjusted = baseWeight * multiplier;
+            return adjusted > 0f && IsFinite(adjusted) ? adjusted : 0f;
+        }
+
+        internal static int ApplyCategoryGuaranteeBonus(int target, float bonus)
+        {
+            if (target < 0)
             {
-                return groups[0].Id;
+                return target;
             }
 
-            var weights = new List<float>(groups.Count);
-            var eventBonusApplied = new List<bool>(groups.Count);
+            double multiplier = IsFinite(bonus) ? Math.Max(0d, 1d + bonus) : 1d;
+            double adjusted = Math.Round(target * multiplier, MidpointRounding.AwayFromZero);
+            return adjusted >= int.MaxValue ? int.MaxValue : (int)Math.Max(0d, adjusted);
+        }
+
+        private static T PickWeighted<T>(
+            IReadOnlyList<T> candidates,
+            IReadOnlyList<float> weights,
+            IRandomStream rng,
+            string zeroWeightErrorKey)
+            where T : class
+        {
+            if (candidates == null || candidates.Count == 0)
+            {
+                return null;
+            }
+
+            if (candidates.Count == 1)
+            {
+                return candidates[0];
+            }
+
             float total = 0f;
-            cfg.Tables tables = run.Tables ?? GameApp.Config.Tables;
-            var itemRuntime = new ItemRuntime(run);
-            float superActionBonus = itemRuntime.SuperActionLargeGroupWeightBonus();
-            float eventActionBonus = itemRuntime.EventActionLargeGroupWeightBonus();
-            foreach (cfg.ActionLargeGroup group in groups)
+            for (int i = 0; i < weights.Count; i++)
             {
-                float w = FallbackWeight(group, run.WeekIndex);
-                w = ApplySuperActionWeightBonus(
-                    w,
-                    ContainsSuperAction(tables, group),
-                    superActionBonus);
-                float beforeEventBonus = w;
-                w = ApplyEventActionWeightBonus(
-                    w,
-                    ContainsEventAction(tables, group),
-                    eventActionBonus);
-                if (!(w > 0f) || float.IsNaN(w) || float.IsInfinity(w))
+                float weight = weights[i];
+                if (weight > 0f && IsFinite(weight))
                 {
-                    w = 0f;
-                }
-                weights.Add(w);
-                eventBonusApplied.Add(
-                    beforeEventBonus > 0f
-                    && w > 0f
-                    && Math.Abs(w - beforeEventBonus) > 0.0001f);
-                total += w;
-            }
-
-            // 仅当保底候选全部为 0 权重时做等概率兜底，保证强制保底仍能落地。
-            int index = total > 0f
-                ? rng.WeightedPickIndex(weights)
-                : rng.Range(0, groups.Count);
-            index = Math.Max(0, Math.Min(index, groups.Count - 1));
-            if (eventBonusApplied[index])
-            {
-                itemRuntime.FlashTriggered(
-                    model => Math.Abs(model.EventActionLargeGroupWeightBonus()) > 0.0001f);
-            }
-
-            return groups[index].Id;
-        }
-
-        /// <summary>
-        /// 大组保底候选集确定之后，仅对其中包含 Super 行动的大组乘以 (1 + bonus)。
-        /// </summary>
-        internal static float ApplySuperActionWeightBonus(float baseWeight, bool containsSuper, float bonus)
-        {
-            if (!containsSuper || !(baseWeight > 0f) || float.IsNaN(bonus))
-            {
-                return baseWeight;
-            }
-
-            float multiplier = Math.Max(0f, 1f + bonus);
-            return baseWeight * multiplier;
-        }
-
-        /// <summary>
-        /// 大组保底候选集确定之后，仅对其中包含 Event 行动的大组乘以 (1 + bonus)。
-        /// 原始/前序权重为 0 时保持 0，不允许概率装饰品和消耗品复活零权重大组。
-        /// </summary>
-        internal static float ApplyEventActionWeightBonus(float baseWeight, bool containsEvent, float bonus)
-        {
-            if (!containsEvent || !(baseWeight > 0f) || float.IsNaN(bonus))
-            {
-                return baseWeight;
-            }
-
-            float multiplier = Math.Max(0f, 1f + bonus);
-            return baseWeight * multiplier;
-        }
-
-        internal static bool ContainsSuperAction(cfg.Tables tables, cfg.ActionLargeGroup group)
-        {
-            if (tables == null || group?.SmallGroupIds == null)
-            {
-                return false;
-            }
-
-            foreach (string smallGroupId in group.SmallGroupIds)
-            {
-                cfg.ActionSmallGroup small = tables.TbActionSmallGroup.GetOrDefault(smallGroupId);
-                if (small?.ActionIds == null)
-                {
-                    continue;
-                }
-
-                foreach (string actionId in small.ActionIds)
-                {
-                    cfg.GameAction action = tables.TbAction.GetOrDefault(actionId);
-                    cfg.Food food = FoodService.Resolve(tables, action);
-                    if (food?.ActionKind == cfg.FoodActionKind.Super)
-                    {
-                        return true;
-                    }
+                    total += weight;
                 }
             }
 
-            return false;
+            int index;
+            if (total > 0f && IsFinite(total))
+            {
+                index = rng.WeightedPickIndex(weights);
+            }
+            else
+            {
+                LogConfigurationError(
+                    zeroWeightErrorKey,
+                    "行动随机当前合法候选的权重全为 0，已使用等概率兜底。");
+                index = rng.Range(0, candidates.Count);
+            }
+
+            index = Math.Max(0, Math.Min(index, candidates.Count - 1));
+            return candidates[index];
         }
 
-        internal static bool ContainsEventAction(cfg.Tables tables, cfg.ActionLargeGroup group)
+        private static float CategoryBonus(GameRun run, cfg.ActionRandomCategory category)
         {
-            if (tables == null || group?.SmallGroupIds == null)
+            var items = new ItemRuntime(run);
+            switch (category)
             {
-                return false;
+                case cfg.ActionRandomCategory.Event:
+                    return items.EventActionLargeGroupWeightBonus();
+                case cfg.ActionRandomCategory.Hot:
+                    return items.SuperActionLargeGroupWeightBonus();
+                default:
+                    return 0f;
             }
-
-            foreach (string smallGroupId in group.SmallGroupIds)
-            {
-                cfg.ActionSmallGroup small = tables.TbActionSmallGroup.GetOrDefault(smallGroupId);
-                if (small?.ActionIds == null)
-                {
-                    continue;
-                }
-
-                foreach (string actionId in small.ActionIds)
-                {
-                    cfg.GameAction action = tables.TbAction.GetOrDefault(actionId);
-                    if (action?.Behavior == cfg.ActionBehavior.Event)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
         }
 
-        /// <summary>大组保底权重：按当前周(1-based)取 fallbackWeights[周-1]，越界取最后一个；空列表按 1。</summary>
-        private static float FallbackWeight(cfg.ActionLargeGroup group, int weekIndex)
+        private static void FlashCategoryBonus(GameRun run, cfg.ActionRandomCategory category)
         {
-            IReadOnlyList<float> weights = group.FallbackWeights;
-            if (weights == null || weights.Count == 0)
+            var items = new ItemRuntime(run);
+            switch (category)
             {
-                return 1f;
+                case cfg.ActionRandomCategory.Event:
+                    items.FlashTriggered(
+                        model => Math.Abs(model.EventActionLargeGroupWeightBonus()) > 0.0001f);
+                    break;
+                case cfg.ActionRandomCategory.Hot:
+                    items.FlashTriggered(
+                        model => Math.Abs(model.SuperActionLargeGroupWeightBonus()) > 0.0001f);
+                    break;
+            }
+        }
+
+        private static HashSet<cfg.RewardKind> GetOrCreateUsedRewardSet(
+            IDictionary<cfg.ActionRandomCategory, HashSet<cfg.RewardKind>> usedRewards,
+            cfg.ActionRandomCategory category)
+        {
+            if (!usedRewards.TryGetValue(category, out HashSet<cfg.RewardKind> result))
+            {
+                result = new HashSet<cfg.RewardKind>();
+                usedRewards[category] = result;
             }
 
-            int idx = Math.Max(0, weekIndex - 1);
-            if (idx >= weights.Count)
+            return result;
+        }
+
+        private static bool IsDailyReward(cfg.RewardKind rewardKind)
+        {
+            return rewardKind == cfg.RewardKind.PassiveItemChoice
+                || rewardKind == cfg.RewardKind.FragmentChoice
+                || rewardKind == cfg.RewardKind.ActiveItemStrengthen
+                || rewardKind == cfg.RewardKind.ActiveItemAdjust
+                || rewardKind == cfg.RewardKind.Gold;
+        }
+
+        private static float WeeklyFloat(IReadOnlyList<float> values, int weekIndex, float fallback)
+        {
+            if (values == null || values.Count == 0)
             {
-                idx = weights.Count - 1;
+                return fallback;
             }
 
-            float w = weights[idx];
-            return w > 0f ? w : 0f;
+            int index = Math.Max(0, weekIndex - 1);
+            if (index >= values.Count)
+            {
+                index = values.Count - 1;
+            }
+
+            float value = values[index];
+            return value >= 0f && IsFinite(value) ? value : 0f;
+        }
+
+        private static int WeeklyInt(IReadOnlyList<int> values, int weekIndex, int fallback)
+        {
+            if (values == null || values.Count == 0)
+            {
+                return fallback;
+            }
+
+            int index = Math.Max(0, weekIndex - 1);
+            if (index >= values.Count)
+            {
+                index = values.Count - 1;
+            }
+
+            return values[index];
+        }
+
+        private static void ValidateWeights(string id, IReadOnlyList<float> weights)
+        {
+            if (weights == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < weights.Count; i++)
+            {
+                if (weights[i] < 0f || !IsFinite(weights[i]))
+                {
+                    LogConfigurationError(
+                        $"invalid_weight_{id}_{i}",
+                        $"行动随机规则 {id} 的第 {i + 1} 周权重必须有限且非负。");
+                }
+            }
+        }
+
+        private static bool IsFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
         private static float RollCostDays(cfg.GameAction action, IRandomStream rng)
@@ -475,12 +778,91 @@ namespace GourmetProject.Game.Meta
                 (min, max) = (max, min);
             }
 
-            // 以 0.1 天为粒度在 [min, max] 闭区间内随机（换算成十分之一天的整数步再取回），保证确定性与粒度对齐。
             int minTenths = (int)Math.Round(min * 10f, MidpointRounding.AwayFromZero);
             int maxTenths = (int)Math.Round(max * 10f, MidpointRounding.AwayFromZero);
             int tenths = minTenths == maxTenths ? minTenths : rng.Range(minTenths, maxTenths + 1);
             return TimelineMath.Quantize(tenths / 10f);
         }
 
+        private static void LogConfigurationError(string key, string message)
+        {
+            if (LoggedConfigurationErrors.Add(key))
+            {
+                Log.Error(message, LogTag);
+            }
+        }
+
+        private readonly struct ActionKey : IEquatable<ActionKey>
+        {
+            public ActionKey(cfg.ActionRandomCategory category, cfg.RewardKind rewardKind)
+            {
+                Category = category;
+                RewardKind = rewardKind;
+            }
+
+            public cfg.ActionRandomCategory Category { get; }
+            public cfg.RewardKind RewardKind { get; }
+
+            public bool Equals(ActionKey other)
+            {
+                return Category == other.Category && RewardKind == other.RewardKind;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is ActionKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return ((int)Category * 397) ^ (int)RewardKind;
+                }
+            }
+        }
+
+        private sealed class ActionCatalog
+        {
+            private readonly Dictionary<ActionKey, cfg.GameAction> _actions =
+                new Dictionary<ActionKey, cfg.GameAction>();
+            private readonly Dictionary<ActionKey, int> _mappingCounts =
+                new Dictionary<ActionKey, int>();
+
+            public cfg.GameAction EventAction { get; set; }
+            public int EventShellCount { get; set; }
+
+            public void Add(
+                cfg.ActionRandomCategory category,
+                cfg.RewardKind rewardKind,
+                cfg.GameAction action)
+            {
+                var key = new ActionKey(category, rewardKind);
+                _mappingCounts.TryGetValue(key, out int count);
+                _mappingCounts[key] = count + 1;
+                if (count == 0)
+                {
+                    _actions[key] = action;
+                }
+                else
+                {
+                    _actions.Remove(key);
+                }
+            }
+
+            public int GetMappingCount(cfg.ActionRandomCategory category, cfg.RewardKind rewardKind)
+            {
+                var key = new ActionKey(category, rewardKind);
+                return _mappingCounts.TryGetValue(key, out int count) ? count : 0;
+            }
+
+            public bool TryGetAction(
+                cfg.ActionRandomCategory category,
+                cfg.RewardKind rewardKind,
+                out cfg.GameAction action)
+            {
+                return _actions.TryGetValue(new ActionKey(category, rewardKind), out action);
+            }
+        }
     }
 }

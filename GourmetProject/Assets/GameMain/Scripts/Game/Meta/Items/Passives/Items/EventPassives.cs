@@ -11,7 +11,7 @@ namespace GourmetProject.Game.Meta.Passives
         public override float LuckyEventChanceBonus() => Value;
     }
 
-    /// <summary>街角路牌：候选保底筛选完成后，提高包含 Event 行动的大组权重。</summary>
+    /// <summary>街角路牌：提高事件类别的权重与上下保底目标。</summary>
     [Preserve]
     [PassiveItemModel("item_more_events")]
     public sealed class MoreEventsModel : PassiveItemModel
@@ -19,7 +19,7 @@ namespace GourmetProject.Game.Meta.Passives
         public override float EventActionLargeGroupWeightBonus() => Value;
     }
 
-    /// <summary>超级计划：候选保底筛选完成后，提高包含 Super 行动的大组权重。</summary>
+    /// <summary>霓虹招牌：提高火热类别的权重与上下保底目标。</summary>
     [Preserve]
     [PassiveItemModel("item_more_super_actions")]
     public sealed class MoreSuperActionsModel : PassiveItemModel

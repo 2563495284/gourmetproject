@@ -123,13 +123,17 @@ public partial class Tables
     /// </summary>
     public TbEventOption TbEventOption {get; }
     /// <summary>
-    /// 小组：内嵌 actionIds(list,string)，固定成员即本次 n 选一候选；weight 供大组挑选。
+    /// 日常行动候选数洗牌袋规则：每周整数票数。
     /// </summary>
-    public TbActionSmallGroup TbActionSmallGroup {get; }
+    public TbActionChoiceCountRule TbActionChoiceCountRule {get; }
     /// <summary>
-    /// 行动大组：内嵌 smallGroupIds(list,string)，按保底上下限与每周权重参与随机。
+    /// 日常行动类别规则：每周权重与逐候选卡累计上下保底。
     /// </summary>
-    public TbActionLargeGroup TbActionLargeGroup {get; }
+    public TbActionCategoryRule TbActionCategoryRule {get; }
+    /// <summary>
+    /// 日常行动奖励规则：复用 RewardKind，配置每周权重与逐候选卡累计上下保底。
+    /// </summary>
+    public TbActionRewardRule TbActionRewardRule {get; }
     /// <summary>
     /// 全局基础配置：整局初始金币、利息与商店等基础数值。
     /// </summary>
@@ -168,8 +172,9 @@ public partial class Tables
         TbBossDebuff = new TbBossDebuff(loader("tbbossdebuff"));
         TbEvent = new TbEvent(loader("tbevent"));
         TbEventOption = new TbEventOption(loader("tbeventoption"));
-        TbActionSmallGroup = new TbActionSmallGroup(loader("tbactionsmallgroup"));
-        TbActionLargeGroup = new TbActionLargeGroup(loader("tbactionlargegroup"));
+        TbActionChoiceCountRule = new TbActionChoiceCountRule(loader("tbactionchoicecountrule"));
+        TbActionCategoryRule = new TbActionCategoryRule(loader("tbactioncategoryrule"));
+        TbActionRewardRule = new TbActionRewardRule(loader("tbactionrewardrule"));
         TbGameBase = new TbGameBase(loader("tbgamebase"));
         TbRecipeGroup = new TbRecipeGroup(loader("tbrecipegroup"));
         ResolveRef();
@@ -204,8 +209,9 @@ public partial class Tables
         TbBossDebuff.ResolveRef(this);
         TbEvent.ResolveRef(this);
         TbEventOption.ResolveRef(this);
-        TbActionSmallGroup.ResolveRef(this);
-        TbActionLargeGroup.ResolveRef(this);
+        TbActionChoiceCountRule.ResolveRef(this);
+        TbActionCategoryRule.ResolveRef(this);
+        TbActionRewardRule.ResolveRef(this);
         TbGameBase.ResolveRef(this);
         TbRecipeGroup.ResolveRef(this);
     }

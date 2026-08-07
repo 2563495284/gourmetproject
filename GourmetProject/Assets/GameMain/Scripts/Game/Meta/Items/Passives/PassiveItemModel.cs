@@ -241,10 +241,10 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>遇到事件的额外概率（分发器累加）。</summary>
         public virtual float MoreEventsBonus() => 0f;
 
-        /// <summary>包含 Event 行动的大组权重增幅（分发器累加）。</summary>
+        /// <summary>事件类别的权重与上下保底目标增幅（分发器累加）。</summary>
         public virtual float EventActionLargeGroupWeightBonus() => 0f;
 
-        /// <summary>包含 Super 行动的大组权重增幅（分发器累加）。</summary>
+        /// <summary>火热类别的权重与上下保底目标增幅（分发器累加）。</summary>
         public virtual float SuperActionLargeGroupWeightBonus() => 0f;
 
         /// <summary>抽奖机中奖归一概率增幅（分发器累加）。</summary>

@@ -13,6 +13,11 @@ namespace GourmetProject.Game.Run
     [Serializable]
     public sealed class RunSaveData
     {
+        /// <summary>
+        /// 日常行动随机规则版本。旧存档缺少该字段时为 0，由 <see cref="RunPersistence"/> 拒绝继续。
+        /// </summary>
+        public int ActionRandomRuleVersion;
+
         public string CharacterId;
         public string SeedText;
         public RandomSnapshot RandomSnapshot;
@@ -211,17 +216,8 @@ namespace GourmetProject.Game.Run
         /// <summary>已进入但尚未结算/提交的行动；用于读档恢复到 food/interest/event/shop 页面。</summary>
         public PendingActionExecutionSaveData PendingActionExecution;
 
-        /// <summary>已生成的整局行动组序列。</summary>
-        public List<string> ActionGroupSequence = new List<string>();
-
-        /// <summary>旧版本周大组计划；仅保留以兼容旧存档，新随机逻辑忽略。</summary>
-        public List<string> ActionWeekPlan = new List<string>();
-
-        /// <summary>旧版计划所属周（0=未构建）。</summary>
-        public int ActionWeekPlanWeek;
-
-        /// <summary>旧版计划对应的整局行动步起点。</summary>
-        public int ActionWeekPlanStartRunStep;
+        /// <summary>当前周日常行动随机计数、行动数洗牌袋与组序号。</summary>
+        public ActionRandomStateSaveData ActionRandomState = new ActionRandomStateSaveData();
 
         /// <summary>本周已结算的节点 id。</summary>
         public List<string> TriggeredNodeIds = new List<string>();
@@ -414,6 +410,28 @@ namespace GourmetProject.Game.Run
         public int RunStepIndex;
         public float CostDays;
         public float TimelineStopChance;
+    }
+
+    [Serializable]
+    public sealed class ActionRandomStateSaveData
+    {
+        /// <summary>状态所属周；与当前周不一致时整份状态重置。</summary>
+        public int WeekIndex;
+
+        /// <summary>本周已成功生成的候选卡数量，包含被重掷覆盖的旧行动组。</summary>
+        public int CandidateIndex;
+
+        /// <summary>本周已生成的行动组数量，包含重掷。</summary>
+        public int GroupSerial;
+
+        /// <summary>当前周行动数洗牌袋的剩余抽取顺序；从列表尾部消费。</summary>
+        public List<int> RemainingChoiceCounts = new List<int>();
+
+        /// <summary>本周类别累计次数；key 为 ActionRandomCategory 的整数值。</summary>
+        public Dictionary<int, int> CategoryCounts = new Dictionary<int, int>();
+
+        /// <summary>本周营业奖励累计次数；key 为 RewardKind 的整数值。</summary>
+        public Dictionary<int, int> RewardCounts = new Dictionary<int, int>();
     }
 
     [Serializable]

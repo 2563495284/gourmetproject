@@ -1,0 +1,217 @@
+[
+  {
+    "id": "gold",
+    "name": "金币",
+    "rewardKind": 1,
+    "fallbackWeights": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "minGuaranteeCounts": [
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ]
+    ],
+    "maxGuaranteeCounts": [
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ]
+    ]
+  },
+  {
+    "id": "fragment",
+    "name": "餐桌格",
+    "rewardKind": 5,
+    "fallbackWeights": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "minGuaranteeCounts": [
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ]
+    ],
+    "maxGuaranteeCounts": [
+      [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ]
+    ]
+  },
+  {
+    "id": "passive",
+    "name": "装饰品",
+    "rewardKind": 3,
+    "fallbackWeights": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "minGuaranteeCounts": [
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ]
+    ],
+    "maxGuaranteeCounts": [
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ]
+    ]
+  },
+  {
+    "id": "strengthen",
+    "name": "强化箱",
+    "rewardKind": 6,
+    "fallbackWeights": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "minGuaranteeCounts": [
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ]
+    ],
+    "maxGuaranteeCounts": [
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ]
+    ]
+  },
+  {
+    "id": "adjust",
+    "name": "调整单",
+    "rewardKind": 7,
+    "fallbackWeights": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "minGuaranteeCounts": [
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ]
+    ],
+    "maxGuaranteeCounts": [
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ],
+      [
+        -1
+      ]
+    ]
+  }
+]

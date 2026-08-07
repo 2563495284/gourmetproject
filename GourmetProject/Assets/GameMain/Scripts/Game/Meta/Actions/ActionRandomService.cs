@@ -4,17 +4,11 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
-    /// 行动可用性：小组成员是否能进入本次 n 选一。Food 看是否解析到 <see cref="cfg.Food"/> 明细；
+    /// 行动可用性：候选行动是否能进入本次随机池。Food 看是否解析到 <see cref="cfg.Food"/> 明细；
     /// Event/Reward/Negative 看对应事件池是否非空；Shop/Interest 恒可用。
     /// </summary>
     public static class ActionRandomService
     {
-        public static int ChoiceCount(GameRun run)
-        {
-            cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
-            return System.Math.Max(1, tables.TbGameBase.ActionChoiceCount);
-        }
-
         public static bool IsAvailable(GameRun run, cfg.GameAction action)
         {
             if (run == null || action == null)

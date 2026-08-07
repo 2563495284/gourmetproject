@@ -67,12 +67,15 @@ namespace GourmetProject.Game.Run
         private string _bossDebuffRerollNodeId = string.Empty;
         private int _forcedBossDebuffWeekIndex;
         private string _forcedBossDebuffId = string.Empty;
-        private readonly List<string> _actionGroupSequence = new List<string>();
 
-        // —— 旧版本周大组预排（仅保留读写旧存档；新随机逻辑完全忽略）——
-        private readonly List<string> _actionWeekPlan = new List<string>();
-        private int _actionWeekPlanWeek;          // 0 = 未构建；否则为计划所属周
-        private int _actionWeekPlanStartRunStep;   // 本周计划对应的整局行动步起点
+        // —— 日常行动随机状态：每周类别/奖励计数、候选卡序号与行动数洗牌袋 ——
+        private int _actionRandomStateWeek;
+        private int _actionRandomCandidateIndex;
+        private int _actionRandomGroupSerial;
+        private readonly List<int> _remainingActionChoiceCounts = new List<int>();
+        private readonly Dictionary<int, int> _actionCategoryCounts = new Dictionary<int, int>();
+        private readonly Dictionary<int, int> _actionRewardCounts = new Dictionary<int, int>();
+
         private readonly List<RunActionChoiceSaveData> _pendingActionChoices = new List<RunActionChoiceSaveData>();
         private readonly List<ShopEntrySaveData> _pendingShopStock = new List<ShopEntrySaveData>();
         private readonly List<GenericRewardSaveData> _pendingGenericRewards = new List<GenericRewardSaveData>();
@@ -1279,33 +1282,89 @@ namespace GourmetProject.Game.Run
         /// <summary>本周已执行的行动次数，用于 UI、随机流和隐藏分进度。</summary>
         public int ActionStepIndex { get; private set; }
 
-        /// <summary>整局累计已执行行动次数，用于行动组序列和隐藏分分段。</summary>
+        /// <summary>整局累计已执行行动次数，用于随机流和隐藏分分段。</summary>
         public int RunActionStepIndex { get; private set; }
 
-        public IReadOnlyList<string> ActionGroupSequence => _actionGroupSequence;
-
-        /// <summary>旧版本周大组计划；仅用于旧存档兼容，新随机逻辑不读取。</summary>
-        public IReadOnlyList<string> ActionWeekPlan => _actionWeekPlan;
-
-        /// <summary>旧版计划所属周（0=未构建）。</summary>
-        public int ActionWeekPlanWeek => _actionWeekPlanWeek;
-
-        /// <summary>旧版计划对应的整局行动步起点。</summary>
-        public int ActionWeekPlanStartRunStep => _actionWeekPlanStartRunStep;
-
-        /// <summary>设置或读档恢复旧版计划；仅为存档兼容保留。</summary>
-        public void SetActionWeekPlan(int week, int startRunStep, IEnumerable<string> plan)
+        internal int ActionRandomCandidateIndex
         {
-            _actionWeekPlanWeek = week;
-            _actionWeekPlanStartRunStep = startRunStep;
-            _actionWeekPlan.Clear();
-            if (plan != null)
+            get
             {
-                foreach (string groupId in plan)
-                {
-                    _actionWeekPlan.Add(groupId ?? string.Empty);
-                }
+                EnsureActionRandomStateForCurrentWeek();
+                return _actionRandomCandidateIndex;
             }
+        }
+
+        internal void EnsureActionRandomStateForCurrentWeek()
+        {
+            if (_actionRandomStateWeek == WeekIndex)
+            {
+                return;
+            }
+
+            _actionRandomStateWeek = WeekIndex;
+            _actionRandomCandidateIndex = 0;
+            _actionRandomGroupSerial = 0;
+            _remainingActionChoiceCounts.Clear();
+            _actionCategoryCounts.Clear();
+            _actionRewardCounts.Clear();
+        }
+
+        internal bool TryTakeActionChoiceCount(out int count)
+        {
+            EnsureActionRandomStateForCurrentWeek();
+            if (_remainingActionChoiceCounts.Count == 0)
+            {
+                count = 0;
+                return false;
+            }
+
+            int last = _remainingActionChoiceCounts.Count - 1;
+            count = _remainingActionChoiceCounts[last];
+            _remainingActionChoiceCounts.RemoveAt(last);
+            return true;
+        }
+
+        internal void ReplaceActionChoiceCountBag(IEnumerable<int> counts)
+        {
+            EnsureActionRandomStateForCurrentWeek();
+            _remainingActionChoiceCounts.Clear();
+            if (counts != null)
+            {
+                _remainingActionChoiceCounts.AddRange(counts);
+            }
+        }
+
+        internal int BeginActionRandomGroup()
+        {
+            EnsureActionRandomStateForCurrentWeek();
+            _actionRandomGroupSerial++;
+            return _actionRandomGroupSerial;
+        }
+
+        internal int GetActionCategoryCount(cfg.ActionRandomCategory category)
+        {
+            EnsureActionRandomStateForCurrentWeek();
+            return _actionCategoryCounts.TryGetValue((int)category, out int count) ? count : 0;
+        }
+
+        internal int GetActionRewardCount(cfg.RewardKind rewardKind)
+        {
+            EnsureActionRandomStateForCurrentWeek();
+            return _actionRewardCounts.TryGetValue((int)rewardKind, out int count) ? count : 0;
+        }
+
+        internal void RecordRandomAction(cfg.ActionRandomCategory category, cfg.RewardKind? rewardKind)
+        {
+            EnsureActionRandomStateForCurrentWeek();
+            int categoryKey = (int)category;
+            _actionCategoryCounts[categoryKey] = GetActionCategoryCount(category) + 1;
+            if (rewardKind.HasValue)
+            {
+                int rewardKey = (int)rewardKind.Value;
+                _actionRewardCounts[rewardKey] = GetActionRewardCount(rewardKind.Value) + 1;
+            }
+
+            _actionRandomCandidateIndex++;
         }
 
         public ActionExecutionContext LastActionContext { get; private set; }
@@ -1473,25 +1532,6 @@ namespace GourmetProject.Game.Run
         public void RestoreRunActionStepIndex(int runActionStepIndex)
         {
             RunActionStepIndex = System.Math.Max(0, runActionStepIndex);
-        }
-
-        public void AppendActionGroup(string groupId)
-        {
-            _actionGroupSequence.Add(groupId ?? string.Empty);
-        }
-
-        public void RestoreActionGroupSequence(IEnumerable<string> groupIds)
-        {
-            _actionGroupSequence.Clear();
-            if (groupIds == null)
-            {
-                return;
-            }
-
-            foreach (string groupId in groupIds)
-            {
-                _actionGroupSequence.Add(groupId ?? string.Empty);
-            }
         }
 
         public void SetLastActionContext(ActionExecutionContext context)
@@ -1970,6 +2010,81 @@ namespace GourmetProject.Game.Run
 
         private cfg.Week LastConfiguredWeek => TotalWeeks > 0 ? _tables.TbWeek.GetOrDefault(TotalWeeks) : null;
 
+        private ActionRandomStateSaveData CaptureActionRandomState()
+        {
+            EnsureActionRandomStateForCurrentWeek();
+            var categoryCounts = new Dictionary<int, int>(_actionCategoryCounts);
+            categoryCounts.TryAdd((int)cfg.ActionRandomCategory.Daily, 0);
+            categoryCounts.TryAdd((int)cfg.ActionRandomCategory.Hot, 0);
+            categoryCounts.TryAdd((int)cfg.ActionRandomCategory.Event, 0);
+
+            var rewardCounts = new Dictionary<int, int>(_actionRewardCounts);
+            rewardCounts.TryAdd((int)cfg.RewardKind.PassiveItemChoice, 0);
+            rewardCounts.TryAdd((int)cfg.RewardKind.FragmentChoice, 0);
+            rewardCounts.TryAdd((int)cfg.RewardKind.ActiveItemStrengthen, 0);
+            rewardCounts.TryAdd((int)cfg.RewardKind.ActiveItemAdjust, 0);
+            rewardCounts.TryAdd((int)cfg.RewardKind.Gold, 0);
+            return new ActionRandomStateSaveData
+            {
+                WeekIndex = _actionRandomStateWeek,
+                CandidateIndex = _actionRandomCandidateIndex,
+                GroupSerial = _actionRandomGroupSerial,
+                RemainingChoiceCounts = new List<int>(_remainingActionChoiceCounts),
+                CategoryCounts = categoryCounts,
+                RewardCounts = rewardCounts,
+            };
+        }
+
+        private void RestoreActionRandomState(ActionRandomStateSaveData state)
+        {
+            _remainingActionChoiceCounts.Clear();
+            _actionCategoryCounts.Clear();
+            _actionRewardCounts.Clear();
+
+            if (state == null || state.WeekIndex != WeekIndex)
+            {
+                _actionRandomStateWeek = 0;
+                EnsureActionRandomStateForCurrentWeek();
+                return;
+            }
+
+            _actionRandomStateWeek = state.WeekIndex;
+            _actionRandomCandidateIndex = System.Math.Max(0, state.CandidateIndex);
+            _actionRandomGroupSerial = System.Math.Max(0, state.GroupSerial);
+            if (state.RemainingChoiceCounts != null)
+            {
+                foreach (int count in state.RemainingChoiceCounts)
+                {
+                    if (count == 2 || count == 3)
+                    {
+                        _remainingActionChoiceCounts.Add(count);
+                    }
+                }
+            }
+
+            if (state.CategoryCounts != null)
+            {
+                foreach (KeyValuePair<int, int> pair in state.CategoryCounts)
+                {
+                    if (pair.Value > 0)
+                    {
+                        _actionCategoryCounts[pair.Key] = pair.Value;
+                    }
+                }
+            }
+
+            if (state.RewardCounts != null)
+            {
+                foreach (KeyValuePair<int, int> pair in state.RewardCounts)
+                {
+                    if (pair.Value > 0)
+                    {
+                        _actionRewardCounts[pair.Key] = pair.Value;
+                    }
+                }
+            }
+        }
+
         /// <summary>导出为存档数据。</summary>
         public RunSaveData ToSaveData()
         {
@@ -1983,6 +2098,7 @@ namespace GourmetProject.Game.Run
 
             return new RunSaveData
             {
+                ActionRandomRuleVersion = RunPersistence.CurrentActionRandomRuleVersion,
                 CharacterId = CharacterId,
                 SeedText = SeedText,
                 WeekIndex = WeekIndex,
@@ -2058,10 +2174,7 @@ namespace GourmetProject.Game.Run
                     ? System.Math.Max(1, LastActionContext.NodeRepeatTotal)
                     : 1,
                 PendingActionExecution = ClonePendingActionExecution(_pendingActionExecution),
-                ActionGroupSequence = new List<string>(_actionGroupSequence),
-                ActionWeekPlan = new List<string>(_actionWeekPlan),
-                ActionWeekPlanWeek = _actionWeekPlanWeek,
-                ActionWeekPlanStartRunStep = _actionWeekPlanStartRunStep,
+                ActionRandomState = CaptureActionRandomState(),
                 TriggeredNodeIds = new List<string>(_triggeredNodeIds),
                 RuntimeTimelineNodes = ToRuntimeTimelineNodeSaveData(),
                 RuntimeTimelineNodeSerial = _runtimeTimelineNodeSerial,
@@ -2304,8 +2417,7 @@ namespace GourmetProject.Game.Run
             run.RestoreActionStepIndex(data.ActionStepIndex);
             run.RestoreRunActionStepIndex(data.RunActionStepIndex);
             run.RequiredScoreOverride = data.RequiredScoreOverride;
-            run.RestoreActionGroupSequence(data.ActionGroupSequence);
-            run.SetActionWeekPlan(data.ActionWeekPlanWeek, data.ActionWeekPlanStartRunStep, data.ActionWeekPlan);
+            run.RestoreActionRandomState(data.ActionRandomState);
             if (!string.IsNullOrEmpty(data.LastActionId))
             {
                 cfg.GameAction lastAction = tables.TbAction.GetOrDefault(data.LastActionId);

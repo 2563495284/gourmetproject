@@ -2445,11 +2445,8 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             string key = GameRun.BuildActionChoiceKey(_run.RunActionStepIndex, _run.WeekIndex, _run.CurrentDay, _run.ActionStepIndex);
-            IReadOnlyList<ActionChoice> previous = _run.HasPendingActionChoices(key)
-                ? _run.GetPendingActionChoices(key)
-                : RollChoices(_run);
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Action, key + "_player_reroll_" + _run.NextActiveUseKey());
-            List<ActionChoice> rerolled = ActionScheduleService.RerollChoices(_run, rng, previous);
+            List<ActionChoice> rerolled = ActionScheduleService.RerollChoices(_run, rng);
             _run.SetPendingActionChoices(key, rerolled);
             RunPersistence.Save(_run);
             RebuildActionAxis();

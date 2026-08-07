@@ -19,9 +19,23 @@ namespace GourmetProject.Game.Run
     public static class RunPersistence
     {
         private const string Tag = "RunSave";
+        public const int CurrentActionRandomRuleVersion = 1;
         private static int _saveSuppressionDepth;
 
-        public static bool HasSave => GameApp.Save.Has(UIForms.GameSaveSlot);
+        public static bool HasSave
+        {
+            get
+            {
+                if (!GameApp.Save.Has(UIForms.GameSaveSlot))
+                {
+                    return false;
+                }
+
+                return GameApp.Save.TryLoad(UIForms.GameSaveSlot, out RunSaveData data)
+                    && data != null
+                    && IsActionRandomRuleVersionCompatible(data.ActionRandomRuleVersion);
+            }
+        }
 
         public static void Save(GameRun run)
         {
@@ -31,6 +45,7 @@ namespace GourmetProject.Game.Run
             }
 
             RunSaveData data = run.ToSaveData();
+            data.ActionRandomRuleVersion = CurrentActionRandomRuleVersion;
             data.RandomSnapshot = GameApp.Random.Capture();
             GameApp.Save.Save(UIForms.GameSaveSlot, data);
             Log.Info($"Run saved. week={run.WeekIndex}, gold={run.Gold}.", Tag);
@@ -55,6 +70,15 @@ namespace GourmetProject.Game.Run
                 return null;
             }
 
+            if (!IsActionRandomRuleVersionCompatible(data.ActionRandomRuleVersion))
+            {
+                Log.Warning(
+                    $"Run save uses incompatible action random rules "
+                    + $"(save={data.ActionRandomRuleVersion}, current={CurrentActionRandomRuleVersion}); start a new run.",
+                    Tag);
+                return null;
+            }
+
             cfg.Tables tables = GameApp.Config.Tables;
             GameplayDatabase db = GameplayContentBuilder.BuildDatabase(tables);
             if (data.RandomSnapshot != null)
@@ -69,6 +93,11 @@ namespace GourmetProject.Game.Run
             GameRun run = GameRun.FromSaveData(tables, db, data);
             Log.Info($"Run loaded. character={run.CharacterId}, week={run.WeekIndex}.", Tag);
             return run;
+        }
+
+        internal static bool IsActionRandomRuleVersionCompatible(int version)
+        {
+            return version == CurrentActionRandomRuleVersion;
         }
 
         private sealed class SaveSuppressionScope : System.IDisposable
