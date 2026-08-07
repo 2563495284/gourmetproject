@@ -221,6 +221,10 @@ namespace GourmetProject.Game.UI.Battle
         internal WeekLoopController ActiveLoop => _loop;
         internal GameplayView CurrentView => _current;
         internal bool InBattle => _inBattle;
+        internal bool IsActionAxisVisible =>
+            _actionAxisBar != null
+            && _actionAxisBar.gameObject.activeInHierarchy
+            && (_actionAxisGroup == null || _actionAxisGroup.alpha > 0f);
         internal bool IsDailyActionSelectionActive =>
             _current == GameplayView.ActionSelect && _currentTimelineNodeCard == null;
         internal BattleInspectionView ActiveInspectionView =>
@@ -1396,6 +1400,8 @@ namespace GourmetProject.Game.UI.Battle
             (_world ?? BattleWorldController.Instance)?.HideWorld();
         void IBattleTableFragmentEditHost.SetInspectionNavigationBlocked(bool blocked) =>
             _infoColumn?.SetInspectionNavigationBlocked(blocked);
+        bool IBattleTableFragmentEditHost.OpenRecipeInspection(Action onClosed) =>
+            _inspectionCoordinator?.OpenRecipeFromOverlay(0, onClosed) == true;
         void IBattleTableFragmentEditHost.RefreshPersistent() => RefreshPersistent();
         void IBattleTableFragmentEditHost.NotifyPreparingChild() => PreparingChild?.Invoke();
         void IBattleTableFragmentEditHost.NotifyChildReady() => ChildReady?.Invoke();
@@ -1466,6 +1472,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             if (_fragmentEditCoordinator?.IsActive == true)
             {
+                _fragmentEditCoordinator.OpenRecipe();
                 return;
             }
 
@@ -2728,11 +2735,6 @@ namespace GourmetProject.Game.UI.Battle
         private void OnViewRecipeClicked()
         {
             if (_run == null || _current == GameplayView.None)
-            {
-                return;
-            }
-
-            if (_fragmentEditCoordinator?.IsActive == true)
             {
                 return;
             }

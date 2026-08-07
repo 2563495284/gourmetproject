@@ -39,6 +39,8 @@ namespace GourmetProject.Game.UI.Battle.View
 
         void SetInspectionNavigationBlocked(bool blocked);
 
+        bool OpenRecipeInspection(Action onClosed);
+
         void RefreshPersistent();
 
         void NotifyPreparingChild();
@@ -156,6 +158,24 @@ namespace GourmetProject.Game.UI.Battle.View
             }
         }
 
+        /// <summary>临时收起碎片编辑层查看菜谱，关闭后继续原选择状态。</summary>
+        public void OpenRecipe()
+        {
+            if (!IsActive
+                || _finishing
+                || !_host.CanInteract
+                || _host.FragmentEditLayer?.IsVisible != true)
+            {
+                return;
+            }
+
+            _host.FragmentEditLayer.HideImmediate();
+            if (!_host.OpenRecipeInspection(ResumeAfterRecipeInspection))
+            {
+                _host.FragmentEditLayer.Show();
+            }
+        }
+
         public void ForceClose()
         {
             if (!IsActive)
@@ -185,6 +205,17 @@ namespace GourmetProject.Game.UI.Battle.View
             _canConfirm = state.CanConfirm;
             _actionInteractable = state.Interactable;
             _host.FragmentEditLayer?.ApplyActionState(state);
+        }
+
+        private void ResumeAfterRecipeInspection()
+        {
+            if (!IsActive || _finishing)
+            {
+                return;
+            }
+
+            _host.FragmentEditLayer?.Show();
+            _host.RefreshPersistent();
         }
 
         private void Finish(bool placed)

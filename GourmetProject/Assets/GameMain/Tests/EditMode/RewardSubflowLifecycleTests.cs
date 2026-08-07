@@ -35,6 +35,66 @@ namespace GourmetProject.Tests.EditMode
             CollectionAssert.DoesNotContain(Enum.GetNames(typeof(GameplayView)), "TableEdit");
         }
 
+        [TestCase(GameplayView.ActionSelect, true)]
+        [TestCase(GameplayView.Shop, true)]
+        [TestCase(GameplayView.Event, true)]
+        [TestCase(GameplayView.Food, false)]
+        [TestCase(GameplayView.RecipeSelection, false)]
+        public void GameplayPages_DefineActionAxisVisibility(GameplayView view, bool expected)
+        {
+            Assert.That(GameplayPageRouter.ShowsActionAxis(view), Is.EqualTo(expected));
+        }
+
+        [TestCase(ActiveUseContextKind.ActionSelect, true)]
+        [TestCase(ActiveUseContextKind.Shop, true)]
+        [TestCase(ActiveUseContextKind.Event, true)]
+        [TestCase(ActiveUseContextKind.Battle, false)]
+        [TestCase(ActiveUseContextKind.Reward, false)]
+        public void ActiveItemContexts_DefineActionAxisAvailability(
+            ActiveUseContextKind context,
+            bool expected)
+        {
+            Assert.That(ItemActiveUsage.IsActionAxisContext(context), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void TimelineAxisTargetItems_AreUsableWheneverActionAxisIsShown()
+        {
+            string configDirectory = System.IO.Path.Combine(Application.streamingAssetsPath, "Config");
+            var tables = new cfg.Tables(name => Luban.SimpleJSON.JSON.Parse(
+                System.IO.File.ReadAllText(System.IO.Path.Combine(configDirectory, name + ".json"))));
+            string[] itemIds =
+            {
+                "item_active_add_reward_node",
+                "item_active_add_interest_node",
+                "item_active_add_shop_node",
+                "item_active_add_lottery_node",
+                "item_active_delete_timeline_node",
+                "item_active_execute_future_node",
+                "item_active_execute_past_node",
+            };
+            ActiveUseContextKind[] visibleContexts =
+            {
+                ActiveUseContextKind.ActionSelect,
+                ActiveUseContextKind.Shop,
+                ActiveUseContextKind.Event,
+            };
+
+            foreach (string itemId in itemIds)
+            {
+                ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Active);
+                Assert.That(item, Is.Not.Null, itemId);
+                Assert.That(ItemActiveUsage.IsTimelineAxisTargetEffect(item.EffectType), Is.True, itemId);
+                foreach (ActiveUseContextKind context in visibleContexts)
+                {
+                    Assert.That(ItemActiveUsage.CanUse(item, context), Is.True, $"{itemId} @ {context}");
+                }
+
+                Assert.That(ItemActiveUsage.CanUse(item, ActiveUseContextKind.Battle), Is.False, itemId);
+                Assert.That(ItemActiveUsage.CanUse(item, ActiveUseContextKind.Reward), Is.False, itemId);
+            }
+        }
+
         [Test]
         public void BattleFormPrefab_OwnsIndependentTableFragmentEditLayer()
         {
@@ -269,7 +329,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void RewardTableEdit_KeepsPersistentColumnVisibleButBlocksInspectionNavigation()
+        public void RewardTableEdit_KeepsRecipeAvailableButBlocksTableInspection()
         {
             var root = new GameObject("BattleInfo", typeof(BattleInfoColumn));
             var recipeObject = new GameObject("ViewRecipe", typeof(RectTransform), typeof(Button));
@@ -293,7 +353,8 @@ namespace GourmetProject.Tests.EditMode
 
                 info.SetInspectionNavigationBlocked(true);
                 Assert.That(root.activeSelf, Is.True, "常驻栏视觉必须保留。");
-                Assert.That(recipeButton.interactable, Is.False);
+                Assert.That(recipeButton.interactable, Is.True,
+                    "碎片三选一期间应允许随时查看菜谱。");
                 Assert.That(tableButton.interactable, Is.False);
 
                 info.SetInspectionNavigationBlocked(false);
@@ -707,6 +768,38 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void OverlayRecipeInspection_DoesNotRestoreItsAlreadyFrozenSource()
+        {
+            var recipeObject = new GameObject(
+                "OverlayInspectionRecipe",
+                typeof(RectTransform),
+                typeof(RecipeReadonlyBookView));
+            var layer = new PendingInspectionLayer(
+                recipeObject.GetComponent<RecipeReadonlyBookView>());
+            var host = new PendingInspectionHost(layer);
+            var coordinator = new BattleInspectionCoordinator(host);
+            int closed = 0;
+
+            try
+            {
+                Assert.That(coordinator.OpenRecipeFromOverlay(0, () => closed++), Is.True);
+                Assert.That(host.BeginCount, Is.Zero);
+
+                coordinator.ForceClose();
+                coordinator.ForceClose();
+
+                Assert.That(host.RestoreCount, Is.Zero,
+                    "嵌套菜谱不能提前恢复碎片页冻结的来源页面。");
+                Assert.That(closed, Is.EqualTo(1));
+                Assert.That(coordinator.IsActive, Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(recipeObject);
+            }
+        }
+
+        [Test]
         public void TableFragmentEdit_LeavesGameplayViewUnchangedAndRestoresSourceExactlyOnce()
         {
             var host = new PendingTableFragmentEditHost();
@@ -788,6 +881,26 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(host.RestoreCount, Is.EqualTo(1));
             Assert.That(host.HideWorldCount, Is.EqualTo(1));
             Assert.That(coordinator.IsActive, Is.False);
+        }
+
+        [Test]
+        public void TableFragmentEdit_RecipeInspection_HidesThenRestoresChoiceLayer()
+        {
+            var host = new PendingTableFragmentEditHost();
+            var coordinator = new BattleTableFragmentEditCoordinator(host);
+
+            Assert.That(coordinator.Open(new[] { "fragment_a", "fragment_b", "fragment_c" }, null), Is.True);
+
+            coordinator.OpenRecipe();
+
+            Assert.That(host.Layer.IsVisible, Is.False);
+            Assert.That(host.RecipeInspectionOpenCount, Is.EqualTo(1));
+
+            host.CloseRecipeInspection();
+
+            Assert.That(host.Layer.IsVisible, Is.True);
+            Assert.That(coordinator.IsActive, Is.True,
+                "关闭菜谱后应继续同一次三选一，不重建也不丢失候选状态。");
         }
 
         private sealed class PendingInspectionLayer : IBattleInspectionLayer
@@ -901,6 +1014,8 @@ namespace GourmetProject.Tests.EditMode
             public int SuspendCount { get; private set; }
             public int RestoreCount { get; private set; }
             public int HideWorldCount { get; private set; }
+            public int RecipeInspectionOpenCount { get; private set; }
+            private Action _closeRecipeInspection;
             public GameRun Run => _run;
             public GameplayView CurrentView => GameplayView.Shop;
             public IBattleTableFragmentEditLayer FragmentEditLayer => Layer;
@@ -935,6 +1050,18 @@ namespace GourmetProject.Tests.EditMode
             }
             public void SetInspectionNavigationBlocked(bool blocked) =>
                 Order.Add($"InspectionBlocked:{blocked}");
+            public bool OpenRecipeInspection(Action onClosed)
+            {
+                RecipeInspectionOpenCount++;
+                _closeRecipeInspection = onClosed;
+                return true;
+            }
+            public void CloseRecipeInspection()
+            {
+                Action callback = _closeRecipeInspection;
+                _closeRecipeInspection = null;
+                callback?.Invoke();
+            }
             public void RefreshPersistent() => Order.Add("Refresh");
             public void NotifyPreparingChild() => Order.Add("PreparingChild");
             public void NotifyChildReady() => Order.Add("ChildReady");

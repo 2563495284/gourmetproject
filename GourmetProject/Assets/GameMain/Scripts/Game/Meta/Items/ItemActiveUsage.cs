@@ -70,6 +70,11 @@ namespace GourmetProject.Game.Meta
                 return ctx != ActiveUseContextKind.Battle;
             }
 
+            if (IsTimelineAxisTargetEffect(item.EffectType))
+            {
+                return IsActionAxisContext(ctx);
+            }
+
             if (IsScheduleEffect(item.EffectType))
             {
                 return IsScheduleUsableIn(item.EffectType, ctx);
@@ -123,21 +128,28 @@ namespace GourmetProject.Game.Meta
                         || ctx == ActiveUseContextKind.Shop
                         || ctx == ActiveUseContextKind.Event
                         || ctx == ActiveUseContextKind.Reward;
-                case ItemEffectTypes.TimelineExecuteFuture:
-                case ItemEffectTypes.TimelineExecutePast:
-                    return ctx == ActiveUseContextKind.ActionSelect;
                 case ItemEffectTypes.TimelineExecuteNext:
-                case ItemEffectTypes.TimelineAddRewardNode:
-                case ItemEffectTypes.TimelineAddInterestNode:
-                case ItemEffectTypes.TimelineAddShopNode:
-                case ItemEffectTypes.TimelineAddLotteryNode:
-                case ItemEffectTypes.TimelineDeleteNode:
-                    return ctx == ActiveUseContextKind.ActionSelect
-                        || ctx == ActiveUseContextKind.Shop
-                        || ctx == ActiveUseContextKind.Event;
+                    return IsActionAxisContext(ctx);
                 default:
                     return false;
             }
+        }
+
+        /// <summary>需要直接在行动轴上选择日期或节点的消耗品效果。</summary>
+        public static bool IsTimelineAxisTargetEffect(string effectType)
+        {
+            return IsTimelineAddEffect(effectType)
+                || effectType == ItemEffectTypes.TimelineDeleteNode
+                || effectType == ItemEffectTypes.TimelineExecuteFuture
+                || effectType == ItemEffectTypes.TimelineExecutePast;
+        }
+
+        /// <summary>常规页面中会显示行动轴的使用情境。</summary>
+        internal static bool IsActionAxisContext(ActiveUseContextKind ctx)
+        {
+            return ctx == ActiveUseContextKind.ActionSelect
+                || ctx == ActiveUseContextKind.Shop
+                || ctx == ActiveUseContextKind.Event;
         }
 
         public static bool IsTimelineAddEffect(string effectType)

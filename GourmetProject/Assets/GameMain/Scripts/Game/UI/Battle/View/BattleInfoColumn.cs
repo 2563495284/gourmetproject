@@ -146,7 +146,8 @@ namespace GourmetProject.Game.UI.Battle.View
         }
 
         /// <summary>
-        /// 临时领奖编辑期间保留常驻栏视觉，但禁止进入会替换中部/世界状态的查看页。
+        /// 临时领奖编辑期间保留常驻栏视觉。菜谱可作为只读覆盖层打开；
+        /// 餐桌查看仍会替换当前世界状态，因此保持禁用。
         /// 解锁时恢复阻塞前或最近一次 Refresh 计算出的按钮状态。
         /// </summary>
         public void SetInspectionNavigationBlocked(bool blocked)
@@ -270,8 +271,7 @@ namespace GourmetProject.Game.UI.Battle.View
         {
             if (_viewRecipeButton != null)
             {
-                _viewRecipeButton.interactable = !_inspectionNavigationBlocked
-                    && _recipeInspectionAvailable;
+                _viewRecipeButton.interactable = _recipeInspectionAvailable;
             }
 
             if (_viewTableButton != null)

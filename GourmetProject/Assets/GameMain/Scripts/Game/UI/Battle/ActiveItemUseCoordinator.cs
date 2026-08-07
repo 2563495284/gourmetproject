@@ -825,18 +825,16 @@ namespace GourmetProject.Game.UI.Battle
                 return false;
             }
 
-            if (item.EffectType == ItemEffectTypes.RerollAction && !_host.IsDailyActionSelectionActive)
+            if (ItemActiveUsage.IsTimelineAxisTargetEffect(item.EffectType)
+                && !_host.IsActionAxisVisible)
             {
-                reason = "只能在普通行动选择时使用。";
+                reason = "只能在行动轴显示时使用。";
                 return false;
             }
 
-            if ((ItemActiveUsage.IsTimelineAddEffect(item.EffectType)
-                    || item.EffectType == ItemEffectTypes.TimelineDeleteNode)
-                && contextKind == ActiveUseContextKind.ActionSelect
-                && !_host.IsDailyActionSelectionActive)
+            if (item.EffectType == ItemEffectTypes.RerollAction && !_host.IsDailyActionSelectionActive)
             {
-                reason = "时间轴节点卡期间不能使用。";
+                reason = "只能在普通行动选择时使用。";
                 return false;
             }
 
@@ -1073,10 +1071,7 @@ namespace GourmetProject.Game.UI.Battle
         private static bool ShouldUseTimelineAxisTargeting(ItemDefinition item)
         {
             return item != null
-                && (ItemActiveUsage.IsTimelineAddEffect(item.EffectType)
-                    || item.EffectType == ItemEffectTypes.TimelineDeleteNode
-                    || item.EffectType == ItemEffectTypes.TimelineExecuteFuture
-                    || item.EffectType == ItemEffectTypes.TimelineExecutePast);
+                && ItemActiveUsage.IsTimelineAxisTargetEffect(item.EffectType);
         }
 
         private bool CanUseCurrentBattleTableCellTargeting()
@@ -1086,16 +1081,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private bool IsTimelineAxisContextValid()
         {
-            if (_host.CurrentView == GameplayView.ActionSelect)
-            {
-                return _host.IsDailyActionSelectionActive
-                    || (_pendingItem != null
-                        && (_pendingItem.EffectType == ItemEffectTypes.TimelineExecuteFuture
-                            || _pendingItem.EffectType == ItemEffectTypes.TimelineExecutePast));
-            }
-
-            return _host.CurrentView == GameplayView.Shop
-                || _host.CurrentView == GameplayView.Event;
+            return _host.IsActionAxisVisible;
         }
 
         private static bool ShouldPlayCellMaterialApply(ItemDefinition item, IReadOnlyList<ActiveTarget> targets)

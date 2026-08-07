@@ -56,8 +56,10 @@ namespace GourmetProject.Game.UI.Battle.View
         private BattleInspectionView _view;
         private GameplayView _sourceView = GameplayView.None;
         private bool _sourceActionAxisVisible;
+        private bool _manageSourcePresentation;
         private bool _tableTargeting;
         private bool _transitioning;
+        private Action _sessionClosed;
 
         public BattleInspectionCoordinator(IBattleInspectionHost host)
         {
@@ -76,7 +78,25 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public bool IsTransitioning => _transitioning || _host.InspectionLayer?.IsTransitioning == true;
 
-        public void OpenRecipe(int bookIndex, bool useBattleRecipe = false)
+        public bool OpenRecipe(int bookIndex, bool useBattleRecipe = false)
+        {
+            return OpenRecipeCore(bookIndex, useBattleRecipe, manageSourcePresentation: true, null);
+        }
+
+        /// <summary>
+        /// 从已经冻结来源表现的业务覆盖层（例如餐桌碎片编辑）打开菜谱。
+        /// 菜谱关闭时不恢复主页面或世界，只通知原覆盖层恢复自身表现。
+        /// </summary>
+        public bool OpenRecipeFromOverlay(int bookIndex, Action onClosed)
+        {
+            return OpenRecipeCore(bookIndex, useBattleRecipe: false, manageSourcePresentation: false, onClosed);
+        }
+
+        private bool OpenRecipeCore(
+            int bookIndex,
+            bool useBattleRecipe,
+            bool manageSourcePresentation,
+            Action onClosed)
         {
             if (_tableTargeting
                 || IsTransitioning
@@ -84,19 +104,20 @@ namespace GourmetProject.Game.UI.Battle.View
                 || bookIndex != 0
                 || _host.InspectionLayer?.RecipeView == null)
             {
-                return;
+                return false;
             }
 
             if (_view == BattleInspectionView.Recipe)
             {
-                return;
+                return false;
             }
 
-            if (!BeginSession())
+            if (!BeginSession(manageSourcePresentation))
             {
-                return;
+                return false;
             }
 
+            _sessionClosed = onClosed;
             _transitioning = true;
             _host.InspectionLayer.TransitionTo(
                 BattleInspectionView.Recipe,
@@ -118,6 +139,7 @@ namespace GourmetProject.Game.UI.Battle.View
                         _host.FoodTips);
                 },
                 CompleteTransition);
+            return true;
         }
 
         public bool ShowPassiveRecipe(
@@ -140,7 +162,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 return true;
             }
 
-            if (!BeginSession())
+            if (!BeginSession(manageSourcePresentation: true))
             {
                 return false;
             }
@@ -176,7 +198,7 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             BattleWorldController world = _host.World;
-            if (world == null || !world.CanEnterTableView || !BeginSession())
+            if (world == null || !world.CanEnterTableView || !BeginSession(manageSourcePresentation: true))
             {
                 return;
             }
@@ -221,7 +243,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 return true;
             }
 
-            if (!world.CanEnterTableView || !BeginSession())
+            if (!world.CanEnterTableView || !BeginSession(manageSourcePresentation: true))
             {
                 return false;
             }
@@ -263,7 +285,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 return false;
             }
 
-            if (!BeginSession())
+            if (!BeginSession(manageSourcePresentation: true))
             {
                 return false;
             }
@@ -328,7 +350,7 @@ namespace GourmetProject.Game.UI.Battle.View
             FinishClose(null);
         }
 
-        private bool BeginSession()
+        private bool BeginSession(bool manageSourcePresentation)
         {
             if (IsActive)
             {
@@ -342,10 +364,14 @@ namespace GourmetProject.Game.UI.Battle.View
 
             _sourceView = _host.CurrentView;
             _sourceActionAxisVisible = _host.ActionAxisVisible;
-            _host.BeginInspectionSource();
-            if (_sourceView == GameplayView.Food)
+            _manageSourcePresentation = manageSourcePresentation;
+            if (_manageSourcePresentation)
             {
-                _host.World?.SuspendWorld();
+                _host.BeginInspectionSource();
+                if (_sourceView == GameplayView.Food)
+                {
+                    _host.World?.SuspendWorld();
+                }
             }
 
             return true;
@@ -354,26 +380,34 @@ namespace GourmetProject.Game.UI.Battle.View
         private void FinishClose(Action onClosed)
         {
             EndTablePresentation();
-            if (_sourceView == GameplayView.Food)
+            if (_manageSourcePresentation && _sourceView == GameplayView.Food)
             {
                 _host.RestoreBattleWorld();
             }
-            else
+            else if (_manageSourcePresentation)
             {
                 _host.World?.SuspendWorld();
             }
 
             GameplayView sourceView = _sourceView;
             bool sourceAxisVisible = _sourceActionAxisVisible;
+            bool manageSourcePresentation = _manageSourcePresentation;
+            Action sessionClosed = _sessionClosed;
             _view = BattleInspectionView.None;
             _sourceView = GameplayView.None;
             _sourceActionAxisVisible = false;
+            _manageSourcePresentation = false;
             _tableTargeting = false;
             _transitioning = false;
-            _host.SetActionAxisVisible(sourceAxisVisible);
-            _host.RestoreInspectionSource(sourceView);
+            _sessionClosed = null;
+            if (manageSourcePresentation)
+            {
+                _host.SetActionAxisVisible(sourceAxisVisible);
+                _host.RestoreInspectionSource(sourceView);
+            }
             _host.RefreshPersistent();
             onClosed?.Invoke();
+            sessionClosed?.Invoke();
         }
 
         private void EndTablePresentation()
