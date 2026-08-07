@@ -16,85 +16,50 @@ namespace GourmetProject.Game.UI.Battle
         private const float DialogueHold = 1.05f;
         private const float DialogueFade = 0.22f;
 
-        private RectTransform _overlay;
-        private CanvasGroup _blocker;
-        private RectTransform _bubble;
-        private CanvasGroup _bubbleGroup;
-        private TMP_Text _dialogueText;
-        private RectTransform _hand;
-        private CanvasGroup _handGroup;
-        private Sprite _pointHandSprite;
-        private Sprite _grabHandSprite;
-        private RectTransform _grabbedDish;
-        private CanvasGroup _grabbedDishGroup;
-        private RectTransform _cue;
-        private CanvasGroup _cueGroup;
-        private TMP_Text _cueText;
+        [Header("Prefab hierarchy")]
+        [SerializeField] private RectTransform _overlay;
+        [SerializeField] private CanvasGroup _blocker;
+        [SerializeField] private RectTransform _bubble;
+        [SerializeField] private CanvasGroup _bubbleGroup;
+        [SerializeField] private TMP_Text _dialogueText;
+        [SerializeField] private RectTransform _hand;
+        [SerializeField] private CanvasGroup _handGroup;
+        [SerializeField] private Image _handImage;
+        [SerializeField] private RectTransform _grabbedDish;
+        [SerializeField] private CanvasGroup _grabbedDishGroup;
+        [SerializeField] private Image _grabbedDishImage;
+        [SerializeField] private RectTransform _cue;
+        [SerializeField] private CanvasGroup _cueGroup;
+        [SerializeField] private TMP_Text _cueText;
+
+        [Header("Designer assets")]
+        [SerializeField] private Sprite _pointHandSprite;
+        [SerializeField] private Sprite _grabHandSprite;
+
         private CancellationTokenSource _animationCts;
         private readonly System.Random _cosmeticRandom = new System.Random();
+        private bool _isBound;
 
         public bool IsPlaying { get; private set; }
 
         public void EnsureBuilt()
         {
-            if (_overlay != null)
+            if (_isBound)
             {
                 _overlay.SetAsLastSibling();
                 return;
             }
 
-            var overlayObject = new GameObject(
-                "BossDebuffPresentationOverlay",
-                typeof(RectTransform),
-                typeof(CanvasGroup),
-                typeof(Image));
-            overlayObject.transform.SetParent(transform, false);
-            _overlay = (RectTransform)overlayObject.transform;
-            Stretch(_overlay);
-            _blocker = overlayObject.GetComponent<CanvasGroup>();
-            _blocker.alpha = 1f;
+            if (!HasCompletePrefabBindings(out string missingBinding))
+            {
+                throw new MissingReferenceException(
+                    $"BossDebuffPresentationView requires prefab binding '{missingBinding}'. " +
+                    "Edit BossDebuffPresentationOverlay.prefab instead of constructing UI at runtime.");
+            }
+
+            _isBound = true;
             _blocker.interactable = false;
             _blocker.blocksRaycasts = false;
-            Image blockerImage = overlayObject.GetComponent<Image>();
-            blockerImage.color = new Color(0f, 0f, 0f, 0.001f);
-            blockerImage.raycastTarget = true;
-
-            _bubble = CreatePanel("DialogueBubble", new Vector2(560f, 380f), out _bubbleGroup);
-            Image bubblePanel = _bubble.GetComponent<Image>();
-            bubblePanel.enabled = false;
-            Sprite bubbleSprite = Resources.Load<Sprite>("Sprites/UI/STS2/speech_bubble3");
-            RectTransform bubbleShadow = CreateImage("DialogueBubbleShadow", bubbleSprite, _bubble);
-            bubbleShadow.sizeDelta = _bubble.sizeDelta;
-            bubbleShadow.anchoredPosition = new Vector2(0f, 10f);
-            bubbleShadow.localRotation = Quaternion.Euler(0f, 0f, 180f);
-            bubbleShadow.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.25f);
-            RectTransform bubbleArt = CreateImage("DialogueBubbleArt", bubbleSprite, _bubble);
-            bubbleArt.sizeDelta = _bubble.sizeDelta;
-            bubbleArt.localRotation = Quaternion.Euler(0f, 0f, 180f);
-            // STS2 merchant_rug_dialogue.tscn uses its HSV shader with v=0.4.
-            bubbleArt.GetComponent<Image>().color = new Color(0.4f, 0.4f, 0.4f, 1f);
-            _dialogueText = CreateText(_bubble, "Dialogue", 34f, new Color(1f, 0.965f, 0.886f, 0.9f));
-            _dialogueText.rectTransform.offsetMin = new Vector2(58f, 82f);
-            _dialogueText.rectTransform.offsetMax = new Vector2(-58f, -82f);
-            _dialogueText.alignment = TextAlignmentOptions.Center;
-
-            _pointHandSprite = Resources.Load<Sprite>("Sprites/UI/serve_point_hand");
-            _grabHandSprite = Resources.Load<Sprite>("Sprites/UI/serve_hand");
-            _grabbedDish = CreateImage("BossGrabbedDish", null);
-            _grabbedDishGroup = _grabbedDish.gameObject.AddComponent<CanvasGroup>();
-            _grabbedDishGroup.alpha = 0f;
-
-            _hand = CreateImage("BossHand", _pointHandSprite ?? _grabHandSprite);
-            _hand.sizeDelta = new Vector2(190f, 190f);
-            _hand.pivot = new Vector2(0.5f, 0.08f);
-            _handGroup = _hand.gameObject.AddComponent<CanvasGroup>();
-            _handGroup.alpha = 0f;
-
-            _cue = CreatePanel("BossCue", new Vector2(300f, 78f), out _cueGroup);
-            _cue.GetComponent<Image>().color = new Color(0.18f, 0.10f, 0.04f, 0.92f);
-            _cueText = CreateText(_cue, "Cue", 28f, new Color(1f, 0.80f, 0.24f, 1f));
-            _cueText.alignment = TextAlignmentOptions.Center;
-
             HideVisuals();
             _overlay.SetAsLastSibling();
         }
@@ -224,9 +189,8 @@ namespace GourmetProject.Game.UI.Battle
                 dishVisual.FlipX ? -1f : 1f,
                 dishVisual.FlipY ? -1f : 1f,
                 1f);
-            Image dishImage = _grabbedDish.GetComponent<Image>();
-            dishImage.sprite = dishVisual.Sprite;
-            dishImage.color = dishVisual.Color;
+            _grabbedDishImage.sprite = dishVisual.Sprite;
+            _grabbedDishImage.color = dishVisual.Color;
             _grabbedDishGroup.alpha = 1f;
             _grabbedDish.SetAsLastSibling();
 
@@ -346,48 +310,6 @@ namespace GourmetProject.Game.UI.Battle
             HideVisuals();
         }
 
-        private RectTransform CreatePanel(string name, Vector2 size, out CanvasGroup group)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
-            go.transform.SetParent(_overlay, false);
-            RectTransform rect = (RectTransform)go.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = size;
-            group = go.GetComponent<CanvasGroup>();
-            go.GetComponent<Image>().raycastTarget = false;
-            return rect;
-        }
-
-        private RectTransform CreateImage(string name, Sprite sprite, RectTransform parent = null)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            go.transform.SetParent(parent != null ? parent : _overlay, false);
-            RectTransform rect = (RectTransform)go.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            Image image = go.GetComponent<Image>();
-            image.sprite = sprite;
-            image.preserveAspect = true;
-            image.raycastTarget = false;
-            return rect;
-        }
-
-        private static TMP_Text CreateText(RectTransform parent, string name, float size, Color color)
-        {
-            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-            go.transform.SetParent(parent, false);
-            RectTransform rect = (RectTransform)go.transform;
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = new Vector2(28f, 16f);
-            rect.offsetMax = new Vector2(-28f, -16f);
-            TMP_Text text = go.GetComponent<TMP_Text>();
-            text.fontSize = size;
-            text.color = color;
-            text.textWrappingMode = TextWrappingModes.Normal;
-            text.raycastTarget = false;
-            return text;
-        }
-
         private void ConfigureHand(
             Sprite sprite,
             Vector2 target,
@@ -395,9 +317,8 @@ namespace GourmetProject.Game.UI.Battle
             float minimumHeight)
         {
             Canvas.ForceUpdateCanvases();
-            Image image = _hand.GetComponent<Image>();
-            image.sprite = sprite;
-            image.color = Color.white;
+            _handImage.sprite = sprite;
+            _handImage.color = Color.white;
             _hand.pivot = new Vector2(0.5f, Mathf.Clamp01(pivotY));
             float heightAbovePivot = Mathf.Max(0.05f, 1f - _hand.pivot.y);
             float requiredHeight = (_overlay.rect.yMax - target.y + 80f) / heightAbovePivot;
@@ -425,20 +346,47 @@ namespace GourmetProject.Game.UI.Battle
             return local;
         }
 
-        private static void Stretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-        }
-
         private void HideVisuals()
         {
             if (_bubbleGroup != null) _bubbleGroup.alpha = 0f;
             if (_handGroup != null) _handGroup.alpha = 0f;
             if (_grabbedDishGroup != null) _grabbedDishGroup.alpha = 0f;
             if (_cueGroup != null) _cueGroup.alpha = 0f;
+        }
+
+        private bool HasCompletePrefabBindings(out string missingBinding)
+        {
+            (UnityEngine.Object Target, string Name)[] bindings =
+            {
+                (_overlay, nameof(_overlay)),
+                (_blocker, nameof(_blocker)),
+                (_bubble, nameof(_bubble)),
+                (_bubbleGroup, nameof(_bubbleGroup)),
+                (_dialogueText, nameof(_dialogueText)),
+                (_hand, nameof(_hand)),
+                (_handGroup, nameof(_handGroup)),
+                (_handImage, nameof(_handImage)),
+                (_grabbedDish, nameof(_grabbedDish)),
+                (_grabbedDishGroup, nameof(_grabbedDishGroup)),
+                (_grabbedDishImage, nameof(_grabbedDishImage)),
+                (_cue, nameof(_cue)),
+                (_cueGroup, nameof(_cueGroup)),
+                (_cueText, nameof(_cueText)),
+                (_pointHandSprite, nameof(_pointHandSprite)),
+                (_grabHandSprite, nameof(_grabHandSprite)),
+            };
+
+            foreach ((UnityEngine.Object target, string name) in bindings)
+            {
+                if (target == null)
+                {
+                    missingBinding = name;
+                    return false;
+                }
+            }
+
+            missingBinding = string.Empty;
+            return true;
         }
 
         private float RandomRange(float min, float max)

@@ -1,13 +1,12 @@
 using GourmetProject.Core.Save;
+using GourmetProject.Game.Save;
 using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.Meta
 {
-    /// <summary>跨局进度档读写，独立于单局运行存档。</summary>
+    /// <summary>玩家总档中的跨局进度分区读写。</summary>
     public static class MetaProgressPersistence
     {
-        public const string Slot = "meta_progress";
-
         public static MetaProgressSaveData Load()
         {
             return Load(GameApp.Save);
@@ -15,13 +14,7 @@ namespace GourmetProject.Game.Meta
 
         public static MetaProgressSaveData Load(ISaveService save)
         {
-            if (save == null || !save.TryLoad(Slot, out MetaProgressSaveData data) || data == null)
-            {
-                return new MetaProgressSaveData();
-            }
-
-            data.Normalize();
-            return data;
+            return GameSavePersistence.Load(save).MetaProgress;
         }
 
         public static void Save(MetaProgressSaveData data)
@@ -36,14 +29,21 @@ namespace GourmetProject.Game.Meta
                 return;
             }
 
-            data ??= new MetaProgressSaveData();
-            data.Normalize();
-            save.Save(Slot, data);
+            GameSaveData root = GameSavePersistence.Load(save);
+            root.MetaProgress = data ?? new MetaProgressSaveData();
+            GameSavePersistence.Save(save, root);
         }
 
         public static void Delete()
         {
-            GameApp.Save?.Delete(Slot);
+            if (GameApp.Save == null)
+            {
+                return;
+            }
+
+            GameSaveData root = GameSavePersistence.Load();
+            root.MetaProgress = new MetaProgressSaveData();
+            GameSavePersistence.Save(root);
         }
     }
 }

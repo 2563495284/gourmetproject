@@ -263,6 +263,108 @@ namespace GourmetProject.Game.UI.Meta
                 });
         }
 
+        internal RectTransform PassiveMutationFlySource =>
+            _dishPreview != null
+                ? _dishPreview.transform as RectTransform
+                : transform as RectTransform;
+
+        internal RenderTexture CapturePassiveMutationFlyTexture()
+        {
+            return _dishPreview != null
+                ? _dishPreview.CopyCurrentTexture()
+                : null;
+        }
+
+        internal void PlayPassiveFlavorTransform(
+            DishDef dishDef,
+            IReadOnlyList<string> flavorIds,
+            int deliciousness,
+            Action onComplete)
+        {
+            HideHover();
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.blocksRaycasts = false;
+                _canvasGroup.alpha = 1f;
+            }
+
+            if (_dishPreview == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            _dishPreview.PlayTransformTo(
+                dishDef,
+                flavorIds,
+                deliciousness,
+                () =>
+                {
+                    _deliciousnessOverride = deliciousness;
+                    if (_canvasGroup != null)
+                    {
+                        _canvasGroup.blocksRaycasts = true;
+                        _canvasGroup.alpha = 1f;
+                    }
+
+                    onComplete?.Invoke();
+                });
+        }
+
+        public void PreparePassiveMutationHidden()
+        {
+            EnsureDragStateRefs();
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.alpha = 0f;
+                _canvasGroup.blocksRaycasts = false;
+            }
+
+            if (_rect != null)
+            {
+                _rect.localScale = Vector3.one * 0.72f;
+            }
+        }
+
+        public void PlayPassiveMutationAppear(Action onComplete)
+        {
+            EnsureDragStateRefs();
+            if (_canvasGroup == null || _rect == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            DOTween.Kill(_rect);
+            _canvasGroup.blocksRaycasts = false;
+            _canvasGroup.alpha = 0f;
+            _rect.localScale = Vector3.one * 0.72f;
+            float progress = 0f;
+            DOTween.To(
+                    () => progress,
+                    value =>
+                    {
+                        progress = value;
+                        _canvasGroup.alpha = value;
+                        _rect.localScale = Vector3.LerpUnclamped(
+                            Vector3.one * 0.72f,
+                            Vector3.one,
+                            value);
+                    },
+                    1f,
+                    0.32f)
+                .SetEase(Ease.OutBack)
+                .SetUpdate(true)
+                .SetTarget(_rect)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    _canvasGroup.alpha = 1f;
+                    _canvasGroup.blocksRaycasts = true;
+                    onComplete?.Invoke();
+                });
+        }
+
         /// <summary>播放与商店购买失败一致的横向衰减晃动。</summary>
         public void PlayInteractionFailed()
         {

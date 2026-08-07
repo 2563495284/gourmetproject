@@ -120,6 +120,49 @@ namespace GourmetProject.Game.UI.Battle.View
                 CompleteTransition);
         }
 
+        public bool ShowPassiveRecipe(
+            IReadOnlyList<RecipeReadonlyDishEntry> entries,
+            Action onShown)
+        {
+            if (_tableTargeting
+                || IsTransitioning
+                || _host.Run == null
+                || _host.InspectionLayer?.RecipeView == null)
+            {
+                return false;
+            }
+
+            if (_view == BattleInspectionView.Recipe)
+            {
+                BindPassiveRecipe(entries);
+                _host.RefreshPersistent();
+                onShown?.Invoke();
+                return true;
+            }
+
+            if (!BeginSession())
+            {
+                return false;
+            }
+
+            _transitioning = true;
+            _host.InspectionLayer.TransitionTo(
+                BattleInspectionView.Recipe,
+                () =>
+                {
+                    EndTablePresentation();
+                    _host.SetActionAxisVisible(_sourceActionAxisVisible);
+                    _view = BattleInspectionView.Recipe;
+                    BindPassiveRecipe(entries);
+                },
+                () =>
+                {
+                    CompleteTransition();
+                    onShown?.Invoke();
+                });
+            return true;
+        }
+
         public void OpenTable()
         {
             if (_tableTargeting || IsTransitioning || _host.Run == null)
@@ -155,6 +198,56 @@ namespace GourmetProject.Game.UI.Battle.View
                     _host.BindWorldHoverCallbacks();
                 },
                 CompleteTransition);
+        }
+
+        public bool ShowPassiveTable(GpTable table, Action onShown)
+        {
+            if (_tableTargeting
+                || IsTransitioning
+                || _host.Run == null
+                || _host.World == null)
+            {
+                return false;
+            }
+
+            BattleWorldController world = _host.World;
+            if (_view == BattleInspectionView.Table)
+            {
+                world.EndTableView();
+                world.BeginTableView(_host.Run, table);
+                _host.BindWorldHoverCallbacks();
+                _host.RefreshPersistent();
+                onShown?.Invoke();
+                return true;
+            }
+
+            if (!world.CanEnterTableView || !BeginSession())
+            {
+                return false;
+            }
+
+            _transitioning = true;
+            _host.InspectionLayer.TransitionTo(
+                BattleInspectionView.Table,
+                () =>
+                {
+                    _host.SetActionAxisVisible(false);
+                    _view = BattleInspectionView.Table;
+                    _tableTargeting = false;
+                    if (_host.InspectionLayer.TablePanel != null)
+                    {
+                        _host.InspectionLayer.TablePanel.gameObject.SetActive(true);
+                    }
+
+                    world.BeginTableView(_host.Run, table);
+                    _host.BindWorldHoverCallbacks();
+                },
+                () =>
+                {
+                    CompleteTransition();
+                    onShown?.Invoke();
+                });
+            return true;
         }
 
         public bool OpenTableTargeting(Action onOpened)
@@ -297,6 +390,18 @@ namespace GourmetProject.Game.UI.Battle.View
         {
             _transitioning = false;
             _host.RefreshPersistent();
+        }
+
+        private void BindPassiveRecipe(IReadOnlyList<RecipeReadonlyDishEntry> entries)
+        {
+            _host.InspectionLayer.RecipeView.Open(
+                _host.Run,
+                RecipeReadonlyBookRequest.ReadonlyBook(
+                    0,
+                    Close,
+                    _host.RefreshPersistent,
+                    entries),
+                _host.FoodTips);
         }
 
         private GpTable SourceBattleTable()

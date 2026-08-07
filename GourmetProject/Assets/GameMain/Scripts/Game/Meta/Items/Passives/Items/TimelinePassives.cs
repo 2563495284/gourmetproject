@@ -47,9 +47,10 @@ namespace GourmetProject.Game.Meta.Passives
 
         public override void OnAcquired()
         {
-            var result = new TimelineMutationResult { Title = Def.Name };
-            result.Changed = Run != null && Run.EnsureTimelineLengthAtLeast(System.Math.Max(1, (int)Value));
-            Finish(result);
+            Finish(PassiveTimelineMutationService.EnsureLengthAtLeast(
+                Run,
+                Def.Name,
+                System.Math.Max(1, (int)Value)));
         }
     }
 

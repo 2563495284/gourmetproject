@@ -53,12 +53,21 @@ namespace GourmetProject.Game.UI.Battle.View
         private bool _inspectionAvailabilityInitialized;
         private bool _recipeInspectionAvailable;
         private bool _tableInspectionAvailable;
+        private Sequence _weekChangeSequence;
+        private int? _recipeCountPresentationOverride;
 
         public SettlementScoreFireView ScoreFire => _scoreFire;
         public RectTransform ViewRecipeButtonRect =>
             _viewRecipeButton != null
                 ? _viewRecipeButton.transform as RectTransform
                 : null;
+
+        public void SetRecipeCountPresentationOverride(int? count)
+        {
+            _recipeCountPresentationOverride = count.HasValue
+                ? Mathf.Max(0, count.Value)
+                : null;
+        }
 
         private void Awake()
         {
@@ -68,7 +77,50 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void OnDisable()
         {
+            _weekChangeSequence?.Kill();
+            _weekChangeSequence = null;
             ResetBossStatPresentation();
+        }
+
+        internal void PlayWeekIndexChange(
+            GameRun run,
+            int beforeWeekIndex,
+            int afterWeekIndex,
+            Action onComplete)
+        {
+            if (_weekText == null || run == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            _weekChangeSequence?.Kill();
+            RectTransform rect = _weekText.rectTransform;
+            Vector3 originalScale = rect.localScale;
+            Color originalColor = _weekText.color;
+            _weekText.text = WeekText(run, beforeWeekIndex);
+            _weekChangeSequence = DOTween.Sequence()
+                .SetUpdate(true)
+                .AppendInterval(0.10f)
+                .AppendCallback(() => _weekText.text = WeekText(run, afterWeekIndex))
+                .Append(rect.DOPunchScale(Vector3.one * 0.28f, 0.34f, 8, 0.62f))
+                .Join(_weekText.DOColor(new Color(1f, 0.58f, 0.12f, 1f), 0.12f))
+                .Append(_weekText.DOColor(originalColor, 0.16f))
+                .OnComplete(() =>
+                {
+                    rect.localScale = originalScale;
+                    _weekText.color = originalColor;
+                    _weekText.text = WeekText(run, afterWeekIndex);
+                    _weekChangeSequence = null;
+                    onComplete?.Invoke();
+                });
+        }
+
+        private static string WeekText(GameRun run, int weekIndex)
+        {
+            return weekIndex > run.TotalWeeks
+                ? $"无尽第{weekIndex - run.TotalWeeks}关"
+                : $"{weekIndex}/{run.TotalWeeks}周";
         }
 
         /// <summary>接线按钮回调（由壳在 OnInit 调用一次）。</summary>
@@ -185,7 +237,8 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (_viewRecipeCountText != null)
             {
-                _viewRecipeCountText.text = run.RecipeEntries.Count.ToString();
+                _viewRecipeCountText.text =
+                    (_recipeCountPresentationOverride ?? run.RecipeEntries.Count).ToString();
             }
 
             bool showScore = inspection == BattleInspectionView.None

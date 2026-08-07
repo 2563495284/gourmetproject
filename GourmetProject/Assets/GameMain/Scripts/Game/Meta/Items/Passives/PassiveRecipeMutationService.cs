@@ -221,9 +221,16 @@ namespace GourmetProject.Game.Meta.Passives
             {
                 GridPos pos = targets[i];
                 string materialId = materials[rng.Range(0, materials.Count)];
+                IReadOnlyList<string> before = MaterialSnapshot(run, pos);
                 if (run.AddCellMaterial(pos, materialId))
                 {
-                    result.Entries.Add(new CellMutationEntry { Pos = pos, MaterialId = materialId });
+                    result.Entries.Add(new CellMutationEntry
+                    {
+                        Pos = pos,
+                        MaterialId = materialId,
+                        BeforeMaterialIds = before,
+                        AfterMaterialIds = Append(before, materialId),
+                    });
                 }
             }
 
@@ -264,13 +271,40 @@ namespace GourmetProject.Game.Meta.Passives
                     continue;
                 }
 
+                IReadOnlyList<string> before = MaterialSnapshot(run, target);
                 if (run.AddCellMaterial(target, source.MaterialId))
                 {
-                    result.Entries.Add(new CellMutationEntry { Pos = target, MaterialId = source.MaterialId });
+                    result.Entries.Add(new CellMutationEntry
+                    {
+                        Pos = target,
+                        MaterialId = source.MaterialId,
+                        BeforeMaterialIds = before,
+                        AfterMaterialIds = Append(before, source.MaterialId),
+                    });
                     break;
                 }
             }
 
+            return result;
+        }
+
+        private static IReadOnlyList<string> MaterialSnapshot(GameRun run, GridPos pos)
+        {
+            DiningTable preview = run?.BuildTablePreviewFromFragments();
+            return preview == null
+                ? System.Array.Empty<string>()
+                : new List<string>(preview.MaterialsAt(pos));
+        }
+
+        private static IReadOnlyList<string> Append(IReadOnlyList<string> source, string materialId)
+        {
+            var result = new List<string>(source?.Count + 1 ?? 1);
+            if (source != null)
+            {
+                result.AddRange(source);
+            }
+
+            result.Add(materialId);
             return result;
         }
 

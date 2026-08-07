@@ -4,12 +4,13 @@ using GourmetProject.Game.UI.Battle;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
-using UnityEngine.UI;
 
 namespace GourmetProject.Tests.PlayMode
 {
     public sealed class BossDebuffPresentationPlayModeTests
     {
+        private const string PresentationPrefabPath = "Prefabs/UI/BossDebuffPresentationOverlay";
+
         [Test]
         public void Presentation_UsesDistinctPointAndGrabHandSprites()
         {
@@ -21,14 +22,22 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(pointHand, Is.Not.SameAs(grabHand));
         }
 
+        [Test]
+        public void Presentation_EnsureBuilt_DoesNotCreateRuntimeHierarchy()
+        {
+            BossDebuffPresentationView view = CreateView();
+            int childCount = view.transform.childCount;
+
+            view.EnsureBuilt();
+
+            Assert.That(view.transform.childCount, Is.EqualTo(childCount));
+            Object.DestroyImmediate(view.gameObject);
+        }
+
         [UnityTest]
         public IEnumerator PresentationLock_ReleasesAfterSequenceCompletes()
         {
-            var canvasObject = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas));
-            canvasObject.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
-            var host = new GameObject("Host", typeof(RectTransform));
-            host.transform.SetParent(canvasObject.transform, false);
-            var view = host.AddComponent<BossDebuffPresentationView>();
+            BossDebuffPresentationView view = CreateView();
             view.EnsureBuilt();
 
             bool completed = false;
@@ -42,7 +51,7 @@ namespace GourmetProject.Tests.PlayMode
 
             Assert.That(completed, Is.True);
             Assert.That(view.IsPlaying, Is.False);
-            Object.Destroy(canvasObject);
+            Object.Destroy(view.gameObject);
 
             async Awaitable RunAsync()
             {
@@ -60,11 +69,7 @@ namespace GourmetProject.Tests.PlayMode
         [UnityTest]
         public IEnumerator PresentationLock_CancelReleasesImmediately()
         {
-            var canvasObject = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas));
-            canvasObject.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
-            var host = new GameObject("Host", typeof(RectTransform));
-            host.transform.SetParent(canvasObject.transform, false);
-            var view = host.AddComponent<BossDebuffPresentationView>();
+            BossDebuffPresentationView view = CreateView();
             view.EnsureBuilt();
 
             _ = view.PlayLockedAsync(
@@ -80,8 +85,16 @@ namespace GourmetProject.Tests.PlayMode
 
             view.CancelCurrent();
             Assert.That(view.IsPlaying, Is.False);
-            Object.Destroy(canvasObject);
+            Object.Destroy(view.gameObject);
             yield return null;
+        }
+
+        private static BossDebuffPresentationView CreateView()
+        {
+            BossDebuffPresentationView prefab =
+                Resources.Load<BossDebuffPresentationView>(PresentationPrefabPath);
+            Assert.That(prefab, Is.Not.Null, $"Missing presentation prefab at Resources/{PresentationPrefabPath}.");
+            return Object.Instantiate(prefab);
         }
     }
 }

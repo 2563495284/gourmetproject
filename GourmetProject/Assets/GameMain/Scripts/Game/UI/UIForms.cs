@@ -1,3 +1,5 @@
+using GourmetProject.Game.Save;
+
 namespace GourmetProject.Game.UI
 {
     /// <summary>
@@ -21,6 +23,7 @@ namespace GourmetProject.Game.UI
 
         // 玩法界面。
         public const string Battle = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
+        public const string TimelineLab = "Assets/GameMain/Content/Prefabs/UI/TimelinePresentationLabForm.prefab";
 
         // 时间轴节点 / 装饰品和消耗品 hover Tips（同为 View，配合 TipHoverTrigger 悬停显示）。
         public const string TimelineNodeTip = "Assets/GameMain/Content/Prefabs/UI/TipsView/TimelineNodeTipView.prefab";
@@ -29,7 +32,7 @@ namespace GourmetProject.Game.UI
         public const string Result = "Assets/GameMain/Content/Prefabs/UI/ResultForm.prefab";
         public const string HeartBreak = "Assets/GameMain/Content/Prefabs/UI/HeartBreakForm.prefab";
 
-        // 主存档槽位：用于判断“开始游戏 / 继续游戏”。
-        public const string GameSaveSlot = "slot0";
+        // 玩家总档槽位。保留此别名供旧调用兼容；新持久化代码统一经 GameSavePersistence 访问。
+        public const string GameSaveSlot = GameSavePersistence.Slot;
     }
 }

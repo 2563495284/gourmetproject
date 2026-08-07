@@ -2,8 +2,8 @@ using GameFramework.Fsm;
 using GameFramework.Procedure;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
-using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.Save;
 using GourmetProject.Game.UI;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Common;
@@ -28,8 +28,8 @@ namespace GourmetProject.Game.Procedure
             base.OnEnter(procedureOwner);
 
             EnsureUIGroups();
-            MetaProgressSaveData progress = MetaProgressPersistence.Load();
-            if (OpeningComicProgress.ShouldPlay(progress))
+            GameSaveData saveData = GameSavePersistence.Load();
+            if (OpeningComicProgress.ShouldPlay(saveData.GuideProgress))
             {
                 MoveTransitionGroupToFront();
                 int serialId = GameApp.UI.OpenUIForm(UIForms.OpeningComic, UIForms.GroupTransition);

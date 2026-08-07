@@ -1,4 +1,4 @@
-using GourmetProject.Game.Meta;
+using GourmetProject.Game.Save;
 
 namespace GourmetProject.Game.UI.Common
 {
@@ -7,16 +7,18 @@ namespace GourmetProject.Game.UI.Common
     {
         internal const int CurrentVersion = 1;
 
-        internal static bool ShouldPlay(MetaProgressSaveData progress)
+        internal static bool ShouldPlay(GuideProgressSaveData progress)
         {
             return progress == null || progress.OpeningComicCompletedVersion < CurrentVersion;
         }
 
-        internal static void MarkCompleted(MetaProgressSaveData progress)
+        internal static void MarkCompleted(GuideProgressSaveData progress)
         {
             if (progress != null)
             {
-                progress.OpeningComicCompletedVersion = CurrentVersion;
+                progress.OpeningComicCompletedVersion = System.Math.Max(
+                    CurrentVersion,
+                    progress.OpeningComicCompletedVersion);
             }
         }
     }

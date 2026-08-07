@@ -5,6 +5,8 @@ namespace GourmetProject.Game.Meta.Passives
 {
     public sealed class RecipeMutationResult
     {
+        public string SourceItemId { get; set; } = string.Empty;
+
         public string Title { get; set; } = string.Empty;
 
         public List<RecipeMutationEntry> Entries { get; } = new List<RecipeMutationEntry>();
@@ -38,6 +40,8 @@ namespace GourmetProject.Game.Meta.Passives
 
     public sealed class CellMutationResult
     {
+        public string SourceItemId { get; set; } = string.Empty;
+
         public string Title { get; set; } = string.Empty;
 
         public List<CellMutationEntry> Entries { get; } = new List<CellMutationEntry>();
@@ -50,15 +54,43 @@ namespace GourmetProject.Game.Meta.Passives
         public GridPos Pos { get; set; }
 
         public string MaterialId { get; set; } = string.Empty;
+
+        public IReadOnlyList<string> BeforeMaterialIds { get; set; } = System.Array.Empty<string>();
+
+        public IReadOnlyList<string> AfterMaterialIds { get; set; } = System.Array.Empty<string>();
+    }
+
+    public enum TimelineMutationCause
+    {
+        Unknown,
+        Add,
+        Replace,
+        Move,
+        Remove,
+        Skip,
+        Resize,
+        WeekChange,
     }
 
     public sealed class TimelineMutationResult
     {
         public string Title { get; set; } = string.Empty;
 
+        public TimelineMutationCause Cause { get; set; }
+
+        public string TargetNodeId { get; set; } = string.Empty;
+
         public List<RuntimeTimelineNodeSnapshot> Before { get; } = new List<RuntimeTimelineNodeSnapshot>();
 
         public List<RuntimeTimelineNodeSnapshot> After { get; } = new List<RuntimeTimelineNodeSnapshot>();
+
+        public float BeforeLengthDays { get; set; }
+
+        public float AfterLengthDays { get; set; }
+
+        public int BeforeWeekIndex { get; set; }
+
+        public int AfterWeekIndex { get; set; }
 
         public bool Changed { get; set; }
     }

@@ -25,6 +25,8 @@ namespace GourmetProject.Game.UI.Battle.View
         public const float FoodAccelerationMax = 5f;
         public const float FoodDurationMin = 0.5f;
         public const float FoodDurationMax = 0.8f;
+        public const float FoodSpriteFadeInDuration = 0.3f;
+        public const float FoodSpriteHoldDuration = 1f;
 
         private static readonly Color FoodDarkColor = new(0.16f, 0.16f, 0.16f, 1f);
         private static readonly Color OuterTrailColor = new(1f, 0.18f, 0.035f, 0.9f);
@@ -183,7 +185,7 @@ namespace GourmetProject.Game.UI.Battle.View
             BindCompletionCallbacks();
         }
 
-        /// <summary>Boss 贪食餐复用食物飞行轨迹；直接使用食物 Sprite，不创建或接管 RenderTexture。</summary>
+        /// <summary>复制食物表现共用的 Sprite 飞行轨迹；不创建或接管 RenderTexture。</summary>
         public void PlayFoodSprite(
             Vector2 startCenter,
             Vector2 startSize,
@@ -196,6 +198,7 @@ namespace GourmetProject.Game.UI.Battle.View
             _onFinished = onFinished;
             ConfigureSprite(sprite, Color.white);
             ConfigureRect(_rect, startCenter, startSize);
+            _group.alpha = 0f;
 
             var random = new System.Random(unchecked(Environment.TickCount * 397 ^ GetInstanceID()));
             float offset = RandomRange(random, FoodControlOffsetMin, FoodControlOffsetMax);
@@ -214,6 +217,10 @@ namespace GourmetProject.Game.UI.Battle.View
             _rect.SetAsLastSibling();
 
             _sequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+            _sequence.Append(_group
+                .DOFade(1f, FoodSpriteFadeInDuration)
+                .SetEase(Ease.OutSine));
+            _sequence.AppendInterval(FoodSpriteHoldDuration);
             _sequence.Append(DOVirtual.Float(0f, 1f, duration, normalized =>
             {
                 float progress = EvaluateAcceleratedProgress(normalized, speed, acceleration);

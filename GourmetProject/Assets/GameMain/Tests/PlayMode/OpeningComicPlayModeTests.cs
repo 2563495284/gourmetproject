@@ -1,7 +1,7 @@
 using System.Collections;
 using System.IO;
 using GourmetProject.Core.Save;
-using GourmetProject.Game.Meta;
+using GourmetProject.Game.Save;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Menu;
 using GourmetProject.Runtime;
@@ -18,10 +18,10 @@ namespace GourmetProject.Tests.PlayMode
         public IEnumerator OpeningComic_AdvancesEightPanels_ThenPersistsAndOpensMainMenu()
         {
             ISaveService diskSave = CreateDiskSave();
-            MetaProgressSaveData original = MetaProgressPersistence.Load(diskSave);
-            int originalOpeningVersion = original.OpeningComicCompletedVersion;
-            original.OpeningComicCompletedVersion = 0;
-            MetaProgressPersistence.Save(diskSave, original);
+            GameSaveData original = GameSavePersistence.Load(diskSave);
+            int originalOpeningVersion = original.GuideProgress.OpeningComicCompletedVersion;
+            original.GuideProgress.OpeningComicCompletedVersion = 0;
+            GameSavePersistence.Save(diskSave, original);
 
             try
             {
@@ -59,17 +59,18 @@ namespace GourmetProject.Tests.PlayMode
 
                 Assert.That(mainMenu, Is.Not.Null, "Final click did not open the main menu.");
 
-                MetaProgressSaveData completed = MetaProgressPersistence.Load(GameApp.Save);
                 Assert.That(
-                    completed.OpeningComicCompletedVersion,
+                    GameSavePersistence.Load(GameApp.Save).GuideProgress.OpeningComicCompletedVersion,
                     Is.EqualTo(OpeningComicProgress.CurrentVersion));
-                Assert.That(OpeningComicProgress.ShouldPlay(completed), Is.False);
+                Assert.That(
+                    OpeningComicProgress.ShouldPlay(GameSavePersistence.Load(GameApp.Save).GuideProgress),
+                    Is.False);
             }
             finally
             {
-                MetaProgressSaveData restore = MetaProgressPersistence.Load(diskSave);
-                restore.OpeningComicCompletedVersion = originalOpeningVersion;
-                MetaProgressPersistence.Save(diskSave, restore);
+                GameSaveData restore = GameSavePersistence.Load(diskSave);
+                restore.GuideProgress.OpeningComicCompletedVersion = originalOpeningVersion;
+                GameSavePersistence.Save(diskSave, restore);
             }
         }
 

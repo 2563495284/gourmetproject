@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Tooltips;
@@ -31,6 +32,121 @@ namespace GourmetProject.Game.UI.Battle.View
                 run,
                 (node, go) => ConfigureNodeTip(run, node, go),
                 executingNodeId);
+        }
+
+        public void BuildPresentation(
+            GameRun run,
+            IReadOnlyList<RuntimeTimelineNodeSnapshot> nodes,
+            float lengthDays,
+            string executingNodeId,
+            bool animate)
+        {
+            _axis?.BuildPresentation(
+                run,
+                nodes,
+                lengthDays,
+                (node, go) => ConfigureNodeTip(run, node, go),
+                executingNodeId,
+                animate);
+        }
+
+        public TimelineAxisViewState CreateState(
+            GameRun run,
+            IReadOnlyList<RuntimeTimelineNodeSnapshot> nodes = null,
+            float? lengthDays = null,
+            float? currentDay = null,
+            string executingNodeId = null)
+        {
+            return ActionAxisBar.CreateState(
+                run,
+                nodes,
+                lengthDays ?? run?.TimelineLengthDays ?? 1f,
+                currentDay ?? run?.CurrentDay ?? 0f,
+                executingNodeId);
+        }
+
+        public void PlayAdvance(
+            GameRun run,
+            float fromDay,
+            float toDay,
+            string arrivingNodeId,
+            Action onComplete)
+        {
+            TimelineAxisViewState target = CreateState(
+                run,
+                currentDay: toDay,
+                executingNodeId: arrivingNodeId);
+            _axis?.PlayCue(
+                TimelinePresentationCue.Advance(fromDay, toDay, arrivingNodeId, target),
+                onComplete);
+            if (_axis == null)
+            {
+                onComplete?.Invoke();
+            }
+        }
+
+        public void PlayNodeCue(
+            GameRun run,
+            string nodeId,
+            TimelinePresentationCueKind kind,
+            Action onComplete)
+        {
+            TimelineAxisViewState target = CreateState(
+                run,
+                executingNodeId: kind == TimelinePresentationCueKind.TriggerStart ? nodeId : null);
+            _axis?.PlayCue(TimelinePresentationCue.Node(kind, nodeId, target), onComplete);
+            if (_axis == null)
+            {
+                onComplete?.Invoke();
+            }
+        }
+
+        public void PlayMutation(
+            GameRun run,
+            TimelineMutationResult result,
+            string executingNodeId,
+            Action onComplete)
+        {
+            if (_axis == null || result == null || !result.Changed)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            TimelineAxisViewState before = CreateState(
+                run,
+                result.Before,
+                result.BeforeLengthDays,
+                run?.CurrentDay,
+                executingNodeId);
+            TimelineAxisViewState after = CreateState(
+                run,
+                result.After,
+                result.AfterLengthDays,
+                run?.CurrentDay,
+                executingNodeId);
+            _axis.BindState(before, run, (node, go) => ConfigureNodeTip(run, node, go), animate: false);
+            IReadOnlyList<TimelinePresentationCue> cues = TimelineAxisPresentationPlanner.BuildMutation(
+                before,
+                after,
+                result.Cause == TimelineMutationCause.Skip,
+                result.TargetNodeId);
+            if (cues.Count == 0)
+            {
+                _axis.BindState(after, run, (node, go) => ConfigureNodeTip(run, node, go), animate: false);
+                onComplete?.Invoke();
+                return;
+            }
+
+            for (int i = 0; i < cues.Count; i++)
+            {
+                _axis.PlayCue(cues[i], i == cues.Count - 1 ? onComplete : null);
+            }
+        }
+
+        public void CompletePresentation()
+        {
+            _axis?.CompletePresentation();
         }
 
         public bool BeginActiveItemTargeting(
