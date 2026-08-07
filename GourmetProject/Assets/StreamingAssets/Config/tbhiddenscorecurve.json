@@ -22,9 +22,9 @@
     "linearBase": 0,
     "weekCoeff": 0,
     "dayCoeff": 0,
-    "expConstant": 5.5,
+    "expConstant": 5,
     "expWeekCoeff": 0,
-    "expDayCoeff": 0.35,
+    "expDayCoeff": 0.3,
     "roundTo": 100
   },
   {
@@ -36,10 +36,10 @@
     "linearBase": 0,
     "weekCoeff": 0,
     "dayCoeff": 0,
-    "expConstant": 7.5,
+    "expConstant": 6.9,
     "expWeekCoeff": 0,
-    "expDayCoeff": 0.35,
-    "roundTo": 1000
+    "expDayCoeff": 0.3,
+    "roundTo": 100
   },
   {
     "id": "target_score_3",
@@ -50,10 +50,10 @@
     "linearBase": 0,
     "weekCoeff": 0,
     "dayCoeff": 0,
-    "expConstant": 9.5,
+    "expConstant": 8.6,
     "expWeekCoeff": 0,
-    "expDayCoeff": 0.4,
-    "roundTo": 10000
+    "expDayCoeff": 0.3,
+    "roundTo": 1000
   },
   {
     "id": "target_score_4",
@@ -64,10 +64,10 @@
     "linearBase": 0,
     "weekCoeff": 0,
     "dayCoeff": 0,
-    "expConstant": 12,
+    "expConstant": 10.5,
     "expWeekCoeff": 0,
     "expDayCoeff": 0.35,
-    "roundTo": 100000
+    "roundTo": 10000
   },
   {
     "id": "hidden_dish",
