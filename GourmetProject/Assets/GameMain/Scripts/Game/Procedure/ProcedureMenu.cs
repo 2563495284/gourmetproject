@@ -29,7 +29,8 @@ namespace GourmetProject.Game.Procedure
 
             EnsureUIGroups();
             MetaProgressSaveData progress = MetaProgressPersistence.Load();
-            if (OpeningComicProgress.ShouldPlay(progress))
+            OpeningComicProgress.MigrateLegacy(progress);
+            if (OpeningComicProgress.ShouldPlay())
             {
                 MoveTransitionGroupToFront();
                 int serialId = GameApp.UI.OpenUIForm(UIForms.OpeningComic, UIForms.GroupTransition);

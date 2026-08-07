@@ -1,10 +1,6 @@
 using System.Collections;
-using System.IO;
-using GourmetProject.Core.Save;
-using GourmetProject.Game.Meta;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Menu;
-using GourmetProject.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -17,11 +13,11 @@ namespace GourmetProject.Tests.PlayMode
         [UnityTest]
         public IEnumerator OpeningComic_AdvancesEightPanels_ThenPersistsAndOpensMainMenu()
         {
-            ISaveService diskSave = CreateDiskSave();
-            MetaProgressSaveData original = MetaProgressPersistence.Load(diskSave);
-            int originalOpeningVersion = original.OpeningComicCompletedVersion;
-            original.OpeningComicCompletedVersion = 0;
-            MetaProgressPersistence.Save(diskSave, original);
+            string key = PlayerPrefsOpeningComicProgressStore.CompletedVersionKey;
+            bool hadOriginalValue = PlayerPrefs.HasKey(key);
+            int originalOpeningVersion = PlayerPrefs.GetInt(key, 0);
+            PlayerPrefs.DeleteKey(key);
+            PlayerPrefs.Save();
 
             try
             {
@@ -59,29 +55,24 @@ namespace GourmetProject.Tests.PlayMode
 
                 Assert.That(mainMenu, Is.Not.Null, "Final click did not open the main menu.");
 
-                MetaProgressSaveData completed = MetaProgressPersistence.Load(GameApp.Save);
                 Assert.That(
-                    completed.OpeningComicCompletedVersion,
+                    PlayerPrefs.GetInt(key, 0),
                     Is.EqualTo(OpeningComicProgress.CurrentVersion));
-                Assert.That(OpeningComicProgress.ShouldPlay(completed), Is.False);
+                Assert.That(OpeningComicProgress.ShouldPlay(), Is.False);
             }
             finally
             {
-                MetaProgressSaveData restore = MetaProgressPersistence.Load(diskSave);
-                restore.OpeningComicCompletedVersion = originalOpeningVersion;
-                MetaProgressPersistence.Save(diskSave, restore);
-            }
-        }
+                if (hadOriginalValue)
+                {
+                    PlayerPrefs.SetInt(key, originalOpeningVersion);
+                }
+                else
+                {
+                    PlayerPrefs.DeleteKey(key);
+                }
 
-        private static ISaveService CreateDiskSave()
-        {
-            var options = new SaveServiceOptions
-            {
-                CurrentVersion = 1,
-                EnableChecksum = true,
-                Indented = Debug.isDebugBuild,
-            };
-            return new JsonSaveService(Path.Combine(Application.persistentDataPath, "saves"), options);
+                PlayerPrefs.Save();
+            }
         }
     }
 }

@@ -54,7 +54,7 @@ namespace GourmetProject.Game.UI.Battle
     {
         private const string Tag = "Battle";
         private const float RandomizedItemFlyDuration = 0.42f;
-        private const float RecipeCopySpriteSize = 112f;
+        private const float RecipeCopySpriteSize = 250f;
         private const float RecipeCopyCenterMargin = 64f;
         private enum FoodTipsHoverOwner
         {

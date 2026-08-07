@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using DG.Tweening;
-using GourmetProject.Game.Meta;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
 using TMPro;
@@ -256,11 +255,9 @@ namespace GourmetProject.Game.UI.Common
                     return;
                 }
 
-                MetaProgressSaveData progress = MetaProgressPersistence.Load();
-                OpeningComicProgress.MarkCompleted(progress);
                 try
                 {
-                    MetaProgressPersistence.Save(progress);
+                    OpeningComicProgress.MarkCompleted();
                 }
                 catch (Exception ex)
                 {
