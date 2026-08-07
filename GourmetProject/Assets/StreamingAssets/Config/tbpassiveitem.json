@@ -802,7 +802,7 @@
   {
     "id": "item_first_+2",
     "name": "迎客灯笼",
-    "desc": "首个上菜的食物\n倍率+1",
+    "desc": "结算开始\n首个上菜的食物\n倍率+1",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 1,
@@ -822,7 +822,7 @@
   {
     "id": "item_last_+2",
     "name": "餐后茶具",
-    "desc": "最后上菜的食物\n倍率+1",
+    "desc": "结算开始\n最后上菜的食物\n倍率+1",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 1,
@@ -1022,7 +1022,7 @@
   {
     "id": "item_lucky_guarantee",
     "name": "四叶草标本框",
-    "desc": "经历4 个事件后\n下个事件一定为奖励",
+    "desc": "经历4个事件后\n下个事件一定为奖励",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 4,
@@ -1042,7 +1042,7 @@
   {
     "id": "item_lucky_chance",
     "name": "四叶草福袋",
-    "desc": "事件行动中\n奖励事件随机权重 +20%",
+    "desc": "事件行动中\n奖励事件随机权重+20%",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 0.2,
@@ -1062,7 +1062,7 @@
   {
     "id": "item_more_events",
     "name": "街角路牌",
-    "desc": "事件行动大组\n随机权重 +20%",
+    "desc": "事件行动大组\n随机权重+20%",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0.2,
@@ -1182,7 +1182,7 @@
   {
     "id": "item_gold_on_event",
     "name": "纪念币展示框",
-    "desc": "进入事件时\n获得15 金币",
+    "desc": "进入事件时\n获得15金币",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 15,
@@ -1282,7 +1282,7 @@
   {
     "id": "item_extra_food_choice",
     "name": "点心展示架",
-    "desc": "每6次日常营业\n额外获得3选一食物",
+    "desc": "每6次日常营业\n额外获得3选1食物",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0,
@@ -1302,7 +1302,7 @@
   {
     "id": "item_extra_item_choice",
     "name": "杂货展示架",
-    "desc": "每4次火热营业\n额外获得3选一装饰品",
+    "desc": "每4次火热营业\n额外获得3选1装饰品",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0,
@@ -1682,7 +1682,7 @@
   {
     "id": "item_skill_count_mult",
     "name": "主厨刀架",
-    "desc": "结算时每有1个技能\n倍率+0.2",
+    "desc": "结算结束\n每个食物每有1个技能\n自身倍率+0.2",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 0.2,
@@ -1702,7 +1702,7 @@
   {
     "id": "item_gold_on_transfer",
     "name": "黄铜传菜铃",
-    "desc": "累计甜蜜传递10次后\n获得10金币（仅一次）",
+    "desc": "累计甜蜜传递10次后\n获得10金币",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 10,

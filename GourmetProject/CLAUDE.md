@@ -34,6 +34,7 @@ Every task follows: **Question -> Options -> Decision -> Draft -> Approval**
 - Agents MUST ask "May I write this to [filepath]?" before using Write/Edit tools
 - Agents MUST show drafts or summaries before requesting approval
 - Multi-file changes require explicit approval for the full changeset
+- Changes to user-facing display descriptions in data/config tables require the user's explicit approval before editing
 - No commits without user instruction
 
 ## Coding Standards

@@ -72,7 +72,7 @@
     "rotation": 0
   },
   {
-    "id": "jelly",
+    "id": "jellyt_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "jelly",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -90,7 +90,7 @@
     "rotation": 0
   },
   {
-    "id": "cupcake",
+    "id": "cupcaket_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "cupcake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -108,7 +108,7 @@
     "rotation": 0
   },
   {
-    "id": "eggtart",
+    "id": "eggtartt_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "eggtart",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -126,7 +126,7 @@
     "rotation": 0
   },
   {
-    "id": "sugarbean",
+    "id": "sugarbeant_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "sugarbean",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -144,7 +144,7 @@
     "rotation": 0
   },
   {
-    "id": "cheesecake",
+    "id": "cheesecaket_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "cheesecake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -162,7 +162,7 @@
     "rotation": 0
   },
   {
-    "id": "mousse",
+    "id": "mousset_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "mousse",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -180,7 +180,7 @@
     "rotation": 0
   },
   {
-    "id": "fruit_candy",
+    "id": "fruit_candyt_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "fruit_candy",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -198,7 +198,7 @@
     "rotation": 0
   },
   {
-    "id": "choco_bar",
+    "id": "choco_bart_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "choco_bar",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -216,7 +216,7 @@
     "rotation": 0
   },
   {
-    "id": "mochi",
+    "id": "mochit_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "mochi",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -234,7 +234,7 @@
     "rotation": 0
   },
   {
-    "id": "cup_cake",
+    "id": "cup_caket_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "cup_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -252,7 +252,7 @@
     "rotation": 0
   },
   {
-    "id": "cream",
+    "id": "creamt_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "cream",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -270,7 +270,7 @@
     "rotation": 0
   },
   {
-    "id": "eggroll",
+    "id": "eggrollt_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "eggroll",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -288,7 +288,7 @@
     "rotation": 0
   },
   {
-    "id": "baguette",
+    "id": "baguettet_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "baguette",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -306,7 +306,7 @@
     "rotation": 0
   },
   {
-    "id": "tanghulu",
+    "id": "tanghulut_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "tanghulu",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -324,7 +324,7 @@
     "rotation": 0
   },
   {
-    "id": "cake_slice",
+    "id": "cake_slicet_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "cake_slice",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -342,7 +342,7 @@
     "rotation": 0
   },
   {
-    "id": "long_cake",
+    "id": "long_caket_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "long_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -360,7 +360,7 @@
     "rotation": 0
   },
   {
-    "id": "eclair",
+    "id": "eclairt_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "eclair",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -378,7 +378,7 @@
     "rotation": 0
   },
   {
-    "id": "gummy",
+    "id": "gummyt_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "gummy",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -396,7 +396,7 @@
     "rotation": 0
   },
   {
-    "id": "chocolate_strip",
+    "id": "chocolate_stript_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "chocolate_strip",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -414,7 +414,7 @@
     "rotation": 0
   },
   {
-    "id": "cake_roll",
+    "id": "cake_rollt_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "cake_roll",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -432,7 +432,7 @@
     "rotation": 0
   },
   {
-    "id": "palmier",
+    "id": "palmiert_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "palmier",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -450,7 +450,7 @@
     "rotation": 0
   },
   {
-    "id": "chiffion",
+    "id": "chiffiont_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "chiffion",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -468,7 +468,7 @@
     "rotation": 0
   },
   {
-    "id": "maple_sugar",
+    "id": "maple_sugart_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "maple_sugar",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -486,7 +486,7 @@
     "rotation": 0
   },
   {
-    "id": "taosu",
+    "id": "taosut_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "taosu",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -504,7 +504,7 @@
     "rotation": 0
   },
   {
-    "id": "waffle",
+    "id": "wafflet_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "waffle",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -522,7 +522,7 @@
     "rotation": 0
   },
   {
-    "id": "cream_cake",
+    "id": "cream_caket_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "cream_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -540,7 +540,7 @@
     "rotation": 0
   },
   {
-    "id": "candycane",
+    "id": "candycanet_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "candycane",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -558,7 +558,7 @@
     "rotation": 0
   },
   {
-    "id": "black_forest_cake",
+    "id": "black_forest_caket_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "black_forest_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -576,7 +576,7 @@
     "rotation": 0
   },
   {
-    "id": "chocolate_sauce",
+    "id": "chocolate_saucet_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "chocolate_sauce",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -594,7 +594,7 @@
     "rotation": 0
   },
   {
-    "id": "mango_sago",
+    "id": "mango_sagot_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "mango_sago",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -612,7 +612,7 @@
     "rotation": 0
   },
   {
-    "id": "fruit_cake",
+    "id": "fruit_caket_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "fruit_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -630,7 +630,7 @@
     "rotation": 0
   },
   {
-    "id": "parfait",
+    "id": "parfaitt_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "parfait",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -648,7 +648,7 @@
     "rotation": 0
   },
   {
-    "id": "marshmallow",
+    "id": "marshmallowt_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "marshmallow",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -666,7 +666,7 @@
     "rotation": 0
   },
   {
-    "id": "big_lollipop",
+    "id": "big_lollipopt_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "big_lollipop",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -684,7 +684,7 @@
     "rotation": 0
   },
   {
-    "id": "apple_pie",
+    "id": "apple_piet_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "apple_pie",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
@@ -702,7 +702,7 @@
     "rotation": 0
   },
   {
-    "id": "double_cake",
+    "id": "double_caket_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseId": "double_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
