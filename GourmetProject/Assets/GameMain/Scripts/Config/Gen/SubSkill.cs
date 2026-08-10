@@ -29,7 +29,6 @@ public sealed partial class SubSkill : Luban.BeanBase
         { if(!_buf["actionCount"].IsNumber) { throw new SerializationException(); }  ActionCount = _buf["actionCount"]; }
         { var __json0 = _buf["actionValue"]; if(!__json0.IsArray) { throw new SerializationException(); } ActionValue = new System.Collections.Generic.List<float>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { float __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  ActionValue.Add(__v0); }   }
         { var __json0 = _buf["actionParam"]; if(!__json0.IsArray) { throw new SerializationException(); } ActionParam = new System.Collections.Generic.List<string>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { string __v0;  { if(!__e0.IsString) { throw new SerializationException(); }  __v0 = __e0; }  ActionParam.Add(__v0); }   }
-        { if(!_buf["isPassive"].IsBoolean) { throw new SerializationException(); }  IsPassive = _buf["isPassive"]; }
         { if(!_buf["signed"].IsBoolean) { throw new SerializationException(); }  Signed = _buf["signed"]; }
         { if(!_buf["descTemplate"].IsString) { throw new SerializationException(); }  DescTemplate = _buf["descTemplate"]; }
         { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
@@ -89,10 +88,6 @@ public sealed partial class SubSkill : Luban.BeanBase
     /// </summary>
     public readonly System.Collections.Generic.List<string> ActionParam;
     /// <summary>
-    /// 是否被动
-    /// </summary>
-    public readonly bool IsPassive;
-    /// <summary>
     /// 数值正负号
     /// </summary>
     public readonly bool Signed;
@@ -127,7 +122,6 @@ public sealed partial class SubSkill : Luban.BeanBase
         + "actionCount:" + ActionCount + ","
         + "actionValue:" + Luban.StringUtil.CollectionToString(ActionValue) + ","
         + "actionParam:" + Luban.StringUtil.CollectionToString(ActionParam) + ","
-        + "isPassive:" + IsPassive + ","
         + "signed:" + Signed + ","
         + "descTemplate:" + DescTemplate + ","
         + "termId:" + TermId + ","

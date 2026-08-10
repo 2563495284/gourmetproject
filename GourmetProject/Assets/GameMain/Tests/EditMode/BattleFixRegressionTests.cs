@@ -6,6 +6,7 @@ using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.Save;
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Menu;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -15,6 +16,7 @@ using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -69,18 +71,9 @@ namespace GourmetProject.Tests.EditMode
         [Test]
         public void ActiveAddCountAs_AffectsOnlyRulesAfterItExecutes()
         {
-            ScoreResult result = CalculateCountAsSequence(isPassive: false);
+            ScoreResult result = CalculateCountAsSequence();
 
             Assert.That(result.Total.ToDouble(), Is.EqualTo(21d).Within(0.0001d));
-            Assert.That(result.DishScores.Single().EffectiveCountAs, Is.EqualTo(2));
-        }
-
-        [Test]
-        public void PassiveAddCountAs_IsAvailableFromSettlementStart()
-        {
-            ScoreResult result = CalculateCountAsSequence(isPassive: true);
-
-            Assert.That(result.Total.ToDouble(), Is.EqualTo(22d).Within(0.0001d));
             Assert.That(result.DishScores.Single().EffectiveCountAs, Is.EqualTo(2));
         }
 
@@ -145,6 +138,45 @@ namespace GourmetProject.Tests.EditMode
             {
                 Assert.That(rows.GetArrayElementAtIndex(i).objectReferenceValue, Is.Not.Null, $"row {i}");
             }
+
+            Transform listTransform = prefab.transform.Find("SettingsList");
+            Transform viewport = prefab.transform.Find("SettingsList/Viewport");
+            Transform content = prefab.transform.Find("SettingsList/Viewport/Content");
+            Transform scrollbarTransform = prefab.transform.Find("SettingsList/Scrollbar");
+            Transform scrollbarHandle = prefab.transform.Find("SettingsList/Scrollbar/Sliding Area/Handle");
+            Assert.That(listTransform, Is.Not.Null);
+            Assert.That(viewport, Is.Not.Null);
+            Assert.That(content, Is.Not.Null);
+            Assert.That(scrollbarTransform, Is.Not.Null);
+            Assert.That(scrollbarHandle, Is.Not.Null);
+            Assert.That(content.childCount, Is.EqualTo(10));
+
+            ScrollRect scrollRect = listTransform.GetComponent<ScrollRect>();
+            Assert.That(scrollRect, Is.Not.Null);
+            Assert.That(scrollRect.content, Is.SameAs(content));
+            Assert.That(scrollRect.viewport, Is.SameAs(viewport));
+            Assert.That(scrollRect.vertical, Is.True);
+            Assert.That(scrollRect.horizontal, Is.False);
+
+            Scrollbar scrollbar = scrollbarTransform.GetComponent<Scrollbar>();
+            Assert.That(scrollbar, Is.Not.Null);
+            Assert.That(scrollRect.verticalScrollbar, Is.Null,
+                "The visible scrollbar must not be assigned here, otherwise ScrollRect rewrites its size every frame.");
+            Assert.That(scrollRect.verticalScrollbarVisibility, Is.EqualTo(ScrollRect.ScrollbarVisibility.Permanent));
+            Assert.That(scrollbar.handleRect, Is.SameAs(scrollbarHandle));
+            Assert.That(scrollbar.direction, Is.EqualTo(Scrollbar.Direction.BottomToTop));
+
+            FixedScrollbarHandleSize fixedHandleSize = scrollbarTransform.GetComponent<FixedScrollbarHandleSize>();
+            Assert.That(fixedHandleSize, Is.Not.Null);
+            var fixedHandleSerialized = new SerializedObject(fixedHandleSize);
+            Assert.That(fixedHandleSerialized.FindProperty("_scrollRect").objectReferenceValue, Is.SameAs(scrollRect));
+            var slidingArea = scrollbar.handleRect.parent as RectTransform;
+            Assert.That(slidingArea, Is.Not.Null);
+            Assert.That(scrollbar.size * slidingArea.rect.height, Is.EqualTo(199f).Within(0.5f));
+
+            ContentSizeFitter fitter = content.GetComponent<ContentSizeFitter>();
+            Assert.That(fitter, Is.Not.Null);
+            Assert.That(fitter.verticalFit, Is.EqualTo(ContentSizeFitter.FitMode.PreferredSize));
         }
 
         [Test]
@@ -174,7 +206,7 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
-        private static ScoreResult CalculateCountAsSequence(bool isPassive)
+        private static ScoreResult CalculateCountAsSequence()
         {
             const string skillId = "skill_count_as";
             SkillRuleDef before = Rule(
@@ -196,8 +228,7 @@ namespace GourmetProject.Tests.EditMode
                 CountMode.Gate,
                 SkillActionType.AddCountAs,
                 SkillScope.All,
-                1f,
-                isPassive);
+                1f);
             SkillRuleDef after = Rule(
                 "after",
                 skillId,
@@ -232,8 +263,7 @@ namespace GourmetProject.Tests.EditMode
             CountMode countMode,
             SkillActionType action,
             SkillScope actionScope,
-            float value,
-            bool isPassive = false)
+            float value)
         {
             return new SkillRuleDef(
                 id,
@@ -249,8 +279,7 @@ namespace GourmetProject.Tests.EditMode
                 actionScope,
                 0,
                 new[] { value },
-                Array.Empty<string>(),
-                isPassive: isPassive);
+                Array.Empty<string>());
         }
 
         private static FlavorDef Flavor(string id, FlavorEffectType type, float value)

@@ -14,7 +14,6 @@
       10
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}\n分数 {0}",
     "termId": ""
@@ -34,7 +33,6 @@
       0.5
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}\n倍率 {0}",
     "termId": ""
@@ -54,7 +52,6 @@
       10
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}\n分数 {0}",
     "termId": ""
@@ -74,7 +71,6 @@
       0.5
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}\n倍率 {0}",
     "termId": ""
@@ -94,7 +90,6 @@
       1.5
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}\n没有空格时，倍率 {0}",
     "termId": ""
@@ -114,7 +109,6 @@
       2
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}每有 1 {unit}技能\n欢乐蛋糕 {0} 层",
     "termId": "clb"
@@ -134,7 +128,6 @@
       0.8
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}\n每有 1 {unit}食物，倍率 {0}",
     "termId": ""
@@ -154,7 +147,6 @@
       6
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}\n每有 1 {unit}技能，分数 {0}",
     "termId": ""
@@ -174,7 +166,6 @@
       0
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "甜蜜传递 {count} 个食物",
     "termId": "term_sweet_transfer"
@@ -194,7 +185,6 @@
       10
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}分数 {0}",
     "termId": ""
@@ -214,7 +204,6 @@
       6
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "欢乐蛋糕 {0} 层",
     "termId": "clb"
@@ -234,7 +223,6 @@
       2
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}每有 1 {unit}食物\n欢乐蛋糕 {0} 层",
     "termId": "clb"
@@ -254,7 +242,6 @@
       0.4
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}倍率 {0}",
     "termId": ""
@@ -274,7 +261,6 @@
       0
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "甜蜜传递 {count} 个食物",
     "termId": "term_sweet_transfer"
@@ -294,7 +280,6 @@
       5
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}\n每有 1 {unit}食物，分数 {0}",
     "termId": ""
@@ -314,7 +299,6 @@
       0
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "甜蜜传递 {count} 个食物",
     "termId": "term_sweet_transfer"
@@ -334,7 +318,6 @@
       0.8
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}\n每有 2 {unit}食物，倍率 {0}",
     "termId": ""
@@ -354,7 +337,6 @@
       0.5
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}倍率 {0}",
     "termId": ""
@@ -374,7 +356,6 @@
       5
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "欢乐蛋糕 {0} 层",
     "termId": "clb"
@@ -394,7 +375,6 @@
       10
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}没有空格时\n{ascope}食物分数 {0}",
     "termId": ""
@@ -414,7 +394,6 @@
       10
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}\n每有 1 {unit}食物，分数 {0}",
     "termId": ""
@@ -434,7 +413,6 @@
       3
     ],
     "actionParam": [],
-    "isPassive": true,
     "signed": true,
     "descTemplate": "{ascope}额外视为 {value} 个食物",
     "termId": ""
@@ -454,7 +432,6 @@
       2
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}倍率 {0}",
     "termId": ""
@@ -474,7 +451,6 @@
       0
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "甜蜜传递 {count} 个食物",
     "termId": "term_sweet_transfer"
@@ -496,7 +472,6 @@
     "actionParam": [
       "cat:cake"
     ],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cat}类食物倍率 {0}",
     "termId": ""
@@ -516,7 +491,6 @@
       30
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}分数 {0}",
     "termId": ""
@@ -536,7 +510,6 @@
       1
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}倍率 {0}",
     "termId": ""
@@ -556,7 +529,6 @@
       15
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "欢乐蛋糕 {0} 层",
     "termId": "clb"
@@ -578,7 +550,6 @@
     "actionParam": [
       "tiervals:2.5|5|8"
     ],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}食物数量达 {tiers} 时\n倍率 {tiervals}",
     "termId": ""
@@ -600,7 +571,6 @@
     "actionParam": [
       "when:transfer;resultscope:ColumnAndSelf"
     ],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "结算后，{cscope}\n发动甜蜜传递，倍率 ×{0}",
     "termId": ""
@@ -620,7 +590,6 @@
       10
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}分数永久 {0}",
     "termId": ""
@@ -640,7 +609,6 @@
       0
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "甜蜜传递 {count} 个食物",
     "termId": "term_sweet_transfer"
@@ -660,7 +628,6 @@
       10
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "欢乐蛋糕 {0} 层",
     "termId": "clb"
@@ -682,7 +649,6 @@
     "actionParam": [
       "cat:cake"
     ],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "将自身分数加至{cat}类食物上",
     "termId": ""
@@ -702,7 +668,6 @@
       2
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "{ascope}倍率 ×{0}",
     "termId": ""
@@ -724,7 +689,6 @@
     "actionParam": [
       "multfloor:20"
     ],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "欢乐蛋糕层数 ×{0}\n至少 +{floor} 层",
     "termId": "clb"
@@ -746,7 +710,6 @@
     "actionParam": [
       "skilltype:TransferSkills"
     ],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "使{ascope}带甜蜜传递的食物\n额外结算 1 次甜蜜传递",
     "termId": "term_sweet_transfer"
@@ -768,7 +731,6 @@
     "actionParam": [
       "tiervals:2|3|4"
     ],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "{cscope}食物达 {tiers} 个时\n倍率 ×{tiervals}",
     "termId": ""
@@ -788,7 +750,6 @@
       0.3
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}每有 1 {unit}食物\n倍率 {0}",
     "termId": ""
@@ -808,7 +769,6 @@
       25
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "欢乐蛋糕 {0} 层",
     "termId": "clb"
@@ -830,7 +790,6 @@
     "actionParam": [
       "cat:cake"
     ],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}{cat}类食物分数 {0}",
     "termId": ""
@@ -850,7 +809,6 @@
       3
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cscope}每有 1 {unit}技能\n倍率 {0}",
     "termId": ""
@@ -870,7 +828,6 @@
       0
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "甜蜜传递 {count} 个食物",
     "termId": "term_sweet_transfer"
@@ -892,7 +849,6 @@
     "actionParam": [
       "cat:cake"
     ],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "{ascope}{cat}类食物倍率 ×{0}",
     "termId": ""
@@ -914,7 +870,6 @@
     "actionParam": [
       "tiervals:15|30|50"
     ],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{cat}数量达 {tiers} 时\n欢乐蛋糕 {tiervals} 层",
     "termId": "clb"
@@ -934,7 +889,6 @@
       2.5
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "{ascope}倍率 ×{0}",
     "termId": ""
@@ -954,7 +908,6 @@
       0
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "甜蜜传递 {count} 个食物",
     "termId": "term_sweet_transfer"
@@ -974,7 +927,6 @@
       1.1
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "{cscope}每有 1 {unit}食物\n倍率 ×{0}",
     "termId": ""
@@ -996,7 +948,6 @@
     "actionParam": [
       "cat:cake"
     ],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "{ascope}{cat}类食物倍率 ×{0}",
     "termId": ""
@@ -1016,7 +967,6 @@
       1
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "将餐桌格总数\n加至欢乐蛋糕层数",
     "termId": "clb"
@@ -1038,7 +988,6 @@
     "actionParam": [
       "target:occupiedcells"
     ],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}食物额外视为 N 个食物\n（N 为各自所占格子数）",
     "termId": ""
@@ -1060,7 +1009,6 @@
     "actionParam": [
       "modifier:add-targets"
     ],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "{ascope}食物发动甜蜜传递时\n额外选择 {0} 个目标",
     "termId": "term_sweet_transfer"
@@ -1080,7 +1028,6 @@
       2
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "{cscope}\n每有 1 {unit}技能，倍率 ×{0}",
     "termId": ""
@@ -1102,7 +1049,6 @@
     "actionParam": [
       "axis:rowcol;skilltype:TransferSkills"
     ],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "甜蜜传递至同行列食物",
     "termId": "term_sweet_transfer"
@@ -1122,7 +1068,6 @@
       1
     ],
     "actionParam": [],
-    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}食物把食物数量加入倍率",
     "termId": ""
@@ -1144,7 +1089,6 @@
     "actionParam": [
       "cat:cake"
     ],
-    "isPassive": false,
     "signed": false,
     "descTemplate": "{ascope}获得 {0} 种不同的{cat}技能",
     "termId": ""

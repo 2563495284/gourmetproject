@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 子技能(合并后=具体子技能)：一行=一条完整效果(全部 SkillRuleDef 字段 + isPassive/signed/descTemplate)。参数不同即不同子技能，内容相同可被多个技能复用。
+/// 子技能(合并后=具体子技能)：一行=一条完整效果(全部 SkillRuleDef 字段 + signed/descTemplate)。参数不同即不同子技能，内容相同可被多个技能复用。
 /// </summary>
 public partial class TbSubSkill
 {

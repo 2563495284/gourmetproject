@@ -64,13 +64,13 @@ namespace GourmetProject.Gameplay.Scoring
                 EnsureAccumulator(dish);
             }
 
-            // 预计算本次结算的「视为食物数」live 值（含条件/定向 AddCountAs），供计数前提读取。
-            ComputeLiveCountAs(snapshot);
+            // 初始化本次结算的「视为食物数」live 值；技能 AddCountAs 会在实际执行时继续修改。
+            InitializeLiveCountAs(snapshot);
         }
 
         /// <summary>
-        /// 本次结算每个食物的「视为食物数」实际值（下限 1）：静态定义 + 已持久化运行时加成 + 本次结算即时生效的 AddCountAs 规则。
-        /// AddCountAs 走 live（每次结算按当前局面重算），不做跨结算持久，故条件类「视为N」在当次结算即生效。
+        /// 本次结算每个食物的「视为食物数」实际值（下限 1）：静态定义 + 已持久化运行时加成 +
+        /// 已执行的 AddCountAs 规则。AddCountAs 只影响其后的规则，且不跨结算持久。
         /// </summary>
         public int GetEffectiveCountAs(DishInstance dish)
         {
@@ -82,70 +82,16 @@ namespace GourmetProject.Gameplay.Scoring
             return _liveCountAs.TryGetValue(dish.Id, out int v) ? v : Math.Max(1, dish.EffectiveCountAs);
         }
 
-        private void ComputeLiveCountAs(ScoreSnapshot snapshot)
+        private void InitializeLiveCountAs(ScoreSnapshot snapshot)
         {
-            var extra = new Dictionary<int, int>();
-            IScoreHistory history = snapshot.History;
-            foreach (DishInstance src in snapshot.DishesInDefaultOrder)
-            {
-                if (src.SkillsDisabled)
-                {
-                    continue;
-                }
-
-                foreach (string skillId in src.SkillIds)
-                {
-                    SkillDef skill = Db?.GetSkill(skillId);
-                    if (skill == null || !skill.HasRules)
-                    {
-                        continue;
-                    }
-
-                    foreach (SkillRuleDef rule in skill.Rules)
-                    {
-                        if (rule.Trigger != SkillTrigger.OnSettle
-                            || rule.ActionType != SkillActionType.AddCountAs
-                            || !rule.IsPassive)
-                        {
-                            continue;
-                        }
-
-                        // 用默认（非 live）计数评估条件，避免 countAs 递归依赖 countAs。
-                        int count = SkillConditionEvaluator.Evaluate(rule, DiningTable, history, src, InitialHappyCakeLayers);
-                        if (count <= 0)
-                        {
-                            continue;
-                        }
-
-                        foreach (DishInstance t in CountAsTargets(rule, src))
-                        {
-                            float basis = HasActionParam(rule, "target:occupiedcells")
-                                ? t.OccupiedCells.Count
-                                : 1f;
-                            int value = (int)Math.Round(
-                                rule.ActionValue * count * basis,
-                                MidpointRounding.AwayFromZero);
-                            if (value == 0)
-                            {
-                                continue;
-                            }
-
-                            extra.TryGetValue(t.Id, out int cur);
-                            extra[t.Id] = cur + value;
-                        }
-                    }
-                }
-            }
-
             int itemBonus = Math.Max(0, snapshot.ExtraCountAsPerDish);
             foreach (DishInstance d in snapshot.DishesInDefaultOrder)
             {
-                extra.TryGetValue(d.Id, out int e);
-                _liveCountAs[d.Id] = Math.Max(1, d.Def.CountAs + d.RuntimeCountAsBonus + e + itemBonus);
+                _liveCountAs[d.Id] = Math.Max(1, d.Def.CountAs + d.RuntimeCountAsBonus + itemBonus);
             }
         }
 
-        /// <summary>主动 AddCountAs 在规则实际执行到时修改 live 值，只影响后续规则。</summary>
+        /// <summary>AddCountAs 在规则实际执行到时修改 live 值，只影响后续规则。</summary>
         public void ApplyLiveCountAs(SkillRuleDef rule, DishInstance self, int count, float value)
         {
             if (rule == null || self == null || count <= 0 || value == 0f)

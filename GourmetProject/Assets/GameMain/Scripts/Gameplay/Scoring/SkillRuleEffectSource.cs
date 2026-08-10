@@ -329,11 +329,8 @@ namespace GourmetProject.Gameplay.Scoring
                     break;
 
                 case SkillActionType.AddCountAs:
-                    // 被动规则已在结算前预计算；主动规则在自身执行到时才影响后续规则。
-                    if (!_rule.IsPassive)
-                    {
-                        ctx.ApplyLiveCountAs(_rule, _self, count, value);
-                    }
+                    // 所有子技能均主动触发，只在自身执行到时影响后续规则。
+                    ctx.ApplyLiveCountAs(_rule, _self, count, value);
                     break;
 
                 case SkillActionType.None:
