@@ -288,6 +288,34 @@ namespace GourmetProject.Game.Meta
             }
         }
 
+        /// <summary>
+        /// 玩家在领奖界面主动确认候选时使用。主动道具栏已满时必须保留候选，
+        /// 不能沿用通用获得入口的折金币兜底，否则 UI 会把未入栏的道具误记为已领取。
+        /// </summary>
+        public static bool TryClaimChoice(GameRun run, RewardChoice choice, out string rewardText)
+        {
+            rewardText = string.Empty;
+            if (run == null || choice == null)
+            {
+                return false;
+            }
+
+            if (IsActiveItemReward(choice.Kind) && !run.HasFreeActiveSlot)
+            {
+                return false;
+            }
+
+            rewardText = ApplyChoice(run, choice);
+            return true;
+        }
+
+        private static bool IsActiveItemReward(cfg.RewardKind kind)
+        {
+            return kind == cfg.RewardKind.ActiveItemGrant
+                || kind == cfg.RewardKind.ActiveItemStrengthen
+                || kind == cfg.RewardKind.ActiveItemAdjust;
+        }
+
         public static bool ApplyDishChoice(GameRun run, RewardChoice choice)
         {
             if (run == null || choice == null || choice.Kind != cfg.RewardKind.DishChoice)

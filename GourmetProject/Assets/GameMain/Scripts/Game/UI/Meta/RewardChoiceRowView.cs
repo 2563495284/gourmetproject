@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Model;
@@ -26,6 +27,7 @@ namespace GourmetProject.Game.UI.Meta
         private static readonly Color SelectedColor = new(1f, 0.82f, 0.42f, 1f);
         private static readonly Color GrantedColor = new(0.88f, 0.96f, 0.82f, 1f);
         private Sprite _selectionFlySprite;
+        private Tween _failureTween;
 
         public RectTransform TipPlacementTarget
         {
@@ -81,6 +83,39 @@ namespace GourmetProject.Game.UI.Meta
 
             trigger.ClearTip();
             trigger.enabled = false;
+        }
+
+        /// <summary>播放与商店购买失败一致的横向衰减晃动。</summary>
+        public void PlayTargetFailed()
+        {
+            EnsureRefs();
+            RectTransform target = TipPlacementTarget;
+            if (target == null)
+            {
+                return;
+            }
+
+            _failureTween?.Kill();
+            Vector2 origin = target.anchoredPosition;
+            _failureTween = DOVirtual.Float(0f, 1f, 0.25f, t =>
+                {
+                    if (target == null)
+                    {
+                        return;
+                    }
+
+                    float offset = Mathf.Sin(t * Mathf.PI * 12f) * 9f * (1f - t);
+                    target.anchoredPosition = origin + new Vector2(offset, 0f);
+                })
+                .SetEase(Ease.Linear)
+                .SetUpdate(true)
+                .OnComplete(() =>
+                {
+                    if (target != null)
+                    {
+                        target.anchoredPosition = origin;
+                    }
+                });
         }
 
         public void Bind(
@@ -211,6 +246,11 @@ namespace GourmetProject.Game.UI.Meta
                 Transform state = transform.Find("State") ?? transform.Find("StateText");
                 _stateText = state != null ? state.GetComponent<TMP_Text>() : null;
             }
+        }
+
+        private void OnDestroy()
+        {
+            _failureTween?.Kill();
         }
     }
 }

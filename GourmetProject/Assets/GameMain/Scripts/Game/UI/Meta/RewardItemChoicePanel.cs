@@ -23,7 +23,7 @@ namespace GourmetProject.Game.UI.Meta
         private bool _resolved;
         private GameRun _run;
         private ItemTipView _itemTip;
-        private Action<RewardItemChoiceCardView, int> _onPick;
+        private Func<RewardItemChoiceCardView, int, bool> _onPick;
         private Action _onFinish;
         private string _baseTitle = string.Empty;
         private int _requiredPicks;
@@ -51,7 +51,7 @@ namespace GourmetProject.Game.UI.Meta
             RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             cfg.ItemKind kind,
-            Action<RewardItemChoiceCardView, int> onPick,
+            Func<RewardItemChoiceCardView, int, bool> onPick,
             Action onFinish,
             GameRun run = null,
             ItemTipView itemTip = null)
@@ -145,7 +145,12 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             RewardItemChoiceCardView card = _cards[index];
-            _onPick?.Invoke(card, index);
+            if (_onPick == null || !_onPick.Invoke(card, index))
+            {
+                card?.PlayTargetFailed();
+                return;
+            }
+
             _claimedOnPage.Add(index);
             card?.SetResolved(true);
             RefreshPresentation();
@@ -311,7 +316,7 @@ namespace GourmetProject.Game.UI.Meta
 
             return _run == null || _run.HasFreeActiveSlot
                 ? null
-                : "消耗品槽已满，选择后会折算金币";
+                : "消耗品槽已满，暂时无法领取";
         }
 
         private void ClearCards()

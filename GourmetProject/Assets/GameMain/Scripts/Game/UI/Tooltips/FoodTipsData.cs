@@ -352,10 +352,37 @@ namespace GourmetProject.Game.UI.Tooltips
                     title = sourceLabel;
                 }
 
-                entries.Add(new FoodInfoEntry(title, skill.Desc));
+                AppendSkillEntries(entries, skill, title);
             }
 
             return entries;
+        }
+
+        /// <summary>
+        /// 将技能按子技能描述拆成独立展示项；一个子技能对应一张 FoodTipCardView。
+        /// 旧数据没有子技能描述时，仍回退到技能聚合描述。
+        /// </summary>
+        internal static void AppendSkillEntries(
+            List<FoodInfoEntry> entries,
+            SkillDef skill,
+            string title = null)
+        {
+            if (entries == null || skill == null)
+            {
+                return;
+            }
+
+            string resolvedTitle = title ?? skill.Name;
+            if (skill.RuleDescs == null || skill.RuleDescs.Count == 0)
+            {
+                entries.Add(new FoodInfoEntry(resolvedTitle, skill.Desc));
+                return;
+            }
+
+            for (int i = 0; i < skill.RuleDescs.Count; i++)
+            {
+                entries.Add(new FoodInfoEntry(resolvedTitle, skill.RuleDescs[i]));
+            }
         }
 
         private static IReadOnlyList<string> BuildFlavorNames(DishInstance dish, GameplayDatabase db)

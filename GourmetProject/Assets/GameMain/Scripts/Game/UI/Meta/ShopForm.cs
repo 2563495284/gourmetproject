@@ -578,7 +578,7 @@ namespace GourmetProject.Game.UI.Meta
                     continue;
                 }
 
-                entries.Add(new FoodInfoEntry(skill.Name, skill.Desc));
+                FoodTipsDataFactory.AppendSkillEntries(entries, skill);
             }
 
             return entries;

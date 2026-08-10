@@ -84,7 +84,7 @@ namespace GourmetProject.Game.UI.Meta
                 SkillDef skill = Database.GetSkill(skillId);
                 if (skill != null)
                 {
-                    skills.Add(new FoodInfoEntry(skill.Name, skill.Desc));
+                    FoodTipsDataFactory.AppendSkillEntries(skills, skill);
                 }
             }
 

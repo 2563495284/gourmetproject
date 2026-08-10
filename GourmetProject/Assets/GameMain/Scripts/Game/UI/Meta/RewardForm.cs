@@ -694,6 +694,13 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            if (IsActiveItemReward(choice.Kind)
+                && (_run == null || !_run.HasFreeActiveSlot))
+            {
+                sourceRow?.PlayTargetFailed();
+                return;
+            }
+
             if (choice.Kind == cfg.RewardKind.DishChoice)
             {
                 bool applied;
@@ -1481,17 +1488,20 @@ namespace GourmetProject.Game.UI.Meta
                 false,
                 true,
                 false,
-                () => OpenChoicePack(groupIndex, choices),
+                () => OpenChoicePack(groupIndex, choices, row),
                 dish: suppressDishPreview ? null : DishForChoice(firstChoice),
                 flavorIds: suppressDishPreview ? null : FlavorIdsForChoice(firstChoice));
         }
 
-        private void OpenChoicePack(int groupIndex, IReadOnlyList<RewardChoice> choices)
+        private void OpenChoicePack(
+            int groupIndex,
+            IReadOnlyList<RewardChoice> choices,
+            RewardChoiceRowView sourceRow)
         {
             RewardChoiceGroup group = GroupFor(groupIndex);
             if (group.RequiredChoiceCount >= group.Choices.Count)
             {
-                ClaimAllRemainingChoices(groupIndex, choices);
+                ClaimAllRemainingChoices(groupIndex, choices, sourceRow);
                 return;
             }
 
@@ -1562,10 +1572,10 @@ namespace GourmetProject.Game.UI.Meta
                 {
                     if (pickedIndex < 0 || pickedIndex >= sourceIndices.Count)
                     {
-                        return;
+                        return false;
                     }
 
-                    ClaimItemChoiceFromPopup(groupIndex, sourceIndices[pickedIndex]);
+                    return ClaimItemChoiceFromPopup(groupIndex, sourceIndices[pickedIndex]);
                 },
                 ResumeFromRewardSubflow);
             if (opened)
@@ -1583,11 +1593,11 @@ namespace GourmetProject.Game.UI.Meta
             return false;
         }
 
-        private void ClaimItemChoiceFromPopup(int groupIndex, int index)
+        private bool ClaimItemChoiceFromPopup(int groupIndex, int index)
         {
             if (!RestoreRewardContextForCallback())
             {
-                return;
+                return false;
             }
 
             RewardChoiceGroup group = GroupFor(groupIndex);
@@ -1599,23 +1609,50 @@ namespace GourmetProject.Game.UI.Meta
                 || currentChoices[index] == null
                 || IsChoiceClaimed(groupIndex, index))
             {
-                return;
+                return false;
             }
 
             using (RunPersistence.SuppressSave())
             {
-                RewardGranter.ApplyChoice(_run, currentChoices[index]);
+                if (!RewardGranter.TryClaimChoice(_run, currentChoices[index], out _))
+                {
+                    return false;
+                }
             }
 
             MarkChoiceClaimed(groupIndex, index);
             CacheCurrentOffer();
             RefreshBattlePersistentHud();
+            return true;
         }
 
-        private void ClaimAllRemainingChoices(int groupIndex, IReadOnlyList<RewardChoice> choices)
+        private void ClaimAllRemainingChoices(
+            int groupIndex,
+            IReadOnlyList<RewardChoice> choices,
+            RewardChoiceRowView sourceRow)
         {
             if (_offer == null || choices == null)
             {
+                return;
+            }
+
+            int activeItemsNeeded = 0;
+            for (int i = 0; i < choices.Count; i++)
+            {
+                if (!IsChoiceClaimed(groupIndex, i)
+                    && choices[i] != null
+                    && IsActiveItemReward(choices[i].Kind))
+                {
+                    activeItemsNeeded++;
+                }
+            }
+
+            int freeActiveSlots = _run != null
+                ? System.Math.Max(0, _run.ActiveSlotCapacity - _run.ActiveItemCount)
+                : 0;
+            if (activeItemsNeeded > freeActiveSlots)
+            {
+                sourceRow?.PlayTargetFailed();
                 return;
             }
 
@@ -1634,7 +1671,10 @@ namespace GourmetProject.Game.UI.Meta
 
                 using (RunPersistence.SuppressSave())
                 {
-                    RewardGranter.ApplyChoice(_run, choice);
+                    if (!RewardGranter.TryClaimChoice(_run, choice, out _))
+                    {
+                        return;
+                    }
                 }
 
                 MarkChoiceClaimed(groupIndex, i);
@@ -1677,8 +1717,8 @@ namespace GourmetProject.Game.UI.Meta
             if (IsActiveItemReward(choice.Kind) && _run != null && !_run.HasFreeActiveSlot)
             {
                 description = string.IsNullOrWhiteSpace(description)
-                    ? "消耗品槽已满，领取后会折算金币。"
-                    : $"{description}\n消耗品槽已满，领取后会折算金币。";
+                    ? "消耗品槽已满，暂时无法领取。"
+                    : $"{description}\n消耗品槽已满，暂时无法领取。";
             }
 
             return description;

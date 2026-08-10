@@ -200,12 +200,14 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 kind,
                 index =>
                 {
-                    if (index >= 0 && index < choices.Count)
+                    if (index < 0 || index >= choices.Count
+                        || !RewardGranter.TryClaimChoice(_host.Run, choices[index], out _))
                     {
-                        RewardGranter.ApplyChoice(_host.Run, choices[index]);
+                        return false;
                     }
 
                     RunPersistence.Save(_host.Run);
+                    return true;
                 },
                 null);
         }
@@ -214,7 +216,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             cfg.ItemKind kind,
-            Action<int> onPick,
+            Func<int, bool> onPick,
             Action onFinish)
         {
             if (_host.Run == null || choices == null || choices.Count == 0)
@@ -255,9 +257,14 @@ namespace GourmetProject.Game.UI.Battle.Pages
                             sourceCard);
                     }
 
-                    onPick?.Invoke(index);
+                    if (onPick?.Invoke(index) != true)
+                    {
+                        return false;
+                    }
+
                     _host.RefreshPersistent();
                     playSelectionFly?.Invoke();
+                    return true;
                 },
                 () => Complete(frame),
                 _host.Run,

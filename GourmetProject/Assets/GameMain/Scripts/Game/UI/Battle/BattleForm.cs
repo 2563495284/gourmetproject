@@ -1648,7 +1648,7 @@ namespace GourmetProject.Game.UI.Battle
             RewardChoiceGroup group,
             IReadOnlyList<RewardChoice> choices,
             cfg.ItemKind kind,
-            Action<int> onPick,
+            Func<int, bool> onPick,
             Action onFinish)
         {
             return _rewardPage != null && _rewardPage.OpenRewardItemChoices(group, choices, kind, onPick, onFinish);

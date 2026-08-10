@@ -1,4 +1,5 @@
 using System;
+using DG.Tweening;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Tooltips;
@@ -16,6 +17,7 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private TMP_Text _nameText;
         [SerializeField] private Button _button;
         private CanvasGroup _canvasGroup;
+        private Tween _failureTween;
 
         public RectTransform SelectionFlySource =>
             _icon != null ? _icon.rectTransform : transform as RectTransform;
@@ -86,6 +88,45 @@ namespace GourmetProject.Game.UI.Meta
             _canvasGroup.alpha = resolved ? 0.45f : 1f;
             _canvasGroup.interactable = !resolved;
             _canvasGroup.blocksRaycasts = !resolved;
+        }
+
+        /// <summary>播放与商店购买失败一致的横向衰减晃动。</summary>
+        public void PlayTargetFailed()
+        {
+            RectTransform target = _icon != null
+                ? _icon.rectTransform
+                : transform as RectTransform;
+            if (target == null)
+            {
+                return;
+            }
+
+            _failureTween?.Kill();
+            Vector2 origin = target.anchoredPosition;
+            _failureTween = DOVirtual.Float(0f, 1f, 0.25f, t =>
+                {
+                    if (target == null)
+                    {
+                        return;
+                    }
+
+                    float offset = Mathf.Sin(t * Mathf.PI * 12f) * 9f * (1f - t);
+                    target.anchoredPosition = origin + new Vector2(offset, 0f);
+                })
+                .SetEase(Ease.Linear)
+                .SetUpdate(true)
+                .OnComplete(() =>
+                {
+                    if (target != null)
+                    {
+                        target.anchoredPosition = origin;
+                    }
+                });
+        }
+
+        private void OnDestroy()
+        {
+            _failureTween?.Kill();
         }
 
         private void BindTip(ItemTipView itemTip, ItemDefinition item)
