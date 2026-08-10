@@ -46,6 +46,8 @@ public sealed partial class GameBase : Luban.BeanBase
         { if(!_buf["slotFreeSpins"].IsNumber) { throw new SerializationException(); }  SlotFreeSpins = _buf["slotFreeSpins"]; }
         { if(!_buf["slotPaidCost"].IsNumber) { throw new SerializationException(); }  SlotPaidCost = _buf["slotPaidCost"]; }
         { if(!_buf["slotMaxSpins"].IsNumber) { throw new SerializationException(); }  SlotMaxSpins = _buf["slotMaxSpins"]; }
+        { if(!_buf["archetypePrimaryMinShare"].IsNumber) { throw new SerializationException(); }  ArchetypePrimaryMinShare = _buf["archetypePrimaryMinShare"]; }
+        { if(!_buf["archetypePrimaryMinLead"].IsNumber) { throw new SerializationException(); }  ArchetypePrimaryMinLead = _buf["archetypePrimaryMinLead"]; }
     }
 
     public static GameBase DeserializeGameBase(JSONNode _buf)
@@ -169,6 +171,14 @@ public sealed partial class GameBase : Luban.BeanBase
     /// 每个抽奖机节点最多抽奖次数
     /// </summary>
     public readonly int SlotMaxSpins;
+    /// <summary>
+    /// 主流派最低占比
+    /// </summary>
+    public readonly float ArchetypePrimaryMinShare;
+    /// <summary>
+    /// 主流派相对第二名最低领先比例
+    /// </summary>
+    public readonly float ArchetypePrimaryMinLead;
    
     public const int __ID__ = -1705057789;
     public override int GetTypeId() => __ID__;
@@ -209,6 +219,8 @@ public sealed partial class GameBase : Luban.BeanBase
         + "slotFreeSpins:" + SlotFreeSpins + ","
         + "slotPaidCost:" + SlotPaidCost + ","
         + "slotMaxSpins:" + SlotMaxSpins + ","
+        + "archetypePrimaryMinShare:" + ArchetypePrimaryMinShare + ","
+        + "archetypePrimaryMinLead:" + ArchetypePrimaryMinLead + ","
         + "}";
     }
 }

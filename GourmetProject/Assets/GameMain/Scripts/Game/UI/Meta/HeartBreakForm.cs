@@ -6,6 +6,7 @@ using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using GourmetProject.Game.Tutorial;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -29,6 +30,7 @@ namespace GourmetProject.Game.UI.Meta
         private bool _closing;
         private Vector2 _leftStart;
         private Vector2 _rightStart;
+        private int _lostCount;
 
         protected override void OnInit(object userData)
         {
@@ -50,6 +52,8 @@ namespace GourmetProject.Game.UI.Meta
             _completed = false;
             _closing = false;
             _onComplete = args.OnComplete;
+            _lostCount = Mathf.Max(1, args.BeforeHeartCount - args.AfterHeartCount);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.HeartBreak, _transitionPanel);
             Bind(args);
             GameApp.Audio.PlayLossFanfare();
             Play();
@@ -61,6 +65,7 @@ namespace GourmetProject.Game.UI.Meta
             _sequence = null;
             _onComplete = null;
             _closing = false;
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.HeartBreak, _transitionPanel);
             base.OnClose(isShutdown, userData);
         }
 
@@ -68,7 +73,9 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (_titleText != null)
             {
-                _titleText.text = args.IsTerminal ? "最后一颗心碎了" : "一颗心碎了";
+                _titleText.text = args.IsTerminal
+                    ? "最后一颗心碎了"
+                    : (_lostCount >= 2 ? "两颗心碎了" : "一颗心碎了");
             }
 
             if (_heartCountText != null)
@@ -144,6 +151,28 @@ namespace GourmetProject.Game.UI.Meta
                     },
                     0f,
                     0.08f));
+                if (_lostCount >= 2)
+                {
+                    _sequence.AppendInterval(0.08f);
+                    _sequence.AppendCallback(() =>
+                    {
+                        Color color = _centerHeartText.color;
+                        color.a = 1f;
+                        _centerHeartText.color = color;
+                        _centerHeartText.rectTransform.localScale = Vector3.one;
+                    });
+                    _sequence.Append(_centerHeartText.rectTransform.DOPunchScale(Vector3.one * 0.2f, 0.28f, 5, 0.5f));
+                    _sequence.Append(DOTween.To(
+                        () => _centerHeartText.color.a,
+                        value =>
+                        {
+                            Color color = _centerHeartText.color;
+                            color.a = value;
+                            _centerHeartText.color = color;
+                        },
+                        0f,
+                        0.08f));
+                }
             }
 
             if (_crackGroup != null)
@@ -189,6 +218,8 @@ namespace GourmetProject.Game.UI.Meta
                 {
                     _continueButton.interactable = true;
                 }
+
+                TutorialRuntime.EnqueueHook(TutorialId.Failure);
             });
         }
 

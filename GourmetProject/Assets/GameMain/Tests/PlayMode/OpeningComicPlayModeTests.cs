@@ -1,6 +1,7 @@
 using System.Collections;
 using System.IO;
 using GourmetProject.Core.Save;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Game.Save;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Menu;
@@ -22,10 +23,39 @@ namespace GourmetProject.Tests.PlayMode
             int originalOpeningVersion = original.GuideProgress.OpeningComicCompletedVersion;
             original.GuideProgress.OpeningComicCompletedVersion = 0;
             GameSavePersistence.Save(diskSave, original);
+            bool hadConsentSetting = false;
+            int originalConsent = 0;
+            GameAnalyticsService.SetSdkSuppressedForTests(true);
 
             try
             {
                 SceneManager.LoadScene("Launch");
+
+                float settingsDeadline = Time.realtimeSinceStartup + 10f;
+                while (GameApp.Settings == null && Time.realtimeSinceStartup < settingsDeadline)
+                {
+                    yield return null;
+                }
+
+                Assert.That(GameApp.Settings, Is.Not.Null);
+                hadConsentSetting = GameApp.Settings.Has(GameAnalyticsService.ConsentSettingKey);
+                originalConsent = GameApp.Settings.GetInt(GameAnalyticsService.ConsentSettingKey, 0);
+                ConfirmDialogForm consentDialog = null;
+                float consentDeadline = Time.realtimeSinceStartup + 2f;
+                while (consentDialog == null
+                       && Object.FindFirstObjectByType<OpeningComicForm>() == null
+                       && Time.realtimeSinceStartup < consentDeadline)
+                {
+                    consentDialog = Object.FindFirstObjectByType<ConfirmDialogForm>();
+                    yield return null;
+                }
+
+                if (consentDialog != null)
+                {
+                    Assert.That(Object.FindFirstObjectByType<OpeningComicForm>(), Is.Null);
+                    Assert.That(Object.FindFirstObjectByType<MainMenuForm>(), Is.Null);
+                    consentDialog.SendMessage("OnConfirmClicked");
+                }
 
                 OpeningComicForm form = null;
                 float openDeadline = Time.realtimeSinceStartup + 10f;
@@ -71,6 +101,21 @@ namespace GourmetProject.Tests.PlayMode
                 GameSaveData restore = GameSavePersistence.Load(diskSave);
                 restore.GuideProgress.OpeningComicCompletedVersion = originalOpeningVersion;
                 GameSavePersistence.Save(diskSave, restore);
+                if (GameApp.Settings != null)
+                {
+                    if (hadConsentSetting)
+                    {
+                        GameApp.Settings.SetInt(GameAnalyticsService.ConsentSettingKey, originalConsent);
+                    }
+                    else
+                    {
+                        GameApp.Settings.Remove(GameAnalyticsService.ConsentSettingKey);
+                    }
+
+                    GameApp.Settings.Save();
+                }
+
+                GameAnalyticsService.SetSdkSuppressedForTests(false);
             }
         }
 

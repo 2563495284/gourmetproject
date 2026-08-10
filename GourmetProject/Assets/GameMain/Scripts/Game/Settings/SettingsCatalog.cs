@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.Settings;
 using UnityEngine;
@@ -214,6 +215,18 @@ namespace GourmetProject.Game.Settings
                 ControlType = SettingControlType.Toggle,
                 GetToggleValue = () => settings.DirectServe,
                 SetToggleValue = v => settings.DirectServe = v,
+            });
+
+            // —— 隐私：匿名数据统计 ——
+            list.Add(new SettingDescriptor
+            {
+                Id = GameAnalyticsService.ConsentSettingKey,
+                Label = "匿名数据统计",
+                ControlType = SettingControlType.Toggle,
+                GetToggleValue = () =>
+                    GameAnalyticsService.ConsentState == AnalyticsConsentState.Granted,
+                SetToggleValue = value => GameAnalyticsService.SetConsent(
+                    value ? AnalyticsConsentState.Granted : AnalyticsConsentState.Denied),
             });
 
             // —— 扩展示例（默认注释关闭）——

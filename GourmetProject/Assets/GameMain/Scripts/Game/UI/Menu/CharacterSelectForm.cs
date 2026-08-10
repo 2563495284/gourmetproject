@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Adapter;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Battle;
@@ -173,6 +174,13 @@ namespace GourmetProject.Game.UI.Menu
 
         private static void ConfirmStartNewRun(cfg.Character character)
         {
+            if (GameRunContext.Current != null)
+            {
+                GameAnalyticsService.TrackRunEnded(
+                    GameRunContext.Current,
+                    "replaced",
+                    isDeath: false);
+            }
             RunPersistence.Delete();
             StartNewRun(character);
         }

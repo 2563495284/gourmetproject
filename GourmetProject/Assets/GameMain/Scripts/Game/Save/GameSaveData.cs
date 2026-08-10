@@ -51,7 +51,24 @@ namespace GourmetProject.Game.Save
     public sealed class GuideProgressSaveData
     {
         public int OpeningComicCompletedVersion;
+
+        /// <summary>
+        /// 首次教程局资格是否已经被领取。开始教程局时立即置为 true；
+        /// 放弃该局不会恢复资格，后续新局均为普通局。
+        /// </summary>
+        public bool CoreTutorialRunConsumed;
+
         public List<string> CompletedTutorialIds = new();
+        /// <summary>已经触发、但尚未完整播放完的教程。中断后会从该段第一步重播。</summary>
+        public List<string> PendingTutorialIds = new();
+
+        public bool TryConsumeCoreTutorialRun()
+        {
+            Normalize();
+            if (CoreTutorialRunConsumed) return false;
+            CoreTutorialRunConsumed = true;
+            return true;
+        }
 
         public void Normalize()
         {
@@ -67,6 +84,41 @@ namespace GourmetProject.Game.Save
             }
 
             CompletedTutorialIds = normalized;
+
+            PendingTutorialIds ??= new List<string>();
+            seen.Clear();
+            var pending = new List<string>();
+            foreach (string tutorialId in PendingTutorialIds)
+            {
+                if (!string.IsNullOrEmpty(tutorialId)
+                    && !CompletedTutorialIds.Contains(tutorialId)
+                    && seen.Add(tutorialId))
+                {
+                    pending.Add(tutorialId);
+                }
+            }
+
+            PendingTutorialIds = pending;
+
+            // 兼容没有资格字段、但已经开始或完成过核心教程的存档。
+            if (!CoreTutorialRunConsumed)
+            {
+                CoreTutorialRunConsumed = ContainsCoreTutorial(CompletedTutorialIds)
+                    || ContainsCoreTutorial(PendingTutorialIds);
+            }
+        }
+
+        private static bool ContainsCoreTutorial(IReadOnlyList<string> tutorialIds)
+        {
+            if (tutorialIds == null) return false;
+            foreach (string tutorialId in tutorialIds)
+            {
+                if (!string.IsNullOrEmpty(tutorialId)
+                    && tutorialId.StartsWith("tutorial.core.", StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
         }
     }
 

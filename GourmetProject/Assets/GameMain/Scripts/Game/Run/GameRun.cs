@@ -11,6 +11,7 @@ using GourmetProject.Runtime;
 using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 using Log = GourmetProject.Core.Diagnostics.Log;
 using GourmetProject.Game.Adapter;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Save;
 
@@ -22,6 +23,7 @@ namespace GourmetProject.Game.Run
     /// </summary>
     public sealed class GameRun : IPreconditionContext
     {
+        public event System.Action<RunContentAcquisition> ContentAcquired;
         private readonly cfg.Tables _tables;
 
         // 装饰品同一 id 唯一一条且不升级；消耗品同一 id 可有多条，每条为一份独立实例。
@@ -82,6 +84,7 @@ namespace GourmetProject.Game.Run
         private readonly List<ShopEntrySaveData> _pendingShopStock = new List<ShopEntrySaveData>();
         private readonly List<GenericRewardSaveData> _pendingGenericRewards = new List<GenericRewardSaveData>();
         private string _pendingActionChoiceKey = string.Empty;
+        private int _pendingActionChoiceRevision;
         private string _pendingShopKey = string.Empty;
         private string _pendingRewardKey = string.Empty;
         private RewardOfferSaveData _pendingRewardOffer;
@@ -124,18 +127,40 @@ namespace GourmetProject.Game.Run
         private readonly Dictionary<string, int> _eventCounters = new Dictionary<string, int>();
         private readonly List<string> _forcedEventIds = new List<string>();
 
-        public GameRun(cfg.Tables tables, GameplayDatabase database, string characterId, string seedText, int weekIndex = 1)
-            : this(tables, database, characterId, seedText, weekIndex, initializeCharacterLoadout: true)
+        public GameRun(
+            cfg.Tables tables,
+            GameplayDatabase database,
+            string characterId,
+            string seedText,
+            int weekIndex = 1,
+            bool isTutorialRun = false)
+            : this(
+                tables,
+                database,
+                characterId,
+                seedText,
+                weekIndex,
+                initializeCharacterLoadout: true,
+                isTutorialRun: isTutorialRun)
         {
         }
 
-        private GameRun(cfg.Tables tables, GameplayDatabase database, string characterId, string seedText, int weekIndex, bool initializeCharacterLoadout)
+        private GameRun(
+            cfg.Tables tables,
+            GameplayDatabase database,
+            string characterId,
+            string seedText,
+            int weekIndex,
+            bool initializeCharacterLoadout,
+            bool isTutorialRun)
         {
             _tables = tables;
             Database = database;
             Library = GameplayContentBuilder.BuildDishLibrary(database);
             CharacterId = characterId;
             SeedText = seedText;
+            RunId = System.Guid.NewGuid().ToString("N");
+            IsTutorialRun = isTutorialRun;
             WeekIndex = weekIndex;
 
             cfg.TbGameBase gameBase = _tables.TbGameBase;
@@ -172,6 +197,11 @@ namespace GourmetProject.Game.Run
 
         public string SeedText { get; }
 
+        /// <summary>匿名统计与跨读档去重使用的单局稳定标识，不包含随机种子。</summary>
+        public string RunId { get; private set; }
+
+        public bool IsTutorialRun { get; }
+
         public int WeekIndex
         {
             get => _weekIndex;
@@ -206,20 +236,23 @@ namespace GourmetProject.Game.Run
 
         public int HeartsRemaining => _heartsRemaining;
 
-        /// <summary>扣除一颗爱心；当前值已经为 0 时不再扣除。</summary>
-        public bool TryLoseHeart(out int before, out int after)
+        /// <summary>扣除指定数量爱心；最低截断至 0。</summary>
+        public bool TryLoseHearts(int amount, out int before, out int after)
         {
             before = _heartsRemaining;
-            if (_heartsRemaining <= 0)
+            if (_heartsRemaining <= 0 || amount <= 0)
             {
-                after = 0;
+                after = _heartsRemaining;
                 return false;
             }
 
-            _heartsRemaining--;
+            _heartsRemaining = System.Math.Max(0, _heartsRemaining - amount);
             after = _heartsRemaining;
             return true;
         }
+
+        /// <summary>兼容旧调用：扣除一颗爱心。</summary>
+        public bool TryLoseHeart(out int before, out int after) => TryLoseHearts(1, out before, out after);
 
         /// <summary>恢复当前爱心，不超过上限。</summary>
         public int RestoreHearts(int amount)
@@ -746,6 +779,11 @@ namespace GourmetProject.Game.Run
             }
 
             _cellMaterialOverrides.Add(new CellMaterialOverride(pos, materialId));
+            NotifyContentAcquired(new RunContentAcquisition
+            {
+                Kind = RunContentAcquisitionKind.TableMaterial,
+                MaterialId = materialId,
+            });
             return true;
         }
 
@@ -1670,7 +1708,12 @@ namespace GourmetProject.Game.Run
 
         public void SetPendingActionChoices(string key, IReadOnlyList<ActionChoice> choices)
         {
-            _pendingActionChoiceKey = key ?? string.Empty;
+            string normalizedKey = key ?? string.Empty;
+            bool isReroll = !string.IsNullOrEmpty(normalizedKey)
+                && normalizedKey == _pendingActionChoiceKey
+                && _pendingActionChoices.Count > 0;
+            _pendingActionChoiceRevision = isReroll ? _pendingActionChoiceRevision + 1 : 0;
+            _pendingActionChoiceKey = normalizedKey;
             _pendingActionChoices.Clear();
             if (choices == null)
             {
@@ -1699,8 +1742,13 @@ namespace GourmetProject.Game.Run
         public void ClearPendingActionChoices()
         {
             _pendingActionChoiceKey = string.Empty;
+            _pendingActionChoiceRevision = 0;
             _pendingActionChoices.Clear();
         }
+
+        public string PendingActionChoiceKey => _pendingActionChoiceKey;
+
+        public int PendingActionChoiceRevision => _pendingActionChoiceRevision;
 
         public List<ShopEntry> GetPendingShopStock(string key)
         {
@@ -2101,8 +2149,10 @@ namespace GourmetProject.Game.Run
             return new RunSaveData
             {
                 ActionRandomRuleVersion = RunPersistence.CurrentActionRandomRuleVersion,
+                RunId = RunId,
                 CharacterId = CharacterId,
                 SeedText = SeedText,
+                IsTutorialRun = IsTutorialRun,
                 WeekIndex = WeekIndex,
                 Gold = Gold,
                 HeartCapacity = _heartCapacity,
@@ -2190,6 +2240,7 @@ namespace GourmetProject.Game.Run
                 ForcedBossDebuffWeekIndex = _forcedBossDebuffWeekIndex,
                 ForcedBossDebuffId = _forcedBossDebuffId,
                 PendingActionChoiceKey = _pendingActionChoiceKey,
+                PendingActionChoiceRevision = _pendingActionChoiceRevision,
                 PendingActionChoices = new List<RunActionChoiceSaveData>(_pendingActionChoices),
                 PendingShopKey = _pendingShopKey,
                 PendingShopStock = new List<ShopEntrySaveData>(_pendingShopStock),
@@ -2205,7 +2256,17 @@ namespace GourmetProject.Game.Run
         /// <summary>从存档数据重建运行（不重复发放初始装饰品和消耗品，整段持有列表以存档为准）。</summary>
         public static GameRun FromSaveData(cfg.Tables tables, GameplayDatabase database, RunSaveData data)
         {
-            var run = new GameRun(tables, database, data.CharacterId, data.SeedText, data.WeekIndex, initializeCharacterLoadout: false);
+            var run = new GameRun(
+                tables,
+                database,
+                data.CharacterId,
+                data.SeedText,
+                data.WeekIndex,
+                initializeCharacterLoadout: false,
+                isTutorialRun: data.IsTutorialRun);
+            run.RunId = string.IsNullOrWhiteSpace(data.RunId)
+                ? System.Guid.NewGuid().ToString("N")
+                : data.RunId;
             run.Gold = data.Gold;
             run._heartCapacity = System.Math.Max(1, data.HeartCapacity);
             run._heartsRemaining = System.Math.Max(0, System.Math.Min(data.HeartsRemaining, run._heartCapacity));
@@ -2525,6 +2586,7 @@ namespace GourmetProject.Game.Run
             run._forcedBossDebuffId = data.ForcedBossDebuffId ?? string.Empty;
 
             run._pendingActionChoiceKey = data.PendingActionChoiceKey ?? string.Empty;
+            run._pendingActionChoiceRevision = System.Math.Max(0, data.PendingActionChoiceRevision);
             if (data.PendingActionChoices != null)
             {
                 run._pendingActionChoices.AddRange(data.PendingActionChoices);
@@ -3284,6 +3346,7 @@ namespace GourmetProject.Game.Run
                     if (fireOnAcquire)
                     {
                         model.OnAcquired();
+                        NotifyItemAcquired(item);
                     }
 
                     return new ItemAcquireResult(ItemAcquireOutcome.Added, itemId, item.Name, 1, 1, 0);
@@ -3302,6 +3365,10 @@ namespace GourmetProject.Game.Run
 
             _items.Add(new RunItemState(itemId, 1));
             int held = GetItemCount(itemId);
+            if (fireOnAcquire)
+            {
+                NotifyItemAcquired(item);
+            }
             return new ItemAcquireResult(ItemAcquireOutcome.Stacked, itemId, item.Name, 1, held, 0);
         }
 
@@ -3313,6 +3380,8 @@ namespace GourmetProject.Game.Run
             }
 
             _recipe.Add(new RecipeBookSlot(dishId));
+            if (Database.GetDish(dishId).HasFlavor)
+                NotifyFlavorAcquired(dishId, Database.GetDish(dishId).FlavorId);
             RebuildBonusDishCache();
             return true;
         }
@@ -3345,6 +3414,7 @@ namespace GourmetProject.Game.Run
             if (!string.IsNullOrEmpty(flavorId))
             {
                 AddRecipeFlavor(_recipe.Count - 1, flavorId);
+                NotifyFlavorAcquired(dishId, flavorId);
             }
 
             RebuildBonusDishCache();
@@ -3361,6 +3431,7 @@ namespace GourmetProject.Game.Run
             var slot = new RecipeBookSlot(dishId);
             _recipe.Add(slot);
             AddRecipeFlavor(_recipe.Count - 1, flavorId);
+            NotifyFlavorAcquired(dishId, flavorId);
             RebuildBonusDishCache();
             return true;
         }
@@ -3389,6 +3460,9 @@ namespace GourmetProject.Game.Run
 
             _stomachFragmentIds.Add(fragmentId);
             EnsureFragmentMaterialRoll(fragmentId, null);
+            if (_fragmentMaterialRolls.TryGetValue(fragmentId, out List<CellMaterial> acquiredMaterials)
+                && acquiredMaterials.Count > 0)
+                NotifyMaterialAcquired(fragmentId, acquiredMaterials[0].MaterialId);
             return true;
         }
 
@@ -3402,8 +3476,46 @@ namespace GourmetProject.Game.Run
 
             _fragmentPlacements.Add(new TableFragmentPlacement(fragmentId, rotation, origin));
             EnsureFragmentMaterialRoll(fragmentId, null);
+            if (_fragmentMaterialRolls.TryGetValue(fragmentId, out List<CellMaterial> placedMaterials)
+                && placedMaterials.Count > 0)
+                NotifyMaterialAcquired(fragmentId, placedMaterials[0].MaterialId);
             return true;
         }
+
+        private void NotifyItemAcquired(ItemDefinition item)
+        {
+            if (item == null) return;
+            NotifyContentAcquired(new RunContentAcquisition
+            {
+                Kind = RunContentAcquisitionKind.Item,
+                ItemId = item.Id,
+                ItemKind = item.Kind,
+                ActiveItemCategory = item.ActiveItemCategory,
+                ItemEffectType = item.EffectType,
+            });
+        }
+
+        private void NotifyFlavorAcquired(string dishId, string flavorId)
+        {
+            NotifyContentAcquired(new RunContentAcquisition
+            {
+                Kind = RunContentAcquisitionKind.DishFlavor,
+                DishId = dishId ?? string.Empty,
+                FlavorId = flavorId ?? string.Empty,
+            });
+        }
+
+        private void NotifyMaterialAcquired(string fragmentId, string materialId)
+        {
+            NotifyContentAcquired(new RunContentAcquisition
+            {
+                Kind = RunContentAcquisitionKind.TableMaterial,
+                FragmentId = fragmentId ?? string.Empty,
+                MaterialId = materialId ?? string.Empty,
+            });
+        }
+
+        private void NotifyContentAcquired(RunContentAcquisition acquisition) => ContentAcquired?.Invoke(acquisition);
 
         /// <summary>
         /// 置入一份待拼贴碎片包。每个候选独立从逆时针 0°/90°/180°/270° 中抽取方向，
@@ -3891,7 +4003,7 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>使用一份消耗品：使用后该实例直接移除（不存在数量消耗的中间态）。</summary>
-        public bool UseActiveItem(string itemId)
+        public bool UseActiveItem(string itemId, string useContext = "unknown")
         {
             ItemDefinition item = ItemDefinition.Get(_tables, itemId, cfg.ItemKind.Active);
             if (item == null)
@@ -3911,6 +4023,8 @@ namespace GourmetProject.Game.Run
                 Gold += gold;
                 itemRuntime.FlashTriggered(m => m.ActiveUseGold() > 0);
             }
+
+            GameAnalyticsService.TrackActiveItemUsed(this, itemId, useContext);
 
             return true;
         }

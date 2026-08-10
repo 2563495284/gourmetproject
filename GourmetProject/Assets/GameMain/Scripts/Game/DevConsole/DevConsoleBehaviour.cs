@@ -17,6 +17,10 @@ namespace GourmetProject.Game.DevConsole
     {
         private const string InputControlName = "DevConsoleInput";
         private const int MaxOutputLines = 200;
+        private const float ReferenceWidth = 1920f;
+        private const float ReferenceHeight = 1080f;
+        private const float MaxUiScale = 3f;
+        private const float MaxLogicalWindowHeight = 480f;
 
         private static DevConsoleBehaviour _instance;
 
@@ -88,8 +92,19 @@ namespace GourmetProject.Game.DevConsole
             }
 
             EnsureStyles();
-            HandleKeys();
-            DrawWindow();
+            float uiScale = CalculateUiScale(Screen.width, Screen.height);
+            Matrix4x4 previousGuiMatrix = GUI.matrix;
+            GUI.matrix = Matrix4x4.Scale(new Vector3(uiScale, uiScale, 1f));
+
+            try
+            {
+                HandleKeys();
+                DrawWindow(uiScale);
+            }
+            finally
+            {
+                GUI.matrix = previousGuiMatrix;
+            }
 
             // 切换用的反引号字符可能漏进输入框，统一剔除。
             if (_input.IndexOf('`') >= 0)
@@ -132,11 +147,13 @@ namespace GourmetProject.Game.DevConsole
             }
         }
 
-        private void DrawWindow()
+        private void DrawWindow(float uiScale)
         {
-            float height = Mathf.Min(Screen.height * 0.45f, 400f);
+            float logicalWidth = Screen.width / uiScale;
+            float logicalHeight = Screen.height / uiScale;
+            float height = Mathf.Min(logicalHeight * 0.5f, MaxLogicalWindowHeight);
             GUI.color = Color.white;
-            GUILayout.BeginArea(new Rect(0f, 0f, Screen.width, height), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(0f, 0f, logicalWidth, height), GUI.skin.box);
 
             _scroll = GUILayout.BeginScrollView(_scroll);
             foreach (string line in _output)
@@ -153,7 +170,7 @@ namespace GourmetProject.Game.DevConsole
             }
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label(">", _inputStyle, GUILayout.Width(16f));
+            GUILayout.Label(">", _inputStyle, GUILayout.Width(24f));
             GUI.SetNextControlName(InputControlName);
             _input = GUILayout.TextField(_input, _inputStyle);
             GUILayout.EndHorizontal();
@@ -247,7 +264,7 @@ namespace GourmetProject.Game.DevConsole
 
             _outputStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 14,
+                fontSize = 20,
                 richText = true,
                 wordWrap = true,
                 normal = { textColor = Color.white },
@@ -255,9 +272,25 @@ namespace GourmetProject.Game.DevConsole
 
             _inputStyle = new GUIStyle(GUI.skin.textField)
             {
-                fontSize = 15,
+                fontSize = 22,
                 normal = { textColor = Color.white },
             };
+        }
+
+        /// <summary>
+        /// 按 1920x1080 基准等比放大控制台。取宽高比例的较小值可避免超宽屏或竖屏裁切，
+        /// 最低保持 1 倍，确保低分辨率窗口中的文字不会比原来更小。
+        /// </summary>
+        internal static float CalculateUiScale(float screenWidth, float screenHeight)
+        {
+            if (screenWidth <= 0f || screenHeight <= 0f)
+            {
+                return 1f;
+            }
+
+            float widthScale = screenWidth / ReferenceWidth;
+            float heightScale = screenHeight / ReferenceHeight;
+            return Mathf.Clamp(Mathf.Min(widthScale, heightScale), 1f, MaxUiScale);
         }
 
         private static string LastToken(string input)

@@ -26,7 +26,8 @@ namespace GourmetProject.Gameplay.Model
             int rotationIndex = 0,
             string category = null,
             int countAs = 1,
-            int sortOrder = 0)
+            int sortOrder = 0,
+            IReadOnlyList<float> archetypeWeights = null)
         {
             Id = id ?? throw new ArgumentNullException(nameof(id));
             Name = name;
@@ -44,6 +45,7 @@ namespace GourmetProject.Gameplay.Model
             Category = category ?? string.Empty;
             CountAs = countAs < 1 ? 1 : countAs;
             SortOrder = sortOrder;
+            ArchetypeWeights = archetypeWeights ?? Array.Empty<float>();
         }
 
         public string Id { get; }
@@ -103,6 +105,9 @@ namespace GourmetProject.Gameplay.Model
 
         /// <summary>食谱中的展示顺序；数值越小越靠前。</summary>
         public int SortOrder { get; }
+
+        /// <summary>流派 0/1/2 的配置权重，固定三项且总和为 1。</summary>
+        public IReadOnlyList<float> ArchetypeWeights { get; }
 
         /// <summary>要求隐藏分是否落在本食物隐藏分范围内。</summary>
         public bool CoversHiddenScore(int requiredHidden)

@@ -63,6 +63,15 @@ namespace GourmetProject.Game.UI.Battle.View
             _viewRecipeButton != null
                 ? _viewRecipeButton.transform as RectTransform
                 : null;
+        public RectTransform ScoreRect => _scoreTitlePanel != null ? _scoreTitlePanel : transform as RectTransform;
+        public RectTransform BossRuleRect
+        {
+            get
+            {
+                EnsureBossStatRect();
+                return _bossStatRect != null ? _bossStatRect : transform as RectTransform;
+            }
+        }
 
         public void SetRecipeCountPresentationOverride(int? count)
         {

@@ -1,4 +1,5 @@
 using GourmetProject.Game.Flow;
+using GourmetProject.Game.Analytics;
 using BreakInfinity;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
@@ -51,6 +52,10 @@ namespace GourmetProject.Game.UI.Meta
             int target = session?.RequiredScore ?? _run.RequiredScore;
             MetaProgressSaveData progress = MetaProgressPersistence.Load();
             _pendingProgressUpdate = MetaProgressService.EvaluateRunEnd(_run, data.Win, data.Total, target, progress);
+            if (data.Win)
+            {
+                GameAnalyticsService.TrackRunMilestone(_run, data.Total, target);
+            }
             SettlementSummary summary = SettlementService.Build(_run, data.Win, data.Total, target, _pendingProgressUpdate);
             _resultText.text = $"{summary.Title}\n\n{summary.Body}";
 

@@ -171,7 +171,8 @@ namespace GourmetProject.Game.Adapter
                 (int)rotation,
                 b.Category,
                 b.CountAs,
-                b.SortOrder);
+                b.SortOrder,
+                ValidateArchetypeWeights(b));
         }
 
         private static DishDef ToStandaloneDishDef(cfg.DishBase b)
@@ -192,7 +193,41 @@ namespace GourmetProject.Game.Adapter
                 0,
                 b.Category,
                 b.CountAs,
-                b.SortOrder);
+                b.SortOrder,
+                ValidateArchetypeWeights(b));
+        }
+
+        private static IReadOnlyList<float> ValidateArchetypeWeights(cfg.DishBase dish)
+        {
+            IReadOnlyList<float> weights = dish?.ArchetypeWeights;
+            if (weights == null || weights.Count != 3)
+            {
+                throw new System.InvalidOperationException(
+                    $"食物 '{dish?.Id}' 的 archetypeWeights 必须恰好包含 3 项。");
+            }
+
+            float sum = 0f;
+            var result = new float[3];
+            for (int i = 0; i < result.Length; i++)
+            {
+                float value = weights[i];
+                if (float.IsNaN(value) || float.IsInfinity(value) || value < 0f)
+                {
+                    throw new System.InvalidOperationException(
+                        $"食物 '{dish.Id}' 的 archetypeWeights[{i}] 必须是非负有限数。");
+                }
+
+                result[i] = value;
+                sum += value;
+            }
+
+            if (System.Math.Abs(sum - 1f) > 0.001f)
+            {
+                throw new System.InvalidOperationException(
+                    $"食物 '{dish.Id}' 的 archetypeWeights 总和必须为 1，当前为 {sum}。");
+            }
+
+            return result;
         }
 
         /// <summary>把 TbSubSkill（合并后=具体子技能）建成 id→行 的索引，供技能正向引用。</summary>

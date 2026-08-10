@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Game.Run;
 using GourmetProject.Runtime;
 
@@ -56,6 +57,7 @@ namespace GourmetProject.Game.Meta
 
             float committedCostDays = ResolveTimelineStopCost(run, context);
             prevDay = TimelineService.AdvanceDays(run, committedCostDays);
+            GameAnalyticsService.TrackCrossedDayCheckpoints(run, prevDay);
             if (context.HalfDayBuffApplied)
             {
                 run.TryConsumeNextDailyActionHalfCostStack();

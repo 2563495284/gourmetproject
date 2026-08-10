@@ -56,6 +56,13 @@
         "com.unity.modules.unitywebrequest": "1.0.0"
       }
     },
+    "com.thinkingdata.analytics": {
+      "version": "https://github.com/ThinkingDataAnalytics/unity-sdk.git#v3.4.9",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "323af6c65bf10a36b4062963575f7f0c71af8905"
+    },
     "com.unity.2d.animation": {
       "version": "13.0.4",
       "depth": 0,

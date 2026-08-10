@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using BreakInfinity;
 using GourmetProject.Core.Rng;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
@@ -466,6 +467,10 @@ namespace GourmetProject.Game.Orchestration
         public void OnBattleSettled(ScoreResult result, bool isWin, int finalHappyCakeLayers)
         {
             ActionExecutionContext battleContext = CurrentBattleActionContext ?? _run.LastActionContext;
+            bool analyticsIsBoss = _currentBattleIsBoss;
+            string analyticsBossId = analyticsIsBoss
+                ? FoodService.ResolveBoss(_run, battleContext?.Action)?.Id ?? string.Empty
+                : string.Empty;
             cfg.Food battleFood = FoodService.Resolve(_run.Tables, battleContext?.Action);
             bool isBusiness = battleFood != null
                 && (battleFood.ActionKind == cfg.FoodActionKind.Normal
@@ -485,6 +490,9 @@ namespace GourmetProject.Game.Orchestration
 
             if (isWin)
             {
+                GameAnalyticsService.TrackBattleSettled(
+                    _run, settledBattleKey, analyticsIsBoss, analyticsBossId,
+                    result?.Total ?? BigDouble.Zero, true, true, false, _run.HeartsRemaining);
                 SettleFoodPassives(battleFood, battleContext, settledBattleKey, survived: true);
                 ApplyCakeLayerGold(finalHappyCakeLayers);
                 Action beforeReward = _beforeBattleReward;
@@ -497,7 +505,8 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            if (_run.HeartsRemaining <= 1 && _run.TryConsumeUndying())
+            int heartLoss = _currentBattleIsBoss ? 2 : 1;
+            if (_run.HeartsRemaining <= heartLoss && _run.TryConsumeUndying())
             {
                 // 最后一颗心优先由名刀挡下：不失去红心，仍按“失败但存活”完整结算本场奖励。
                 // 兼容旧存档已经为 0 心的中断状态：名刀生效后显式保证至少 1 心。
@@ -505,6 +514,10 @@ namespace GourmetProject.Game.Orchestration
                 {
                     _run.RestoreHearts(1);
                 }
+
+                GameAnalyticsService.TrackBattleSettled(
+                    _run, settledBattleKey, analyticsIsBoss, analyticsBossId,
+                    result?.Total ?? BigDouble.Zero, false, true, false, _run.HeartsRemaining);
 
                 SettleFoodPassives(battleFood, battleContext, settledBattleKey, survived: true);
                 ApplyCakeLayerGold(finalHappyCakeLayers);
@@ -526,8 +539,12 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            if (!_run.TryLoseHeart(out int before, out int after))
+            if (!_run.TryLoseHearts(heartLoss, out int before, out int after))
             {
+                GameAnalyticsService.TrackBattleSettled(
+                    _run, settledBattleKey, analyticsIsBoss, analyticsBossId,
+                    result?.Total ?? BigDouble.Zero, false, false, true, 0);
+                GameAnalyticsService.TrackRunEnded(_run, "hearts_zero", isDeath: true);
                 // 防御性兜底：开发期旧存档或中断状态可能已经为 0；仍必须先展示最后碎心页，不能直跳失败页。
                 SettleFoodPassives(battleFood, battleContext, settledBattleKey, survived: false);
                 _beforeBattleReward = null;
@@ -547,6 +564,13 @@ namespace GourmetProject.Game.Orchestration
             }
 
             bool terminal = after <= 0;
+            GameAnalyticsService.TrackBattleSettled(
+                _run, settledBattleKey, analyticsIsBoss, analyticsBossId,
+                result?.Total ?? BigDouble.Zero, false, !terminal, terminal, after);
+            if (terminal)
+            {
+                GameAnalyticsService.TrackRunEnded(_run, "hearts_zero", isDeath: true);
+            }
             SettleFoodPassives(battleFood, battleContext, settledBattleKey, survived: !terminal);
             _run.SetPendingHeartBreak(new PendingHeartBreakSaveData
             {
@@ -836,6 +860,7 @@ namespace GourmetProject.Game.Orchestration
         {
             ApplyEndOfWeekItemSettlement();
             _run.IncrementWeek();
+            GameAnalyticsService.TrackRunCheckpoint(_run, _run.WeekIndex, 0);
             _run.RequiredScoreOverride = -1;
             RunPersistence.Save(_run);
             BeginWeek();

@@ -12,7 +12,9 @@
         "Luban.Runtime",
         "Unity.InputSystem",
         "Unity.RenderPipelines.Universal.2D.Runtime",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "SentryToolkit.Tutorial.Runtime",
+        "ThinkingAnalytics"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

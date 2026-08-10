@@ -8,6 +8,7 @@ using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using GourmetProject.Game.Tutorial;
 
 namespace GourmetProject.Game.UI.Battle.View
 {
@@ -28,6 +29,7 @@ namespace GourmetProject.Game.UI.Battle.View
         private Func<ItemTipView> _rewardTip;
 
         public bool CardsActive => _cardsContainer != null && _cardsContainer.gameObject.activeSelf;
+        public RectTransform ContainerRect => _cardsContainer;
 
         public void SetRewardTip(Func<ItemTipView> rewardTip)
         {
@@ -157,6 +159,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
+            UnregisterTutorialCards();
             var cards = new List<WeekEventCardView>(_cards);
             _cards.Clear();
             float hideDelay = PickEffectHold(cards);
@@ -205,6 +208,7 @@ namespace GourmetProject.Game.UI.Battle.View
         {
             EnsureRefs();
             KillPendingShow();
+            UnregisterTutorialCards();
             foreach (WeekEventCardView card in _cards)
             {
                 if (card != null)
@@ -309,6 +313,21 @@ namespace GourmetProject.Game.UI.Battle.View
 
             bind?.Invoke(card);
             _cards.Add(card);
+            int index = _cards.Count - 1;
+            TutorialAnchorRegistry.Register($"action.card.{index}", card.CardRect);
+            TutorialAnchorRegistry.Register($"action.reward.{index}", card.RewardRect);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.ActionDeck, _cardsContainer);
+        }
+
+        private void UnregisterTutorialCards()
+        {
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.ActionDeck, _cardsContainer);
+            for (int i = 0; i < _cards.Count; i++)
+            {
+                WeekEventCardView card = _cards[i];
+                TutorialAnchorRegistry.Unregister($"action.card.{i}", card != null ? card.CardRect : null);
+                TutorialAnchorRegistry.Unregister($"action.reward.{i}", card != null ? card.RewardRect : null);
+            }
         }
 
         private static float PickEffectHold(IReadOnlyList<WeekEventCardView> cards)

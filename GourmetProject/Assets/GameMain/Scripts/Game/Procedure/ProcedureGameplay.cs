@@ -3,9 +3,11 @@ using GameFramework.Event;
 using GameFramework.Fsm;
 using GameFramework.Procedure;
 using GourmetProject.Game.Adapter;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.Tutorial;
 using GourmetProject.Game.UI;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Common;
@@ -202,9 +204,21 @@ namespace GourmetProject.Game.Procedure
             string seed = $"{characterId}-{DateTime.UtcNow.Ticks:x}";
             GameApp.Random.Init(seed);
 
-            var run = new GameRun(tables, db, characterId, seed, weekIndex: 1);
+            bool isTutorialRun = TutorialProgressService.ConsumeTutorialRun();
+            var run = new GameRun(
+                tables,
+                db,
+                characterId,
+                seed,
+                weekIndex: 1,
+                isTutorialRun: isTutorialRun);
             GameRunContext.Set(run);
-            Log.Info($"New run started. character={characterId}, seed={seed}.", Tag);
+            RunPersistence.Save(run);
+            GameAnalyticsService.TrackRunStarted(run);
+            GameAnalyticsService.TrackRunCheckpoint(run, 1, 0);
+            Log.Info(
+                $"New run started. character={characterId}, seed={seed}, tutorial={isTutorialRun}.",
+                Tag);
         }
 
         private static void EnsureRandomInitialized()

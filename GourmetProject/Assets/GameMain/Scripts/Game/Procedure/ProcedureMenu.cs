@@ -1,6 +1,7 @@
 using GameFramework.Fsm;
 using GameFramework.Procedure;
 using GourmetProject.Game.Adapter;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.Save;
@@ -28,6 +29,35 @@ namespace GourmetProject.Game.Procedure
             base.OnEnter(procedureOwner);
 
             EnsureUIGroups();
+            GameAnalyticsService.ApplyStoredConsent();
+            // if (GameAnalyticsService.ConsentState == AnalyticsConsentState.Unknown)
+            // {
+            //     var consent = new ConfirmDialogData
+            //     {
+            //         Title = "帮助我们改进游戏",
+            //         Message = "是否允许发送匿名的游玩统计（如奖励选择、关卡进度和分数），用于平衡与体验优化？不会采集姓名、联系方式或聊天内容；你可以随时在设置中关闭。",
+            //         ConfirmText = "允许",
+            //         CancelText = "暂不允许",
+            //         OnConfirm = () =>
+            //         {
+            //             GameAnalyticsService.SetConsent(AnalyticsConsentState.Granted);
+            //             OpenMenuContent();
+            //         },
+            //         OnCancel = () =>
+            //         {
+            //             GameAnalyticsService.SetConsent(AnalyticsConsentState.Denied);
+            //             OpenMenuContent();
+            //         },
+            //     };
+            //     GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, consent);
+            //     return;
+            // }
+            GameAnalyticsService.SetConsent(AnalyticsConsentState.Granted);
+            OpenMenuContent();
+        }
+
+        private static void OpenMenuContent()
+        {
             GameSaveData saveData = GameSavePersistence.Load();
             if (OpeningComicProgress.ShouldPlay(saveData.GuideProgress))
             {

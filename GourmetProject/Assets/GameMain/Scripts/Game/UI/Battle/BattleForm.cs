@@ -5,6 +5,7 @@ using BreakInfinity;
 using DG.Tweening;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Save;
 using GourmetProject.Game.Meta;
@@ -33,6 +34,7 @@ using GourmetProject.Game.UI.Battle.Pages;
 using GourmetProject.Game.UI.Battle.States;
 using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Game.Meta.Passives;
+using GourmetProject.Game.Tutorial;
 using UnityEngine.Serialization;
 
 namespace GourmetProject.Game.UI.Battle
@@ -176,6 +178,8 @@ namespace GourmetProject.Game.UI.Battle
         private cfg.TimelineNode _currentTimelineNodeCard;
         private int? _currentTimelineNodeInterestMaxGain;
         private Action _currentTimelineNodePick;
+        private ArchetypeVector _actionOfferArchetype;
+        private float _actionOfferOpenedRealtime;
         private int _activeBattleRawRequiredScore;
         private string _activeBattleModifier = string.Empty;
         private string _activeBossDebuffId = string.Empty;
@@ -296,9 +300,12 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             Active = this;
+            RegisterTutorialAnchors();
             _discardSettlementCallbacks = false;
             _run.GoldChanged -= OnGoldChanged;
             _run.GoldChanged += OnGoldChanged;
+            _run.ContentAcquired -= OnContentAcquired;
+            _run.ContentAcquired += OnContentAcquired;
             // 尽早绑定场景里的经营挑战世界单例：否则首次 StartBattle 之前 _world 为 null，
             // BeginWeek 里的 HideBattleWorld 会变成空操作，导致进场景默认态残留食物专属按钮。
             _world = BattleWorldController.Instance;
@@ -313,6 +320,8 @@ namespace GourmetProject.Game.UI.Battle
 
         protected override void OnClose(bool isShutdown, object userData)
         {
+            TutorialRuntime.CloseForPageChange();
+            UnregisterTutorialAnchors();
             if (Active == this)
             {
                 Active = null;
@@ -322,6 +331,7 @@ namespace GourmetProject.Game.UI.Battle
             if (_run != null)
             {
                 _run.GoldChanged -= OnGoldChanged;
+                _run.ContentAcquired -= OnContentAcquired;
             }
             StopBattleMusic(0.15f);
             CancelBossPresentation();
@@ -827,7 +837,15 @@ namespace GourmetProject.Game.UI.Battle
             SwitchTo(GameplayView.ActionSelect, () =>
             {
                 BuildTimelineNodeCard(node, interestMaxGain, onPick);
-            }, PlayShowCardsWhenReady);
+            }, () =>
+            {
+                PlayShowCardsWhenReady();
+                if (_run != null
+                    && _run.IsTutorialRun
+                    && !TutorialProgressService.IsCompleted(TutorialId.CoreComplete)
+                    && TutorialProgressService.IsCompleted(TutorialId.FirstAction))
+                    TutorialRuntime.Play(TutorialId.TimelineNode);
+            });
         }
 
         public void ShowTimelineNodeSkipped(
@@ -1447,6 +1465,7 @@ namespace GourmetProject.Game.UI.Battle
             }, () =>
             {
                 PlayShowCardsWhenReady();
+                PlayActionSelectionTutorialIfNeeded();
                 onShown?.Invoke();
             });
         }
@@ -2584,8 +2603,10 @@ namespace GourmetProject.Game.UI.Battle
         private void BuildActionCards()
         {
             ClearTimelineNodeCard();
+            List<ActionChoice> choices = BuildDisplayedActionChoices(RollChoices(_run));
+            ReportActionChoicesShown(choices);
             _deck?.ShowActionChoices(
-                BuildDisplayedActionChoices(RollChoices(_run)),
+                choices,
                 OnActionSelectionPicked,
                 OnActionRerollClicked,
                 _run != null ? _run.ActionRerollCount : 0);
@@ -2667,8 +2688,12 @@ namespace GourmetProject.Game.UI.Battle
                 return run.GetPendingActionChoices(key);
             }
 
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Action, key);
-            List<ActionChoice> choices = ActionScheduleService.GenerateChoices(run, rng);
+            List<ActionChoice> choices;
+            if (!TutorialActionScheduleOverride.TryBuildChoices(run, out choices))
+            {
+                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Action, key);
+                choices = ActionScheduleService.GenerateChoices(run, rng);
+            }
             run.SetPendingActionChoices(key, choices);
             RunPersistence.Save(run);
             return choices;
@@ -2684,6 +2709,15 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             string key = GameRun.BuildActionChoiceKey(_run.RunActionStepIndex, _run.WeekIndex, _run.CurrentDay, _run.ActionStepIndex);
+            GameAnalyticsService.TrackChoiceOfferResolved(
+                _run,
+                CurrentActionOfferId(),
+                "daily_action",
+                0,
+                skipped: true,
+                _run.PendingActionChoiceRevision + 1,
+                (long)Math.Max(0d, (Time.realtimeSinceStartup - _actionOfferOpenedRealtime) * 1000d),
+                _actionOfferArchetype);
             IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Action, key + "_player_reroll_" + _run.NextActiveUseKey());
             List<ActionChoice> rerolled = ActionScheduleService.RerollChoices(_run, rng);
             _run.SetPendingActionChoices(key, rerolled);
@@ -2695,6 +2729,8 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>玩家在中部选择了一个行动（null = 无行动可选时的「休息」）。</summary>
         private void OnActionSelectionPicked(ActionChoice choice)
         {
+            TutorialRuntime.Publish(TutorialSignal.ActionPicked);
+            ReportActionChoiceSelected(choice);
             _run?.ClearPendingActionChoices();
             _deck?.HideThenDestroy(() =>
             {
@@ -2702,9 +2738,96 @@ namespace GourmetProject.Game.UI.Battle
             });
         }
 
+        private void ReportActionChoicesShown(IReadOnlyList<ActionChoice> choices)
+        {
+            if (_run == null || choices == null)
+            {
+                return;
+            }
+
+            AnalyticsSelectionMode mode = choices.Count > 1
+                ? AnalyticsSelectionMode.Optional
+                : AnalyticsSelectionMode.Forced;
+            _actionOfferArchetype = ArchetypeService.Capture(_run);
+            _actionOfferOpenedRealtime = Time.realtimeSinceStartup;
+            string offerId = CurrentActionOfferId();
+            for (int index = 0; index < choices.Count; index++)
+            {
+                ActionChoice choice = choices[index];
+                if (choice?.Action == null)
+                {
+                    continue;
+                }
+
+                GameAnalyticsService.TrackChoiceCandidate(
+                    _run,
+                    selected: false,
+                    offerId,
+                    "daily_action",
+                    "action",
+                    choice.Action.Id,
+                    string.Empty,
+                    index,
+                    choices.Count,
+                    1,
+                    mode,
+                    _run.PendingActionChoiceRevision,
+                    _actionOfferArchetype);
+            }
+        }
+
+        private void ReportActionChoiceSelected(ActionChoice selected)
+        {
+            if (_run == null || selected?.Action == null)
+            {
+                return;
+            }
+
+            List<ActionChoice> choices = _run.GetPendingActionChoices(_run.PendingActionChoiceKey);
+            int index = choices.FindIndex(candidate =>
+                candidate?.Action != null
+                && string.Equals(candidate.Action.Id, selected.Action.Id, StringComparison.Ordinal)
+                && string.Equals(candidate.ActionGroupId, selected.ActionGroupId, StringComparison.Ordinal));
+            AnalyticsSelectionMode mode = choices.Count > 1
+                ? AnalyticsSelectionMode.Optional
+                : AnalyticsSelectionMode.Forced;
+            string offerId = CurrentActionOfferId();
+            GameAnalyticsService.TrackChoiceCandidate(
+                _run,
+                selected: true,
+                offerId,
+                "daily_action",
+                "action",
+                selected.Action.Id,
+                string.Empty,
+                Math.Max(0, index),
+                choices.Count,
+                1,
+                mode,
+                _run.PendingActionChoiceRevision,
+                _actionOfferArchetype);
+            GameAnalyticsService.TrackChoiceOfferResolved(
+                _run,
+                offerId,
+                "daily_action",
+                1,
+                skipped: false,
+                _run.PendingActionChoiceRevision,
+                (long)Math.Max(0d, (Time.realtimeSinceStartup - _actionOfferOpenedRealtime) * 1000d),
+                _actionOfferArchetype);
+        }
+
+        private string CurrentActionOfferId()
+        {
+            return _run == null
+                ? string.Empty
+                : $"{_run.RunId}:{_run.PendingActionChoiceKey}:r{_run.PendingActionChoiceRevision}";
+        }
+
         /// <summary>玩家点击时间轴节点卡片。</summary>
         private void OnTimelineNodePicked(Action onPick)
         {
+            TutorialRuntime.Publish(TutorialSignal.TimelineNodePicked);
             ClearTimelineNodeCard();
             _deck?.HideThenDestroy(() =>
             {
@@ -3606,6 +3729,16 @@ namespace GourmetProject.Game.UI.Battle
             SetMessage(string.Empty);
             UnsubscribeCakeLayerChanges();
             _session = _run.BuildBattleSession(requiredScore, modifier, key, _activeBossDebuffId);
+            string analyticsBossId = _activeBattleIsBoss
+                ? FoodService.ResolveBoss(_run, actionContext?.Action)?.Id ?? string.Empty
+                : string.Empty;
+            GameAnalyticsService.TrackBattleStarted(
+                _run,
+                _activeBattleKey,
+                _activeBattleIsBoss,
+                analyticsBossId,
+                _session.RequiredScore,
+                _run.HeartsRemaining);
             BossDebuffPresentationPlan bossPlan = _session.BossDebuffPresentation;
             _bossDiscardRevealPending = _activeBattleIsBoss
                 && string.Equals(bossPlan?.DebuffId, "debuff_omakase", StringComparison.Ordinal);
@@ -3673,6 +3806,10 @@ namespace GourmetProject.Game.UI.Battle
                     {
                         _ = PlayBossOpeningPresentationAsync(bossPlan);
                     }
+                    else
+                    {
+                        PlayBattleTutorialIfNeeded();
+                    }
                 });
         }
 
@@ -3732,6 +3869,7 @@ namespace GourmetProject.Game.UI.Battle
                 _world.EnsureNextDishPrepared(0, allowDuringBossPresentation: true);
                 await ShowCarbDialogueIfNeededAsync(token);
             });
+            PlayBattleTutorialIfNeeded();
         }
 
         private bool _pendingDishConfirmationInProgress;
@@ -4150,7 +4288,11 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        private void OnBattleServed(DishInstance dish, int servesUsed) => RefreshPersistent();
+        private void OnBattleServed(DishInstance dish, int servesUsed)
+        {
+            TutorialRuntime.Publish(TutorialSignal.DishPlaced);
+            RefreshPersistent();
+        }
 
         private void OnServeTriggerCue(ServeTriggerCue cue)
         {
@@ -4598,6 +4740,8 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            TutorialRuntime.Publish(TutorialSignal.SettleClicked);
+
             // if (_session.DiningTable.DishCount == 0)
             // {
             //     SetMessage("餐桌还是空的，先上几个食物吧。");
@@ -4735,7 +4879,65 @@ namespace GourmetProject.Game.UI.Battle
             BattleSession settledSession = _session;
             int finalHappyCakeLayers = settledSession?.HappyCakeLayers ?? 0;
             bool isWin = settledSession != null && settledSession.IsWin;
-            _loop?.OnBattleSettled(result, isWin, finalHappyCakeLayers);
+            void ContinueSettlement() => _loop?.OnBattleSettled(result, isWin, finalHappyCakeLayers);
+            if (IsFirstTutorialBattle() && !TutorialProgressService.IsCompleted(TutorialId.Settlement))
+                TutorialRuntime.Play(TutorialId.Settlement, ContinueSettlement);
+            else
+                ContinueSettlement();
+        }
+
+        private void RegisterTutorialAnchors()
+        {
+            TutorialAnchorRegistry.Register(TutorialAnchorId.Score, _infoColumn?.ScoreRect);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.Recipe, _infoColumn?.ViewRecipeButtonRect);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.FoodInfo, _infoColumn != null ? _infoColumn.transform as RectTransform : null);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.BossRule, _infoColumn?.BossRuleRect);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.ActionAxis, _actionAxisBar != null ? _actionAxisBar.transform as RectTransform : null);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.Table, _boardArea);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.ServingOutlet, _servingOutlet != null ? _servingOutlet.transform as RectTransform : null);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.Discard, _foodDiscardBin != null ? _foodDiscardBin.transform as RectTransform : null);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.Settle, _foodBar?.SettleRect);
+        }
+
+        private void UnregisterTutorialAnchors()
+        {
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.Score);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.Recipe);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.FoodInfo);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.BossRule);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.ActionAxis);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.Table);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.ServingOutlet);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.Discard);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.Settle);
+        }
+
+        private bool IsFirstTutorialBattle() =>
+            _run != null
+            && _run.IsTutorialRun
+            && _run.WeekIndex == 1
+            && CurrentBattleActionContext?.RunStepIndex == 0
+            && string.Equals(CurrentBattleActionContext?.Action?.Id, "act_food_gold", StringComparison.Ordinal);
+
+        private void PlayActionSelectionTutorialIfNeeded()
+        {
+            if (_run == null
+                || !_run.IsTutorialRun
+                || TutorialProgressService.IsCompleted(TutorialId.CoreComplete)) return;
+            if (_run.WeekIndex == 1
+                && _run.RunActionStepIndex == 0
+                && _run.CurrentDay <= TimelineMath.Epsilon)
+                TutorialRuntime.Play(TutorialId.FirstAction);
+            else if (_run.WeekIndex == 1
+                && _run.RunActionStepIndex == 1
+                && TutorialProgressService.IsCompleted(TutorialId.FirstAction))
+                TutorialRuntime.Play(TutorialId.SecondAction);
+        }
+
+        private void PlayBattleTutorialIfNeeded()
+        {
+            if (IsFirstTutorialBattle()) TutorialRuntime.Play(TutorialId.FirstBattle);
+            if (_activeBattleIsBoss) TutorialRuntime.EnqueueHook(TutorialId.Boss);
         }
 
         private void OnGoldChanged(int before, int after)
@@ -4744,6 +4946,11 @@ namespace GourmetProject.Game.UI.Battle
             {
                 GameApp.Audio.PlayRandomCoin();
             }
+        }
+
+        private void OnContentAcquired(RunContentAcquisition acquisition)
+        {
+            TutorialRuntime.ObserveContentAcquired(acquisition);
         }
 
         private void StartBattleMusic()

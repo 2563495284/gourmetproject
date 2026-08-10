@@ -147,6 +147,14 @@ public partial class TbGameBase
     /// 每个抽奖机节点最多抽奖次数
     /// </summary>
      public int SlotMaxSpins => _data.SlotMaxSpins;
+    /// <summary>
+    /// 主流派最低占比
+    /// </summary>
+     public float ArchetypePrimaryMinShare => _data.ArchetypePrimaryMinShare;
+    /// <summary>
+    /// 主流派相对第二名最低领先比例
+    /// </summary>
+     public float ArchetypePrimaryMinLead => _data.ArchetypePrimaryMinLead;
     
     public void ResolveRef(Tables tables)
     {

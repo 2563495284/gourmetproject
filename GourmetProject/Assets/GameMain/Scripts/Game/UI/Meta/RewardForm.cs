@@ -5,6 +5,7 @@ using DG.Tweening;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game;
 using GourmetProject.Game.Adapter;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
@@ -23,6 +24,7 @@ using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Game.UI.Tooltips;
 using TMPro;
+using GourmetProject.Game.Tutorial;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -136,6 +138,8 @@ namespace GourmetProject.Game.UI.Meta
         private bool _isSuspendedForRewardSubflow;
         private bool _completingFromRewardSubflow;
         private float _suspendedScrollPosition = 1f;
+        private ArchetypeVector _offerArchetype;
+        private float _offerOpenedRealtime;
 
         private RewardFormTransitionSettings TransitionSettings =>
             _transitionSettings ?? (_transitionSettings = new RewardFormTransitionSettings());
@@ -216,6 +220,7 @@ namespace GourmetProject.Game.UI.Meta
 
                 _lastTotal = 0;
                 _lastTarget = 0;
+                ReportOfferShown();
                 RefreshOffer();
                 if (!_isClosing)
                 {
@@ -249,15 +254,24 @@ namespace GourmetProject.Game.UI.Meta
             _lastTotal = total;
             _lastTarget = target;
 
+            ReportOfferShown();
             RefreshOffer();
             if (!_isClosing)
             {
                 PlayOpenTransition();
+                TutorialAnchorRegistry.Register(TutorialAnchorId.RewardList, _rewardListContent);
+                TutorialAnchorRegistry.Register(TutorialAnchorId.RewardContinue, _continueButton.transform as RectTransform);
+                if (_run.IsTutorialRun
+                    && actionContext?.RunStepIndex == 0
+                    && !TutorialProgressService.IsCompleted(TutorialId.CoreComplete))
+                    TutorialRuntime.Play(TutorialId.RewardSummary);
             }
         }
 
         protected override void OnClose(bool isShutdown, object userData)
         {
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.RewardList, _rewardListContent);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.RewardContinue, _continueButton != null ? _continueButton.transform as RectTransform : null);
             if (_peekHidden)
             {
                 RestorePeekChildren();
@@ -372,6 +386,7 @@ namespace GourmetProject.Game.UI.Meta
         /// <summary>结算并推进：清空 pending offer/碎片包、存档、（可选）关界面并回到时间轴，等效于点「继续」。</summary>
         private void CompleteRewards(bool closeForm)
         {
+            ReportOfferResolved();
             BattleForm.Active?.CloseRewardOperationPages();
             _run.ClearPendingFragmentPack();
 
@@ -381,6 +396,7 @@ namespace GourmetProject.Game.UI.Meta
                 if (LoadNextGenericReward())
                 {
                     RunPersistence.Save(_run);
+                    ReportOfferShown();
                     RefreshOffer();
                     return;
                 }
@@ -431,6 +447,7 @@ namespace GourmetProject.Game.UI.Meta
                 if (LoadNextGenericReward())
                 {
                     RunPersistence.Save(_run);
+                    ReportOfferShown();
                     RefreshOffer();
                     return;
                 }
@@ -953,10 +970,179 @@ namespace GourmetProject.Game.UI.Meta
         private void MarkChoiceClaimed(int groupIndex, int index)
         {
             GroupFor(groupIndex).MarkClaimed(index);
+            ReportChoiceSelected(groupIndex, index);
             if (IsChoiceResolved(groupIndex))
             {
                 _expandedChoicePackGroupIndex = NoExpandedChoicePackGroup;
             }
+        }
+
+        private void ReportOfferShown()
+        {
+            if (_run == null || _offer == null)
+            {
+                return;
+            }
+
+            _offerArchetype = ArchetypeService.Capture(_run);
+            _offerOpenedRealtime = Time.realtimeSinceStartup;
+            for (int groupIndex = 0; groupIndex < _offer.FixedGroups.Count; groupIndex++)
+            {
+                ReportGroupShown(_offer.FixedGroups[groupIndex], groupIndex);
+            }
+
+            ReportGroupShown(_offer.SpecificGroup, -1);
+        }
+
+        private void ReportGroupShown(RewardChoiceGroup group, int groupIndex)
+        {
+            if (group?.Choices == null)
+            {
+                return;
+            }
+
+            AnalyticsSelectionMode mode = ResolveSelectionMode(group);
+            string offerId = $"{CurrentAnalyticsOfferId()}:g{groupIndex}";
+            for (int index = 0; index < group.Choices.Count; index++)
+            {
+                RewardChoice choice = group.Choices[index];
+                if (choice == null)
+                {
+                    continue;
+                }
+
+                GameAnalyticsService.TrackChoiceCandidate(
+                    _run,
+                    selected: false,
+                    offerId,
+                    CurrentAnalyticsContext(),
+                    AnalyticsContentType(choice),
+                    choice.Id,
+                    AnalyticsBaseId(choice),
+                    index,
+                    group.Choices.Count,
+                    group.RequiredChoiceCount,
+                    mode,
+                    archetype: _offerArchetype);
+            }
+        }
+
+        private void ReportChoiceSelected(int groupIndex, int index)
+        {
+            RewardChoiceGroup group = GroupFor(groupIndex);
+            if (group?.Choices == null || index < 0 || index >= group.Choices.Count)
+            {
+                return;
+            }
+
+            RewardChoice choice = group.Choices[index];
+            if (choice == null)
+            {
+                return;
+            }
+
+            GameAnalyticsService.TrackChoiceCandidate(
+                _run,
+                selected: true,
+                $"{CurrentAnalyticsOfferId()}:g{groupIndex}",
+                CurrentAnalyticsContext(),
+                AnalyticsContentType(choice),
+                choice.Id,
+                AnalyticsBaseId(choice),
+                index,
+                group.Choices.Count,
+                group.RequiredChoiceCount,
+                ResolveSelectionMode(group),
+                archetype: _offerArchetype);
+        }
+
+        private void ReportOfferResolved()
+        {
+            if (_run == null || _offer == null)
+            {
+                return;
+            }
+
+            int selectedCount = _offer.SpecificGroup?.ClaimedIndices.Count ?? 0;
+            bool skipped = _offer.SpecificGroup?.Skipped == true;
+            foreach (RewardChoiceGroup group in _offer.FixedGroups)
+            {
+                selectedCount += group?.ClaimedIndices.Count ?? 0;
+                skipped |= group?.Skipped == true || (group?.HasChoices == true && !group.IsResolved);
+            }
+
+            skipped |= _offer.SpecificGroup?.HasChoices == true && !_offer.SpecificGroup.IsResolved;
+            long duration = (long)Math.Max(0d, (Time.realtimeSinceStartup - _offerOpenedRealtime) * 1000d);
+            GameAnalyticsService.TrackChoiceOfferResolved(
+                _run,
+                CurrentAnalyticsOfferId(),
+                CurrentAnalyticsContext(),
+                selectedCount,
+                skipped,
+                0,
+                duration,
+                _offerArchetype);
+        }
+
+        private string CurrentAnalyticsOfferId()
+        {
+            return _genericMode ? _genericRewardKey : _rewardKey;
+        }
+
+        private string CurrentAnalyticsContext()
+        {
+            if (!_genericMode)
+            {
+                ActionExecutionContext context = BattleForm.Active?.CurrentBattleActionContext;
+                return FoodService.IsBossAction(_run.Tables, context?.Action)
+                    ? "boss_reward"
+                    : "battle_reward";
+            }
+
+            if (_genericRewardContinuation == PendingGenericRewardContinuationKind.Slot)
+            {
+                return "slot_reward";
+            }
+
+            string key = _genericRewardKey ?? string.Empty;
+            return key.IndexOf("shop", StringComparison.OrdinalIgnoreCase) >= 0
+                && key.IndexOf("fragment", StringComparison.OrdinalIgnoreCase) >= 0
+                    ? "shop_fragment"
+                    : "event_reward";
+        }
+
+        private static AnalyticsSelectionMode ResolveSelectionMode(RewardChoiceGroup group)
+        {
+            if (group == null || group.Choices.Count == 0)
+            {
+                return AnalyticsSelectionMode.Auto;
+            }
+
+            return group.Choices.Count > group.RequiredChoiceCount
+                ? AnalyticsSelectionMode.Optional
+                : AnalyticsSelectionMode.Forced;
+        }
+
+        private string AnalyticsBaseId(RewardChoice choice)
+        {
+            return choice?.Kind == cfg.RewardKind.DishChoice
+                ? _run.Database?.GetDish(choice.Id)?.BaseId ?? choice.Id
+                : string.Empty;
+        }
+
+        private static string AnalyticsContentType(RewardChoice choice)
+        {
+            return choice?.Kind switch
+            {
+                cfg.RewardKind.DishChoice => "dish",
+                cfg.RewardKind.FragmentChoice => "fragment",
+                cfg.RewardKind.PassiveItemChoice => "passive_item",
+                cfg.RewardKind.ActiveItemGrant => "active_item",
+                cfg.RewardKind.ActiveItemStrengthen => "active_item",
+                cfg.RewardKind.ActiveItemAdjust => "active_item",
+                cfg.RewardKind.Gold => "gold",
+                _ => "unknown",
+            };
         }
 
         private static void RefreshBattlePersistentHud(bool refreshItems = true)

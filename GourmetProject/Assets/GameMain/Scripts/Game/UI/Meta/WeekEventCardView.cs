@@ -83,6 +83,10 @@ namespace GourmetProject.Game.UI.Meta
 
         // 选中特效停留已在 OnPickClicked 内于回调前播放完毕，退场不再额外等待。
         public float PickEffectHold => 0f;
+        public RectTransform CardRect => transform as RectTransform;
+        public RectTransform RewardRect => _rewardBadgeImage != null
+            ? _rewardBadgeImage.rectTransform
+            : transform as RectTransform;
 
         public void SetRewardTip(ItemTipView rewardTip)
         {

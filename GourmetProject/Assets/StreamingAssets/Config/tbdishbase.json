@@ -10,7 +10,12 @@
     "shapeRows": [
       "XX"
     ],
-    "sortOrder": 10
+    "sortOrder": 10,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "arrow_cookie_2",
@@ -23,7 +28,12 @@
     "shapeRows": [
       "XX"
     ],
-    "sortOrder": 20
+    "sortOrder": 20,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "arrow_cookie_3",
@@ -37,7 +47,12 @@
       "X",
       "X"
     ],
-    "sortOrder": 30
+    "sortOrder": 30,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "arrow_cookie_4",
@@ -51,7 +66,12 @@
       "X",
       "X"
     ],
-    "sortOrder": 40
+    "sortOrder": 40,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "jelly",
@@ -64,7 +84,12 @@
     "shapeRows": [
       "XX"
     ],
-    "sortOrder": 50
+    "sortOrder": 50,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "cupcake",
@@ -77,7 +102,12 @@
     "shapeRows": [
       "XX"
     ],
-    "sortOrder": 60
+    "sortOrder": 60,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "eggtart",
@@ -90,7 +120,12 @@
     "shapeRows": [
       "XX"
     ],
-    "sortOrder": 70
+    "sortOrder": 70,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "sugarbean",
@@ -103,7 +138,12 @@
     "shapeRows": [
       "XX"
     ],
-    "sortOrder": 80
+    "sortOrder": 80,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "cheesecake",
@@ -116,7 +156,12 @@
     "shapeRows": [
       "XX"
     ],
-    "sortOrder": 90
+    "sortOrder": 90,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "mousse",
@@ -129,7 +174,12 @@
     "shapeRows": [
       "XX"
     ],
-    "sortOrder": 100
+    "sortOrder": 100,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "fruit_candy",
@@ -143,7 +193,12 @@
       "X",
       "X"
     ],
-    "sortOrder": 110
+    "sortOrder": 110,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "choco_bar",
@@ -157,7 +212,12 @@
       "X",
       "X"
     ],
-    "sortOrder": 120
+    "sortOrder": 120,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "mochi",
@@ -171,7 +231,12 @@
       "X",
       "X"
     ],
-    "sortOrder": 130
+    "sortOrder": 130,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "cup_cake",
@@ -185,7 +250,12 @@
       "X",
       "X"
     ],
-    "sortOrder": 140
+    "sortOrder": 140,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "cream",
@@ -199,7 +269,12 @@
       "X",
       "X"
     ],
-    "sortOrder": 150
+    "sortOrder": 150,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "eggroll",
@@ -212,7 +287,12 @@
     "shapeRows": [
       "XXX"
     ],
-    "sortOrder": 160
+    "sortOrder": 160,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "baguette",
@@ -225,7 +305,12 @@
     "shapeRows": [
       "XXX"
     ],
-    "sortOrder": 170
+    "sortOrder": 170,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "tanghulu",
@@ -238,7 +323,12 @@
     "shapeRows": [
       "XXX"
     ],
-    "sortOrder": 180
+    "sortOrder": 180,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "cake_slice",
@@ -251,7 +341,12 @@
     "shapeRows": [
       "XXX"
     ],
-    "sortOrder": 190
+    "sortOrder": 190,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "long_cake",
@@ -264,7 +359,12 @@
     "shapeRows": [
       "XXX"
     ],
-    "sortOrder": 200
+    "sortOrder": 200,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "eclair",
@@ -279,7 +379,12 @@
       "X",
       "X"
     ],
-    "sortOrder": 210
+    "sortOrder": 210,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "gummy",
@@ -294,7 +399,12 @@
       "X",
       "X"
     ],
-    "sortOrder": 220
+    "sortOrder": 220,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "chocolate_strip",
@@ -309,7 +419,12 @@
       "X",
       "X"
     ],
-    "sortOrder": 230
+    "sortOrder": 230,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "cake_roll",
@@ -324,7 +439,12 @@
       "X",
       "X"
     ],
-    "sortOrder": 240
+    "sortOrder": 240,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "palmier",
@@ -338,7 +458,12 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 250
+    "sortOrder": 250,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "chiffion",
@@ -352,7 +477,12 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 260
+    "sortOrder": 260,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "maple_sugar",
@@ -366,7 +496,12 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 270
+    "sortOrder": 270,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "taosu",
@@ -380,7 +515,12 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 280
+    "sortOrder": 280,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "waffle",
@@ -394,7 +534,12 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 290
+    "sortOrder": 290,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "cream_cake",
@@ -408,7 +553,12 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 300
+    "sortOrder": 300,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "candycane",
@@ -423,7 +573,12 @@
       ".X",
       ".X"
     ],
-    "sortOrder": 310
+    "sortOrder": 310,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "black_forest_cake",
@@ -437,7 +592,12 @@
       "XXX",
       "XXX"
     ],
-    "sortOrder": 320
+    "sortOrder": 320,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "chocolate_sauce",
@@ -451,7 +611,12 @@
       "XXX",
       "XXX"
     ],
-    "sortOrder": 330
+    "sortOrder": 330,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "mango_sago",
@@ -465,7 +630,12 @@
       "XXX",
       "XXX"
     ],
-    "sortOrder": 340
+    "sortOrder": 340,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "fruit_cake",
@@ -480,7 +650,12 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 350
+    "sortOrder": 350,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "parfait",
@@ -495,7 +670,12 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 360
+    "sortOrder": 360,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "marshmallow",
@@ -510,7 +690,12 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 370
+    "sortOrder": 370,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "big_lollipop",
@@ -525,7 +710,12 @@
       "XXX",
       "XXX"
     ],
-    "sortOrder": 380
+    "sortOrder": 380,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "apple_pie",
@@ -540,7 +730,12 @@
       "XXX",
       "XXX"
     ],
-    "sortOrder": 390
+    "sortOrder": 390,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "double_cake",
@@ -556,7 +751,12 @@
       "XXX",
       "XXX"
     ],
-    "sortOrder": 400
+    "sortOrder": 400,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   },
   {
     "id": "mantou",
@@ -569,6 +769,11 @@
     "shapeRows": [
       "X"
     ],
-    "sortOrder": 10000
+    "sortOrder": 10000,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
   }
 ]

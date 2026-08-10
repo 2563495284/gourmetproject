@@ -19,8 +19,13 @@ namespace GourmetProject.Game.Run
         /// </summary>
         public int ActionRandomRuleVersion;
 
+        /// <summary>匿名统计使用的单局稳定 GUID；旧档读取时自动补齐。</summary>
+        public string RunId;
+
         public string CharacterId;
         public string SeedText;
+        /// <summary>该单局是否为首次且唯一一次的核心教程局。</summary>
+        public bool IsTutorialRun;
         public RandomSnapshot RandomSnapshot;
         public int WeekIndex;
         public int Gold;
@@ -258,6 +263,9 @@ namespace GourmetProject.Game.Run
 
         /// <summary>当前行动选择快照 key；同一步 UI 重开时沿用已有候选。</summary>
         public string PendingActionChoiceKey;
+
+        /// <summary>同一行动选择批次的重抽版本，首次为 0。</summary>
+        public int PendingActionChoiceRevision;
 
         public List<RunActionChoiceSaveData> PendingActionChoices = new List<RunActionChoiceSaveData>();
 

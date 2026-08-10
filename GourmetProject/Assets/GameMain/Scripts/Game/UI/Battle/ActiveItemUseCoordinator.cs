@@ -408,7 +408,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
+            if (_host.ActiveRun?.UseActiveItem(item.Id, ctx.ContextKind.ToString().ToLowerInvariant()) != true)
             {
                 CleanupTargeting();
                 _host.ShowActiveItemMessage($"{item.Name}：装饰品和消耗品已失效。");
@@ -613,7 +613,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
+            if (_host.ActiveRun?.UseActiveItem(item.Id, ctx.ContextKind.ToString().ToLowerInvariant()) != true)
             {
                 CleanupTargeting();
                 _host.ShowActiveItemMessage($"{item.Name}：装饰品和消耗品已失效。");
@@ -670,7 +670,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
+            if (_host.ActiveRun?.UseActiveItem(item.Id, ctx.ContextKind.ToString().ToLowerInvariant()) != true)
             {
                 CleanupTargeting();
                 _host.ShowActiveItemMessage($"{item.Name}：装饰品和消耗品已失效。");
@@ -770,7 +770,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (_host.ActiveRun?.UseActiveItem(item.Id) != true)
+            if (_host.ActiveRun?.UseActiveItem(item.Id, ctx.ContextKind.ToString().ToLowerInvariant()) != true)
             {
                 if (!string.IsNullOrEmpty(result.CreatedTimelineNodeId))
                 {

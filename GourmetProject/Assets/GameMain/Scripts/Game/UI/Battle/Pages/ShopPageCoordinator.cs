@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using GourmetProject.Core.Rng;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI;
@@ -36,6 +37,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         private readonly IShopPageHost _host;
         private readonly List<ShopEntry> _stock = new();
         private string _shopKey;
+        private readonly Dictionary<string, int> _restockIndexes = new();
 
         public ShopPageCoordinator(IShopPageHost host)
         {
@@ -52,6 +54,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             }
 
             EnsureStock(run);
+            ReportStockShown(run);
             _host.ShopPanel?.Open(
                 run,
                 _stock,
@@ -110,10 +113,30 @@ namespace GourmetProject.Game.UI.Battle.Pages
         private bool BuyImmediate(ShopEntry entry, ShopBuyItemViewBase card)
         {
             GameRun run = _host.Run;
-            if (run == null || entry == null || !ShopService.Purchase(run, entry))
+            if (run == null || entry == null)
             {
                 return false;
             }
+
+            string contentId = entry.Id;
+            string category = AnalyticsCategory(entry.Kind);
+            int price = ShopService.CurrentPrice(run, entry);
+            int goldBefore = run.Gold;
+            ArchetypeVector archetype = ArchetypeService.Capture(run);
+            if (!ShopService.Purchase(run, entry))
+            {
+                return false;
+            }
+
+            GameAnalyticsService.TrackShopPurchase(
+                run,
+                _shopKey,
+                category,
+                contentId,
+                price,
+                goldBefore,
+                run.Gold,
+                archetype);
 
             if (entry.Kind != ShopEntryKind.Fragment)
             {
@@ -136,6 +159,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
             if (restock != null)
             {
                 entry.RestockFrom(restock);
+                string indexKey = RestockIndexKey(entry);
+                _restockIndexes[indexKey] = RestockIndex(entry) + 1;
             }
             else
             {
@@ -143,6 +168,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             }
 
             RefreshPanel();
+            ReportStockShown(run);
 
             // 碎片包：购买后进入餐桌编辑页手动拼贴（金币已扣，待开包状态已置）。
             if (entry.Kind == ShopEntryKind.Fragment && run.PendingFragmentPack.Count > 0)
@@ -155,6 +181,55 @@ namespace GourmetProject.Game.UI.Battle.Pages
             {
                 GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.GenericQueue());
             }
+        }
+
+        private void ReportStockShown(GameRun run)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            foreach (ShopEntry entry in _stock)
+            {
+                if (entry == null || !entry.IsStocked)
+                {
+                    continue;
+                }
+
+                int price = ShopService.CurrentPrice(run, entry);
+                GameAnalyticsService.TrackShopItemShown(
+                    run,
+                    _shopKey,
+                    AnalyticsCategory(entry.Kind),
+                    entry.Id,
+                    entry.SlotIndex,
+                    price,
+                    run.Gold >= price,
+                    RestockIndex(entry));
+            }
+        }
+
+        private int RestockIndex(ShopEntry entry)
+        {
+            return _restockIndexes.TryGetValue(RestockIndexKey(entry), out int value) ? value : 0;
+        }
+
+        private static string RestockIndexKey(ShopEntry entry)
+        {
+            return $"{entry?.Kind}:{entry?.SlotIndex}";
+        }
+
+        private static string AnalyticsCategory(ShopEntryKind kind)
+        {
+            return kind switch
+            {
+                ShopEntryKind.Dish => "dish",
+                ShopEntryKind.PassiveItem => "passive_item",
+                ShopEntryKind.ActiveItem => "active_item",
+                ShopEntryKind.Fragment => "fragment",
+                _ => "unknown",
+            };
         }
 
         private ShopEntry TryAutoRestock(ShopEntry purchasedEntry)

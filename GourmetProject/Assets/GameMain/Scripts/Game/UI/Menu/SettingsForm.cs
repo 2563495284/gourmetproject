@@ -57,6 +57,7 @@ namespace GourmetProject.Game.UI.Menu
             UnbindRows();
             _descriptors.Clear();
             _descriptors.AddRange(SettingsCatalog.BuildDefault());
+            EnsureRowCapacity(_descriptors.Count);
 
             int boundCount = Mathf.Min(_descriptors.Count, _settingRows.Count);
             for (int i = 0; i < _settingRows.Count; i++)
@@ -80,6 +81,23 @@ namespace GourmetProject.Game.UI.Menu
                 Debug.LogWarning(
                     $"SettingsForm 预制行数量({_settingRows.Count})与设置描述符数量({_descriptors.Count})不一致。",
                     this);
+            }
+        }
+
+        private void EnsureRowCapacity(int requiredCount)
+        {
+            if (_settingRows.Count == 0)
+            {
+                return;
+            }
+
+            GameObject template = _settingRows[_settingRows.Count - 1];
+            while (_settingRows.Count < requiredCount && template != null)
+            {
+                GameObject clone = Instantiate(template, template.transform.parent);
+                clone.name = $"SettingRow{_settingRows.Count + 1}";
+                clone.SetActive(false);
+                _settingRows.Add(clone);
             }
         }
 

@@ -19,6 +19,8 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private Button _doodleToggleButton;
         [SerializeField] private TMP_Text _doodleToggleText;
 
+        public RectTransform SettleRect => _eatButton != null ? _eatButton.transform as RectTransform : transform as RectTransform;
+
         public void Bind(Action onEat, Action onDoodleClear, Action onDoodleToggle)
         {
             UIButtonSoundFeedback.Install(_eatButton);

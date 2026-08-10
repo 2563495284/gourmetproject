@@ -1,0 +1,19 @@
+{
+    "name": "SentryToolkit.Tutorial.Editor",
+    "rootNamespace": "SentryToolkit.Editor",
+    "references": [
+        "SentryToolkit.Tutorial.Runtime",
+        "NaughtyAttributes.Core"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

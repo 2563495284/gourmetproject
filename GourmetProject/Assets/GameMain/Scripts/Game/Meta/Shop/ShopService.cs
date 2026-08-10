@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using GourmetProject.Game.Run;
@@ -619,6 +620,8 @@ namespace GourmetProject.Game.Meta
             }
 
             int cost = DeleteCost(run);
+            int goldBefore = run.Gold;
+            ArchetypeVector archetype = ArchetypeService.Capture(run);
             if (!run.RemoveBonusDish(dishId))
             {
                 return false;
@@ -626,6 +629,15 @@ namespace GourmetProject.Game.Meta
 
             run.Gold -= cost;
             run.RecordDishDeleted();
+            GameAnalyticsService.TrackShopPurchase(
+                run,
+                GameRun.BuildShopKey(run.WeekIndex, run.CurrentDay),
+                "dish_delete_service",
+                dishId,
+                cost,
+                goldBefore,
+                run.Gold,
+                archetype);
             return true;
         }
 
@@ -637,6 +649,11 @@ namespace GourmetProject.Game.Meta
             }
 
             int cost = DeleteCost(run);
+            int goldBefore = run.Gold;
+            string dishId = dishIndex >= 0 && dishIndex < run.RecipeEntries.Count
+                ? run.RecipeEntries[dishIndex].DishId
+                : string.Empty;
+            ArchetypeVector archetype = ArchetypeService.Capture(run);
             if (!run.RemoveBonusDishAt(dishIndex))
             {
                 return false;
@@ -644,6 +661,15 @@ namespace GourmetProject.Game.Meta
 
             run.Gold -= cost;
             run.RecordDishDeleted();
+            GameAnalyticsService.TrackShopPurchase(
+                run,
+                GameRun.BuildShopKey(run.WeekIndex, run.CurrentDay),
+                "dish_delete_service",
+                dishId,
+                cost,
+                goldBefore,
+                run.Gold,
+                archetype);
             return true;
         }
 

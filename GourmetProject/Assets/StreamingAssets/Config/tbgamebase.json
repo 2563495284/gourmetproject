@@ -44,6 +44,8 @@
     "totalWeeks": 4,
     "slotFreeSpins": 1,
     "slotPaidCost": 20,
-    "slotMaxSpins": 5
+    "slotMaxSpins": 5,
+    "archetypePrimaryMinShare": 0.45,
+    "archetypePrimaryMinLead": 0.1
   }
 ]

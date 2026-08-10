@@ -72,6 +72,7 @@ namespace GourmetProject.Tests.EditMode
                 Run = new RunSaveData { ActionRandomRuleVersion = RunPersistence.CurrentActionRandomRuleVersion },
             };
             OpeningComicProgress.MarkCompleted(root.GuideProgress);
+            root.GuideProgress.CoreTutorialRunConsumed = true;
             GameSavePersistence.Save(save, root);
             var command = new SaveCommand(
                 () =>
@@ -88,6 +89,7 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(runSaveDeleted, Is.True);
             Assert.That(completed.Run, Is.Null);
             Assert.That(OpeningComicProgress.ShouldPlay(completed.GuideProgress), Is.False);
+            Assert.That(completed.GuideProgress.CoreTutorialRunConsumed, Is.True);
         }
 
         [Test]
