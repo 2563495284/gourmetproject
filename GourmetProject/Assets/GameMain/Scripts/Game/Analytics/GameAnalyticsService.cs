@@ -29,7 +29,7 @@ namespace GourmetProject.Game.Analytics
         public const string ConsentSettingKey = "Privacy.AnonymousAnalytics";
         private const string Tag = "Analytics";
         private const int SchemaVersion = 1;
-        private const string TgaGameId = "yjcs_mix_test";
+        private const string TgaGameId = "yjcs_app_test";
         private const int MaxBusinessPropertyCount = 64;
         private const int MaxTextBytes = 2 * 1024;
         private const double MaxNumber = 9e15;
