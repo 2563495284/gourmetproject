@@ -14,7 +14,6 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Image _background;
         [SerializeField] private Image _icon;
         [SerializeField] private TMP_Text _nameText;
-        [SerializeField] private TMP_Text _descriptionText;
         [SerializeField] private Button _button;
         private CanvasGroup _canvasGroup;
 
@@ -52,14 +51,6 @@ namespace GourmetProject.Game.UI.Meta
             if (_nameText != null)
             {
                 _nameText.text = choice?.Name ?? string.Empty;
-            }
-
-            if (_descriptionText != null)
-            {
-                string description = item != null ? item.Desc : choice?.Description ?? string.Empty;
-                _descriptionText.text = string.IsNullOrWhiteSpace(disabledReason)
-                    ? description
-                    : $"{description}\n\n{disabledReason}";
             }
 
             if (_button != null)
