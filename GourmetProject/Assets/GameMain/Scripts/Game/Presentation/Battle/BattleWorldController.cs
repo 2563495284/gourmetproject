@@ -26,7 +26,7 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class BattleWorldController : MonoBehaviour
     {
-        private static readonly bool DoodleEnabled = false;
+        private const bool DoodleEnabled = true;
         public const float Gap = DiningTableLayout.Gap;
         private const float MaxCellSize = DiningTableLayout.MaxCellSize;
         private const float MinCellSize = DiningTableLayout.MinCellSize;
@@ -3319,6 +3319,23 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         public string DoodleToggleLabel => _doodle != null && _doodle.IsVisible ? "隐藏涂鸦" : "显示涂鸦";
+        public bool IsDoodleVisible => _doodle != null && _doodle.IsVisible;
+        public BattleDoodleTool DoodleTool => _doodle != null ? _doodle.Tool : BattleDoodleTool.None;
+
+        public void BindDoodleOutput(RawImage output)
+        {
+            _doodle?.BindOutput(output);
+        }
+
+        public BattleDoodleTool ToggleDoodleTool(BattleDoodleTool tool)
+        {
+            if (!DoodleEnabled || _doodle == null)
+            {
+                return BattleDoodleTool.None;
+            }
+
+            return _doodle.ToggleTool(tool);
+        }
 
         /// <summary>每次进入经营挑战时清空笔迹，并把涂鸦层复位为可见。</summary>
         public void ResetDoodle()
@@ -3329,6 +3346,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _doodle.Clear();
+            _doodle.SetTool(BattleDoodleTool.None);
             _doodle.SetVisible(DoodleEnabled);
             _doodle.enabled = DoodleEnabled;
         }

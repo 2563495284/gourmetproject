@@ -1,182 +1,350 @@
-using System.Collections.Generic;
 using UnityEngine;
-using GourmetProject.Game.Meta;
-using GourmetProject.Game.Run;
+using UnityEngine.UI;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
+    public enum BattleDoodleTool
+    {
+        None,
+        Draw,
+        Erase
+    }
+
     /// <summary>
-    /// 经营挑战内玩家自由涂鸦层（仿杀戮尖塔2画笔）：右键拖动按距离阈值采样，逐笔生成 <see cref="LineRenderer"/> 矢量笔迹，
-    /// 归入最顶 Sorting Layer（<see cref="BattleSorting.Doodle"/>）压在所有经营挑战内容之上。纯表现，不参与玩法结算。
-    /// 笔迹挂在子物体 <c>_strokesRoot</c> 下，便于一键清空与整体显隐。
+    /// 经营挑战涂鸦画布。参考 STS2：笔迹先混合进半分辨率离屏纹理，再由屏幕空间 UI 一次合成到画面上。
+    /// 绘制使用普通 Alpha 合成，擦除直接削减画布 Alpha，因此不会生成或长期保留逐笔 Renderer。
     /// </summary>
     public sealed class BattleDoodleController : MonoBehaviour
     {
-        // —— 固定画笔参数 ——
         private static readonly Color BrushColor = new Color(0.15f, 0.1f, 0.08f, 1f);
-        private const float BrushWidth = 0.08f;
-        private const float MinSampleDistance = 0.05f;
-        private const int CapVertices = 6;
-        private const int CornerVertices = 6;
 
-        [Tooltip("用于屏幕→世界坐标换算的经营挑战相机；为空时回退 Camera.main。")]
-        [SerializeField] private Camera _camera;
-        [Tooltip("预置的笔迹根节点。")]
-        [SerializeField] private Transform _strokesRoot;
-        [Tooltip("单笔笔迹 LineRenderer prefab/template。")]
-        [SerializeField] private LineRenderer _strokePrefab;
+        // STS2 的半分辨率 Line2D 宽度分别为 4 / 12；shader 使用半径，因此对应 2 / 6 像素。
+        private const float DrawRadius = 2f;
+        private const float EraseRadius = 6f;
+        private const int ResolutionDivisor = 2;
+        private const int MinimumCanvasDimension = 64;
+        private const string CanvasShaderResourcePath = "Shaders/BattleDoodleCanvas";
 
-        private static Material _sharedMaterial;
+        private static readonly int StrokeStartId = Shader.PropertyToID("_StrokeStart");
+        private static readonly int StrokeEndId = Shader.PropertyToID("_StrokeEnd");
+        private static readonly int CanvasSizeId = Shader.PropertyToID("_CanvasSize");
+        private static readonly int BrushColorId = Shader.PropertyToID("_BrushColor");
+        private static readonly int BrushRadiusId = Shader.PropertyToID("_BrushRadius");
+        private static readonly int EraseId = Shader.PropertyToID("_Erase");
 
-        private LineRenderer _currentStroke;
-        private readonly List<Vector3> _points = new List<Vector3>();
+        private RenderTexture _canvasA;
+        private RenderTexture _canvasB;
+        private RenderTexture _currentCanvas;
+        private Material _strokeMaterial;
+        private RawImage _output;
+        private Vector2 _lastCanvasPoint;
+        private BattleDoodleTool _tool = BattleDoodleTool.None;
+        private bool _drawing;
         private bool _visible = true;
 
-        /// <summary>当前涂鸦层是否可见。</summary>
         public bool IsVisible => _visible;
-
-        private void Awake()
-        {
-            EnsureStrokesRoot();
-        }
+        public BattleDoodleTool Tool => _tool;
+        public RenderTexture CanvasTexture => _currentCanvas;
 
         private void Update()
         {
-            if (!_visible)
+            EnsureCanvas();
+
+            if (!_visible || _tool == BattleDoodleTool.None)
             {
+                _drawing = false;
                 return;
             }
 
-            Camera cam = _camera != null ? _camera : Camera.main;
-            if (cam == null)
+            if (WorldInput.PrimaryPressedThisFrame &&
+                TryScreenPointToCanvasUv(WorldInput.MouseScreen, out Vector2 start))
             {
-                return;
+                _lastCanvasPoint = start;
+                _drawing = true;
+                StampSegment(_lastCanvasPoint, _lastCanvasPoint);
+            }
+            else if (_drawing && WorldInput.PrimaryHeld)
+            {
+                if (!TryScreenPointToCanvasUv(WorldInput.MouseScreen, out Vector2 next))
+                {
+                    _drawing = false;
+                    return;
+                }
+
+                Vector2 canvasDelta = Vector2.Scale(
+                    next - _lastCanvasPoint,
+                    new Vector2(_currentCanvas.width, _currentCanvas.height));
+                if (canvasDelta.sqrMagnitude >= 1f)
+                {
+                    StampSegment(_lastCanvasPoint, next);
+                    _lastCanvasPoint = next;
+                }
             }
 
-            if (WorldInput.SecondaryPressedThisFrame)
+            if (!WorldInput.PrimaryHeld)
             {
-                BeginStroke(WorldInput.MouseWorld(cam));
-            }
-            else if (_currentStroke != null && WorldInput.SecondaryHeld)
-            {
-                ExtendStroke(WorldInput.MouseWorld(cam));
-            }
-
-            if (WorldInput.SecondaryReleasedThisFrame)
-            {
-                EndStroke();
+                _drawing = false;
             }
         }
 
-        /// <summary>清空所有已绘制的笔迹。</summary>
+        private void OnDisable()
+        {
+            _drawing = false;
+        }
+
+        private void OnDestroy()
+        {
+            ReleaseCanvas(ref _canvasA);
+            ReleaseCanvas(ref _canvasB);
+            _currentCanvas = null;
+
+            if (_strokeMaterial != null)
+            {
+                Destroy(_strokeMaterial);
+                _strokeMaterial = null;
+            }
+        }
+
+        public void BindOutput(RawImage output)
+        {
+            if (_output == output)
+            {
+                SyncOutput();
+                return;
+            }
+
+            if (_output != null)
+            {
+                _output.texture = null;
+            }
+
+            _output = output;
+            if (_output != null)
+            {
+                _output.raycastTarget = false;
+                _output.uvRect = new Rect(0f, 0f, 1f, 1f);
+            }
+
+            EnsureCanvas();
+            SyncOutput();
+        }
+
+        public void SetTool(BattleDoodleTool tool)
+        {
+            _tool = tool;
+            _drawing = false;
+            if (_tool != BattleDoodleTool.None)
+            {
+                _visible = true;
+                SyncOutput();
+            }
+        }
+
+        public BattleDoodleTool ToggleTool(BattleDoodleTool tool)
+        {
+            SetTool(_tool == tool ? BattleDoodleTool.None : tool);
+            return _tool;
+        }
+
         public void Clear()
         {
-            _currentStroke = null;
-            _points.Clear();
-            EnsureStrokesRoot();
-            for (int i = _strokesRoot.childCount - 1; i >= 0; i--)
-            {
-                Destroy(_strokesRoot.GetChild(i).gameObject);
-            }
+            _drawing = false;
+            EnsureCanvas();
+            ClearRenderTexture(_canvasA);
+            ClearRenderTexture(_canvasB);
+            _currentCanvas = _canvasA;
+            SyncOutput();
         }
 
-        /// <summary>整体显隐涂鸦层；隐藏时同时中断并禁止新建笔迹。</summary>
         public void SetVisible(bool visible)
         {
             _visible = visible;
-            EnsureStrokesRoot();
-            _strokesRoot.gameObject.SetActive(visible);
+            _drawing = false;
             if (!visible)
             {
-                _currentStroke = null;
-                _points.Clear();
+                _tool = BattleDoodleTool.None;
             }
+            SyncOutput();
         }
 
-        private void BeginStroke(Vector3 worldPoint)
+        private void StampSegment(Vector2 start, Vector2 end)
         {
-            EnsureStrokesRoot();
-            if (_strokesRoot == null || _strokePrefab == null)
+            EnsureCanvas();
+            if (_currentCanvas == null || _strokeMaterial == null)
             {
                 return;
             }
 
-            worldPoint.z = 0f;
+            RenderTexture destination = _currentCanvas == _canvasA ? _canvasB : _canvasA;
+            _strokeMaterial.SetVector(StrokeStartId, start);
+            _strokeMaterial.SetVector(StrokeEndId, end);
+            _strokeMaterial.SetVector(CanvasSizeId, new Vector4(_currentCanvas.width, _currentCanvas.height, 0f, 0f));
+            _strokeMaterial.SetColor(BrushColorId, BrushColor);
+            _strokeMaterial.SetFloat(BrushRadiusId, _tool == BattleDoodleTool.Erase ? EraseRadius : DrawRadius);
+            _strokeMaterial.SetFloat(EraseId, _tool == BattleDoodleTool.Erase ? 1f : 0f);
 
-            LineRenderer line = Instantiate(_strokePrefab, _strokesRoot);
-            line.gameObject.name = "Stroke";
-            line.useWorldSpace = true;
-            line.alignment = LineAlignment.View;
-            line.textureMode = LineTextureMode.Stretch;
-            line.numCapVertices = CapVertices;
-            line.numCornerVertices = CornerVertices;
-            line.startWidth = BrushWidth;
-            line.endWidth = BrushWidth;
-            line.startColor = BrushColor;
-            line.endColor = BrushColor;
-            line.sharedMaterial = GetSharedMaterial();
-            BattleSorting.Apply(line, BattleSorting.Doodle);
-
-            _points.Clear();
-            _points.Add(worldPoint);
-            line.positionCount = 1;
-            line.SetPosition(0, worldPoint);
-            _currentStroke = line;
+            Graphics.Blit(_currentCanvas, destination, _strokeMaterial);
+            _currentCanvas = destination;
+            SyncOutput();
         }
 
-        private void ExtendStroke(Vector3 worldPoint)
+        private void EnsureCanvas()
         {
-            worldPoint.z = 0f;
-            if (_points.Count > 0 &&
-                Vector3.Distance(_points[_points.Count - 1], worldPoint) < MinSampleDistance)
+            Vector2 pixelSize = OutputPixelSize();
+            int width = Mathf.Max(MinimumCanvasDimension, Mathf.RoundToInt(pixelSize.x / ResolutionDivisor));
+            int height = Mathf.Max(MinimumCanvasDimension, Mathf.RoundToInt(pixelSize.y / ResolutionDivisor));
+            if (_canvasA != null && _canvasB != null && _canvasA.width == width && _canvasA.height == height)
+            {
+                EnsureStrokeMaterial();
+                return;
+            }
+
+            RenderTexture oldCanvas = _currentCanvas;
+            RenderTexture oldA = _canvasA;
+            RenderTexture oldB = _canvasB;
+
+            _canvasA = CreateCanvas(width, height, "BattleDoodleCanvasA");
+            _canvasB = CreateCanvas(width, height, "BattleDoodleCanvasB");
+            ClearRenderTexture(_canvasA);
+            ClearRenderTexture(_canvasB);
+
+            if (oldCanvas != null)
+            {
+                Graphics.Blit(oldCanvas, _canvasA);
+            }
+
+            _currentCanvas = _canvasA;
+            ReleaseCanvas(ref oldA);
+            ReleaseCanvas(ref oldB);
+            EnsureStrokeMaterial();
+            SyncOutput();
+        }
+
+        private bool TryScreenPointToCanvasUv(Vector2 screenPoint, out Vector2 uv)
+        {
+            uv = default;
+            if (_output == null)
+            {
+                return false;
+            }
+
+            RectTransform rectTransform = _output.rectTransform;
+            Canvas canvas = _output.canvas;
+            Camera eventCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? canvas.worldCamera
+                : null;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    rectTransform,
+                    screenPoint,
+                    eventCamera,
+                    out Vector2 localPoint) ||
+                !rectTransform.rect.Contains(localPoint))
+            {
+                return false;
+            }
+
+            uv = LocalPointToUv(rectTransform.rect, localPoint);
+            return true;
+        }
+
+        internal static Vector2 LocalPointToUv(Rect rect, Vector2 localPoint)
+        {
+            return new Vector2(
+                Mathf.InverseLerp(rect.xMin, rect.xMax, localPoint.x),
+                Mathf.InverseLerp(rect.yMin, rect.yMax, localPoint.y));
+        }
+
+        private Vector2 OutputPixelSize()
+        {
+            if (_output == null)
+            {
+                return new Vector2(Screen.width, Screen.height);
+            }
+
+            var corners = new Vector3[4];
+            _output.rectTransform.GetWorldCorners(corners);
+            Canvas canvas = _output.canvas;
+            Camera eventCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? canvas.worldCamera
+                : null;
+            Vector2 bottomLeft = RectTransformUtility.WorldToScreenPoint(eventCamera, corners[0]);
+            Vector2 topRight = RectTransformUtility.WorldToScreenPoint(eventCamera, corners[2]);
+            float width = Mathf.Abs(topRight.x - bottomLeft.x);
+            float height = Mathf.Abs(topRight.y - bottomLeft.y);
+            return width >= 1f && height >= 1f
+                ? new Vector2(width, height)
+                : new Vector2(Screen.width, Screen.height);
+        }
+
+        private void EnsureStrokeMaterial()
+        {
+            if (_strokeMaterial != null)
             {
                 return;
             }
 
-            _points.Add(worldPoint);
-            _currentStroke.positionCount = _points.Count;
-            _currentStroke.SetPosition(_points.Count - 1, worldPoint);
-        }
-
-        private void EndStroke()
-        {
-            // 单击未拖动：补一个极小偏移点，让圆角线帽渲染成一个圆点。
-            if (_currentStroke != null && _points.Count == 1)
+            Shader shader = Resources.Load<Shader>(CanvasShaderResourcePath);
+            if (shader == null)
             {
-                Vector3 dot = _points[0] + new Vector3(0.001f, 0f, 0f);
-                _currentStroke.positionCount = 2;
-                _currentStroke.SetPosition(1, dot);
+                Debug.LogError($"{nameof(BattleDoodleController)} 找不到涂鸦混合 Shader：Resources/{CanvasShaderResourcePath}", this);
+                return;
             }
 
-            _currentStroke = null;
-            _points.Clear();
+            _strokeMaterial = new Material(shader)
+            {
+                name = "Battle Doodle Stroke Material",
+                hideFlags = HideFlags.HideAndDontSave
+            };
         }
 
-        private void EnsureStrokesRoot()
+        private void SyncOutput()
         {
-            if (_strokesRoot != null)
+            if (_output == null)
             {
                 return;
             }
 
-            Transform existing = transform.Find("Strokes");
-            if (existing != null)
+            _output.texture = _currentCanvas;
+            _output.enabled = _visible;
+        }
+
+        private static RenderTexture CreateCanvas(int width, int height, string textureName)
+        {
+            var texture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Default)
             {
-                _strokesRoot = existing;
+                name = textureName,
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+                useMipMap = false,
+                autoGenerateMips = false
+            };
+            texture.Create();
+            return texture;
+        }
+
+        private static void ClearRenderTexture(RenderTexture texture)
+        {
+            if (texture == null)
+            {
                 return;
             }
 
-            Debug.LogError($"{nameof(BattleDoodleController)} 缺少 Strokes 预置根节点。", this);
+            RenderTexture previous = RenderTexture.active;
+            RenderTexture.active = texture;
+            GL.Clear(false, true, Color.clear);
+            RenderTexture.active = previous;
         }
 
-        private static Material GetSharedMaterial()
+        private static void ReleaseCanvas(ref RenderTexture texture)
         {
-            if (_sharedMaterial == null)
+            if (texture == null)
             {
-                _sharedMaterial = new Material(Shader.Find("Sprites/Default"));
+                return;
             }
 
-            return _sharedMaterial;
+            texture.Release();
+            Destroy(texture);
+            texture = null;
         }
     }
 }

@@ -262,7 +262,12 @@ namespace GourmetProject.Game.UI.Battle
             _infoColumn?.Bind(OnSettingsClicked, OnViewTableClicked, OnViewRecipeClicked);
             _inspectionLayer?.TablePanel?.Bind(OnExitTableViewClicked);
             _cakeLayerBuffHud = GetComponent<CakeLayerBuffHud>();
-            _foodBar?.Bind(OnEatClicked, OnDoodleClearClicked, OnDoodleToggleClicked);
+            _foodBar?.Bind(
+                OnEatClicked,
+                OnDoodleDrawClicked,
+                OnDoodleEraseClicked,
+                OnDoodleClearClicked,
+                OnDoodleToggleClicked);
             if (_bossPresentation == null)
             {
                 throw new MissingReferenceException(
@@ -5010,6 +5015,28 @@ namespace GourmetProject.Game.UI.Battle
         }
 
         // —— 局内交互（透传到经营挑战世界）——
+
+        private void OnDoodleDrawClicked()
+        {
+            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
+            {
+                return;
+            }
+
+            (_world ?? BattleWorldController.Instance)?.ToggleDoodleTool(BattleDoodleTool.Draw);
+            RefreshFoodActions();
+        }
+
+        private void OnDoodleEraseClicked()
+        {
+            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
+            {
+                return;
+            }
+
+            (_world ?? BattleWorldController.Instance)?.ToggleDoodleTool(BattleDoodleTool.Erase);
+            RefreshFoodActions();
+        }
 
         private void OnDoodleClearClicked()
         {
