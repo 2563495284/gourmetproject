@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BreakInfinity;
 using GourmetProject.Core.Rng;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
@@ -1136,12 +1137,13 @@ namespace GourmetProject.Gameplay.Battle
                 return;
             }
 
-            if (entry.ScoreMultiplier > 0f && Math.Abs(entry.ScoreMultiplier - 1f) > 0.0001f)
+            if (entry.ScoreMultiplier > BigDouble.Zero
+                && BigDouble.Abs(entry.ScoreMultiplier - BigDouble.One) > 0.0001d)
             {
                 instance.MultiplyPermanentMult(entry.ScoreMultiplier);
             }
 
-            if (Math.Abs(entry.ScoreFlatBonus) > 0.0001f)
+            if (BigDouble.Abs(entry.ScoreFlatBonus) > 0.0001d)
             {
                 instance.AddPermanentFlat(entry.ScoreFlatBonus);
             }
@@ -1425,7 +1427,7 @@ namespace GourmetProject.Gameplay.Battle
             ApplyCopySkillRequests(result.CopySkillRequests);
 
             // 永久分 / 永久倍率 / 视为食物数：写回实例（经营挑战内跨结算持久）。
-            foreach (KeyValuePair<int, float> kv in result.PermanentFlatDeltas)
+            foreach (KeyValuePair<int, BigDouble> kv in result.PermanentFlatDeltas)
             {
                 DishInstance inst = FindInstance(kv.Key);
                 if (inst == null)
@@ -1443,7 +1445,7 @@ namespace GourmetProject.Gameplay.Battle
                 }
             }
 
-            foreach (KeyValuePair<int, float> kv in result.PermanentMultDeltas)
+            foreach (KeyValuePair<int, BigDouble> kv in result.PermanentMultDeltas)
             {
                 DishInstance inst = FindInstance(kv.Key);
                 if (inst == null)
@@ -1657,13 +1659,13 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>读档恢复待领奖界面时，把会话标记为已结算的只读 UI 状态；不触发任何结算副作用。</summary>
-        public void RestoreSettledForRewardView(int total)
+        public void RestoreSettledForRewardView(BigDouble total)
         {
             RestoreSettledForRewardView(
                 total,
                 -1,
                 Array.Empty<DishScore>(),
-                Math.Max(0, total),
+                BigDouble.Max(BigDouble.Zero, total),
                 0f,
                 1f,
                 hasDetailedScore: false);
@@ -1673,12 +1675,12 @@ namespace GourmetProject.Gameplay.Battle
         /// 从待领奖快照恢复只读结算状态。层数与详细分数均为表现恢复数据，不重复执行结算技能或资源副作用。
         /// </summary>
         public void RestoreSettledForRewardView(
-            int total,
+            BigDouble total,
             int finalHappyCakeLayers,
             IReadOnlyList<DishScore> dishScores,
-            float rawSum,
-            float finalFlat,
-            float finalMultiplier,
+            BigDouble rawSum,
+            BigDouble finalFlat,
+            BigDouble finalMultiplier,
             bool hasDetailedScore)
         {
             if (finalHappyCakeLayers >= 0)
@@ -1692,7 +1694,7 @@ namespace GourmetProject.Gameplay.Battle
                     rawSum,
                     finalFlat,
                     finalMultiplier)
-                : new ScoreResult(Array.Empty<DishScore>(), Math.Max(0, total), 0f, 1f);
+                : new ScoreResult(Array.Empty<DishScore>(), BigDouble.Max(BigDouble.Zero, total), 0f, 1f);
             IsSettled = true;
         }
 
@@ -1745,12 +1747,12 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
-        /// 把已上桌食物从当前朝向逆时针旋转指定步数，并移动到独立临时桌。
+        /// 按麻风味变化量旋转已上桌食物，并移动到独立临时桌。正数逆时针，负数顺时针。
         /// 不回滚该菜已发生的上菜次数、OnServe 或费用副作用。
         /// </summary>
-        public bool MoveDishToTemporaryAreaAfterRotate(int dishId, int ccwSteps)
+        public bool MoveDishToTemporaryAreaAfterRotationDelta(int dishId, int ccwSteps)
         {
-            if (IsSettled || ccwSteps <= 0)
+            if (IsSettled || ccwSteps == 0)
             {
                 return false;
             }

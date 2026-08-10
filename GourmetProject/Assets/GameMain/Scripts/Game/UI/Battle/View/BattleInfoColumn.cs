@@ -1,10 +1,12 @@
 using System;
+using BreakInfinity;
 using System.Collections.Generic;
 using DG.Tweening;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
+using GourmetProject.Gameplay.Scoring;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -44,7 +46,7 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private TMP_Text _bossSkillText;
 
         private readonly List<Image> _heartItems = new List<Image>();
-        private int? _battleScoreOverride;
+        private BigDouble? _battleScoreOverride;
         private RectTransform _bossStatRect;
         private bool _bossStatPresented;
         private string _presentedBossDebuffId = string.Empty;
@@ -166,7 +168,7 @@ namespace GourmetProject.Game.UI.Battle.View
         }
 
         /// <summary>结算动画逐步写入当前显示分；为空时按 session 的稳定状态刷新。</summary>
-        public void SetBattleScoreOverride(int? score)
+        public void SetBattleScoreOverride(BigDouble? score)
         {
             _battleScoreOverride = score;
         }
@@ -248,7 +250,9 @@ namespace GourmetProject.Game.UI.Battle.View
                 && (_battleScoreOverride.HasValue || !session.IsSettled);
             if (_scoreCurrentText != null)
             {
-                _scoreCurrentText.text = showScore ? (_battleScoreOverride ?? 0).ToString() : "-";
+                _scoreCurrentText.text = showScore
+                    ? ScoreNumberFormatter.Format(_battleScoreOverride ?? BigDouble.Zero)
+                    : "-";
             }
 
             if (_scoreRequiredText != null)

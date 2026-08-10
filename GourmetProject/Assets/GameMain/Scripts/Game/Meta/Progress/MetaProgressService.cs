@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BreakInfinity;
 using GourmetProject.Game.Run;
 using GourmetProject.Runtime;
 
@@ -7,7 +8,7 @@ namespace GourmetProject.Game.Meta
     /// <summary>跨局进度累计与游戏结束解锁评估。</summary>
     public static class MetaProgressService
     {
-        public static MetaProgressUpdate EvaluateRunEnd(GameRun run, bool won, int lastTotal, int lastTarget, MetaProgressSaveData progress = null)
+        public static MetaProgressUpdate EvaluateRunEnd(GameRun run, bool won, BigDouble lastTotal, int lastTarget, MetaProgressSaveData progress = null)
         {
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
             return EvaluateRunEnd(tables, run, won, lastTotal, lastTarget, progress);
@@ -17,7 +18,7 @@ namespace GourmetProject.Game.Meta
             cfg.Tables tables,
             GameRun run,
             bool won,
-            int lastTotal,
+            BigDouble lastTotal,
             int lastTarget,
             MetaProgressSaveData progress)
         {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BreakInfinity;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
@@ -255,7 +256,12 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.AddCurrentMult:
                 {
-                    float sourceMultiplier = CurrentMultiplierSources(ctx).Sum(ctx.GetCurrentMultiplier) * count;
+                    BigDouble sourceMultiplier = BigDouble.Zero;
+                    foreach (DishInstance source in CurrentMultiplierSources(ctx))
+                    {
+                        sourceMultiplier += ctx.GetCurrentMultiplier(source);
+                    }
+                    sourceMultiplier *= count;
                     foreach (DishInstance t in Targets(ctx)) ctx.AddMultFlatTo(t, sourceMultiplier);
                     break;
                 }
@@ -263,7 +269,7 @@ namespace GourmetProject.Gameplay.Scoring
                 case SkillActionType.AddCurrentScore:
                 {
                     // 先读来源快照，再统一写目标；目标包含自身时不会改变后续目标获得的数值。
-                    float sourceScore = ctx.GetCurrentScore(_self) * count;
+                    BigDouble sourceScore = ctx.GetCurrentScore(_self) * count;
                     foreach (DishInstance t in Targets(ctx)) ctx.AddFlatTo(t, sourceScore);
                     break;
                 }
@@ -323,8 +329,11 @@ namespace GourmetProject.Gameplay.Scoring
                     break;
 
                 case SkillActionType.AddCountAs:
-                    // 「视为食物数」由 ScoreContext 结算前 live 预计算（ComputeLiveCountAs）当次生效，
-                    // 此处不再作为延迟副作用累加，避免与 live 值重复计入。
+                    // 被动规则已在结算前预计算；主动规则在自身执行到时才影响后续规则。
+                    if (!_rule.IsPassive)
+                    {
+                        ctx.ApplyLiveCountAs(_rule, _self, count, value);
+                    }
                     break;
 
                 case SkillActionType.None:

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BreakInfinity;
 using System.Linq;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
@@ -84,20 +85,20 @@ namespace GourmetProject.Game.UI.Tooltips
     {
         public static readonly FoodScoreTipsData Empty = new FoodScoreTipsData(0f, 1f);
 
-        public FoodScoreTipsData(float score, float multiplier)
+        public FoodScoreTipsData(BigDouble score, BigDouble multiplier)
         {
             Score = score;
             Multiplier = multiplier;
         }
 
         /// <summary>分数：基础分数 + 加法分。</summary>
-        public float Score { get; }
+        public BigDouble Score { get; }
 
         /// <summary>倍率：本食物当前倍率。</summary>
-        public float Multiplier { get; }
+        public BigDouble Multiplier { get; }
 
         /// <summary>美味值：倍率 * 分数 后向上取整。</summary>
-        public float Deliciousness => DishScore.CeilContribution(Score, Multiplier);
+        public BigDouble Deliciousness => DishScore.CeilContribution(Score, Multiplier);
     }
 
     public sealed class FoodMaterialTipsEntry
@@ -137,7 +138,7 @@ namespace GourmetProject.Game.UI.Tooltips
     /// </summary>
     public sealed class FoodTipsReveal
     {
-        public FoodTipsReveal(float score, float multiplier, int maxSkills, int maxTransferred)
+        public FoodTipsReveal(BigDouble score, BigDouble multiplier, int maxSkills, int maxTransferred)
         {
             Score = score;
             Multiplier = multiplier;
@@ -146,10 +147,10 @@ namespace GourmetProject.Game.UI.Tooltips
         }
 
         /// <summary>已揭示的分数（基础分数 + 已表演的加法分）。</summary>
-        public float Score { get; }
+        public BigDouble Score { get; }
 
         /// <summary>已揭示的倍率（已表演到的倍率）。</summary>
-        public float Multiplier { get; }
+        public BigDouble Multiplier { get; }
 
         /// <summary>技能列表最多显示前几条（含复制技能追加项）；-1 表示全部。</summary>
         public int MaxSkills { get; }
@@ -201,8 +202,8 @@ namespace GourmetProject.Game.UI.Tooltips
                 dish.IsTemporary,
                 effectiveCountAs);
 
-            float scoreValue;
-            float multiplier;
+            BigDouble scoreValue;
+            BigDouble multiplier;
             if (score != null)
             {
                 scoreValue = score.BaseValue + score.FlatBonus;

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BreakInfinity;
 using GourmetProject.Gameplay.Board;
 
 namespace GourmetProject.Game.UI.Tooltips
@@ -11,9 +12,9 @@ namespace GourmetProject.Game.UI.Tooltips
     {
         private sealed class DishReveal
         {
-            public float BaseScore;
-            public float Flat;
-            public float Multiplier;
+            public BigDouble BaseScore;
+            public BigDouble Flat;
+            public BigDouble Multiplier;
             public int SkillCount;
             public int TransferredCount;
         }
@@ -39,7 +40,7 @@ namespace GourmetProject.Game.UI.Tooltips
         }
 
         /// <summary>揭示某道菜「加法分」的当前累加值（ScoreLine.After）。</summary>
-        public void RevealFlat(int dishInstanceId, float flatAfter)
+        public void RevealFlat(int dishInstanceId, BigDouble flatAfter)
         {
             if (_byDish.TryGetValue(dishInstanceId, out DishReveal reveal))
             {
@@ -48,7 +49,7 @@ namespace GourmetProject.Game.UI.Tooltips
         }
 
         /// <summary>揭示某道菜「倍率」的当前累加值（ScoreLine.After）。</summary>
-        public void RevealMultiplier(int dishInstanceId, float multiplierAfter)
+        public void RevealMultiplier(int dishInstanceId, BigDouble multiplierAfter)
         {
             if (_byDish.TryGetValue(dishInstanceId, out DishReveal reveal))
             {

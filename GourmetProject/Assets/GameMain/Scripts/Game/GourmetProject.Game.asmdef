@@ -7,6 +7,7 @@
         "GourmetProject.Core",
         "GourmetProject.Config",
         "GourmetProject.Gameplay",
+        "BreakInfinity",
         "DOTween.Modules",
         "Luban.Runtime",
         "Unity.InputSystem",

@@ -1,4 +1,5 @@
 using GourmetProject.Game.Flow;
+using BreakInfinity;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
@@ -91,7 +92,7 @@ namespace GourmetProject.Game.UI.Meta
     /// <summary>打开 ResultForm 时携带的数据：本局胜负与最终得分。</summary>
     public sealed class ResultFormData
     {
-        public ResultFormData(bool win, int total)
+        public ResultFormData(bool win, BigDouble total)
         {
             Win = win;
             Total = total;
@@ -99,6 +100,6 @@ namespace GourmetProject.Game.UI.Meta
 
         public bool Win { get; }
 
-        public int Total { get; }
+        public BigDouble Total { get; }
     }
 }

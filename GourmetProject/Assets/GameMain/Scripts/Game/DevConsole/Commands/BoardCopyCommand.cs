@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using BreakInfinity;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -299,6 +300,11 @@ namespace GourmetProject.Game.DevConsole.Commands
 
         private static string Number(float value)
             => value.ToString("R", CultureInfo.InvariantCulture);
+
+        private static string Number(BigDouble value)
+            => value.Mantissa.ToString("R", CultureInfo.InvariantCulture)
+               + "e"
+               + value.Exponent.ToString(CultureInfo.InvariantCulture);
     }
 }
 #endif

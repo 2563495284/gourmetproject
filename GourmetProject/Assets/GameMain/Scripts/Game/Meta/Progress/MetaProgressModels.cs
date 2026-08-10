@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BreakInfinity;
 
 namespace GourmetProject.Game.Meta
 {
@@ -10,7 +11,7 @@ namespace GourmetProject.Game.Meta
         public int WeekIndex { get; set; }
         public int CurrentDay { get; set; }
         public bool IsEndless { get; set; }
-        public int LastTotal { get; set; }
+        public BigDouble LastTotal { get; set; }
         public int LastTarget { get; set; }
         public int Gold { get; set; }
         public int OwnedItemCount { get; set; }

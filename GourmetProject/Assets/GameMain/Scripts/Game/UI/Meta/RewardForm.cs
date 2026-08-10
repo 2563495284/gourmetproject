@@ -1,4 +1,5 @@
 using System;
+using BreakInfinity;
 using System.Collections.Generic;
 using DG.Tweening;
 using GourmetProject.Core.Rng;
@@ -110,7 +111,7 @@ namespace GourmetProject.Game.UI.Meta
         private string _rewardKey;
         private string _genericRewardKey;
         private string _genericRewardTitle;
-        private int _lastTotal;
+        private BigDouble _lastTotal;
         private int _lastTarget;
         private CanvasGroup _rewardScrollbarGroup;
         private float _lastRewardScrollTime;
@@ -224,7 +225,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             BattleSession session = BattleForm.Active?.Session;
-            int total = session != null && session.IsSettled ? session.LastResult.Total : 0;
+            BigDouble total = session != null && session.IsSettled ? session.LastResult.Total : BigDouble.Zero;
             int target = session?.RequiredScore ?? _run.RequiredScore;
             ActionExecutionContext actionContext = BattleForm.Active?.CurrentBattleActionContext;
             _rewardKey = GameRun.BuildRewardKey(_run.WeekIndex, _run.CurrentDay, actionContext);

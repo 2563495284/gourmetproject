@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BreakInfinity;
 using System.Linq;
 
 namespace GourmetProject.Gameplay.Battle
@@ -106,15 +107,15 @@ namespace GourmetProject.Gameplay.Battle
             string dishId,
             IEnumerable<string> extraFlavorIds,
             IEnumerable<string> extraSkillIds,
-            float scoreMultiplier,
-            float scoreFlatBonus = 0f,
+            BigDouble scoreMultiplier,
+            BigDouble scoreFlatBonus = default,
             int sourceBookIndex = -1,
             int sourceDishIndex = -1)
         {
             DishId = dishId ?? string.Empty;
             _extraFlavorIds = extraFlavorIds != null ? new List<string>(extraFlavorIds) : new List<string>();
             _extraSkillIds = extraSkillIds != null ? new List<string>(extraSkillIds) : new List<string>();
-            ScoreMultiplier = scoreMultiplier > 0f ? scoreMultiplier : 1f;
+            ScoreMultiplier = scoreMultiplier > BigDouble.Zero ? scoreMultiplier : BigDouble.One;
             ScoreFlatBonus = scoreFlatBonus;
             SourceBookIndex = sourceBookIndex;
             SourceDishIndex = sourceDishIndex;
@@ -131,9 +132,9 @@ namespace GourmetProject.Gameplay.Battle
 
         public IReadOnlyList<string> ExtraSkillIds => _extraSkillIds;
 
-        public float ScoreMultiplier { get; }
+        public BigDouble ScoreMultiplier { get; }
 
-        public float ScoreFlatBonus { get; }
+        public BigDouble ScoreFlatBonus { get; }
 
         public int SourceBookIndex { get; }
 
@@ -175,7 +176,7 @@ namespace GourmetProject.Gameplay.Battle
 
     public readonly struct RecipeScoreFlatDelta
     {
-        public RecipeScoreFlatDelta(int bookIndex, int dishIndex, float delta)
+        public RecipeScoreFlatDelta(int bookIndex, int dishIndex, BigDouble delta)
         {
             BookIndex = bookIndex;
             DishIndex = dishIndex;
@@ -186,12 +187,12 @@ namespace GourmetProject.Gameplay.Battle
 
         public int DishIndex { get; }
 
-        public float Delta { get; }
+        public BigDouble Delta { get; }
     }
 
     public readonly struct RecipeScoreMultiplierDelta
     {
-        public RecipeScoreMultiplierDelta(int bookIndex, int dishIndex, float multiplier)
+        public RecipeScoreMultiplierDelta(int bookIndex, int dishIndex, BigDouble multiplier)
         {
             BookIndex = bookIndex;
             DishIndex = dishIndex;
@@ -202,6 +203,6 @@ namespace GourmetProject.Gameplay.Battle
 
         public int DishIndex { get; }
 
-        public float Multiplier { get; }
+        public BigDouble Multiplier { get; }
     }
 }

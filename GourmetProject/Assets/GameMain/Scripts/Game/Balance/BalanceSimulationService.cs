@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BreakInfinity;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Data;
@@ -63,7 +64,7 @@ namespace GourmetProject.Game.Balance
             BalanceRuntime template = BuildCheckpointRuntimeFactory.Create(_tables, _database, checkpoint, baseline[0].Seed);
             foreach (string componentId in template.ComponentIds)
             {
-                double delta = 0d;
+                BigDouble delta = BigDouble.Zero;
                 double ratio = 0d;
                 int count = 0;
                 int stride = Math.Max(1, baseline.Count / Math.Max(1, maxSamples));
@@ -73,13 +74,13 @@ namespace GourmetProject.Game.Balance
                     if (!original.IsValid) continue;
                     BalanceSampleResult removed = RunSample(checkpoint, original.Seed, componentId);
                     if (!removed.IsValid) continue;
-                    float d = original.TotalScore - removed.TotalScore;
+                    BigDouble d = original.TotalScore - removed.TotalScore;
                     delta += d;
-                    ratio += original.TotalScore != 0 ? d / original.TotalScore : 0f;
+                    ratio += original.TotalScore != 0 ? (d / original.TotalScore).ToDouble() : 0d;
                     count++;
                 }
                 if (count > 0)
-                    result.Add(new BalanceComponentContribution { ComponentId = componentId, MeanDelta = (float)(delta / count), MeanRatio = (float)(ratio / count) });
+                    result.Add(new BalanceComponentContribution { ComponentId = componentId, MeanDelta = delta / count, MeanRatio = (float)(ratio / count) });
             }
             return result;
         }

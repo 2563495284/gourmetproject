@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
+using BreakInfinity;
+using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
 using GourmetProject.Game.Run;
 
@@ -20,12 +22,12 @@ namespace GourmetProject.Game.Meta
     /// </summary>
     public static class SettlementService
     {
-        public static SettlementSummary Build(GameRun run, bool won, int lastTotal, int lastTarget)
+        public static SettlementSummary Build(GameRun run, bool won, BigDouble lastTotal, int lastTarget)
         {
             return Build(run, won, lastTotal, lastTarget, null);
         }
 
-        public static SettlementSummary Build(GameRun run, bool won, int lastTotal, int lastTarget, MetaProgressUpdate progressUpdate)
+        public static SettlementSummary Build(GameRun run, bool won, BigDouble lastTotal, int lastTarget, MetaProgressUpdate progressUpdate)
         {
             RunStatistics statistics = progressUpdate?.Statistics ?? RunStatisticsService.Build(run, won, lastTotal, lastTarget);
             var body = new StringBuilder();
@@ -35,7 +37,7 @@ namespace GourmetProject.Game.Meta
             body.AppendLine();
             body.AppendLine($"周数：第 {statistics.WeekIndex} 周{(statistics.IsEndless ? "（无尽）" : string.Empty)}");
             body.AppendLine($"天数：第 {statistics.CurrentDay} 天");
-            body.AppendLine($"总美味值：{statistics.LastTotal} / 目标美味值：{statistics.LastTarget}");
+            body.AppendLine($"总美味值：{ScoreNumberFormatter.Format(statistics.LastTotal)} / 目标美味值：{statistics.LastTarget}");
             body.AppendLine($"完成星级评鉴：{statistics.CompletedBossIds.Count} 次{BossNames(run, statistics.CompletedBossIds)}");
             body.AppendLine($"金币：{statistics.Gold}");
             body.AppendLine($"持有装饰品和消耗品：{statistics.OwnedItemCount} 个");

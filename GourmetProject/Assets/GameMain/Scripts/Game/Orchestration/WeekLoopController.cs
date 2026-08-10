@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using BreakInfinity;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.Save;
 using GourmetProject.Game.UI;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Hud;
@@ -16,7 +18,7 @@ namespace GourmetProject.Game.Orchestration
 {
     public interface IWeekLoopView
     {
-        int LastBattleTotal { get; }
+        BigDouble LastBattleTotal { get; }
 
         void HideBattleWorld();
 
@@ -81,7 +83,7 @@ namespace GourmetProject.Game.Orchestration
             Action<int> onPick,
             Action onEnd);
 
-        void ShowRunResult(bool win, int total);
+        void ShowRunResult(bool win, BigDouble total);
     }
 
     /// <summary>
@@ -535,7 +537,8 @@ namespace GourmetProject.Game.Orchestration
                 {
                     BeforeHeartCount = 0,
                     AfterHeartCount = 0,
-                    BattleTotal = result?.Total ?? 0,
+                    BattleTotal = BigNumberSaveData.ToLegacyInt(result?.Total ?? BigDouble.Zero),
+                    BattleTotalBig = BigNumberSaveData.From(result?.Total ?? BigDouble.Zero),
                     IsTerminal = true,
                 });
                 RunPersistence.Save(_run);
@@ -549,7 +552,8 @@ namespace GourmetProject.Game.Orchestration
             {
                 BeforeHeartCount = before,
                 AfterHeartCount = after,
-                BattleTotal = result?.Total ?? 0,
+                BattleTotal = BigNumberSaveData.ToLegacyInt(result?.Total ?? BigDouble.Zero),
+                BattleTotalBig = BigNumberSaveData.From(result?.Total ?? BigDouble.Zero),
                 IsTerminal = terminal,
             });
             if (!terminal)
@@ -774,7 +778,7 @@ namespace GourmetProject.Game.Orchestration
 
             if (pending.IsTerminal)
             {
-                _view.ShowRunResult(false, pending.BattleTotal);
+                _view.ShowRunResult(false, pending.BattleTotalBig?.GetValue(pending.BattleTotal) ?? pending.BattleTotal);
                 return;
             }
 

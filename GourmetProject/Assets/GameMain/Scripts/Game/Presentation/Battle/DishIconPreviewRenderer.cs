@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BreakInfinity;
 using GourmetProject.Core.Utility;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
@@ -44,7 +45,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public static RenderTexture Render(
             DishDef dish,
             Sprite sprite,
-            int deliciousness,
+            BigDouble deliciousness,
             IReadOnlyList<string> flavorIds,
             SpriteRenderer cellPrefab,
             DishValueBadgeView badgePrefab,
@@ -198,7 +199,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private RenderTexture RenderInternal(
             DishDef dish,
             Sprite sprite,
-            int deliciousness,
+            BigDouble deliciousness,
             IReadOnlyList<string> flavorIds,
             SpriteRenderer cellPrefab,
             DishValueBadgeView badgePrefab,
@@ -391,7 +392,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private void BuildBadge(
             DishValueBadgeView badgePrefab,
             DishShape displayShape,
-            int deliciousness)
+            BigDouble deliciousness)
         {
             if (badgePrefab == null)
             {

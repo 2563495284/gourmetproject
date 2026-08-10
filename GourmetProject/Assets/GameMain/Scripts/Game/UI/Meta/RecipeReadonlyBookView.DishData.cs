@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using BreakInfinity;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.Save;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Model;
@@ -21,10 +23,10 @@ namespace GourmetProject.Game.UI.Meta
                 return 0;
             }
 
-            float score = def.Deliciousness
+            BigDouble score = def.Deliciousness
                 + (slot != null ? slot.ScoreFlatBonus : 0f);
-            float multiplier = slot != null ? slot.ScoreMultiplier : 1f;
-            return (int)DishScore.CeilContribution(score, multiplier);
+            BigDouble multiplier = slot != null ? slot.ScoreMultiplier : BigDouble.One;
+            return BigNumberSaveData.ToLegacyInt(DishScore.CeilContribution(score, multiplier));
         }
 
         private bool TryBuildRecipeTarget(
@@ -111,8 +113,8 @@ namespace GourmetProject.Game.UI.Meta
                     skillIds,
                     flavorIds,
                     Database));
-            float multiplier = slot != null ? slot.ScoreMultiplier : 1f;
-            float score = def.Deliciousness
+            BigDouble multiplier = slot != null ? slot.ScoreMultiplier : BigDouble.One;
+            BigDouble score = def.Deliciousness
                 + (slot != null ? slot.ScoreFlatBonus : 0f);
             return new FoodTipsData(
                 summary,

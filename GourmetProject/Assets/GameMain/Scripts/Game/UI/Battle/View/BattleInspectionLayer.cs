@@ -92,12 +92,14 @@ namespace GourmetProject.Game.UI.Battle.View
                         1f,
                         _fadeInSeconds)
                     .SetEase(Ease.OutSine)
+                    .SetUpdate(true)
                     .SetTarget(this)
                     .OnComplete(() => CompleteTransition(onShown));
                 return;
             }
 
             _transition = DOTween.Sequence()
+                .SetUpdate(true)
                 .SetTarget(this)
                 .Append(DOTween.To(
                     () => _group.alpha,
@@ -135,6 +137,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     0f,
                     _fadeOutSeconds)
                 .SetEase(Ease.InSine)
+                .SetUpdate(true)
                 .SetTarget(this)
                 .OnComplete(() =>
                 {

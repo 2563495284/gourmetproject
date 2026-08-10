@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BreakInfinity;
 using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Meta
@@ -6,7 +7,7 @@ namespace GourmetProject.Game.Meta
     /// <summary>从单局运行态提取结算统计，供结算页和跨局进度共同使用。</summary>
     public static class RunStatisticsService
     {
-        public static RunStatistics Build(GameRun run, bool won, int lastTotal, int lastTarget)
+        public static RunStatistics Build(GameRun run, bool won, BigDouble lastTotal, int lastTarget)
         {
             var statistics = new RunStatistics
             {

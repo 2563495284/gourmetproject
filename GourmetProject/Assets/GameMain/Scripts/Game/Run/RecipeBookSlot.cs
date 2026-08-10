@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BreakInfinity;
 
 namespace GourmetProject.Game.Run
 {
@@ -11,8 +12,8 @@ namespace GourmetProject.Game.Run
     {
         private readonly List<string> _extraFlavorIds = new List<string>();
         private readonly List<string> _extraSkillIds = new List<string>();
-        private float _scoreFlatBonus;
-        private float _scoreMultiplier = 1f;
+        private BigDouble _scoreFlatBonus;
+        private BigDouble _scoreMultiplier = BigDouble.One;
 
         public RecipeBookSlot(string dishId)
         {
@@ -26,9 +27,9 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> ExtraSkillIds => _extraSkillIds;
 
-        public float ScoreFlatBonus => _scoreFlatBonus;
+        public BigDouble ScoreFlatBonus => _scoreFlatBonus;
 
-        public float ScoreMultiplier => _scoreMultiplier;
+        public BigDouble ScoreMultiplier => _scoreMultiplier;
 
         public bool HasExtraFlavors => _extraFlavorIds.Count > 0;
 
@@ -110,27 +111,27 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        public void MultiplyScore(float multiplier)
+        public void MultiplyScore(BigDouble multiplier)
         {
-            if (multiplier > 0f)
+            if (multiplier > BigDouble.Zero)
             {
                 _scoreMultiplier *= multiplier;
             }
         }
 
-        public void AddScoreFlat(float amount)
+        public void AddScoreFlat(BigDouble amount)
         {
             _scoreFlatBonus += amount;
         }
 
-        public void RestoreScoreFlatBonus(float amount)
+        public void RestoreScoreFlatBonus(BigDouble amount)
         {
             _scoreFlatBonus = amount;
         }
 
-        public void RestoreScoreMultiplier(float multiplier)
+        public void RestoreScoreMultiplier(BigDouble multiplier)
         {
-            _scoreMultiplier = multiplier > 0f ? multiplier : 1f;
+            _scoreMultiplier = multiplier > BigDouble.Zero ? multiplier : BigDouble.One;
         }
 
         public RecipeBookSlot Clone()

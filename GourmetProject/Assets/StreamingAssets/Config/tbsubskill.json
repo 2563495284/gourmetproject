@@ -1038,7 +1038,7 @@
     "actionParam": [
       "target:occupiedcells"
     ],
-    "isPassive": true,
+    "isPassive": false,
     "signed": true,
     "descTemplate": "{ascope}食物额外视为 N 个食物\n（N 为各自所占格子数）",
     "termId": ""

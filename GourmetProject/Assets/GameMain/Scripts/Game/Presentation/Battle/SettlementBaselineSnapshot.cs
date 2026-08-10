@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BreakInfinity;
 using GourmetProject.Gameplay.Board;
 
 namespace GourmetProject.Game.Presentation.Battle
@@ -29,16 +30,16 @@ namespace GourmetProject.Game.Presentation.Battle
 
     public readonly struct SettlementDishBaseline
     {
-        public SettlementDishBaseline(float baseScore, float multiplier, int transferredSkillCount = 0)
+        public SettlementDishBaseline(BigDouble baseScore, BigDouble multiplier, int transferredSkillCount = 0)
         {
             BaseScore = baseScore;
             Multiplier = multiplier;
             TransferredSkillCount = System.Math.Max(0, transferredSkillCount);
         }
 
-        public float BaseScore { get; }
+        public BigDouble BaseScore { get; }
 
-        public float Multiplier { get; }
+        public BigDouble Multiplier { get; }
 
         public int TransferredSkillCount { get; }
     }

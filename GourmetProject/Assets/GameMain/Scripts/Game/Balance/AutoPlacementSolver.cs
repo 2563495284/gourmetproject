@@ -1,4 +1,5 @@
 using System;
+using BreakInfinity;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 
@@ -7,7 +8,7 @@ namespace GourmetProject.Game.Balance
     [Serializable]
     public sealed class AutoPlacementResult
     {
-        public int Score;
+        public BigDouble Score;
         public bool Truncated;
         public bool HasLegalSolution = true;
         public int SearchNodes;

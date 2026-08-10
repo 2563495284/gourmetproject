@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BreakInfinity;
 using DG.Tweening;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Board;
@@ -20,7 +21,7 @@ namespace GourmetProject.Game.UI.Widgets
         public DishPreviewRequest(
             DishDef dish,
             Sprite sprite,
-            int value,
+            BigDouble value,
             IReadOnlyList<string> flavorIds,
             DishIconPreviewMode mode,
             int? rotationIndex)
@@ -37,7 +38,7 @@ namespace GourmetProject.Game.UI.Widgets
 
         public Sprite Sprite { get; }
 
-        public int Value { get; }
+        public BigDouble Value { get; }
 
         public IReadOnlyList<string> FlavorIds { get; }
 
@@ -68,7 +69,7 @@ namespace GourmetProject.Game.UI.Widgets
             return new DishPreviewRequest(
                 dish?.Def,
                 sprite,
-                Mathf.RoundToInt(DishValueDisplay.CurrentContribution(dish)),
+                DishValueDisplay.CurrentContribution(dish),
                 dish?.FlavorIds,
                 mode,
                 dish?.Placement.RotationIndex);
@@ -105,7 +106,7 @@ namespace GourmetProject.Game.UI.Widgets
         private DishIconPreviewMode _mode;
         private DishDef _boundDish;
         private Sprite _boundSprite;
-        private int _boundValue;
+        private BigDouble _boundValue;
         private DishIconPreviewMode _boundMode;
         private int? _boundRotationIndex;
         private readonly List<string> _boundFlavorIds = new();

@@ -18,7 +18,7 @@ namespace GourmetProject.Game.Save
 
         // 不提供字段默认值，以便把旧版直接存入 slot0 的 RunSaveData 与聚合总档区分开。
         public string Format;
-        public int Version = 1;
+        public int Version = 2;
         public MetaProgressSaveData MetaProgress = new();
         public GuideProgressSaveData GuideProgress = new();
         public RunSaveData Run;
@@ -28,9 +28,9 @@ namespace GourmetProject.Game.Save
         public void Normalize()
         {
             Format = CurrentFormat;
-            if (Version <= 0)
+            if (Version < 2)
             {
-                Version = 1;
+                Version = 2;
             }
 
             MetaProgress ??= new MetaProgressSaveData();

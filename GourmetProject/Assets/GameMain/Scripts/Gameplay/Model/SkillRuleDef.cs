@@ -28,7 +28,8 @@ namespace GourmetProject.Gameplay.Model
             int actionCount,
             IReadOnlyList<float> actionValues,
             IReadOnlyList<string> actionParams,
-            IReadOnlyList<string> termIds = null)
+            IReadOnlyList<string> termIds = null,
+            bool isPassive = false)
         {
             Id = id ?? string.Empty;
             SkillId = skillId ?? string.Empty;
@@ -45,6 +46,7 @@ namespace GourmetProject.Gameplay.Model
             ActionValues = actionValues ?? EmptyValues;
             ActionParams = actionParams ?? EmptyParams;
             TermIds = termIds ?? EmptyParams;
+            IsPassive = isPassive;
         }
 
         public string Id { get; }
@@ -77,6 +79,9 @@ namespace GourmetProject.Gameplay.Model
 
         /// <summary>该子技能自身关联的专有名词 id 列表（去重前的原始声明；空表示无）。供甜蜜传递携带时展示其术语。</summary>
         public IReadOnlyList<string> TermIds { get; }
+
+        /// <summary>是否为结算开始前即可生效的常驻规则；主动规则只在自身执行到时生效。</summary>
+        public bool IsPassive { get; }
 
         /// <summary>首个行为数值；空时为 0。</summary>
         public float ActionValue => ActionValues.Count > 0 ? ActionValues[0] : 0f;

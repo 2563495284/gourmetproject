@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Globalization;
+using BreakInfinity;
 using GourmetProject.Core.Rng;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -11,6 +12,7 @@ using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 using Log = GourmetProject.Core.Diagnostics.Log;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Save;
 
 namespace GourmetProject.Game.Run
 {
@@ -2791,11 +2793,15 @@ namespace GourmetProject.Game.Run
                 BattleKey = data.BattleKey ?? string.Empty,
                 IsBoss = data.IsBoss,
                 LastTotal = data.LastTotal,
+                LastTotalBig = data.LastTotalBig?.Clone(),
                 FinalHappyCakeLayers = data.FinalHappyCakeLayers,
                 HasDetailedScore = data.HasDetailedScore,
                 RawSum = data.RawSum,
+                RawSumBig = data.RawSumBig?.Clone(),
                 FinalFlat = data.FinalFlat,
+                FinalFlatBig = data.FinalFlatBig?.Clone(),
                 FinalMultiplier = data.FinalMultiplier,
+                FinalMultiplierBig = data.FinalMultiplierBig?.Clone(),
                 Dishes = new List<PendingRewardBattleDishSaveData>(),
                 Cakes = new List<PendingRewardCakeVisualSaveData>(),
             };
@@ -2846,17 +2852,25 @@ namespace GourmetProject.Game.Run
                     FlavorIds = dish.FlavorIds != null ? new List<string>(dish.FlavorIds) : new List<string>(),
                     RuntimeCountAsBonus = dish.RuntimeCountAsBonus,
                     PermanentFlatBonus = dish.PermanentFlatBonus,
+                    PermanentFlatBonusBig = dish.PermanentFlatBonusBig?.Clone(),
                     PermanentMultBonus = dish.PermanentMultBonus,
+                    PermanentMultBonusBig = dish.PermanentMultBonusBig?.Clone(),
                     TemporaryBaseMultiplier = dish.TemporaryBaseMultiplier,
+                    TemporaryBaseMultiplierBig = dish.TemporaryBaseMultiplierBig?.Clone(),
                     ServeMultiplier = dish.ServeMultiplier,
+                    ServeMultiplierBig = dish.ServeMultiplierBig?.Clone(),
                     ServeMultiplierFlatBonus = dish.ServeMultiplierFlatBonus,
+                    ServeMultiplierFlatBonusBig = dish.ServeMultiplierFlatBonusBig?.Clone(),
                     SkillsDisabled = dish.SkillsDisabled,
                     ExcludedFromScore = dish.ExcludedFromScore,
                     IsTemporary = dish.IsTemporary,
                     HasDishScore = dish.HasDishScore,
                     ScoreBaseValue = dish.ScoreBaseValue,
+                    ScoreBaseValueBig = dish.ScoreBaseValueBig?.Clone(),
                     ScoreFlatBonus = dish.ScoreFlatBonus,
+                    ScoreFlatBonusBig = dish.ScoreFlatBonusBig?.Clone(),
                     ScoreMultiplier = dish.ScoreMultiplier,
+                    ScoreMultiplierBig = dish.ScoreMultiplierBig?.Clone(),
                     ScoreEffectiveCountAs = dish.ScoreEffectiveCountAs,
                 });
             }
@@ -2876,6 +2890,7 @@ namespace GourmetProject.Game.Run
                 BeforeHeartCount = data.BeforeHeartCount,
                 AfterHeartCount = data.AfterHeartCount,
                 BattleTotal = data.BattleTotal,
+                BattleTotalBig = data.BattleTotalBig?.Clone(),
                 IsTerminal = data.IsTerminal,
             };
         }
@@ -3074,10 +3089,10 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
-        public bool MultiplyRecipeScore(int dishIndex, float multiplier)
+        public bool MultiplyRecipeScore(int dishIndex, BigDouble multiplier)
         {
             RecipeBookSlot slot = GetRecipeSlot(dishIndex);
-            if (slot == null || multiplier <= 0f)
+            if (slot == null || multiplier <= BigDouble.Zero)
             {
                 return false;
             }
@@ -3086,10 +3101,10 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
-        public bool AddRecipeScoreFlat(int dishIndex, float amount)
+        public bool AddRecipeScoreFlat(int dishIndex, BigDouble amount)
         {
             RecipeBookSlot slot = GetRecipeSlot(dishIndex);
-            if (slot == null || System.Math.Abs(amount) < 0.0001f)
+            if (slot == null || BigDouble.Abs(amount) < 0.0001d)
             {
                 return false;
             }
@@ -3679,8 +3694,10 @@ namespace GourmetProject.Game.Run
                 {
                     FlavorIds = new List<string>(slot.ExtraFlavorIds),
                     ExtraSkillIds = new List<string>(slot.ExtraSkillIds),
-                    ScoreFlatBonus = slot.ScoreFlatBonus,
-                    ScoreMultiplier = slot.ScoreMultiplier,
+                    ScoreFlatBonus = BigNumberSaveData.ToLegacyFloat(slot.ScoreFlatBonus),
+                    ScoreFlatBonusBig = BigNumberSaveData.From(slot.ScoreFlatBonus),
+                    ScoreMultiplier = BigNumberSaveData.ToLegacyFloat(slot.ScoreMultiplier),
+                    ScoreMultiplierBig = BigNumberSaveData.From(slot.ScoreMultiplier),
                 });
             }
 
@@ -3860,8 +3877,10 @@ namespace GourmetProject.Game.Run
                             }
                         }
 
-                        slot.RestoreScoreMultiplier(extra != null ? extra.ScoreMultiplier : 1f);
-                        slot.RestoreScoreFlatBonus(extra != null ? extra.ScoreFlatBonus : 0f);
+                        slot.RestoreScoreMultiplier(
+                            extra?.ScoreMultiplierBig?.GetValue(extra.ScoreMultiplier) ?? extra?.ScoreMultiplier ?? 1f);
+                        slot.RestoreScoreFlatBonus(
+                            extra?.ScoreFlatBonusBig?.GetValue(extra.ScoreFlatBonus) ?? extra?.ScoreFlatBonus ?? 0f);
                     }
 
                     _recipe.Add(slot);

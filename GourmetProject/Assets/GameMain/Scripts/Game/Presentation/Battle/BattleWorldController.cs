@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using BreakInfinity;
 using DG.Tweening;
 using GourmetProject.Game;
 using GourmetProject.Gameplay.Battle;
@@ -126,7 +127,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private WorldMode _worldMode = WorldMode.Hidden;
 
         private Action<string> _messageSink;
-        private Action<int> _settlementScoreSink;
+        private Action<BigDouble> _settlementScoreSink;
         private Action<string> _activeItemClicked;
         private Action<DishInstance> _dishClicked;
         private Action<ServeTriggerCue> _serveTriggerCueSink;
@@ -168,6 +169,19 @@ namespace GourmetProject.Game.Presentation.Battle
                 || _outletDragPiece != null
                 || _movingPiece != null
                 || _temporaryAreaDragPiece != null;
+
+        public bool IsSettlementPlaying => _settling;
+
+        public bool PauseSettlementPlayback()
+        {
+            EnsureSequencer();
+            return _settling && _sequencer != null && _sequencer.PausePlayback();
+        }
+
+        public bool ResumeSettlementPlayback()
+        {
+            return _sequencer != null && _sequencer.ResumePlayback();
+        }
 
         public void SetBossPresentationBusy(bool busy)
         {
@@ -918,7 +932,7 @@ namespace GourmetProject.Game.Presentation.Battle
             GameRun run,
             BattleSession session,
             Action<string> messageSink,
-            Action<int> settlementScoreSink,
+            Action<BigDouble> settlementScoreSink,
             Action stateChanged,
             Action<string> activeItemClicked,
             Action<DishInstance> dishClicked,
@@ -1878,10 +1892,30 @@ namespace GourmetProject.Game.Presentation.Battle
             GameApp.Audio.PlayPlacement();
             PlayDropDust(placement, footprintSize, releaseVelocity);
             PlayScopeAffectedDishFeedback(affectedDishIds);
-            SetMessage($"已摆放：{result.Dish.Def.Name}，点击下方“上菜”按钮确认。");
             RefreshPendingDishActionButtons();
             _stateChanged?.Invoke();
+
+            if (ShouldAutoConfirmPendingDish(
+                    PendingDishActionKind.Serve,
+                    GameApp.Settings?.DirectServe == true)
+                && _pendingDishConfirmRequested != null)
+            {
+                SetMessage($"已摆放：{result.Dish.Def.Name}，正在上菜。");
+                _pendingDishConfirmRequested(result.Dish.Id);
+            }
+            else
+            {
+                SetMessage($"已摆放：{result.Dish.Def.Name}，点击下方“上菜”按钮确认。");
+            }
+
             return true;
+        }
+
+        internal static bool ShouldAutoConfirmPendingDish(
+            PendingDishActionKind actionKind,
+            bool directServeEnabled)
+        {
+            return directServeEnabled && actionKind == PendingDishActionKind.Serve;
         }
 
         private DishPieceView InstantiateLoosePiece(DishInstance dish, string objectName)
@@ -3415,7 +3449,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private void RenderSettlementScore(int score)
+        private void RenderSettlementScore(BigDouble score)
         {
             _settlementScoreSink?.Invoke(score);
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
+using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Game.Meta
@@ -134,19 +135,38 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
+            int beforeSteps = NumbRotationSteps(dish.FlavorIds, Run.Database);
             dish.AddFlavor(flavorId, Run.FoodFlavorLimit);
-
-            FlavorDef flavor = Run.Database?.GetFlavor(flavorId);
-            if (flavor != null && flavor.EffectType == FlavorEffectType.Rotate)
+            int rotationDelta = NumbRotationSteps(dish.FlavorIds, Run.Database) - beforeSteps;
+            if (rotationDelta != 0
+                && !_session.MoveDishToTemporaryAreaAfterRotationDelta(dishId, rotationDelta))
             {
-                int ccwSteps = Math.Max(0, (int)flavor.EffectValue);
-                if (ccwSteps > 0 && !_session.MoveDishToTemporaryAreaAfterRotate(dishId, ccwSteps))
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;
+        }
+
+        internal static int NumbRotationSteps(
+            IReadOnlyList<string> flavorIds,
+            GameplayDatabase database)
+        {
+            int steps = 0;
+            if (flavorIds == null)
+            {
+                return steps;
+            }
+
+            foreach (string id in flavorIds)
+            {
+                FlavorDef flavor = database?.GetFlavor(id);
+                if (flavor != null && flavor.EffectType == FlavorEffectType.Rotate)
+                {
+                    steps += (int)flavor.EffectValue;
+                }
+            }
+
+            return steps;
         }
 
         public bool RemoveFlavorFromDish(ActiveTarget target, string flavorId)

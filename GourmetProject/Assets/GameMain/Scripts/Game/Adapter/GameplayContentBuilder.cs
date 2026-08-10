@@ -245,7 +245,8 @@ namespace GourmetProject.Game.Adapter
                     ss.ActionCount,
                     ss.ActionValue,
                     ss.ActionParam,
-                    ruleTermIds);
+                    ruleTermIds,
+                    ss.IsPassive);
 
                 rules.Add(rule);
                 parts.Add(SkillDescComposer.ComposeComponent(ss.DescTemplate, rule, ss.Signed));

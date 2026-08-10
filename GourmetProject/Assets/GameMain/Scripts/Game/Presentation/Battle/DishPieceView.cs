@@ -343,7 +343,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        internal void SetDishValueBadge(float value)
+        internal void SetDishValueBadge(BreakInfinity.BigDouble value)
         {
             _dishValueBadgePresenter?.SetOverride(value);
         }

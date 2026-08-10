@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
+using BreakInfinity;
 using DG.Tweening;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -64,14 +65,47 @@ namespace GourmetProject.Game.Presentation.Battle
         private float _visualScale = 1f;
         private bool _settlementAccelerationEnabled;
         private SettlementStageView _stage;
+        private bool _externalPlaybackPaused;
+        private bool _playbackHasSavedTimeScale;
+        private float _playbackSavedTimeScale = 1f;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         [SerializeField, Tooltip("开发版结算调试：Space 暂停/继续时的当前状态。")]
         private bool _debugScorePaused;
         private bool _debugScoreControlsActive;
-        private bool _debugScoreHasSavedTimeScale;
-        private float _debugScoreSavedTimeScale = 1f;
         private GUIStyle _debugScoreOverlayStyle;
 #endif
+
+        public bool IsPlaybackPaused => _externalPlaybackPaused
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            || _debugScorePaused
+#endif
+            ;
+
+        /// <summary>暂停当前结算演出并保存进入暂停前的世界时间倍率。重复调用不会重复保存。</summary>
+        public bool PausePlayback()
+        {
+            if (_externalPlaybackPaused)
+            {
+                return false;
+            }
+
+            _externalPlaybackPaused = true;
+            ApplyPlaybackPauseState();
+            return true;
+        }
+
+        /// <summary>恢复由 <see cref="PausePlayback"/> 发起的暂停；只在所有暂停来源都释放后恢复时间倍率。</summary>
+        public bool ResumePlayback()
+        {
+            if (!_externalPlaybackPaused)
+            {
+                return false;
+            }
+
+            _externalPlaybackPaused = false;
+            ApplyPlaybackPauseState();
+            return true;
+        }
 
         private enum SettlementCueKind
         {
@@ -139,7 +173,7 @@ namespace GourmetProject.Game.Presentation.Battle
             DiningTableCoordinateMapper mapper,
             Transform fxRoot,
             SettlementScoreFireView scoreFire,
-            Action<int> renderScore,
+            Action<BigDouble> renderScore,
             Action<SettlementRevealSignal> onReveal,
             Action<SettlementScopeSignal> onScope,
             Action<string> onPassiveTriggered,
@@ -162,11 +196,12 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearSweetTransferBuffMarkers(dishViews);
             var sweetTransferPlayback = new SweetTransferPlaybackState();
             bool completed = false;
+            ResetPlaybackPauseState();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             using CancellationTokenSource debugScorePauseCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _debugScorePaused = false;
             _debugScoreControlsActive = true;
-            RestoreDebugScorePauseTimeScale();
+            ApplyPlaybackPauseState();
             _ = MonitorDebugScorePauseAsync(debugScorePauseCts.Token);
 #endif
             BeginSettlementSpeed();
@@ -179,12 +214,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 var baseTasks = new List<Awaitable>(plan.BaseBeats.Count);
                 for (int i = 0; i < plan.BaseBeats.Count; i++)
                 {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    await WaitWhileDebugScorePausedAsync(cancellationToken);
-#endif
+                    await WaitWhilePlaybackPausedAsync(cancellationToken);
                     SettlementBaseBeat beat = plan.BaseBeats[i];
                     AdvanceSettlementSpeed(playback, SettlementCueKind.DishContribution);
-                    float contribution = ledger.ApplyBase(beat.DishInstanceId, beat.BaseValue);
+                    BigDouble contribution = ledger.ApplyBase(beat.DishInstanceId, beat.BaseValue);
                     dishViews.TryGetValue(beat.DishInstanceId, out DishPieceView view);
                     if (view != null)
                     {
@@ -215,9 +248,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 for (int groupIndex = 0; groupIndex < plan.Groups.Count; groupIndex++)
                 {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    await WaitWhileDebugScorePausedAsync(cancellationToken);
-#endif
+                    await WaitWhilePlaybackPausedAsync(cancellationToken);
                     SettlementEffectGroup group = plan.Groups[groupIndex];
                     SettlementSweetTransferPresentationContext handoffContext =
                         SettlementSweetTransferPresentationContext.FromGroup(group);
@@ -323,9 +354,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     // 在同一帧启动。这样保留正式因果顺序，同时恢复“一起触发”的节奏。
                     for (int lineIndex = 0; lineIndex < group.Lines.Count; lineIndex++)
                     {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                        await WaitWhileDebugScorePausedAsync(cancellationToken);
-#endif
+                        await WaitWhilePlaybackPausedAsync(cancellationToken);
                         ScoreLine line = group.Lines[lineIndex];
                         AdvanceSettlementSpeed(playback, CueKindFor(line));
                         SettlementCue cue = null;
@@ -363,7 +392,7 @@ namespace GourmetProject.Game.Presentation.Battle
                             await PlaySweetTransferFailureAsync(line, dishViews, cancellationToken);
                         }
 
-                        float contribution = ledger.Apply(line);
+                        BigDouble contribution = ledger.Apply(line);
                         dishViews.TryGetValue(line.DishInstanceId, out DishPieceView target);
                         if (target != null && ChangesDishValue(line.Kind))
                         {
@@ -421,9 +450,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         playback);
                 }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                await WaitWhileDebugScorePausedAsync(cancellationToken);
-#endif
+                await WaitWhilePlaybackPausedAsync(cancellationToken);
                 ClearSweetTransferVisuals(sweetTransferPlayback, dishViews);
                 onScope?.Invoke(default);
                 AdvanceSettlementSpeed(playback, SettlementCueKind.FinalScore);
@@ -451,6 +478,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 debugScorePauseCts.Cancel();
                 ClearDebugScorePauseState();
 #endif
+                ResetPlaybackPauseState();
                 RestoreSettlementSpeed();
                 scoreFire?.Hide();
                 if (!completed)
@@ -483,17 +511,13 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDisable()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            ClearDebugScorePauseState();
-#endif
+            ForceRestorePlaybackTimeScale();
             RestoreSettlementSpeed();
         }
 
         private void OnDestroy()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            ClearDebugScorePauseState();
-#endif
+            ForceRestorePlaybackTimeScale();
             RestoreSettlementSpeed();
             ClearRetainedDishValueBadges();
         }
@@ -685,9 +709,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Action<string> onPassiveTriggered,
             CancellationToken cancellationToken)
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            await WaitWhileDebugScorePausedAsync(cancellationToken);
-#endif
+            await WaitWhilePlaybackPausedAsync(cancellationToken);
             AdvanceSettlementSpeed(playback, cue.Kind);
             EmitScope(onScope, scope);
             EmitPassiveTriggered(onPassiveTriggered, cue);
@@ -753,9 +775,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            await WaitWhileDebugScorePausedAsync(cancellationToken);
-#endif
+            await WaitWhilePlaybackPausedAsync(cancellationToken);
             AdvanceSettlementSpeed(playback, batch[0].Cue.Kind);
             var triggeredActorIds = new HashSet<int>();
             var triggeredPassiveItemIds = new HashSet<string>(StringComparer.Ordinal);
@@ -1364,8 +1384,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     continue;
                 }
 
-                float baseScore = dish.BaseScoreBeforeSettlement;
-                float multiplier = dish.BaseMultiplierBeforeSettlement;
+                BigDouble baseScore = dish.BaseScoreBeforeSettlement;
+                BigDouble multiplier = dish.BaseMultiplierBeforeSettlement;
                 if (baselineSnapshot != null
                     && baselineSnapshot.TryGet(dish.Id, out SettlementDishBaseline baseline))
                 {
@@ -1433,9 +1453,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform fxRoot,
             CancellationToken cancellationToken)
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            await WaitWhileDebugScorePausedAsync(cancellationToken);
-#endif
+            await WaitWhilePlaybackPausedAsync(cancellationToken);
             if (fxRoot != null)
             {
                 FloatingTextView.SpawnEffect(
@@ -1466,9 +1484,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             for (int i = 0; i < cues.Count; i++)
             {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                await WaitWhileDebugScorePausedAsync(cancellationToken);
-#endif
+                await WaitWhilePlaybackPausedAsync(cancellationToken);
                 SettlementCue cue = cues[i];
                 AdvanceSettlementSpeed(playback, cue.Kind);
                 EmitPassiveTriggered(onPassiveTriggered, cue);
@@ -1691,29 +1707,17 @@ namespace GourmetProject.Game.Presentation.Battle
                 && string.Equals(first.Cue.BatchKey, next.Cue.BatchKey, StringComparison.Ordinal);
         }
 
-        private async Awaitable TweenScoreAsync(float from, float to, float duration, Action<int> renderScore, CancellationToken cancellationToken)
+        private async Awaitable TweenScoreAsync(BigDouble from, BigDouble to, float duration, Action<BigDouble> renderScore, CancellationToken cancellationToken)
         {
             if (renderScore == null)
             {
                 return;
             }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            await TweenScoreWithDebugControlsAsync(from, to, duration, renderScore, cancellationToken);
-#else
-            Tween tween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), t =>
-                {
-                    renderScore((int)Math.Round(Mathf.Lerp(from, to, Mathf.Clamp01(t)), MidpointRounding.AwayFromZero));
-                })
-                .SetEase(Ease.Linear);
-            await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
-
-            renderScore((int)Math.Round(to, MidpointRounding.AwayFromZero));
-#endif
+            await TweenScoreWithPauseAsync(from, to, duration, renderScore, cancellationToken);
         }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        private async Awaitable TweenScoreWithDebugControlsAsync(float from, float to, float duration, Action<int> renderScore, CancellationToken cancellationToken)
+        private async Awaitable TweenScoreWithPauseAsync(BigDouble from, BigDouble to, float duration, Action<BigDouble> renderScore, CancellationToken cancellationToken)
         {
             float clampedDuration = Mathf.Max(0.0001f, duration);
             float elapsed = 0f;
@@ -1722,18 +1726,66 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (!_debugScorePaused)
+                if (!IsPlaybackPaused)
                 {
                     elapsed = Mathf.Min(clampedDuration, elapsed + Time.unscaledDeltaTime);
                     float t = elapsed / clampedDuration;
-                    renderScore((int)Math.Round(Mathf.Lerp(from, to, t), MidpointRounding.AwayFromZero));
+                    renderScore(BigDouble.Round(from + (to - from) * t, MidpointRounding.AwayFromZero));
                 }
 
                 await Awaitable.NextFrameAsync(cancellationToken);
             }
 
-            renderScore((int)Math.Round(to, MidpointRounding.AwayFromZero));
+            renderScore(BigDouble.Round(to, MidpointRounding.AwayFromZero));
         }
+
+        private async Awaitable WaitWhilePlaybackPausedAsync(CancellationToken cancellationToken)
+        {
+            while (IsPlaybackPaused)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await Awaitable.NextFrameAsync(cancellationToken);
+            }
+        }
+
+        private void ApplyPlaybackPauseState()
+        {
+            if (IsPlaybackPaused)
+            {
+                if (!_playbackHasSavedTimeScale)
+                {
+                    _playbackSavedTimeScale = Time.timeScale;
+                    _playbackHasSavedTimeScale = true;
+                }
+
+                Time.timeScale = 0f;
+                return;
+            }
+
+            if (_playbackHasSavedTimeScale)
+            {
+                Time.timeScale = _playbackSavedTimeScale;
+                _playbackHasSavedTimeScale = false;
+            }
+        }
+
+        private void ResetPlaybackPauseState()
+        {
+            _externalPlaybackPaused = false;
+            ApplyPlaybackPauseState();
+        }
+
+        internal void ForceRestorePlaybackTimeScale()
+        {
+            _externalPlaybackPaused = false;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            _debugScorePaused = false;
+            _debugScoreControlsActive = false;
+#endif
+            ApplyPlaybackPauseState();
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 
         private async Awaitable MonitorDebugScorePauseAsync(CancellationToken cancellationToken)
         {
@@ -1748,15 +1800,6 @@ namespace GourmetProject.Game.Presentation.Battle
             catch (OperationCanceledException)
             {
                 // 结算结束或被打断时正常退出后台监听。
-            }
-        }
-
-        private async Awaitable WaitWhileDebugScorePausedAsync(CancellationToken cancellationToken)
-        {
-            while (_debugScorePaused)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                await Awaitable.NextFrameAsync(cancellationToken);
             }
         }
 
@@ -1776,39 +1819,14 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _debugScorePaused = paused;
-            if (_debugScorePaused)
-            {
-                if (!_debugScoreHasSavedTimeScale)
-                {
-                    _debugScoreSavedTimeScale = Time.timeScale;
-                    _debugScoreHasSavedTimeScale = true;
-                }
-
-                Time.timeScale = 0f;
-            }
-            else
-            {
-                RestoreDebugScorePauseTimeScale();
-            }
-
+            ApplyPlaybackPauseState();
         }
 
         private void ClearDebugScorePauseState()
         {
             _debugScorePaused = false;
             _debugScoreControlsActive = false;
-            RestoreDebugScorePauseTimeScale();
-        }
-
-        private void RestoreDebugScorePauseTimeScale()
-        {
-            if (!_debugScoreHasSavedTimeScale)
-            {
-                return;
-            }
-
-            Time.timeScale = _debugScoreSavedTimeScale;
-            _debugScoreHasSavedTimeScale = false;
+            ApplyPlaybackPauseState();
         }
 
         private GUIStyle GetDebugScoreOverlayStyle()
@@ -2117,7 +2135,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementBaselineSnapshot baselineSnapshot,
             string batchKey = null)
         {
-            float baseScore = 0f;
+            BigDouble baseScore = BigDouble.Zero;
             if (instance != null)
             {
                 baseScore = baselineSnapshot != null && baselineSnapshot.TryGet(instance.Id, out SettlementDishBaseline baseline)
@@ -2155,7 +2173,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             bool isExecutedDishSkill = line.Trace != null
                 || line.Source?.Type == ScoreSourceType.DishSkill;
-            if (Mathf.Abs(line.Value) <= 0.001f && !isExecutedDishSkill)
+            if (BigDouble.Abs(line.Value) <= 0.001f && !isExecutedDishSkill)
             {
                 return false;
             }
@@ -2241,29 +2259,29 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.SideEffect,
                         $"层数 {FormatSigned(line.Value)}",
                         sourceName: sourceName,
-                        reveal: SettlementRevealSignal.CakeLayerReveal(Mathf.RoundToInt(line.Value)));
+                        reveal: SettlementRevealSignal.CakeLayerReveal(RoundCount(line.Value)));
                     return true;
 
                 case ScoreLineKind.SilverItemRoll:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"获得装饰品和消耗品 ×{Mathf.RoundToInt(line.Value)}",
+                        $"获得装饰品和消耗品 ×{RoundCount(line.Value)}",
                         sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.CopySkill:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"获得技能 ×{Mathf.RoundToInt(line.Value)}",
+                        $"获得技能 ×{RoundCount(line.Value)}",
                         feedbackKind: SettlementDishFeedbackKind.CopySkillTriggered,
-                        reveal: SettlementRevealSignal.CopySkillReveal(line.DishInstanceId, Mathf.RoundToInt(line.Value)),
+                        reveal: SettlementRevealSignal.CopySkillReveal(line.DishInstanceId, RoundCount(line.Value)),
                         sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.TriggerSweetTransfer:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        line.Value > 1f ? $"触发甜蜜传递 ×{Mathf.RoundToInt(line.Value)}" : "触发甜蜜传递",
+                        line.Value > 1f ? $"触发甜蜜传递 ×{RoundCount(line.Value)}" : "触发甜蜜传递",
                         feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
                         triggerSweetTransferPhase: TriggerSweetTransferCuePhase.ActivatorStarted,
                         sourceName: sourceName);
@@ -2294,8 +2312,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
                         line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
-                            ? $"额外选择 +{Mathf.RoundToInt(line.Value)}"
-                            : $"本行倍率 ×{line.Value:0.##}",
+                            ? $"额外选择 +{RoundCount(line.Value)}"
+                            : $"本行倍率 ×{FormatPlain(line.Value)}",
                         feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
                         sourceName: sourceName);
                     return true;
@@ -2436,19 +2454,19 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private static bool HasFinalModifier(ScoreResult result)
         {
-            return Mathf.Abs(result.FinalFlat) > 0.001f
-                || Mathf.Abs(result.FinalMultiplier - 1f) > 0.001f;
+            return BigDouble.Abs(result.FinalFlat) > 0.001f
+                || BigDouble.Abs(result.FinalMultiplier - 1f) > 0.001f;
         }
 
         private static SettlementCue BuildFinalSummaryCue(ScoreResult result)
         {
             string summary = string.Empty;
-            if (Mathf.Abs(result.FinalMultiplier - 1f) > 0.001f)
+            if (BigDouble.Abs(result.FinalMultiplier - 1f) > 0.001f)
             {
                 summary += FormatMultiplier(result.FinalMultiplier);
             }
 
-            if (Mathf.Abs(result.FinalFlat) > 0.001f)
+            if (BigDouble.Abs(result.FinalFlat) > 0.001f)
             {
                 if (summary.Length > 0)
                 {
@@ -2466,14 +2484,26 @@ namespace GourmetProject.Game.Presentation.Battle
                 sourceName: "局加成");
         }
 
-        private static string FormatSigned(float value)
+        private static string FormatSigned(BigDouble value)
         {
-            return $"{(value >= 0f ? "+" : string.Empty)}{value:0.#}";
+            return $"{(value >= 0f ? "+" : string.Empty)}{FormatPlain(value)}";
         }
 
-        private static string FormatMultiplier(float value)
+        private static string FormatMultiplier(BigDouble value)
         {
-            return $"×{value:0.##}";
+            return $"×{FormatPlain(value)}";
+        }
+
+        private static string FormatPlain(BigDouble value)
+        {
+            return BigDouble.Abs(value) < ScoreNumberFormatter.ScientificThreshold
+                ? value.ToString("G3")
+                : ScoreNumberFormatter.Format(value);
+        }
+
+        private static int RoundCount(BigDouble value)
+        {
+            return (int)Math.Round(value.ToDouble(), MidpointRounding.AwayFromZero);
         }
 
         private static Vector3 DishValueAnchor(
@@ -2638,7 +2668,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private readonly struct DishValueChange
         {
-            private DishValueChange(DishValueChangeKind kind, float value)
+            private DishValueChange(DishValueChangeKind kind, BigDouble value)
             {
                 Kind = kind;
                 Value = value;
@@ -2646,19 +2676,19 @@ namespace GourmetProject.Game.Presentation.Battle
 
             public DishValueChangeKind Kind { get; }
 
-            public float Value { get; }
+            public BigDouble Value { get; }
 
-            public static DishValueChange Base(float value)
+            public static DishValueChange Base(BigDouble value)
             {
                 return new DishValueChange(DishValueChangeKind.Base, value);
             }
 
-            public static DishValueChange FlatBonus(float value)
+            public static DishValueChange FlatBonus(BigDouble value)
             {
                 return new DishValueChange(DishValueChangeKind.FlatBonus, value);
             }
 
-            public static DishValueChange Multiplier(float value)
+            public static DishValueChange Multiplier(BigDouble value)
             {
                 return new DishValueChange(DishValueChangeKind.Multiplier, value);
             }
@@ -2666,19 +2696,19 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private sealed class DishValuePlaybackAccumulator
         {
-            public DishValuePlaybackAccumulator(float baseScore, float multiplier)
+            public DishValuePlaybackAccumulator(BigDouble baseScore, BigDouble multiplier)
             {
                 BaseScore = baseScore;
                 Multiplier = multiplier;
             }
 
-            private float BaseScore { get; set; }
+            private BigDouble BaseScore { get; set; }
 
-            private float FlatBonus { get; set; }
+            private BigDouble FlatBonus { get; set; }
 
-            private float Multiplier { get; set; }
+            private BigDouble Multiplier { get; set; }
 
-            public float Contribution => DishScore.CeilContribution(BaseScore + FlatBonus, Multiplier);
+            public BigDouble Contribution => DishScore.CeilContribution(BaseScore + FlatBonus, Multiplier);
 
             public void Apply(DishValueChange change)
             {

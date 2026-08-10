@@ -1,4 +1,6 @@
 using UnityEngine;
+using BreakInfinity;
+using GourmetProject.Gameplay.Scoring;
 
 namespace GourmetProject.Game.UI.Tooltips
 {
@@ -33,6 +35,13 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             return value.ToString("0.##");
+        }
+
+        public static string FormatNumber(BigDouble value)
+        {
+            return BigDouble.Abs(value) < ScoreNumberFormatter.ScientificThreshold
+                ? value.ToString("G3")
+                : ScoreNumberFormatter.Format(value);
         }
     }
 }

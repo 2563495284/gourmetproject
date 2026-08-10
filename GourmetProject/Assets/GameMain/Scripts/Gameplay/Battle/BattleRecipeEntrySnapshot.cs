@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BreakInfinity;
 
 namespace GourmetProject.Gameplay.Battle
 {
@@ -28,8 +29,8 @@ namespace GourmetProject.Gameplay.Battle
             string dishId,
             IReadOnlyList<string> extraFlavorIds,
             IReadOnlyList<string> extraSkillIds,
-            float scoreMultiplier,
-            float scoreFlatBonus,
+            BigDouble scoreMultiplier,
+            BigDouble scoreFlatBonus,
             bool skillsDisabled,
             bool excludedFromScore,
             BattleRecipeEntryStatus status)
@@ -39,7 +40,7 @@ namespace GourmetProject.Gameplay.Battle
             DishId = dishId ?? string.Empty;
             ExtraFlavorIds = extraFlavorIds ?? Array.Empty<string>();
             ExtraSkillIds = extraSkillIds ?? Array.Empty<string>();
-            ScoreMultiplier = scoreMultiplier > 0f ? scoreMultiplier : 1f;
+            ScoreMultiplier = scoreMultiplier > BigDouble.Zero ? scoreMultiplier : BigDouble.One;
             ScoreFlatBonus = scoreFlatBonus;
             SkillsDisabled = skillsDisabled;
             ExcludedFromScore = excludedFromScore;
@@ -56,9 +57,9 @@ namespace GourmetProject.Gameplay.Battle
 
         public IReadOnlyList<string> ExtraSkillIds { get; }
 
-        public float ScoreMultiplier { get; }
+        public BigDouble ScoreMultiplier { get; }
 
-        public float ScoreFlatBonus { get; }
+        public BigDouble ScoreFlatBonus { get; }
 
         public bool SkillsDisabled { get; }
 

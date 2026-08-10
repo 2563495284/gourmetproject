@@ -23,7 +23,11 @@ namespace GourmetProject.Game.Balance
                 return result;
             }
 
-            List<float> scores = samples.Where(s => s != null && s.IsValid).Select(s => (float)s.TotalScore).OrderBy(v => v).ToList();
+            List<float> scores = samples
+                .Where(s => s != null && s.IsValid)
+                .Select(s => (float)Math.Clamp(s.TotalScore.ToDouble(), -float.MaxValue, float.MaxValue))
+                .OrderBy(v => v)
+                .ToList();
             result.ValidCount = scores.Count;
             result.ValidRate = (float)scores.Count / samples.Count;
             if (scores.Count == 0)

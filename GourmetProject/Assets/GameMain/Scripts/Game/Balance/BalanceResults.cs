@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BreakInfinity;
 using GourmetProject.Gameplay.Scoring;
 
 namespace GourmetProject.Game.Balance
@@ -10,7 +11,7 @@ namespace GourmetProject.Game.Balance
         public int Seed;
         public bool IsValid;
         public string FailureReason = string.Empty;
-        public int TotalScore;
+        public BigDouble TotalScore;
         public int EffectiveRequiredScore;
         public float GoldDelta;
         public List<BalanceDishContribution> Dishes = new List<BalanceDishContribution>();
@@ -21,14 +22,14 @@ namespace GourmetProject.Game.Balance
     public sealed class BalanceDishContribution
     {
         public string DishId = string.Empty;
-        public float Score;
+        public BigDouble Score;
     }
 
     [Serializable]
     public sealed class BalanceComponentContribution
     {
         public string ComponentId = string.Empty;
-        public float MeanDelta;
+        public BigDouble MeanDelta;
         public float MeanRatio;
     }
 

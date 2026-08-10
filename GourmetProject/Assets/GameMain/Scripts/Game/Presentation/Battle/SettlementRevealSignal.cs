@@ -1,3 +1,5 @@
+using BreakInfinity;
+
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
@@ -11,9 +13,9 @@ namespace GourmetProject.Game.Presentation.Battle
         public SettlementRevealSignal(
             int dishInstanceId,
             bool hasFlat,
-            float flat,
+            BigDouble flat,
             bool hasMultiplier,
-            float multiplier,
+            BigDouble multiplier,
             int copySkillDelta,
             int transferredDelta,
             int cakeLayerDelta)
@@ -33,12 +35,12 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>是否揭示「加法分」维度；<see cref="Flat"/> 为该维度累加后的当前值（ScoreLine.After）。</summary>
         public bool HasFlat { get; }
 
-        public float Flat { get; }
+        public BigDouble Flat { get; }
 
         /// <summary>是否揭示「倍率」维度；<see cref="Multiplier"/> 为该维度累加后的当前值（ScoreLine.After）。</summary>
         public bool HasMultiplier { get; }
 
-        public float Multiplier { get; }
+        public BigDouble Multiplier { get; }
 
         /// <summary>本次新揭示的复制技能条数（追加进技能列表末尾）。</summary>
         public int CopySkillDelta { get; }
@@ -53,12 +55,12 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public bool IsEmpty => !HasFlat && !HasMultiplier && CopySkillDelta == 0 && TransferredDelta == 0 && !HasCakeLayer;
 
-        public static SettlementRevealSignal FlatReveal(int dishInstanceId, float flatAfter, int transferredDelta = 0)
+        public static SettlementRevealSignal FlatReveal(int dishInstanceId, BigDouble flatAfter, int transferredDelta = 0)
         {
             return new SettlementRevealSignal(dishInstanceId, true, flatAfter, false, 0f, 0, transferredDelta, 0);
         }
 
-        public static SettlementRevealSignal MultiplierReveal(int dishInstanceId, float multiplierAfter, int transferredDelta = 0)
+        public static SettlementRevealSignal MultiplierReveal(int dishInstanceId, BigDouble multiplierAfter, int transferredDelta = 0)
         {
             return new SettlementRevealSignal(dishInstanceId, false, 0f, true, multiplierAfter, 0, transferredDelta, 0);
         }

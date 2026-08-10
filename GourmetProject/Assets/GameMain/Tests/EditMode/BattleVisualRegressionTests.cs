@@ -110,14 +110,14 @@ namespace GourmetProject.Tests.EditMode
             ServePrepareResult prepared = session.PrepareServe(0);
 
             Assert.That(prepared.Success, Is.True);
-            Assert.That(prepared.PreparedDish.Dish.PermanentFlatBonus, Is.EqualTo(4f));
-            Assert.That(prepared.PreparedDish.Dish.PermanentMultBonus, Is.EqualTo(1.5f));
+            Assert.That(prepared.PreparedDish.Dish.PermanentFlatBonus.ToDouble(), Is.EqualTo(4d));
+            Assert.That(prepared.PreparedDish.Dish.PermanentMultBonus.ToDouble(), Is.EqualTo(1.5d));
 
             ServeResult preplaced = session.PreplacePreparedServe(
                 prepared.PreparedDish.Placements[0]);
             Assert.That(preplaced.Outcome, Is.EqualTo(ServeOutcome.Placed));
-            Assert.That(preplaced.Dish.PermanentFlatBonus, Is.EqualTo(4f));
-            Assert.That(preplaced.Dish.PermanentMultBonus, Is.EqualTo(1.5f));
+            Assert.That(preplaced.Dish.PermanentFlatBonus.ToDouble(), Is.EqualTo(4d));
+            Assert.That(preplaced.Dish.PermanentMultBonus.ToDouble(), Is.EqualTo(1.5d));
         }
 
         [Test]

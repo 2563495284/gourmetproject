@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using BreakInfinity;
 using DG.Tweening;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
+using GourmetProject.Game.Save;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Orchestration;
 using GourmetProject.Game.Run;
@@ -361,7 +363,7 @@ namespace GourmetProject.Game.UI.Battle
 
         // —— 周循环编排（代理到 WeekLoopController）——
 
-        public int LastBattleTotal => _session?.LastResult?.Total ?? 0;
+        public BigDouble LastBattleTotal => _session?.LastResult?.Total ?? BigDouble.Zero;
 
         private bool HasPendingBattleRewardLifecycle
             => _session?.IsSettled == true && _run?.HasPendingRewardBattleView == true;
@@ -459,12 +461,16 @@ namespace GourmetProject.Game.UI.Battle
                 BossDebuffId = _activeBossDebuffId ?? string.Empty,
                 BattleKey = _activeBattleKey ?? string.Empty,
                 IsBoss = _activeBattleIsBoss,
-                LastTotal = _session.LastResult.Total,
+                LastTotal = BigNumberSaveData.ToLegacyInt(_session.LastResult.Total),
+                LastTotalBig = BigNumberSaveData.From(_session.LastResult.Total),
                 FinalHappyCakeLayers = _session.HappyCakeLayers,
                 HasDetailedScore = true,
-                RawSum = _session.LastResult.RawSum,
-                FinalFlat = _session.LastResult.FinalFlat,
-                FinalMultiplier = _session.LastResult.FinalMultiplier,
+                RawSum = BigNumberSaveData.ToLegacyFloat(_session.LastResult.RawSum),
+                RawSumBig = BigNumberSaveData.From(_session.LastResult.RawSum),
+                FinalFlat = BigNumberSaveData.ToLegacyFloat(_session.LastResult.FinalFlat),
+                FinalFlatBig = BigNumberSaveData.From(_session.LastResult.FinalFlat),
+                FinalMultiplier = BigNumberSaveData.ToLegacyFloat(_session.LastResult.FinalMultiplier),
+                FinalMultiplierBig = BigNumberSaveData.From(_session.LastResult.FinalMultiplier),
                 Dishes = new List<PendingRewardBattleDishSaveData>(),
                 Cakes = new List<PendingRewardCakeVisualSaveData>(),
             };
@@ -498,18 +504,26 @@ namespace GourmetProject.Game.UI.Battle
                     SkillIds = new List<string>(dish.SkillIds),
                     FlavorIds = new List<string>(dish.FlavorIds),
                     RuntimeCountAsBonus = dish.RuntimeCountAsBonus,
-                    PermanentFlatBonus = dish.PermanentFlatBonus,
-                    PermanentMultBonus = dish.PermanentMultBonus,
-                    TemporaryBaseMultiplier = dish.TemporaryBaseMultiplier,
-                    ServeMultiplier = dish.ServeMultiplier,
-                    ServeMultiplierFlatBonus = dish.ServeMultiplierFlatBonus,
+                    PermanentFlatBonus = BigNumberSaveData.ToLegacyFloat(dish.PermanentFlatBonus),
+                    PermanentFlatBonusBig = BigNumberSaveData.From(dish.PermanentFlatBonus),
+                    PermanentMultBonus = BigNumberSaveData.ToLegacyFloat(dish.PermanentMultBonus),
+                    PermanentMultBonusBig = BigNumberSaveData.From(dish.PermanentMultBonus),
+                    TemporaryBaseMultiplier = BigNumberSaveData.ToLegacyFloat(dish.TemporaryBaseMultiplier),
+                    TemporaryBaseMultiplierBig = BigNumberSaveData.From(dish.TemporaryBaseMultiplier),
+                    ServeMultiplier = BigNumberSaveData.ToLegacyFloat(dish.ServeMultiplier),
+                    ServeMultiplierBig = BigNumberSaveData.From(dish.ServeMultiplier),
+                    ServeMultiplierFlatBonus = BigNumberSaveData.ToLegacyFloat(dish.ServeMultiplierFlatBonus),
+                    ServeMultiplierFlatBonusBig = BigNumberSaveData.From(dish.ServeMultiplierFlatBonus),
                     SkillsDisabled = dish.SkillsDisabled,
                     ExcludedFromScore = dish.ExcludedFromScore,
                     IsTemporary = dish.IsTemporary,
                     HasDishScore = dishScore != null,
-                    ScoreBaseValue = dishScore?.BaseValue ?? 0f,
-                    ScoreFlatBonus = dishScore?.FlatBonus ?? 0f,
-                    ScoreMultiplier = dishScore?.Multiplier ?? 1f,
+                    ScoreBaseValue = BigNumberSaveData.ToLegacyFloat(dishScore?.BaseValue ?? BigDouble.Zero),
+                    ScoreBaseValueBig = BigNumberSaveData.From(dishScore?.BaseValue ?? BigDouble.Zero),
+                    ScoreFlatBonus = BigNumberSaveData.ToLegacyFloat(dishScore?.FlatBonus ?? BigDouble.Zero),
+                    ScoreFlatBonusBig = BigNumberSaveData.From(dishScore?.FlatBonus ?? BigDouble.Zero),
+                    ScoreMultiplier = BigNumberSaveData.ToLegacyFloat(dishScore?.Multiplier ?? BigDouble.One),
+                    ScoreMultiplierBig = BigNumberSaveData.From(dishScore?.Multiplier ?? BigDouble.One),
                     ScoreEffectiveCountAs = dishScore?.EffectiveCountAs ?? Math.Max(1, dish.EffectiveCountAs),
                 });
             }
@@ -544,7 +558,11 @@ namespace GourmetProject.Game.UI.Battle
 
             HideAllTips();
             _infoColumn?.ScoreFire?.Hide();
-            _infoColumn?.SetBattleScoreOverride(snapshot.LastTotal);
+            BigDouble restoredTotal = SavedValue(snapshot.LastTotalBig, snapshot.LastTotal);
+            BigDouble restoredRawSum = SavedValue(snapshot.RawSumBig, snapshot.RawSum);
+            BigDouble restoredFinalFlat = SavedValue(snapshot.FinalFlatBig, snapshot.FinalFlat);
+            BigDouble restoredFinalMultiplier = SavedValue(snapshot.FinalMultiplierBig, snapshot.FinalMultiplier);
+            _infoColumn?.SetBattleScoreOverride(restoredTotal);
 
             _activeBattleRawRequiredScore = snapshot.RawRequiredScore > 0 ? snapshot.RawRequiredScore : snapshot.RequiredScore;
             _activeBattleModifier = snapshot.Modifier ?? string.Empty;
@@ -571,12 +589,12 @@ namespace GourmetProject.Game.UI.Battle
             RestorePendingRewardBattleDishes(_session, snapshot);
             List<DishScore> dishScores = RestorePendingRewardDishScores(snapshot);
             _session.RestoreSettledForRewardView(
-                snapshot.LastTotal,
+                restoredTotal,
                 snapshot.FinalHappyCakeLayers,
                 dishScores,
-                snapshot.RawSum,
-                snapshot.FinalFlat,
-                snapshot.FinalMultiplier,
+                restoredRawSum,
+                restoredFinalFlat,
+                restoredFinalMultiplier,
                 snapshot.HasDetailedScore);
             _displayedCakeLayers = _session.HappyCakeLayers;
             _session.HappyCakeLayersChanged += OnHappyCakeLayersChanged;
@@ -604,7 +622,7 @@ namespace GourmetProject.Game.UI.Battle
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
             _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
             RestorePendingRewardPresentation(snapshot);
-            SetSettlementScore(snapshot.LastTotal);
+            SetSettlementScore(restoredTotal);
             RefreshAll();
         }
 
@@ -626,13 +644,18 @@ namespace GourmetProject.Game.UI.Battle
                 result.Add(new DishScore(
                     dish.Id,
                     dish.DishId ?? string.Empty,
-                    dish.ScoreBaseValue,
-                    dish.ScoreFlatBonus,
-                    dish.ScoreMultiplier,
+                    SavedValue(dish.ScoreBaseValueBig, dish.ScoreBaseValue),
+                    SavedValue(dish.ScoreFlatBonusBig, dish.ScoreFlatBonus),
+                    SavedValue(dish.ScoreMultiplierBig, dish.ScoreMultiplier),
                     dish.ScoreEffectiveCountAs));
             }
 
             return result;
+        }
+
+        private static BigDouble SavedValue(BigNumberSaveData value, BigDouble legacy)
+        {
+            return value?.GetValue(legacy) ?? legacy;
         }
 
         private void RestorePendingRewardPresentation(PendingRewardBattleViewSaveData snapshot)
@@ -727,29 +750,34 @@ namespace GourmetProject.Game.UI.Battle
                 dish.AddCountAsBonus(saved.RuntimeCountAsBonus);
             }
 
-            if (Math.Abs(saved.PermanentFlatBonus) > 0.0001f)
+            BigDouble permanentFlat = SavedValue(saved.PermanentFlatBonusBig, saved.PermanentFlatBonus);
+            if (BigDouble.Abs(permanentFlat) > 0.0001d)
             {
-                dish.AddPermanentFlat(saved.PermanentFlatBonus);
+                dish.AddPermanentFlat(permanentFlat);
             }
 
-            if (saved.PermanentMultBonus > 0f && Math.Abs(saved.PermanentMultBonus - 1f) > 0.0001f)
+            BigDouble permanentMult = SavedValue(saved.PermanentMultBonusBig, saved.PermanentMultBonus);
+            if (permanentMult > BigDouble.Zero && BigDouble.Abs(permanentMult - 1d) > 0.0001d)
             {
-                dish.MultiplyPermanentMult(saved.PermanentMultBonus);
+                dish.MultiplyPermanentMult(permanentMult);
             }
 
-            if (saved.TemporaryBaseMultiplier > 0f && Math.Abs(saved.TemporaryBaseMultiplier - 1f) > 0.0001f)
+            BigDouble temporaryBase = SavedValue(saved.TemporaryBaseMultiplierBig, saved.TemporaryBaseMultiplier);
+            if (temporaryBase > BigDouble.Zero && BigDouble.Abs(temporaryBase - 1d) > 0.0001d)
             {
-                dish.MultiplyTemporaryBase(saved.TemporaryBaseMultiplier);
+                dish.MultiplyTemporaryBase(temporaryBase);
             }
 
-            if (saved.ServeMultiplier > 0f && Math.Abs(saved.ServeMultiplier - 1f) > 0.0001f)
+            BigDouble serveMult = SavedValue(saved.ServeMultiplierBig, saved.ServeMultiplier);
+            if (serveMult > BigDouble.Zero && BigDouble.Abs(serveMult - 1d) > 0.0001d)
             {
-                dish.MultiplyServeMultiplier(saved.ServeMultiplier);
+                dish.MultiplyServeMultiplier(serveMult);
             }
 
-            if (Math.Abs(saved.ServeMultiplierFlatBonus) > 0.0001f)
+            BigDouble serveFlat = SavedValue(saved.ServeMultiplierFlatBonusBig, saved.ServeMultiplierFlatBonus);
+            if (BigDouble.Abs(serveFlat) > 0.0001d)
             {
-                dish.AddServeMultiplierFlat(saved.ServeMultiplierFlatBonus);
+                dish.AddServeMultiplierFlat(serveFlat);
             }
 
             if (saved.SkillsDisabled)
@@ -2862,9 +2890,9 @@ namespace GourmetProject.Game.UI.Battle
                     continue;
                 }
 
-                int displayValue = (int)DishScore.CeilContribution(
+                int displayValue = BigNumberSaveData.ToLegacyInt(DishScore.CeilContribution(
                     def.Deliciousness + after.ScoreFlatBonus,
-                    after.ScoreMultiplier);
+                    after.ScoreMultiplier));
                 dish.PlayPassiveFlavorTransform(
                     def,
                     after.FlavorIds,
@@ -3482,7 +3510,7 @@ namespace GourmetProject.Game.UI.Battle
                 || (_inspectionCoordinator != null && _inspectionCoordinator.IsTransitioning);
         }
 
-        public void ShowRunResult(bool win, int total)
+        public void ShowRunResult(bool win, BigDouble total)
         {
             ResetBossBattlePresentation();
             _world?.HideWorld();
@@ -3497,7 +3525,7 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        private void ShowDefeatDialog(int total)
+        private void ShowDefeatDialog(BigDouble total)
         {
             GameRun run = GameRunContext.Current;
             if (run == null)
@@ -3706,18 +3734,29 @@ namespace GourmetProject.Game.UI.Battle
             });
         }
 
+        private bool _pendingDishConfirmationInProgress;
+
         private async void OnPendingDishConfirmRequested(int dishId)
         {
             if (_session == null
                 || _session.IsSettled
+                || _pendingDishConfirmationInProgress
                 || _bossPresentation?.IsPlaying == true
                 || (_world != null && _world.IsFoodInteractionBusy))
             {
                 return;
             }
 
-            await PlayBossLockedAsync(token =>
-                ConfirmPendingDishPresentationAsync(dishId, prepareNextDish: true, token));
+            _pendingDishConfirmationInProgress = true;
+            try
+            {
+                await PlayBossLockedAsync(token =>
+                    ConfirmPendingDishPresentationAsync(dishId, prepareNextDish: true, token));
+            }
+            finally
+            {
+                _pendingDishConfirmationInProgress = false;
+            }
         }
 
         private async Awaitable ConfirmPendingDishPresentationAsync(
@@ -4870,7 +4909,7 @@ namespace GourmetProject.Game.UI.Battle
             return;
         }
 
-        private void SetSettlementScore(int score)
+        private void SetSettlementScore(BigDouble score)
         {
             _infoColumn?.SetBattleScoreOverride(score);
             RefreshPersistent(refreshItems: false);

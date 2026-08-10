@@ -2,7 +2,8 @@
     "name": "GourmetProject.Gameplay",
     "rootNamespace": "GourmetProject.Gameplay",
     "references": [
-        "GourmetProject.Core"
+        "GourmetProject.Core",
+        "BreakInfinity"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -1,4 +1,5 @@
 using GourmetProject.Gameplay.Model;
+using BreakInfinity;
 
 namespace GourmetProject.Gameplay.Scoring
 {
@@ -32,9 +33,9 @@ namespace GourmetProject.Gameplay.Scoring
             int dishInstanceId,
             string dishId,
             GridPos? cell,
-            float value,
-            float before,
-            float after,
+            BigDouble value,
+            BigDouble before,
+            BigDouble after,
             string message,
             SkillExecutionTrace trace = null,
             int executionGroupId = 0)
@@ -65,11 +66,11 @@ namespace GourmetProject.Gameplay.Scoring
 
         public GridPos? Cell { get; }
 
-        public float Value { get; }
+        public BigDouble Value { get; }
 
-        public float Before { get; }
+        public BigDouble Before { get; }
 
-        public float After { get; }
+        public BigDouble After { get; }
 
         public string Message { get; }
 

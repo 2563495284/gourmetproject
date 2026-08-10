@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BreakInfinity;
 using System.Linq;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta;
@@ -139,7 +140,7 @@ namespace GourmetProject.Game.Balance
             ScoreResult settled = session.Settle();
             placement.Score = settled.Total;
             ApplyBattleGrowth(run, session, rng, stage);
-            stage.Score = Math.Max(stage.Score, placement.Score);
+            stage.Score = BigDouble.Max(stage.Score, placement.Score);
             stage.RequiredScore = Math.Max(stage.RequiredScore, required);
             stage.SolverTruncated |= placement.Truncated;
             stage.NoLegalPlacement |= !placement.HasLegalSolution;

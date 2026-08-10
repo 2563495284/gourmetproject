@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BreakInfinity;
 using GourmetProject.Gameplay.Scoring;
 using UnityEngine;
 
@@ -343,7 +344,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             var source = ScoreSource.FinalModifier("settlement_fallback", "结算");
-            if (!hasFinalFlat && Mathf.Abs(result.FinalFlat) > 0.001f)
+            if (!hasFinalFlat && BigDouble.Abs(result.FinalFlat) > 0.001f)
             {
                 AppendSynthetic(plan, new ScoreLine(
                     ScorePhase.Final,
@@ -358,7 +359,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     $"局级加法 {FormatSigned(result.FinalFlat)}"));
             }
 
-            if (!hasFinalMultiplier && Mathf.Abs(result.FinalMultiplier - 1f) > 0.001f)
+            if (!hasFinalMultiplier && BigDouble.Abs(result.FinalMultiplier - 1f) > 0.001f)
             {
                 AppendSynthetic(plan, new ScoreLine(
                     ScorePhase.Final,
@@ -370,7 +371,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     result.FinalMultiplier,
                     1f,
                     result.FinalMultiplier,
-                    $"局级倍率 ×{result.FinalMultiplier:0.##}"));
+                    $"局级倍率 ×{FormatDecimal(result.FinalMultiplier)}"));
             }
 
             if (!hasGold && Mathf.Abs(result.GoldDelta) > 0.001f)
@@ -418,15 +419,22 @@ namespace GourmetProject.Game.Presentation.Battle
             plan.Groups.Add(new SettlementEffectGroup(line));
         }
 
-        private static string FormatSigned(float value)
+        private static string FormatSigned(BigDouble value)
         {
-            return $"{(value >= 0f ? "+" : string.Empty)}{value:0.#}";
+            return $"{(value >= 0f ? "+" : string.Empty)}{ScoreNumberFormatter.Format(value)}";
+        }
+
+        private static string FormatDecimal(BigDouble value)
+        {
+            return BigDouble.Abs(value) < ScoreNumberFormatter.ScientificThreshold
+                ? value.ToString("G3")
+                : ScoreNumberFormatter.Format(value);
         }
     }
 
     internal sealed class SettlementBaseBeat
     {
-        public SettlementBaseBeat(int dishInstanceId, string dishId, ScoreLine line, float baseValue)
+        public SettlementBaseBeat(int dishInstanceId, string dishId, ScoreLine line, BigDouble baseValue)
         {
             DishInstanceId = dishInstanceId;
             DishId = dishId ?? string.Empty;
@@ -437,7 +445,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public int DishInstanceId { get; }
         public string DishId { get; }
         public ScoreLine Line { get; }
-        public float BaseValue { get; }
+        public BigDouble BaseValue { get; }
     }
 
     internal sealed class SettlementEffectGroup
@@ -558,15 +566,15 @@ namespace GourmetProject.Game.Presentation.Battle
     {
         private sealed class DishState
         {
-            public float Base;
-            public float Flat;
-            public float Multiplier = 1f;
+            public BigDouble Base;
+            public BigDouble Flat;
+            public BigDouble Multiplier = BigDouble.One;
             public bool HasBase;
         }
 
         private readonly Dictionary<int, DishState> _dishes = new();
-        private float _finalFlat;
-        private float _finalMultiplier = 1f;
+        private BigDouble _finalFlat;
+        private BigDouble _finalMultiplier = BigDouble.One;
 
         public SettlementRunningLedger(
             IReadOnlyList<DishScore> scores,
@@ -585,7 +593,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     continue;
                 }
 
-                float multiplier = 1f;
+                BigDouble multiplier = BigDouble.One;
                 if (baselineSnapshot != null
                     && baselineSnapshot.TryGet(score.DishInstanceId, out SettlementDishBaseline baseline))
                 {
@@ -596,11 +604,11 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        public int CurrentTotal
+        public BigDouble CurrentTotal
         {
             get
             {
-                float raw = 0f;
+                BigDouble raw = BigDouble.Zero;
                 foreach (DishState state in _dishes.Values)
                 {
                     if (state.HasBase)
@@ -609,13 +617,13 @@ namespace GourmetProject.Game.Presentation.Battle
                     }
                 }
 
-                return (int)Math.Round(
+                return BigDouble.Round(
                     (raw + _finalFlat) * _finalMultiplier,
                     MidpointRounding.AwayFromZero);
             }
         }
 
-        public float ApplyBase(int dishInstanceId, float baseValue)
+        public BigDouble ApplyBase(int dishInstanceId, BigDouble baseValue)
         {
             DishState state = EnsureDish(dishInstanceId);
             state.Base = baseValue;
@@ -623,11 +631,11 @@ namespace GourmetProject.Game.Presentation.Battle
             return ContributionFor(dishInstanceId);
         }
 
-        public float Apply(ScoreLine line)
+        public BigDouble Apply(ScoreLine line)
         {
             if (line == null)
             {
-                return 0f;
+                return BigDouble.Zero;
             }
 
             DishState state;
@@ -655,11 +663,11 @@ namespace GourmetProject.Game.Presentation.Battle
             return ContributionFor(line.DishInstanceId);
         }
 
-        public float ContributionFor(int dishInstanceId)
+        public BigDouble ContributionFor(int dishInstanceId)
         {
             if (!_dishes.TryGetValue(dishInstanceId, out DishState state) || !state.HasBase)
             {
-                return 0f;
+                return BigDouble.Zero;
             }
 
             return DishScore.CeilContribution(state.Base + state.Flat, state.Multiplier);

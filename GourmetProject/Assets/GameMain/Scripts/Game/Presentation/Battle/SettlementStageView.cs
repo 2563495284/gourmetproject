@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using BreakInfinity;
 using DG.Tweening;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
@@ -103,7 +104,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public async Awaitable PlayBaseAsync(
             DishPieceView view,
             string dishName,
-            float contribution,
+            BigDouble contribution,
             float duration,
             CancellationToken cancellationToken)
         {
@@ -123,7 +124,7 @@ namespace GourmetProject.Game.Presentation.Battle
             await SpawnLabelAsync(
                 anchor,
                 string.IsNullOrEmpty(dishName) ? "基础美味" : dishName,
-                $"基础贡献  {contribution:0}",
+                $"基础贡献  {ScoreNumberFormatter.Format(contribution)}",
                 SettlementAttributePalette.WithAlpha(SettlementAttributePalette.BaseScore, 0.96f),
                 duration,
                 cancellationToken);
@@ -354,8 +355,8 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementEffectGroup group,
             ScoreLine line,
             DishPieceView target,
-            float dishContribution,
-            int runningTotal,
+            BigDouble dishContribution,
+            BigDouble runningTotal,
             float duration,
             int stackIndex,
             int stackCount,
@@ -423,7 +424,7 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         public async Awaitable PlayFinaleAsync(
-            int total,
+            BigDouble total,
             float duration,
             CancellationToken cancellationToken)
         {
@@ -476,7 +477,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Awaitable labelTask = SpawnLabelAsync(
                 center + Vector3.up * (0.62f * _visualScale),
                 "本桌结算",
-                $"总分  {total}",
+                $"总分  {ScoreNumberFormatter.Format(total)}",
                 new Color(1f, 0.62f, 0.10f, 1f),
                 duration,
                 cancellationToken,
@@ -858,56 +859,69 @@ namespace GourmetProject.Game.Presentation.Battle
             };
         }
 
-        internal static string ResultText(ScoreLine line, float dishContribution, int runningTotal)
+        internal static string ResultText(ScoreLine line, BigDouble dishContribution, BigDouble runningTotal)
         {
             if (line == null)
             {
-                return $"总分  {runningTotal}";
+                return $"总分  {ScoreNumberFormatter.Format(runningTotal)}";
             }
 
-            if (Mathf.Abs(line.Value) <= 0.001f
+            if (BigDouble.Abs(line.Value) <= 0.001f
                 && line.Kind != ScoreLineKind.FinalMultiplier
                 && line.Kind != ScoreLineKind.SweetTransferFailed)
             {
                 return "无变化";
             }
 
-            string signed = $"{(line.Value >= 0f ? "+" : string.Empty)}{line.Value:0.#}";
+            string signed = $"{(line.Value >= 0f ? "+" : string.Empty)}{FormatLineValue(line.Value)}";
+            string total = ScoreNumberFormatter.Format(runningTotal);
             switch (line.Kind)
             {
                 case ScoreLineKind.DishFlat:
                     return $"分数 {signed}";
                 case ScoreLineKind.DishMultiplier:
-                    return $"倍率 ×{line.Value:0.##}";
+                    return $"倍率 ×{FormatLineValue(line.Value)}";
                 case ScoreLineKind.DishMultiplierAdd:
                     return $"倍率 {signed}";
                 case ScoreLineKind.FinalFlat:
-                    return $"总分 {signed}  →  {runningTotal}";
+                    return $"总分 {signed}  →  {total}";
                 case ScoreLineKind.FinalMultiplier:
-                    return $"总分 ×{line.Value:0.##}  →  {runningTotal}";
+                    return $"总分 ×{FormatLineValue(line.Value)}  →  {total}";
                 case ScoreLineKind.Gold:
                     return $"金币 {signed}";
                 case ScoreLineKind.Layer:
                     return $"层数 {signed}";
                 case ScoreLineKind.SilverItemRoll:
-                    return $"获得装饰品和消耗品 ×{Mathf.RoundToInt(line.Value)}";
+                    return $"获得装饰品和消耗品 ×{Count(line.Value)}";
                 case ScoreLineKind.CopySkill:
-                    return $"获得技能 ×{Mathf.RoundToInt(line.Value)}";
+                    return $"获得技能 ×{Count(line.Value)}";
                 case ScoreLineKind.TriggerSweetTransfer:
-                    return line.Value > 1f ? $"触发 ×{Mathf.RoundToInt(line.Value)}" : "触发甜蜜传递";
+                    return line.Value > 1f ? $"触发 ×{Count(line.Value)}" : "触发甜蜜传递";
                 case ScoreLineKind.TriggeredSweetTransferSource:
                     return "来源已接力";
                 case ScoreLineKind.SweetTransferBuffApplied:
-                    return $"挂载目标 ×{Mathf.RoundToInt(line.Value)}";
+                    return $"挂载目标 ×{Count(line.Value)}";
                 case ScoreLineKind.SweetTransferBuffTriggered:
                     return line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
-                        ? $"额外目标 +{Mathf.RoundToInt(line.Value)}"
-                        : $"本行倍率 ×{line.Value:0.##}";
+                        ? $"额外目标 +{Count(line.Value)}"
+                        : $"本行倍率 ×{FormatLineValue(line.Value)}";
                 case ScoreLineKind.SweetTransferFailed:
                     return "没有可传递目标";
                 default:
                     return string.IsNullOrEmpty(line.Message) ? signed : line.Message;
             }
+        }
+
+        private static string FormatLineValue(BigDouble value)
+        {
+            return BigDouble.Abs(value) < ScoreNumberFormatter.ScientificThreshold
+                ? value.ToString("G3")
+                : ScoreNumberFormatter.Format(value);
+        }
+
+        private static int Count(BigDouble value)
+        {
+            return (int)Math.Round(value.ToDouble(), MidpointRounding.AwayFromZero);
         }
 
         private static Color WithAlpha(Color color, float alpha)

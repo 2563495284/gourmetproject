@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BreakInfinity;
 using UnityEngine;
 
 namespace GourmetProject.Game.Balance
@@ -51,12 +52,12 @@ namespace GourmetProject.Game.Balance
     public sealed class AutoRunStageTrace
     {
         public int Week;
-        public int Score;
+        public BigDouble Score;
         public int RequiredScore;
         public bool Passed;
         public int MealBattles;
         public int MealPasses;
-        public int BossScore;
+        public BigDouble BossScore;
         public int BossRequiredScore;
         public bool BossReached;
         public bool BossPassed;

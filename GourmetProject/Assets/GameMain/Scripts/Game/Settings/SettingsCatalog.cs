@@ -206,6 +206,16 @@ namespace GourmetProject.Game.Settings
                 SetToggleValue = v => settings.SettlementAcceleration = v,
             });
 
+            // —— 游戏：拖放后直接上菜 ——
+            list.Add(new SettingDescriptor
+            {
+                Id = SettingsService.KeyDirectServe,
+                Label = "直接上菜",
+                ControlType = SettingControlType.Toggle,
+                GetToggleValue = () => settings.DirectServe,
+                SetToggleValue = v => settings.DirectServe = v,
+            });
+
             // —— 扩展示例（默认注释关闭）——
             // 想给游戏加“经营挑战倍速”，把下面这段取消注释即可，无需改 SettingsForm：
             //

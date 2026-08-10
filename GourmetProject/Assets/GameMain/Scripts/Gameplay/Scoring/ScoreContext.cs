@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BreakInfinity;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
@@ -21,9 +22,9 @@ namespace GourmetProject.Gameplay.Scoring
         private sealed class DishAccumulator
         {
             public DishInstance Dish;
-            public float Base;
-            public float Flat;
-            public float Mult = 1f;
+            public BigDouble Base;
+            public BigDouble Flat;
+            public BigDouble Mult = BigDouble.One;
         }
 
         private readonly Dictionary<int, DishAccumulator> _accums = new Dictionary<int, DishAccumulator>();
@@ -37,8 +38,8 @@ namespace GourmetProject.Gameplay.Scoring
         private readonly List<SkillTransferSideEffect> _skillTransfers = new List<SkillTransferSideEffect>();
         private readonly List<SweetTransferBuffRegistration> _sweetTransferBuffs = new List<SweetTransferBuffRegistration>();
         private readonly List<CopySkillRequest> _copySkillRequests = new List<CopySkillRequest>();
-        private readonly Dictionary<int, float> _permanentFlatDeltas = new Dictionary<int, float>();
-        private readonly Dictionary<int, float> _permanentMultDeltas = new Dictionary<int, float>();
+        private readonly Dictionary<int, BigDouble> _permanentFlatDeltas = new Dictionary<int, BigDouble>();
+        private readonly Dictionary<int, BigDouble> _permanentMultDeltas = new Dictionary<int, BigDouble>();
         private readonly Dictionary<int, int> _liveCountAs = new Dictionary<int, int>();
         private DishAccumulator _current;
         private bool _initialFinalModifiersRecorded;
@@ -102,7 +103,9 @@ namespace GourmetProject.Gameplay.Scoring
 
                     foreach (SkillRuleDef rule in skill.Rules)
                     {
-                        if (rule.Trigger != SkillTrigger.OnSettle || rule.ActionType != SkillActionType.AddCountAs)
+                        if (rule.Trigger != SkillTrigger.OnSettle
+                            || rule.ActionType != SkillActionType.AddCountAs
+                            || !rule.IsPassive)
                         {
                             continue;
                         }
@@ -139,6 +142,30 @@ namespace GourmetProject.Gameplay.Scoring
             {
                 extra.TryGetValue(d.Id, out int e);
                 _liveCountAs[d.Id] = Math.Max(1, d.Def.CountAs + d.RuntimeCountAsBonus + e + itemBonus);
+            }
+        }
+
+        /// <summary>主动 AddCountAs 在规则实际执行到时修改 live 值，只影响后续规则。</summary>
+        public void ApplyLiveCountAs(SkillRuleDef rule, DishInstance self, int count, float value)
+        {
+            if (rule == null || self == null || count <= 0 || value == 0f)
+            {
+                return;
+            }
+
+            foreach (DishInstance target in CountAsTargets(rule, self))
+            {
+                float basis = HasActionParam(rule, "target:occupiedcells")
+                    ? target.OccupiedCells.Count
+                    : 1f;
+                int delta = (int)Math.Round(value * count * basis, MidpointRounding.AwayFromZero);
+                if (delta == 0)
+                {
+                    continue;
+                }
+
+                int current = GetEffectiveCountAs(target);
+                _liveCountAs[target.Id] = Math.Max(1, current + delta);
             }
         }
 
@@ -191,15 +218,15 @@ namespace GourmetProject.Gameplay.Scoring
 
         public SkillExecutionTrace Trace { get; private set; }
 
-        public float FlatBonus => _current?.Flat ?? 0f;
+        public BigDouble FlatBonus => _current?.Flat ?? BigDouble.Zero;
 
-        public float Multiplier => _current?.Mult ?? 1f;
+        public BigDouble Multiplier => _current?.Mult ?? BigDouble.One;
 
-        public float RawSum { get; private set; }
+        public BigDouble RawSum { get; private set; }
 
-        public float FinalFlat { get; private set; }
+        public BigDouble FinalFlat { get; private set; }
 
-        public float FinalMultiplier { get; private set; } = 1f;
+        public BigDouble FinalMultiplier { get; private set; } = BigDouble.One;
 
         /// <summary>本次结算产生的金币增量（副作用，由 Game 层在正式结算后入账）。</summary>
         public float GoldDelta { get; private set; }
@@ -227,10 +254,10 @@ namespace GourmetProject.Gameplay.Scoring
         public IReadOnlyList<CopySkillRequest> CopySkillRequests => _copySkillRequests;
 
         /// <summary>本次结算登记的永久加法分增量（实例 Id → 累加值）。正式结算后写回实例。</summary>
-        public IReadOnlyDictionary<int, float> PermanentFlatDeltas => _permanentFlatDeltas;
+        public IReadOnlyDictionary<int, BigDouble> PermanentFlatDeltas => _permanentFlatDeltas;
 
         /// <summary>本次结算登记的永久倍率增量（实例 Id → 累乘倍数）。正式结算后写回实例。</summary>
-        public IReadOnlyDictionary<int, float> PermanentMultDeltas => _permanentMultDeltas;
+        public IReadOnlyDictionary<int, BigDouble> PermanentMultDeltas => _permanentMultDeltas;
 
         public void EmitEvent(ScoreEventType type, string message)
         {
@@ -268,7 +295,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             Phase = ScorePhase.DishBase;
             Source = ScoreSource.Dish(Dish);
-            float baseScore = Dish.BaseScoreBeforeSettlement;
+            BigDouble baseScore = Dish.BaseScoreBeforeSettlement;
             _lines.Add(new ScoreLine(
                 Phase,
                 ScoreLineKind.DishBase,
@@ -332,13 +359,13 @@ namespace GourmetProject.Gameplay.Scoring
 
         // ------- 兼容旧 API：作用于「当前菜」 -------
 
-        public void AddFlat(float value)
+        public void AddFlat(BigDouble value)
         {
             int id = Dish != null ? Dish.Id : 0;
             SubmitCommand(new AddDishFlatCommand(id, value));
         }
 
-        public void MultiplyBy(float value)
+        public void MultiplyBy(BigDouble value)
         {
             int id = Dish != null ? Dish.Id : 0;
             SubmitCommand(new MultiplyDishCommand(id, value));
@@ -346,7 +373,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         // ------- 跨菜 / 副作用 API -------
 
-        public void AddFlatTo(DishInstance target, float value)
+        public void AddFlatTo(DishInstance target, BigDouble value)
         {
             if (target == null)
             {
@@ -356,7 +383,7 @@ namespace GourmetProject.Gameplay.Scoring
             SubmitCommand(new AddDishFlatCommand(target.Id, value));
         }
 
-        public void MultiplyTo(DishInstance target, float value)
+        public void MultiplyTo(DishInstance target, BigDouble value)
         {
             if (target == null)
             {
@@ -367,7 +394,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>目标食物「倍率区」加法（倍率+X），区别于乘法的 MultiplyTo。</summary>
-        public void AddMultFlatTo(DishInstance target, float value)
+        public void AddMultFlatTo(DishInstance target, BigDouble value)
         {
             if (target == null)
             {
@@ -378,22 +405,22 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>读取目标食物结算到当前时刻的倍率（含固化倍率与此前已执行的倍率效果）。</summary>
-        public float GetCurrentMultiplier(DishInstance target)
+        public BigDouble GetCurrentMultiplier(DishInstance target)
         {
             if (target == null || !_accums.TryGetValue(target.Id, out DishAccumulator accumulator))
             {
-                return 0f;
+                return BigDouble.Zero;
             }
 
             return accumulator.Mult;
         }
 
         /// <summary>读取目标食物结算到当前时刻的分数（基础分 + 此前已执行的固定加分，不含倍率）。</summary>
-        public float GetCurrentScore(DishInstance target)
+        public BigDouble GetCurrentScore(DishInstance target)
         {
             if (target == null || !_accums.TryGetValue(target.Id, out DishAccumulator accumulator))
             {
-                return 0f;
+                return BigDouble.Zero;
             }
 
             return accumulator.Base + accumulator.Flat;
@@ -413,12 +440,12 @@ namespace GourmetProject.Gameplay.Scoring
             SubmitCommand(new RequestSilverItemRollCommand());
         }
 
-        public void AddFinalFlat(float value)
+        public void AddFinalFlat(BigDouble value)
         {
             SubmitCommand(new AddFinalFlatCommand(value));
         }
 
-        public void MultiplyFinalBy(float value)
+        public void MultiplyFinalBy(BigDouble value)
         {
             SubmitCommand(new MultiplyFinalCommand(value));
         }
@@ -433,14 +460,14 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>
         /// 目标食物「永久加法分」+value：本次结算即计入加法区，并登记持久增量（正式结算后写回实例，之后每次结算叠加进基础分）。
         /// </summary>
-        public void AddPermanentFlatTo(DishInstance target, float value)
+        public void AddPermanentFlatTo(DishInstance target, BigDouble value)
         {
-            if (target == null || Math.Abs(value) < 0.0001f)
+            if (target == null || BigDouble.Abs(value) < 0.0001d)
             {
                 return;
             }
 
-            _permanentFlatDeltas.TryGetValue(target.Id, out float cur);
+            _permanentFlatDeltas.TryGetValue(target.Id, out BigDouble cur);
             _permanentFlatDeltas[target.Id] = cur + value;
             SubmitCommand(new AddDishFlatCommand(target.Id, value));
         }
@@ -448,15 +475,15 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>
         /// 目标食物「永久倍率」×value：本次结算即计入倍率，并登记持久倍数（正式结算后写回实例，之后每次结算叠乘进倍率初值）。
         /// </summary>
-        public void AddPermanentMultTo(DishInstance target, float value)
+        public void AddPermanentMultTo(DishInstance target, BigDouble value)
         {
-            if (target == null || value <= 0f)
+            if (target == null || value <= BigDouble.Zero)
             {
                 return;
             }
 
-            _permanentMultDeltas.TryGetValue(target.Id, out float cur);
-            _permanentMultDeltas[target.Id] = (cur <= 0f ? 1f : cur) * value;
+            _permanentMultDeltas.TryGetValue(target.Id, out BigDouble cur);
+            _permanentMultDeltas[target.Id] = (cur <= BigDouble.Zero ? BigDouble.One : cur) * value;
             SubmitCommand(new MultiplyDishCommand(target.Id, value));
         }
 
@@ -858,7 +885,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             _finalized = true;
-            RawSum = 0f;
+            RawSum = BigDouble.Zero;
             foreach (int id in _order)
             {
                 DishAccumulator a = _accums[id];
@@ -923,38 +950,38 @@ namespace GourmetProject.Gameplay.Scoring
 
         // ------- 命令实际改分（internal，供命令调用） -------
 
-        internal void ApplyDishFlatCommand(int dishId, float value)
+        internal void ApplyDishFlatCommand(int dishId, BigDouble value)
         {
             if (!_accums.TryGetValue(dishId, out DishAccumulator a))
             {
                 return;
             }
 
-            float before = a.Flat;
+            BigDouble before = a.Flat;
             a.Flat += value;
             AddLine(a, ScoreLineKind.DishFlat, value, before, a.Flat, $"美味值 +{value}");
         }
 
-        internal void ApplyDishMultiplierCommand(int dishId, float value)
+        internal void ApplyDishMultiplierCommand(int dishId, BigDouble value)
         {
             if (!_accums.TryGetValue(dishId, out DishAccumulator a))
             {
                 return;
             }
 
-            float before = a.Mult;
+            BigDouble before = a.Mult;
             a.Mult *= value;
             AddLine(a, ScoreLineKind.DishMultiplier, value, before, a.Mult, $"倍率 x{value}");
         }
 
-        internal void ApplyDishMultFlatCommand(int dishId, float value)
+        internal void ApplyDishMultFlatCommand(int dishId, BigDouble value)
         {
             if (!_accums.TryGetValue(dishId, out DishAccumulator a))
             {
                 return;
             }
 
-            float before = a.Mult;
+            BigDouble before = a.Mult;
             a.Mult += value;
             AddLine(a, ScoreLineKind.DishMultiplierAdd, value, before, a.Mult, $"倍率 +{value}");
         }
@@ -999,16 +1026,16 @@ namespace GourmetProject.Gameplay.Scoring
             AddLine(_current, ScoreLineKind.Layer, after - before, before, after, mult ? $"欢乐蛋糕层数 x{value}" : $"欢乐蛋糕层数 {(value >= 0 ? "+" : string.Empty)}{value}");
         }
 
-        internal void ApplyFinalFlatCommand(float value)
+        internal void ApplyFinalFlatCommand(BigDouble value)
         {
-            float before = FinalFlat;
+            BigDouble before = FinalFlat;
             FinalFlat += value;
             AddLine(null, ScoreLineKind.FinalFlat, value, before, FinalFlat, $"总分 +{value}");
         }
 
-        internal void ApplyFinalMultiplierCommand(float value)
+        internal void ApplyFinalMultiplierCommand(BigDouble value)
         {
-            float before = FinalMultiplier;
+            BigDouble before = FinalMultiplier;
             FinalMultiplier *= value;
             AddLine(null, ScoreLineKind.FinalMultiplier, value, before, FinalMultiplier, $"总分倍率 x{value}");
         }
@@ -1086,9 +1113,9 @@ namespace GourmetProject.Gameplay.Scoring
         private void AddLine(
             DishAccumulator accum,
             ScoreLineKind kind,
-            float value,
-            float before,
-            float after,
+            BigDouble value,
+            BigDouble before,
+            BigDouble after,
             string fallbackMessage,
             ScoreSource sourceOverride = null,
             SkillExecutionTrace traceOverride = null)
@@ -1217,9 +1244,9 @@ namespace GourmetProject.Gameplay.Scoring
     public sealed class AddDishFlatCommand : IScoreCommand
     {
         private readonly int _dishId;
-        private readonly float _value;
+        private readonly BigDouble _value;
 
-        public AddDishFlatCommand(int dishId, float value)
+        public AddDishFlatCommand(int dishId, BigDouble value)
         {
             _dishId = dishId;
             _value = value;
@@ -1234,9 +1261,9 @@ namespace GourmetProject.Gameplay.Scoring
     public sealed class MultiplyDishCommand : IScoreCommand
     {
         private readonly int _dishId;
-        private readonly float _value;
+        private readonly BigDouble _value;
 
-        public MultiplyDishCommand(int dishId, float value)
+        public MultiplyDishCommand(int dishId, BigDouble value)
         {
             _dishId = dishId;
             _value = value;
@@ -1251,9 +1278,9 @@ namespace GourmetProject.Gameplay.Scoring
     public sealed class AddDishMultFlatCommand : IScoreCommand
     {
         private readonly int _dishId;
-        private readonly float _value;
+        private readonly BigDouble _value;
 
-        public AddDishMultFlatCommand(int dishId, float value)
+        public AddDishMultFlatCommand(int dishId, BigDouble value)
         {
             _dishId = dishId;
             _value = value;
@@ -1309,9 +1336,9 @@ namespace GourmetProject.Gameplay.Scoring
     /// <summary>最终总分加法区增加固定值。</summary>
     public sealed class AddFinalFlatCommand : IScoreCommand
     {
-        private readonly float _value;
+        private readonly BigDouble _value;
 
-        public AddFinalFlatCommand(float value)
+        public AddFinalFlatCommand(BigDouble value)
         {
             _value = value;
         }
@@ -1324,9 +1351,9 @@ namespace GourmetProject.Gameplay.Scoring
     /// <summary>最终总分倍率乘以固定值。</summary>
     public sealed class MultiplyFinalCommand : IScoreCommand
     {
-        private readonly float _value;
+        private readonly BigDouble _value;
 
-        public MultiplyFinalCommand(float value)
+        public MultiplyFinalCommand(BigDouble value)
         {
             _value = value;
         }

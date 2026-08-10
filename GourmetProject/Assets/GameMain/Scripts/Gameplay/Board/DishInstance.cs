@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BreakInfinity;
 using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Gameplay.Board
@@ -158,28 +159,28 @@ namespace GourmetProject.Gameplay.Board
         public int EffectiveCountAs => Math.Max(1, Def.CountAs + RuntimeCountAsBonus);
 
         /// <summary>运行时永久加法分（PermanentAddFlat 累加，计入基础分）。</summary>
-        public float PermanentFlatBonus { get; private set; }
+        public BigDouble PermanentFlatBonus { get; private set; }
 
         /// <summary>运行时永久倍率（效果累乘并计入倍率初值），初始 1。</summary>
-        public float PermanentMultBonus { get; private set; } = 1f;
+        public BigDouble PermanentMultBonus { get; private set; } = BigDouble.One;
 
         /// <summary>本场临时基础分倍率（Boss Debuff 等），只影响当前经营挑战内结算。</summary>
-        public float TemporaryBaseMultiplier { get; private set; } = 1f;
+        public BigDouble TemporaryBaseMultiplier { get; private set; } = BigDouble.One;
 
         /// <summary>上菜时确定的临时倍率（Boss Debuff 等），只影响当前经营挑战内结算。</summary>
-        public float ServeMultiplier { get; private set; } = 1f;
+        public BigDouble ServeMultiplier { get; private set; } = BigDouble.One;
 
         /// <summary>上菜落地时追加的临时倍率加值（如「每 3 个后的下一个」），只影响当前经营挑战内结算。</summary>
-        public float ServeMultiplierFlatBonus { get; private set; }
+        public BigDouble ServeMultiplierFlatBonus { get; private set; }
 
         /// <summary>结算前「固化基础分」：基础分数 + 永久加分，再乘本场基础分倍率（不含本次结算临时触发的加成）。</summary>
-        public float BaseScoreBeforeSettlement => (Def.Deliciousness + PermanentFlatBonus) * TemporaryBaseMultiplier;
+        public BigDouble BaseScoreBeforeSettlement => (Def.Deliciousness + PermanentFlatBonus) * TemporaryBaseMultiplier;
 
         /// <summary>结算前「固化倍率」：永久倍率 × 上菜临时倍率（不含本次结算临时触发的倍率）。</summary>
-        public float BaseMultiplierBeforeSettlement
+        public BigDouble BaseMultiplierBeforeSettlement
             => PermanentMultBonus * ServeMultiplier
                 + ServeMultiplierFlatBonus
-                + _serveMultiplierFlatBySource.Values.Sum();
+                + ServeMultiplierFlatSourceTotal();
 
         /// <summary>本实例技能是否失效（清淡餐）。</summary>
         public bool SkillsDisabled { get; private set; }
@@ -194,46 +195,46 @@ namespace GourmetProject.Gameplay.Board
         }
 
         /// <summary>累加永久加法分。</summary>
-        public void AddPermanentFlat(float delta)
+        public void AddPermanentFlat(BigDouble delta)
         {
             PermanentFlatBonus += delta;
         }
 
         /// <summary>累乘永久倍率（value 为倍数，如 1.2）。</summary>
-        public void MultiplyPermanentMult(float value)
+        public void MultiplyPermanentMult(BigDouble value)
         {
-            if (value > 0f)
+            if (value > BigDouble.Zero)
             {
                 PermanentMultBonus *= value;
             }
         }
 
         /// <summary>累加永久倍率（delta 为增量，如 +0.1）。</summary>
-        public void AddPermanentMultBonus(float delta)
+        public void AddPermanentMultBonus(BigDouble delta)
         {
-            if (Math.Abs(delta) > 0.0001f)
+            if (BigDouble.Abs(delta) > 0.0001d)
             {
                 PermanentMultBonus += delta;
             }
         }
 
-        public void MultiplyTemporaryBase(float value)
+        public void MultiplyTemporaryBase(BigDouble value)
         {
-            if (value > 0f)
+            if (value > BigDouble.Zero)
             {
                 TemporaryBaseMultiplier *= value;
             }
         }
 
-        public void MultiplyServeMultiplier(float value)
+        public void MultiplyServeMultiplier(BigDouble value)
         {
-            if (value > 0f)
+            if (value > BigDouble.Zero)
             {
                 ServeMultiplier *= value;
             }
         }
 
-        public void AddServeMultiplierFlat(float value)
+        public void AddServeMultiplierFlat(BigDouble value)
         {
             ServeMultiplierFlatBonus += value;
         }
@@ -269,6 +270,17 @@ namespace GourmetProject.Gameplay.Board
                 && _serveMultiplierFlatBySource.TryGetValue(sourceId, out float value)
                     ? value
                     : 0f;
+
+        private BigDouble ServeMultiplierFlatSourceTotal()
+        {
+            BigDouble total = BigDouble.Zero;
+            foreach (float value in _serveMultiplierFlatBySource.Values)
+            {
+                total += value;
+            }
+
+            return total;
+        }
 
         /// <summary>复制来源化倍率；调用方可排除必须保持唯一目标的动态来源。</summary>
         public void CopyServeMultiplierFlatSourcesFrom(

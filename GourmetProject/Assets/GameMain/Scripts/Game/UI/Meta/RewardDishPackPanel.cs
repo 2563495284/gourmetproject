@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BreakInfinity;
 using DG.Tweening;
 using GourmetProject.Game;
 using GourmetProject.Game.Meta;
@@ -442,8 +443,8 @@ namespace GourmetProject.Game.UI.Meta
                     skillIds,
                     flavorIds,
                     run.Database));
-            float multiplier = slot != null ? slot.ScoreMultiplier : 1f;
-            float score = def.Deliciousness + (slot != null ? slot.ScoreFlatBonus : 0f);
+            BigDouble multiplier = slot != null ? slot.ScoreMultiplier : BigDouble.One;
+            BigDouble score = def.Deliciousness + (slot != null ? slot.ScoreFlatBonus : 0f);
             return new FoodTipsData(
                 summary,
                 new FoodScoreTipsData(score, multiplier),

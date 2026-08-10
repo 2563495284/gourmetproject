@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Save;
 
 namespace GourmetProject.Game.Run
 {
@@ -313,8 +314,10 @@ namespace GourmetProject.Game.Run
         public List<string> ExtraSkillIds = new List<string>();
 
         public float ScoreFlatBonus;
+        public BigNumberSaveData ScoreFlatBonusBig;
 
         public float ScoreMultiplier = 1f;
+        public BigNumberSaveData ScoreMultiplierBig;
     }
 
     [Serializable]
@@ -497,6 +500,7 @@ namespace GourmetProject.Game.Run
         public int BeforeHeartCount;
         public int AfterHeartCount;
         public int BattleTotal;
+        public BigNumberSaveData BattleTotalBig;
         public bool IsTerminal;
     }
 
@@ -510,12 +514,16 @@ namespace GourmetProject.Game.Run
         public string BattleKey;
         public bool IsBoss;
         public int LastTotal;
+        public BigNumberSaveData LastTotalBig;
         // -1 表示旧存档未保存最终层数；不可用运行时默认值冒充已确认的结算结果。
         public int FinalHappyCakeLayers = -1;
         public bool HasDetailedScore;
         public float RawSum;
+        public BigNumberSaveData RawSumBig;
         public float FinalFlat;
+        public BigNumberSaveData FinalFlatBig;
         public float FinalMultiplier = 1f;
+        public BigNumberSaveData FinalMultiplierBig;
         public List<PendingRewardBattleDishSaveData> Dishes = new List<PendingRewardBattleDishSaveData>();
         public List<PendingRewardCakeVisualSaveData> Cakes = new List<PendingRewardCakeVisualSaveData>();
     }
@@ -534,17 +542,25 @@ namespace GourmetProject.Game.Run
         public List<string> FlavorIds = new List<string>();
         public int RuntimeCountAsBonus;
         public float PermanentFlatBonus;
+        public BigNumberSaveData PermanentFlatBonusBig;
         public float PermanentMultBonus = 1f;
+        public BigNumberSaveData PermanentMultBonusBig;
         public float TemporaryBaseMultiplier = 1f;
+        public BigNumberSaveData TemporaryBaseMultiplierBig;
         public float ServeMultiplier = 1f;
+        public BigNumberSaveData ServeMultiplierBig;
         public float ServeMultiplierFlatBonus;
+        public BigNumberSaveData ServeMultiplierFlatBonusBig;
         public bool SkillsDisabled;
         public bool ExcludedFromScore;
         public bool IsTemporary;
         public bool HasDishScore;
         public float ScoreBaseValue;
+        public BigNumberSaveData ScoreBaseValueBig;
         public float ScoreFlatBonus;
+        public BigNumberSaveData ScoreFlatBonusBig;
         public float ScoreMultiplier = 1f;
+        public BigNumberSaveData ScoreMultiplierBig;
         public int ScoreEffectiveCountAs = 1;
     }
 

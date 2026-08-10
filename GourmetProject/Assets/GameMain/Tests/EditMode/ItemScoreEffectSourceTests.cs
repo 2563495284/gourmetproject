@@ -38,12 +38,12 @@ namespace GourmetProject.Tests.EditMode
             ScoreResult result = calculator.Calculate(table, CreateEmptyDatabase());
 
             Assert.That(result.DishScores, Has.Count.EqualTo(3));
-            Assert.That(result.DishScores.Single(x => x.DishId == "two").Multiplier,
-                Is.EqualTo(1.4f).Within(0.0001f));
-            Assert.That(result.DishScores.Single(x => x.DishId == "one").Multiplier,
-                Is.EqualTo(1.2f).Within(0.0001f));
-            Assert.That(result.DishScores.Single(x => x.DishId == "none").Multiplier,
-                Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(result.DishScores.Single(x => x.DishId == "two").Multiplier.ToDouble(),
+                Is.EqualTo(1.4d).Within(0.0001d));
+            Assert.That(result.DishScores.Single(x => x.DishId == "one").Multiplier.ToDouble(),
+                Is.EqualTo(1.2d).Within(0.0001d));
+            Assert.That(result.DishScores.Single(x => x.DishId == "none").Multiplier.ToDouble(),
+                Is.EqualTo(1d).Within(0.0001d));
         }
 
         private static DishInstance CreateDish(

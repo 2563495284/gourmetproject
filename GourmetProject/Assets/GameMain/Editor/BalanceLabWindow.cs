@@ -4,11 +4,14 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using BreakInfinity;
+using GourmetProject.Gameplay.Scoring;
 using System.Text;
 using GourmetProject.Config;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Balance;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.Save;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
@@ -319,8 +322,8 @@ namespace GourmetProject.EditorTools
                     Rotation = dish.Placement.RotationIndex,
                     ExtraSkillIds = extraSkills,
                     ExtraFlavorIds = flavors,
-                    PermanentFlat = dish.PermanentFlatBonus,
-                    PermanentMultiplier = dish.PermanentMultBonus,
+                    PermanentFlat = BigNumberSaveData.ToLegacyFloat(dish.PermanentFlatBonus),
+                    PermanentMultiplier = BigNumberSaveData.ToLegacyFloat(dish.PermanentMultBonus),
                 });
             }
         }
@@ -353,8 +356,8 @@ namespace GourmetProject.EditorTools
                     Rotation = placement.RotationIndex,
                     ExtraSkillIds = new List<string>(slot.ExtraSkillIds),
                     ExtraFlavorIds = new List<string>(slot.ExtraFlavorIds),
-                    PermanentFlat = slot.ScoreFlatBonus,
-                    PermanentMultiplier = slot.ScoreMultiplier,
+                    PermanentFlat = BigNumberSaveData.ToLegacyFloat(slot.ScoreFlatBonus),
+                    PermanentMultiplier = BigNumberSaveData.ToLegacyFloat(slot.ScoreMultiplier),
                 });
             }
         }
@@ -690,17 +693,17 @@ namespace GourmetProject.EditorTools
                     foreach (IGrouping<int, AutoRunStageTrace> week in stages.GroupBy(v => v.Week).OrderBy(v => v.Key))
                     {
                         List<AutoRunStageTrace> bossRuns = week.Where(v => v.BossReached).ToList();
-                        int[] scores = (bossRuns.Count > 0 ? bossRuns.Select(v => v.BossScore) : week.Select(v => v.Score)).OrderBy(v => v).ToArray();
-                        int p10 = scores[Mathf.Clamp(Mathf.FloorToInt((scores.Length - 1) * .1f), 0, scores.Length - 1)];
-                        int p50 = scores[(scores.Length - 1) / 2];
-                        int p90 = scores[Mathf.Clamp(Mathf.CeilToInt((scores.Length - 1) * .9f), 0, scores.Length - 1)];
-                        int suggested = scores[Mathf.Clamp(Mathf.FloorToInt((scores.Length - 1) * .3f), 0, scores.Length - 1)];
+                        BigDouble[] scores = (bossRuns.Count > 0 ? bossRuns.Select(v => v.BossScore) : week.Select(v => v.Score)).OrderBy(v => v).ToArray();
+                        BigDouble p10 = scores[Mathf.Clamp(Mathf.FloorToInt((scores.Length - 1) * .1f), 0, scores.Length - 1)];
+                        BigDouble p50 = scores[(scores.Length - 1) / 2];
+                        BigDouble p90 = scores[Mathf.Clamp(Mathf.CeilToInt((scores.Length - 1) * .9f), 0, scores.Length - 1)];
+                        BigDouble suggested = scores[Mathf.Clamp(Mathf.FloorToInt((scores.Length - 1) * .3f), 0, scores.Length - 1)];
                         int mealCount = week.Sum(v => v.MealBattles);
                         int mealPasses = week.Sum(v => v.MealPasses);
                         float mealRate = mealCount > 0 ? mealPasses / (float)mealCount : 0f;
                         float bossReach = bossRuns.Count / (float)week.Count();
                         float bossPass = bossRuns.Count > 0 ? bossRuns.Count(v => v.BossPassed) / (float)bossRuns.Count : 0f;
-                        EditorGUILayout.LabelField($"W{week.Key} Boss：到达 {bossReach:P1}　通过 {bossPass:P1}　P10 {p10} / P50 {p50} / P90 {p90}　建议要求 {suggested}");
+                        EditorGUILayout.LabelField($"W{week.Key} Boss：到达 {bossReach:P1}　通过 {bossPass:P1}　P10 {ScoreNumberFormatter.Format(p10)} / P50 {ScoreNumberFormatter.Format(p50)} / P90 {ScoreNumberFormatter.Format(p90)}　建议要求 {ScoreNumberFormatter.Format(suggested)}");
                         EditorGUILayout.LabelField($"　日常营业：{mealPasses}/{mealCount}（{mealRate:P1}）　金币结余 {week.Average(v => v.GoldBalance):0}");
                         if (bossReach < 0.01f)
                             EditorGUILayout.HelpBox($"W{week.Key} 没有样本到达 Boss；本周星级评鉴 分位数和建议要求分无效。请先检查日常营业目标曲线或成长供给。", MessageType.Error);

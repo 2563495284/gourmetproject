@@ -1,4 +1,5 @@
 using DG.Tweening;
+using BreakInfinity;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
@@ -14,7 +15,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private DishInstance _instance;
         private Vector3 _baseScale = Vector3.one;
         private float _visualScale = 1f;
-        private float? _valueOverride;
+        private BigDouble? _valueOverride;
         private bool _flying;
         private int _sortingOrderOffset;
 
@@ -73,12 +74,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            float value = _valueOverride
+            BigDouble value = _valueOverride
                 ?? DishValueDisplay.CurrentContribution(_instance);
             _badge.SetValue(DishValueDisplay.Format(value));
         }
 
-        internal void SetOverride(float value)
+        internal void SetOverride(BigDouble value)
         {
             _valueOverride = value;
             Refresh();

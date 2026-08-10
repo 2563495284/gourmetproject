@@ -57,6 +57,8 @@ namespace GourmetProject.Game.UI.Battle.View
         private GameplayView _sourceView = GameplayView.None;
         private bool _sourceActionAxisVisible;
         private bool _manageSourcePresentation;
+        private bool _preserveSettlementWorld;
+        private bool _settlementPauseOwned;
         private bool _tableTargeting;
         private bool _transitioning;
         private Action _sessionClosed;
@@ -370,7 +372,16 @@ namespace GourmetProject.Game.UI.Battle.View
                 _host.BeginInspectionSource();
                 if (_sourceView == GameplayView.Food)
                 {
-                    _host.World?.SuspendWorld();
+                    BattleWorldController world = _host.World;
+                    if (world?.IsSettlementPlaying == true)
+                    {
+                        _preserveSettlementWorld = true;
+                        _settlementPauseOwned = world.PauseSettlementPlayback();
+                    }
+                    else
+                    {
+                        world?.SuspendWorld();
+                    }
                 }
             }
 
@@ -382,7 +393,17 @@ namespace GourmetProject.Game.UI.Battle.View
             EndTablePresentation();
             if (_manageSourcePresentation && _sourceView == GameplayView.Food)
             {
-                _host.RestoreBattleWorld();
+                if (_preserveSettlementWorld)
+                {
+                    if (_settlementPauseOwned)
+                    {
+                        _host.World?.ResumeSettlementPlayback();
+                    }
+                }
+                else
+                {
+                    _host.RestoreBattleWorld();
+                }
             }
             else if (_manageSourcePresentation)
             {
@@ -397,6 +418,8 @@ namespace GourmetProject.Game.UI.Battle.View
             _sourceView = GameplayView.None;
             _sourceActionAxisVisible = false;
             _manageSourcePresentation = false;
+            _preserveSettlementWorld = false;
+            _settlementPauseOwned = false;
             _tableTargeting = false;
             _transitioning = false;
             _sessionClosed = null;
