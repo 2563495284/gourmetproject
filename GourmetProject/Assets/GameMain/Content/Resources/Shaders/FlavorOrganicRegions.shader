@@ -120,43 +120,112 @@ Shader "GourmetProject/FlavorOrganicRegions"
                 return half3(1.00, 0.20, 0.09);
             }
 
-            float FlavorPattern(int flavor, float2 uv)
+            half3 FlavorShadow(int flavor)
+            {
+                if (flavor == 0) return half3(0.48, 0.08, 0.25); // 甜：莓果粉阴影
+                if (flavor == 1) return half3(0.18, 0.43, 0.04); // 酸：青柠绿阴影
+                if (flavor == 2) return half3(0.14, 0.09, 0.025); // 苦：深咖啡阴影
+                if (flavor == 3) return half3(0.12, 0.39, 0.62); // 咸：冰蓝阴影
+                if (flavor == 4) return half3(0.25, 0.08, 0.54); // 麻：靛紫阴影
+                if (flavor == 5) return half3(0.55, 0.18, 0.015); // 鲜：焦糖橙阴影
+                return half3(0.61, 0.025, 0.005);                // 辣：深朱红阴影
+            }
+
+            half3 FlavorHighlight(int flavor)
+            {
+                if (flavor == 0) return half3(1.00, 0.78, 0.88); // 甜：奶油桃粉
+                if (flavor == 1) return half3(0.88, 1.00, 0.27); // 酸：荧光黄绿
+                if (flavor == 2) return half3(0.66, 0.51, 0.15); // 苦：干芥末高光
+                if (flavor == 3) return half3(0.86, 0.98, 1.00); // 咸：冰晶白
+                if (flavor == 4) return half3(0.86, 0.61, 1.00); // 麻：薰衣草紫
+                if (flavor == 5) return half3(1.00, 0.80, 0.25); // 鲜：琥珀金
+                return half3(1.00, 0.56, 0.10);                  // 辣：火焰橙
+            }
+
+            half3 ApplyFlavorGrade(half3 source, int flavor)
+            {
+                half luminance = dot(source, half3(0.299, 0.587, 0.114));
+                half curve = smoothstep(0.08, 0.92, luminance);
+                half3 duotone = lerp(FlavorShadow(flavor), FlavorHighlight(flavor), curve);
+
+                // 保留少量原图色差，避免双色分级把细节压成平面。
+                half3 originalChroma = source - luminance.xxx;
+                return saturate(duotone + originalChroma * 0.16);
+            }
+
+            float FlavorPattern(int flavor, float2 uv, float time)
             {
                 if (flavor == 0)
                 {
-                    float2 cell = frac(uv * float2(8, 7)) - 0.5;
-                    return 1.0 - smoothstep(0.12, 0.25, length(cell));
+                    // 甜：有黏性的糖浆带沿斜方向缓慢流动。
+                    float syrupWarp = sin(uv.y * 10.0 + time * 0.72 + _Seed) * 0.11;
+                    float ribbon = abs(sin((uv.x * 3.0 + uv.y * 1.45 + syrupWarp - time * 0.43) * 3.14159));
+                    return 1.0 - smoothstep(0.16, 0.40, ribbon);
                 }
                 if (flavor == 1)
                 {
-                    float2 cell = frac(uv * 6.0) - 0.5;
-                    return 1.0 - smoothstep(0.045, 0.105, abs(length(cell) - 0.27));
+                    // 酸：气泡向上漂移，并按各自相位轻微胀缩。
+                    float2 bubbleUv = uv * 5.8 + float2(0.0, -time * 0.78);
+                    float2 bubbleId = floor(bubbleUv);
+                    float2 bubbleCell = frac(bubbleUv) - 0.5;
+                    float bubbleHash = Hash(bubbleId + _Seed);
+                    bubbleCell.x += (bubbleHash - 0.5) * 0.30;
+                    float bubbleRadius = 0.22 + sin(time * 2.4 + bubbleHash * 6.2831853) * 0.045;
+                    return 1.0 - smoothstep(0.035, 0.105, abs(length(bubbleCell) - bubbleRadius));
                 }
                 if (flavor == 2)
                 {
-                    float hatch = abs(frac((uv.x + uv.y * 0.72) * 8.0) - 0.5);
-                    float crack = abs(frac((uv.x * 0.31 - uv.y) * 5.0 + Noise(uv * 7.0)) - 0.5);
-                    return saturate((1.0 - smoothstep(0.07, 0.17, hatch)) + (1.0 - smoothstep(0.04, 0.1, crack)));
+                    // 苦：干涩斜线缓慢错动，裂纹在原位收紧、放松。
+                    float hatch = abs(frac((uv.x + uv.y * 0.72) * 8.5 + time * 0.10) - 0.5);
+                    float patchPhase = Hash(floor(uv * 4.0) + _Seed) * 6.2831853;
+                    float dryPulse = sin(time * 0.86 + patchPhase) * 0.5 + 0.5;
+                    float crackWidth = lerp(0.035, 0.105, dryPulse);
+                    float crack = abs(frac((uv.x * 0.31 - uv.y) * 5.5 + Noise(uv * 7.0)) - 0.5);
+                    float hatchInk = 1.0 - smoothstep(0.065, 0.16, hatch);
+                    float crackInk = 1.0 - smoothstep(crackWidth, crackWidth + 0.055, crack);
+                    return saturate(hatchInk + crackInk);
                 }
                 if (flavor == 3)
                 {
-                    float2 cell = abs(frac(uv * 7.0) - 0.5);
-                    return 1.0 - smoothstep(0.18, 0.29, cell.x + cell.y);
+                    // 咸：晶体不平移，只按格子随机相位闪烁。
+                    float2 crystalUv = uv * 7.0;
+                    float2 crystalId = floor(crystalUv);
+                    float2 crystalCell = abs(frac(crystalUv) - 0.5);
+                    float crystal = 1.0 - smoothstep(0.17, 0.30, crystalCell.x + crystalCell.y);
+                    float twinkle = sin(time * 3.7 + Hash(crystalId + _Seed) * 6.2831853) * 0.5 + 0.5;
+                    return crystal * lerp(0.32, 1.0, twinkle);
                 }
                 if (flavor == 4)
                 {
-                    float zig = abs(frac(uv.x * 6.0) - 0.5) * 2.0;
-                    float wave = abs(frac(uv.y * 5.0 + zig * 0.55) - 0.5);
-                    return 1.0 - smoothstep(0.07, 0.15, wave);
+                    // 麻：连续的锯齿电流横向传播，不做随机闪断或亮灭。
+                    float zig = abs(frac(uv.x * 6.0 - time * 1.32) - 0.5) * 2.0;
+                    float wave = abs(frac(uv.y * 5.2 + zig * 0.62) - 0.5);
+                    float bolt = 1.0 - smoothstep(0.055, 0.145, wave);
+                    return bolt;
                 }
                 if (flavor == 5)
                 {
-                    float wave = abs(sin((uv.x * 8.0 + sin(uv.y * 12.0) * 0.32) * 3.14159));
-                    return 1.0 - smoothstep(0.74, 0.94, wave);
+                    // 鲜：油滴涟漪从多个固定中心向外扩散。
+                    float2 rippleUv = uv * 3.5;
+                    float2 rippleId = floor(rippleUv);
+                    float2 rippleCell = frac(rippleUv) - 0.5;
+                    float rippleHash = Hash(rippleId + _Seed);
+                    rippleCell += float2(Hash(rippleId + 7.31) - 0.5, Hash(rippleId + 19.17) - 0.5) * 0.12;
+                    float rippleRadius = frac(time * 0.36 + rippleHash) * 0.64;
+                    float ripple = 1.0 - smoothstep(0.035, 0.105, abs(length(rippleCell) - rippleRadius));
+                    return ripple * (1.0 - rippleRadius * 0.72);
                 }
 
-                float heat = abs(frac(uv.x * 7.0 + sin(uv.y * 13.0) * 0.22) - 0.5);
-                return 1.0 - smoothstep(0.09, 0.2, heat);
+                // 辣：重复的火舌向上窜动，顶部收尖并左右摆动。
+                float flameColumns = uv.x * 5.2;
+                float flameId = floor(flameColumns);
+                float flameY = frac(uv.y * 3.1 - time * 0.92 + Hash(flameId + _Seed) * 0.73);
+                float flameSway = sin(uv.y * 13.0 + time * 2.35 + flameId) * 0.14;
+                float flameX = abs(frac(flameColumns + flameSway) - 0.5);
+                float flameWidth = lerp(0.27, 0.045, flameY);
+                float flameBody = 1.0 - smoothstep(flameWidth, flameWidth + 0.07, flameX);
+                float flameFade = smoothstep(0.02, 0.14, flameY) * (1.0 - smoothstep(0.76, 1.0, flameY));
+                return flameBody * flameFade;
             }
 
             float2 FlowField(float2 uv, float time)
@@ -214,19 +283,30 @@ Shader "GourmetProject/FlavorOrganicRegions"
                 float time = _MotionTime * _MotionSpeed;
                 float2 flow = FlowField(input.uv, time);
                 float disturbance = InternalDisturbance(input.uv, flow, time);
-                float2 patternDrift = float2(sin(time * 1.13), cos(time * 0.91)) * 0.065;
-                float2 patternUv = input.uv + flow * (0.17 * _WarpStrength) + patternDrift + _Seed * 0.0017;
-                float pattern = FlavorPattern(flavor, patternUv);
+                float2 patternUv = input.uv + flow * (0.055 * _WarpStrength) + _Seed * 0.0017;
+                float pattern = FlavorPattern(flavor, patternUv, time);
                 float localPhase = frac(phase * count);
                 float divider = 1.0 - smoothstep(0.015, 0.045, min(localPhase, 1.0 - localPhase));
                 float liquidRidge = 1.0 - abs(disturbance * 2.0 - 1.0);
                 liquidRidge = smoothstep(0.32, 0.82, liquidRidge);
                 float movingFill = smoothstep(0.30, 0.68, disturbance);
-                float blendAmount = _Intensity * (0.08 + pattern * 0.12 + movingFill * 0.32 + liquidRidge * 0.12);
-                half3 rgb = lerp(tex.rgb, tint, (half)blendAmount);
+                float patternOuter = smoothstep(0.18, 0.48, pattern);
+                float patternCore = smoothstep(0.56, 0.82, pattern);
+                float patternEdge = saturate(patternOuter - patternCore);
+                float blendAmount = _Intensity * (0.08 + patternOuter * 0.10 + movingFill * 0.30 + liquidRidge * 0.10);
+
+                half3 graded = ApplyFlavorGrade(tex.rgb, flavor);
+                half3 rgb = lerp(tex.rgb, graded, (half)(0.52 * _Intensity));
+                rgb = lerp(rgb, tint, (half)blendAmount);
                 rgb = lerp(rgb, rgb * half3(0.45, 0.36, 0.25), (half)(divider * 0.32 * _Intensity));
                 rgb *= (half)(0.84 + disturbance * 0.24);
-                rgb += tint * (half)((pattern * 0.06 + liquidRidge * 0.10) * _Intensity);
+
+                // 风味纹理使用“暗边 + 亮芯”，在高饱和和浅色 Sprite 上都能保持清晰。
+                half3 patternDark = FlavorShadow(flavor) * 0.58;
+                half3 patternLight = lerp(tint, FlavorHighlight(flavor), 0.72);
+                rgb = lerp(rgb, patternDark, (half)(patternEdge * 0.28 * _Intensity));
+                rgb = lerp(rgb, patternLight, (half)(patternCore * 0.38 * _Intensity));
+                rgb += tint * (half)(liquidRidge * 0.075 * _Intensity);
                 return half4(rgb, tex.a);
             }
             ENDHLSL
