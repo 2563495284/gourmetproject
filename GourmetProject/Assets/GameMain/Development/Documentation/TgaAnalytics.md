@@ -1,21 +1,28 @@
-# ThinkingData 匿名游玩统计
+# HSDK TGA 匿名游玩统计
 
-## 隐私与身份
+## 接入与隐私
 
-- SDK 只在玩家明确允许后初始化；拒绝时业务事件在进入 SDK 前即被丢弃。
-- 仅使用 SDK 生成的匿名 `distinct_id`，项目代码不得调用 `TDAnalytics.Login`。
-- 设置页“匿名数据统计”可以随时撤回授权；撤回调用 `TDTrackStatus.Stop` 清除未上报缓存与匿名标识。
-- 业务代码统一调用 `GameAnalyticsService`，不得直接依赖 ThinkingData 的事件 API。
+- 业务代码统一调用 `GameAnalyticsService`，不得直接调用 HSDK 的 TGA 事件接口。
+- HSDK 只在玩家允许匿名数据统计后初始化；拒绝或撤回时，业务事件会被丢弃，待发送队列会被清空。
+- 当前游戏没有账号系统，因此不调用 `HSDK.SetTGAAccountId`；HSDK 使用本地生成的匿名 `distinctId`。
+- 当前按示例配置使用 `gameId=fkttl-test` 和 `ENV.Test`。切生产环境前必须同时确认正式 `gameId` 并切换为 `ENV.Production`。
+
+## TGA 数据约束
+
+- 所有业务事件只使用扁平标量属性，不使用列表、对象或对象组，因此不会产生第二层对象组。
+- 当前共 12 个事件、53 个复用的业务属性名；加上 HSDK 的 31 个字段后仍低于建议的 300 个事件属性上限。
+- 业务属性最多 64 个，为 HSDK 自动补充字段预留空间，保证单个 `extra` 对象不超过 100 个子属性。
+- 文本按 UTF-8 截断到 2KB；数值会收敛到 `-9E15` 至 `9E15`，`NaN` 和无穷值会转为 `0`。
+- 首次事件统一复用 `event_unique_id`，在客户端会话内去重，并可在分析侧跨会话去重。
+- 属性值类型由第一次入库决定。已有属性不得在后续版本中改变类型。
+
+更多限制见 [ThinkingData 数据规则](https://docs-v2.thinkingdata.cn/?version=v5.0&lan=zh-CN&code=data_format&anchorId=)。
 
 ## 公共属性
 
 所有局内业务事件都包含：
 
-`schema_version, run_id, character_id, is_tutorial, week_index, day_value, day_bucket, archetype_id, archetype_0_share, archetype_1_share, archetype_2_share, archetype_lead`
-
-SDK Super Properties 包含：
-
-`schema_version, app_version, build_guid, platform, channel, build_type`
+`schema_version, app_version, build_guid, platform, channel, build_type, run_id, character_id, is_tutorial, week_index, day_value, day_bucket, archetype_id, archetype_0_share, archetype_1_share, archetype_2_share, archetype_lead`
 
 流派是事件发生时的菜谱快照，不是永久用户属性。`archetype_id` 为 `0 / 1 / 2 / mixed`。
 

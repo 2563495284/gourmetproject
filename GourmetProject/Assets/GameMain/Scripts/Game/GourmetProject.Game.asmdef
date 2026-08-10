@@ -14,7 +14,7 @@
         "Unity.RenderPipelines.Universal.2D.Runtime",
         "Unity.TextMeshPro",
         "SentryToolkit.Tutorial.Runtime",
-        "ThinkingAnalytics"
+        "Hortor.HSDK"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -347,7 +347,7 @@ namespace GourmetProject.Game.Editor
             text.alignment = TextAlignmentOptions.MidlineRight;
             text.color = new Color(0.22f, 0.14f, 0.08f, 0.92f);
             text.raycastTarget = false;
-            text.enableWordWrapping = false;
+            text.textWrappingMode = TextWrappingModes.NoWrap;
             TMP_FontAsset font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontPath);
             if (font != null)
             {

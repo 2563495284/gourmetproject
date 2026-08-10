@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using BreakInfinity;
 using GourmetProject.Game.Run;
 using GourmetProject.Runtime;
-using ThinkingData.Analytics;
+using Hortor;
 using UnityEngine;
 using Log = GourmetProject.Core.Diagnostics.Log;
 
@@ -28,20 +29,26 @@ namespace GourmetProject.Game.Analytics
         public const string ConsentSettingKey = "Privacy.AnonymousAnalytics";
         private const string Tag = "Analytics";
         private const int SchemaVersion = 1;
+        private const string TgaGameId = "yjcs_mix_test";
+        private const int MaxBusinessPropertyCount = 64;
+        private const int MaxTextBytes = 2 * 1024;
+        private const double MaxNumber = 9e15;
 
         private static bool _sdkInitialized;
         private static bool _suppressSdkCallsForTests;
+        private static readonly HashSet<string> FirstEventKeys = new HashSet<string>(StringComparer.Ordinal);
         private static readonly Dictionary<string, ArchetypeVector> BattleArchetypeSnapshots =
             new Dictionary<string, ArchetypeVector>(StringComparer.Ordinal);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetRuntimeState()
         {
-            // Enter Play Mode Options may disable domain reload. Reset our session flags so the
-            // ThinkingData runtime object and its sender are initialized for every play session.
+            // Enter Play Mode Options may disable domain reload, so reset both service and HSDK queues.
             _sdkInitialized = false;
             _suppressSdkCallsForTests = false;
+            FirstEventKeys.Clear();
             BattleArchetypeSnapshots.Clear();
+            HSDK.ClearPendingGameLogs();
         }
 
         /// <summary>PlayMode 测试使用，避免授权流程测试向真实项目发送数据。</summary>
@@ -89,7 +96,7 @@ namespace GourmetProject.Game.Analytics
 
             if (_sdkInitialized)
             {
-                SafeSdkCall(() => TDAnalytics.SetTrackStatus(TDTrackStatus.Stop), "stop");
+                SafeSdkCall(HSDK.ClearPendingGameLogs, "clear pending logs");
                 _sdkInitialized = false;
             }
         }
@@ -326,29 +333,19 @@ namespace GourmetProject.Game.Analytics
 
             try
             {
-                TDAnalytics.Init();
-                TDAnalytics.EnableLog(Debug.isDebugBuild);
-                TDAnalytics.SetTrackStatus(TDTrackStatus.Normal);
-                TDAnalytics.SetSuperProperties(new Dictionary<string, object>
+                HSDK.Init(new InitOption
                 {
-                    ["schema_version"] = SchemaVersion,
-                    ["app_version"] = Application.version ?? string.Empty,
-                    ["build_guid"] = Application.buildGUID ?? string.Empty,
-                    ["platform"] = Application.platform.ToString(),
-                    ["channel"] = "default",
-                    ["build_type"] = Debug.isDebugBuild ? "debug" : "release",
+                    gameId = TgaGameId,
+                    gameVersion = Application.version ?? string.Empty,
+                    env = ENV.Test,
                 });
-                TDAnalytics.EnableAutoTrack(
-                    TDAutoTrackEventType.AppInstall
-                    | TDAutoTrackEventType.AppStart
-                    | TDAutoTrackEventType.AppEnd);
                 _sdkInitialized = true;
-                Log.Info("ThinkingData anonymous analytics enabled after consent.", Tag);
+                Log.Info("HSDK TGA anonymous analytics enabled after consent.", Tag);
             }
             catch (Exception exception)
             {
                 _sdkInitialized = false;
-                Log.Warning($"ThinkingData initialization failed: {exception.Message}", Tag);
+                Log.Warning($"HSDK TGA initialization failed: {exception.Message}", Tag);
             }
         }
 
@@ -357,6 +354,11 @@ namespace GourmetProject.Game.Analytics
             var properties = new Dictionary<string, object>
             {
                 ["schema_version"] = SchemaVersion,
+                ["app_version"] = Application.version ?? string.Empty,
+                ["build_guid"] = Application.buildGUID ?? string.Empty,
+                ["platform"] = Application.platform.ToString(),
+                ["channel"] = "default",
+                ["build_type"] = Debug.isDebugBuild ? "debug" : "release",
             };
             if (run == null)
             {
@@ -399,8 +401,12 @@ namespace GourmetProject.Game.Analytics
 
             SafeSdkCall(() =>
             {
-                TDAnalytics.Track(eventName, properties);
-                TDAnalytics.Flush();
+                HSDK.PostGameLog(new PostGameLogOption
+                {
+                    eventName = eventName,
+                    eventType = Hortor.EventType.Track,
+                    customData = NormalizeProperties(properties),
+                });
             }, eventName);
         }
 
@@ -412,12 +418,85 @@ namespace GourmetProject.Game.Analytics
             }
 
             string checkId = Hash128.Compute(uniqueKey ?? string.Empty).ToString();
-            var model = new TDFirstEventModel(eventName, checkId) { Properties = properties };
-            SafeSdkCall(() =>
+            if (!FirstEventKeys.Add(checkId))
             {
-                TDAnalytics.Track(model);
-                TDAnalytics.Flush();
-            }, eventName);
+                return;
+            }
+
+            properties["event_unique_id"] = checkId;
+            Track(eventName, properties);
+        }
+
+        private static Dictionary<string, object> NormalizeProperties(Dictionary<string, object> properties)
+        {
+            if (properties == null)
+            {
+                return new Dictionary<string, object>();
+            }
+
+            if (properties.Count > MaxBusinessPropertyCount)
+            {
+                throw new InvalidOperationException(
+                    $"TGA event has {properties.Count} business properties; maximum is {MaxBusinessPropertyCount}.");
+            }
+
+            var normalized = new Dictionary<string, object>(properties.Count, StringComparer.Ordinal);
+            foreach (KeyValuePair<string, object> pair in properties)
+            {
+                normalized[pair.Key] = NormalizeValue(pair.Value);
+            }
+            return normalized;
+        }
+
+        private static object NormalizeValue(object value)
+        {
+            switch (value)
+            {
+                case null:
+                    return string.Empty;
+                case string text:
+                    return TruncateUtf8(text, MaxTextBytes);
+                case double number:
+                    return NormalizeNumber(number);
+                case float number:
+                    return (float)NormalizeNumber(number);
+                case decimal number:
+                    return Math.Max((decimal)-MaxNumber, Math.Min((decimal)MaxNumber, number));
+                case long number:
+                    return Math.Max((long)-MaxNumber, Math.Min((long)MaxNumber, number));
+                case ulong number:
+                    return Math.Min((ulong)MaxNumber, number);
+                default:
+                    return value;
+            }
+        }
+
+        private static double NormalizeNumber(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                return 0d;
+            }
+            return Math.Max(-MaxNumber, Math.Min(MaxNumber, value));
+        }
+
+        private static string TruncateUtf8(string value, int maxBytes)
+        {
+            if (string.IsNullOrEmpty(value) || Encoding.UTF8.GetByteCount(value) <= maxBytes)
+            {
+                return value ?? string.Empty;
+            }
+
+            int charCount = value.Length;
+            while (charCount > 0 && Encoding.UTF8.GetByteCount(value, 0, charCount) > maxBytes)
+            {
+                charCount--;
+            }
+            if (charCount > 0 && char.IsHighSurrogate(value[charCount - 1]))
+            {
+                charCount--;
+            }
+            return value.Substring(0, charCount);
         }
 
         private static void SafeSdkCall(Action action, string operation)
@@ -433,7 +512,7 @@ namespace GourmetProject.Game.Analytics
             }
             catch (Exception exception)
             {
-                Log.Warning($"ThinkingData '{operation}' failed: {exception.Message}", Tag);
+                Log.Warning($"HSDK TGA '{operation}' failed: {exception.Message}", Tag);
             }
         }
 
