@@ -22,25 +22,25 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float CellSize = 1f;
         private const float DishInset = 0.06f;
         private const float BadgeScale = 0.85f;
-        private const float StainScale = 8f;
-        private const float StainThreshold = 0.62f;
-        private const float StainSoftness = 0.12f;
-        private const float StainDarken = 0.12f;
         private static readonly Vector3 StageWorldPosition = new(10000f, 10000f, 0f);
         private const float StageSlotSpacing = 64f;
         private static readonly Color PreviewBackgroundColor = Color.clear;
 
         private static DishIconPreviewRenderer _instance;
 
-        private readonly List<GameObject> _spawnedObjects = new();
+        private readonly List<SpriteRenderer> _cellPool = new();
         private readonly List<string> _flavorScratch = new();
         private Camera _camera;
         private int _previewLayer;
         private Transform _boardRoot;
         private Transform _dishRoot;
         private SpriteRenderer _dishRenderer;
-        private MaterialPropertyBlock _dishStainBlock;
+        private MaterialPropertyBlock _dishFlavorBlock;
         private DishValueBadgeView _badge;
+        private DishValueBadgeView _badgeSourcePrefab;
+        private BigDouble _badgeValue;
+        private string _badgeText;
+        private bool _hasBadgeValue;
 
         public static RenderTexture Render(
             DishDef dish,
@@ -67,7 +67,47 @@ namespace GourmetProject.Game.Presentation.Battle
                 badgePrefab,
                 Mathf.Clamp(pixelsPerCell, 32, 256),
                 mode,
-                rotationIndexOverride);
+                rotationIndexOverride,
+                null);
+        }
+
+        /// <summary>
+        /// 在已有 RT 中重绘。实时风味预览逐帧调用此入口，不创建新的相机、材质或 RT。
+        /// </summary>
+        public static bool RenderInto(
+            RenderTexture target,
+            DishDef dish,
+            Sprite sprite,
+            BigDouble deliciousness,
+            IReadOnlyList<string> flavorIds,
+            SpriteRenderer cellPrefab,
+            DishValueBadgeView badgePrefab,
+            int pixelsPerCell,
+            DishIconPreviewMode mode,
+            int? rotationIndexOverride = null)
+        {
+            if (target == null
+                || !target.IsCreated()
+                || dish?.Shape == null
+                || sprite == null
+                || cellPrefab == null
+                || badgePrefab == null)
+            {
+                return false;
+            }
+
+            RenderTexture rendered = Instance.RenderInternal(
+                dish,
+                sprite,
+                deliciousness,
+                flavorIds,
+                cellPrefab,
+                badgePrefab,
+                Mathf.Clamp(pixelsPerCell, 32, 256),
+                mode,
+                rotationIndexOverride,
+                target);
+            return ReferenceEquals(rendered, target);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -205,7 +245,8 @@ namespace GourmetProject.Game.Presentation.Battle
             DishValueBadgeView badgePrefab,
             int pixelsPerCell,
             DishIconPreviewMode mode,
-            int? rotationIndexOverride)
+            int? rotationIndexOverride,
+            RenderTexture existingTarget)
         {
             MoveRigToActiveScene();
             ClearStage();
@@ -233,26 +274,32 @@ namespace GourmetProject.Game.Presentation.Battle
             Color backgroundColor = mode == DishIconPreviewMode.Warehouse
                 ? Color.clear
                 : PreviewBackgroundColor;
-            var descriptor = new RenderTextureDescriptor(textureWidth, textureHeight)
+            RenderTexture texture = existingTarget;
+            if (texture != null
+                && (texture.width != textureWidth || texture.height != textureHeight))
             {
-                graphicsFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.LDR),
-                depthStencilFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.DepthStencil),
-                msaaSamples = 1,
-                useMipMap = false,
-                autoGenerateMips = false,
-                memoryless = RenderTextureMemoryless.None,
-            };
-            var texture = new RenderTexture(descriptor)
+                return null;
+            }
+
+            if (texture == null)
             {
-                name = $"DishIcon_{mode}_{dish.Id}_{boardWidth}x{boardHeight}",
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp,
-            };
-            texture.Create();
-            RenderTexture previous = RenderTexture.active;
-            RenderTexture.active = texture;
-            GL.Clear(true, true, backgroundColor);
-            RenderTexture.active = previous;
+                var descriptor = new RenderTextureDescriptor(textureWidth, textureHeight)
+                {
+                    graphicsFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.LDR),
+                    depthStencilFormat = SystemInfo.GetGraphicsFormat(DefaultFormat.DepthStencil),
+                    msaaSamples = 1,
+                    useMipMap = false,
+                    autoGenerateMips = false,
+                    memoryless = RenderTextureMemoryless.None,
+                };
+                texture = new RenderTexture(descriptor)
+                {
+                    name = $"DishIcon_{mode}_{dish.Id}_{boardWidth}x{boardHeight}",
+                    filterMode = FilterMode.Bilinear,
+                    wrapMode = TextureWrapMode.Clamp,
+                };
+                texture.Create();
+            }
 
             _camera.clearFlags = CameraClearFlags.SolidColor;
             _camera.backgroundColor = backgroundColor;
@@ -318,24 +365,34 @@ namespace GourmetProject.Game.Presentation.Battle
             for (int i = 0; i < cells.Count; i++)
             {
                 GridPos cell = cells[i];
-                var cellObject = new GameObject($"Cell_{cell.X}_{cell.Y}")
+                SpriteRenderer cellRenderer;
+                if (i < _cellPool.Count)
                 {
-                    hideFlags = HideFlags.HideAndDontSave,
-                    layer = _previewLayer,
-                };
-                cellObject.transform.SetParent(_boardRoot, false);
-                cellObject.transform.localPosition = new Vector3(
+                    cellRenderer = _cellPool[i];
+                }
+                else
+                {
+                    var cellObject = new GameObject($"Cell_{i}")
+                    {
+                        hideFlags = HideFlags.HideAndDontSave,
+                        layer = _previewLayer,
+                    };
+                    cellObject.transform.SetParent(_boardRoot, false);
+                    cellRenderer = cellObject.AddComponent<SpriteRenderer>();
+                    _cellPool.Add(cellRenderer);
+                }
+
+                cellRenderer.gameObject.SetActive(true);
+                cellRenderer.transform.localPosition = new Vector3(
                     left + cell.X * CellSize,
                     top - cell.Y * CellSize,
                     0f);
-                cellObject.transform.localScale = new Vector3(scaleX, scaleY, 1f);
+                cellRenderer.transform.localScale = new Vector3(scaleX, scaleY, 1f);
 
-                SpriteRenderer cellRenderer = cellObject.AddComponent<SpriteRenderer>();
                 cellRenderer.sprite = cellSprite;
                 cellRenderer.color = Color.white;
                 SpriteRenderStyle.ApplyUnlitMaterial(cellRenderer);
                 BattleSorting.Apply(cellRenderer, BattleSorting.DiningTable);
-                _spawnedObjects.Add(cellObject);
             }
         }
 
@@ -363,17 +420,13 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishRoot.localRotation = Quaternion.Euler(0f, 0f, -90f * rotationIndex);
             _dishRoot.localScale = new Vector3(scaleX, scaleY, 1f);
 
-            var stainSettings = new FlavorStainPalette.Settings(
-                StainScale,
-                StainThreshold,
-                StainSoftness,
-                StainDarken,
-                (float)(StableHash.Fnv1a64(dishId) & 0xFFFFFF));
-            FlavorStainPalette.ApplyToSpriteRenderer(
+            FlavorOrganicVisual.ApplyToSpriteRenderer(
                 _dishRenderer,
                 _flavorScratch,
-                ref _dishStainBlock,
-                stainSettings);
+                ref _dishFlavorBlock,
+                (float)(StableHash.Fnv1a64(dishId) & 0xFFFFFF),
+                FlavorOrganicVisual.DefaultIntensity,
+                useGlobalTime: true);
         }
 
         private void ComposeFlavorIds(DishDef dish, IReadOnlyList<string> flavorIds)
@@ -399,13 +452,33 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            _badge = Instantiate(badgePrefab, transform);
-            if (_badge == null)
+            if (_badge == null || !ReferenceEquals(_badgeSourcePrefab, badgePrefab))
             {
-                return;
+                if (_badge != null)
+                {
+                    if (Application.isPlaying)
+                    {
+                        Destroy(_badge.gameObject);
+                    }
+                    else
+                    {
+                        DestroyImmediate(_badge.gameObject);
+                    }
+                }
+
+                _badge = Instantiate(badgePrefab, transform);
+                _badgeSourcePrefab = badgePrefab;
+                _hasBadgeValue = false;
+                if (_badge == null)
+                {
+                    return;
+                }
+
+                _badge.gameObject.hideFlags = HideFlags.HideAndDontSave;
+                SetLayerRecursively(_badge.gameObject, _previewLayer);
             }
 
-            _badge.gameObject.hideFlags = HideFlags.HideAndDontSave;
+            _badge.gameObject.SetActive(true);
             _badge.transform.localScale = Vector3.one * BadgeScale;
             float badgeTopExtent = _badge.TopExtent
                 * Mathf.Abs(_badge.transform.localScale.y);
@@ -414,9 +487,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 CellSize,
                 CellSize,
                 badgeTopExtent);
-            SetLayerRecursively(_badge.gameObject, _previewLayer);
-            _badge.SetValue(DishValueDisplay.Format(deliciousness));
-            _spawnedObjects.Add(_badge.gameObject);
+            if (!_hasBadgeValue || _badgeValue != deliciousness)
+            {
+                _badgeValue = deliciousness;
+                _badgeText = DishValueDisplay.Format(deliciousness);
+                _hasBadgeValue = true;
+                _badge.SetValue(_badgeText);
+            }
         }
 
         private static void SetLayerRecursively(GameObject root, int layer)
@@ -431,28 +508,23 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ClearStage()
         {
-            for (int i = 0; i < _spawnedObjects.Count; i++)
+            for (int i = 0; i < _cellPool.Count; i++)
             {
-                GameObject spawned = _spawnedObjects[i];
-                if (spawned == null)
+                SpriteRenderer cell = _cellPool[i];
+                if (cell == null)
                 {
                     continue;
                 }
 
-                spawned.SetActive(false);
-                if (Application.isPlaying)
-                {
-                    Destroy(spawned);
-                }
-                else
-                {
-                    DestroyImmediate(spawned);
-                }
+                cell.gameObject.SetActive(false);
             }
 
-            _spawnedObjects.Clear();
             _flavorScratch.Clear();
-            _badge = null;
+            if (_badge != null)
+            {
+                _badge.gameObject.SetActive(false);
+            }
+
             _dishRenderer.SetPropertyBlock(null);
             _dishRenderer.sprite = null;
             _dishRoot.localPosition = Vector3.zero;

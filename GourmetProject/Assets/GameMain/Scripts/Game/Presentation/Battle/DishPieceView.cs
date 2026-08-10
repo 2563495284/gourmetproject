@@ -154,15 +154,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [Tooltip("落地后从食物外圈向占格视觉中心溶解的时长。")]
         [SerializeField] private float _digestDissolveDuration = 0.85f;
 
-        [Header("风味脏印（程序化噪声，仅作用于本体）")]
-        [Tooltip("噪声频率：越大斑点越碎密。")]
-        [SerializeField] private float _stainScale = 8f;
-        [Tooltip("斑点阈值：越大脏印越稀疏、越散开。")]
-        [SerializeField, Range(0f, 1f)] private float _stainThreshold = 0.62f;
-        [Tooltip("斑点边缘软度。")]
-        [SerializeField, Range(0.001f, 0.5f)] private float _stainSoftness = 0.12f;
-        [Tooltip("脏印处对底色的压暗强度（越大越脏，不发亮）。")]
-        [SerializeField, Range(0f, 1f)] private float _stainDarken = 0.12f;
+        [Header("风味有机味区（仅作用于本体）")]
+        [SerializeField, Range(0f, 1f)] private float _flavorVisualIntensity = FlavorOrganicVisual.DefaultIntensity;
 
         [Header("外轮廓发光（shader alpha outline）")]
         [SerializeField] private Material _outlineGlowMaterial;
@@ -201,7 +194,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _flying;
         private int _sortingOrderOffset;
         private bool _dragPresentationActive;
-        private MaterialPropertyBlock _stainBlock;
+        private MaterialPropertyBlock _flavorVisualBlock;
         private MaterialPropertyBlock _placementGlowBlock;
         private Tween _scopeAffectedTween;
         private Transform _scopeAffectedTarget;
@@ -495,7 +488,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (suppressed)
             {
                 DebuffVisualStyle.ClearSprite(_spriteRenderer);
-                ApplyFlavorStain();
+                ApplyFlavorVisual();
             }
             else
             {
@@ -671,7 +664,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     .InsertCallback(0.14f, () =>
                     {
                         onVisualSwitch?.Invoke();
-                        ApplyFlavorStain();
+                        ApplyFlavorVisual();
                     })
                     .OnComplete(() =>
                     {
@@ -688,14 +681,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 .AppendCallback(() =>
                 {
                     onVisualSwitch?.Invoke();
-                    ApplyFlavorStain();
+                    ApplyFlavorVisual();
                     ApplyActiveItemTransformEffect(1f);
                 })
                 .Append(DOTween.To(() => 1f, ApplyActiveItemTransformEffect, 0f, 0.2f).SetEase(Ease.InOutQuad))
                 .OnComplete(() =>
                 {
                     _activeItemFlavorSequence = null;
-                    ApplyFlavorStain();
+                    ApplyFlavorVisual();
                     onComplete?.Invoke();
                 });
         }
@@ -740,7 +733,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     UpdatePlacement(rotatedPlacement);
                     // 新朝向会重建 VisualPivot 的局部位置；补偿根节点以锁住同一个世界视觉中心。
                     transform.position += lockedVisualCenterWorld - target.position;
-                    ApplyFlavorStain();
+                    ApplyFlavorVisual();
                     ApplyActiveItemTransformEffect(1f);
                 })
                 .Append(DOTween.To(
@@ -753,7 +746,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     _activeItemFlavorSequence = null;
                     ApplyActiveItemTransformEffect(0f);
-                    ApplyFlavorStain();
+                    ApplyFlavorVisual();
                     onComplete?.Invoke();
                 });
         }
@@ -1934,28 +1927,28 @@ namespace GourmetProject.Game.Presentation.Battle
             // DishShape.Rotate90 为顺时针；Unity +Z 为逆时针，故顺时针旋转取负角。
             t.localRotation = Quaternion.Euler(0f, 0f, -90f * rot);
 
-            ApplyFlavorStain();
+            ApplyFlavorVisual();
             ApplyDebuffVisual();
         }
 
         /// <summary>
-        /// 按实例风味给本体叠加脏印：去重取前若干种风味色，走 FlavorStain 材质 + MaterialPropertyBlock 逐菜喂色；
-        /// 无可映射风味（或 shader 缺失）时回落到普通 Unlit 平涂，与无风味菜表现一致。
+        /// 按实例风味给本体应用有机味区；未知风味忽略、重复风味去重，
+        /// 无可映射风味（或 shader 缺失）时回落到普通 Unlit。
         /// </summary>
-        private void ApplyFlavorStain()
+        private void ApplyFlavorVisual()
         {
             if (_spriteRenderer == null)
             {
                 return;
             }
 
-            var settings = new FlavorStainPalette.Settings(
-                _stainScale,
-                _stainThreshold,
-                _stainSoftness,
-                _stainDarken,
-                Instance != null ? Instance.Id : 0f);
-            FlavorStainPalette.ApplyToSpriteRenderer(_spriteRenderer, Instance?.FlavorIds, ref _stainBlock, settings);
+            FlavorOrganicVisual.ApplyToSpriteRenderer(
+                _spriteRenderer,
+                Instance?.FlavorIds,
+                ref _flavorVisualBlock,
+                Instance != null ? Instance.Id : 0f,
+                _flavorVisualIntensity,
+                useGlobalTime: true);
         }
 
         private void ApplyDebuffVisual()
@@ -2445,7 +2438,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _activeItemFlavorSequence.Kill();
                 _activeItemFlavorSequence = null;
                 ApplyActiveItemTransformEffect(0f);
-                ApplyFlavorStain();
+                ApplyFlavorVisual();
             }
 
             _sweetTransferSourceActive = false;

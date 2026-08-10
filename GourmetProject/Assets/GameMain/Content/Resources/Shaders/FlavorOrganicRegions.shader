@@ -4,6 +4,7 @@ Shader "GourmetProject/FlavorOrganicRegions"
     {
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
+        [PerRendererData] _SpriteUvRect ("Sprite UV Rect", Vector) = (0,0,1,1)
         _FlavorMask ("Flavor Mask", Float) = 0
         _FlavorCount ("Flavor Count", Range(0,7)) = 0
         _Seed ("Seed", Float) = 0
@@ -11,6 +12,7 @@ Shader "GourmetProject/FlavorOrganicRegions"
         _Aspect ("Sprite Aspect", Float) = 1
         _AnimationEnabled ("Animation Enabled", Float) = 1
         _MotionTime ("Motion Time", Float) = 0
+        _UseGlobalTime ("Use Global Time", Range(0,1)) = 1
         _MotionSpeed ("Motion Speed", Range(0,2)) = 1.6
         _WarpStrength ("Warp Strength", Range(0,1)) = 1
     }
@@ -59,6 +61,7 @@ Shader "GourmetProject/FlavorOrganicRegions"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
+                float4 _SpriteUvRect;
                 float _FlavorMask;
                 float _FlavorCount;
                 float _Seed;
@@ -66,6 +69,7 @@ Shader "GourmetProject/FlavorOrganicRegions"
                 float _Aspect;
                 float _AnimationEnabled;
                 float _MotionTime;
+                float _UseGlobalTime;
                 float _MotionSpeed;
                 float _WarpStrength;
             CBUFFER_END
@@ -275,15 +279,19 @@ Shader "GourmetProject/FlavorOrganicRegions"
                 half4 tex = (SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv) + _TextureSampleAdd) * input.color;
                 if (_FlavorCount < 0.5 || tex.a <= 0.001) return tex;
 
+                float2 uvSpan = max(_SpriteUvRect.zw - _SpriteUvRect.xy, float2(0.0001, 0.0001));
+                float2 spriteUv = saturate((input.uv - _SpriteUvRect.xy) / uvSpan);
+
                 int count = max(1, (int)round(_FlavorCount));
-                float phase = SectorPhase(input.uv);
+                float phase = SectorPhase(spriteUv);
                 int slot = min(count - 1, (int)floor(phase * count));
                 int flavor = FlavorForSlot(slot);
                 half3 tint = FlavorColor(flavor);
-                float time = _MotionTime * _MotionSpeed;
-                float2 flow = FlowField(input.uv, time);
-                float disturbance = InternalDisturbance(input.uv, flow, time);
-                float2 patternUv = input.uv + flow * (0.055 * _WarpStrength) + _Seed * 0.0017;
+                float timeSource = lerp(_MotionTime, _Time.y, saturate(_UseGlobalTime));
+                float time = timeSource * _MotionSpeed;
+                float2 flow = FlowField(spriteUv, time);
+                float disturbance = InternalDisturbance(spriteUv, flow, time);
+                float2 patternUv = spriteUv + flow * (0.055 * _WarpStrength) + _Seed * 0.0017;
                 float pattern = FlavorPattern(flavor, patternUv, time);
                 float localPhase = frac(phase * count);
                 float divider = 1.0 - smoothstep(0.015, 0.045, min(localPhase, 1.0 - localPhase));

@@ -13,6 +13,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private static Material _spriteUnlitMaterial;
         private static Material _spriteOutlineMaterial;
         private static Material _spriteStainMaterial;
+        private static Material _spriteFlavorOrganicMaterial;
         private static Material _spriteTransformMaterial;
         private static Material _digestDissolveMaterial;
 
@@ -96,6 +97,27 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        public static Material SpriteFlavorOrganicMaterial
+        {
+            get
+            {
+                if (_spriteFlavorOrganicMaterial == null)
+                {
+                    Shader shader = Resources.Load<Shader>("Shaders/FlavorOrganicRegions")
+                                    ?? Shader.Find("GourmetProject/FlavorOrganicRegions");
+                    if (shader != null)
+                    {
+                        _spriteFlavorOrganicMaterial = new Material(shader)
+                        {
+                            name = "RuntimeFlavorOrganicRegions",
+                        };
+                    }
+                }
+
+                return _spriteFlavorOrganicMaterial;
+            }
+        }
+
         public static Material DigestDissolveMaterial
         {
             get
@@ -146,6 +168,14 @@ namespace GourmetProject.Game.Presentation.Battle
             if (renderer != null && SpriteTransformMaterial != null)
             {
                 renderer.sharedMaterial = SpriteTransformMaterial;
+            }
+        }
+
+        public static void ApplyFlavorOrganicMaterial(SpriteRenderer renderer)
+        {
+            if (renderer != null && SpriteFlavorOrganicMaterial != null)
+            {
+                renderer.sharedMaterial = SpriteFlavorOrganicMaterial;
             }
         }
 

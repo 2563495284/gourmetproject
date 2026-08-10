@@ -112,6 +112,7 @@ namespace GourmetProject.Game.UI.Widgets
         private readonly List<string> _boundFlavorIds = new();
         private bool _boundFlavorIdsWereNull;
         private bool _hasBinding;
+        private bool _requiresLiveRendering;
 
         public RenderTexture CurrentTexture => _renderTexture;
 
@@ -287,6 +288,34 @@ namespace GourmetProject.Game.UI.Widgets
         {
             EnsureRefs();
             CapturePrefabSize();
+        }
+
+        private void LateUpdate()
+        {
+            if (!_requiresLiveRendering
+                || !_hasBinding
+                || _renderTexture == null
+                || !_renderTexture.IsCreated()
+                || _targetImage == null
+                || !_targetImage.enabled)
+            {
+                return;
+            }
+
+            IReadOnlyList<string> flavorIds = _boundFlavorIdsWereNull
+                ? null
+                : _boundFlavorIds;
+            DishIconPreviewRenderer.RenderInto(
+                _renderTexture,
+                _boundDish,
+                _boundSprite,
+                _boundValue,
+                flavorIds,
+                _cellPrefab,
+                _badgePrefab,
+                _pixelsPerCell,
+                _boundMode,
+                _boundRotationIndex);
         }
 
         public void PlayTransformTo(
@@ -624,6 +653,9 @@ namespace GourmetProject.Game.UI.Widgets
             }
 
             _hasBinding = _renderTexture != null;
+            _requiresLiveRendering = HasVisibleFlavor(
+                request.Dish,
+                request.FlavorIds);
         }
 
         private void ClearBinding()
@@ -636,6 +668,19 @@ namespace GourmetProject.Game.UI.Widgets
             _boundFlavorIdsWereNull = false;
             _boundFlavorIds.Clear();
             _hasBinding = false;
+            _requiresLiveRendering = false;
+        }
+
+        private static bool HasVisibleFlavor(
+            DishDef dish,
+            IReadOnlyList<string> flavorIds)
+        {
+            if (flavorIds != null)
+            {
+                return FlavorOrganicVisual.HasVisibleFlavor(flavorIds);
+            }
+
+            return FlavorVisualCatalog.TryResolve(dish?.FlavorId, out _);
         }
 
         private void ApplyTextureToTarget(DishIconPreviewMode mode)

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using GourmetProject.Game.Presentation.Battle;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -70,6 +71,63 @@ namespace GourmetProject.Tests.EditMode
 
             Assert.That(FlavorVisualCatalog.BuildMask(ids), Is.EqualTo(FlavorVisualCatalog.AllMask));
             Assert.That(FlavorVisualCatalog.CountBits(FlavorVisualCatalog.AllMask), Is.EqualTo(7));
+        }
+
+        [Test]
+        public void FormalOrganicVisual_UsesSharedMaterialAndPerRendererMask()
+        {
+            var texture = new Texture2D(8, 4);
+            var sprite = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, 8f, 4f),
+                new Vector2(0.5f, 0.5f),
+                8f);
+            var gameObject = new GameObject("OrganicFlavorTest");
+            SpriteRenderer renderer = gameObject.AddComponent<SpriteRenderer>();
+            renderer.sprite = sprite;
+            MaterialPropertyBlock block = null;
+
+            try
+            {
+                FlavorOrganicVisual.ApplyToSpriteRenderer(
+                    renderer,
+                    new[] { "t_sour", "t_sour", "unknown", "t_spicy" },
+                    ref block,
+                    123f,
+                    0.72f,
+                    useGlobalTime: true);
+
+                Assert.That(renderer.sharedMaterial, Is.SameAs(SpriteRenderStyle.SpriteFlavorOrganicMaterial));
+                Assert.That(renderer.sharedMaterial.shader.name, Is.EqualTo("GourmetProject/FlavorOrganicRegions"));
+                Assert.That(renderer.sharedMaterial.shader.isSupported, Is.True);
+
+                var actual = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(actual);
+                Assert.That(actual.GetFloat("_FlavorMask"), Is.EqualTo((1 << 1) | (1 << 6)));
+                Assert.That(actual.GetFloat("_FlavorCount"), Is.EqualTo(2f));
+                Assert.That(actual.GetFloat("_Aspect"), Is.EqualTo(2f).Within(0.001f));
+                Assert.That(actual.GetFloat("_UseGlobalTime"), Is.EqualTo(1f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(gameObject);
+                Object.DestroyImmediate(sprite);
+                Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
+        public void DigestDissolve_AcceptsOrganicFlavorPropertyBlock()
+        {
+            Material material = SpriteRenderStyle.DigestDissolveMaterial;
+
+            Assert.That(material, Is.Not.Null);
+            Assert.That(material.shader.isSupported, Is.True);
+            Assert.That(material.HasProperty("_FlavorMask"), Is.True);
+            Assert.That(material.HasProperty("_FlavorCount"), Is.True);
+            Assert.That(material.HasProperty("_UseGlobalTime"), Is.True);
+            Assert.That(material.HasProperty("_SpriteUvRect"), Is.True);
+            Assert.That(material.HasProperty("_StainCount"), Is.False);
         }
     }
 }

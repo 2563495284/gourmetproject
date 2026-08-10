@@ -33,6 +33,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly int AnimationEnabledId = Shader.PropertyToID("_AnimationEnabled");
         private static readonly int RimWidthId = Shader.PropertyToID("_RimWidth");
         private static readonly int MotionTimeId = Shader.PropertyToID("_MotionTime");
+        private static readonly int UseGlobalTimeId = Shader.PropertyToID("_UseGlobalTime");
 
         private sealed class Stage
         {
@@ -487,6 +488,7 @@ namespace GourmetProject.Game.Presentation.Battle
             stage.Block.SetFloat(AspectId, SpriteAspect(stage.Dish.sprite));
             stage.Block.SetFloat(AnimationEnabledId, _paused ? 0f : 1f);
             stage.Block.SetFloat(MotionTimeId, _motionTime);
+            stage.Block.SetFloat(UseGlobalTimeId, 0f);
             if (stageIndex == 2)
             {
                 stage.Block.SetFloat(RimWidthId, 18f);
