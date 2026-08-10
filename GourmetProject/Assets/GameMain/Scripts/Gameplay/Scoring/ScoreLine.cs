@@ -21,6 +21,8 @@ namespace GourmetProject.Gameplay.Scoring
         SweetTransferBuffApplied = 13,
         SweetTransferBuffTriggered = 14,
         SweetTransferFailed = 15,
+        /// <summary>当次计入加法区、结算后写回食物实例的永久分数。</summary>
+        DishPermanentFlat = 16,
     }
 
     /// <summary>一次具体分数变化的可解释记录。</summary>

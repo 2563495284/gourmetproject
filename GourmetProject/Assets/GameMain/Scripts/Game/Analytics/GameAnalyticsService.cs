@@ -333,7 +333,7 @@ namespace GourmetProject.Game.Analytics
 
             try
             {
-                HSDK.Init(new InitOption
+                HSDK.Init(new InitOption()
                 {
                     gameId = TgaGameId,
                     gameVersion = Application.version ?? string.Empty,

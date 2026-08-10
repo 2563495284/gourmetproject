@@ -6,6 +6,7 @@ using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -147,6 +148,30 @@ namespace GourmetProject.Tests.EditMode
             AssertRedTheme(gainColor);
             Assert.That(passiveColor, Is.Not.EqualTo(gainColor));
             Assert.That(passiveColor.g, Is.GreaterThan(passiveColor.b));
+        }
+
+        [Test]
+        public void PermanentFlat_UsesDistinctLabelAndColorFromTemporaryFlat()
+        {
+            var permanent = new ScoreLine(
+                ScorePhase.DishSkills,
+                ScoreLineKind.DishPermanentFlat,
+                ScoreSource.FinalModifier("permanent", "永久加分"),
+                1,
+                "dish",
+                null,
+                3f,
+                0f,
+                3f,
+                string.Empty);
+
+            string label = SettlementStageView.ResultText(permanent, 13f, 13f);
+            Color temporaryColor = SettlementAttributePalette.For(ScoreLineKind.DishFlat);
+            Color permanentColor = SettlementAttributePalette.For(ScoreLineKind.DishPermanentFlat);
+
+            Assert.That(label, Is.EqualTo("永久分数 +3"));
+            Assert.That(permanentColor, Is.Not.EqualTo(temporaryColor));
+            Assert.That(permanentColor.g, Is.GreaterThan(permanentColor.r));
         }
 
         [Test]

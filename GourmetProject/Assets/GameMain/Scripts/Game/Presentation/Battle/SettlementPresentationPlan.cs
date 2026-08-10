@@ -12,6 +12,7 @@ namespace GourmetProject.Game.Presentation.Battle
     internal static class SettlementAttributePalette
     {
         public static readonly Color BaseScore = new Color32(246, 196, 83, 255);
+        public static readonly Color PermanentScore = new Color32(82, 226, 145, 255);
         public static readonly Color AddMultiplier = new Color32(57, 208, 176, 255);
         public static readonly Color MultiplyMultiplier = new Color32(255, 90, 95, 255);
         public static readonly Color Special = new Color32(169, 120, 255, 255);
@@ -21,6 +22,7 @@ namespace GourmetProject.Game.Presentation.Battle
             return kind switch
             {
                 ScoreLineKind.DishBase or ScoreLineKind.DishFlat or ScoreLineKind.FinalFlat => BaseScore,
+                ScoreLineKind.DishPermanentFlat => PermanentScore,
                 ScoreLineKind.DishMultiplierAdd => AddMultiplier,
                 ScoreLineKind.DishMultiplier or ScoreLineKind.FinalMultiplier => MultiplyMultiplier,
                 _ => Special,
@@ -644,6 +646,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.DishBase:
                     return ApplyBase(line.DishInstanceId, line.After);
                 case ScoreLineKind.DishFlat:
+                case ScoreLineKind.DishPermanentFlat:
                     state = EnsureDish(line.DishInstanceId);
                     state.Flat = line.After;
                     break;

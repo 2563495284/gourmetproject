@@ -641,6 +641,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             return kind == ScoreLineKind.DishBase
                 || kind == ScoreLineKind.DishFlat
+                || kind == ScoreLineKind.DishPermanentFlat
                 || kind == ScoreLineKind.DishMultiplier
                 || kind == ScoreLineKind.DishMultiplierAdd;
         }
@@ -726,6 +727,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue.Text,
                     cue.Rise,
                     ScaleSettlementDuration(cue.Duration),
+                    effectColor: cue.EffectColor,
                     visualScale: _visualScale);
             }
 
@@ -814,6 +816,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         cue.Text,
                         cue.Rise,
                         ScaleSettlementDuration(cue.Duration),
+                        effectColor: cue.EffectColor,
                         visualScale: _visualScale);
                 }
 
@@ -1503,6 +1506,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         cue.Text,
                         cue.Rise,
                         ScaleSettlementDuration(cue.Duration),
+                        effectColor: cue.EffectColor,
                         visualScale: _visualScale);
                 }
 
@@ -2207,6 +2211,25 @@ namespace GourmetProject.Game.Presentation.Battle
                         sourceName: sourceName);
                     return true;
 
+                case ScoreLineKind.DishPermanentFlat:
+                    if (!IsReadableDishSource(line.Source))
+                    {
+                        return false;
+                    }
+
+                    cue = new SettlementCue(
+                        SettlementCueKind.Source,
+                        $"永久分数 {FormatSigned(line.Value)}",
+                        rise: 0.28f,
+                        duration: 0.82f,
+                        feedbackKind: SettlementDishFeedbackKind.PermanentFlatBonus,
+                        reveal: SettlementRevealSignal.FlatReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
+                        valueChange: DishValueChange.FlatBonus(line.After),
+                        batchKey: BuildDishSkillBatchKey(line),
+                        sourceName: sourceName,
+                        effectColor: SettlementAttributePalette.PermanentScore);
+                    return true;
+
                 case ScoreLineKind.DishMultiplier:
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
@@ -2395,6 +2418,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     return active
                         ? SettlementDishFeedbackKind.ActiveFlatBonus
                         : SettlementDishFeedbackKind.PassiveFlatBonus;
+                case ScoreLineKind.DishPermanentFlat:
+                    return SettlementDishFeedbackKind.PermanentFlatBonus;
                 case ScoreLineKind.DishMultiplier:
                     return active
                         ? SettlementDishFeedbackKind.ActiveMultiplier
@@ -2599,7 +2624,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 string batchKey = null,
                 TriggerSweetTransferCuePhase triggerSweetTransferPhase = TriggerSweetTransferCuePhase.None,
                 string sourceName = null,
-                bool showEffectLabel = true)
+                bool showEffectLabel = true,
+                Color? effectColor = null)
             {
                 Kind = kind;
                 Text = text;
@@ -2612,6 +2638,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 BatchKey = batchKey;
                 TriggerSweetTransferPhase = triggerSweetTransferPhase;
                 ShowEffectLabel = showEffectLabel;
+                EffectColor = effectColor;
             }
 
             public SettlementCueKind Kind { get; }
@@ -2643,6 +2670,8 @@ namespace GourmetProject.Game.Presentation.Battle
             public TriggerSweetTransferCuePhase TriggerSweetTransferPhase { get; }
 
             public bool ShowEffectLabel { get; }
+
+            public Color? EffectColor { get; }
         }
 
         private sealed class PendingLineCue

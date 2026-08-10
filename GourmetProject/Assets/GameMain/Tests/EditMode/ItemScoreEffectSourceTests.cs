@@ -46,6 +46,27 @@ namespace GourmetProject.Tests.EditMode
                 Is.EqualTo(1d).Within(0.0001d));
         }
 
+        [Test]
+        public void PermanentFlat_UsesDistinctScoreLineKindFromTemporaryFlat()
+        {
+            var table = new DiningTable(1, 1);
+            table.Place(CreateDish(1, "dish", 10, 0));
+            var specs = new[]
+            {
+                new ItemScoreSpec(ItemScoreEffectType.AllDishFlat, 2f, string.Empty, "temp", "临时加分"),
+                new ItemScoreSpec(ItemScoreEffectType.PermanentAddFlatAll, 3f, string.Empty, "permanent", "永久加分"),
+            };
+
+            ScoreResult result = new ScoreCalculator(
+                    effectSources: new[] { new ItemScoreEffectSource(specs) })
+                .Calculate(table, CreateEmptyDatabase());
+
+            Assert.That(result.ScoreLines.Any(line => line.Kind == ScoreLineKind.DishFlat && line.Value == 2f), Is.True);
+            Assert.That(result.ScoreLines.Any(line => line.Kind == ScoreLineKind.DishPermanentFlat && line.Value == 3f), Is.True);
+            Assert.That(result.DishScores.Single().FlatBonus.ToDouble(), Is.EqualTo(5d));
+            Assert.That(result.PermanentFlatDeltas[1].ToDouble(), Is.EqualTo(3d));
+        }
+
         private static DishInstance CreateDish(
             int instanceId,
             string id,

@@ -32,6 +32,7 @@ namespace GourmetProject.Game.Presentation.Battle
         SweetTransferResult = 14,
         SweetTransferExecutor = 15,
         SweetTransferFailed = 16,
+        PermanentFlatBonus = 17,
     }
 
     public readonly struct DishGrabVisualSnapshot
@@ -1480,6 +1481,24 @@ namespace GourmetProject.Game.Presentation.Battle
                         sideInCells: 0f,
                         rotationDegrees: 2.5f,
                         color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.BaseScore, 0.96f));
+
+                case SettlementDishFeedbackKind.PermanentFlatBonus:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.46f,
+                        anticipationScale: 0.88f,
+                        peakScale: new Vector2(1.18f, 1.30f),
+                        liftInCells: 0.16f,
+                        sideInCells: 0f,
+                        rotationDegrees: 1.5f,
+                        rotationCycles: 1f,
+                        pulseCount: 2f,
+                        glowColor: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.PermanentScore, 0.98f),
+                        glowWidth: 0.13f,
+                        glowInflate: 1.11f,
+                        glowFillAlpha: 0.09f,
+                        glowPulseSpeed: 11f,
+                        glowPulseAmplitude: 0.24f,
+                        anticipationFraction: 0.18f);
 
                 case SettlementDishFeedbackKind.PassiveMultiplier:
                     return BonusProfile(

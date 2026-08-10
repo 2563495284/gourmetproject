@@ -787,6 +787,8 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 case ScoreLineKind.DishFlat:
                     return active ? SettlementDishFeedbackKind.ActiveFlatBonus : SettlementDishFeedbackKind.PassiveFlatBonus;
+                case ScoreLineKind.DishPermanentFlat:
+                    return SettlementDishFeedbackKind.PermanentFlatBonus;
                 case ScoreLineKind.DishMultiplier:
                     return active ? SettlementDishFeedbackKind.ActiveMultiplier : SettlementDishFeedbackKind.PassiveMultiplier;
                 case ScoreLineKind.DishMultiplierAdd:
@@ -842,6 +844,7 @@ namespace GourmetProject.Game.Presentation.Battle
             return line.Kind switch
             {
                 ScoreLineKind.DishFlat => "基础分",
+                ScoreLineKind.DishPermanentFlat => "永久分数",
                 ScoreLineKind.DishMultiplier => "乘倍率",
                 ScoreLineKind.DishMultiplierAdd => "加倍率",
                 ScoreLineKind.FinalFlat => "总分加成",
@@ -879,6 +882,8 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 case ScoreLineKind.DishFlat:
                     return $"分数 {signed}";
+                case ScoreLineKind.DishPermanentFlat:
+                    return $"永久分数 {signed}";
                 case ScoreLineKind.DishMultiplier:
                     return $"倍率 ×{FormatLineValue(line.Value)}";
                 case ScoreLineKind.DishMultiplierAdd:

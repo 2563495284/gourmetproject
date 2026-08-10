@@ -415,7 +415,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             _permanentFlatDeltas.TryGetValue(target.Id, out BigDouble cur);
             _permanentFlatDeltas[target.Id] = cur + value;
-            SubmitCommand(new AddDishFlatCommand(target.Id, value));
+            SubmitCommand(new AddDishPermanentFlatCommand(target.Id, value));
         }
 
         /// <summary>
@@ -908,6 +908,18 @@ namespace GourmetProject.Gameplay.Scoring
             AddLine(a, ScoreLineKind.DishFlat, value, before, a.Flat, $"美味值 +{value}");
         }
 
+        internal void ApplyDishPermanentFlatCommand(int dishId, BigDouble value)
+        {
+            if (!_accums.TryGetValue(dishId, out DishAccumulator a))
+            {
+                return;
+            }
+
+            BigDouble before = a.Flat;
+            a.Flat += value;
+            AddLine(a, ScoreLineKind.DishPermanentFlat, value, before, a.Flat, $"永久美味值 +{value}");
+        }
+
         internal void ApplyDishMultiplierCommand(int dishId, BigDouble value)
         {
             if (!_accums.TryGetValue(dishId, out DishAccumulator a))
@@ -1201,6 +1213,23 @@ namespace GourmetProject.Gameplay.Scoring
         public string Name => "AddDishFlat";
 
         public void Execute(ScoreContext context) => context.ApplyDishFlatCommand(_dishId, _value);
+    }
+
+    /// <summary>指定食物增加永久分数；当次进入加法区，结算后写回实例。</summary>
+    public sealed class AddDishPermanentFlatCommand : IScoreCommand
+    {
+        private readonly int _dishId;
+        private readonly BigDouble _value;
+
+        public AddDishPermanentFlatCommand(int dishId, BigDouble value)
+        {
+            _dishId = dishId;
+            _value = value;
+        }
+
+        public string Name => "AddDishPermanentFlat";
+
+        public void Execute(ScoreContext context) => context.ApplyDishPermanentFlatCommand(_dishId, _value);
     }
 
     /// <summary>指定食物倍率乘以固定值。</summary>
