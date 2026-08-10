@@ -50,7 +50,7 @@ namespace GourmetProject.Game.UI.Meta
                     ? "确认删除食物"
                     : title,
                 Message = $"确定要从食谱中删除「{dishName}」吗？",
-                ConfirmText = "删除",
+                ConfirmText = "确定",
                 CancelText = "返回",
                 OnConfirm = () => onConfirm?.Invoke(target),
                 OnCancel = onCancel,
@@ -83,7 +83,7 @@ namespace GourmetProject.Game.UI.Meta
             {
                 Title = "确认删除食物",
                 Message = $"花费 {cost} 金币\n从食谱中删除「{def.Name}」？",
-                ConfirmText = $"删除 -{cost}",
+                ConfirmText = "确定",
                 CancelText = "返回",
                 OnConfirm = () =>
                 {
