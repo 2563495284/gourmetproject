@@ -148,26 +148,36 @@ namespace GourmetProject.Game.Presentation.Battle
                     material);
             }
 
-            if (trace.ActionType == SkillActionType.TransferSkills
-                && trace.ActionScope == SkillScope.Other)
+            if (!ShouldRenderTargetRegion(trace.ActionType, trace.ActionScope))
             {
-                _activeTableView?.SetAllExistingScopeHighlight(
-                    channel,
-                    targetLayer,
-                    targetColor,
-                    cellWidth,
-                    material);
+                return;
             }
-            else
+
+            _activeTableView?.SetScopeRegionHighlight(
+                trace.VisualTargetCells,
+                channel,
+                targetLayer,
+                targetColor,
+                cellWidth,
+                material);
+        }
+
+        /// <summary>
+        /// 全局目标没有可帮助玩家判断摆位的边界，不绘制包住整张餐桌的目标范围框。
+        /// 甜蜜传递的接收者固定从全场其它食物中选择，因此无论配置作用域为何都按全局处理。
+        /// </summary>
+        internal static bool ShouldRenderTargetRegion(
+            SkillActionType actionType,
+            SkillScope actionScope)
+        {
+            if (actionType == SkillActionType.TransferSkills)
             {
-                _activeTableView?.SetScopeRegionHighlight(
-                    trace.VisualTargetCells,
-                    channel,
-                    targetLayer,
-                    targetColor,
-                    cellWidth,
-                    material);
+                return false;
             }
+
+            return actionScope != SkillScope.All
+                && actionScope != SkillScope.Other
+                && actionScope != SkillScope.CakeBuff;
         }
 
         private void RenderConditionScope(

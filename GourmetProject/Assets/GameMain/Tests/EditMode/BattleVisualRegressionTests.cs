@@ -163,6 +163,33 @@ namespace GourmetProject.Tests.EditMode
                 Is.EqualTo(1f).Within(0.0001f));
         }
 
+        [TestCase(SkillActionType.TransferSkills, SkillScope.Other)]
+        [TestCase(SkillActionType.TransferSkills, SkillScope.Row)]
+        [TestCase(SkillActionType.AddFlat, SkillScope.All)]
+        [TestCase(SkillActionType.AddFlat, SkillScope.Other)]
+        [TestCase(SkillActionType.AddLayer, SkillScope.CakeBuff)]
+        public void ScopeHighlight_GlobalTargetsDoNotDrawTableRegion(
+            SkillActionType actionType,
+            SkillScope actionScope)
+        {
+            Assert.That(
+                BattleScopeHighlightController.ShouldRenderTargetRegion(actionType, actionScope),
+                Is.False);
+        }
+
+        [TestCase(SkillScope.Self)]
+        [TestCase(SkillScope.Row)]
+        [TestCase(SkillScope.Column)]
+        [TestCase(SkillScope.Category)]
+        public void ScopeHighlight_LocalTargetsKeepTheirRegion(SkillScope actionScope)
+        {
+            Assert.That(
+                BattleScopeHighlightController.ShouldRenderTargetRegion(
+                    SkillActionType.AddFlat,
+                    actionScope),
+                Is.True);
+        }
+
         private static ServeTriggerCue Cue(
             ServeCueSourceKind sourceKind,
             string sourceId,
