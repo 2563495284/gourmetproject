@@ -129,7 +129,10 @@ namespace GourmetProject.Game.Presentation.Battle
             if (channel == BattleScopeHighlightChannel.Settlement)
             {
                 targetColor = SettlementThemeColor(trace);
-                conditionColor = Color.Lerp(targetColor, new Color(1f, 0.88f, 0.46f, 0.88f), 0.42f);
+                conditionColor = Color.Lerp(
+                    targetColor,
+                    SettlementColorPalette.WithAlpha(SettlementColorPalette.ScopeCondition, 0.88f),
+                    0.42f);
             }
             Material material = MaterialFor(trace);
 
@@ -243,9 +246,11 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             return trace.Kind switch
             {
-                SkillExecutionKind.SweetTransfer => new Color(1f, 0.30f, 0.68f, 0.96f),
-                SkillExecutionKind.CopiedSkill => new Color(0.24f, 0.88f, 1f, 0.96f),
-                _ => new Color(1f, 0.72f, 0.18f, 0.96f),
+                SkillExecutionKind.SweetTransfer =>
+                    SettlementColorPalette.WithAlpha(SettlementColorPalette.SweetTransferSource, 0.96f),
+                SkillExecutionKind.CopiedSkill =>
+                    SettlementColorPalette.WithAlpha(SettlementColorPalette.CopiedSkillSource, 0.96f),
+                _ => SettlementColorPalette.WithAlpha(SettlementColorPalette.NativeSource, 0.96f),
             };
         }
     }

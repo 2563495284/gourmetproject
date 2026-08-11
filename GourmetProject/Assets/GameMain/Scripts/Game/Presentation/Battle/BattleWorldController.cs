@@ -1602,7 +1602,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void FinalizePendingDishPresentation(
             PendingDishConfirmResult result,
-            bool prepareNextDish = true)
+            bool prepareNextDish = true,
+            bool allowPrepareDuringBossPresentation = false)
         {
             if (!result.Success)
             {
@@ -1630,7 +1631,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (prepareNextDish)
             {
-                EnsureNextDishPrepared();
+                EnsureNextDishPrepared(
+                    allowDuringBossPresentation: allowPrepareDuringBossPresentation);
             }
 
             RefreshAll();

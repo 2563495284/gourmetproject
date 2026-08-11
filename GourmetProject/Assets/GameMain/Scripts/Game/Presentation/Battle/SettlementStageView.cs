@@ -125,7 +125,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 anchor,
                 string.IsNullOrEmpty(dishName) ? "基础美味" : dishName,
                 $"基础贡献  {ScoreNumberFormatter.Format(contribution)}",
-                SettlementAttributePalette.WithAlpha(SettlementAttributePalette.BaseScore, 0.96f),
+                SettlementColorPalette.WithAlpha(SettlementColorPalette.BaseScore, 0.96f),
                 duration,
                 cancellationToken);
         }
@@ -193,7 +193,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             EndGroupImmediate();
             DimAllDishes();
-            Color theme = new Color(1f, 0.30f, 0.68f, 1f);
+            Color theme = SettlementColorPalette.SweetTransferSource;
             string sourceName = ReadableName(context.SourceName, "技能来源");
             string executorName = ReadableName(context.ExecutorName, "接收者");
             string skillName = ReadableName(context.SkillName, "甜蜜传递技能");
@@ -268,7 +268,6 @@ namespace GourmetProject.Game.Presentation.Battle
             DishPieceView transferSource,
             DishPieceView buffOwner,
             SweetTransferParticleView particlePrefab,
-            SkillActionType actionType,
             float duration,
             CancellationToken cancellationToken)
         {
@@ -277,9 +276,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            Color theme = actionType == SkillActionType.TriggerSweetTransfer
-                ? new Color32(54, 224, 242, 255)
-                : new Color32(255, 84, 178, 255);
+            Color theme = SettlementColorPalette.SweetTransfer;
             await SweetTransferParticleView.PlayAsync(
                 particlePrefab,
                 _fxRoot,
@@ -452,7 +449,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
             Vector3 center = _mapper.Center
                 + Vector3.up * (0.35f * _visualScale);
-            GameObject ring = CreateSprite("FinaleTableRing", center, new Color(1f, 0.72f, 0.16f, 0.42f), -4);
+            GameObject ring = CreateSprite(
+                "FinaleTableRing",
+                center,
+                SettlementColorPalette.WithAlpha(SettlementColorPalette.FinalScore, 0.42f),
+                -4);
             ring.transform.localScale = Vector3.one
                 * (0.28f * _visualScale);
             SpriteRenderer renderer = ring.GetComponent<SpriteRenderer>();
@@ -478,7 +479,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 center + Vector3.up * (0.62f * _visualScale),
                 "本桌结算",
                 $"总分  {ScoreNumberFormatter.Format(total)}",
-                new Color(1f, 0.62f, 0.10f, 1f),
+                SettlementColorPalette.FinalScore,
                 duration,
                 cancellationToken,
                 finalStamp: true);
@@ -628,8 +629,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 finalStamp ? 44 : 32,
                 finalStamp ? 0.115f : 0.090f,
                 3);
-            headerText.color = new Color(1f, 0.96f, 0.82f, 0.92f);
-            bodyText.color = Color.white;
+            headerText.color = SettlementColorPalette.WithAlpha(SettlementColorPalette.TextInk, 0.78f);
+            bodyText.color = SettlementColorPalette.TextInk;
 
             Color backgroundColor = background.color;
             Color headerColor = headerText.color;
@@ -745,18 +746,18 @@ namespace GourmetProject.Game.Presentation.Battle
                 switch (trace.Kind)
                 {
                     case SkillExecutionKind.SweetTransfer:
-                        return new Color(1f, 0.28f, 0.68f, 1f);
+                        return SettlementColorPalette.SweetTransferSource;
                     case SkillExecutionKind.CopiedSkill:
-                        return new Color(0.24f, 0.88f, 1f, 1f);
+                        return SettlementColorPalette.CopiedSkillSource;
                 }
             }
 
             if (source != null && source.Type == ScoreSourceType.Relic)
             {
-                return new Color(0.72f, 0.48f, 1f, 1f);
+                return SettlementColorPalette.RelicSource;
             }
 
-            return new Color(1f, 0.72f, 0.18f, 1f);
+            return SettlementColorPalette.NativeSource;
         }
 
         private static SettlementDishFeedbackKind ActorFeedbackFor(SkillExecutionTrace trace)
@@ -812,26 +813,24 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             if (line == null)
             {
-                return SettlementAttributePalette.Special;
+                return SettlementColorPalette.Special;
             }
 
             if (line.Kind == ScoreLineKind.SweetTransferFailed)
             {
-                return new Color32(224, 106, 132, 255);
+                return SettlementColorPalette.Failure;
             }
 
             if (line.Kind == ScoreLineKind.SweetTransferBuffApplied
                 || line.Kind == ScoreLineKind.SweetTransferBuffTriggered)
             {
-                return line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
-                    ? new Color32(54, 224, 242, 255)
-                    : new Color32(255, 84, 178, 255);
+                return SettlementColorPalette.SweetTransfer;
             }
 
             return line.Kind == ScoreLineKind.TriggerSweetTransfer
                 || line.Kind == ScoreLineKind.TriggeredSweetTransferSource
-                ? new Color32(255, 77, 173, 255)
-                : SettlementAttributePalette.For(line.Kind);
+                ? SettlementColorPalette.SweetTransfer
+                : SettlementColorPalette.For(line.Kind);
         }
 
         private static string ResultHeader(ScoreLine line)

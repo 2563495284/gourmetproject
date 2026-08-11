@@ -3953,12 +3953,16 @@ namespace GourmetProject.Game.UI.Battle
             {
                 // Confirmation already changed gameplay state. Always reconcile the world view,
                 // even when page closure cancels a hand/cue tween midway through the sequence.
-                _world?.FinalizePendingDishPresentation(result, prepareNextDish: false);
+                // Prepare the next dish before the same final UI refresh so the outlet never
+                // renders the legacy transient "no dish can serve" state between dishes.
+                _world?.FinalizePendingDishPresentation(
+                    result,
+                    prepareNextDish,
+                    allowPrepareDuringBossPresentation: true);
             }
 
             if (prepareNextDish)
             {
-                _world.EnsureNextDishPrepared(0, allowDuringBossPresentation: true);
                 await ShowCarbDialogueIfNeededAsync(token);
             }
         }

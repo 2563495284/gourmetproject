@@ -7,15 +7,33 @@ using UnityEngine;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 结算属性色板。来源聚光表达“谁触发”，本色板只表达“发生了哪类属性变化”。
+    /// 结算语义色板。结果色表达“发生了什么”，来源色表达“谁触发”，两套语义互不混用。
     /// </summary>
-    internal static class SettlementAttributePalette
+    internal static class SettlementColorPalette
     {
+        // 结果属性
         public static readonly Color BaseScore = new Color32(246, 196, 83, 255);
-        public static readonly Color PermanentScore = new Color32(82, 226, 145, 255);
+        public static readonly Color PermanentScore = new Color32(184, 90, 43, 255);
         public static readonly Color AddMultiplier = new Color32(57, 208, 176, 255);
         public static readonly Color MultiplyMultiplier = new Color32(255, 90, 95, 255);
+        public static readonly Color Gold = new Color32(244, 183, 64, 255);
+        public static readonly Color CakeLayer = new Color32(255, 138, 61, 255);
+        public static readonly Color SilverReward = new Color32(169, 196, 216, 255);
+        public static readonly Color CopySkill = new Color32(54, 224, 242, 255);
+        public static readonly Color SweetTransfer = new Color32(255, 84, 178, 255);
+        public static readonly Color Failure = new Color32(224, 106, 132, 255);
         public static readonly Color Special = new Color32(169, 120, 255, 255);
+        public static readonly Color FinalScore = new Color32(255, 158, 26, 255);
+
+        // 来源身份
+        public static readonly Color NativeSource = new Color32(255, 184, 46, 255);
+        public static readonly Color RelicSource = new Color32(184, 122, 255, 255);
+        public static readonly Color SweetTransferSource = SweetTransfer;
+        public static readonly Color CopiedSkillSource = CopySkill;
+
+        // 明亮底板统一使用深墨色文字；范围条件色不参与结果属性语义。
+        public static readonly Color TextInk = new Color32(35, 24, 15, 255);
+        public static readonly Color ScopeCondition = new Color32(255, 224, 117, 255);
 
         public static Color For(ScoreLineKind kind)
         {
@@ -25,6 +43,15 @@ namespace GourmetProject.Game.Presentation.Battle
                 ScoreLineKind.DishPermanentFlat => PermanentScore,
                 ScoreLineKind.DishMultiplierAdd => AddMultiplier,
                 ScoreLineKind.DishMultiplier or ScoreLineKind.FinalMultiplier => MultiplyMultiplier,
+                ScoreLineKind.Gold => Gold,
+                ScoreLineKind.Layer => CakeLayer,
+                ScoreLineKind.SilverItemRoll => SilverReward,
+                ScoreLineKind.CopySkill => CopySkill,
+                ScoreLineKind.TriggerSweetTransfer
+                    or ScoreLineKind.TriggeredSweetTransferSource
+                    or ScoreLineKind.SweetTransferBuffApplied
+                    or ScoreLineKind.SweetTransferBuffTriggered => SweetTransfer,
+                ScoreLineKind.SweetTransferFailed => Failure,
                 _ => Special,
             };
         }

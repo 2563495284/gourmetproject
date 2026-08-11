@@ -1119,7 +1119,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 source,
                 owner,
                 _sweetTransferParticlePrefab,
-                trace.ActionType,
                 ScaleSettlementDuration(SweetTransferParticleDuration),
                 cancellationToken);
         }
@@ -2227,7 +2226,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         valueChange: DishValueChange.FlatBonus(line.After),
                         batchKey: BuildDishSkillBatchKey(line),
                         sourceName: sourceName,
-                        effectColor: SettlementAttributePalette.PermanentScore);
+                        effectColor: SettlementColorPalette.PermanentScore);
                     return true;
 
                 case ScoreLineKind.DishMultiplier:

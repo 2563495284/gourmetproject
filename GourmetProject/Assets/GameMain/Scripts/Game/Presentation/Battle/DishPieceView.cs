@@ -280,14 +280,22 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_gummyBuffLayers > 0)
             {
                 string suffix = _gummyBuffLayers > 1 ? $" ×{_gummyBuffLayers}" : string.Empty;
-                CreateSweetTransferBuffText("GummyBuff", $"×1.5{suffix}", x, new Color32(255, 84, 178, 255));
+                CreateSweetTransferBuffText(
+                    "GummyBuff",
+                    $"×1.5{suffix}",
+                    x,
+                    SettlementColorPalette.SweetTransfer);
                 x += 0.56f;
             }
 
             if (_marshmallowBuffLayers > 0)
             {
                 string suffix = _marshmallowBuffLayers > 1 ? $" ×{_marshmallowBuffLayers}" : string.Empty;
-                CreateSweetTransferBuffText("MarshmallowBuff", $"+2{suffix}", x, new Color32(54, 224, 242, 255));
+                CreateSweetTransferBuffText(
+                    "MarshmallowBuff",
+                    $"+2{suffix}",
+                    x,
+                    SettlementColorPalette.SweetTransfer);
             }
         }
 
@@ -303,7 +311,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 8);
             mesh.transform.localPosition += Vector3.right * localX;
             mesh.color = color;
-            mesh.outlineColor = new Color32(44, 22, 52, 230);
+            mesh.outlineColor = SettlementColorPalette.WithAlpha(SettlementColorPalette.TextInk, 0.90f);
             mesh.outlineWidth = 0.18f;
         }
 
@@ -1304,7 +1312,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: 0f,
                         rotationCycles: 0f,
                         pulseCount: 1f,
-                        glowColor: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.BaseScore, 0.72f),
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.BaseScore, 0.72f),
                         glowWidth: 0.055f,
                         glowInflate: 1.035f,
                         glowFillAlpha: 0.02f,
@@ -1321,7 +1329,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: 6f,
                         rotationCycles: 1.5f,
                         pulseCount: 1f,
-                        glowColor: new Color(1f, 0.72f, 0.18f, 0.95f),
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.NativeSource, 0.95f),
                         glowWidth: 0.105f,
                         glowInflate: 1.08f,
                         glowFillAlpha: 0.08f,
@@ -1339,7 +1347,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: 3.5f,
                         rotationCycles: 2f,
                         pulseCount: 1f,
-                        glowColor: new Color(1f, 0.70f, 0.16f, 0.98f),
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.NativeSource, 0.98f),
                         glowWidth: 0.14f,
                         glowInflate: 1.12f,
                         glowFillAlpha: 0.07f,
@@ -1420,7 +1428,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: 5f,
                         rotationCycles: 2.5f,
                         pulseCount: 1f,
-                        glowColor: new Color(1f, 0.28f, 0.52f, 0.42f),
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.Failure, 0.42f),
                         glowWidth: 0.055f,
                         glowInflate: 1.035f,
                         glowFillAlpha: 0.015f,
@@ -1438,7 +1446,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: 10f,
                         rotationCycles: 2f,
                         pulseCount: 2f,
-                        glowColor: new Color(0.32f, 0.92f, 1f, 0.95f),
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.CopiedSkillSource, 0.95f),
                         glowWidth: 0.12f,
                         glowInflate: 1.10f,
                         glowFillAlpha: 0.08f,
@@ -1456,7 +1464,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: 4f,
                         rotationCycles: 2f,
                         pulseCount: 2f,
-                        glowColor: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.Special, 0.95f),
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.CopySkill, 0.95f),
                         glowWidth: 0.12f,
                         glowInflate: 1.10f,
                         glowFillAlpha: 0.10f,
@@ -1471,7 +1479,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         liftInCells: 0.055f,
                         sideInCells: 0f,
                         rotationDegrees: 1.5f,
-                        color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.BaseScore, 0.86f));
+                        color: SettlementColorPalette.WithAlpha(SettlementColorPalette.BaseScore, 0.86f));
 
                 case SettlementDishFeedbackKind.ActiveFlatBonus:
                     return BonusProfile(
@@ -1480,7 +1488,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         liftInCells: 0.13f,
                         sideInCells: 0f,
                         rotationDegrees: 2.5f,
-                        color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.BaseScore, 0.96f));
+                        color: SettlementColorPalette.WithAlpha(SettlementColorPalette.BaseScore, 0.96f));
 
                 case SettlementDishFeedbackKind.PermanentFlatBonus:
                     return new SettlementFeedbackProfile(
@@ -1492,7 +1500,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: 1.5f,
                         rotationCycles: 1f,
                         pulseCount: 2f,
-                        glowColor: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.PermanentScore, 0.98f),
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.PermanentScore, 0.98f),
                         glowWidth: 0.13f,
                         glowInflate: 1.11f,
                         glowFillAlpha: 0.09f,
@@ -1507,7 +1515,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         liftInCells: 0.03f,
                         sideInCells: 0f,
                         rotationDegrees: 5f,
-                        color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.MultiplyMultiplier, 0.86f));
+                        color: SettlementColorPalette.WithAlpha(SettlementColorPalette.MultiplyMultiplier, 0.86f));
 
                 case SettlementDishFeedbackKind.ActiveMultiplier:
                     return BonusProfile(
@@ -1516,7 +1524,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         liftInCells: 0.05f,
                         sideInCells: 0f,
                         rotationDegrees: 9f,
-                        color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.MultiplyMultiplier, 0.98f));
+                        color: SettlementColorPalette.WithAlpha(SettlementColorPalette.MultiplyMultiplier, 0.98f));
 
                 case SettlementDishFeedbackKind.PassiveMultiplierAdd:
                     return BonusProfile(
@@ -1525,7 +1533,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         liftInCells: 0.025f,
                         sideInCells: 0.04f,
                         rotationDegrees: 3f,
-                        color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.AddMultiplier, 0.86f));
+                        color: SettlementColorPalette.WithAlpha(SettlementColorPalette.AddMultiplier, 0.86f));
 
                 case SettlementDishFeedbackKind.ActiveMultiplierAdd:
                     return BonusProfile(
@@ -1534,7 +1542,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         liftInCells: 0.04f,
                         sideInCells: 0.065f,
                         rotationDegrees: 5f,
-                        color: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.AddMultiplier, 0.98f));
+                        color: SettlementColorPalette.WithAlpha(SettlementColorPalette.AddMultiplier, 0.98f));
 
                 case SettlementDishFeedbackKind.GenericValueChanged:
                 default:
@@ -1547,7 +1555,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         rotationDegrees: _deliciousnessGainWobbleDegrees,
                         rotationCycles: _deliciousnessGainWobbleCycles,
                         pulseCount: 1f,
-                        glowColor: SettlementAttributePalette.WithAlpha(SettlementAttributePalette.Special, 0.78f),
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.Special, 0.78f),
                         glowWidth: 0.07f,
                         glowInflate: 1.05f,
                         glowFillAlpha: 0.025f,
@@ -1662,7 +1670,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ConfigureOutlineGlowRenderer(
                 _placementGlow,
                 ref _placementGlowBlock,
-                new Color(1f, 0.70f, 0.16f, 0.98f),
+                SettlementColorPalette.WithAlpha(SettlementColorPalette.NativeSource, 0.98f),
                 outlineWidth: 0.14f,
                 fillAlpha: 0.07f,
                 inflate: 1.12f,

@@ -166,12 +166,59 @@ namespace GourmetProject.Tests.EditMode
                 string.Empty);
 
             string label = SettlementStageView.ResultText(permanent, 13f, 13f);
-            Color temporaryColor = SettlementAttributePalette.For(ScoreLineKind.DishFlat);
-            Color permanentColor = SettlementAttributePalette.For(ScoreLineKind.DishPermanentFlat);
+            Color temporaryColor = SettlementColorPalette.For(ScoreLineKind.DishFlat);
+            Color permanentColor = SettlementColorPalette.For(ScoreLineKind.DishPermanentFlat);
 
             Assert.That(label, Is.EqualTo("永久分数 +3"));
             Assert.That(permanentColor, Is.Not.EqualTo(temporaryColor));
-            Assert.That(permanentColor.g, Is.GreaterThan(permanentColor.r));
+            Assert.That(permanentColor, Is.Not.EqualTo(SettlementColorPalette.AddMultiplier));
+            Assert.That(permanentColor, Is.Not.EqualTo(SettlementColorPalette.MultiplyMultiplier));
+            AssertColor(permanentColor, 184, 90, 43);
+        }
+
+        [TestCase(ScoreLineKind.DishBase, 246, 196, 83)]
+        [TestCase(ScoreLineKind.DishFlat, 246, 196, 83)]
+        [TestCase(ScoreLineKind.FinalFlat, 246, 196, 83)]
+        [TestCase(ScoreLineKind.DishPermanentFlat, 184, 90, 43)]
+        [TestCase(ScoreLineKind.DishMultiplierAdd, 57, 208, 176)]
+        [TestCase(ScoreLineKind.DishMultiplier, 255, 90, 95)]
+        [TestCase(ScoreLineKind.FinalMultiplier, 255, 90, 95)]
+        [TestCase(ScoreLineKind.Gold, 244, 183, 64)]
+        [TestCase(ScoreLineKind.Layer, 255, 138, 61)]
+        [TestCase(ScoreLineKind.SilverItemRoll, 169, 196, 216)]
+        [TestCase(ScoreLineKind.CopySkill, 54, 224, 242)]
+        [TestCase(ScoreLineKind.TriggerSweetTransfer, 255, 84, 178)]
+        [TestCase(ScoreLineKind.TriggeredSweetTransferSource, 255, 84, 178)]
+        [TestCase(ScoreLineKind.SweetTransferBuffApplied, 255, 84, 178)]
+        [TestCase(ScoreLineKind.SweetTransferBuffTriggered, 255, 84, 178)]
+        [TestCase(ScoreLineKind.SweetTransferFailed, 224, 106, 132)]
+        public void SettlementPalette_MapsEveryScoreLineKindToItsSemanticColor(
+            ScoreLineKind kind,
+            int expectedR,
+            int expectedG,
+            int expectedB)
+        {
+            AssertColor(SettlementColorPalette.For(kind), expectedR, expectedG, expectedB);
+        }
+
+        [TestCase(ScoreLineKind.SweetTransferBuffApplied)]
+        [TestCase(ScoreLineKind.SweetTransferBuffTriggered)]
+        [TestCase(ScoreLineKind.SweetTransferFailed)]
+        public void SettlementResultTheme_UsesSemanticSideEffectColor(ScoreLineKind kind)
+        {
+            var line = new ScoreLine(
+                ScorePhase.DishSkills,
+                kind,
+                ScoreSource.FinalModifier("side_effect", "副作用"),
+                1,
+                "dish",
+                null,
+                1f,
+                0f,
+                1f,
+                string.Empty);
+
+            Assert.That(SettlementStageView.ResultThemeFor(line), Is.EqualTo(SettlementColorPalette.For(kind)));
         }
 
         [Test]
@@ -236,6 +283,15 @@ namespace GourmetProject.Tests.EditMode
         {
             Assert.That(color.r, Is.GreaterThan(color.g));
             Assert.That(color.r, Is.GreaterThan(color.b));
+        }
+
+        private static void AssertColor(Color color, int expectedR, int expectedG, int expectedB)
+        {
+            Color32 actual = color;
+            Assert.That(actual.r, Is.EqualTo(expectedR));
+            Assert.That(actual.g, Is.EqualTo(expectedG));
+            Assert.That(actual.b, Is.EqualTo(expectedB));
+            Assert.That(actual.a, Is.EqualTo(255));
         }
     }
 }
