@@ -15,21 +15,29 @@ namespace GourmetProject.Gameplay.Scoring
 
     public sealed class SkillScopeVisual
     {
-        public static readonly SkillScopeVisual Empty = new SkillScopeVisual(null, null, null);
+        public static readonly SkillScopeVisual Empty = new SkillScopeVisual(null, null, null, null);
 
         public SkillScopeVisual(
             IReadOnlyList<int> visualTargetDishInstanceIds,
             IReadOnlyList<GridPos> visualTargetCells,
+            IReadOnlyList<GridPos> actionScopeCells,
             IReadOnlyList<GridPos> conditionCells)
         {
             VisualTargetDishInstanceIds = visualTargetDishInstanceIds ?? System.Array.Empty<int>();
             VisualTargetCells = visualTargetCells ?? System.Array.Empty<GridPos>();
+            ActionScopeCells = actionScopeCells ?? System.Array.Empty<GridPos>();
             ConditionCells = conditionCells ?? System.Array.Empty<GridPos>();
         }
 
         public IReadOnlyList<int> VisualTargetDishInstanceIds { get; }
 
         public IReadOnlyList<GridPos> VisualTargetCells { get; }
+
+        /// <summary>
+        /// 行为配置对应的语义作用域格。与实际命中的食物占格分离，避免多格食物
+        /// 只用一格接触作用域时把整块食物扩进范围轮廓。
+        /// </summary>
+        public IReadOnlyList<GridPos> ActionScopeCells { get; }
 
         public IReadOnlyList<GridPos> ConditionCells { get; }
     }
@@ -51,18 +59,25 @@ namespace GourmetProject.Gameplay.Scoring
 
             IReadOnlyList<DishInstance> targetDishes = ResolveVisualActionDishes(db, board, self, rule, mode);
             List<int> targetIds = targetDishes.Select(d => d.Id).Distinct().ToList();
+            List<GridPos> actionScopeCells = VisualCellsForScope(
+                db,
+                board,
+                self,
+                rule,
+                rule.ActionScope,
+                isActionScope: true);
             List<GridPos> targetCells = rule.ActionType == SkillActionType.TransferSkills
                 ? board.ExistingCells()
                 : mode == SkillScopeVisualMode.CandidateScope
-                    ? VisualCellsForScope(db, board, self, rule, rule.ActionScope, isActionScope: true)
+                    ? new List<GridPos>(actionScopeCells)
                     : CellsForDishes(targetDishes);
             if (targetCells.Count == 0)
             {
-                targetCells = VisualCellsForScope(db, board, self, rule, rule.ActionScope, isActionScope: true);
+                targetCells = new List<GridPos>(actionScopeCells);
             }
 
             List<GridPos> conditionCells = VisualCellsForScope(db, board, self, rule, rule.CondScope, isActionScope: false);
-            return new SkillScopeVisual(targetIds, targetCells, conditionCells);
+            return new SkillScopeVisual(targetIds, targetCells, actionScopeCells, conditionCells);
         }
 
         public static IReadOnlyList<DishInstance> ResolveActionTargetDishes(

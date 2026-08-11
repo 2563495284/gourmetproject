@@ -200,7 +200,9 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             BattleWorldController world = _host.World;
-            if (world == null || !world.CanEnterTableView || !BeginSession(manageSourcePresentation: true))
+            if (world == null
+                || !world.CanEnterTableInspectionView
+                || !BeginSession(manageSourcePresentation: true))
             {
                 return;
             }

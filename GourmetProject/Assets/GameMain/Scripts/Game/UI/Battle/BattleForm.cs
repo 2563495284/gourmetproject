@@ -2890,7 +2890,14 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            GameApp.UI.OpenUIForm(UIForms.Settings, UIForms.GroupDialog, new SettingsFormData(inGameplay: true));
+            _world = _world ?? BattleWorldController.Instance;
+            GameApp.UI.OpenUIForm(
+                UIForms.Settings,
+                UIForms.GroupDialog,
+                new SettingsFormData(
+                    inGameplay: true,
+                    pauseSettlementPlayback: () => _world?.PauseSettlementPlayback() == true,
+                    resumeSettlementPlayback: () => _world?.ResumeSettlementPlayback()));
         }
 
         private void OnViewRecipeClicked()

@@ -204,7 +204,7 @@ namespace GourmetProject.Game.UI.Battle.View
             _tableInspectionAvailable = canOpenInspection
                 && inspection != BattleInspectionView.Table
                 && world != null
-                && world.CanEnterTableView;
+                && world.CanEnterTableInspectionView;
             _inspectionAvailabilityInitialized = true;
 
             ApplyInspectionAvailability();

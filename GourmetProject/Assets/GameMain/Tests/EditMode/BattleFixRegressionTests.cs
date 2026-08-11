@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using BreakInfinity;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta;
@@ -204,6 +205,67 @@ namespace GourmetProject.Tests.EditMode
                 UnityEngine.Object.DestroyImmediate(go);
                 Time.timeScale = original;
             }
+        }
+
+        [Test]
+        public void TableInspection_RemainsAvailableDuringSettlementOnlyBusyState()
+        {
+            var go = new GameObject("BattleWorldControllerTest");
+            BattleWorldController world = go.AddComponent<BattleWorldController>();
+            try
+            {
+                SetPrivateField(world, "_worldMode", "Food");
+                SetPrivateField(world, "_settling", true);
+
+                Assert.That(world.CanEnterTableView, Is.False);
+                Assert.That(world.CanEnterTableInspectionView, Is.True);
+
+                SetPrivateField(world, "_activeItemTransitioning", true);
+                Assert.That(world.CanEnterTableInspectionView, Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void SettingsSettlementPause_IsOwnedAndReleasedExactlyOnce()
+        {
+            int pauseCount = 0;
+            int resumeCount = 0;
+            var data = new SettingsFormData(
+                inGameplay: true,
+                () =>
+                {
+                    pauseCount++;
+                    return true;
+                },
+                () => resumeCount++);
+
+            data.AcquireSettlementPause();
+            data.AcquireSettlementPause();
+            Assert.That(data.SettlementPauseOwned, Is.True);
+            Assert.That(pauseCount, Is.EqualTo(1));
+
+            data.ReleaseSettlementPause();
+            data.ReleaseSettlementPause();
+            Assert.That(data.SettlementPauseOwned, Is.False);
+            Assert.That(resumeCount, Is.EqualTo(1));
+        }
+
+        private static void SetPrivateField(object target, string fieldName, object value)
+        {
+            FieldInfo field = target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, fieldName);
+            if (field.FieldType.IsEnum && value is string enumName)
+            {
+                value = Enum.Parse(field.FieldType, enumName);
+            }
+
+            field.SetValue(target, value);
         }
 
         private static ScoreResult CalculateCountAsSequence()
