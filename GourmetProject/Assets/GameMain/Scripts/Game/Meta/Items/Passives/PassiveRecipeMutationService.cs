@@ -439,6 +439,11 @@ namespace GourmetProject.Game.Meta.Passives
             return ids;
         }
 
+        internal static RecipeDishSnapshot Snapshot(GameRun run, int dishIndex)
+        {
+            return Snapshot(run, new RecipeTarget(dishIndex));
+        }
+
         private static RecipeDishSnapshot Snapshot(GameRun run, RecipeTarget target)
         {
             RecipeBookSlot slot = Slot(run, target);

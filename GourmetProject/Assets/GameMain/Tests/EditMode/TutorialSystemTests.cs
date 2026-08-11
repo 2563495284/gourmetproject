@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GourmetProject.Game.Adapter;
@@ -33,6 +35,20 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(progress.TryConsumeCoreTutorialRun(), Is.True);
             Assert.That(progress.CoreTutorialRunConsumed, Is.True);
             Assert.That(progress.TryConsumeCoreTutorialRun(), Is.False);
+        }
+
+        [Test]
+        public void DirectionPrelude_DoesNotConsumeTutorialRunEligibility()
+        {
+            var progress = new GuideProgressSaveData
+            {
+                PendingTutorialIds = new() { TutorialId.DirectionSelection },
+            };
+
+            progress.Normalize();
+
+            Assert.That(TutorialId.IsCore(TutorialId.DirectionSelection), Is.False);
+            Assert.That(progress.CoreTutorialRunConsumed, Is.False);
         }
 
         [Test]
@@ -120,12 +136,93 @@ namespace GourmetProject.Tests.EditMode
         {
             string[] ids =
             {
+                TutorialId.DirectionSelection,
                 TutorialId.FirstAction, TutorialId.FirstBattle, TutorialId.Settlement,
                 TutorialId.RewardSummary, TutorialId.SecondAction, TutorialId.TimelineNode,
                 TutorialId.Flavor, TutorialId.Material, TutorialId.Adjustment,
                 TutorialId.Boss, TutorialId.Failure, TutorialId.PassiveItem,
             };
             Assert.That(ids.All(id => TutorialCatalog.Get(id)?.Steps.Count > 0), Is.True);
+        }
+
+        [Test]
+        public void FirstBattle_UsesAutomaticInspectionCommands_AndNonForcedSettlement()
+        {
+            TutorialSequenceDefinition sequence = TutorialCatalog.Get(TutorialId.FirstBattle);
+
+            Assert.That(sequence.Steps.Select(step => step.EnterCommand), Does.Contain(TutorialCommand.OpenInitialRecipe));
+            Assert.That(sequence.Steps.Select(step => step.ExitCommand), Does.Contain(TutorialCommand.CloseInitialRecipe));
+            Assert.That(sequence.Steps.Select(step => step.EnterCommand), Does.Contain(TutorialCommand.ShowPreparedFoodTips));
+            Assert.That(sequence.Steps.Select(step => step.ExitCommand), Does.Contain(TutorialCommand.HidePreparedFoodTips));
+
+            TutorialStepDefinition settlement = sequence.Steps.Last();
+            Assert.That(settlement.Mode, Is.EqualTo(TutorialAdvanceMode.Continue));
+            Assert.That(settlement.Signal, Is.Empty);
+            Assert.That(settlement.AllowTargetInteraction, Is.False);
+            Assert.That(settlement.Anchors, Does.Contain(TutorialAnchorId.Settle));
+        }
+
+        [Test]
+        public void ResultHeart_UsesOneCompletionId_WithOutcomeSpecificCopy()
+        {
+            TutorialSequenceDefinition win = TutorialCatalog.BuildResultHeart(isWin: true);
+            TutorialSequenceDefinition loss = TutorialCatalog.BuildResultHeart(isWin: false);
+
+            Assert.That(win.Id, Is.EqualTo(TutorialId.ResultHeart));
+            Assert.That(loss.Id, Is.EqualTo(TutorialId.ResultHeart));
+            Assert.That(win.Steps[0].Message, Does.Contain("不会减少"));
+            Assert.That(loss.Steps[0].Message, Does.Contain("损失"));
+            Assert.That(win.Steps[0].Message, Is.Not.EqualTo(loss.Steps[0].Message));
+        }
+
+        [Test]
+        public void ContentHookClassifier_CoversFlavorMaterialAdjustmentAndDecoration()
+        {
+            Assert.That(
+                TutorialRuntime.ContentHookFor(new RunContentAcquisition { Kind = RunContentAcquisitionKind.DishFlavor }),
+                Is.EqualTo(TutorialId.Flavor));
+            Assert.That(
+                TutorialRuntime.ContentHookFor(new RunContentAcquisition { Kind = RunContentAcquisitionKind.TableMaterial }),
+                Is.EqualTo(TutorialId.Material));
+            Assert.That(
+                TutorialRuntime.ContentHookFor(new RunContentAcquisition
+                {
+                    Kind = RunContentAcquisitionKind.Item,
+                    ItemKind = cfg.ItemKind.Active,
+                    ActiveItemCategory = cfg.ActiveItemCategory.Adjust,
+                }),
+                Is.EqualTo(TutorialId.Adjustment));
+            Assert.That(
+                TutorialRuntime.ContentHookFor(new RunContentAcquisition
+                {
+                    Kind = RunContentAcquisitionKind.Item,
+                    ItemKind = cfg.ItemKind.Passive,
+                }),
+                Is.EqualTo(TutorialId.PassiveItem));
+        }
+
+        [Test]
+        public void TutorialCommandRegistry_CompletesAfterRegisteredCommand()
+        {
+            const string commandId = "tutorial.test.command";
+            var order = new List<string>();
+            Action<Action> handler = done =>
+            {
+                order.Add("command");
+                done();
+            };
+
+            try
+            {
+                TutorialCommandRegistry.Register(commandId, handler);
+                TutorialCommandRegistry.Execute(commandId, () => order.Add("done"));
+            }
+            finally
+            {
+                TutorialCommandRegistry.Unregister(commandId, handler);
+            }
+
+            Assert.That(order, Is.EqualTo(new[] { "command", "done" }));
         }
 
         private GameRun CreateRun(bool isTutorialRun = false) =>

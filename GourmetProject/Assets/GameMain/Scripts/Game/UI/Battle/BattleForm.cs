@@ -307,6 +307,7 @@ namespace GourmetProject.Game.UI.Battle
 
             Active = this;
             RegisterTutorialAnchors();
+            RegisterTutorialCommands();
             _discardSettlementCallbacks = false;
             _run.GoldChanged -= OnGoldChanged;
             _run.GoldChanged += OnGoldChanged;
@@ -327,6 +328,7 @@ namespace GourmetProject.Game.UI.Battle
         protected override void OnClose(bool isShutdown, object userData)
         {
             TutorialRuntime.CloseForPageChange();
+            UnregisterTutorialCommands();
             UnregisterTutorialAnchors();
             if (Active == this)
             {
@@ -1044,21 +1046,50 @@ namespace GourmetProject.Game.UI.Battle
 
         private void ShowPassiveFlavorMutation(RecipeMutationResult result)
         {
+            ShowFlavorMutation(result, null);
+        }
+
+        private void ShowFlavorMutation(
+            RecipeMutationResult result,
+            Action onComplete)
+        {
+            bool completed = false;
+            void CompleteOnce()
+            {
+                if (completed)
+                {
+                    return;
+                }
+
+                completed = true;
+                onComplete?.Invoke();
+            }
+
             EnqueuePassivePresentation(done =>
             {
+                void Finish()
+                {
+                    done();
+                    CompleteOnce();
+                }
+
                 if (!OpenPassiveFlavorMutationPage(result))
                 {
                     ClosePassiveFlavorMutationPage();
                     RefreshPersistent();
-                    done();
+                    Finish();
                     return;
                 }
 
                 DelayPassivePresentation(1f, () =>
                     PlayPassiveFlavorTransforms(() =>
                         WaitPassiveHold(() =>
-                            FlyPassiveFlavorDishesToRecipe(done))));
-            }, ClosePassiveFlavorMutationPage);
+                            FlyPassiveFlavorDishesToRecipe(Finish))));
+            }, () =>
+            {
+                ClosePassiveFlavorMutationPage();
+                CompleteOnce();
+            });
         }
 
         public void ShowPassiveCellMutation(CellMutationResult result)
@@ -1498,6 +1529,165 @@ namespace GourmetProject.Game.UI.Battle
                 optionEnabled,
                 onPick,
                 onEnd));
+        }
+
+        public void ShowEventEffectFeedback(
+            string title,
+            string message,
+            string bgSprite,
+            Action onComplete)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            if (_eventPage == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            _eventPage.Show(new EventPageRequest(
+                title,
+                message,
+                string.Empty,
+                bgSprite,
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                Array.Empty<bool>(),
+                onPick: null,
+                onEnd: onComplete,
+                autoContinueDelaySeconds: 1.5f));
+        }
+
+        public void ShowEventRecipeMutation(
+            RecipeMutationResult result,
+            Action onComplete)
+        {
+            if (result == null || !result.HasChanges)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            ShowFlavorMutation(result, onComplete);
+        }
+
+        public void ShowDirectPassiveItemAcquire(
+            ItemDefinition item,
+            ItemAcquireResult acquireResult,
+            Action onComplete)
+        {
+            // 金币在事件结算阶段已经到账；这里只刷新常驻数值，不重建物品栏。
+            RefreshPersistent(refreshItems: false);
+
+            bool requestCompleted = false;
+            void CompleteRequest()
+            {
+                if (requestCompleted)
+                {
+                    return;
+                }
+
+                requestCompleted = true;
+                onComplete?.Invoke();
+            }
+
+            if (item == null || acquireResult.Outcome != ItemAcquireOutcome.Added)
+            {
+                CompleteRequest();
+                return;
+            }
+
+            ShopPurchaseFlyView activeFly = null;
+            BattleItemsColumn.PassiveAcquirePlan acquirePlan = null;
+            EnqueuePassivePresentation(done =>
+            {
+                Canvas canvas = GetComponentInParent<Canvas>();
+                RectTransform layer = canvas != null
+                    ? canvas.transform as RectTransform
+                    : transform.root as RectTransform;
+                if (layer == null
+                    || _itemsColumn == null
+                    || !_itemsColumn.TryPreparePassiveAcquire(
+                        _run,
+                        item,
+                        layer,
+                        _tips != null ? _tips.Item : null,
+                        ShowItemInfo,
+                        out acquirePlan))
+                {
+                    done();
+                    CompleteRequest();
+                    return;
+                }
+
+                activeFly = CreateShopPurchaseFly(layer);
+                if (activeFly == null)
+                {
+                    acquirePlan.Complete();
+                    done();
+                    CompleteRequest();
+                    return;
+                }
+
+                RegisterShopPurchaseFly(activeFly);
+                ShopPurchaseFlyView capturedFly = activeFly;
+                bool presentationFinished = false;
+                void FinishPresentation()
+                {
+                    if (presentationFinished)
+                    {
+                        return;
+                    }
+
+                    presentationFinished = true;
+                    acquirePlan.Complete();
+                    UnregisterShopPurchaseFly(capturedFly);
+                    if (ReferenceEquals(activeFly, capturedFly))
+                    {
+                        activeFly = null;
+                    }
+
+                    done();
+                    CompleteRequest();
+                }
+
+                Sprite sprite = RunItemSlotView.LoadIcon(item) ?? LoadShopItemFallbackIcon(item.Kind);
+                Vector2 startSize = acquirePlan.TargetSize;
+                try
+                {
+                    capturedFly.PlayPassiveAcquire(
+                        layer.rect.center,
+                        startSize,
+                        acquirePlan.TargetCenter,
+                        acquirePlan.TargetSize,
+                        sprite,
+                        RunItemSlotView.QualityColor(item.Quality),
+                        acquirePlan.ApplyScroll,
+                        acquirePlan.Complete,
+                        FinishPresentation);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception, capturedFly);
+                    capturedFly.Cancel();
+                    FinishPresentation();
+                }
+            }, cancel: () =>
+            {
+                acquirePlan?.Complete();
+                if (activeFly != null)
+                {
+                    activeFly.Cancel();
+                }
+                else
+                {
+                    CompleteRequest();
+                }
+            });
         }
 
         public void OpenEventRecipeDishDelete(
@@ -4723,6 +4913,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void HideFoodTips()
         {
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.FoodTips);
             _hoveredDishPiece = null;
             _hoveredCell = null;
             _hoveredTableFragmentSession = -1;
@@ -4907,16 +5098,17 @@ namespace GourmetProject.Game.UI.Battle
             int finalHappyCakeLayers = settledSession?.HappyCakeLayers ?? 0;
             bool isWin = settledSession != null && settledSession.IsWin;
             void ContinueSettlement() => _loop?.OnBattleSettled(result, isWin, finalHappyCakeLayers);
-            if (IsFirstTutorialBattle() && !TutorialProgressService.IsCompleted(TutorialId.Settlement))
-                TutorialRuntime.Play(TutorialId.Settlement, ContinueSettlement);
-            else
-                ContinueSettlement();
+            TutorialRuntime.PlayResultHeart(isWin, ContinueSettlement);
         }
 
         private void RegisterTutorialAnchors()
         {
             TutorialAnchorRegistry.Register(TutorialAnchorId.Score, _infoColumn?.ScoreRect);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.Hearts, _infoColumn?.HeartsRect);
             TutorialAnchorRegistry.Register(TutorialAnchorId.Recipe, _infoColumn?.ViewRecipeButtonRect);
+            TutorialAnchorRegistry.Register(
+                TutorialAnchorId.RecipePanel,
+                _inspectionLayer?.RecipeView != null ? _inspectionLayer.RecipeView.transform as RectTransform : null);
             TutorialAnchorRegistry.Register(TutorialAnchorId.FoodInfo, _infoColumn != null ? _infoColumn.transform as RectTransform : null);
             TutorialAnchorRegistry.Register(TutorialAnchorId.BossRule, _infoColumn?.BossRuleRect);
             TutorialAnchorRegistry.Register(TutorialAnchorId.ActionAxis, _actionAxisBar != null ? _actionAxisBar.transform as RectTransform : null);
@@ -4929,7 +5121,10 @@ namespace GourmetProject.Game.UI.Battle
         private void UnregisterTutorialAnchors()
         {
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.Score);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.Hearts);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.Recipe);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.RecipePanel);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.FoodTips);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.FoodInfo);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.BossRule);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.ActionAxis);
@@ -4937,6 +5132,60 @@ namespace GourmetProject.Game.UI.Battle
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.ServingOutlet);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.Discard);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.Settle);
+        }
+
+        private void RegisterTutorialCommands()
+        {
+            TutorialCommandRegistry.Register(TutorialCommand.OpenInitialRecipe, TutorialOpenInitialRecipe);
+            TutorialCommandRegistry.Register(TutorialCommand.CloseInitialRecipe, TutorialCloseInitialRecipe);
+            TutorialCommandRegistry.Register(TutorialCommand.ShowPreparedFoodTips, TutorialShowPreparedFoodTips);
+            TutorialCommandRegistry.Register(TutorialCommand.HidePreparedFoodTips, TutorialHidePreparedFoodTips);
+        }
+
+        private void UnregisterTutorialCommands()
+        {
+            TutorialCommandRegistry.Unregister(TutorialCommand.OpenInitialRecipe, TutorialOpenInitialRecipe);
+            TutorialCommandRegistry.Unregister(TutorialCommand.CloseInitialRecipe, TutorialCloseInitialRecipe);
+            TutorialCommandRegistry.Unregister(TutorialCommand.ShowPreparedFoodTips, TutorialShowPreparedFoodTips);
+            TutorialCommandRegistry.Unregister(TutorialCommand.HidePreparedFoodTips, TutorialHidePreparedFoodTips);
+        }
+
+        private void TutorialOpenInitialRecipe(Action done)
+        {
+            if (_inspectionCoordinator?.View == BattleInspectionView.Recipe)
+            {
+                done?.Invoke();
+                return;
+            }
+
+            if (_inspectionCoordinator?.OpenRecipe(0, useBattleRecipe: true, onShown: done) != true)
+                done?.Invoke();
+        }
+
+        private void TutorialCloseInitialRecipe(Action done)
+        {
+            if (_inspectionCoordinator?.IsActive == true)
+                _inspectionCoordinator.Close(done);
+            else
+                done?.Invoke();
+        }
+
+        private void TutorialShowPreparedFoodTips(Action done)
+        {
+            bool shown = OnServingOutletDishHoverEntered(_servingOutlet);
+            if (shown && _tips?.Food != null)
+            {
+                TutorialAnchorRegistry.Register(
+                    TutorialAnchorId.FoodTips,
+                    _tips.Food.transform as RectTransform);
+            }
+            done?.Invoke();
+        }
+
+        private void TutorialHidePreparedFoodTips(Action done)
+        {
+            HideFoodTips();
+            done?.Invoke();
         }
 
         private bool IsFirstTutorialBattle() =>

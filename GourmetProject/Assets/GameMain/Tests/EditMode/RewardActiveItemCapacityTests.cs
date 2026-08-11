@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Data;
 using Luban.SimpleJSON;
@@ -93,6 +95,147 @@ namespace GourmetProject.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(cardObject);
                 UnityEngine.Object.DestroyImmediate(panelObject);
+            }
+        }
+
+        [Test]
+        public void KitchenGodNegativeReward_GrantsGoldAndNegativePassiveWithoutRewardQueue()
+        {
+            var run = new GameRun(_tables, _database, "glutton_dog", "kitchen-god-direct-test", 1);
+            cfg.EventOption option = _tables.TbEventOption.Get("opt_kitchen_god_statue_choice_2");
+            var rng = new Xoshiro256SS(0xC0FFEEUL);
+            int goldBefore = run.Gold;
+
+            EventService.ResolveOption(
+                run,
+                option,
+                rng,
+                cfg.EffectType.GrantRandomPassiveItems);
+            RandomizedItemResult result = EffectResolver.GrantRandomNegativePassiveDirect(run, rng);
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Acquired, Is.True);
+            Assert.That(result.Item.IsNegative, Is.True);
+            Assert.That(run.HasItem(result.Item.Id), Is.True);
+            Assert.That(run.Gold, Is.EqualTo(goldBefore + 100));
+            Assert.That(run.HasPendingGenericRewards, Is.False);
+        }
+
+        [Test]
+        public void KitchenGodNegativeReward_WhenPoolIsEmpty_AddsFortyFallbackGoldWithoutQueue()
+        {
+            var run = new GameRun(_tables, _database, "glutton_dog", "kitchen-god-empty-test", 1);
+            foreach (cfg.PassiveItem passive in _tables.TbPassiveItem.DataList)
+            {
+                ItemDefinition item = ItemDefinition.From(passive);
+                if (item.IsNegative && !run.HasItem(item.Id))
+                {
+                    run.AcquireItem(item.Id, fallbackGold: 0, fireOnAcquire: false);
+                }
+            }
+
+            cfg.EventOption option = _tables.TbEventOption.Get("opt_kitchen_god_statue_choice_2");
+            var rng = new Xoshiro256SS(0xBAD5EEDUL);
+            int goldBefore = run.Gold;
+
+            EventService.ResolveOption(
+                run,
+                option,
+                rng,
+                cfg.EffectType.GrantRandomPassiveItems);
+            RandomizedItemResult result = EffectResolver.GrantRandomNegativePassiveDirect(run, rng);
+
+            Assert.That(result, Is.Null);
+            Assert.That(run.Gold, Is.EqualTo(goldBefore + 140));
+            Assert.That(run.HasPendingGenericRewards, Is.False);
+        }
+
+        [Test]
+        public void PassiveAcquireScroll_TargetVisibleKeepsPosition_OverflowScrollsToBottom()
+        {
+            float visible = BattleItemsColumn.CalculatePassiveAcquireEndTop(
+                index: 3,
+                slotHeight: 100f,
+                currentTop: 0f,
+                viewportHeight: 220f,
+                contentHeight: 220f);
+            float overflow = BattleItemsColumn.CalculatePassiveAcquireEndTop(
+                index: 8,
+                slotHeight: 100f,
+                currentTop: 0f,
+                viewportHeight: 220f,
+                contentHeight: 520f);
+
+            Assert.That(visible, Is.EqualTo(0f));
+            Assert.That(overflow, Is.EqualTo(300f));
+        }
+
+        [Test]
+        public void PassiveAcquirePlan_AppendsOneSlotWithoutReplacingExistingSlots()
+        {
+            GameObject battlePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab");
+            BattleItemsColumn prefabColumn = battlePrefab.GetComponentInChildren<BattleItemsColumn>(true);
+            GameObject layerObject = new GameObject("Layer", typeof(RectTransform));
+            GameObject columnObject = UnityEngine.Object.Instantiate(prefabColumn.gameObject, layerObject.transform);
+            var layer = layerObject.GetComponent<RectTransform>();
+            layer.sizeDelta = new Vector2(1920f, 1080f);
+
+            try
+            {
+                var run = new GameRun(_tables, _database, "glutton_dog", "passive-local-append-test", 1);
+                int added = 0;
+                foreach (cfg.PassiveItem passive in _tables.TbPassiveItem.DataList)
+                {
+                    ItemDefinition definition = ItemDefinition.From(passive);
+                    if (definition.IsNegative || run.HasItem(definition.Id))
+                    {
+                        continue;
+                    }
+
+                    run.AcquireItem(definition.Id, fallbackGold: 0, fireOnAcquire: false);
+                    if (++added == 4)
+                    {
+                        break;
+                    }
+                }
+
+                BattleItemsColumn column = columnObject.GetComponent<BattleItemsColumn>();
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(BattleItemsColumn)
+                    .GetMethod("RefreshPassive", flags)
+                    ?.Invoke(column, new object[] { run, _tables, null, null });
+                var slots = (System.Collections.IList)typeof(BattleItemsColumn)
+                    .GetField("_passiveSlots", flags)
+                    ?.GetValue(column);
+                object[] existing = new object[slots.Count];
+                slots.CopyTo(existing, 0);
+
+                RandomizedItemResult direct = EffectResolver.GrantRandomNegativePassiveDirect(
+                    run,
+                    new Xoshiro256SS(0x51A7UL));
+                bool prepared = column.TryPreparePassiveAcquire(
+                    run,
+                    direct.Item,
+                    layer,
+                    null,
+                    null,
+                    out BattleItemsColumn.PassiveAcquirePlan plan);
+
+                Assert.That(prepared, Is.True);
+                Assert.That(plan, Is.Not.Null);
+                Assert.That(slots.Count, Is.EqualTo(existing.Length + 1));
+                for (int i = 0; i < existing.Length; i++)
+                {
+                    Assert.That(slots[i], Is.SameAs(existing[i]));
+                }
+
+                plan.Complete();
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(columnObject);
+                UnityEngine.Object.DestroyImmediate(layerObject);
             }
         }
     }

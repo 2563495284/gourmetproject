@@ -4,6 +4,8 @@ using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Analytics;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.Save;
+using GourmetProject.Game.Tutorial;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Meta;
@@ -87,10 +89,17 @@ namespace GourmetProject.Game.UI.Menu
             SetRecipeViewOpen(false);
             RefreshSaveEntryState();
             Refresh();
+            RegisterTutorialAnchors();
+            PlayDirectionTutorialIfNeeded();
         }
 
         protected override void OnClose(bool isShutdown, object userData)
         {
+            if (string.Equals(TutorialRuntime.CurrentId, TutorialId.DirectionSelection, StringComparison.Ordinal))
+            {
+                TutorialRuntime.CloseForPageChange();
+            }
+            UnregisterTutorialAnchors();
             _foodTipsView?.Hide();
             SetRecipeViewOpen(false);
             base.OnClose(isShutdown, userData);
@@ -154,6 +163,7 @@ namespace GourmetProject.Game.UI.Menu
                 return;
             }
 
+            TutorialRuntime.Publish(TutorialSignal.DirectionConfirmed);
             StartNewRun(character);
         }
 
@@ -227,6 +237,36 @@ namespace GourmetProject.Game.UI.Menu
                 _continueButton.GetComponent<RectTransform>();
             continueRect.anchoredPosition = _confirmButtonDefaultPosition
                 + Vector2.left * ActionButtonHorizontalOffset;
+        }
+
+        private void RegisterTutorialAnchors()
+        {
+            TutorialAnchorRegistry.Register(TutorialAnchorId.Direction, _portraitImage?.rectTransform);
+            TutorialAnchorRegistry.Register(
+                TutorialAnchorId.DirectionStart,
+                _confirmButton != null ? _confirmButton.transform as RectTransform : null);
+        }
+
+        private void UnregisterTutorialAnchors()
+        {
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.Direction, _portraitImage?.rectTransform);
+            TutorialAnchorRegistry.Unregister(
+                TutorialAnchorId.DirectionStart,
+                _confirmButton != null ? _confirmButton.transform as RectTransform : null);
+        }
+
+        private static void PlayDirectionTutorialIfNeeded()
+        {
+            if (RunPersistence.HasSave || TutorialProgressService.IsCompleted(TutorialId.DirectionSelection))
+            {
+                return;
+            }
+
+            GameSaveData save = GameSavePersistence.Load();
+            if (!save.GuideProgress.CoreTutorialRunConsumed)
+            {
+                TutorialRuntime.Play(TutorialId.DirectionSelection);
+            }
         }
 
         private static bool IsBattleReady()

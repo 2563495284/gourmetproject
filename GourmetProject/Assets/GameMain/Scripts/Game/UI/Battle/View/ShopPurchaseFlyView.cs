@@ -17,6 +17,8 @@ namespace GourmetProject.Game.UI.Battle.View
         public const float ActiveFlashDuration = 1f;
         public const float PassiveFlashDuration = 0.75f;
         public const float PassiveFlashStagger = 0.12f;
+        public const float PassiveAcquireFadeInDuration = 0.3f;
+        public const float PassiveAcquireHoldDuration = 1f;
         public const float FoodControlOffsetMin = 100f;
         public const float FoodControlOffsetMax = 400f;
         public const float FoodSpeedMin = 3.3f;
@@ -291,6 +293,81 @@ namespace GourmetProject.Game.UI.Battle.View
             }).SetEase(Ease.Linear));
             _sequence.AppendCallback(() =>
             {
+                CompleteArrival();
+                SetMainVisualVisible(false);
+            });
+            float flashTotalDuration =
+                PassiveFlashDuration + PassiveFlashStagger * (flashes.Length - 1);
+            _sequence.Append(DOVirtual.Float(0f, flashTotalDuration, flashTotalDuration, elapsed =>
+            {
+                for (int i = 0; i < flashes.Length; i++)
+                {
+                    float progress = Mathf.Clamp01(
+                        (elapsed - PassiveFlashStagger * i) / PassiveFlashDuration);
+                    if (elapsed < PassiveFlashStagger * i)
+                    {
+                        UpdateFlash(flashes[i], 0f, 0.61f, 1.35f, 0f);
+                        continue;
+                    }
+
+                    UpdateFlash(
+                        flashes[i],
+                        progress,
+                        0.61f,
+                        1.35f,
+                        FlashAlpha(progress, 0.16f, 0.62f));
+                }
+            }).SetEase(Ease.Linear));
+            BindCompletionCallbacks();
+        }
+
+        /// <summary>
+        /// 事件直接获得装饰品：先在画面中心渐显并停留，再与被动栏滚动同步飞入目标槽。
+        /// </summary>
+        public void PlayPassiveAcquire(
+            Vector2 startCenter,
+            Vector2 startSize,
+            Vector2 endCenter,
+            Vector2 targetSize,
+            Sprite sprite,
+            Color fallbackColor,
+            Action<float> onFlyProgress,
+            Action onArrived,
+            Action onFinished)
+        {
+            _onArrived = onArrived;
+            _onFinished = onFinished;
+            ConfigureSprite(sprite, fallbackColor);
+            ConfigureRect(_rect, startCenter, startSize);
+            _group.alpha = 0f;
+
+            Image[] flashes = new Image[3];
+            for (int i = 0; i < flashes.Length; i++)
+            {
+                flashes[i] = CreateFlashImage(
+                    $"PassiveItemArrivalFlash_{i}",
+                    endCenter,
+                    targetSize,
+                    sprite,
+                    fallbackColor);
+            }
+
+            _sequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+            _sequence.Append(_group
+                .DOFade(1f, PassiveAcquireFadeInDuration)
+                .SetEase(Ease.OutSine));
+            _sequence.AppendInterval(PassiveAcquireHoldDuration);
+            _sequence.AppendCallback(() => onFlyProgress?.Invoke(0f));
+            _sequence.Append(DOVirtual.Float(0f, 1f, PassiveFlyDuration, progress =>
+            {
+                float eased = Mathf.Sin(progress * Mathf.PI * 0.5f);
+                _rect.anchoredPosition = Vector2.LerpUnclamped(startCenter, endCenter, eased);
+                _rect.sizeDelta = Vector2.LerpUnclamped(startSize, targetSize, eased);
+                onFlyProgress?.Invoke(eased);
+            }).SetEase(Ease.Linear));
+            _sequence.AppendCallback(() =>
+            {
+                onFlyProgress?.Invoke(1f);
                 CompleteArrival();
                 SetMainVisualVisible(false);
             });

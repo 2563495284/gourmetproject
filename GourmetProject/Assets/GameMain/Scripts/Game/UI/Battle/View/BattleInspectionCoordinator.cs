@@ -80,9 +80,14 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public bool IsTransitioning => _transitioning || _host.InspectionLayer?.IsTransitioning == true;
 
-        public bool OpenRecipe(int bookIndex, bool useBattleRecipe = false)
+        public bool OpenRecipe(int bookIndex, bool useBattleRecipe = false, Action onShown = null)
         {
-            return OpenRecipeCore(bookIndex, useBattleRecipe, manageSourcePresentation: true, null);
+            return OpenRecipeCore(
+                bookIndex,
+                useBattleRecipe,
+                manageSourcePresentation: true,
+                onClosed: null,
+                onShown: onShown);
         }
 
         /// <summary>
@@ -91,14 +96,20 @@ namespace GourmetProject.Game.UI.Battle.View
         /// </summary>
         public bool OpenRecipeFromOverlay(int bookIndex, Action onClosed)
         {
-            return OpenRecipeCore(bookIndex, useBattleRecipe: false, manageSourcePresentation: false, onClosed);
+            return OpenRecipeCore(
+                bookIndex,
+                useBattleRecipe: false,
+                manageSourcePresentation: false,
+                onClosed: onClosed,
+                onShown: null);
         }
 
         private bool OpenRecipeCore(
             int bookIndex,
             bool useBattleRecipe,
             bool manageSourcePresentation,
-            Action onClosed)
+            Action onClosed,
+            Action onShown)
         {
             if (_tableTargeting
                 || IsTransitioning
@@ -140,7 +151,11 @@ namespace GourmetProject.Game.UI.Battle.View
                             entries),
                         _host.FoodTips);
                 },
-                CompleteTransition);
+                () =>
+                {
+                    CompleteTransition();
+                    onShown?.Invoke();
+                });
             return true;
         }
 

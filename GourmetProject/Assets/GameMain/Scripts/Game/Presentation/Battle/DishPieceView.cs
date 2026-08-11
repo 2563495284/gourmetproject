@@ -166,9 +166,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private Material _outlineGlowMaterial;
         [SerializeField, Range(0f, 0.2f)] private float _placementGlowOutlineWidth = 0.11f;
         [SerializeField] private float _placementGlowInflate = 1.08f;
-        [SerializeField, Range(0f, 0.2f)] private float _scopeTargetGlowOutlineWidth = 0.075f;
+        [SerializeField, Range(0f, 0.2f)] private float _scopeTargetGlowOutlineWidth = 0.045f;
         [SerializeField] private float _scopeTargetGlowInflate = 1.055f;
-        [SerializeField, Range(0f, 1f)] private float _scopeTargetGlowFillAlpha = 0.025f;
         [SerializeField, Range(0.25f, 3f)] private float _scopeTargetGlowIntensity = 1.8f;
         [SerializeField, Range(0.25f, 3f)] private float _outlineGlowIntensity = 2.2f;
         [SerializeField, Range(0f, 8f)] private float _persistentPulseSpeed = 0.65f;
@@ -665,12 +664,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 ref _scopeTargetGlowBlock,
                 activeState.Color,
                 _scopeTargetGlowOutlineWidth,
-                _scopeTargetGlowFillAlpha,
-                _scopeTargetGlowInflate,
+                fillAlpha: 0f,
+                inflate: _scopeTargetGlowInflate,
                 sortingOrderOffset: 3,
                 materialOverride: null,
                 pulseSpeed,
                 pulseAmplitude,
+                innerAlpha: 0f,
                 glowIntensity: _scopeTargetGlowIntensity);
         }
 

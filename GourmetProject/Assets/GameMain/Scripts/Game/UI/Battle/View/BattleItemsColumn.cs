@@ -45,6 +45,74 @@ namespace GourmetProject.Game.UI.Battle.View
         private bool _hasActiveItemsInfoNormalColor;
         private int _visibleActiveSlotCount;
 
+        public sealed class PassiveAcquirePlan
+        {
+            private readonly BattleItemsColumn _owner;
+            private readonly RunItemSlotView _slot;
+            private readonly CanvasGroup _slotGroup;
+            private readonly float _startTop;
+            private readonly float _endTop;
+            private readonly float _scrollableHeight;
+            private bool _completed;
+
+            internal PassiveAcquirePlan(
+                BattleItemsColumn owner,
+                RunItemSlotView slot,
+                CanvasGroup slotGroup,
+                float startTop,
+                float endTop,
+                float scrollableHeight,
+                Vector2 targetCenter,
+                Vector2 targetSize)
+            {
+                _owner = owner;
+                _slot = slot;
+                _slotGroup = slotGroup;
+                _startTop = startTop;
+                _endTop = endTop;
+                _scrollableHeight = scrollableHeight;
+                TargetCenter = targetCenter;
+                TargetSize = targetSize;
+            }
+
+            public Vector2 TargetCenter { get; }
+
+            public Vector2 TargetSize { get; }
+
+            public bool RequiresScroll => Mathf.Abs(_endTop - _startTop) > PassiveScrollEpsilon;
+
+            public void ApplyScroll(float progress)
+            {
+                if (_completed || _owner == null)
+                {
+                    return;
+                }
+
+                _owner.ApplyPassiveAcquireScroll(
+                    Mathf.LerpUnclamped(_startTop, _endTop, Mathf.Clamp01(progress)),
+                    _scrollableHeight);
+            }
+
+            public void Complete()
+            {
+                if (_completed)
+                {
+                    return;
+                }
+
+                _completed = true;
+                _owner?.ApplyPassiveAcquireScroll(_endTop, _scrollableHeight);
+                if (_slotGroup != null)
+                {
+                    _slotGroup.alpha = 1f;
+                    _slotGroup.interactable = true;
+                    _slotGroup.blocksRaycasts = true;
+                }
+
+                _slot?.PlayPassivePulse();
+            }
+        }
+
         private void Awake()
         {
             EnsurePassiveItemsContent();
@@ -135,6 +203,153 @@ namespace GourmetProject.Game.UI.Battle.View
             return kind == cfg.ItemKind.Passive
                 ? TryGetPassiveFlyTarget(run, itemId, layer, out center, out size)
                 : TryGetActiveFlyTarget(run, itemId, layer, out center, out size);
+        }
+
+        /// <summary>
+        /// 为一件已经加入 GameRun 的被动装饰品局部追加槽位，并计算飞入时的最终目标与滚动范围。
+        /// 不销毁或重建已有槽位。
+        /// </summary>
+        public bool TryPreparePassiveAcquire(
+            GameRun run,
+            ItemDefinition item,
+            RectTransform layer,
+            ItemTipView tipView,
+            Action<ItemDefinition, RunItemState> onShowItemInfo,
+            out PassiveAcquirePlan plan)
+        {
+            plan = null;
+            if (run == null || item == null || !item.IsPassive || layer == null)
+            {
+                return false;
+            }
+
+            RectTransform content = EnsurePassiveItemsContent();
+            RunItemState state = run.GetItemState(item.Id);
+            if (content == null || _passiveItemTemplate == null || state == null)
+            {
+                return false;
+            }
+
+            // 该入口只处理本次新追加的末尾槽；若列表已被其他流程刷新，交给后续常规刷新同步。
+            int expectedExistingCount = 0;
+            foreach (RunItemState candidate in run.PassiveItemStates)
+            {
+                if (!string.Equals(candidate.ItemId, item.Id, StringComparison.Ordinal))
+                {
+                    expectedExistingCount++;
+                }
+            }
+
+            if (_passiveSlotByItemId.ContainsKey(item.Id)
+                || _passiveSlots.Count != expectedExistingCount)
+            {
+                return false;
+            }
+
+            Vector2 slotSize = GetPassiveSlotSize();
+            int index = _passiveSlots.Count;
+            RunItemSlotView slot = Instantiate(_passiveItemTemplate, content);
+            slot.gameObject.name = $"PassiveSlot_{index}";
+            RectTransform slotRect = slot.transform as RectTransform;
+            LayoutPassiveSlot(slotRect, index, slotSize);
+            slot.gameObject.SetActive(true);
+            slot.Bind(
+                RunItemSlotView.LoadIcon(item),
+                RunItemSlotView.ShortName(item.Name),
+                string.Empty,
+                RunItemSlotView.QualityColor(item.Quality),
+                true,
+                () => onShowItemInfo?.Invoke(item, state),
+                state,
+                usePassiveShader: true);
+            slot.SetTip(tipView, item);
+
+            CanvasGroup slotGroup = slot.GetComponent<CanvasGroup>();
+            if (slotGroup == null)
+            {
+                slotGroup = slot.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            slotGroup.alpha = 0f;
+            slotGroup.interactable = false;
+            slotGroup.blocksRaycasts = false;
+            _passiveSlots.Add(slot);
+            _passiveSlotByItemId[item.Id] = slot;
+
+            int rows = Mathf.Max(1, Mathf.CeilToInt(_passiveSlots.Count / (float)PassiveSlotColumns));
+            float contentHeight = CalculatePassiveContentHeight(rows, slotSize.y);
+            float startTop = Mathf.Max(0f, content.anchoredPosition.y);
+            content.sizeDelta = new Vector2(content.sizeDelta.x, contentHeight);
+            float viewportHeight = GetPassiveViewportHeight();
+            float scrollableHeight = Mathf.Max(0f, contentHeight - viewportHeight);
+            startTop = Mathf.Clamp(startTop, 0f, scrollableHeight);
+            float endTop = CalculatePassiveAcquireEndTop(
+                index,
+                slotSize.y,
+                startTop,
+                viewportHeight,
+                contentHeight);
+
+            ApplyPassiveAcquireScroll(endTop, scrollableHeight);
+            Canvas.ForceUpdateCanvases();
+            bool hasTarget = TryGetRectInLayer(slot.VisualRectTransform, layer, out Vector2 targetCenter, out Vector2 targetSize);
+            ApplyPassiveAcquireScroll(startTop, scrollableHeight);
+            Canvas.ForceUpdateCanvases();
+            if (!hasTarget)
+            {
+                slotGroup.alpha = 1f;
+                slotGroup.interactable = true;
+                slotGroup.blocksRaycasts = true;
+                return false;
+            }
+
+            plan = new PassiveAcquirePlan(
+                this,
+                slot,
+                slotGroup,
+                startTop,
+                endTop,
+                scrollableHeight,
+                targetCenter,
+                targetSize);
+            return true;
+        }
+
+        internal static float CalculatePassiveAcquireEndTop(
+            int index,
+            float slotHeight,
+            float currentTop,
+            float viewportHeight,
+            float contentHeight)
+        {
+            float scrollableHeight = Mathf.Max(0f, contentHeight - viewportHeight);
+            float startTop = Mathf.Clamp(currentTop, 0f, scrollableHeight);
+            int row = Mathf.Max(0, index) / PassiveSlotColumns;
+            float slotTop = PassiveSlotPadding + row * (slotHeight + PassiveSlotSpacing);
+            float slotBottom = slotTop + slotHeight;
+            bool targetVisible = slotTop >= startTop + PassiveSlotPadding
+                && slotBottom <= startTop + viewportHeight - PassiveSlotPadding;
+            return targetVisible ? startTop : scrollableHeight;
+        }
+
+        private void ApplyPassiveAcquireScroll(float top, float scrollableHeight)
+        {
+            if (_passiveItemsContent == null)
+            {
+                return;
+            }
+
+            float clamped = Mathf.Clamp(top, 0f, Mathf.Max(0f, scrollableHeight));
+            _passiveItemsScrollRect?.StopMovement();
+            _passiveItemsContent.anchoredPosition = new Vector2(
+                _passiveItemsContent.anchoredPosition.x,
+                clamped);
+            if (_passiveItemsScrollRect != null)
+            {
+                _passiveItemsScrollRect.verticalNormalizedPosition = scrollableHeight > 0f
+                    ? 1f - clamped / scrollableHeight
+                    : 1f;
+            }
         }
 
         private void RefreshPassive(

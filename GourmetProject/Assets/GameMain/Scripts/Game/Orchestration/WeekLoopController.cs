@@ -84,6 +84,24 @@ namespace GourmetProject.Game.Orchestration
             Action<int> onPick,
             Action onEnd);
 
+        /// <summary>自动展示事件效果反馈；表现结束后回调，不要求玩家再次确认。</summary>
+        void ShowEventEffectFeedback(
+            string title,
+            string message,
+            string bgSprite,
+            Action onComplete);
+
+        /// <summary>展示事件造成的食谱食物变化；全部动画结束后回调。</summary>
+        void ShowEventRecipeMutation(
+            RecipeMutationResult result,
+            Action onComplete);
+
+        /// <summary>在常驻壳中直接展示一件已到账的负面装饰品，表现结束后继续事件流程。</summary>
+        void ShowDirectPassiveItemAcquire(
+            ItemDefinition item,
+            ItemAcquireResult acquireResult,
+            Action onComplete);
+
         void ShowRunResult(bool win, BigDouble total);
     }
 
@@ -92,6 +110,9 @@ namespace GourmetProject.Game.Orchestration
     /// </summary>
     public sealed class WeekLoopController
     {
+        private const string KitchenGodStatueEventId = "ev_kitchen_god_statue";
+        private const string KitchenGodDirectNegativeOptionId = "opt_kitchen_god_statue_choice_2";
+
         private readonly GameRun _run;
         private readonly IWeekLoopView _view;
 
@@ -1801,6 +1822,15 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
+            // 厨神像直领奖励在表现前已经完成结算并存档。若期间中断，直接完成行动，
+            // 避免恢复事件页后再次领取金币和负面装饰品。
+            if (string.Equals(eventId, KitchenGodStatueEventId, StringComparison.Ordinal)
+                && _run.HasUsedEvent(eventId))
+            {
+                onDone?.Invoke();
+                return;
+            }
+
             if (!restoringPending)
             {
                 SavePendingActionExecution(context, outcome, ev.Id);
@@ -1931,8 +1961,42 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
+            if (string.Equals(
+                    option?.Id,
+                    KitchenGodDirectNegativeOptionId,
+                    StringComparison.Ordinal))
+            {
+                ResolveKitchenGodDirectNegativeOption(ev, option, rng, onDone);
+                return;
+            }
+
             EventResolveResult result = EventService.ResolveOption(_run, option, rng);
             ContinueResolvedEventOption(ev, pageDescription, option, result, rng, onDone);
+        }
+
+        private void ResolveKitchenGodDirectNegativeOption(
+            cfg.GameEvent ev,
+            cfg.EventOption option,
+            IRandomStream rng,
+            Action onDone)
+        {
+            EventResolveResult result = EventService.ResolveOption(
+                _run,
+                option,
+                rng,
+                cfg.EffectType.GrantRandomPassiveItems);
+            RandomizedItemResult directReward = EffectResolver.GrantRandomNegativePassiveDirect(
+                _run,
+                rng,
+                fallbackGold: 40);
+
+            // 金币和装饰品都已到账；事件也先标记完成再落盘，避免中断恢复时重复领取。
+            EventService.OnEventFinished(_run, ev, result);
+            RunPersistence.Save(_run);
+            _view.ShowDirectPassiveItemAcquire(
+                directReward?.Item,
+                directReward?.AcquireResult ?? default,
+                () => ContinueAfterEventRewards(onDone));
         }
 
         private void ContinueResolvedEventOption(
@@ -1941,9 +2005,28 @@ namespace GourmetProject.Game.Orchestration
             cfg.EventOption option,
             EventResolveResult result,
             IRandomStream rng,
-            Action onDone)
+            Action onDone,
+            bool effectPresentationComplete = false)
         {
             result ??= EventResolveResult.Immediate(string.Empty);
+
+            if (!effectPresentationComplete
+                && HasEventEffectPresentation(option, result))
+            {
+                PresentEventEffects(
+                    ev,
+                    option,
+                    result,
+                    () => ContinueResolvedEventOption(
+                        ev,
+                        pageDescription,
+                        option,
+                        result,
+                        rng,
+                        onDone,
+                        effectPresentationComplete: true));
+                return;
+            }
 
             // 经营挑战、商店和结局节点是立即终点，不再显示普通结果按钮。
             if (result.FollowUpKind != EventFollowUpKind.None)
@@ -2000,6 +2083,55 @@ namespace GourmetProject.Game.Orchestration
                 new List<bool>(),
                 onPick: null,
                 onEnd: () => FinishEventAndContinue(ev, result, onDone));
+        }
+
+        private static bool HasEventEffectPresentation(
+            cfg.EventOption option,
+            EventResolveResult result)
+        {
+            return result?.RecipeMutation?.HasChanges == true
+                || (option?.AutoEnd == true
+                    && (!string.IsNullOrWhiteSpace(option.ResultText)
+                        || !string.IsNullOrWhiteSpace(result?.Feedback)));
+        }
+
+        private void PresentEventEffects(
+            cfg.GameEvent ev,
+            cfg.EventOption option,
+            EventResolveResult result,
+            Action onComplete)
+        {
+            void PresentAutoEndFeedback()
+            {
+                if (option?.AutoEnd != true)
+                {
+                    onComplete?.Invoke();
+                    return;
+                }
+
+                string message = ResolveEventPageText(option, result, string.Empty);
+                if (string.IsNullOrWhiteSpace(message))
+                {
+                    onComplete?.Invoke();
+                    return;
+                }
+
+                _view.ShowEventEffectFeedback(
+                    ev?.Name ?? string.Empty,
+                    EventService.FormatRuntimeText(_run, message),
+                    ev?.BgSprite ?? string.Empty,
+                    onComplete);
+            }
+
+            if (result?.RecipeMutation?.HasChanges == true)
+            {
+                _view.ShowEventRecipeMutation(
+                    result.RecipeMutation,
+                    PresentAutoEndFeedback);
+                return;
+            }
+
+            PresentAutoEndFeedback();
         }
 
         private void BeginEventRecipeDishDelete(

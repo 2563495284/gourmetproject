@@ -64,6 +64,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 ? _viewRecipeButton.transform as RectTransform
                 : null;
         public RectTransform ScoreRect => _scoreTitlePanel != null ? _scoreTitlePanel : transform as RectTransform;
+        public RectTransform HeartsRect => _heartContainer;
         public RectTransform BossRuleRect
         {
             get

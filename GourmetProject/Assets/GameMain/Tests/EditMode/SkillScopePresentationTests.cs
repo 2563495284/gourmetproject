@@ -78,6 +78,17 @@ namespace GourmetProject.Tests.EditMode
                 view.SetScopeTargetGlow(BattleScopeHighlightChannel.Persistent, Color.cyan, 0);
                 Assert.That(view.ActiveScopeTargetGlowChannel, Is.EqualTo(BattleScopeHighlightChannel.Persistent));
 
+                SpriteRenderer glowRenderer = instance.transform.Find("VisualPivot/Sprite/ScopeTargetGlow")
+                    ?.GetComponent<SpriteRenderer>();
+                Assert.That(glowRenderer, Is.Not.Null);
+                var glowBlock = new MaterialPropertyBlock();
+                glowRenderer.GetPropertyBlock(glowBlock);
+                Assert.That(glowBlock.GetFloat(Shader.PropertyToID("_InnerAlpha")), Is.Zero);
+                Assert.That(glowBlock.GetFloat(Shader.PropertyToID("_FillAlpha")), Is.Zero);
+                Assert.That(
+                    glowBlock.GetFloat(Shader.PropertyToID("_OutlineWidth")),
+                    Is.EqualTo(0.045f).Within(0.0001f));
+
                 view.SetScopeTargetGlow(BattleScopeHighlightChannel.Flash, Color.yellow, 0);
                 Assert.That(view.ActiveScopeTargetGlowChannel, Is.EqualTo(BattleScopeHighlightChannel.Flash));
 

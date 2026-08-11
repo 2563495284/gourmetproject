@@ -1,6 +1,7 @@
 using System;
 using DG.Tweening;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.Tutorial;
 using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Runtime;
@@ -34,6 +35,7 @@ namespace GourmetProject.Game.UI.Meta
             string disabledReason = null)
         {
             ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, choice?.Id, kind);
+            TutorialRuntime.ObserveItemShown(item);
 
             if (_background != null)
             {

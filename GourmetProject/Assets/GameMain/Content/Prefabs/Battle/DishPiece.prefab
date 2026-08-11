@@ -550,9 +550,8 @@ MonoBehaviour:
   _outlineGlowMaterial: {fileID: 2100000, guid: ddae4db2e52d4ddda932874405152ce7, type: 2}
   _placementGlowOutlineWidth: 0.11
   _placementGlowInflate: 1.08
-  _scopeTargetGlowOutlineWidth: 0.075
+  _scopeTargetGlowOutlineWidth: 0.045
   _scopeTargetGlowInflate: 1.055
-  _scopeTargetGlowFillAlpha: 0.025
   _scopeTargetGlowIntensity: 1.8
   _outlineGlowIntensity: 2.2
   _persistentPulseSpeed: 0.65

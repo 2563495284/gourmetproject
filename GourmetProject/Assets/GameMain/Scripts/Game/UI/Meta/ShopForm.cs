@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.Tutorial;
 using GourmetProject.Game.UI.Hud;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Data;
@@ -661,6 +662,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             cfg.ItemKind kind = entry.Kind == ShopEntryKind.ActiveItem ? cfg.ItemKind.Active : cfg.ItemKind.Passive;
             ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, entry.Id, kind);
+            TutorialRuntime.ObserveItemShown(item);
             if (trigger == null || _itemTipView == null || item == null)
             {
                 trigger?.ClearTip();
