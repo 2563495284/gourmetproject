@@ -33,7 +33,6 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private RectTransform _preparedDishRoot;
         [SerializeField] private DishIconRenderTexturePreview _dishPreview;
         [SerializeField] private ServingOutletDishHoverTrigger _dishHoverTrigger;
-        [SerializeField] private TMP_Text _titleText;
         [SerializeField] private TMP_Text _statusText;
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private Canvas _worldCanvas;
@@ -209,7 +208,6 @@ namespace GourmetProject.Game.UI.Hud
         private void ApplyState(ServingOutletState state, PreparedServeDish prepared, string blockedReason)
         {
             State = state;
-            SetText(_titleText, "出菜口");
 
             bool waitingForDrag = state == ServingOutletState.WaitingForDishDrag && prepared != null;
             if (_preparedDishRoot != null)

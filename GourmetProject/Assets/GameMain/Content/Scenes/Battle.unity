@@ -260,9 +260,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44fb7ec3d455d4fc593e07d7491d263f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Gameplay.Presentation.BattleDoodleController
-  _camera: {fileID: 788870930}
-  _strokesRoot: {fileID: 230226105}
-  _strokePrefab: {fileID: 2300493847144611895, guid: e178ac4e1599e43e0a0973fe42c08539, type: 3}
 --- !u!4 &232143574
 Transform:
   m_ObjectHideFlags: 0
@@ -658,7 +655,8 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 9061424230109326910, guid: 0f58c60cda34548149eed4f0d284e5f4, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0f58c60cda34548149eed4f0d284e5f4, type: 3}
