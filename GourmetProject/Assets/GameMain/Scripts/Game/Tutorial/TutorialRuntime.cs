@@ -252,6 +252,12 @@ namespace GourmetProject.Game.Tutorial
                 if (version != _operationVersion || _sequence != sequence || _stepIndex != index) return;
                 EnsureOverlay();
                 _transitioning = false;
+                if (_overlay == null)
+                {
+                    Debug.LogError("Tutorial overlay could not be created; closing the current tutorial sequence.");
+                    CloseForPageChange();
+                    return;
+                }
                 _overlay.Show(
                     step,
                     index,
@@ -307,152 +313,67 @@ namespace GourmetProject.Game.Tutorial
     }
 
     /// <summary>铛铛引导层：四块遮罩保留高亮挖孔，并按步骤决定挖孔是否可交互。</summary>
-    internal sealed class TutorialOverlayView : MonoBehaviour
+    internal sealed class TutorialOverlayView
     {
+        private const string PrefabResourcePath = "Prefabs/UI/Tutorial/TutorialOverlay";
         private const float TipWidth = 900f;
         private const float TipHeight = 270f;
-        private RectTransform _root;
-        private readonly List<Image> _masks = new();
-        private readonly List<Image> _progressDots = new();
-        private Image _holeBlocker;
-        private RectTransform _tip;
-        private Image _mascot;
-        private TMP_Text _message;
-        private Button _continue;
+        private readonly GameObject _instance;
+        private readonly RectTransform _root;
+        private readonly Image[] _masks;
+        private readonly Image[] _progressDots;
+        private readonly Image _holeBlocker;
+        private readonly RectTransform _tip;
+        private readonly Image _mascot;
+        private readonly TMP_Text _message;
+        private readonly Button _continue;
         private Action _advance;
         private TutorialStepDefinition _step;
         private Rect _lastHole;
         private bool _lastHadHole;
         private Vector2Int _lastScreenSize;
 
+        public Transform transform => _instance != null ? _instance.transform : null;
+
         public static TutorialOverlayView Create()
         {
-            var go = new GameObject("TutorialOverlay", typeof(RectTransform), typeof(Canvas), typeof(GraphicRaycaster), typeof(TutorialOverlayView));
-            DontDestroyOnLoad(go);
-            Canvas canvas = go.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.overrideSorting = true;
-            canvas.sortingOrder = 32000;
-            RectTransform root = go.GetComponent<RectTransform>();
-            root.anchorMin = Vector2.zero;
-            root.anchorMax = Vector2.one;
-            root.offsetMin = root.offsetMax = Vector2.zero;
-            TutorialOverlayView view = go.GetComponent<TutorialOverlayView>();
-            view.Build(root);
-            return view;
-        }
-
-        private void Build(RectTransform root)
-        {
-            _root = root;
-            for (int i = 0; i < 4; i++)
+            GameObject prefab = Resources.Load<GameObject>(PrefabResourcePath);
+            if (prefab == null)
             {
-                var go = new GameObject("Mask" + i, typeof(RectTransform), typeof(Image));
-                go.transform.SetParent(root, false);
-                Image image = go.GetComponent<Image>();
-                image.color = new Color(0f, 0f, 0f, 0.72f);
-                image.raycastTarget = true;
-                _masks.Add(image);
+                Debug.LogError($"Tutorial overlay prefab is missing at Resources/{PrefabResourcePath}.");
+                return null;
             }
 
-            var blockerGo = new GameObject("HoleInputBlocker", typeof(RectTransform), typeof(Image));
-            blockerGo.transform.SetParent(root, false);
-            _holeBlocker = blockerGo.GetComponent<Image>();
-            _holeBlocker.color = new Color(1f, 1f, 1f, 0.001f);
-            _holeBlocker.raycastTarget = true;
-            _holeBlocker.gameObject.SetActive(false);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            UnityEngine.Object.DontDestroyOnLoad(instance);
+            return new TutorialOverlayView(instance);
+        }
 
-            var tipGo = new GameObject("DangDangDialogue", typeof(RectTransform));
-            tipGo.transform.SetParent(root, false);
-            _tip = tipGo.GetComponent<RectTransform>();
-            _tip.anchorMin = _tip.anchorMax = new Vector2(0.5f, 0.5f);
-            _tip.sizeDelta = new Vector2(TipWidth, TipHeight);
-
-            var panelGo = new GameObject("DialoguePanel", typeof(RectTransform), typeof(Image));
-            panelGo.transform.SetParent(_tip, false);
-            RectTransform panelRect = panelGo.GetComponent<RectTransform>();
-            SetCenteredRect(panelRect, new Vector2(80f, -4f), new Vector2(740f, 222f));
-            Image panel = panelGo.GetComponent<Image>();
-            panel.sprite = LoadSprite("Sprites/UI/Tutorial/Components/dialogue_panel_base");
-            panel.color = panel.sprite != null ? Color.white : new Color(0.96f, 0.90f, 0.74f, 0.99f);
-            panel.raycastTarget = true;
-
-            var mascotGo = new GameObject("DangDang", typeof(RectTransform), typeof(Image));
-            mascotGo.transform.SetParent(_tip, false);
-            RectTransform mascotRect = mascotGo.GetComponent<RectTransform>();
-            SetCenteredRect(mascotRect, new Vector2(-348f, 4f), new Vector2(270f, 270f));
-            _mascot = mascotGo.GetComponent<Image>();
-            _mascot.preserveAspect = true;
-            _mascot.raycastTarget = false;
-
-            var nameplateGo = new GameObject("Nameplate", typeof(RectTransform), typeof(Image));
-            nameplateGo.transform.SetParent(panelRect, false);
-            RectTransform nameplateRect = nameplateGo.GetComponent<RectTransform>();
-            SetCenteredRect(nameplateRect, new Vector2(-232f, 76f), new Vector2(190f, 50f));
-            Image nameplate = nameplateGo.GetComponent<Image>();
-            nameplate.sprite = LoadSprite("Sprites/UI/Tutorial/Components/dialogue_nameplate");
-            nameplate.color = nameplate.sprite != null ? Color.white : new Color(0.76f, 0.43f, 0.14f, 1f);
-            nameplate.raycastTarget = false;
-
-            var nameGo = new GameObject("Name", typeof(RectTransform), typeof(TextMeshProUGUI));
-            nameGo.transform.SetParent(nameplateRect, false);
-            Stretch(nameGo.GetComponent<RectTransform>());
-            TMP_Text name = nameGo.GetComponent<TextMeshProUGUI>();
-            name.text = "铛铛";
-            name.fontSize = 27f;
-            name.fontStyle = FontStyles.Bold;
-            name.color = new Color(0.22f, 0.11f, 0.04f, 1f);
-            name.alignment = TextAlignmentOptions.Center;
-            name.raycastTarget = false;
-
-            var textGo = new GameObject("Message", typeof(RectTransform), typeof(TextMeshProUGUI));
-            textGo.transform.SetParent(panelRect, false);
-            RectTransform textRect = textGo.GetComponent<RectTransform>();
-            SetCenteredRect(textRect, new Vector2(45f, 10f), new Vector2(570f, 118f));
-            _message = textGo.GetComponent<TextMeshProUGUI>();
-            _message.fontSize = 27f;
-            _message.color = new Color(0.20f, 0.12f, 0.06f, 1f);
-            _message.alignment = TextAlignmentOptions.MidlineLeft;
-            _message.enableWordWrapping = true;
-            _message.raycastTarget = false;
-
-            var buttonGo = new GameObject("Continue", typeof(RectTransform), typeof(Image), typeof(Button));
-            buttonGo.transform.SetParent(panelRect, false);
-            RectTransform buttonRect = buttonGo.GetComponent<RectTransform>();
-            SetCenteredRect(buttonRect, new Vector2(245f, -76f), new Vector2(150f, 52f));
-            Image buttonImage = buttonGo.GetComponent<Image>();
-            buttonImage.sprite = LoadSprite("Sprites/UI/Tutorial/Components/dialogue_continue_button");
-            buttonImage.color = buttonImage.sprite != null ? Color.white : new Color(0.94f, 0.64f, 0.18f, 1f);
-            _continue = buttonGo.GetComponent<Button>();
-            _continue.onClick.AddListener(() => _advance?.Invoke());
-            var labelGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
-            labelGo.transform.SetParent(buttonGo.transform, false);
-            RectTransform labelRect = labelGo.GetComponent<RectTransform>();
-            Stretch(labelRect);
-            TMP_Text label = labelGo.GetComponent<TextMeshProUGUI>();
-            label.text = "继续";
-            label.fontSize = 25f;
-            label.fontStyle = FontStyles.Bold;
-            label.color = new Color(0.18f, 0.10f, 0.04f, 1f);
-            label.alignment = TextAlignmentOptions.Center;
-            label.raycastTarget = false;
-
-            var progressGo = new GameObject("Progress", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-            progressGo.transform.SetParent(panelRect, false);
-            RectTransform progressRect = progressGo.GetComponent<RectTransform>();
-            SetCenteredRect(progressRect, new Vector2(-55f, -78f), new Vector2(300f, 30f));
-            HorizontalLayoutGroup progress = progressGo.GetComponent<HorizontalLayoutGroup>();
-            progress.spacing = 7f;
-            progress.childAlignment = TextAnchor.MiddleCenter;
-            progress.childControlWidth = false;
-            progress.childControlHeight = false;
-            progress.childForceExpandWidth = false;
-            progress.childForceExpandHeight = false;
+        private TutorialOverlayView(GameObject instance)
+        {
+            _instance = instance ?? throw new ArgumentNullException(nameof(instance));
+            _root = Require<RectTransform>(instance.transform, string.Empty);
+            _masks = new[]
+            {
+                Require<Image>(instance.transform, "Mask0"),
+                Require<Image>(instance.transform, "Mask1"),
+                Require<Image>(instance.transform, "Mask2"),
+                Require<Image>(instance.transform, "Mask3"),
+            };
+            _holeBlocker = Require<Image>(instance.transform, "HoleInputBlocker");
+            _tip = Require<RectTransform>(instance.transform, "DangDangDialogue");
+            _mascot = Require<Image>(instance.transform, "DangDangDialogue/DangDang");
+            _message = Require<TMP_Text>(instance.transform, "DangDangDialogue/DialoguePanel/Message");
+            _continue = Require<Button>(instance.transform, "DangDangDialogue/DialoguePanel/Continue");
+            Transform progress = RequireTransform(instance.transform, "DangDangDialogue/DialoguePanel/Progress");
+            _progressDots = progress.GetComponentsInChildren<Image>(includeInactive: true);
+            _continue.onClick.AddListener(OnContinueClicked);
+            Canvas.willRenderCanvases += RefreshTrackedLayout;
         }
 
         public void Show(TutorialStepDefinition step, int stepIndex, int stepCount, Action advance)
         {
-            gameObject.SetActive(true);
+            _instance.SetActive(true);
             _step = step;
             _advance = advance;
             _message.text = step.Message;
@@ -461,24 +382,25 @@ namespace GourmetProject.Game.Tutorial
             _continue.gameObject.SetActive(step.Mode == TutorialAdvanceMode.Continue);
             RefreshProgress(stepIndex, stepCount);
             Canvas.ForceUpdateCanvases();
+            Vector2Int canvasSize = GetCanvasSize();
             bool hasHole = TryResolveHole(step.Anchors, out Rect hole);
             if (hasHole) ApplyHole(hole);
             else ApplyFallback(step.Mode == TutorialAdvanceMode.Continue);
-            PositionTip(hasHole ? hole : new Rect(Screen.width * 0.5f, Screen.height * 0.5f, 0f, 0f));
+            PositionTip(hasHole ? hole : new Rect(canvasSize.x * 0.5f, canvasSize.y * 0.5f, 0f, 0f));
             _lastHadHole = hasHole;
             _lastHole = hole;
-            _lastScreenSize = new Vector2Int(Screen.width, Screen.height);
+            _lastScreenSize = canvasSize;
         }
 
-        private void LateUpdate()
+        private void RefreshTrackedLayout()
         {
-            if (_step == null) return;
+            if (_step == null || _instance == null || !_instance.activeInHierarchy) return;
             bool hasHole = TryResolveHole(_step.Anchors, out Rect hole);
-            Vector2Int screen = new(Screen.width, Screen.height);
+            Vector2Int screen = GetCanvasSize();
             if (screen == _lastScreenSize && hasHole == _lastHadHole && (!hasHole || Approximately(hole, _lastHole))) return;
             if (hasHole) ApplyHole(hole);
             else ApplyFallback(_step.Mode == TutorialAdvanceMode.Continue);
-            PositionTip(hasHole ? hole : new Rect(Screen.width * 0.5f, Screen.height * 0.5f, 0f, 0f));
+            PositionTip(hasHole ? hole : new Rect(screen.x * 0.5f, screen.y * 0.5f, 0f, 0f));
             _lastHadHole = hasHole;
             _lastHole = hole;
             _lastScreenSize = screen;
@@ -490,13 +412,17 @@ namespace GourmetProject.Game.Tutorial
 
         public void Hide()
         {
-            if (this != null) gameObject.SetActive(false);
+            if (_instance != null) _instance.SetActive(false);
         }
 
         public void Dispose()
         {
-            if (this != null) Destroy(gameObject);
+            Canvas.willRenderCanvases -= RefreshTrackedLayout;
+            if (_continue != null) _continue.onClick.RemoveListener(OnContinueClicked);
+            if (_instance != null) UnityEngine.Object.Destroy(_instance);
         }
+
+        private void OnContinueClicked() => _advance?.Invoke();
 
         private bool TryResolveHole(IReadOnlyList<string> ids, out Rect result)
         {
@@ -528,10 +454,11 @@ namespace GourmetProject.Game.Tutorial
 
         private void ApplyHole(Rect hole)
         {
-            SetMask(_masks[0].rectTransform, 0f, 0f, hole.xMin, Screen.height);
-            SetMask(_masks[1].rectTransform, hole.xMax, 0f, Screen.width, Screen.height);
+            Vector2Int canvasSize = GetCanvasSize();
+            SetMask(_masks[0].rectTransform, 0f, 0f, hole.xMin, canvasSize.y);
+            SetMask(_masks[1].rectTransform, hole.xMax, 0f, canvasSize.x, canvasSize.y);
             SetMask(_masks[2].rectTransform, hole.xMin, 0f, hole.xMax, hole.yMin);
-            SetMask(_masks[3].rectTransform, hole.xMin, hole.yMax, hole.xMax, Screen.height);
+            SetMask(_masks[3].rectTransform, hole.xMin, hole.yMax, hole.xMax, canvasSize.y);
             _holeBlocker.gameObject.SetActive(!_step.AllowTargetInteraction);
             if (!_step.AllowTargetInteraction)
                 SetMask(_holeBlocker.rectTransform, hole.xMin, hole.yMin, hole.xMax, hole.yMax);
@@ -539,8 +466,9 @@ namespace GourmetProject.Game.Tutorial
 
         private void ApplyFallback(bool blockInput)
         {
-            for (int i = 0; i < _masks.Count; i++) _masks[i].gameObject.SetActive(i == 0 && blockInput);
-            if (blockInput) SetMask(_masks[0].rectTransform, 0f, 0f, Screen.width, Screen.height);
+            for (int i = 0; i < _masks.Length; i++) _masks[i].gameObject.SetActive(i == 0 && blockInput);
+            Vector2Int canvasSize = GetCanvasSize();
+            if (blockInput) SetMask(_masks[0].rectTransform, 0f, 0f, canvasSize.x, canvasSize.y);
             _holeBlocker.gameObject.SetActive(false);
         }
 
@@ -555,44 +483,42 @@ namespace GourmetProject.Game.Tutorial
 
         private void PositionTip(Rect hole)
         {
-            float referenceScale = Mathf.Max(0.62f, Screen.height / 1080f);
-            float widthFitScale = Mathf.Max(0.62f, (Screen.width - 24f) / TipWidth);
+            Vector2Int canvasSize = GetCanvasSize();
+            float referenceScale = Mathf.Max(0.62f, canvasSize.y / 1080f);
+            float widthFitScale = Mathf.Max(0.62f, (canvasSize.x - 24f) / TipWidth);
             float scale = Mathf.Min(referenceScale, widthFitScale);
             _tip.localScale = Vector3.one * scale;
             float halfWidth = TipWidth * scale * 0.5f;
             float halfHeight = TipHeight * scale * 0.5f;
-            float x = Mathf.Clamp(hole.center.x, halfWidth + 12f, Screen.width - halfWidth - 12f);
+            float x = Mathf.Clamp(hole.center.x, halfWidth + 12f, canvasSize.x - halfWidth - 12f);
             float y = hole.yMin > TipHeight * scale + 28f
                 ? hole.yMin - halfHeight - 18f
                 : hole.yMax + halfHeight + 18f;
-            y = Mathf.Clamp(y, halfHeight + 12f, Screen.height - halfHeight - 12f);
+            y = Mathf.Clamp(y, halfHeight + 12f, canvasSize.y - halfHeight - 12f);
             _tip.anchorMin = _tip.anchorMax = Vector2.zero;
             _tip.anchoredPosition = new Vector2(x, y);
+        }
+
+        private Vector2Int GetCanvasSize()
+        {
+            Rect rect = _root.rect;
+            int width = Mathf.RoundToInt(rect.width);
+            int height = Mathf.RoundToInt(rect.height);
+            return new Vector2Int(width > 0 ? width : Screen.width, height > 0 ? height : Screen.height);
         }
 
         private void RefreshProgress(int current, int count)
         {
             count = Mathf.Max(1, count);
-            Transform parent = _progressDots.Count > 0
-                ? _progressDots[0].transform.parent
-                : _continue.transform.parent.Find("Progress");
-            while (_progressDots.Count < count)
+            if (count > _progressDots.Length)
             {
-                var dotGo = new GameObject($"Dot{_progressDots.Count + 1}", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
-                dotGo.transform.SetParent(parent, false);
-                dotGo.GetComponent<RectTransform>().sizeDelta = new Vector2(19f, 19f);
-                LayoutElement layout = dotGo.GetComponent<LayoutElement>();
-                layout.preferredWidth = 19f;
-                layout.preferredHeight = 19f;
-                Image dot = dotGo.GetComponent<Image>();
-                dot.preserveAspect = true;
-                dot.raycastTarget = false;
-                _progressDots.Add(dot);
+                Debug.LogError($"Tutorial sequence has {count} steps, but the overlay prefab only provides {_progressDots.Length} progress dots.");
+                count = _progressDots.Length;
             }
 
             Sprite active = LoadSprite("Sprites/UI/Tutorial/Components/dialogue_progress_active");
             Sprite inactive = LoadSprite("Sprites/UI/Tutorial/Components/dialogue_progress_inactive");
-            for (int i = 0; i < _progressDots.Count; i++)
+            for (int i = 0; i < _progressDots.Length; i++)
             {
                 Image dot = _progressDots[i];
                 dot.gameObject.SetActive(i < count);
@@ -622,19 +548,20 @@ namespace GourmetProject.Game.Tutorial
             return sprites != null && sprites.Length > 0 ? sprites[0] : null;
         }
 
-        private static void Stretch(RectTransform rect)
+        private static Transform RequireTransform(Transform root, string path)
         {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            Transform result = string.IsNullOrEmpty(path) ? root : root.Find(path);
+            if (result == null) throw new InvalidOperationException($"Tutorial overlay prefab is missing '{path}'.");
+            return result;
         }
 
-        private static void SetCenteredRect(RectTransform rect, Vector2 position, Vector2 size)
+        private static T Require<T>(Transform root, string path) where T : Component
         {
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = position;
-            rect.sizeDelta = size;
+            Transform target = RequireTransform(root, path);
+            T component = target.GetComponent<T>();
+            if (component == null)
+                throw new InvalidOperationException($"Tutorial overlay prefab node '{path}' is missing {typeof(T).Name}.");
+            return component;
         }
     }
 }

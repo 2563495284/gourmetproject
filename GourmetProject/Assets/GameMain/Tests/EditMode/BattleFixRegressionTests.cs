@@ -116,11 +116,11 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void DirectServe_AutoConfirmsOnlyServeActions()
+        public void RequireServeConfirmation_AutoConfirmsOnlyWhenDisabled()
         {
-            Assert.That(BattleWorldController.ShouldAutoConfirmPendingDish(PendingDishActionKind.Serve, true), Is.True);
-            Assert.That(BattleWorldController.ShouldAutoConfirmPendingDish(PendingDishActionKind.Confirm, true), Is.False);
-            Assert.That(BattleWorldController.ShouldAutoConfirmPendingDish(PendingDishActionKind.Serve, false), Is.False);
+            Assert.That(BattleWorldController.ShouldAutoConfirmPendingDish(PendingDishActionKind.Serve, true), Is.False);
+            Assert.That(BattleWorldController.ShouldAutoConfirmPendingDish(PendingDishActionKind.Serve, false), Is.True);
+            Assert.That(BattleWorldController.ShouldAutoConfirmPendingDish(PendingDishActionKind.Confirm, false), Is.False);
         }
 
         [Test]

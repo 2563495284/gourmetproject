@@ -1915,7 +1915,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             bool autoConfirm = ShouldAutoConfirmPendingDish(
                     PendingDishActionKind.Serve,
-                    GameApp.Settings?.DirectServe == true)
+                    GameApp.Settings?.RequireServeConfirmation ?? true)
                 && _pendingDishConfirmRequested != null;
             if (autoConfirm)
             {
@@ -1936,9 +1936,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal static bool ShouldAutoConfirmPendingDish(
             PendingDishActionKind actionKind,
-            bool directServeEnabled)
+            bool requireServeConfirmation)
         {
-            return directServeEnabled && actionKind == PendingDishActionKind.Serve;
+            return !requireServeConfirmation && actionKind == PendingDishActionKind.Serve;
         }
 
         private DishPieceView InstantiateLoosePiece(DishInstance dish, string objectName)

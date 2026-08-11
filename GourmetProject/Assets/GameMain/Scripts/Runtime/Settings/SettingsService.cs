@@ -38,7 +38,7 @@ namespace GourmetProject.Runtime.Settings
 
         // 游戏演出偏好键。
         public const string KeySettlementAcceleration = "Gameplay.SettlementAcceleration";
-        public const string KeyDirectServe = "Gameplay.DirectServe";
+        public const string KeyRequireServeConfirmation = "Gameplay.RequireServeConfirmation";
 
         public SettingsService(SettingComponent setting, SoundComponent sound)
         {
@@ -123,11 +123,11 @@ namespace GourmetProject.Runtime.Settings
             set => _setting.SetBool(KeySettlementAcceleration, value);
         }
 
-        /// <summary>食物拖到餐桌后是否跳过手动“上菜”按钮，直接确认正式上菜。</summary>
-        public bool DirectServe
+        /// <summary>食物拖到餐桌后是否需要玩家点击“上菜”按钮确认。</summary>
+        public bool RequireServeConfirmation
         {
-            get => _setting.GetBool(KeyDirectServe, false);
-            set => _setting.SetBool(KeyDirectServe, value);
+            get => _setting.GetBool(KeyRequireServeConfirmation, true);
+            set => _setting.SetBool(KeyRequireServeConfirmation, value);
         }
 
         /// <summary>

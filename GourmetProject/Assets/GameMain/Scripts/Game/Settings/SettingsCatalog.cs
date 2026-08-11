@@ -207,14 +207,14 @@ namespace GourmetProject.Game.Settings
                 SetToggleValue = v => settings.SettlementAcceleration = v,
             });
 
-            // —— 游戏：拖放后直接上菜 ——
+            // —— 游戏：拖放后需确认上菜 ——
             list.Add(new SettingDescriptor
             {
-                Id = SettingsService.KeyDirectServe,
-                Label = "直接上菜",
+                Id = SettingsService.KeyRequireServeConfirmation,
+                Label = "需确认上菜",
                 ControlType = SettingControlType.Toggle,
-                GetToggleValue = () => settings.DirectServe,
-                SetToggleValue = v => settings.DirectServe = v,
+                GetToggleValue = () => settings.RequireServeConfirmation,
+                SetToggleValue = v => settings.RequireServeConfirmation = v,
             });
 
             // —— 隐私：匿名数据统计 ——
