@@ -2,13 +2,14 @@ using System;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Runtime.UI;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 经营挑战态操作条：结算按钮，以及 STS2 风格的绘制 / 擦除 / 清空 / 显隐图标工具栏。
+    /// 经营挑战态操作条：菜谱入口、结算按钮，以及 STS2 风格的绘制 / 擦除 / 清空 / 显隐图标工具栏。
     /// </summary>
     public sealed class BattleFoodActionBar : MonoBehaviour
     {
@@ -20,6 +21,8 @@ namespace GourmetProject.Game.UI.Battle.View
         private static readonly Color HiddenColor = new Color(1f, 1f, 1f, 0.28f);
 
         [SerializeField] private Button _eatButton;
+        [SerializeField] private Button _recipeInfoButton;
+        [SerializeField] private TMP_Text _recipeInfoText;
         [SerializeField] private RawImage _doodleCanvas;
         [SerializeField] private Button _doodleDrawButton;
         [SerializeField] private Button _doodleEraseButton;
@@ -37,27 +40,43 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private CanvasGroup _formInteractionGroup;
         private CanvasGroup _toolsInteractionGroup;
+        private bool _hasRecipeInspectAction;
+        private int? _recipeCountPresentationOverride;
 
-        public RectTransform SettleRect => _eatButton != null ? _eatButton.transform as RectTransform : transform as RectTransform;
+        public RectTransform SettleRect =>
+            _eatButton != null ? _eatButton.transform as RectTransform : transform as RectTransform;
+        public RectTransform RecipeInfoButtonRect =>
+            _recipeInfoButton != null ? _recipeInfoButton.transform as RectTransform : null;
 
         public void Bind(
             Action onEat,
+            Action onRecipeInspect,
             Action onDoodleDraw,
             Action onDoodleErase,
             Action onDoodleClear,
             Action onDoodleToggle)
         {
             UIButtonSoundFeedback.Install(_eatButton);
+            UIButtonSoundFeedback.Install(_recipeInfoButton);
             UIButtonSoundFeedback.Install(_doodleDrawButton);
             UIButtonSoundFeedback.Install(_doodleEraseButton);
             UIButtonSoundFeedback.Install(_doodleClearButton);
             UIButtonSoundFeedback.Install(_doodleToggleButton);
 
             Wire(_eatButton, onEat);
+            Wire(_recipeInfoButton, onRecipeInspect);
             Wire(_doodleDrawButton, onDoodleDraw);
             Wire(_doodleEraseButton, onDoodleErase);
             Wire(_doodleClearButton, onDoodleClear);
             Wire(_doodleToggleButton, onDoodleToggle);
+            _hasRecipeInspectAction = onRecipeInspect != null;
+        }
+
+        public void SetRecipeCountPresentationOverride(int? count)
+        {
+            _recipeCountPresentationOverride = count.HasValue
+                ? Mathf.Max(0, count.Value)
+                : null;
         }
 
         public void SetVisible(bool visible)
@@ -84,6 +103,7 @@ namespace GourmetProject.Game.UI.Battle.View
             BattleDoodleTool tool = world != null ? world.DoodleTool : BattleDoodleTool.None;
             bool toolActive = doodleReady && tool != BattleDoodleTool.None;
             SetInteractionLocked(toolActive);
+            RefreshRecipeInfo(food, session);
 
             if (_eatButton != null)
             {
@@ -94,14 +114,12 @@ namespace GourmetProject.Game.UI.Battle.View
                     && !toolActive;
             }
 
-            SetInteractable(
-                _doodleDrawButton,
-                doodleReady && (!toolActive || tool == BattleDoodleTool.Draw));
-            SetInteractable(
-                _doodleEraseButton,
-                doodleReady && (!toolActive || tool == BattleDoodleTool.Erase));
-            SetInteractable(_doodleClearButton, doodleReady && !toolActive);
-            SetInteractable(_doodleToggleButton, doodleReady && !toolActive);
+            // 涂鸦工具栏在绘制期间仍是唯一可交互区域：画笔和橡皮需要能直接互相切换，
+            // 清空与显隐也不应要求玩家先退出当前工具。
+            SetInteractable(_doodleDrawButton, doodleReady);
+            SetInteractable(_doodleEraseButton, doodleReady);
+            SetInteractable(_doodleClearButton, doodleReady);
+            SetInteractable(_doodleToggleButton, doodleReady);
 
             if (world != null)
             {
@@ -137,6 +155,40 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _doodleToggleIcon.color = visible ? VisibleColor : HiddenColor;
             }
+        }
+
+        private void RefreshRecipeInfo(bool food, BattleSession session)
+        {
+            int placeable = 0;
+            int blocked = 0;
+            RecipeSlot slot = session != null && session.Slots.Count > 0
+                ? session.Slots[0]
+                : null;
+            if (session != null && slot != null)
+            {
+                for (int i = 0; i < slot.Entries.Count; i++)
+                {
+                    if (session.CanFitRecipeEntry(0, i))
+                    {
+                        placeable++;
+                    }
+                    else
+                    {
+                        blocked++;
+                    }
+                }
+            }
+
+            if (_recipeInfoText != null)
+            {
+                _recipeInfoText.text = _recipeCountPresentationOverride.HasValue
+                    ? $"{_recipeCountPresentationOverride.Value} 份"
+                    : $"{placeable}<color=#35B84A>✓</color> {blocked}<color=#E33A3A>×</color>";
+            }
+
+            SetInteractable(
+                _recipeInfoButton,
+                food && session != null && _hasRecipeInspectAction);
         }
 
         private void OnDisable()

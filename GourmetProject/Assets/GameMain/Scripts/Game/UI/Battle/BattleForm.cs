@@ -264,6 +264,7 @@ namespace GourmetProject.Game.UI.Battle
             _cakeLayerBuffHud = GetComponent<CakeLayerBuffHud>();
             _foodBar?.Bind(
                 OnEatClicked,
+                OnBattleRecipeClicked,
                 OnDoodleDrawClicked,
                 OnDoodleEraseClicked,
                 OnDoodleClearClicked,
@@ -1821,7 +1822,6 @@ namespace GourmetProject.Game.UI.Battle
 
             servingOutlet?.Bind(
                 _session,
-                () => OpenRecipeInspect(0, useBattleRecipe: true),
                 () => OnServingOutletDishHoverEntered(servingOutlet),
                 OnServingOutletDishHoverExited,
                 world == null ? null : screen => world.BeginServingOutletDrag(screen),
@@ -2903,6 +2903,19 @@ namespace GourmetProject.Game.UI.Battle
             OpenRecipeInspect(0);
         }
 
+        private void OnBattleRecipeClicked()
+        {
+            if (_rewardPeekOnly
+                || HasPendingBattleRewardLifecycle
+                || _current != GameplayView.Food
+                || IsViewToggleTransitioning())
+            {
+                return;
+            }
+
+            OpenRecipeInspect(0, useBattleRecipe: true);
+        }
+
         private bool OpenPassiveFlavorMutationPage(RecipeMutationResult result)
         {
             EnsurePassiveFlavorMutationPage();
@@ -3781,7 +3794,7 @@ namespace GourmetProject.Game.UI.Battle
                     _world.SetTableArea(_boardArea);
                     if (string.Equals(bossPlan?.DebuffId, "debuff_gluttony", StringComparison.Ordinal))
                     {
-                        _servingOutlet?.SetRecipeCountPresentationOverride(bossPlan.InitialRecipeEntryCount);
+                        _foodBar?.SetRecipeCountPresentationOverride(bossPlan.InitialRecipeEntryCount);
                     }
 
                     _world.Initialize(
@@ -3869,7 +3882,7 @@ namespace GourmetProject.Game.UI.Battle
                 }
 
                 _world.FinishBossPresentation();
-                _servingOutlet?.SetRecipeCountPresentationOverride(null);
+                _foodBar?.SetRecipeCountPresentationOverride(null);
                 RefreshAll();
                 _world.EnsureNextDishPrepared(0, allowDuringBossPresentation: true);
                 await ShowCarbDialogueIfNeededAsync(token);
@@ -4029,20 +4042,13 @@ namespace GourmetProject.Game.UI.Battle
             RectTransform layer = canvas != null
                 ? canvas.transform as RectTransform
                 : transform.root as RectTransform;
+            RectTransform target = _foodBar?.RecipeInfoButtonRect;
             Canvas.ForceUpdateCanvases();
-            Camera layerCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
-                ? canvas.worldCamera
-                : null;
             if (layer == null
                 || _run == null
                 || GameApp.Random == null
-                || _servingOutlet == null
-                || !_servingOutlet.TryGetRecipeInfoButtonScreenPoint(out Vector2 targetScreenPoint)
-                || !RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    layer,
-                    targetScreenPoint,
-                    layerCamera,
-                    out Vector2 recipeInfoButtonCenter)
+                || target == null
+                || !TryGetRectInLayer(target, layer, out RectSnapshot recipeInfoButtonRect)
                 || plan.DuplicatedDishIds.Count == 0)
             {
                 return;
@@ -4054,11 +4060,11 @@ namespace GourmetProject.Game.UI.Battle
             bool started = PlayRecipeCopyFlys(
                 plan.DuplicatedDishIds,
                 layer,
-                recipeInfoButtonCenter,
+                recipeInfoButtonRect.Center,
                 cosmetic,
                 arrived =>
                 {
-                    _servingOutlet?.SetRecipeCountPresentationOverride(
+                    _foodBar?.SetRecipeCountPresentationOverride(
                         plan.InitialRecipeEntryCount + arrived);
                     RefreshFoodActions();
                 },
@@ -4278,7 +4284,7 @@ namespace GourmetProject.Game.UI.Battle
             _bossPresentation?.CancelCurrent();
             CancelRecipeCopyFlys(_bossRecipeCopyFlys);
             (_world ?? BattleWorldController.Instance)?.SetBossPresentationBusy(false);
-            _servingOutlet?.SetRecipeCountPresentationOverride(null);
+            _foodBar?.SetRecipeCountPresentationOverride(null);
         }
 
         private void ApplyCakeLayerPresentation(int targetLayers)

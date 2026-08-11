@@ -2,7 +2,6 @@ using System;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Battle;
-using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -18,7 +17,7 @@ namespace GourmetProject.Game.UI.Hud
     }
 
     /// <summary>
-    /// 经营挑战底部出菜口：负责显示食谱可放统计，以及等待玩家拖到餐桌的自动出菜食物。
+    /// 经营挑战底部出菜口：负责显示等待玩家拖到餐桌的自动出菜食物。
     /// 具体餐桌预览与提交由 <see cref="BattleWorldController"/> 完成。
     /// </summary>
     [RequireComponent(typeof(Canvas), typeof(GraphicRaycaster))]
@@ -26,10 +25,6 @@ namespace GourmetProject.Game.UI.Hud
     {
         private const float PreparedDishRaycastPadding = 24f;
 
-        [SerializeField] private Button _recipeInfoButton;
-        [SerializeField] private TMP_Text _recipeInfoText;
-        [SerializeField] private Button _serveButton;
-        [SerializeField] private Image _serveBellImage;
         [SerializeField] private RectTransform _preparedDishRoot;
         [SerializeField] private DishIconRenderTexturePreview _dishPreview;
         [SerializeField] private ServingOutletDishHoverTrigger _dishHoverTrigger;
@@ -48,38 +43,8 @@ namespace GourmetProject.Game.UI.Hud
         private Func<Vector2, bool> _endDrag;
         private bool _dragging;
         private Camera _worldCamera;
-        private int? _recipeCountPresentationOverride;
 
         public ServingOutletState State { get; private set; }
-
-        public RectTransform RecipeInfoButtonRect
-            => _recipeInfoButton != null ? _recipeInfoButton.transform as RectTransform : null;
-
-        public bool TryGetRecipeInfoButtonScreenPoint(out Vector2 screenPoint)
-        {
-            screenPoint = default;
-            RectTransform rect = RecipeInfoButtonRect;
-            if (rect == null || !rect.gameObject.activeInHierarchy)
-            {
-                return false;
-            }
-
-            Canvas canvas = rect.GetComponentInParent<Canvas>();
-            Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
-                ? canvas.worldCamera != null ? canvas.worldCamera : _worldCamera
-                : null;
-            screenPoint = RectTransformUtility.WorldToScreenPoint(
-                camera,
-                rect.TransformPoint(rect.rect.center));
-            return true;
-        }
-
-        public void SetRecipeCountPresentationOverride(int? count)
-        {
-            _recipeCountPresentationOverride = count.HasValue
-                ? Mathf.Max(0, count.Value)
-                : null;
-        }
 
         public void ConfigureWorldSpace(Camera worldCamera)
         {
@@ -105,21 +70,16 @@ namespace GourmetProject.Game.UI.Hud
             {
                 gameObject.SetActive(visible);
             }
-
         }
 
         public void Bind(
             BattleSession session,
-            Action onInspect,
             Func<bool> onDishHoverEntered,
             Action onDishHoverExited,
             Action<Vector2> beginDrag,
             Action<Vector2> drag,
             Func<Vector2, bool> endDrag)
         {
-            UIButtonSoundFeedback.Install(_recipeInfoButton);
-            UIButtonSoundFeedback.Install(_serveButton);
-
             _beginDrag = beginDrag;
             _drag = drag;
             _endDrag = endDrag;
@@ -135,25 +95,7 @@ namespace GourmetProject.Game.UI.Hud
                 _dishHoverTrigger.Bind(onDishHoverEntered, onDishHoverExited);
             }
 
-            int placeable = 0;
-            int blocked = 0;
             RecipeSlot slot = session != null && session.Slots.Count > 0 ? session.Slots[0] : null;
-            if (session != null && slot != null)
-            {
-                for (int i = 0; i < slot.Entries.Count; i++)
-                {
-                    if (session.CanFitRecipeEntry(0, i))
-                    {
-                        placeable++;
-                    }
-                    else
-                    {
-                        blocked++;
-                    }
-                }
-            }
-
-            BindRecipeInfo(placeable, blocked, onInspect);
 
             bool limitReached = session != null
                 && session.MaxServes >= 0
@@ -175,34 +117,6 @@ namespace GourmetProject.Game.UI.Hud
                         : "剩余食物无法摆入餐桌";
                 ApplyState(ServingOutletState.NoDishCanServe, null, reason);
             }
-
-            if (_serveButton != null)
-            {
-                _serveButton.onClick.RemoveAllListeners();
-                _serveButton.interactable = false;
-                _serveButton.gameObject.SetActive(false);
-            }
-        }
-
-        // 兼容仍使用旧参数表的 UI 测试/调用方；出菜口已经自动出菜，onServe 会被忽略。
-        public void Bind(
-            BattleSession session,
-            Action onServe,
-            Action onInspect,
-            Func<bool> onDishHoverEntered,
-            Action onDishHoverExited,
-            Action<Vector2> beginDrag,
-            Action<Vector2> drag,
-            Func<Vector2, bool> endDrag)
-        {
-            Bind(
-                session,
-                onInspect,
-                onDishHoverEntered,
-                onDishHoverExited,
-                beginDrag,
-                drag,
-                endDrag);
         }
 
         private void ApplyState(ServingOutletState state, PreparedServeDish prepared, string blockedReason)
@@ -218,11 +132,6 @@ namespace GourmetProject.Game.UI.Hud
             if (!waitingForDrag)
             {
                 _dishHoverTrigger?.CancelHover();
-            }
-
-            if (_serveBellImage != null)
-            {
-                _serveBellImage.gameObject.SetActive(false);
             }
 
             if (_dishPreview != null)
@@ -265,25 +174,6 @@ namespace GourmetProject.Game.UI.Hud
                 _canvasGroup.alpha = 1f;
                 _canvasGroup.interactable = true;
                 _canvasGroup.blocksRaycasts = true;
-            }
-        }
-
-        private void BindRecipeInfo(int placeable, int blocked, Action onInspect)
-        {
-            SetText(_recipeInfoText, _recipeCountPresentationOverride.HasValue
-                ? $"{_recipeCountPresentationOverride.Value} 份"
-                : $"{placeable}<color=#35B84A>✓</color> {blocked}<color=#E33A3A>×</color>");
-
-            if (_recipeInfoButton == null)
-            {
-                return;
-            }
-
-            _recipeInfoButton.onClick.RemoveAllListeners();
-            _recipeInfoButton.interactable = onInspect != null;
-            if (onInspect != null)
-            {
-                _recipeInfoButton.onClick.AddListener(() => onInspect());
             }
         }
 

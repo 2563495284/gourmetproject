@@ -47,10 +47,15 @@ namespace GourmetProject.Tests.EditMode
 
             BattleFoodActionBar bar = panel.GetComponentInChildren<BattleFoodActionBar>(true);
             Assert.That(bar, Is.Not.Null);
+            Transform recipeInfo = panel.Find("FoodActions/RecipeInfoButton");
+            Assert.That(recipeInfo?.GetComponent<Button>(), Is.Not.Null);
+            Assert.That(bar.RecipeInfoButtonRect, Is.EqualTo(recipeInfo as RectTransform));
             var serializedBar = new SerializedObject(bar);
             foreach (string fieldName in new[]
                      {
                          "_doodleCanvas",
+                         "_recipeInfoButton",
+                         "_recipeInfoText",
                          "_doodleDrawButton",
                          "_doodleEraseButton",
                          "_doodleClearButton",
@@ -102,6 +107,72 @@ namespace GourmetProject.Tests.EditMode
             {
                 Object.DestroyImmediate(gameObject);
             }
+        }
+
+        [Test]
+        public void DoodleToolbar_AllowsSwitchingToolsWhileOneIsActive()
+        {
+            var worldObject = new GameObject("BattleWorldControllerTest");
+            var actionsObject = new GameObject("FoodActions", typeof(RectTransform));
+            try
+            {
+                BattleDoodleController doodle = worldObject.AddComponent<BattleDoodleController>();
+                BattleWorldController world = worldObject.AddComponent<BattleWorldController>();
+                var serializedWorld = new SerializedObject(world);
+                serializedWorld.FindProperty("_doodle").objectReferenceValue = doodle;
+                serializedWorld.ApplyModifiedPropertiesWithoutUndo();
+
+                BattleFoodActionBar bar = actionsObject.AddComponent<BattleFoodActionBar>();
+                var toolsObject = new GameObject("DoodleTools", typeof(RectTransform), typeof(CanvasGroup));
+                toolsObject.transform.SetParent(actionsObject.transform, false);
+                Button drawButton = CreateButton("DoodleDrawButton", toolsObject.transform);
+                Button eraseButton = CreateButton("DoodleEraseButton", toolsObject.transform);
+                Button clearButton = CreateButton("DoodleClearButton", toolsObject.transform);
+                Button toggleButton = CreateButton("DoodleToggleButton", toolsObject.transform);
+
+                var serializedBar = new SerializedObject(bar);
+                serializedBar.FindProperty("_doodleDrawButton").objectReferenceValue = drawButton;
+                serializedBar.FindProperty("_doodleEraseButton").objectReferenceValue = eraseButton;
+                serializedBar.FindProperty("_doodleClearButton").objectReferenceValue = clearButton;
+                serializedBar.FindProperty("_doodleToggleButton").objectReferenceValue = toggleButton;
+                serializedBar.ApplyModifiedPropertiesWithoutUndo();
+
+                bar.Bind(
+                    null,
+                    null,
+                    () => world.ToggleDoodleTool(BattleDoodleTool.Draw),
+                    () => world.ToggleDoodleTool(BattleDoodleTool.Erase),
+                    world.ClearDoodle,
+                    () => world.ToggleDoodleVisible());
+
+                drawButton.onClick.Invoke();
+                bar.Refresh(true, null, world);
+
+                Assert.That(world.DoodleTool, Is.EqualTo(BattleDoodleTool.Draw));
+                Assert.That(eraseButton.interactable, Is.True,
+                    "画笔激活后仍应能直接点击橡皮。");
+                Assert.That(clearButton.interactable, Is.True);
+                Assert.That(toggleButton.interactable, Is.True);
+
+                eraseButton.onClick.Invoke();
+                bar.Refresh(true, null, world);
+
+                Assert.That(world.DoodleTool, Is.EqualTo(BattleDoodleTool.Erase));
+                Assert.That(drawButton.interactable, Is.True,
+                    "切到橡皮后仍应能直接切回画笔。");
+            }
+            finally
+            {
+                Object.DestroyImmediate(actionsObject);
+                Object.DestroyImmediate(worldObject);
+            }
+        }
+
+        private static Button CreateButton(string name, Transform parent)
+        {
+            var gameObject = new GameObject(name, typeof(RectTransform), typeof(Button));
+            gameObject.transform.SetParent(parent, false);
+            return gameObject.GetComponent<Button>();
         }
     }
 }
