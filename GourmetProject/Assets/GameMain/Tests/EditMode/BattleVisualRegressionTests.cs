@@ -1,4 +1,6 @@
 using System;
+using System.Reflection;
+using System.Threading;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Meta;
@@ -119,6 +121,58 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(preplaced.Outcome, Is.EqualTo(ServeOutcome.Placed));
             Assert.That(preplaced.Dish.PermanentFlatBonus.ToDouble(), Is.EqualTo(4d));
             Assert.That(preplaced.Dish.PermanentMultBonus.ToDouble(), Is.EqualTo(1.5d));
+        }
+
+        [Test]
+        public void PendingDishVisualCommit_DoesNotPublishTransientOutletState()
+        {
+            var root = new GameObject("PendingDishVisualCommitTest");
+            BattleWorldController controller = root.AddComponent<BattleWorldController>();
+            int stateChangedCount = 0;
+
+            try
+            {
+                FieldInfo field = typeof(BattleWorldController).GetField(
+                    "_stateChanged",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(field, Is.Not.Null);
+                field.SetValue(controller, new Action(() => stateChangedCount++));
+
+                var dish = new DishDef(
+                    "dish_outlet_transition",
+                    "出餐口切换测试菜",
+                    1,
+                    DishShape.FromRows(new[] { "X" }),
+                    0,
+                    0,
+                    1f,
+                    Array.Empty<string>(),
+                    string.Empty,
+                    allowRotate: false);
+                var instance = new DishInstance(
+                    1,
+                    dish,
+                    new Placement(dish.Shape, 0, new GridPos(0, 0)),
+                    Array.Empty<string>(),
+                    Array.Empty<string>());
+                var result = new PendingDishConfirmResult(
+                    true,
+                    instance,
+                    PendingDishActionKind.Serve);
+
+                _ = controller.CommitPendingDishVisualStateAsync(
+                    result,
+                    CancellationToken.None);
+
+                Assert.That(
+                    stateChangedCount,
+                    Is.Zero,
+                    "中间演出不得刷新 HUD；下一道菜应在最终刷新前准备好。");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
         }
 
         [Test]

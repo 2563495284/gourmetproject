@@ -1592,7 +1592,11 @@ namespace GourmetProject.Game.Presentation.Battle
             SetMessage(result.ActionKind == PendingDishActionKind.Serve
                 ? $"上菜：{result.Dish.Def.Name}"
                 : $"已确认摆放：{result.Dish.Def.Name}");
-            _stateChanged?.Invoke();
+
+            // Keep the outlet on its previous prepared-dish presentation until finalization.
+            // Publishing the already-confirmed session here exposes a transient state where
+            // PreparedServe is null but the next dish has not been prepared yet, so the outlet
+            // briefly renders "no dish can serve" before the final refresh.
 
             if (result.ActionKind == PendingDishActionKind.Serve && piece != null)
             {
