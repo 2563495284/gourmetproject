@@ -27,6 +27,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private DiningTableCoordinateMapper _mapper;
         private Transform _fxRoot;
         private float _visualScale = 1f;
+        private SettlementStageLabelView _labelPrefab;
+        private SettlementStageLabelView _finaleLabelPrefab;
+        private SpriteRenderer _spritePrefab;
         private GameObject _groupSpotlight;
         private GameObject _groupLabel;
         private SettlementEffectGroup _resultHitSoundGroup;
@@ -35,12 +38,18 @@ namespace GourmetProject.Game.Presentation.Battle
             IReadOnlyDictionary<int, DishPieceView> dishViews,
             DiningTableCoordinateMapper mapper,
             Transform fxRoot,
+            SettlementStageLabelView labelPrefab,
+            SettlementStageLabelView finaleLabelPrefab,
+            SpriteRenderer spritePrefab,
             float visualScale = 1f)
         {
             ClearImmediate();
             _dishViews = dishViews;
             _mapper = mapper;
             _fxRoot = fxRoot != null ? fxRoot : transform;
+            _labelPrefab = labelPrefab;
+            _finaleLabelPrefab = finaleLabelPrefab;
+            _spritePrefab = spritePrefab;
             _visualScale = Mathf.Max(0.0001f, visualScale);
         }
 
@@ -454,6 +463,21 @@ namespace GourmetProject.Game.Presentation.Battle
                 center,
                 SettlementColorPalette.WithAlpha(SettlementColorPalette.FinalScore, 0.42f),
                 -4);
+            Awaitable labelTask = SpawnLabelAsync(
+                center + Vector3.up * (0.62f * _visualScale),
+                "本桌结算",
+                $"总分  {ScoreNumberFormatter.Format(total)}",
+                SettlementColorPalette.FinalScore,
+                duration,
+                cancellationToken,
+                finalStamp: true);
+
+            if (ring == null)
+            {
+                await labelTask;
+                return;
+            }
+
             ring.transform.localScale = Vector3.one
                 * (0.28f * _visualScale);
             SpriteRenderer renderer = ring.GetComponent<SpriteRenderer>();
@@ -475,14 +499,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 .SetEase(Ease.Linear)
                 .SetLink(ring);
 
-            Awaitable labelTask = SpawnLabelAsync(
-                center + Vector3.up * (0.62f * _visualScale),
-                "本桌结算",
-                $"总分  {ScoreNumberFormatter.Format(total)}",
-                SettlementColorPalette.FinalScore,
-                duration,
-                cancellationToken,
-                finalStamp: true);
             await PresentationTween.AwaitCompletionAsync(ringTween, cancellationToken);
             await labelTask;
         }
@@ -564,6 +580,11 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             Vector3 center = bounds.size.sqrMagnitude > 0.0001f ? bounds.center : fallback;
             _groupSpotlight = CreateSprite("SettlementSpotlight", center, WithAlpha(theme, 0.20f), -6);
+            if (_groupSpotlight == null)
+            {
+                return;
+            }
+
             Vector2 size = bounds.size.sqrMagnitude > 0.0001f
                 ? new Vector2(
                     Mathf.Max(1.2f * _visualScale, bounds.size.x * 1.45f),
@@ -574,10 +595,16 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private GameObject CreateSprite(string name, Vector3 worldPosition, Color color, int orderOffset)
         {
-            GameObject root = new(name);
-            root.transform.SetParent(_fxRoot, worldPositionStays: true);
+            if (_spritePrefab == null)
+            {
+                Debug.LogError($"{nameof(SettlementStageView)} 缺少舞台 Sprite prefab。", this);
+                return null;
+            }
+
+            SpriteRenderer renderer = Instantiate(_spritePrefab, _fxRoot);
+            GameObject root = renderer.gameObject;
+            root.name = name;
             root.transform.position = worldPosition;
-            SpriteRenderer renderer = root.AddComponent<SpriteRenderer>();
             renderer.sprite = BattleShadow.SoftShadowSprite;
             renderer.color = color;
             BattleSorting.Apply(renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText + orderOffset);
@@ -597,42 +624,24 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform parentOverride = null,
             float visualScaleOverride = -1f)
         {
-            GameObject root = new("SettlementStageLabel");
-            root.transform.SetParent(parentOverride != null ? parentOverride : _fxRoot, worldPositionStays: true);
+            SettlementStageLabelView prefab = finalStamp ? _finaleLabelPrefab : _labelPrefab;
+            if (prefab == null)
+            {
+                Debug.LogError($"{nameof(SettlementStageView)} 缺少结算标签 prefab。", this);
+                return;
+            }
+
+            SettlementStageLabelView label = Instantiate(
+                prefab,
+                parentOverride != null ? parentOverride : _fxRoot);
+            GameObject root = label.gameObject;
+            root.name = finalStamp ? "SettlementFinaleLabel" : "SettlementStageLabel";
             root.transform.position = anchor;
             _transients.Add(root);
+            label.Bind(header, body, theme);
 
-            GameObject backgroundObject = new("Background");
-            backgroundObject.transform.SetParent(root.transform, false);
-            backgroundObject.transform.localPosition = Vector3.zero;
-            backgroundObject.transform.localScale = finalStamp
-                ? new Vector3(3.4f, 0.95f, 1f)
-                : new Vector3(2.7f, 0.72f, 1f);
-            SpriteRenderer background = backgroundObject.AddComponent<SpriteRenderer>();
-            background.sprite = BattleShadow.SoftShadowSprite;
-            background.color = WithAlpha(theme, 0.88f);
-            BattleSorting.Apply(background, BattleSorting.Fx, BattleSorting.OrderFloatingText);
-
-            TextMeshPro headerText = CreateText(
-                root.transform,
-                "Header",
-                header,
-                finalStamp ? 0.18f : 0.14f,
-                finalStamp ? 28 : 22,
-                finalStamp ? 0.085f : 0.070f,
-                2);
-            TextMeshPro bodyText = CreateText(
-                root.transform,
-                "Body",
-                body,
-                finalStamp ? -0.16f : -0.13f,
-                finalStamp ? 44 : 32,
-                finalStamp ? 0.115f : 0.090f,
-                3);
-            headerText.color = SettlementColorPalette.WithAlpha(SettlementColorPalette.TextInk, 0.78f);
-            bodyText.color = SettlementColorPalette.TextInk;
-
-            Color backgroundColor = background.color;
+            TextMeshPro headerText = label.HeaderText;
+            TextMeshPro bodyText = label.BodyText;
             Color headerColor = headerText.color;
             Color bodyColor = bodyText.color;
             float visualScale = visualScaleOverride > 0f
@@ -663,7 +672,6 @@ namespace GourmetProject.Game.Presentation.Battle
                         + Vector3.up * (0.10f * visualScale * enter);
 
                     float alpha = holdUntilCleared ? 1f : Mathf.Clamp01((1f - t) / 0.24f);
-                    background.color = WithAlpha(backgroundColor, alpha);
                     headerText.color = WithAlpha(headerColor, alpha);
                     bodyText.color = WithAlpha(bodyColor, alpha);
                 })
@@ -680,34 +688,6 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 Destroy(root);
             }
-        }
-
-        internal static TextMeshPro CreateText(
-            Transform parent,
-            string name,
-            string text,
-            float localY,
-            int fontSize,
-            float characterSize,
-            int orderOffset)
-        {
-            GameObject child = new(name);
-            child.transform.SetParent(parent, false);
-            child.transform.localPosition = new Vector3(0f, localY, -0.02f);
-            child.transform.localScale = Vector3.one * (characterSize * 1.1289f);
-            TextMeshPro mesh = child.AddComponent<TextMeshPro>();
-            mesh.text = text ?? string.Empty;
-            mesh.alignment = TextAlignmentOptions.Center;
-            mesh.fontSize = fontSize;
-            mesh.fontStyle = FontStyles.Bold;
-            mesh.textWrappingMode = TextWrappingModes.NoWrap;
-            mesh.overflowMode = TextOverflowModes.Overflow;
-            mesh.font = Resources.Load<TMP_FontAsset>("Fonts/AlimamaShuHeiTi-Bold SDF")
-                ?? TMP_Settings.defaultFontAsset;
-            mesh.ForceMeshUpdate(true, true);
-
-            BattleSorting.Apply(mesh, BattleSorting.Fx, BattleSorting.OrderFloatingText + orderOffset);
-            return mesh;
         }
 
         private DishPieceView TryGetDish(int dishInstanceId)

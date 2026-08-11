@@ -275,6 +275,27 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(SettlementStageView.ResultThemeFor(line), Is.EqualTo(SettlementColorPalette.For(kind)));
         }
 
+        [TestCase(ScoreLineKind.DishFlat)]
+        [TestCase(ScoreLineKind.DishPermanentFlat)]
+        [TestCase(ScoreLineKind.DishMultiplierAdd)]
+        [TestCase(ScoreLineKind.DishMultiplier)]
+        [TestCase(ScoreLineKind.Gold)]
+        [TestCase(ScoreLineKind.Layer)]
+        [TestCase(ScoreLineKind.SilverItemRoll)]
+        [TestCase(ScoreLineKind.CopySkill)]
+        [TestCase(ScoreLineKind.TriggerSweetTransfer)]
+        [TestCase(ScoreLineKind.SweetTransferFailed)]
+        public void SettlementPalette_UsesBrightSemanticTextOnDarkSemanticPlate(ScoreLineKind kind)
+        {
+            Color theme = SettlementColorPalette.For(kind);
+            Color plate = SettlementColorPalette.PlateFor(theme);
+            Color text = SettlementColorPalette.TextFor(theme);
+
+            Assert.That(RelativeLuminance(text), Is.GreaterThan(RelativeLuminance(plate)));
+            Assert.That(ContrastRatio(text, plate), Is.GreaterThanOrEqualTo(4.5f));
+            Assert.That((Color32)text, Is.Not.EqualTo((Color32)SettlementColorPalette.TextInk));
+        }
+
         [Test]
         public void DiningTableVisualScale_TracksCellSizeAndCapsAtOne()
         {
@@ -346,6 +367,27 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(actual.g, Is.EqualTo(expectedG));
             Assert.That(actual.b, Is.EqualTo(expectedB));
             Assert.That(actual.a, Is.EqualTo(255));
+        }
+
+        private static float ContrastRatio(Color first, Color second)
+        {
+            float bright = Mathf.Max(RelativeLuminance(first), RelativeLuminance(second));
+            float dark = Mathf.Min(RelativeLuminance(first), RelativeLuminance(second));
+            return (bright + 0.05f) / (dark + 0.05f);
+        }
+
+        private static float RelativeLuminance(Color color)
+        {
+            return 0.2126f * LinearChannel(color.r)
+                + 0.7152f * LinearChannel(color.g)
+                + 0.0722f * LinearChannel(color.b);
+        }
+
+        private static float LinearChannel(float channel)
+        {
+            return channel <= 0.04045f
+                ? channel / 12.92f
+                : Mathf.Pow((channel + 0.055f) / 1.055f, 2.4f);
         }
     }
 }
