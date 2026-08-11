@@ -17,13 +17,17 @@ namespace cfg
     public enum CountUnit
     {
         /// <summary>
-        /// 按实例(个)
+        /// 按有效份数
         /// </summary>
         Instances = 0,
         /// <summary>
         /// 按BaseId去重(种)
         /// </summary>
         Kinds = 1,
+        /// <summary>
+        /// 按物理食物数(个)
+        /// </summary>
+        PhysicalInstances = 2,
     }
 
 } 

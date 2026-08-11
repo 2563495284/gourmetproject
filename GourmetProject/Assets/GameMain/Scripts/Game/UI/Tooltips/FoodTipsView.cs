@@ -258,7 +258,7 @@ namespace GourmetProject.Game.UI.Tooltips
 
             cfg.Term term = GameApp.Config?.Tables?.TbTerm?.GetOrDefault(CountAsTermId);
             string title = !string.IsNullOrEmpty(term?.Name) ? term.Name : "食物";
-            string template = !string.IsNullOrEmpty(term?.Desc) ? term.Desc : "视为{x}个食物";
+            string template = !string.IsNullOrEmpty(term?.Desc) ? term.Desc : "视为{x}份食物";
             string desc = template.Replace("{x}", countAs.ToString());
             result.Add(new FoodInfoEntry(title, desc));
             return result;

@@ -24,7 +24,9 @@ namespace GourmetProject.Gameplay.Scoring
             bool reverseDishOrder = false,
             IReadOnlyList<UnservedRecipeDish> unservedRecipeDishes = null,
             Func<IReadOnlyList<string>, int, IReadOnlyList<string>> copySkillSelector = null,
-            Func<IReadOnlyList<int>, int, IReadOnlyList<int>> transferTargetSelector = null)
+            Func<IReadOnlyList<int>, int, IReadOnlyList<int>> transferTargetSelector = null,
+            Func<int, int, int> randomIntegerSelector = null,
+            int passiveItemCount = 0)
         {
             DiningTable = board ?? throw new ArgumentNullException(nameof(board));
             Db = db ?? throw new ArgumentNullException(nameof(db));
@@ -38,6 +40,8 @@ namespace GourmetProject.Gameplay.Scoring
             EffectSources = (effectSources ?? Array.Empty<IScoreEffectSource>()).ToArray();
             CopySkillSelector = copySkillSelector;
             TransferTargetSelector = transferTargetSelector;
+            RandomIntegerSelector = randomIntegerSelector;
+            PassiveItemCount = Math.Max(0, passiveItemCount);
 
             // 结算优先级层级（甜=+1、苦=-1，多风味累加）：层级高者先结算；同层再按棋盘从上到下、从左到右。
             IEnumerable<DishInstance> alive = DiningTable.Dishes.Where(d => !d.ExcludedFromScore);
@@ -137,6 +141,12 @@ namespace GourmetProject.Gameplay.Scoring
         /// 甜蜜传递目标选择器。正式结算由 BattleSession 注入随机流；预览未注入时使用稳定顺序。
         /// </summary>
         public Func<IReadOnlyList<int>, int, IReadOnlyList<int>> TransferTargetSelector { get; }
+
+        /// <summary>闭区间整数随机选择器；正式结算注入会话 RNG，预览为空时使用区间下限。</summary>
+        public Func<int, int, int> RandomIntegerSelector { get; }
+
+        /// <summary>本场结算开始时持有的被动装饰品数量。</summary>
+        public int PassiveItemCount { get; }
 
         /// <summary>本次结算时仍未上菜的食谱条目（槽索引 + dishId），供酸/咸在结算开始时遍历。</summary>
         public IReadOnlyList<UnservedRecipeDish> UnservedRecipeDishes { get; }

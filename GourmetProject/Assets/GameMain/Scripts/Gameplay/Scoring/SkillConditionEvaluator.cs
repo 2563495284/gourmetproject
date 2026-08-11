@@ -16,10 +16,10 @@ namespace GourmetProject.Gameplay.Scoring
         private static readonly System.Func<DishInstance, int> DefaultCountAs = d => d.EffectiveCountAs;
 
         public static int Evaluate(SkillRuleDef rule, ScoreContext ctx, DishInstance self)
-            => Evaluate(rule, ctx.DiningTable, ctx.Snapshot.History, self, ctx.CurrentHappyCakeLayers, ctx.GetEffectiveCountAs, ctx.Db);
+            => Evaluate(rule, ctx.DiningTable, ctx.Snapshot.History, self, ctx.CurrentHappyCakeLayers, ctx.GetEffectiveCountAs, ctx.Db, ctx);
 
         public static int Evaluate(SkillRuleDef rule, GpTable board, IScoreHistory history, DishInstance self, int happyCakeLayers = 0)
-            => Evaluate(rule, board, history, self, happyCakeLayers, DefaultCountAs, null);
+            => Evaluate(rule, board, history, self, happyCakeLayers, DefaultCountAs, null, null);
 
         public static int Evaluate(
             SkillRuleDef rule,
@@ -28,16 +28,16 @@ namespace GourmetProject.Gameplay.Scoring
             DishInstance self,
             int happyCakeLayers,
             GameplayDatabase db)
-            => Evaluate(rule, board, history, self, happyCakeLayers, DefaultCountAs, db);
+            => Evaluate(rule, board, history, self, happyCakeLayers, DefaultCountAs, db, null);
 
-        private static int Evaluate(SkillRuleDef rule, GpTable board, IScoreHistory history, DishInstance self, int happyCakeLayers, System.Func<DishInstance, int> countAsOf, GameplayDatabase db)
+        private static int Evaluate(SkillRuleDef rule, GpTable board, IScoreHistory history, DishInstance self, int happyCakeLayers, System.Func<DishInstance, int> countAsOf, GameplayDatabase db, ScoreContext ctx)
         {
             if (rule.CondType == SkillConditionType.None)
             {
                 return 1;
             }
 
-            int raw = RawValue(rule, board, history ?? EmptyScoreHistory.Instance, self, happyCakeLayers, countAsOf ?? DefaultCountAs, db);
+            int raw = RawValue(rule, board, history ?? EmptyScoreHistory.Instance, self, happyCakeLayers, countAsOf ?? DefaultCountAs, db, ctx);
             raw = ApplyDivisor(raw, rule.CondParam);
 
             // 阶梯：condParam="tiers:t1|t2|t3"，返回满足的最高档序号（1-based），行为侧据此取对应 actionValue。
@@ -58,7 +58,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
-        private static int RawValue(SkillRuleDef rule, GpTable board, IScoreHistory history, DishInstance self, int happyCakeLayers, System.Func<DishInstance, int> countAsOf, GameplayDatabase db)
+        private static int RawValue(SkillRuleDef rule, GpTable board, IScoreHistory history, DishInstance self, int happyCakeLayers, System.Func<DishInstance, int> countAsOf, GameplayDatabase db, ScoreContext ctx)
         {
             switch (rule.CondType)
             {
@@ -69,15 +69,30 @@ namespace GourmetProject.Gameplay.Scoring
                     return CountEmptyCells(board, self, rule.CondScope);
 
                 case SkillConditionType.Edge:
-                    return IsOnEdge(board, self) ? 1 : 0;
+                {
+                    bool onEdge = IsOnEdge(board, self);
+                    return HasParam(rule.CondParam, "not") ? (onEdge ? 0 : 1) : (onEdge ? 1 : 0);
+                }
 
                 case SkillConditionType.DishCount:
-                    return CountByUnit(ConditionScopeDishes(rule, board, self), rule.CondUnit, countAsOf);
+                {
+                    int value = CountByUnit(ConditionScopeDishes(rule, board, self, ctx), rule.CondUnit, countAsOf);
+                    if (rule.CondUnit == CountUnit.Instances && ctx != null)
+                    {
+                        value += ctx.EmptyCountAsInScope(self, rule.CondScope);
+                    }
+                    return value;
+                }
 
                 case SkillConditionType.DishSize:
-                    return CountDishSize(ConditionScopeDishes(rule, board, self), rule, countAsOf);
+                    return CountDishSize(ConditionScopeDishes(rule, board, self, ctx), rule, countAsOf);
 
                 case SkillConditionType.ServeOrder:
+                    if (HasParam(rule.CondParam, "first:settlement") && ctx != null)
+                    {
+                        return ctx.Snapshot.DishesInDefaultOrder.Count > 0
+                            && ctx.Snapshot.DishesInDefaultOrder[0].Id == self.Id ? 1 : 0;
+                    }
                     return CountByUnit(ServeOrderDishes(board, self, rule.CondScope), rule.CondUnit, countAsOf);
 
                 case SkillConditionType.SameDish:
@@ -92,22 +107,40 @@ namespace GourmetProject.Gameplay.Scoring
                         : CountSameBase(ScopeDishes(board, self, SkillScope.All), self, rule.CondUnit, countAsOf);
 
                 case SkillConditionType.TagCount:
-                    return self.SkillIds.Count + (self.HasFlavor ? 1 : 0);
+                    if (HasParam(rule.CondParam, "source:passive-items"))
+                    {
+                        return ctx?.Snapshot.PassiveItemCount ?? 0;
+                    }
+                    if (HasParam(rule.CondParam, "source:flavors"))
+                    {
+                        int flavors = 0;
+                        foreach (DishInstance dish in ConditionScopeDishes(rule, board, self, ctx))
+                        {
+                            flavors += dish.FlavorIds.Count;
+                        }
+                        return flavors;
+                    }
+                    return self.SkillIds.Count + self.TransferredSkills.Count + self.FlavorIds.Count;
 
                 case SkillConditionType.SkillCount:
-                    return CountSkills(ConditionScopeDishes(rule, board, self));
+                    return CountSkills(ConditionScopeDishes(rule, board, self, ctx));
 
                 case SkillConditionType.ShapeMatch:
-                    return CountShapeMatch(ConditionScopeDishes(rule, board, self), rule.CondParam, rule.CondUnit, countAsOf);
+                    return CountShapeMatch(ConditionScopeDishes(rule, board, self, ctx), rule.CondParam, rule.CondUnit, countAsOf);
 
                 case SkillConditionType.RecipeCount:
                     return RecipeRaw(history, rule);
 
                 case SkillConditionType.CategoryCount:
-                    return CountByUnit(CategoryDishes(board, CategoryOf(rule.CondParam)), rule.CondUnit, countAsOf);
+                {
+                    string category = CategoryOf(rule.CondParam);
+                    List<DishInstance> categoryDishes = ConditionScopeDishes(rule, board, self, ctx);
+                    categoryDishes.RemoveAll(d => !(ctx?.IsCategory(d, category) ?? d.IsCategory(category)));
+                    return CountByUnit(categoryDishes, rule.CondUnit, countAsOf);
+                }
 
                 case SkillConditionType.SkillTypeCount:
-                    return CountSkillType(rule, board, db, self, countAsOf);
+                    return CountSkillType(rule, board, db, self, countAsOf, ctx);
 
                 case SkillConditionType.LayerCount:
                     return CapLayers(happyCakeLayers, rule.CondParam);
@@ -140,7 +173,8 @@ namespace GourmetProject.Gameplay.Scoring
         private static List<DishInstance> ConditionScopeDishes(
             SkillRuleDef rule,
             GpTable board,
-            DishInstance self)
+            DishInstance self,
+            ScoreContext ctx = null)
         {
             List<DishInstance> dishes = ScopeDishes(board, self, rule.CondScope);
             if (HasParam(rule.CondParam, "include:self") && dishes.TrueForAll(d => d.Id != self.Id))
@@ -151,7 +185,7 @@ namespace GourmetProject.Gameplay.Scoring
             string category = CategoryParamOf(rule.CondParam);
             if (!string.IsNullOrEmpty(category))
             {
-                dishes.RemoveAll(d => !d.Def.IsCategory(category));
+                dishes.RemoveAll(d => !(ctx?.IsCategory(d, category) ?? d.IsCategory(category)));
             }
 
             return dishes;
@@ -263,7 +297,8 @@ namespace GourmetProject.Gameplay.Scoring
             GpTable board,
             GameplayDatabase db,
             DishInstance self,
-            System.Func<DishInstance, int> countAsOf)
+            System.Func<DishInstance, int> countAsOf,
+            ScoreContext ctx)
         {
             if (db == null || string.IsNullOrEmpty(rule.CondParam))
             {
@@ -277,7 +312,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             var matched = new List<DishInstance>();
-            foreach (DishInstance d in ConditionScopeDishes(rule, board, self))
+            foreach (DishInstance d in ConditionScopeDishes(rule, board, self, ctx))
             {
                 if (HasSkillOfType(db, d, actionType))
                 {
@@ -395,7 +430,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             foreach (DishInstance d in board.Dishes)
             {
-                if (d.Def.IsCategory(category))
+                if (d.IsCategory(category))
                 {
                     result.Add(d);
                 }
@@ -482,6 +517,13 @@ namespace GourmetProject.Gameplay.Scoring
                         {
                             result.Add(d);
                         }
+                    }
+                    return result;
+
+                case SkillScope.Edge:
+                    foreach (DishInstance d in board.Dishes)
+                    {
+                        if (IsOnEdge(board, d)) result.Add(d);
                     }
                     return result;
 
@@ -575,6 +617,11 @@ namespace GourmetProject.Gameplay.Scoring
 
         private static int CountByUnit(List<DishInstance> dishes, CountUnit unit, System.Func<DishInstance, int> countAsOf)
         {
+            if (unit == CountUnit.PhysicalInstances)
+            {
+                return dishes.Count;
+            }
+
             if (unit != CountUnit.Kinds)
             {
                 int sum = 0;
@@ -592,7 +639,10 @@ namespace GourmetProject.Gameplay.Scoring
             int count = 0;
             foreach (DishInstance d in dishes)
             {
-                if (d.Id != self.Id && d.Def.BaseId == self.Def.BaseId) count += countAsOf(d);
+                if (d.Id != self.Id && d.Def.BaseId == self.Def.BaseId)
+                {
+                    count += unit == CountUnit.PhysicalInstances ? 1 : countAsOf(d);
+                }
             }
 
             if (unit == CountUnit.Kinds)
@@ -610,7 +660,7 @@ namespace GourmetProject.Gameplay.Scoring
             {
                 if (SkillConditionParamParser.EvaluateComparison(rule.CondParam, d.OccupiedCells.Count, defaultValue: true))
                 {
-                    count += countAsOf(d);
+                    count += rule.CondUnit == CountUnit.PhysicalInstances ? 1 : countAsOf(d);
                 }
             }
 
@@ -876,7 +926,7 @@ namespace GourmetProject.Gameplay.Scoring
             if (seen.Add(key)) cells.Add(p);
         }
 
-        private static bool IsOnEdge(GpTable board, DishInstance self)
+        internal static bool IsOnEdge(GpTable board, DishInstance self)
         {
             if (!board.TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY))
             {

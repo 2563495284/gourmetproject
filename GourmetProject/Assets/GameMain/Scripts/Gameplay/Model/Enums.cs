@@ -146,11 +146,12 @@ namespace GourmetProject.Gameplay.Model
         Gate = 2,
     }
 
-    /// <summary>计数单位：按实例(个) / 按 BaseId 去重(种)。与 cfg.CountUnit 一一对应。</summary>
+    /// <summary>计数单位：按有效份数 / 按 BaseId 去重(种) / 按物理食物数(个)。与 cfg.CountUnit 一一对应。</summary>
     public enum CountUnit
     {
         Instances = 0,
         Kinds = 1,
+        PhysicalInstances = 2,
     }
 
     /// <summary>技能行为类型。与 cfg.SkillActionType 一一对应。</summary>
@@ -170,6 +171,9 @@ namespace GourmetProject.Gameplay.Model
         TriggerSweetTransfer = 15,
         AddCurrentMult = 17,
         AddCurrentScore = 18,
+        RequestRecipeRemoval = 19,
+        AddEmptyCountAs = 20,
+        AddTemporaryCategory = 21,
     }
 
     /// <summary>技能触发时机。与 cfg.SkillTrigger 一一对应。</summary>

@@ -25,6 +25,20 @@ namespace GourmetProject.Gameplay.Battle
         public int TargetInstanceId { get; }
     }
 
+    /// <summary>营业成败已确定后完成的一次食谱移除判定。</summary>
+    public readonly struct RecipeRemovalOutcome
+    {
+        public RecipeRemovalOutcome(RecipeRemovalRequest request, bool removed)
+        {
+            Request = request;
+            Removed = removed;
+        }
+
+        public RecipeRemovalRequest Request { get; }
+
+        public bool Removed { get; }
+    }
+
     /// <summary>
     /// 一局局内经营挑战的完整逻辑（纯 C#，可单测）：持有餐桌与食谱槽，处理「准备出菜 / 玩家摆放 / 吃」结算。
     /// 所有随机经由注入的确定性流，保证同种子可复现。表现层（BattleForm）只读取状态并转发操作。
@@ -45,6 +59,7 @@ namespace GourmetProject.Gameplay.Battle
         private readonly Dictionary<string, int> _runSettled = new Dictionary<string, int>();
         private readonly List<RecipeScoreFlatDelta> _lastRecipeScoreFlatDeltas = new List<RecipeScoreFlatDelta>();
         private readonly List<RecipeScoreMultiplierDelta> _lastRecipeScoreMultiplierDeltas = new List<RecipeScoreMultiplierDelta>();
+        private readonly List<RecipeRemovalOutcome> _lastRecipeRemovalOutcomes = new List<RecipeRemovalOutcome>();
         private readonly List<DishInstance> _temporaryAreaDishes = new List<DishInstance>();
         private readonly Dictionary<int, PendingDishPlacement> _pendingDishPlacements =
             new Dictionary<int, PendingDishPlacement>();
@@ -129,6 +144,9 @@ namespace GourmetProject.Gameplay.Battle
 
         /// <summary>每个食物额外「视为食物数」（由装饰品注入，影响计数类前提）。</summary>
         public int ExtraCountAsPerDish { get; set; }
+
+        /// <summary>本场结算开始时持有的被动装饰品数量。</summary>
+        public int PassiveItemCount { get; set; }
 
         /// <summary>蛋糕层数 buff 阈值下调（由装饰品「蛋糕捷径」注入）。</summary>
         public int CakeLayerThresholdReduction { get; set; }
@@ -305,6 +323,8 @@ namespace GourmetProject.Gameplay.Battle
         public IReadOnlyList<RecipeScoreFlatDelta> LastRecipeScoreFlatDeltas => _lastRecipeScoreFlatDeltas;
 
         public IReadOnlyList<RecipeScoreMultiplierDelta> LastRecipeScoreMultiplierDeltas => _lastRecipeScoreMultiplierDeltas;
+
+        public IReadOnlyList<RecipeRemovalOutcome> LastRecipeRemovalOutcomes => _lastRecipeRemovalOutcomes;
 
         /// <summary>本场经营挑战食谱内容（BaseId 列表，供食谱检测）。</summary>
         public IReadOnlyList<string> RecipeBaseIds => _recipeBaseIds;
@@ -1024,7 +1044,7 @@ namespace GourmetProject.Gameplay.Battle
 
         private ScoreResult CalculatePreviewScore()
         {
-            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes());
+            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), passiveItemCount: PassiveItemCount);
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
@@ -1033,10 +1053,11 @@ namespace GourmetProject.Gameplay.Battle
             ConfirmAllPendingTableDishes();
             ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
                 ? ZeroScoreResult()
-                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets);
+                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets, randomIntegerSelector: SelectRandomInteger, passiveItemCount: PassiveItemCount);
             ApplySideEffects(result);
             LastResult = result;
             IsSettled = true;
+            ResolveRecipeRemovalRequests(result.RecipeRemovalRequests);
             return LastResult;
         }
 
@@ -1060,6 +1081,32 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             return targets;
+        }
+
+        private int SelectRandomInteger(int minInclusive, int maxInclusive)
+        {
+            if (maxInclusive < minInclusive)
+            {
+                (minInclusive, maxInclusive) = (maxInclusive, minInclusive);
+            }
+
+            return _rng.Range(minInclusive, maxInclusive + 1);
+        }
+
+        private void ResolveRecipeRemovalRequests(IReadOnlyList<RecipeRemovalRequest> requests)
+        {
+            _lastRecipeRemovalOutcomes.Clear();
+            if (requests == null)
+            {
+                return;
+            }
+
+            foreach (RecipeRemovalRequest request in requests)
+            {
+                _lastRecipeRemovalOutcomes.Add(new RecipeRemovalOutcome(
+                    request,
+                    _rng.NextBool(request.Probability)));
+            }
         }
 
         private List<string> ComposeServeSkills(DishDef dish, RecipeSlotEntry entry)
@@ -1425,6 +1472,12 @@ namespace GourmetProject.Gameplay.Battle
 
             // 技能复制：结算阶段只登记候选池，正式结算后由会话随机流落地，避免预览消耗 RNG。
             ApplyCopySkillRequests(result.CopySkillRequests);
+
+            // 本场临时分类：计分上下文中已即时生效，正式结算后写回实例供后续结算继续读取。
+            foreach (TemporaryCategorySideEffect category in result.TemporaryCategories)
+            {
+                FindInstance(category.DishInstanceId)?.AddTemporaryCategory(category.Category);
+            }
 
             // 永久分 / 永久倍率 / 视为食物数：写回实例（经营挑战内跨结算持久）。
             foreach (KeyValuePair<int, BigDouble> kv in result.PermanentFlatDeltas)

@@ -316,7 +316,7 @@ namespace GourmetProject.Gameplay.Scoring
                 {
                     case "cat":
                     case "category":
-                        return dish.Def.IsCategory(body);
+                        return dish.IsCategory(body);
                     case "flavor":
                         return HasFlavor(dish, body);
                     case "skill":
@@ -324,7 +324,7 @@ namespace GourmetProject.Gameplay.Scoring
                 }
             }
 
-            return dish.Def.IsCategory(param)
+            return dish.IsCategory(param)
                 || HasFlavor(dish, param)
                 || HasSkill(dish, param);
         }

@@ -160,7 +160,18 @@ namespace GourmetProject.Gameplay.Scoring
             string category = SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams);
             if (!string.IsNullOrEmpty(category))
             {
-                dishes = dishes.Where(d => d.Def.IsCategory(category)).ToList();
+                dishes = dishes.Where(d => d.IsCategory(category)).ToList();
+            }
+
+            if (HasActionParam(rule, "position:non-edge"))
+            {
+                dishes = dishes.Where(d => !SkillConditionEvaluator.IsOnEdge(board, d)).ToList();
+            }
+
+            int size = ParseIntActionParam(rule.ActionParams, "size", 0);
+            if (size > 0)
+            {
+                dishes = dishes.Where(d => d.OccupiedCells.Count == size).ToList();
             }
 
             string skillTypeToken = ParseSkillTypeParam(rule.ActionParams);
@@ -186,6 +197,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             if (mode == SkillScopeVisualMode.ResolvedTargets
                 && rule.ActionCount > 0
+                && !HasActionParam(rule, "target:random")
                 && dishes.Count > rule.ActionCount)
             {
                 dishes = dishes.Take(rule.ActionCount).ToList();
@@ -457,6 +469,31 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             return string.Empty;
+        }
+
+        private static int ParseIntActionParam(IReadOnlyList<string> actionParams, string key, int defaultValue)
+        {
+            if (actionParams == null)
+            {
+                return defaultValue;
+            }
+
+            string prefix = key + ":";
+            foreach (string param in actionParams)
+            {
+                if (string.IsNullOrEmpty(param)) continue;
+                foreach (string raw in param.Split(';'))
+                {
+                    string segment = raw.Trim();
+                    if (segment.StartsWith(prefix, System.StringComparison.OrdinalIgnoreCase)
+                        && int.TryParse(segment.Substring(prefix.Length), out int value))
+                    {
+                        return value;
+                    }
+                }
+            }
+
+            return defaultValue;
         }
 
         private static bool HasSkillOfType(GameplayDatabase db, DishInstance dish, SkillActionType actionType)

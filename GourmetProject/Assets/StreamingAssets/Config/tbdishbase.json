@@ -182,6 +182,24 @@
     ]
   },
   {
+    "id": "codename_general_01",
+    "name": "通用01",
+    "deliciousness": 20,
+    "allowRotate": false,
+    "skills": "sk_codename_general_01",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "XX"
+    ],
+    "sortOrder": 110,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
     "id": "fruit_candy",
     "name": "水果糖",
     "deliciousness": 20,
@@ -193,7 +211,7 @@
       "X",
       "X"
     ],
-    "sortOrder": 110,
+    "sortOrder": 120,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -212,7 +230,7 @@
       "X",
       "X"
     ],
-    "sortOrder": 120,
+    "sortOrder": 130,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -231,7 +249,7 @@
       "X",
       "X"
     ],
-    "sortOrder": 130,
+    "sortOrder": 140,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -250,7 +268,7 @@
       "X",
       "X"
     ],
-    "sortOrder": 140,
+    "sortOrder": 150,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -269,7 +287,26 @@
       "X",
       "X"
     ],
-    "sortOrder": 150,
+    "sortOrder": 160,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_general_02",
+    "name": "通用02",
+    "deliciousness": 100,
+    "allowRotate": false,
+    "skills": "sk_codename_general_02",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "X",
+      "X"
+    ],
+    "sortOrder": 170,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -287,7 +324,7 @@
     "shapeRows": [
       "XXX"
     ],
-    "sortOrder": 160,
+    "sortOrder": 180,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -305,7 +342,7 @@
     "shapeRows": [
       "XXX"
     ],
-    "sortOrder": 170,
+    "sortOrder": 190,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -323,7 +360,7 @@
     "shapeRows": [
       "XXX"
     ],
-    "sortOrder": 180,
+    "sortOrder": 200,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -341,7 +378,7 @@
     "shapeRows": [
       "XXX"
     ],
-    "sortOrder": 190,
+    "sortOrder": 210,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -359,7 +396,197 @@
     "shapeRows": [
       "XXX"
     ],
-    "sortOrder": 200,
+    "sortOrder": 220,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_cake_01",
+    "name": "蛋糕01",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_cake_01",
+    "category": "cake",
+    "countAs": 1,
+    "shapeRows": [
+      "XXX"
+    ],
+    "sortOrder": 230,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_transfer_01",
+    "name": "传递01",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_transfer_01",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "XXX"
+    ],
+    "sortOrder": 240,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_serving_01",
+    "name": "份数01",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_serving_01",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "XXX"
+    ],
+    "sortOrder": 250,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_general_03",
+    "name": "通用03",
+    "deliciousness": 300,
+    "allowRotate": false,
+    "skills": "sk_codename_general_03",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "XXX"
+    ],
+    "sortOrder": 260,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_general_04",
+    "name": "通用04",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_general_04",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "XXX"
+    ],
+    "sortOrder": 270,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_general_05",
+    "name": "通用05",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_general_05",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "X",
+      "X",
+      "X"
+    ],
+    "sortOrder": 280,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_general_06",
+    "name": "通用06",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_general_06",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "X",
+      "X",
+      "X"
+    ],
+    "sortOrder": 290,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_transfer_02",
+    "name": "传递02",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_transfer_02",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "X",
+      "X",
+      "X"
+    ],
+    "sortOrder": 300,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_cake_02",
+    "name": "蛋糕02",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_cake_02",
+    "category": "cake",
+    "countAs": 1,
+    "shapeRows": [
+      "X",
+      "X",
+      "X"
+    ],
+    "sortOrder": 310,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_serving_02",
+    "name": "份数02",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_serving_02",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "X",
+      "X",
+      "X"
+    ],
+    "sortOrder": 320,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -379,7 +606,7 @@
       "X",
       "X"
     ],
-    "sortOrder": 210,
+    "sortOrder": 330,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -399,7 +626,7 @@
       "X",
       "X"
     ],
-    "sortOrder": 220,
+    "sortOrder": 340,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -419,7 +646,7 @@
       "X",
       "X"
     ],
-    "sortOrder": 230,
+    "sortOrder": 350,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -439,7 +666,121 @@
       "X",
       "X"
     ],
-    "sortOrder": 240,
+    "sortOrder": 360,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_cake_03",
+    "name": "蛋糕03",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_cake_03",
+    "category": "cake",
+    "countAs": 1,
+    "shapeRows": [
+      "XX",
+      "XX"
+    ],
+    "sortOrder": 370,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_cake_04",
+    "name": "蛋糕04",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_cake_04",
+    "category": "cake",
+    "countAs": 1,
+    "shapeRows": [
+      "XX",
+      "XX"
+    ],
+    "sortOrder": 380,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_serving_03",
+    "name": "份数03",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_serving_03",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "XX",
+      "XX"
+    ],
+    "sortOrder": 390,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_serving_04",
+    "name": "份数04",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_serving_04",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "XX",
+      "XX"
+    ],
+    "sortOrder": 400,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_transfer_03",
+    "name": "传递03",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_transfer_03",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "XX",
+      "XX"
+    ],
+    "sortOrder": 410,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_transfer_04",
+    "name": "传递04",
+    "deliciousness": 30,
+    "allowRotate": false,
+    "skills": "sk_codename_transfer_04",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "XX",
+      "XX"
+    ],
+    "sortOrder": 420,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -458,7 +799,7 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 250,
+    "sortOrder": 430,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -477,7 +818,7 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 260,
+    "sortOrder": 440,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -496,7 +837,7 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 270,
+    "sortOrder": 450,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -515,7 +856,7 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 280,
+    "sortOrder": 460,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -534,7 +875,7 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 290,
+    "sortOrder": 470,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -553,7 +894,7 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 300,
+    "sortOrder": 480,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -573,7 +914,45 @@
       ".X",
       ".X"
     ],
-    "sortOrder": 310,
+    "sortOrder": 490,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_general_07",
+    "name": "通用07",
+    "deliciousness": 40,
+    "allowRotate": false,
+    "skills": "sk_codename_general_07",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "XX",
+      "XX"
+    ],
+    "sortOrder": 500,
+    "archetypeWeights": [
+      0.333333,
+      0.333333,
+      0.333334
+    ]
+  },
+  {
+    "id": "codename_general_08",
+    "name": "通用08",
+    "deliciousness": 40,
+    "allowRotate": false,
+    "skills": "sk_codename_general_08",
+    "category": "",
+    "countAs": 1,
+    "shapeRows": [
+      "XX",
+      "XX"
+    ],
+    "sortOrder": 510,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -592,7 +971,7 @@
       "XXX",
       "XXX"
     ],
-    "sortOrder": 320,
+    "sortOrder": 520,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -611,7 +990,7 @@
       "XXX",
       "XXX"
     ],
-    "sortOrder": 330,
+    "sortOrder": 530,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -630,7 +1009,7 @@
       "XXX",
       "XXX"
     ],
-    "sortOrder": 340,
+    "sortOrder": 540,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -650,7 +1029,7 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 350,
+    "sortOrder": 550,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -670,7 +1049,7 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 360,
+    "sortOrder": 560,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -690,7 +1069,7 @@
       "XX",
       "XX"
     ],
-    "sortOrder": 370,
+    "sortOrder": 570,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -700,7 +1079,7 @@
   {
     "id": "big_lollipop",
     "name": "大棒棒糖",
-    "deliciousness": 110,
+    "deliciousness": 100,
     "allowRotate": false,
     "skills": "sk_big_lollipop",
     "category": "",
@@ -710,7 +1089,7 @@
       "XXX",
       "XXX"
     ],
-    "sortOrder": 380,
+    "sortOrder": 580,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -720,7 +1099,7 @@
   {
     "id": "apple_pie",
     "name": "苹果派",
-    "deliciousness": 90,
+    "deliciousness": 100,
     "allowRotate": false,
     "skills": "sk_apple_pie",
     "category": "",
@@ -730,7 +1109,7 @@
       "XXX",
       "XXX"
     ],
-    "sortOrder": 390,
+    "sortOrder": 590,
     "archetypeWeights": [
       0.333333,
       0.333333,
@@ -740,7 +1119,7 @@
   {
     "id": "double_cake",
     "name": "双层蛋糕",
-    "deliciousness": 120,
+    "deliciousness": 100,
     "allowRotate": false,
     "skills": "sk_double_cake",
     "category": "cake",
@@ -751,7 +1130,7 @@
       "XXX",
       "XXX"
     ],
-    "sortOrder": 400,
+    "sortOrder": 600,
     "archetypeWeights": [
       0.333333,
       0.333333,

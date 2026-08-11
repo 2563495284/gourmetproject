@@ -40,6 +40,10 @@
     "subSkills": "sk_mousse_1"
   },
   {
+    "id": "sk_codename_general_01",
+    "subSkills": "sk_codename_general_01_1"
+  },
+  {
     "id": "sk_fruit_candy",
     "subSkills": "sk_fruit_candy_1|sk_fruit_candy_2"
   },
@@ -58,6 +62,10 @@
   {
     "id": "sk_cream",
     "subSkills": "sk_cream_1"
+  },
+  {
+    "id": "sk_codename_general_02",
+    "subSkills": "sk_codename_general_02_1"
   },
   {
     "id": "sk_eggroll",
@@ -80,6 +88,46 @@
     "subSkills": "sk_long_cake_1|sk_long_cake_2"
   },
   {
+    "id": "sk_codename_cake_01",
+    "subSkills": "sk_codename_cake_01_1"
+  },
+  {
+    "id": "sk_codename_transfer_01",
+    "subSkills": "sk_codename_transfer_01_1|sk_codename_transfer_01_2"
+  },
+  {
+    "id": "sk_codename_serving_01",
+    "subSkills": "sk_codename_serving_01_1"
+  },
+  {
+    "id": "sk_codename_general_03",
+    "subSkills": "sk_codename_general_03_1"
+  },
+  {
+    "id": "sk_codename_general_04",
+    "subSkills": "sk_codename_general_04_1"
+  },
+  {
+    "id": "sk_codename_general_05",
+    "subSkills": "sk_codename_general_05_1"
+  },
+  {
+    "id": "sk_codename_general_06",
+    "subSkills": "sk_codename_general_06_1|sk_codename_general_06_2"
+  },
+  {
+    "id": "sk_codename_transfer_02",
+    "subSkills": "sk_codename_transfer_02_1"
+  },
+  {
+    "id": "sk_codename_cake_02",
+    "subSkills": "sk_codename_cake_02_1"
+  },
+  {
+    "id": "sk_codename_serving_02",
+    "subSkills": "sk_codename_serving_02_1"
+  },
+  {
     "id": "sk_eclair",
     "subSkills": "sk_eclair_1"
   },
@@ -94,6 +142,30 @@
   {
     "id": "sk_cake_roll",
     "subSkills": "sk_cake_roll_1|sk_cake_roll_2"
+  },
+  {
+    "id": "sk_codename_cake_03",
+    "subSkills": "sk_codename_cake_03_1|sk_codename_cake_03_2"
+  },
+  {
+    "id": "sk_codename_cake_04",
+    "subSkills": "sk_codename_cake_04_1"
+  },
+  {
+    "id": "sk_codename_serving_03",
+    "subSkills": "sk_codename_serving_03_1"
+  },
+  {
+    "id": "sk_codename_serving_04",
+    "subSkills": "sk_codename_serving_04_1"
+  },
+  {
+    "id": "sk_codename_transfer_03",
+    "subSkills": "sk_codename_transfer_03_1"
+  },
+  {
+    "id": "sk_codename_transfer_04",
+    "subSkills": "sk_codename_transfer_04_1|sk_codename_transfer_04_2"
   },
   {
     "id": "sk_palmier",
@@ -122,6 +194,14 @@
   {
     "id": "sk_candycane",
     "subSkills": "sk_candycane_1|sk_candycane_2"
+  },
+  {
+    "id": "sk_codename_general_07",
+    "subSkills": "sk_codename_general_07_1"
+  },
+  {
+    "id": "sk_codename_general_08",
+    "subSkills": "sk_codename_general_08_1"
   },
   {
     "id": "sk_black_forest_cake",

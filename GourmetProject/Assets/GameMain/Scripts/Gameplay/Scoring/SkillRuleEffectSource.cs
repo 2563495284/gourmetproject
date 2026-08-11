@@ -251,7 +251,13 @@ namespace GourmetProject.Gameplay.Scoring
                 }
 
                 case SkillActionType.AddMultFlat:
-                    foreach (DishInstance t in Targets(ctx)) ctx.AddMultFlatTo(t, value * count);
+                    foreach (DishInstance t in Targets(ctx))
+                    {
+                        float amount = HasActionParam(_rule, "source:target-countas")
+                            ? value * ctx.GetEffectiveCountAs(t)
+                            : value * count;
+                        ctx.AddMultFlatTo(t, amount);
+                    }
                     break;
 
                 case SkillActionType.AddCurrentMult:
@@ -269,7 +275,28 @@ namespace GourmetProject.Gameplay.Scoring
                 case SkillActionType.AddCurrentScore:
                 {
                     // 先读来源快照，再统一写目标；目标包含自身时不会改变后续目标获得的数值。
-                    BigDouble sourceScore = ctx.GetCurrentScore(_self) * count;
+                    BigDouble sourceScore;
+                    if (HasActionParam(_rule, "source:row-max"))
+                    {
+                        sourceScore = BigDouble.Zero;
+                        foreach (DishInstance source in SkillConditionEvaluator.ScopeDishes(
+                            ctx.DiningTable,
+                            _self,
+                            SkillScope.RowAndSelf))
+                        {
+                            BigDouble candidate = ctx.GetCurrentScore(source);
+                            if (candidate > sourceScore)
+                            {
+                                sourceScore = candidate;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        sourceScore = ctx.GetCurrentScore(_self);
+                    }
+
+                    sourceScore *= value * count;
                     foreach (DishInstance t in Targets(ctx)) ctx.AddFlatTo(t, sourceScore);
                     break;
                 }
@@ -278,7 +305,20 @@ namespace GourmetProject.Gameplay.Scoring
                 {
                     // 全局欢乐蛋糕层数：无论作用域，统一改一次全局计数器。
                     bool mult = IsMultLayer(_rule);
-                    ctx.AddHappyCakeLayers(mult ? value : value * count, mult, ParseFloor(_rule));
+                    if (TryParseRandomIntegerRange(_rule, out int min, out int max))
+                    {
+                        value = ctx.Snapshot.RandomIntegerSelector != null
+                            ? ctx.Snapshot.RandomIntegerSelector(min, max)
+                            : min;
+                        count = 1;
+                    }
+
+                    float layerValue = mult ? value : value * count;
+                    if (!mult && HasActionParam(_rule, "round:ceil"))
+                    {
+                        layerValue = (float)Math.Ceiling(layerValue);
+                    }
+                    ctx.AddHappyCakeLayers(layerValue, mult, ParseFloor(_rule));
                     break;
                 }
 
@@ -330,8 +370,26 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case SkillActionType.AddCountAs:
                     // 所有子技能均主动触发，只在自身执行到时影响后续规则。
-                    ctx.ApplyLiveCountAs(_rule, _self, count, value);
+                    ctx.ApplyLiveCountAs(_rule, _self, count, value, Targets(ctx));
                     break;
+
+                case SkillActionType.RequestRecipeRemoval:
+                    ctx.RequestRecipeRemoval(_self, value * count);
+                    break;
+
+                case SkillActionType.AddEmptyCountAs:
+                    ctx.AddEmptyCountAsPerCell(Math.Max(0, (int)Math.Round(value * count, MidpointRounding.AwayFromZero)));
+                    break;
+
+                case SkillActionType.AddTemporaryCategory:
+                {
+                    string category = SkillConditionEvaluator.ParseCategoryParam(_rule.ActionParams);
+                    foreach (DishInstance target in Targets(ctx))
+                    {
+                        ctx.AddTemporaryCategory(target, category);
+                    }
+                    break;
+                }
 
                 case SkillActionType.None:
                 default:
@@ -541,10 +599,7 @@ namespace GourmetProject.Gameplay.Scoring
             IReadOnlyList<SweetTransferBuffRegistration> buffs,
             IReadOnlyList<DishInstance> transferTargets)
         {
-            if (buffs == null || buffs.Count == 0)
-            {
-                return;
-            }
+            buffs ??= Array.Empty<SweetTransferBuffRegistration>();
 
             // 先表现/登记棉花糖的目标数修饰，再结算软糖倍率响应。
             foreach (SweetTransferBuffRegistration buff in buffs)
@@ -562,7 +617,7 @@ namespace GourmetProject.Gameplay.Scoring
                     (int)Math.Round(
                         rule.ActionValue * buff.ConditionCount,
                         MidpointRounding.AwayFromZero));
-                ResolveSweetTransferBuffTrigger(ctx, buff, transferTargets, extra, applyMultiplier: false);
+                ResolveSweetTransferBuffTrigger(ctx, buff, transferTargets, extra, SkillActionType.None);
             }
 
             foreach (SweetTransferBuffRegistration buff in buffs)
@@ -576,17 +631,37 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
-                SkillScope resultScope = ParseResultScope(rule, SkillScope.RowAndSelf);
-                IReadOnlyList<DishInstance> resultTargets = SkillConditionEvaluator.ScopeDishes(
-                    ctx.DiningTable,
-                    buff.Owner,
-                    resultScope);
+                IReadOnlyList<DishInstance> resultTargets = HasActionParam(rule, "resultscope:TransferSource")
+                    ? new[] { _self }
+                    : SkillConditionEvaluator.ScopeDishes(
+                        ctx.DiningTable,
+                        buff.Owner,
+                        ParseResultScope(rule, SkillScope.RowAndSelf));
                 float value = rule.ActionType == SkillActionType.AddMultFlat
                     ? rule.ActionValue * buff.ConditionCount
                     : HasActionParam(rule, "linear")
                         ? 1f + rule.ActionValue * buff.ConditionCount
                         : (float)Math.Pow(rule.ActionValue, buff.ConditionCount);
-                ResolveSweetTransferBuffTrigger(ctx, buff, resultTargets, value, applyMultiplier: true);
+                ResolveSweetTransferBuffTrigger(ctx, buff, resultTargets, value, rule.ActionType);
+            }
+
+            foreach (SweetTransferBuffRegistration buff in ctx.SweetTransferReceiverBuffsFor(transferTargets))
+            {
+                SkillRuleDef rule = buff.Rule;
+                if (rule.ActionType != SkillActionType.AddFlat)
+                {
+                    continue;
+                }
+
+                IReadOnlyList<DishInstance> resultTargets = transferTargets
+                    .Where(target => buff.TargetDishInstanceIds.Contains(target.Id))
+                    .ToArray();
+                ResolveSweetTransferBuffTrigger(
+                    ctx,
+                    buff,
+                    resultTargets,
+                    rule.ActionValue * buff.ConditionCount,
+                    SkillActionType.AddFlat);
             }
         }
 
@@ -595,7 +670,7 @@ namespace GourmetProject.Gameplay.Scoring
             SweetTransferBuffRegistration buff,
             IReadOnlyList<DishInstance> targets,
             float value,
-            bool applyMultiplier)
+            SkillActionType applyType)
         {
             if (ctx == null || buff?.Owner == null || buff.Rule == null)
             {
@@ -612,7 +687,7 @@ namespace GourmetProject.Gameplay.Scoring
             var entry = new ScoreEffectEntry(
                 ScorePhase.DishSkills,
                 buff.Source,
-                new SweetTransferBuffTriggerEffect(buff, _self, targetList, value, applyMultiplier),
+                new SweetTransferBuffTriggerEffect(buff, _self, targetList, value, applyType),
                 buff.Owner,
                 null,
                 null,
@@ -651,6 +726,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         private static bool IsSweetTransferModifier(SkillRuleDef rule)
             => HasActionParam(rule, "when:transfer")
+               || HasActionParam(rule, "when:receive-transfer")
                || HasActionParam(rule, "modifier:add-targets");
 
         private void ResolveTransferredEffects(
@@ -900,12 +976,99 @@ namespace GourmetProject.Gameplay.Scoring
 
         private IReadOnlyList<DishInstance> Targets(ScoreContext ctx)
         {
-            return SkillScopeResolver.ResolveActionTargetDishes(
-                ctx.Db,
-                ctx.DiningTable,
-                _self,
-                _rule,
-                SkillScopeVisualMode.ResolvedTargets);
+            bool randomTargets = HasActionParam(_rule, "target:random");
+            IEnumerable<DishInstance> targets;
+            if (_rule.ActionType == SkillActionType.AddTemporaryCategory)
+            {
+                targets = SkillConditionEvaluator.ScopeDishes(ctx.DiningTable, _self, _rule.ActionScope)
+                    .OrderBy(BoardTop)
+                    .ThenBy(BoardLeft)
+                    .ThenBy(dish => dish.Id);
+                if (_rule.ActionCount > 0 && !randomTargets)
+                {
+                    targets = targets.Take(_rule.ActionCount);
+                }
+            }
+            else if (_rule.ActionScope == SkillScope.Category)
+            {
+                targets = ctx.DiningTable.Dishes;
+            }
+            else
+            {
+                targets = SkillScopeResolver.ResolveActionTargetDishes(
+                    ctx.Db,
+                    ctx.DiningTable,
+                    _self,
+                    _rule,
+                    SkillScopeVisualMode.ResolvedTargets);
+            }
+
+            string category = SkillConditionEvaluator.ParseCategoryParam(_rule.ActionParams);
+            if (!string.IsNullOrEmpty(category)
+                && _rule.ActionType != SkillActionType.AddTemporaryCategory)
+            {
+                targets = targets.Where(target => ctx.IsCategory(target, category));
+            }
+
+            if (HasActionParam(_rule, "exclude:source") || HasActionParam(_rule, "exclude:self"))
+            {
+                targets = targets.Where(target => target.Id != _self.Id);
+            }
+
+            var resolved = targets
+                .Distinct()
+                .OrderBy(BoardTop)
+                .ThenBy(BoardLeft)
+                .ThenBy(dish => dish.Id)
+                .ToList();
+            if (!randomTargets || _rule.ActionCount <= 0 || resolved.Count <= _rule.ActionCount)
+            {
+                return resolved;
+            }
+
+            // 正式结算复用会话随机整数选择器；预览未注入选择器时稳定取第一个。
+            // 每抽中一个候选就从池中移除，保证按食物实例均权且无放回。
+            var selected = new List<DishInstance>(_rule.ActionCount);
+            for (int i = 0; i < _rule.ActionCount && resolved.Count > 0; i++)
+            {
+                int index = ctx.Snapshot.RandomIntegerSelector != null
+                    ? ctx.Snapshot.RandomIntegerSelector(0, resolved.Count - 1)
+                    : 0;
+                index = Math.Max(0, Math.Min(index, resolved.Count - 1));
+                selected.Add(resolved[index]);
+                resolved.RemoveAt(index);
+            }
+
+            return selected;
+        }
+
+        private static bool TryParseRandomIntegerRange(SkillRuleDef rule, out int min, out int max)
+        {
+            min = 0;
+            max = 0;
+            if (rule?.ActionParams == null)
+            {
+                return false;
+            }
+
+            foreach (string param in rule.ActionParams)
+            {
+                if (string.IsNullOrEmpty(param)) continue;
+                int index = param.IndexOf("random:int:", StringComparison.OrdinalIgnoreCase);
+                if (index < 0) continue;
+                string[] parts = param.Substring(index + "random:int:".Length)
+                    .Split(';')[0]
+                    .Split('|', ',');
+                if (parts.Length >= 2
+                    && int.TryParse(parts[0].Trim(), out min)
+                    && int.TryParse(parts[1].Trim(), out max))
+                {
+                    if (max < min) (min, max) = (max, min);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private IReadOnlyList<DishInstance> SweetTransferBuffTargets(ScoreContext ctx)
@@ -1010,20 +1173,20 @@ namespace GourmetProject.Gameplay.Scoring
         private readonly DishInstance _transferSource;
         private readonly IReadOnlyList<DishInstance> _targets;
         private readonly float _value;
-        private readonly bool _applyMultiplier;
+        private readonly SkillActionType _applyType;
 
         public SweetTransferBuffTriggerEffect(
             SweetTransferBuffRegistration registration,
             DishInstance transferSource,
             IReadOnlyList<DishInstance> targets,
             float value,
-            bool applyMultiplier)
+            SkillActionType applyType)
         {
             _registration = registration;
             _transferSource = transferSource;
             _targets = targets ?? Array.Empty<DishInstance>();
             _value = value;
-            _applyMultiplier = applyMultiplier;
+            _applyType = applyType;
         }
 
         public void Apply(ScoreContext ctx)
@@ -1034,14 +1197,18 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             ctx.RecordSweetTransferBuffTriggered(_registration, _transferSource, _value, _targets);
-            if (!_applyMultiplier)
+            if (_applyType == SkillActionType.None)
             {
                 return;
             }
 
             foreach (DishInstance target in _targets)
             {
-                if (_registration.Rule.ActionType == SkillActionType.AddMultFlat)
+                if (_applyType == SkillActionType.AddFlat)
+                {
+                    ctx.AddFlatTo(target, _value);
+                }
+                else if (_applyType == SkillActionType.AddMultFlat)
                 {
                     ctx.AddMultFlatTo(target, _value);
                 }

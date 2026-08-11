@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
@@ -50,6 +51,7 @@ namespace GourmetProject.Game.Run
             var items = new ItemRuntime(run);
             cfg.GameBase gameBase = run.Tables.TbGameBase.Data;
             session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
+            session.PassiveItemCount = run.PassiveItemStates.Count();
             session.ConfigureFoodDiscardLimit(items.FoodDiscardCapacity());
             session.ConfigureRandomServeMultiplier(gameBase.RandomServeMultiplierMin, gameBase.RandomServeMultiplierMax, gameBase.RandomServeMultiplierStep);
             session.ConfigureCookieServePity(gameBase.ServeCookiePityCount, gameBase.ServeCookieDishIds);
@@ -123,6 +125,7 @@ namespace GourmetProject.Game.Run
             var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore, calculator, runSettledCounts: run.RunSettledCounts);
             session.AttachBossDebuffPresentation(presentation);
             session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
+            session.PassiveItemCount = run.PassiveItemStates.Count();
             var itemRuntime = new ItemRuntime(run);
             cfg.GameBase gameBase = run.Tables.TbGameBase.Data;
             session.ConfigureFoodDiscardLimit(itemRuntime.FoodDiscardCapacity());
@@ -208,6 +211,7 @@ namespace GourmetProject.Game.Run
                 run.RunSettledCounts);
             var itemRuntime = new ItemRuntime(run);
             session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
+            session.PassiveItemCount = run.PassiveItemStates.Count();
             session.CakeLayerThresholdReduction = itemRuntime.CakeThresholdReduction();
             session.CakeLayerAccelBonus = itemRuntime.CakeAccelBonus();
             session.SweetTransferTargetMultiplier = itemRuntime.SweetTransferTargetMultiplier();

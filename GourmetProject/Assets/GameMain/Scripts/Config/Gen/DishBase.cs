@@ -59,7 +59,7 @@ public sealed partial class DishBase : Luban.BeanBase
     /// </summary>
     public readonly string Category;
     /// <summary>
-    /// 视为食物数(默认1)
+    /// 静态有效份数(默认1)
     /// </summary>
     public readonly int CountAs;
     /// <summary>

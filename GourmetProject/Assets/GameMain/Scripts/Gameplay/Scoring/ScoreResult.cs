@@ -70,7 +70,9 @@ namespace GourmetProject.Gameplay.Scoring
             IReadOnlyDictionary<int, BigDouble> permanentFlatDeltas = null,
             IReadOnlyDictionary<int, BigDouble> permanentMultDeltas = null,
             int silverItemRollRequests = 0,
-            IReadOnlyList<CopySkillRequest> copySkillRequests = null)
+            IReadOnlyList<CopySkillRequest> copySkillRequests = null,
+            IReadOnlyList<TemporaryCategorySideEffect> temporaryCategories = null,
+            IReadOnlyList<RecipeRemovalRequest> recipeRemovalRequests = null)
         {
             DishScores = dishScores;
             RawSum = rawSum;
@@ -85,6 +87,8 @@ namespace GourmetProject.Gameplay.Scoring
             PermanentMultDeltas = permanentMultDeltas ?? EmptyBigDeltas;
             SilverItemRollRequests = silverItemRollRequests;
             CopySkillRequests = copySkillRequests ?? System.Array.Empty<CopySkillRequest>();
+            TemporaryCategories = temporaryCategories ?? System.Array.Empty<TemporaryCategorySideEffect>();
+            RecipeRemovalRequests = recipeRemovalRequests ?? System.Array.Empty<RecipeRemovalRequest>();
         }
 
         private static readonly IReadOnlyDictionary<int, BigDouble> EmptyBigDeltas = new Dictionary<int, BigDouble>();
@@ -128,10 +132,56 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>结算阶段登记的技能复制请求。正式结算后由 BattleSession 用随机流落地。</summary>
         public IReadOnlyList<CopySkillRequest> CopySkillRequests { get; }
 
+        /// <summary>本场新登记的临时食物分类，正式结算后写回实例供后续结算使用。</summary>
+        public IReadOnlyList<TemporaryCategorySideEffect> TemporaryCategories { get; }
+
+        /// <summary>营业成败判定后才执行的食谱移除判定请求；计分阶段只登记，不掷骰。</summary>
+        public IReadOnlyList<RecipeRemovalRequest> RecipeRemovalRequests { get; }
+
         /// <summary>最终得分（四舍五入到整数，0.5 向上取整）。</summary>
         public BigDouble Total => BigDouble.Round(
             (RawSum + FinalFlat) * FinalMultiplier,
             System.MidpointRounding.AwayFromZero);
+    }
+
+    public readonly struct TemporaryCategorySideEffect
+    {
+        public TemporaryCategorySideEffect(int dishInstanceId, string category)
+        {
+            DishInstanceId = dishInstanceId;
+            Category = category ?? string.Empty;
+        }
+
+        public int DishInstanceId { get; }
+
+        public string Category { get; }
+    }
+
+    public readonly struct RecipeRemovalRequest
+    {
+        public RecipeRemovalRequest(
+            int dishInstanceId,
+            int sourceDishIndex,
+            string dishId,
+            string dishName,
+            float probability)
+        {
+            DishInstanceId = dishInstanceId;
+            SourceDishIndex = sourceDishIndex;
+            DishId = dishId ?? string.Empty;
+            DishName = dishName ?? string.Empty;
+            Probability = probability < 0f ? 0f : probability > 1f ? 1f : probability;
+        }
+
+        public int DishInstanceId { get; }
+
+        public int SourceDishIndex { get; }
+
+        public string DishId { get; }
+
+        public string DishName { get; }
+
+        public float Probability { get; }
     }
 
     /// <summary>结算生命周期事件。它记录“发生了什么”，不直接改变分数。</summary>
