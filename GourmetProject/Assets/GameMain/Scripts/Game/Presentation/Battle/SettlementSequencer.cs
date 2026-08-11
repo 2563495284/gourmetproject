@@ -45,6 +45,9 @@ namespace GourmetProject.Game.Presentation.Battle
         [FormerlySerializedAs("_floatingTextPrefab")]
         [SerializeField] private FloatingTextView _settlementEffectLabelPrefab;
         [SerializeField] private SweetTransferParticleView _sweetTransferParticlePrefab;
+        [SerializeField] private SettlementStageLabelView _settlementStageLabelPrefab;
+        [SerializeField] private SettlementStageLabelView _settlementFinaleLabelPrefab;
+        [SerializeField] private SpriteRenderer _settlementStageSpritePrefab;
 
         [Header("餐桌舞台节拍（统一速度下的秒数）")]
         [SerializeField] private float _baseDishDuration = 0.45f;
@@ -207,7 +210,14 @@ namespace GourmetProject.Game.Presentation.Battle
             BeginSettlementSpeed();
             scoreFire?.Hide();
             EnsureStage();
-            _stage.Configure(dishViews, mapper, fxRoot, _visualScale);
+            _stage.Configure(
+                dishViews,
+                mapper,
+                fxRoot,
+                _settlementStageLabelPrefab,
+                _settlementFinaleLabelPrefab,
+                _settlementStageSpritePrefab,
+                _visualScale);
 
             try
             {

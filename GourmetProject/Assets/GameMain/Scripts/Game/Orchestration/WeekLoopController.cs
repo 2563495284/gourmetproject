@@ -333,6 +333,11 @@ namespace GourmetProject.Game.Orchestration
         {
             RepairIncompleteTriggeredBossNodes();
 
+            if (ResumePendingTimelineNodeRepeat())
+            {
+                return;
+            }
+
             if (ResolveDueNodes(PromptNextAction))
             {
                 return;
@@ -1161,18 +1166,48 @@ namespace GourmetProject.Game.Orchestration
             _run.ClearPendingActionExecution();
             int repeatIndex = System.Math.Max(1, context?.NodeRepeatIndex ?? 1);
             int repeatTotal = System.Math.Max(repeatIndex, context?.NodeRepeatTotal ?? 1);
+            bool wasTriggered = _run.IsNodeTriggered(node?.Id);
+            if (node != null)
+            {
+                // 第一轮就是节点本身的正常执行；完成后立即结算节点并切成灰色。
+                _run.MarkNodeTriggered(node.Id);
+            }
+
+            RunPersistence.Save(_run);
             if (repeatIndex < repeatTotal)
             {
-                ExecutePlacedActionPass(node, action, repeatIndex + 1, repeatTotal, onNodeDone);
+                Action showRepeat = () => ActivateAndShowNextTimelineNodeRepeatCard(
+                    node,
+                    action,
+                    repeatIndex + 1,
+                    repeatTotal,
+                    onNodeDone);
+                if (!wasTriggered && node != null)
+                {
+                    _view.PlayTimelineNodeCue(
+                        node.Id,
+                        TimelinePresentationCueKind.TriggerComplete,
+                        Once(showRepeat));
+                }
+                else
+                {
+                    showRepeat();
+                }
+
                 return;
             }
 
-            _run.MarkNodeTriggered(node.Id);
-            RunPersistence.Save(_run);
-            _view.PlayTimelineNodeCue(
-                node.Id,
-                TimelinePresentationCueKind.TriggerComplete,
-                Once(onNodeDone));
+            if (!wasTriggered && node != null)
+            {
+                _view.PlayTimelineNodeCue(
+                    node.Id,
+                    TimelinePresentationCueKind.TriggerComplete,
+                    Once(onNodeDone));
+            }
+            else
+            {
+                onNodeDone?.Invoke();
+            }
         }
 
         private void ContinueRecoveredTimelineNodePass(ActionExecutionContext context)
@@ -1197,11 +1232,9 @@ namespace GourmetProject.Game.Orchestration
 
             cfg.TimelineNode node = TimelineService.GetNode(_run, context.SourceKey);
             cfg.GameAction action = node != null ? TimelineService.NodeAction(_run, node) : null;
-            int repeatIndex = System.Math.Max(1, context.NodeRepeatIndex);
-            int repeatTotal = System.Math.Max(repeatIndex, context.NodeRepeatTotal);
-            if (node != null && action != null && repeatIndex < repeatTotal)
+            if (node != null && action != null)
             {
-                ExecutePlacedActionPass(node, action, repeatIndex + 1, repeatTotal, PromptNextAction);
+                ContinueTimelineNodePass(node, action, context, PromptNextAction);
                 return;
             }
 
@@ -1222,6 +1255,54 @@ namespace GourmetProject.Game.Orchestration
             {
                 DrainPendingExtraNodes(PromptNextAction);
             }
+        }
+
+        /// <summary>第一轮节点已置灰后，由被动道具激活表现引出下一轮节点卡。</summary>
+        private void ActivateAndShowNextTimelineNodeRepeatCard(
+            cfg.TimelineNode node,
+            cfg.GameAction action,
+            int repeatIndex,
+            int repeatTotal,
+            Action onNodeDone)
+        {
+            RunPersistence.Save(_run);
+            new ItemRuntime(_run).FlashTriggered(model => model.TimelineNodeRepeatCount() > 1);
+            _view.ShowTimelineNodeCard(
+                node,
+                InterestMaxGain(),
+                () => ExecutePlacedActionPass(node, action, repeatIndex, repeatTotal, onNodeDone));
+        }
+
+        /// <summary>节点已置灰、下一轮卡片尚未点击时的读档恢复。</summary>
+        private bool ResumePendingTimelineNodeRepeat()
+        {
+            ActionExecutionContext previous = _run?.LastActionContext;
+            int repeatIndex = System.Math.Max(1, previous?.NodeRepeatIndex ?? 1);
+            int repeatTotal = System.Math.Max(repeatIndex, previous?.NodeRepeatTotal ?? 1);
+            if (previous?.Action == null
+                || previous.IsExtraTimelineExecution
+                || string.IsNullOrEmpty(previous.SourceKey)
+                || repeatIndex >= repeatTotal
+                || !_run.IsNodeTriggered(previous.SourceKey))
+            {
+                return false;
+            }
+
+            cfg.TimelineNode node = TimelineService.GetNode(_run, previous.SourceKey);
+            cfg.GameAction action = node != null ? TimelineService.NodeAction(_run, node) : null;
+            if (action == null
+                || !string.Equals(action.Id, previous.Action.Id, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            ActivateAndShowNextTimelineNodeRepeatCard(
+                node,
+                action,
+                repeatIndex + 1,
+                repeatTotal,
+                ProcessNextNode);
+            return true;
         }
 
         private static Action Once(Action callback)

@@ -775,6 +775,45 @@ namespace GourmetProject.Game.UI.Hud
             }
         }
 
+        public bool CommitAddDayPreview(string nodeId)
+        {
+            if (_selectionMode != TimelineAxisSelectionMode.AddDay
+                || string.IsNullOrEmpty(nodeId)
+                || _previewBubble == null
+                || _previewGroup == null
+                || _hoveredPreviewDay < 0
+                || !_previewGroup.PromotePreview(nodeId, out TimelineNodeBubbleView bubble))
+            {
+                return false;
+            }
+
+            int day = _hoveredPreviewDay;
+            cfg.GameAction action = _run?.Tables?.TbAction?.GetOrDefault(_previewActionId);
+            ActionDisplayKind kind = ActionDisplay.KindOf(_run?.Tables, action);
+            bubble.Bind(
+                NodeSprite(kind),
+                completed: false,
+                executing: false,
+                kind == ActionDisplayKind.Boss,
+                preview: false,
+                negative: kind == ActionDisplayKind.Negative);
+
+            _nodeBubbles[nodeId] = bubble;
+            _nodeDays[nodeId] = day;
+            _nodeActionIds[nodeId] = _previewActionId ?? string.Empty;
+            cfg.TimelineNode runtimeNode = _run != null
+                ? TimelineService.GetNode(_run, nodeId)
+                : null;
+            _onNodeCreated?.Invoke(runtimeNode, bubble.gameObject);
+
+            SetDayDotHighlight(day, false);
+            _hoveredPreviewDay = -1;
+            _previewBubble = null;
+            _previewGroup = null;
+            EndSelection(rebuild: false);
+            return true;
+        }
+
         private void RebuildAxisChrome()
         {
             ClearAxisChrome();

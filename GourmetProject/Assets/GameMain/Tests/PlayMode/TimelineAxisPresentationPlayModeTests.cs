@@ -127,6 +127,39 @@ namespace GourmetProject.Tests.PlayMode
             Assert.That(_axis.HasActivePresentationTweens, Is.False);
         }
 
+        [UnityTest]
+        public IEnumerator PromotePreview_ReusesBubbleWithoutDestroyingIt()
+        {
+            var groupObject = new GameObject(
+                "PreviewPromotionGroup",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(UnityEngine.UI.Image),
+                typeof(TimelineDayNodeGroupView));
+            groupObject.transform.SetParent(_canvasObject.transform, false);
+            TimelineDayNodeGroupView group = groupObject.GetComponent<TimelineDayNodeGroupView>();
+            group.Initialize(day: 3, axisX: 0.5f);
+
+            TimelineNodeBubbleView bubblePrefab =
+                Resources.Load<TimelineNodeBubbleView>("Prefabs/UI/Hud/TimelineNodeBubbleView");
+            Assert.That(bubblePrefab, Is.Not.Null);
+            TimelineNodeBubbleView preview =
+                Object.Instantiate(bubblePrefab, groupObject.transform, false);
+            group.AddPreview(preview);
+            yield return null;
+
+            bool promoted = group.PromotePreview("runtime-node", out TimelineNodeBubbleView normal);
+
+            Assert.That(promoted, Is.True);
+            Assert.That(normal, Is.SameAs(preview));
+            Assert.That(group.NodeCount, Is.EqualTo(1));
+            Assert.That(group.GetComponentsInChildren<TimelineNodeBubbleView>(true), Has.Length.EqualTo(1));
+            Assert.That(normal.gameObject.name, Is.EqualTo("NodeBubble_runtime-node"));
+
+            yield return new WaitForSecondsRealtime(0.4f);
+            Assert.That(normal, Is.Not.Null, "提升后的预览节点不应被旧的退场回调销毁。");
+        }
+
         private static TimelineAxisViewState State(
             float currentDay,
             params TimelineAxisNodeState[] nodes)

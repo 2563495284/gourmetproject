@@ -221,6 +221,30 @@ namespace GourmetProject.Game.UI.Hud
             Add(PreviewId, bubble, preview: true, animate: true);
         }
 
+        public bool PromotePreview(string nodeId, out TimelineNodeBubbleView bubble)
+        {
+            bubble = null;
+            if (string.IsNullOrEmpty(nodeId)
+                || _entries.Exists(entry => entry.Id == nodeId))
+            {
+                return false;
+            }
+
+            int index = _entries.FindIndex(entry => entry.Preview);
+            if (index < 0 || _entries[index].Bubble == null)
+            {
+                return false;
+            }
+
+            Entry entry = _entries[index];
+            entry.Id = nodeId;
+            entry.Preview = false;
+            bubble = entry.Bubble;
+            bubble.gameObject.name = $"NodeBubble_{nodeId}";
+            bubble.SetRaycastEnabled(!_nodeTargetMode);
+            return true;
+        }
+
         public void ConfigureNodeTargetMode(
             IEnumerable<string> targetableIds,
             Action<string> onTarget,

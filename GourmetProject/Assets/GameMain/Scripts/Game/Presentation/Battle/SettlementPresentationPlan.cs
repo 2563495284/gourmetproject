@@ -31,8 +31,9 @@ namespace GourmetProject.Game.Presentation.Battle
         public static readonly Color SweetTransferSource = SweetTransfer;
         public static readonly Color CopiedSkillSource = CopySkill;
 
-        // 明亮底板统一使用深墨色文字；范围条件色不参与结果属性语义。
+        // 标签使用压暗的语义底板和提亮的语义文字，避免所有文字看起来都是黑色。
         public static readonly Color TextInk = new Color32(35, 24, 15, 255);
+        public static readonly Color TextLight = new Color32(255, 244, 220, 255);
         public static readonly Color ScopeCondition = new Color32(255, 224, 117, 255);
 
         public static Color For(ScoreLineKind kind)
@@ -54,6 +55,16 @@ namespace GourmetProject.Game.Presentation.Battle
                 ScoreLineKind.SweetTransferFailed => Failure,
                 _ => Special,
             };
+        }
+
+        public static Color PlateFor(Color theme)
+        {
+            return Color.Lerp(TextInk, theme, 0.25f);
+        }
+
+        public static Color TextFor(Color theme)
+        {
+            return Color.Lerp(theme, TextLight, 0.30f);
         }
 
         public static Color WithAlpha(Color color, float alpha)

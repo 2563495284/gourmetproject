@@ -132,6 +132,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SpriteRenderer _placementGlow;
         [Tooltip("常驻美味值标签的独立表现器。")]
         [SerializeField] private DishPieceValueBadgePresenter _dishValueBadgePresenter;
+        [Tooltip("甜蜜传递 Buff 层数文字（prefab 预拼）。")]
+        [SerializeField] private TextMeshPro _sweetTransferBuffTextPrefab;
 
         [Header("落定反馈（仅作用于本体视觉枢轴，不影响格子锚点/碰撞盒）")]
         [SerializeField] private bool _useOccupiedCentroidPivot = true;
@@ -301,14 +303,16 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void CreateSweetTransferBuffText(string name, string text, float localX, Color color)
         {
-            TextMeshPro mesh = SettlementStageView.CreateText(
-                _sweetTransferBuffMarkerRoot,
-                name,
-                text,
-                0f,
-                3,
-                0.18f,
-                8);
+            if (_sweetTransferBuffTextPrefab == null)
+            {
+                Debug.LogError($"{nameof(DishPieceView)} 缺少甜蜜传递 Buff 文字 prefab。", this);
+                return;
+            }
+
+            TextMeshPro mesh = Instantiate(_sweetTransferBuffTextPrefab, _sweetTransferBuffMarkerRoot);
+            mesh.name = name;
+            mesh.text = text;
+            mesh.ForceMeshUpdate(true, true);
             mesh.transform.localPosition += Vector3.right * localX;
             mesh.color = color;
             mesh.outlineColor = SettlementColorPalette.WithAlpha(SettlementColorPalette.TextInk, 0.90f);

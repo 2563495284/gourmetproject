@@ -232,6 +232,11 @@ namespace GourmetProject.Game.UI.Battle.View
             _axis?.EndSelection();
         }
 
+        public bool CommitActiveItemAddPreview(string nodeId)
+        {
+            return _axis != null && _axis.CommitAddDayPreview(nodeId);
+        }
+
         public void CancelActiveItemTargeting()
         {
             _axis?.CancelSelection();

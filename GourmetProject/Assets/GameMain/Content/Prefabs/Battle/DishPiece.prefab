@@ -437,6 +437,7 @@ MonoBehaviour:
   _collider: {fileID: 8981609610198139404}
   _placementGlow: {fileID: 4549533738029501594}
   _dishValueBadgePresenter: {fileID: 2759962042206279977}
+  _sweetTransferBuffTextPrefab: {fileID: 439386249539575394, guid: c727651070b664e4d93cd2c3503ec625, type: 3}
   _useOccupiedCentroidPivot: 1
   _landPunchScale: 1.12
   _landPunchDuration: 0.16
