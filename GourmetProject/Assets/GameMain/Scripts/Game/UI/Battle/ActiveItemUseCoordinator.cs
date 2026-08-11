@@ -362,12 +362,18 @@ namespace GourmetProject.Game.UI.Battle
 
             IActiveUseContext ctx = _pendingContext;
             ItemDefinition item = _pendingItem;
-            CleanupTargeting();
+            bool commitAddPreview = ItemActiveUsage.IsTimelineAddEffect(item.EffectType);
+            if (!commitAddPreview)
+            {
+                CleanupTargeting();
+            }
+
             ApplyAndConsume(
                 ctx,
                 item,
                 new[] { target },
-                refreshActionContent: false);
+                refreshActionContent: false,
+                commitTimelineAddPreview: commitAddPreview);
         }
 
         private void CompleteRecipePanelTargeting(ActiveTarget target, Action onComplete)
@@ -719,9 +725,9 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        private void CleanupTargeting()
+        private void CleanupTargeting(bool closeTimelineAxisTarget = true)
         {
-            bool closeTimelineAxisTarget = _timelineAxisTargeting;
+            closeTimelineAxisTarget &= _timelineAxisTargeting;
             _pendingItem = null;
             _pendingContext = null;
             _pendingSlot = null;
@@ -758,12 +764,18 @@ namespace GourmetProject.Game.UI.Battle
             IActiveUseContext ctx,
             ItemDefinition item,
             IReadOnlyList<ActiveTarget> targets,
-            bool refreshActionContent = true)
+            bool refreshActionContent = true,
+            bool commitTimelineAddPreview = false)
         {
             ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(ctx, item, targets);
             _host.ShowActiveItemMessage(result.Message);
             if (!result.Success)
             {
+                if (commitTimelineAddPreview)
+                {
+                    CleanupTargeting();
+                }
+
                 _host.RefreshAfterActiveItem(
                     boardChanged: false,
                     refreshActionContent: refreshActionContent);
@@ -777,12 +789,24 @@ namespace GourmetProject.Game.UI.Battle
                     ctx.DeleteTimelineNode(result.CreatedTimelineNodeId);
                 }
 
+                if (commitTimelineAddPreview)
+                {
+                    CleanupTargeting();
+                }
+
                 _host.ShowActiveItemMessage($"{item.Name}：装饰品和消耗品已失效。");
                 _host.RefreshAfterActiveItem(
                     result.BoardChanged,
                     result.ActionChoicesChanged,
                     refreshActionContent);
                 return;
+            }
+
+            if (commitTimelineAddPreview)
+            {
+                bool committed = _host.CommitActiveItemTimelineAxisPreview(
+                    result.CreatedTimelineNodeId);
+                CleanupTargeting(closeTimelineAxisTarget: !committed);
             }
 
             _host.RefreshAfterActiveItem(

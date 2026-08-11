@@ -126,7 +126,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 () =>
                 {
                     EndTablePresentation();
-                    _host.SetActionAxisVisible(_sourceActionAxisVisible);
+                    _host.SetActionAxisVisible(false);
                     _view = BattleInspectionView.Recipe;
                     IReadOnlyList<RecipeReadonlyDishEntry> entries = useBattleRecipe
                         ? BuildBattleReadonlyEntries(bookIndex)
@@ -175,7 +175,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 () =>
                 {
                     EndTablePresentation();
-                    _host.SetActionAxisVisible(_sourceActionAxisVisible);
+                    _host.SetActionAxisVisible(false);
                     _view = BattleInspectionView.Recipe;
                     BindPassiveRecipe(entries);
                 },

@@ -1565,6 +1565,11 @@ namespace GourmetProject.Game.UI.Battle
             _axisBinder?.EndActiveItemTargeting();
         }
 
+        internal bool CommitActiveItemTimelineAxisPreview(string nodeId)
+        {
+            return _axisBinder != null && _axisBinder.CommitActiveItemAddPreview(nodeId);
+        }
+
         internal bool PlayActiveItemRecipeFlavorApplied(ActiveTarget target, Action onComplete)
         {
             return _recipeBookPage != null

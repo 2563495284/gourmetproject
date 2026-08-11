@@ -118,6 +118,7 @@
       <Asset Guid="2a996728aa7fb4905b033d6d6d6851ed" ResourceName="sprites/dishes" />
       <Asset Guid="2aac023c834f841d297b7b457558a2c5" ResourceName="audio/sounds" />
       <Asset Guid="2b4c10525f7684877bd275cf2d791b82" ResourceName="sprites/ui" />
+      <Asset Guid="2b5b141a1e49848f093625e6c82d202b" ResourceName="prefabs/battle" />
       <Asset Guid="2bc162e07d97344b98bb0801da4290ba" ResourceName="sprites/ui" />
       <Asset Guid="2c6b9b618ac6c47f48626a1370e92002" ResourceName="sprites/ui" />
       <Asset Guid="2c79f9a1a4389423f94133263d82e368" ResourceName="sprites/items" />
@@ -176,6 +177,7 @@
       <Asset Guid="43b77477f9dc245f0a61386b7f15ac86" ResourceName="sprites/items" />
       <Asset Guid="44125719333ff4db1a6efff52852de62" ResourceName="sprites/dishes" />
       <Asset Guid="4479e118ca0254ba1b1826c29bbd0bd0" ResourceName="textures/effects" />
+      <Asset Guid="46de8087a6f654039ad3eb5cf4835712" ResourceName="prefabs/battle" />
       <Asset Guid="4709a04a77a444854a4bd24f0bb5640b" ResourceName="audio/sounds" />
       <Asset Guid="477f5051c4d9b42c4b9c66e3d739a27e" ResourceName="sprites/items" />
       <Asset Guid="47c255074264242a791660020d3fc9ef" ResourceName="sprites/ui" />
@@ -346,6 +348,7 @@
       <Asset Guid="9a05041d5c2c7446f8ba420513db09fa" ResourceName="sprites/ui" />
       <Asset Guid="9a8900b3b39634ce098940bcb34ae227" ResourceName="sprites/ui" />
       <Asset Guid="9adef94e4fa974f3eaebba7f3bfd8bfa" ResourceName="sprites/items" />
+      <Asset Guid="9c0eff87a4d6a4f3ab55c22dbc223c50" ResourceName="prefabs/battle" />
       <Asset Guid="9cd82bbd422164e17a316399685ac6c4" ResourceName="sprites/ui" />
       <Asset Guid="9e015711961ac418e9d261134ea1f737" ResourceName="sprites/items" />
       <Asset Guid="9e4d0fce5396242f4ae226b69e1fe1b4" ResourceName="sprites/items" />
@@ -425,6 +428,7 @@
       <Asset Guid="c5b23e8811aa14052a0ec5e234d569d6" ResourceName="prefabs/ui" />
       <Asset Guid="c608314cd59d9458aa724887bbfd0b0d" ResourceName="sprites/items" />
       <Asset Guid="c64e05b4fde5240bd9e5c67bbb9c5268" ResourceName="sprites/items" />
+      <Asset Guid="c727651070b664e4d93cd2c3503ec625" ResourceName="prefabs/battle" />
       <Asset Guid="c75bfcad09c8a402ca482df965b344bd" ResourceName="sprites/ui" />
       <Asset Guid="c7e8d9a0b1c24d3e5f6a7b8c9d0e1f2a" ResourceName="shaders/runtime" />
       <Asset Guid="c8fc0c62cac5749e5a8fc685681fa0c5" ResourceName="sprites/ui" />

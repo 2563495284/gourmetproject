@@ -47,7 +47,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3cf90eba1d84240538a9ac4f19055dc3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Presentation.Battle.SettlementStageLabelView
-  _background: {fileID: 6020292862060423944}
   _headerText: {fileID: 9090686542540765773}
   _bodyText: {fileID: 1214606123173086423}
 --- !u!1 &2788861311244482097
@@ -203,7 +202,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -8718148927222724939, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
+  - {fileID: 2100000, guid: 4281e2b0ae0504d92a5b07bae4072964, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -250,13 +249,13 @@ MonoBehaviour:
   m_text: "\u603B\u5206  0"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
-  m_sharedMaterial: {fileID: -8718148927222724939, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: 4281e2b0ae0504d92a5b07bae4072964, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4291949311
   m_fontColor: {r: 1, g: 0.95, b: 0.82, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -269,7 +268,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -384,7 +383,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -8718148927222724939, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
+  - {fileID: 2100000, guid: 4281e2b0ae0504d92a5b07bae4072964, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -431,13 +430,13 @@ MonoBehaviour:
   m_text: "\u672C\u684C\u7ED3\u7B97"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
-  m_sharedMaterial: {fileID: -8718148927222724939, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: 4281e2b0ae0504d92a5b07bae4072964, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 3516850431
   m_fontColor: {r: 1, g: 0.88, b: 0.62, a: 0.82}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -450,7 +449,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
