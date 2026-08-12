@@ -10,7 +10,9 @@ using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using Luban.SimpleJSON;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -143,6 +145,33 @@ namespace GourmetProject.Tests.EditMode
                 TutorialId.Boss, TutorialId.Failure, TutorialId.PassiveItem,
             };
             Assert.That(ids.All(id => TutorialCatalog.Get(id)?.Steps.Count > 0), Is.True);
+        }
+
+        [Test]
+        public void DirectionAndScoreSteps_UseCompleteCompositeAnchors()
+        {
+            TutorialStepDefinition direction = TutorialCatalog.Get(TutorialId.DirectionSelection).Steps[0];
+            Assert.That(direction.Anchors, Is.EqualTo(new[]
+            {
+                TutorialAnchorId.DirectionName,
+                TutorialAnchorId.DirectionDescription,
+            }));
+
+            TutorialStepDefinition score = TutorialCatalog.Get(TutorialId.FirstBattle).Steps[3];
+            Assert.That(score.Anchors, Does.Contain(TutorialAnchorId.ScoreSection));
+            Assert.That(score.Anchors, Does.Contain(TutorialAnchorId.ScoreTitle));
+            Assert.That(score.Anchors, Does.Contain(TutorialAnchorId.ScoreMeter));
+        }
+
+        [Test]
+        public void TutorialOverlayPrefab_InheritsTheFrameworkCanvas()
+        {
+            const string path = "Assets/GameMain/Content/Resources/Prefabs/UI/Tutorial/TutorialOverlay.prefab";
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+
+            Assert.That(prefab, Is.Not.Null);
+            Assert.That(prefab.GetComponent<Canvas>(), Is.Null);
+            Assert.That(prefab.GetComponent<GraphicRaycaster>(), Is.Null);
         }
 
         [Test]

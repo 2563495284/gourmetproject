@@ -1452,6 +1452,9 @@ namespace GourmetProject.Game.Presentation.Battle
             foreach (PendingDishPlacement pending in _session.PendingDishPlacements)
             {
                 if (!pending.IsOnDiningTable
+                    || !ShouldShowPendingDishActionButton(
+                        pending.ActionKind,
+                        GameApp.Settings?.RequireServeConfirmation ?? true)
                     || !_dishViewsById.TryGetValue(pending.Dish.Id, out DishPieceView piece)
                     || piece == null)
                 {
@@ -1468,14 +1471,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     button.onClick.RemoveAllListeners();
                     button.onClick.AddListener(() =>
                     {
-                        if (_pendingDishConfirmRequested != null)
-                        {
-                            _pendingDishConfirmRequested(dishId);
-                        }
-                        else
-                        {
-                            ConfirmPendingDishFromButton(dishId);
-                        }
+                        RequestPendingDishConfirmation(dishId);
                     });
                     _pendingDishActionButtons[dishId] = button;
                 }
@@ -1574,6 +1570,25 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureNextDishPrepared();
             RefreshAll();
             _stateChanged?.Invoke();
+        }
+
+        private void RequestPendingDishConfirmation(int dishId)
+        {
+            DispatchPendingDishConfirmation(
+                dishId,
+                _pendingDishConfirmRequested,
+                ConfirmPendingDishFromButton);
+        }
+
+        internal static void DispatchPendingDishConfirmation(
+            int dishId,
+            Action<int> presentationRequest,
+            Action<int> fallback)
+        {
+            if (presentationRequest != null)
+                presentationRequest(dishId);
+            else
+                fallback?.Invoke(dishId);
         }
 
         public PendingDishConfirmResult ConfirmPendingDishForPresentation(int dishId)
@@ -1915,14 +1930,13 @@ namespace GourmetProject.Game.Presentation.Battle
 
             bool autoConfirm = ShouldAutoConfirmPendingDish(
                     PendingDishActionKind.Serve,
-                    GameApp.Settings?.RequireServeConfirmation ?? true)
-                && _pendingDishConfirmRequested != null;
+                    GameApp.Settings?.RequireServeConfirmation ?? true);
             if (autoConfirm)
             {
                 // 自动上菜会同步提交数据，再等待落格/触发演出。这里不要先发布
                 // PendingDish 中间态，否则出餐口会闪成“等待上菜/确认”。
                 SetMessage($"已摆放：{result.Dish.Def.Name}，正在上菜。");
-                _pendingDishConfirmRequested(result.Dish.Id);
+                RequestPendingDishConfirmation(result.Dish.Id);
             }
             else
             {
@@ -1939,6 +1953,13 @@ namespace GourmetProject.Game.Presentation.Battle
             bool requireServeConfirmation)
         {
             return !requireServeConfirmation && actionKind == PendingDishActionKind.Serve;
+        }
+
+        internal static bool ShouldShowPendingDishActionButton(
+            PendingDishActionKind actionKind,
+            bool requireServeConfirmation)
+        {
+            return actionKind != PendingDishActionKind.Serve || requireServeConfirmation;
         }
 
         private DishPieceView InstantiateLoosePiece(DishInstance dish, string objectName)

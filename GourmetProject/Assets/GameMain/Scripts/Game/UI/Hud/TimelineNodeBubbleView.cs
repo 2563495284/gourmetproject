@@ -276,6 +276,41 @@ namespace GourmetProject.Game.UI.Hud
             _visibilityTween = sequence;
         }
 
+        /// <summary>时间游标经过节点日期时播放一次短促高亮，不改变节点的执行/完成状态。</summary>
+        public void PlayAdvancePulse(float speed = 1f)
+        {
+            EnsureRefs();
+            if (_removing)
+            {
+                return;
+            }
+
+            _visibilityTween?.Kill();
+            _executingGlow.enabled = true;
+            _executingGlow.effectColor = ExecutingGlowMax;
+            _executingGlow.effectDistance = new Vector2(5f, -5f);
+            float durationScale = 1f / Mathf.Max(0.05f, speed);
+            Sequence sequence = DOTween.Sequence()
+                .SetUpdate(true)
+                .SetTarget(_canvasGroup);
+            sequence.Join(Rect.DOPunchScale(
+                _boundScale * 0.18f,
+                0.30f * durationScale,
+                5,
+                0.55f));
+            sequence.Join(_canvasGroup.DOFade(1f, 0.08f * durationScale));
+            sequence.AppendInterval(0.06f * durationScale);
+            sequence.OnComplete(() =>
+            {
+                Rect.localScale = _boundScale;
+                _canvasGroup.alpha = _boundAlpha;
+                _outline.effectColor = _boundOutlineColor;
+                _outline.effectDistance = _boundOutlineDistance;
+                _executingGlow.enabled = _executing;
+            });
+            _visibilityTween = sequence;
+        }
+
         public void PlayTriggerComplete(Action onComplete, float speed = 1f)
         {
             EnsureRefs();

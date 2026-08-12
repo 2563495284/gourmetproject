@@ -34,6 +34,10 @@ namespace GourmetProject.Game.Tutorial
     {
         public const string Direction = "character.direction";
         public const string DirectionStart = "character.start";
+        public const string DirectionTitle = "character.direction.title";
+        public const string DirectionName = "character.direction.name";
+        public const string DirectionDescription = "character.direction.description";
+        public const string DirectionButtons = "character.direction.buttons";
         public const string ActionDeck = "action.deck";
         public const string ActionCard0 = "action.card.0";
         public const string ActionCard1 = "action.card.1";
@@ -43,6 +47,9 @@ namespace GourmetProject.Game.Tutorial
         public const string ActionReward2 = "action.reward.2";
         public const string ActionAxis = "action.axis";
         public const string Score = "battle.score";
+        public const string ScoreSection = "battle.score.section";
+        public const string ScoreTitle = "battle.score.title";
+        public const string ScoreMeter = "battle.score.meter";
         public const string Hearts = "battle.hearts";
         public const string Recipe = "battle.recipe";
         public const string RecipePanel = "battle.recipe_panel";
@@ -211,7 +218,8 @@ namespace GourmetProject.Game.Tutorial
                         enterCommand: null,
                         exitCommand: null,
                         allowTargetInteraction: false,
-                        TutorialAnchorId.Direction),
+                        TutorialAnchorId.DirectionName,
+                        TutorialAnchorId.DirectionDescription),
                     new TutorialStepDefinition(
                         "方向选好了，就点击「新游戏」吧。铛铛会陪你一起把店开起来！",
                         TutorialMascotPose.PointRight,
@@ -259,7 +267,9 @@ namespace GourmetProject.Game.Tutorial
                         enterCommand: null,
                         exitCommand: null,
                         allowTargetInteraction: false,
-                        TutorialAnchorId.Score),
+                        TutorialAnchorId.ScoreSection,
+                        TutorialAnchorId.ScoreTitle,
+                        TutorialAnchorId.ScoreMeter),
                     new TutorialStepDefinition(
                         "现在，把出餐口的食物拖到餐桌上吧！绿色位置可以摆放，缺格或被占用的位置不能摆放。",
                         TutorialMascotPose.PointRight,

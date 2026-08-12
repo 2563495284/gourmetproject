@@ -26,6 +26,7 @@ namespace GourmetProject.Game.UI.Battle.View
         private Tween _pendingCardShowTween;
         private Tween _cardsHideTween;
         private Func<bool> _canShowPredicate;
+        private Action _pendingShowCompleted;
         private Func<ItemTipView> _rewardTip;
 
         public bool CardsActive => _cardsContainer != null && _cardsContainer.gameObject.activeSelf;
@@ -198,9 +199,11 @@ namespace GourmetProject.Game.UI.Battle.View
         }
 
         /// <summary>等待场景转场结束后播放卡片出场动画；canShow 每次重新判定（保证仍在行动选择态）。</summary>
-        public void PlayShowWhenReady(Func<bool> canShow)
+        public void PlayShowWhenReady(Func<bool> canShow, Action onShown = null)
         {
+            KillPendingShow();
             _canShowPredicate = canShow;
+            _pendingShowCompleted = onShown;
             PlayShowInternal();
         }
 
@@ -245,6 +248,8 @@ namespace GourmetProject.Game.UI.Battle.View
                 _pendingCardShowTween.Kill();
                 _pendingCardShowTween = null;
             }
+
+            _pendingShowCompleted = null;
         }
 
         /// <summary>关闭清场：停掉待播出场与退场动画。</summary>
@@ -260,25 +265,51 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void PlayShowInternal()
         {
-            KillPendingShow();
             if ((_canShowPredicate != null && !_canShowPredicate()) || _cards.Count == 0)
             {
+                _pendingShowCompleted = null;
                 return;
             }
 
-            if (GameApp.UI.HasUIForm(UIForms.CartoonSceneTransition))
+            if (GameApp.UI != null && GameApp.UI.HasUIForm(UIForms.CartoonSceneTransition))
             {
-                _pendingCardShowTween = DOVirtual.DelayedCall(0.03f, PlayShowInternal, true).SetUpdate(true);
+                _pendingCardShowTween = DOVirtual.DelayedCall(0.03f, () =>
+                {
+                    _pendingCardShowTween = null;
+                    PlayShowInternal();
+                }, true).SetUpdate(true);
                 return;
             }
 
+            Sequence sequence = DOTween.Sequence().SetUpdate(true);
+            bool hasTween = false;
             foreach (WeekEventCardView card in _cards)
             {
                 if (card != null && card.isActiveAndEnabled)
                 {
-                    card.PlayShow();
+                    Tween tween = card.PlayShow();
+                    if (tween != null)
+                    {
+                        sequence.Join(tween);
+                        hasTween = true;
+                    }
                 }
             }
+
+            Action onShown = _pendingShowCompleted;
+            _pendingShowCompleted = null;
+            if (!hasTween)
+            {
+                sequence.Kill();
+                onShown?.Invoke();
+                return;
+            }
+
+            _pendingCardShowTween = sequence.OnComplete(() =>
+            {
+                _pendingCardShowTween = null;
+                onShown?.Invoke();
+            });
         }
 
         private void SpawnCard(float minX, float maxX, Action<WeekEventCardView> bind)

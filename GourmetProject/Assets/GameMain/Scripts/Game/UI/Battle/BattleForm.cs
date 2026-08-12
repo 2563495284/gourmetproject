@@ -157,6 +157,7 @@ namespace GourmetProject.Game.UI.Battle
         private WeekLoopController _loop;
 
         private TimelineAxisBinder _axisBinder;
+        private TimelineAxisFocusPresenter _timelineAxisFocus;
         private BattleOverlaySuspension _overlaySuspension;
         private BattleInspectionCoordinator _inspectionCoordinator;
         private BattleTableFragmentEditCoordinator _fragmentEditCoordinator;
@@ -279,6 +280,9 @@ namespace GourmetProject.Game.UI.Battle
             _axisBinder = new TimelineAxisBinder(
                 _actionAxisBar,
                 () => _tips != null ? _tips.Timeline : null);
+            _timelineAxisFocus = new TimelineAxisFocusPresenter(
+                _actionAxisBar != null ? _actionAxisBar.transform as RectTransform : null,
+                ResolveActionAxisGroup());
             _deck?.SetRewardTip(() => _tips != null ? _tips.Item : null);
             _pageRouter = new GameplayPageRouter(this);
             _shopPage = new ShopPageCoordinator(this);
@@ -353,6 +357,8 @@ namespace GourmetProject.Game.UI.Battle
             CancelPassivePresentations();
             _activeItemUse?.Dispose();
             _rewardPeekOnly = false;
+            _timelineAxisFocus?.Cancel();
+            _actionAxisBar?.CancelPresentation();
             _deck?.KillAllTweens();
             ClearWorldHoverCallbacks();
             HideAllTips();
@@ -427,6 +433,12 @@ namespace GourmetProject.Game.UI.Battle
             _session?.ClearHappyCakeLayers();
             _displayedCakeLayers = 0;
             _pendingSettlementCakeLayers = null;
+            if (_current == GameplayView.Food)
+            {
+                ExitBattleBeforeTimelinePresentation(() => _loop?.OnRewardConfirmed());
+                return;
+            }
+
             _loop?.OnRewardConfirmed();
         }
 
@@ -847,12 +859,14 @@ namespace GourmetProject.Game.UI.Battle
                 BuildTimelineNodeCard(node, interestMaxGain, onPick);
             }, () =>
             {
-                PlayShowCardsWhenReady();
-                if (_run != null
-                    && _run.IsTutorialRun
-                    && !TutorialProgressService.IsCompleted(TutorialId.CoreComplete)
-                    && TutorialProgressService.IsCompleted(TutorialId.FirstAction))
-                    TutorialRuntime.Play(TutorialId.TimelineNode);
+                PlayShowCardsWhenReady(() =>
+                {
+                    if (_run != null
+                        && _run.IsTutorialRun
+                        && !TutorialProgressService.IsCompleted(TutorialId.CoreComplete)
+                        && TutorialProgressService.IsCompleted(TutorialId.FirstAction))
+                        TutorialRuntime.Play(TutorialId.TimelineNode);
+                });
             });
         }
 
@@ -889,7 +903,62 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             SetActionAxisVisible(true);
-            _axisBinder.PlayAdvance(_run, fromDay, toDay, arrivingNodeId, onDone);
+            void PlayAdvance()
+            {
+                _axisBinder.PlayAdvance(
+                    _run,
+                    fromDay,
+                    toDay,
+                    arrivingNodeId,
+                    () =>
+                    {
+                        if (_timelineAxisFocus != null)
+                        {
+                            _timelineAxisFocus.Exit(onDone);
+                        }
+                        else
+                        {
+                            onDone?.Invoke();
+                        }
+                    });
+            }
+
+            if (_timelineAxisFocus?.CanPresent == true)
+            {
+                _timelineAxisFocus.Enter(PlayAdvance);
+            }
+            else
+            {
+                _axisBinder.PlayAdvance(_run, fromDay, toDay, arrivingNodeId, onDone);
+            }
+        }
+
+        /// <summary>
+        /// 经营挑战领奖完成后先退出世界态并清空中部卡片，再允许周循环推进时间轴。
+        /// 这样时间轴聚焦演出不会被强制叠到仍可见的战斗画面上。
+        /// </summary>
+        private void ExitBattleBeforeTimelinePresentation(Action onExited)
+        {
+            ClearTimelineNodeCard();
+            _deck?.Clear();
+            _deck?.SetCardsActive(false);
+
+            if (_pageRouter == null)
+            {
+                HideBattleWorld();
+                onExited?.Invoke();
+                return;
+            }
+
+            SwitchTo(
+                GameplayView.ActionSelect,
+                () =>
+                {
+                    ClearTimelineNodeCard();
+                    _deck?.Clear();
+                    _deck?.SetCardsActive(false);
+                },
+                onExited);
         }
 
         public void PlayTimelineNodeCue(
@@ -1501,8 +1570,7 @@ namespace GourmetProject.Game.UI.Battle
                 BuildActionCards();
             }, () =>
             {
-                PlayShowCardsWhenReady();
-                PlayActionSelectionTutorialIfNeeded();
+                PlayShowCardsWhenReady(PlayActionSelectionTutorialIfNeeded);
                 onShown?.Invoke();
             });
         }
@@ -1926,7 +1994,8 @@ namespace GourmetProject.Game.UI.Battle
                 null,
                 OnDishClicked,
                 resetDoodle: false,
-                serveTriggerCueSink: OnServeTriggerCue);
+                serveTriggerCueSink: OnServeTriggerCue,
+                pendingDishConfirmRequested: OnPendingDishConfirmRequested);
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
             _world.SetCellHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
             _world.SetTableFragmentHoverCallbacks(OnTableFragmentHoverEntered, OnTableFragmentHoverExited);
@@ -3035,9 +3104,11 @@ namespace GourmetProject.Game.UI.Battle
             });
         }
 
-        private void PlayShowCardsWhenReady()
+        private void PlayShowCardsWhenReady(Action onShown = null)
         {
-            _deck?.PlayShowWhenReady(() => _current == GameplayView.ActionSelect);
+            _deck?.PlayShowWhenReady(
+                () => _current == GameplayView.ActionSelect,
+                onShown);
         }
 
         /// <summary>行动选项变更：先等旧卡 hide 播完，再构建并 show 新卡。</summary>
@@ -5116,6 +5187,9 @@ namespace GourmetProject.Game.UI.Battle
         private void RegisterTutorialAnchors()
         {
             TutorialAnchorRegistry.Register(TutorialAnchorId.Score, _infoColumn?.ScoreRect);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.ScoreSection, _infoColumn?.ScoreSectionRect);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.ScoreTitle, _infoColumn?.ScoreTitleRect);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.ScoreMeter, _infoColumn?.ScoreMeterRect);
             TutorialAnchorRegistry.Register(TutorialAnchorId.Hearts, _infoColumn?.HeartsRect);
             TutorialAnchorRegistry.Register(TutorialAnchorId.Recipe, _infoColumn?.ViewRecipeButtonRect);
             TutorialAnchorRegistry.Register(
@@ -5133,6 +5207,9 @@ namespace GourmetProject.Game.UI.Battle
         private void UnregisterTutorialAnchors()
         {
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.Score);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.ScoreSection);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.ScoreTitle);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.ScoreMeter);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.Hearts);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.Recipe);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.RecipePanel);

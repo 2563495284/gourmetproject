@@ -121,6 +121,24 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(BattleWorldController.ShouldAutoConfirmPendingDish(PendingDishActionKind.Serve, true), Is.False);
             Assert.That(BattleWorldController.ShouldAutoConfirmPendingDish(PendingDishActionKind.Serve, false), Is.True);
             Assert.That(BattleWorldController.ShouldAutoConfirmPendingDish(PendingDishActionKind.Confirm, false), Is.False);
+            Assert.That(BattleWorldController.ShouldShowPendingDishActionButton(PendingDishActionKind.Serve, true), Is.True);
+            Assert.That(BattleWorldController.ShouldShowPendingDishActionButton(PendingDishActionKind.Serve, false), Is.False);
+            Assert.That(BattleWorldController.ShouldShowPendingDishActionButton(PendingDishActionKind.Confirm, false), Is.True);
+        }
+
+        [Test]
+        public void PendingDishConfirmation_UsesPresentationCallbackOrFallback()
+        {
+            int presented = 0;
+            int fallback = 0;
+            BattleWorldController.DispatchPendingDishConfirmation(7, id => presented = id, id => fallback = id);
+            Assert.That(presented, Is.EqualTo(7));
+            Assert.That(fallback, Is.Zero);
+
+            presented = 0;
+            BattleWorldController.DispatchPendingDishConfirmation(9, null, id => fallback = id);
+            Assert.That(presented, Is.Zero);
+            Assert.That(fallback, Is.EqualTo(9));
         }
 
         [Test]

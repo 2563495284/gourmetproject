@@ -379,6 +379,7 @@ namespace GourmetProject.Game.UI.Hud
                             for (int day = lastWholeDay + 1; day <= wholeDay; day++)
                             {
                                 PulseDayDot(day, speed);
+                                PulseNodesAtDay(day, speed);
                             }
 
                             lastWholeDay = wholeDay;
@@ -1382,6 +1383,21 @@ namespace GourmetProject.Game.UI.Hud
                     0.45f)
                 .SetUpdate(true)
                 .SetTarget(dot.rectTransform);
+        }
+
+        private void PulseNodesAtDay(int day, float speed)
+        {
+            foreach (KeyValuePair<string, int> pair in _nodeDays)
+            {
+                if (pair.Value != day
+                    || !_nodeBubbles.TryGetValue(pair.Key, out TimelineNodeBubbleView bubble)
+                    || bubble == null)
+                {
+                    continue;
+                }
+
+                bubble.PlayAdvancePulse(speed);
+            }
         }
 
         private void RefreshCurrentDay()

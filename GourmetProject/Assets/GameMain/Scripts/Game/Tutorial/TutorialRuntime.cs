@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.UI;
+using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.Tutorial
 {
@@ -169,6 +172,7 @@ namespace GourmetProject.Game.Tutorial
         public static void Publish(string signal)
         {
             if (_transitioning || _sequence == null || _stepIndex < 0 || _stepIndex >= _sequence.Steps.Count) return;
+            if (_overlay != null && !_overlay.IsPresentationReady) return;
             TutorialStepDefinition step = _sequence.Steps[_stepIndex];
             if (step.Mode == TutorialAdvanceMode.Signal
                 && string.Equals(step.Signal, signal, StringComparison.Ordinal))
@@ -316,23 +320,46 @@ namespace GourmetProject.Game.Tutorial
     internal sealed class TutorialOverlayView
     {
         private const string PrefabResourcePath = "Prefabs/UI/Tutorial/TutorialOverlay";
-        private const float TipWidth = 900f;
-        private const float TipHeight = 270f;
+        private const float DialogueBaseScale = 0.5f;
+        private const float RevealDuration = 0.22f;
+        private const float CharactersPerSecond = 30f;
+        private const float LayoutMargin = 12f;
+        private const float HoleGap = 18f;
         private readonly GameObject _instance;
         private readonly RectTransform _root;
         private readonly Image[] _masks;
         private readonly Image _holeBlocker;
         private readonly RectTransform _tip;
+        private readonly RectTransform _dialoguePanel;
         private readonly Image _mascot;
         private readonly TMP_Text _message;
+        private readonly CanvasGroup _tipCanvasGroup;
+        private readonly Vector3 _dialoguePanelBaseScale;
+        private readonly Vector3 _mascotBaseScale;
         private readonly TutorialOverlayClickSurface[] _clickSurfaces;
         private Action _advance;
         private TutorialStepDefinition _step;
         private Rect _lastHole;
         private bool _lastHadHole;
         private Vector2Int _lastScreenSize;
+        private Tween _presentationTween;
+        private bool _presentationReady;
 
         public Transform transform => _instance != null ? _instance.transform : null;
+        internal bool IsPresentationReady => _presentationReady;
+        internal Rect CurrentHole => _lastHole;
+        internal Rect CurrentDialogueBounds
+        {
+            get
+            {
+                Bounds bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(_tip);
+                float scale = _tip.localScale.x;
+                return TipRect(
+                    _tip.anchoredPosition,
+                    (Vector2)bounds.min * scale,
+                    (Vector2)bounds.max * scale);
+            }
+        }
 
         public static TutorialOverlayView Create()
         {
@@ -343,8 +370,39 @@ namespace GourmetProject.Game.Tutorial
                 return null;
             }
 
-            GameObject instance = UnityEngine.Object.Instantiate(prefab);
-            UnityEngine.Object.DontDestroyOnLoad(instance);
+            var tutorialGroup = GameApp.UI?.GetUIGroup(UIForms.GroupTutorial);
+            if (!(tutorialGroup?.Helper is Component helper))
+            {
+                Debug.LogError($"Tutorial UI group '{UIForms.GroupTutorial}' is unavailable.");
+                return null;
+            }
+
+            return CreateUnderParent(prefab, helper.transform);
+        }
+
+        internal static TutorialOverlayView CreateForTests(Transform parent)
+        {
+            GameObject prefab = Resources.Load<GameObject>(PrefabResourcePath);
+            return prefab != null && parent != null ? CreateUnderParent(prefab, parent) : null;
+        }
+
+        private static TutorialOverlayView CreateUnderParent(GameObject prefab, Transform parent)
+        {
+            GameObject instance = UnityEngine.Object.Instantiate(prefab, parent, false);
+            RectTransform root = instance.transform as RectTransform;
+            if (root == null)
+            {
+                Debug.LogError("Tutorial overlay prefab root must be a RectTransform.");
+                UnityEngine.Object.Destroy(instance);
+                return null;
+            }
+
+            root.anchorMin = Vector2.zero;
+            root.anchorMax = Vector2.one;
+            root.offsetMin = Vector2.zero;
+            root.offsetMax = Vector2.zero;
+            root.localScale = Vector3.one;
+            instance.transform.SetAsLastSibling();
             return new TutorialOverlayView(instance);
         }
 
@@ -361,8 +419,14 @@ namespace GourmetProject.Game.Tutorial
             };
             _holeBlocker = Require<Image>(instance.transform, "HoleInputBlocker");
             _tip = Require<RectTransform>(instance.transform, "DangDangDialogue");
+            _dialoguePanel = Require<RectTransform>(instance.transform, "DangDangDialogue/DialoguePanel");
             _mascot = Require<Image>(instance.transform, "DangDangDialogue/DangDang");
             _message = Require<TMP_Text>(instance.transform, "DangDangDialogue/DialoguePanel/Message");
+            _tipCanvasGroup = _tip.GetComponent<CanvasGroup>();
+            if (_tipCanvasGroup == null)
+                _tipCanvasGroup = _tip.gameObject.AddComponent<CanvasGroup>();
+            _dialoguePanelBaseScale = _dialoguePanel.localScale;
+            _mascotBaseScale = _mascot.rectTransform.localScale;
             _clickSurfaces = instance.GetComponentsInChildren<TutorialOverlayClickSurface>(includeInactive: true);
             if (_clickSurfaces.Length == 0)
                 throw new InvalidOperationException("Tutorial overlay prefab does not provide any click surfaces.");
@@ -375,18 +439,22 @@ namespace GourmetProject.Game.Tutorial
             _instance.SetActive(true);
             _step = step;
             _advance = advance;
+            StopPresentation(complete: false);
+            _presentationReady = false;
             _message.text = step.Message;
+            _message.maxVisibleCharacters = 0;
             _mascot.sprite = LoadMascot(step.Pose);
             _mascot.enabled = _mascot.sprite != null;
             Canvas.ForceUpdateCanvases();
             Vector2Int canvasSize = GetCanvasSize();
             bool hasHole = TryResolveHole(step.Anchors, out Rect hole);
             if (hasHole) ApplyHole(hole);
-            else ApplyFallback(step.Mode == TutorialAdvanceMode.Continue);
-            PositionTip(hasHole ? hole : new Rect(canvasSize.x * 0.5f, canvasSize.y * 0.5f, 0f, 0f));
+            else ApplyFallback(ShouldBlockFallback());
+            PositionTip(hole, hasHole);
             _lastHadHole = hasHole;
             _lastHole = hole;
             _lastScreenSize = canvasSize;
+            PlayPresentation();
         }
 
         private void RefreshTrackedLayout()
@@ -396,8 +464,8 @@ namespace GourmetProject.Game.Tutorial
             Vector2Int screen = GetCanvasSize();
             if (screen == _lastScreenSize && hasHole == _lastHadHole && (!hasHole || Approximately(hole, _lastHole))) return;
             if (hasHole) ApplyHole(hole);
-            else ApplyFallback(_step.Mode == TutorialAdvanceMode.Continue);
-            PositionTip(hasHole ? hole : new Rect(screen.x * 0.5f, screen.y * 0.5f, 0f, 0f));
+            else ApplyFallback(ShouldBlockFallback());
+            PositionTip(hole, hasHole);
             _lastHadHole = hasHole;
             _lastHole = hole;
             _lastScreenSize = screen;
@@ -409,18 +477,26 @@ namespace GourmetProject.Game.Tutorial
 
         public void Hide()
         {
+            StopPresentation(complete: false);
             if (_instance != null) _instance.SetActive(false);
         }
 
         public void Dispose()
         {
             Canvas.willRenderCanvases -= RefreshTrackedLayout;
+            StopPresentation(complete: false);
             foreach (TutorialOverlayClickSurface surface in _clickSurfaces) surface?.Unbind();
             if (_instance != null) UnityEngine.Object.Destroy(_instance);
         }
 
         private void OnOverlayClicked()
         {
+            if (!_presentationReady)
+            {
+                CompletePresentationImmediately();
+                return;
+            }
+
             if (_step?.Mode == TutorialAdvanceMode.Continue) _advance?.Invoke();
         }
 
@@ -434,9 +510,32 @@ namespace GourmetProject.Game.Tutorial
                 if (!TutorialAnchorRegistry.TryGet(id, out RectTransform target)) continue;
                 Vector3[] corners = new Vector3[4];
                 target.GetWorldCorners(corners);
-                Camera camera = target.GetComponentInParent<Canvas>()?.worldCamera;
-                for (int i = 0; i < corners.Length; i++) corners[i] = RectTransformUtility.WorldToScreenPoint(camera, corners[i]);
-                Rect rect = Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y);
+                Canvas targetCanvas = target.GetComponentInParent<Canvas>();
+                Camera targetCamera = targetCanvas != null && targetCanvas.renderMode != RenderMode.ScreenSpaceOverlay
+                    ? targetCanvas.worldCamera
+                    : null;
+                Canvas overlayCanvas = _root.GetComponentInParent<Canvas>();
+                Camera overlayCamera = overlayCanvas != null && overlayCanvas.renderMode != RenderMode.ScreenSpaceOverlay
+                    ? overlayCanvas.worldCamera
+                    : null;
+                Vector2 min = new(float.PositiveInfinity, float.PositiveInfinity);
+                Vector2 max = new(float.NegativeInfinity, float.NegativeInfinity);
+                for (int i = 0; i < corners.Length; i++)
+                {
+                    Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(targetCamera, corners[i]);
+                    if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                            _root,
+                            screenPoint,
+                            overlayCamera,
+                            out Vector2 localPoint))
+                        continue;
+                    localPoint -= _root.rect.min;
+                    min = Vector2.Min(min, localPoint);
+                    max = Vector2.Max(max, localPoint);
+                }
+
+                if (float.IsInfinity(min.x) || float.IsInfinity(min.y)) continue;
+                Rect rect = Rect.MinMaxRect(min.x, min.y, max.x, max.y);
                 if (!any) { result = rect; any = true; }
                 else
                 {
@@ -447,7 +546,12 @@ namespace GourmetProject.Game.Tutorial
             if (any)
             {
                 const float padding = 16f;
-                result = Rect.MinMaxRect(result.xMin - padding, result.yMin - padding, result.xMax + padding, result.yMax + padding);
+                Vector2Int canvasSize = GetCanvasSize();
+                result = Rect.MinMaxRect(
+                    Mathf.Clamp(result.xMin - padding, 0f, canvasSize.x),
+                    Mathf.Clamp(result.yMin - padding, 0f, canvasSize.y),
+                    Mathf.Clamp(result.xMax + padding, 0f, canvasSize.x),
+                    Mathf.Clamp(result.yMax + padding, 0f, canvasSize.y));
             }
             return any;
         }
@@ -459,8 +563,9 @@ namespace GourmetProject.Game.Tutorial
             SetMask(_masks[1].rectTransform, hole.xMax, 0f, canvasSize.x, canvasSize.y);
             SetMask(_masks[2].rectTransform, hole.xMin, 0f, hole.xMax, hole.yMin);
             SetMask(_masks[3].rectTransform, hole.xMin, hole.yMax, hole.xMax, canvasSize.y);
-            _holeBlocker.gameObject.SetActive(!_step.AllowTargetInteraction);
-            if (!_step.AllowTargetInteraction)
+            bool blockHole = !_presentationReady || !_step.AllowTargetInteraction;
+            _holeBlocker.gameObject.SetActive(blockHole);
+            if (blockHole)
                 SetMask(_holeBlocker.rectTransform, hole.xMin, hole.yMin, hole.xMax, hole.yMax);
         }
 
@@ -481,22 +586,134 @@ namespace GourmetProject.Game.Tutorial
             rect.sizeDelta = new Vector2(Mathf.Max(0f, xMax - xMin), Mathf.Max(0f, yMax - yMin));
         }
 
-        private void PositionTip(Rect hole)
+        private bool ShouldBlockFallback() =>
+            !_presentationReady || _step == null || !_step.AllowTargetInteraction;
+
+        private void PositionTip(Rect hole, bool hasHole)
         {
             Vector2Int canvasSize = GetCanvasSize();
+            Bounds bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(_tip);
+            float naturalWidth = Mathf.Max(1f, bounds.size.x);
             float referenceScale = Mathf.Max(0.62f, canvasSize.y / 1080f);
-            float widthFitScale = Mathf.Max(0.62f, (canvasSize.x - 24f) / TipWidth);
-            float scale = Mathf.Min(referenceScale, widthFitScale);
+            float widthFitScale = Mathf.Max(0.62f, (canvasSize.x - LayoutMargin * 2f) / naturalWidth);
+            float scale = DialogueBaseScale * Mathf.Min(referenceScale, widthFitScale);
             _tip.localScale = Vector3.one * scale;
-            float halfWidth = TipWidth * scale * 0.5f;
-            float halfHeight = TipHeight * scale * 0.5f;
-            float x = Mathf.Clamp(hole.center.x, halfWidth + 12f, canvasSize.x - halfWidth - 12f);
-            float y = hole.yMin > TipHeight * scale + 28f
-                ? hole.yMin - halfHeight - 18f
-                : hole.yMax + halfHeight + 18f;
-            y = Mathf.Clamp(y, halfHeight + 12f, canvasSize.y - halfHeight - 12f);
             _tip.anchorMin = _tip.anchorMax = Vector2.zero;
-            _tip.anchoredPosition = new Vector2(x, y);
+
+            Vector2 scaledMin = (Vector2)bounds.min * scale;
+            Vector2 scaledMax = (Vector2)bounds.max * scale;
+            Vector2 scaledCenter = (Vector2)bounds.center * scale;
+            if (!hasHole)
+            {
+                Vector2 centered = new Vector2(canvasSize.x * 0.5f, canvasSize.y * 0.5f) - scaledCenter;
+                _tip.anchoredPosition = ClampTipPosition(centered, scaledMin, scaledMax, canvasSize);
+                return;
+            }
+
+            Vector2[] candidates =
+            {
+                new(hole.center.x - scaledCenter.x, hole.yMax + HoleGap - scaledMin.y),
+                new(hole.center.x - scaledCenter.x, hole.yMin - HoleGap - scaledMax.y),
+                new(hole.xMax + HoleGap - scaledMin.x, hole.center.y - scaledCenter.y),
+                new(hole.xMin - HoleGap - scaledMax.x, hole.center.y - scaledCenter.y),
+            };
+
+            Vector2 best = ClampTipPosition(candidates[0], scaledMin, scaledMax, canvasSize);
+            float bestOverlap = OverlapArea(TipRect(best, scaledMin, scaledMax), hole);
+            for (int i = 1; i < candidates.Length && bestOverlap > 0.01f; i++)
+            {
+                Vector2 candidate = ClampTipPosition(candidates[i], scaledMin, scaledMax, canvasSize);
+                float overlap = OverlapArea(TipRect(candidate, scaledMin, scaledMax), hole);
+                if (overlap < bestOverlap)
+                {
+                    best = candidate;
+                    bestOverlap = overlap;
+                }
+            }
+
+            _tip.anchoredPosition = best;
+        }
+
+        private static Vector2 ClampTipPosition(
+            Vector2 position,
+            Vector2 scaledMin,
+            Vector2 scaledMax,
+            Vector2Int canvasSize)
+        {
+            float minX = LayoutMargin - scaledMin.x;
+            float maxX = canvasSize.x - LayoutMargin - scaledMax.x;
+            float minY = LayoutMargin - scaledMin.y;
+            float maxY = canvasSize.y - LayoutMargin - scaledMax.y;
+            return new Vector2(
+                minX <= maxX ? Mathf.Clamp(position.x, minX, maxX) : canvasSize.x * 0.5f,
+                minY <= maxY ? Mathf.Clamp(position.y, minY, maxY) : canvasSize.y * 0.5f);
+        }
+
+        private static Rect TipRect(Vector2 position, Vector2 scaledMin, Vector2 scaledMax) =>
+            Rect.MinMaxRect(
+                position.x + scaledMin.x,
+                position.y + scaledMin.y,
+                position.x + scaledMax.x,
+                position.y + scaledMax.y);
+
+        private static float OverlapArea(Rect a, Rect b)
+        {
+            float width = Mathf.Max(0f, Mathf.Min(a.xMax, b.xMax) - Mathf.Max(a.xMin, b.xMin));
+            float height = Mathf.Max(0f, Mathf.Min(a.yMax, b.yMax) - Mathf.Max(a.yMin, b.yMin));
+            return width * height;
+        }
+
+        private void PlayPresentation()
+        {
+            _tipCanvasGroup.alpha = 0f;
+            _dialoguePanel.localScale = _dialoguePanelBaseScale * 0.9f;
+            _mascot.rectTransform.localScale = _mascotBaseScale * 0.9f;
+            _message.ForceMeshUpdate();
+            int characterCount = _message.textInfo.characterCount;
+            float typingDuration = characterCount / CharactersPerSecond;
+
+            Sequence sequence = DOTween.Sequence()
+                .SetUpdate(true)
+                .SetTarget(_instance)
+                .Append(_tipCanvasGroup.DOFade(1f, RevealDuration).SetEase(Ease.OutQuad))
+                .Join(_dialoguePanel.DOScale(_dialoguePanelBaseScale, RevealDuration).SetEase(Ease.OutBack))
+                .Join(_mascot.rectTransform.DOScale(_mascotBaseScale, RevealDuration).SetEase(Ease.OutBack));
+            if (characterCount > 0)
+            {
+                sequence.Append(DOVirtual.Int(
+                        0,
+                        characterCount,
+                        Mathf.Max(0.05f, typingDuration),
+                        value => _message.maxVisibleCharacters = value)
+                    .SetEase(Ease.Linear));
+            }
+
+            _presentationTween = sequence.OnComplete(MarkPresentationReady);
+        }
+
+        private void CompletePresentationImmediately()
+        {
+            StopPresentation(complete: false);
+            MarkPresentationReady();
+        }
+
+        private void MarkPresentationReady()
+        {
+            _presentationTween = null;
+            _tipCanvasGroup.alpha = 1f;
+            _dialoguePanel.localScale = _dialoguePanelBaseScale;
+            _mascot.rectTransform.localScale = _mascotBaseScale;
+            _message.maxVisibleCharacters = int.MaxValue;
+            _presentationReady = true;
+            if (_lastHadHole) ApplyHole(_lastHole);
+            else ApplyFallback(ShouldBlockFallback());
+        }
+
+        private void StopPresentation(bool complete)
+        {
+            if (_presentationTween == null) return;
+            _presentationTween.Kill(complete);
+            _presentationTween = null;
         }
 
         private Vector2Int GetCanvasSize()

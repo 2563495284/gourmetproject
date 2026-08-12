@@ -1,7 +1,9 @@
 using System.Linq;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Game.UI.Hud;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -80,6 +82,32 @@ namespace GourmetProject.Tests.EditMode
             TimelineAxisViewState state = State(7f, Node("future", 6, "future"));
 
             Assert.That(TimelineAxisPresentationPlanner.DueStops(state, 1f, 3f), Is.Empty);
+        }
+
+        [Test]
+        public void FocusPresenter_CalculatesScreenCenterFromTopStretchAnchors()
+        {
+            var parentObject = new GameObject("TimelineFocusParent", typeof(RectTransform));
+            var axisObject = new GameObject("TimelineFocusAxis", typeof(RectTransform));
+            try
+            {
+                RectTransform parent = parentObject.GetComponent<RectTransform>();
+                parent.sizeDelta = new Vector2(1600f, 1000f);
+                RectTransform axis = axisObject.GetComponent<RectTransform>();
+                axis.SetParent(parent, false);
+                axis.anchorMin = new Vector2(0.18f, 0.86f);
+                axis.anchorMax = new Vector2(0.82f, 0.985f);
+                axis.anchoredPosition = new Vector2(0f, 17f);
+
+                float centeredY = TimelineAxisFocusPresenter.CenteredAnchoredY(axis);
+
+                Assert.That(centeredY, Is.EqualTo(-422.5f).Within(0.001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(axisObject);
+                Object.DestroyImmediate(parentObject);
+            }
         }
 
         private static TimelineAxisViewState State(

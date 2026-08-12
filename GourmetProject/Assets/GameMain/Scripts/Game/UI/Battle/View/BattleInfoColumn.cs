@@ -57,6 +57,8 @@ namespace GourmetProject.Game.UI.Battle.View
         private bool _tableInspectionAvailable;
         private Sequence _weekChangeSequence;
         private int? _recipeCountPresentationOverride;
+        private RectTransform _scoreSection;
+        private RectTransform _scoreMeter;
         private TMP_Text _settlementDeltaText;
         private Sequence _settlementScoreBeatSequence;
         private bool _settlementScoreBeatPending;
@@ -74,6 +76,23 @@ namespace GourmetProject.Game.UI.Battle.View
                 ? _viewRecipeButton.transform as RectTransform
                 : null;
         public RectTransform ScoreRect => _scoreTitlePanel != null ? _scoreTitlePanel : transform as RectTransform;
+        public RectTransform ScoreSectionRect
+        {
+            get
+            {
+                EnsureTutorialScoreRects();
+                return _scoreSection;
+            }
+        }
+        public RectTransform ScoreTitleRect => _scoreTitlePanel;
+        public RectTransform ScoreMeterRect
+        {
+            get
+            {
+                EnsureTutorialScoreRects();
+                return _scoreMeter;
+            }
+        }
         public RectTransform HeartsRect => _heartContainer;
         public RectTransform BossRuleRect
         {
@@ -93,9 +112,20 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void Awake()
         {
+            EnsureTutorialScoreRects();
             EnsureBossStatRect();
             EnsureSettlementDeltaText();
             ResetBossStatPresentation();
+        }
+
+        private void EnsureTutorialScoreRects()
+        {
+            _scoreSection = _scoreSection != null
+                ? _scoreSection
+                : transform.Find("ScoreSection") as RectTransform;
+            _scoreMeter = _scoreMeter != null
+                ? _scoreMeter
+                : transform.Find("ScoreMeter") as RectTransform;
         }
 
         private void LateUpdate()
