@@ -25,6 +25,8 @@ namespace GourmetProject.Game.UI.Hud
     /// </summary>
     public sealed class ActionAxisBar : MonoBehaviour
     {
+        private const float ProgressDurationMultiplier = 2f;
+
         [Header("引用")]
         [SerializeField] private RectTransform _container;
         [SerializeField] private RectTransform _positionMarker;
@@ -371,7 +373,9 @@ namespace GourmetProject.Game.UI.Hud
             }
 
             float distance = Mathf.Abs(target - start);
-            float duration = Mathf.Clamp(0.38f + 0.18f * distance, 0.45f, 1.10f) / speed;
+            float duration = Mathf.Clamp(0.38f + 0.18f * distance, 0.45f, 1.10f)
+                * ProgressDurationMultiplier
+                / speed;
             int lastWholeDay = Mathf.FloorToInt(start + TimelineMath.Epsilon);
             _presentationTween = DOTween.To(
                     () => start,
