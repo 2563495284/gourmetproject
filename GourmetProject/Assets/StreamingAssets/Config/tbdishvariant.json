@@ -180,8 +180,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_general_01",
-    "baseId": "codename_general_01",
+    "id": "caramel_pudding",
+    "baseId": "caramel_pudding",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 30,
@@ -270,8 +270,8 @@
     "rotation": 0
   },
   {
-    "id": "cream",
-    "baseId": "cream",
+    "id": "cream_puff",
+    "baseId": "cream_puff",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 30,
@@ -288,8 +288,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_general_02",
-    "baseId": "codename_general_02",
+    "id": "ice_cream",
+    "baseId": "ice_cream",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 30,
@@ -324,8 +324,8 @@
     "rotation": 0
   },
   {
-    "id": "baguette",
-    "baseId": "baguette",
+    "id": "osmanthus_cake",
+    "baseId": "osmanthus_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -360,8 +360,8 @@
     "rotation": 0
   },
   {
-    "id": "cake_slice",
-    "baseId": "cake_slice",
+    "id": "napoleon_cake",
+    "baseId": "napoleon_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -378,8 +378,8 @@
     "rotation": 0
   },
   {
-    "id": "long_cake",
-    "baseId": "long_cake",
+    "id": "honey_cake",
+    "baseId": "honey_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -396,8 +396,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_cake_01",
-    "baseId": "codename_cake_01",
+    "id": "tree_ring_cake",
+    "baseId": "tree_ring_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -414,8 +414,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_transfer_01",
-    "baseId": "codename_transfer_01",
+    "id": "nougat",
+    "baseId": "nougat",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -432,8 +432,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_serving_01",
-    "baseId": "codename_serving_01",
+    "id": "hawthorn_cake",
+    "baseId": "hawthorn_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -450,8 +450,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_general_03",
-    "baseId": "codename_general_03",
+    "id": "souffle",
+    "baseId": "souffle",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -468,8 +468,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_general_04",
-    "baseId": "codename_general_04",
+    "id": "fruit_tart",
+    "baseId": "fruit_tart",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -486,8 +486,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_general_05",
-    "baseId": "codename_general_05",
+    "id": "strawberry_sundae",
+    "baseId": "strawberry_sundae",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -504,8 +504,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_general_06",
-    "baseId": "codename_general_06",
+    "id": "rock_sugar_pear",
+    "baseId": "rock_sugar_pear",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -522,8 +522,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_transfer_02",
-    "baseId": "codename_transfer_02",
+    "id": "popping_candy",
+    "baseId": "popping_candy",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -540,8 +540,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_cake_02",
-    "baseId": "codename_cake_02",
+    "id": "mille_crepe_cake",
+    "baseId": "mille_crepe_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -558,8 +558,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_serving_02",
-    "baseId": "codename_serving_02",
+    "id": "soybean_glutinous_roll",
+    "baseId": "soybean_glutinous_roll",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -576,8 +576,8 @@
     "rotation": 0
   },
   {
-    "id": "eclair",
-    "baseId": "eclair",
+    "id": "sachima",
+    "baseId": "sachima",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -612,8 +612,8 @@
     "rotation": 0
   },
   {
-    "id": "chocolate_strip",
-    "baseId": "chocolate_strip",
+    "id": "chocolate_wafer",
+    "baseId": "chocolate_wafer",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -648,8 +648,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_cake_03",
-    "baseId": "codename_cake_03",
+    "id": "fondant_cake",
+    "baseId": "fondant_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -666,8 +666,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_cake_04",
-    "baseId": "codename_cake_04",
+    "id": "matcha_cake",
+    "baseId": "matcha_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -684,8 +684,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_serving_03",
-    "baseId": "codename_serving_03",
+    "id": "mung_bean_cake",
+    "baseId": "mung_bean_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -702,8 +702,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_serving_04",
-    "baseId": "codename_serving_04",
+    "id": "egg_yolk_pastry",
+    "baseId": "egg_yolk_pastry",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -720,8 +720,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_transfer_03",
-    "baseId": "codename_transfer_03",
+    "id": "chocolate_truffle",
+    "baseId": "chocolate_truffle",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -738,8 +738,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_transfer_04",
-    "baseId": "codename_transfer_04",
+    "id": "liquor_chocolate",
+    "baseId": "liquor_chocolate",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 45,
@@ -792,8 +792,8 @@
     "rotation": 0
   },
   {
-    "id": "maple_sugar",
-    "baseId": "maple_sugar",
+    "id": "toffee_candy",
+    "baseId": "toffee_candy",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 60,
@@ -828,8 +828,8 @@
     "rotation": 0
   },
   {
-    "id": "waffle",
-    "baseId": "waffle",
+    "id": "brown_sugar_steamed_cake",
+    "baseId": "brown_sugar_steamed_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 60,
@@ -882,8 +882,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_general_07",
-    "baseId": "codename_general_07",
+    "id": "fruit_shaved_ice",
+    "baseId": "fruit_shaved_ice",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 60,
@@ -900,8 +900,8 @@
     "rotation": 0
   },
   {
-    "id": "codename_general_08",
-    "baseId": "codename_general_08",
+    "id": "coconut_milk_jelly",
+    "baseId": "coconut_milk_jelly",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 60,
@@ -936,8 +936,8 @@
     "rotation": 0
   },
   {
-    "id": "chocolate_sauce",
-    "baseId": "chocolate_sauce",
+    "id": "nama_chocolate",
+    "baseId": "nama_chocolate",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 90,
@@ -990,8 +990,8 @@
     "rotation": 0
   },
   {
-    "id": "parfait",
-    "baseId": "parfait",
+    "id": "fermented_rice_balls",
+    "baseId": "fermented_rice_balls",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 90,
@@ -1044,8 +1044,8 @@
     "rotation": 0
   },
   {
-    "id": "apple_pie",
-    "baseId": "apple_pie",
+    "id": "double_skin_milk",
+    "baseId": "double_skin_milk",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_rust",
     "baseWeight": 1200,
     "price": 135,

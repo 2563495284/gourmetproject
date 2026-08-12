@@ -3494,6 +3494,20 @@ namespace GourmetProject.Game.UI.Battle
             RecipeMutationResult result,
             bool before)
         {
+            IReadOnlyList<RecipeDishSnapshot> fullRecipe = before
+                ? result.BeforeRecipe
+                : result.AfterRecipe;
+            if (fullRecipe != null && fullRecipe.Count > 0)
+            {
+                var fullEntries = new List<RecipeReadonlyDishEntry>(fullRecipe.Count);
+                foreach (RecipeDishSnapshot snapshot in fullRecipe)
+                {
+                    fullEntries.Add(new RecipeReadonlyDishEntry(RecipeSlotFromSnapshot(snapshot)));
+                }
+
+                return fullEntries;
+            }
+
             var mutations = new Dictionary<int, RecipeMutationEntry>();
             foreach (RecipeMutationEntry entry in result.Entries)
             {

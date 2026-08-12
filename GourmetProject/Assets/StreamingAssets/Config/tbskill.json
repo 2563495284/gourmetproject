@@ -40,8 +40,8 @@
     "subSkills": "sk_mousse_1"
   },
   {
-    "id": "sk_codename_general_01",
-    "subSkills": "sk_codename_general_01_1"
+    "id": "sk_caramel_pudding",
+    "subSkills": "sk_caramel_pudding_1"
   },
   {
     "id": "sk_fruit_candy",
@@ -60,112 +60,112 @@
     "subSkills": "sk_cup_cake_1|sk_cup_cake_2"
   },
   {
-    "id": "sk_cream",
-    "subSkills": "sk_cream_1"
+    "id": "sk_cream_puff",
+    "subSkills": "sk_cream_puff_1"
   },
   {
-    "id": "sk_codename_general_02",
-    "subSkills": "sk_codename_general_02_1"
+    "id": "sk_ice_cream",
+    "subSkills": "sk_ice_cream_1"
   },
   {
     "id": "sk_eggroll",
     "subSkills": "sk_eggroll_1"
   },
   {
-    "id": "sk_baguette",
-    "subSkills": "sk_baguette_1"
+    "id": "sk_osmanthus_cake",
+    "subSkills": "sk_osmanthus_cake_1"
   },
   {
     "id": "sk_tanghulu",
     "subSkills": "sk_tanghulu_1|sk_tanghulu_2"
   },
   {
-    "id": "sk_cake_slice",
-    "subSkills": "sk_cake_slice_1|sk_cake_slice_2"
+    "id": "sk_napoleon_cake",
+    "subSkills": "sk_napoleon_cake_1|sk_napoleon_cake_2"
   },
   {
-    "id": "sk_long_cake",
-    "subSkills": "sk_long_cake_1|sk_long_cake_2"
+    "id": "sk_honey_cake",
+    "subSkills": "sk_honey_cake_1|sk_honey_cake_2"
   },
   {
-    "id": "sk_codename_cake_01",
-    "subSkills": "sk_codename_cake_01_1"
+    "id": "sk_tree_ring_cake",
+    "subSkills": "sk_tree_ring_cake_1"
   },
   {
-    "id": "sk_codename_transfer_01",
-    "subSkills": "sk_codename_transfer_01_1|sk_codename_transfer_01_2"
+    "id": "sk_nougat",
+    "subSkills": "sk_nougat_1|sk_nougat_2"
   },
   {
-    "id": "sk_codename_serving_01",
-    "subSkills": "sk_codename_serving_01_1"
+    "id": "sk_hawthorn_cake",
+    "subSkills": "sk_hawthorn_cake_1"
   },
   {
-    "id": "sk_codename_general_03",
-    "subSkills": "sk_codename_general_03_1"
+    "id": "sk_souffle",
+    "subSkills": "sk_souffle_1"
   },
   {
-    "id": "sk_codename_general_04",
-    "subSkills": "sk_codename_general_04_1"
+    "id": "sk_fruit_tart",
+    "subSkills": "sk_fruit_tart_1"
   },
   {
-    "id": "sk_codename_general_05",
-    "subSkills": "sk_codename_general_05_1"
+    "id": "sk_strawberry_sundae",
+    "subSkills": "sk_strawberry_sundae_1"
   },
   {
-    "id": "sk_codename_general_06",
-    "subSkills": "sk_codename_general_06_1|sk_codename_general_06_2"
+    "id": "sk_rock_sugar_pear",
+    "subSkills": "sk_rock_sugar_pear_1|sk_rock_sugar_pear_2"
   },
   {
-    "id": "sk_codename_transfer_02",
-    "subSkills": "sk_codename_transfer_02_1"
+    "id": "sk_popping_candy",
+    "subSkills": "sk_popping_candy_1"
   },
   {
-    "id": "sk_codename_cake_02",
-    "subSkills": "sk_codename_cake_02_1"
+    "id": "sk_mille_crepe_cake",
+    "subSkills": "sk_mille_crepe_cake_1"
   },
   {
-    "id": "sk_codename_serving_02",
-    "subSkills": "sk_codename_serving_02_1"
+    "id": "sk_soybean_glutinous_roll",
+    "subSkills": "sk_soybean_glutinous_roll_1"
   },
   {
-    "id": "sk_eclair",
-    "subSkills": "sk_eclair_1"
+    "id": "sk_sachima",
+    "subSkills": "sk_sachima_1"
   },
   {
     "id": "sk_gummy",
     "subSkills": "sk_gummy_1"
   },
   {
-    "id": "sk_chocolate_strip",
-    "subSkills": "sk_chocolate_strip_1|sk_chocolate_strip_2"
+    "id": "sk_chocolate_wafer",
+    "subSkills": "sk_chocolate_wafer_1|sk_chocolate_wafer_2"
   },
   {
     "id": "sk_cake_roll",
     "subSkills": "sk_cake_roll_1|sk_cake_roll_2"
   },
   {
-    "id": "sk_codename_cake_03",
-    "subSkills": "sk_codename_cake_03_1|sk_codename_cake_03_2"
+    "id": "sk_fondant_cake",
+    "subSkills": "sk_fondant_cake_1|sk_fondant_cake_2"
   },
   {
-    "id": "sk_codename_cake_04",
-    "subSkills": "sk_codename_cake_04_1"
+    "id": "sk_matcha_cake",
+    "subSkills": "sk_matcha_cake_1"
   },
   {
-    "id": "sk_codename_serving_03",
-    "subSkills": "sk_codename_serving_03_1"
+    "id": "sk_mung_bean_cake",
+    "subSkills": "sk_mung_bean_cake_1"
   },
   {
-    "id": "sk_codename_serving_04",
-    "subSkills": "sk_codename_serving_04_1"
+    "id": "sk_egg_yolk_pastry",
+    "subSkills": "sk_egg_yolk_pastry_1"
   },
   {
-    "id": "sk_codename_transfer_03",
-    "subSkills": "sk_codename_transfer_03_1"
+    "id": "sk_chocolate_truffle",
+    "subSkills": "sk_chocolate_truffle_1"
   },
   {
-    "id": "sk_codename_transfer_04",
-    "subSkills": "sk_codename_transfer_04_1|sk_codename_transfer_04_2"
+    "id": "sk_liquor_chocolate",
+    "subSkills": "sk_liquor_chocolate_1|sk_liquor_chocolate_2"
   },
   {
     "id": "sk_palmier",
@@ -176,16 +176,16 @@
     "subSkills": "sk_chiffion_1"
   },
   {
-    "id": "sk_maple_sugar",
-    "subSkills": "sk_maple_sugar_1"
+    "id": "sk_toffee_candy",
+    "subSkills": "sk_toffee_candy_1"
   },
   {
     "id": "sk_taosu",
     "subSkills": "sk_taosu_1"
   },
   {
-    "id": "sk_waffle",
-    "subSkills": "sk_waffle_1"
+    "id": "sk_brown_sugar_steamed_cake",
+    "subSkills": "sk_brown_sugar_steamed_cake_1"
   },
   {
     "id": "sk_cream_cake",
@@ -196,20 +196,20 @@
     "subSkills": "sk_candycane_1|sk_candycane_2"
   },
   {
-    "id": "sk_codename_general_07",
-    "subSkills": "sk_codename_general_07_1"
+    "id": "sk_fruit_shaved_ice",
+    "subSkills": "sk_fruit_shaved_ice_1"
   },
   {
-    "id": "sk_codename_general_08",
-    "subSkills": "sk_codename_general_08_1"
+    "id": "sk_coconut_milk_jelly",
+    "subSkills": "sk_coconut_milk_jelly_1"
   },
   {
     "id": "sk_black_forest_cake",
     "subSkills": "sk_black_forest_cake_1|sk_black_forest_cake_2"
   },
   {
-    "id": "sk_chocolate_sauce",
-    "subSkills": "sk_chocolate_sauce_1|sk_chocolate_sauce_2"
+    "id": "sk_nama_chocolate",
+    "subSkills": "sk_nama_chocolate_1|sk_nama_chocolate_2"
   },
   {
     "id": "sk_mango_sago",
@@ -220,8 +220,8 @@
     "subSkills": "sk_fruit_cake_1|sk_fruit_cake_2"
   },
   {
-    "id": "sk_parfait",
-    "subSkills": "sk_parfait_1"
+    "id": "sk_fermented_rice_balls",
+    "subSkills": "sk_fermented_rice_balls_1"
   },
   {
     "id": "sk_marshmallow",
@@ -232,8 +232,8 @@
     "subSkills": "sk_big_lollipop_1|sk_big_lollipop_2"
   },
   {
-    "id": "sk_apple_pie",
-    "subSkills": "sk_apple_pie_1"
+    "id": "sk_double_skin_milk",
+    "subSkills": "sk_double_skin_milk_1"
   },
   {
     "id": "sk_double_cake",

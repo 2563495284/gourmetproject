@@ -13,6 +13,7 @@ namespace GourmetProject.Game.Meta
     public static class RewardPoolService
     {
         private const string Tag = "RewardPool";
+        private const string FlavoredDishPoolId = "pool_flavored_dish";
 
         public static List<RewardChoice> RollChoices(RewardContext context, cfg.RewardSlot slot)
         {
@@ -98,10 +99,11 @@ namespace GourmetProject.Game.Meta
             int count,
             List<RewardChoice> result)
         {
+            bool requireFlavor = string.Equals(pool.Id, FlavoredDishPoolId, StringComparison.Ordinal);
             var candidates = new List<DishDef>();
             foreach (DishDef dish in context.Run.Library.Dishes)
             {
-                if (dish.CoversHiddenScore(hidden))
+                if ((!requireFlavor || dish.HasFlavor) && dish.CoversHiddenScore(hidden))
                 {
                     candidates.Add(dish);
                 }
@@ -109,7 +111,13 @@ namespace GourmetProject.Game.Meta
 
             if (candidates.Count == 0 && pool.AllowFallback)
             {
-                candidates.AddRange(context.Run.Library.Dishes);
+                foreach (DishDef dish in context.Run.Library.Dishes)
+                {
+                    if (!requireFlavor || dish.HasFlavor)
+                    {
+                        candidates.Add(dish);
+                    }
+                }
             }
 
             for (int i = 0; i < count && candidates.Count > 0; i++)

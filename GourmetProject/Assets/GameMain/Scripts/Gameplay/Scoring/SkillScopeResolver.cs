@@ -49,7 +49,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return SkillScopeVisual.Empty;
             }
 
-            IReadOnlyList<DishInstance> targetDishes = ResolveVisualActionDishes(db, board, self, rule, mode);
+            IReadOnlyList<DishInstance> targetDishes = ResolveVisualActionDishes(db, board, self, rule, mode, null);
             List<int> targetIds = targetDishes.Select(d => d.Id).Distinct().ToList();
             List<GridPos> targetCells = rule.ActionType == SkillActionType.TransferSkills
                 ? board.ExistingCells()
@@ -70,9 +70,10 @@ namespace GourmetProject.Gameplay.Scoring
             GpTable board,
             DishInstance self,
             SkillRuleDef rule,
-            SkillScopeVisualMode mode)
+            SkillScopeVisualMode mode,
+            System.Func<DishInstance, string, bool> categoryMatcher = null)
         {
-            return ResolveVisualActionDishes(db, board, self, rule, mode);
+            return ResolveVisualActionDishes(db, board, self, rule, mode, categoryMatcher);
         }
 
         private static IReadOnlyList<DishInstance> ResolveVisualActionDishes(
@@ -80,11 +81,12 @@ namespace GourmetProject.Gameplay.Scoring
             GpTable board,
             DishInstance self,
             SkillRuleDef rule,
-            SkillScopeVisualMode mode)
+            SkillScopeVisualMode mode,
+            System.Func<DishInstance, string, bool> categoryMatcher)
         {
             if (rule.ActionType == SkillActionType.CopySkill)
             {
-                return ResolveCopyCandidateDishes(db, board, self, rule, mode);
+                return ResolveCopyCandidateDishes(db, board, self, rule, mode, categoryMatcher);
             }
 
             if (rule.ActionType == SkillActionType.TriggerSweetTransfer)
@@ -109,7 +111,13 @@ namespace GourmetProject.Gameplay.Scoring
                 return System.Array.Empty<DishInstance>();
             }
 
-            List<DishInstance> dishes = ResolveScopeDishes(db, board, self, rule, includeSelfForSelfScope: true);
+            List<DishInstance> dishes = ResolveScopeDishes(
+                db,
+                board,
+                self,
+                rule,
+                includeSelfForSelfScope: true,
+                categoryMatcher);
             return ApplyActionCount(dishes, rule, mode);
         }
 
@@ -118,12 +126,19 @@ namespace GourmetProject.Gameplay.Scoring
             GpTable board,
             DishInstance self,
             SkillRuleDef rule,
-            SkillScopeVisualMode mode)
+            SkillScopeVisualMode mode,
+            System.Func<DishInstance, string, bool> categoryMatcher)
         {
             string category = SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams);
             List<DishInstance> dishes = !string.IsNullOrEmpty(category)
-                ? SkillConditionEvaluator.CategoryDishes(board, category)
-                : ResolveScopeDishes(db, board, self, rule, includeSelfForSelfScope: false);
+                ? board.Dishes.Where(d => MatchesCategory(d, category, categoryMatcher)).ToList()
+                : ResolveScopeDishes(
+                    db,
+                    board,
+                    self,
+                    rule,
+                    includeSelfForSelfScope: false,
+                    categoryMatcher);
 
             dishes.RemoveAll(d => d.Id == self.Id || !HasCopyableSkill(db, self, d));
             return ApplyActionCount(dishes, rule, mode);
@@ -134,7 +149,8 @@ namespace GourmetProject.Gameplay.Scoring
             GpTable board,
             DishInstance self,
             SkillRuleDef rule,
-            bool includeSelfForSelfScope)
+            bool includeSelfForSelfScope,
+            System.Func<DishInstance, string, bool> categoryMatcher = null)
         {
             List<DishInstance> dishes;
             if (rule.ActionScope == SkillScope.Self)
@@ -143,9 +159,10 @@ namespace GourmetProject.Gameplay.Scoring
             }
             else if (rule.ActionScope == SkillScope.Category)
             {
-                dishes = SkillConditionEvaluator.CategoryDishes(
-                    board,
-                    SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams));
+                string scopedCategory = SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams);
+                dishes = board.Dishes
+                    .Where(d => MatchesCategory(d, scopedCategory, categoryMatcher))
+                    .ToList();
             }
             else
             {
@@ -160,7 +177,7 @@ namespace GourmetProject.Gameplay.Scoring
             string category = SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams);
             if (!string.IsNullOrEmpty(category))
             {
-                dishes = dishes.Where(d => d.IsCategory(category)).ToList();
+                dishes = dishes.Where(d => MatchesCategory(d, category, categoryMatcher)).ToList();
             }
 
             if (HasActionParam(rule, "position:non-edge"))
@@ -183,6 +200,14 @@ namespace GourmetProject.Gameplay.Scoring
 
             return dishes;
         }
+
+        private static bool MatchesCategory(
+            DishInstance dish,
+            string category,
+            System.Func<DishInstance, string, bool> categoryMatcher)
+            => categoryMatcher != null
+                ? categoryMatcher(dish, category)
+                : dish != null && dish.IsCategory(category);
 
         private static List<DishInstance> ApplyActionCount(
             List<DishInstance> dishes,

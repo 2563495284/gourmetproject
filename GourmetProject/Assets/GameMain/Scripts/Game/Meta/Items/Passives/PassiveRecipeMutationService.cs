@@ -288,6 +288,238 @@ namespace GourmetProject.Game.Meta.Passives
             return result;
         }
 
+        public static CellMutationResult SpreadMaterialToAdjacentCell(
+            GameRun run,
+            string title,
+            IRandomStream rng)
+        {
+            var result = new CellMutationResult { Title = title };
+            if (run == null || rng == null)
+            {
+                return result;
+            }
+
+            DiningTable preview = run.BuildTablePreviewFromFragments();
+            var sources = new List<GridPos>();
+            foreach (GridPos cell in preview.ExistingCells())
+            {
+                if (preview.MaterialsAt(cell).Count > 0)
+                {
+                    sources.Add(cell);
+                }
+            }
+
+            if (sources.Count == 0)
+            {
+                return result;
+            }
+
+            rng.Shuffle(sources);
+            var directions = new[]
+            {
+                new GridPos(1, 0),
+                new GridPos(-1, 0),
+                new GridPos(0, 1),
+                new GridPos(0, -1),
+            };
+
+            foreach (GridPos source in sources)
+            {
+                IReadOnlyList<string> sourceMaterials = preview.MaterialsAt(source);
+                var candidates = new List<CellMutationEntry>();
+                foreach (GridPos direction in directions)
+                {
+                    var target = new GridPos(source.X + direction.X, source.Y + direction.Y);
+                    if (!preview.Exists(target))
+                    {
+                        continue;
+                    }
+
+                    IReadOnlyList<string> before = preview.MaterialsAt(target);
+                    foreach (string materialId in sourceMaterials)
+                    {
+                        if (!ContainsIgnoreCase(before, materialId))
+                        {
+                            candidates.Add(new CellMutationEntry
+                            {
+                                Pos = target,
+                                MaterialId = materialId,
+                                BeforeMaterialIds = new List<string>(before),
+                            });
+                        }
+                    }
+                }
+
+                if (candidates.Count == 0)
+                {
+                    continue;
+                }
+
+                CellMutationEntry selected = candidates[rng.Range(0, candidates.Count)];
+                if (!run.AddCellMaterial(selected.Pos, selected.MaterialId))
+                {
+                    continue;
+                }
+
+                selected.AfterMaterialIds = Append(selected.BeforeMaterialIds, selected.MaterialId);
+                result.Entries.Add(selected);
+                break;
+            }
+
+            return result;
+        }
+
+        public static RecipeMutationResult RemoveArrowCookies(GameRun run, string title, int maxCount)
+        {
+            var result = new RecipeMutationResult { Title = title };
+            if (run == null || maxCount <= 0)
+            {
+                return result;
+            }
+
+            result.BeforeRecipe.AddRange(SnapshotRecipe(run));
+
+            IEnumerable<string> cookieIds = run.Tables?.TbGameBase?.ServeCookieDishIds;
+            var configuredIds = new HashSet<string>(
+                cookieIds ?? System.Array.Empty<string>(),
+                System.StringComparer.OrdinalIgnoreCase);
+            var indices = new List<int>();
+            for (int i = 0; i < run.RecipeEntries.Count && indices.Count < maxCount; i++)
+            {
+                string dishId = run.RecipeEntries[i].DishId;
+                bool isArrowCookie = configuredIds.Count > 0
+                    ? configuredIds.Contains(dishId)
+                    : dishId.StartsWith("arrow_cookie_", System.StringComparison.OrdinalIgnoreCase);
+                if (isArrowCookie)
+                {
+                    indices.Add(i);
+                }
+            }
+
+            for (int i = indices.Count - 1; i >= 0; i--)
+            {
+                int dishIndex = indices[i];
+                RecipeDishSnapshot before = Snapshot(run, new RecipeTarget(dishIndex));
+                if (!run.RemoveBonusDishAt(dishIndex))
+                {
+                    continue;
+                }
+
+                result.Entries.Insert(0, new RecipeMutationEntry
+                {
+                    BookIndex = 0,
+                    DishIndex = dishIndex,
+                    Before = before,
+                    After = new RecipeDishSnapshot(),
+                });
+            }
+
+            if (result.HasChanges)
+            {
+                result.AfterRecipe.AddRange(SnapshotRecipe(run));
+            }
+            else
+            {
+                result.BeforeRecipe.Clear();
+            }
+
+            return result;
+        }
+
+        public static RecipeMutationResult RandomizeAllRecipeDishes(
+            GameRun run,
+            string title,
+            IRandomStream rng)
+        {
+            var result = new RecipeMutationResult { Title = title };
+            if (run == null || rng == null || run.Database?.AllDishes == null)
+            {
+                return result;
+            }
+
+            var pool = new List<DishDef>();
+            foreach (DishDef dish in run.Database.AllDishes)
+            {
+                if (dish != null && !string.IsNullOrEmpty(dish.Id) && dish.BaseWeight > 0f)
+                {
+                    pool.Add(dish);
+                }
+            }
+
+            for (int dishIndex = 0; dishIndex < run.RecipeEntries.Count; dishIndex++)
+            {
+                string currentId = run.RecipeEntries[dishIndex].DishId;
+                var candidates = new List<DishDef>();
+                var weights = new List<float>();
+                foreach (DishDef dish in pool)
+                {
+                    if (string.Equals(dish.Id, currentId, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    candidates.Add(dish);
+                    weights.Add(dish.BaseWeight);
+                }
+
+                if (candidates.Count == 0)
+                {
+                    continue;
+                }
+
+                RecipeDishSnapshot before = Snapshot(run, new RecipeTarget(dishIndex));
+                DishDef selected = candidates[rng.WeightedPickIndex(weights)];
+                if (!run.ReplaceRecipeDishAt(dishIndex, selected.Id))
+                {
+                    continue;
+                }
+
+                result.Entries.Add(new RecipeMutationEntry
+                {
+                    BookIndex = 0,
+                    DishIndex = dishIndex,
+                    Before = before,
+                    After = Snapshot(run, new RecipeTarget(dishIndex)),
+                });
+            }
+
+            return result;
+        }
+
+        private static bool ContainsIgnoreCase(IReadOnlyList<string> values, string value)
+        {
+            if (values == null)
+            {
+                return false;
+            }
+
+            foreach (string candidate in values)
+            {
+                if (string.Equals(candidate, value, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static List<RecipeDishSnapshot> SnapshotRecipe(GameRun run)
+        {
+            var snapshots = new List<RecipeDishSnapshot>();
+            if (run == null)
+            {
+                return snapshots;
+            }
+
+            for (int i = 0; i < run.RecipeEntries.Count; i++)
+            {
+                snapshots.Add(Snapshot(run, new RecipeTarget(i)));
+            }
+
+            return snapshots;
+        }
+
         private static IReadOnlyList<string> MaterialSnapshot(GameRun run, GridPos pos)
         {
             DiningTable preview = run?.BuildTablePreviewFromFragments();

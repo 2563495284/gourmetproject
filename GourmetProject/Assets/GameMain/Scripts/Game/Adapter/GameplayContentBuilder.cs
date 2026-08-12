@@ -64,7 +64,7 @@ namespace GourmetProject.Game.Adapter
                 }
             }
 
-            // 没有食物族的本体是系统机制可直接生成的独立食物（例如 Boss 碳水餐的 mantou）。
+            // 没有食物族的本体是系统机制可直接生成的独立食物（例如 Boss 碳水餐的 custard_bun）。
             foreach (cfg.DishBase baseDish in tables.TbDishBase.DataList)
             {
                 if (!referencedBaseIds.Contains(baseDish.Id))

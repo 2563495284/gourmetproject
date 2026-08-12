@@ -38,10 +38,12 @@ namespace GourmetProject.Gameplay.Scoring
             Func<IReadOnlyList<string>, int, IReadOnlyList<string>> copySkillSelector = null,
             Func<IReadOnlyList<int>, int, IReadOnlyList<int>> transferTargetSelector = null,
             Func<int, int, int> randomIntegerSelector = null,
-            int passiveItemCount = 0)
+            int passiveItemCount = 0,
+            int remainingFoodDiscards = 0,
+            int sweetTransferExtraTargetCount = 0)
         {
             IScoreEffectSource[] sources = MergeSources(extraSources);
-            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction, reverseDishOrder, unservedRecipeDishes, copySkillSelector, transferTargetSelector, randomIntegerSelector, passiveItemCount));
+            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction, reverseDishOrder, unservedRecipeDishes, copySkillSelector, transferTargetSelector, randomIntegerSelector, passiveItemCount, remainingFoodDiscards, sweetTransferExtraTargetCount));
         }
 
         public ScoreResult Calculate(ScoreSnapshot snapshot)

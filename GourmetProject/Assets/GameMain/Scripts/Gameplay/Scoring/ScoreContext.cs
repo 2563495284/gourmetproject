@@ -95,6 +95,17 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
+        /// <summary>装饰品在结算开场为指定食物增加本次结算的有效份数。</summary>
+        public void AddLiveCountAs(DishInstance dish, int delta)
+        {
+            if (dish == null || delta == 0)
+            {
+                return;
+            }
+
+            _liveCountAs[dish.Id] = Math.Max(1, GetEffectiveCountAs(dish) + delta);
+        }
+
         /// <summary>AddCountAs 在规则实际执行到时修改 live 值，只影响后续规则。</summary>
         public void ApplyLiveCountAs(
             SkillRuleDef rule,
@@ -130,8 +141,7 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
-                int current = GetEffectiveCountAs(target);
-                _liveCountAs[target.Id] = Math.Max(1, current + delta);
+                AddLiveCountAs(target, delta);
             }
         }
 
@@ -197,6 +207,38 @@ namespace GourmetProject.Gameplay.Scoring
         public IEffectDef EffectDef { get; set; }
 
         public SkillExecutionTrace Trace { get; private set; }
+
+        /// <summary>用规则运行时实际命中的食物刷新当前演出范围。</summary>
+        public void UpdateTraceVisualTargets(IReadOnlyList<DishInstance> targets)
+        {
+            if (Trace == null || targets == null)
+            {
+                return;
+            }
+
+            var ids = new List<int>();
+            var cells = new List<GridPos>();
+            var seenIds = new HashSet<int>();
+            var seenCells = new HashSet<GridPos>();
+            foreach (DishInstance target in targets)
+            {
+                if (target == null || !seenIds.Add(target.Id))
+                {
+                    continue;
+                }
+
+                ids.Add(target.Id);
+                foreach (GridPos cell in target.OccupiedCells)
+                {
+                    if (seenCells.Add(cell))
+                    {
+                        cells.Add(cell);
+                    }
+                }
+            }
+
+            Trace = Trace.WithVisualTargets(ids, cells);
+        }
 
         public BigDouble FlatBonus => _current?.Flat ?? BigDouble.Zero;
 
@@ -303,6 +345,26 @@ namespace GourmetProject.Gameplay.Scoring
                 _temporaryCategories.Add(new TemporaryCategorySideEffect(dish.Id, category));
                 EmitEvent(ScoreEventType.CommandExecuted, $"{dish.Def.Name} 临时视为 {category}");
             }
+        }
+
+        /// <summary>
+        /// 仅在当前计分上下文中追加分类，不产出会写回 DishInstance 的副作用。
+        /// 适用于“持有装饰品时，本次结算视为某分类”这类非持久效果。
+        /// </summary>
+        public void AddLiveCategory(DishInstance dish, string category)
+        {
+            if (dish == null || string.IsNullOrEmpty(category) || IsCategory(dish, category))
+            {
+                return;
+            }
+
+            if (!_liveTemporaryCategories.TryGetValue(dish.Id, out HashSet<string> categories))
+            {
+                categories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                _liveTemporaryCategories[dish.Id] = categories;
+            }
+
+            categories.Add(category);
         }
 
         public void RequestRecipeRemoval(DishInstance dish, float probability)

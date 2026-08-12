@@ -418,7 +418,8 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             IReadOnlyList<SweetTransferBuffRegistration> buffs = ctx.SweetTransferBuffsFor(_self);
-            int extraTargetCount = ExtraTargetCount(buffs);
+            int extraTargetCount = ExtraTargetCount(buffs)
+                + Math.Max(0, ctx.Snapshot.SweetTransferExtraTargetCount);
             IReadOnlyList<DishInstance> targets = SelectTransferTargets(ctx, candidates, extraTargetCount);
             if (targets.Count == 0)
             {
@@ -505,7 +506,8 @@ namespace GourmetProject.Gameplay.Scoring
                 ctx.DiningTable,
                 _self,
                 _rule,
-                SkillScopeVisualMode.CandidateScope);
+                SkillScopeVisualMode.CandidateScope,
+                ctx.IsCategory);
             var result = new List<DishInstance>();
             var seen = new HashSet<int>();
             foreach (DishInstance dish in candidates)
@@ -1000,7 +1002,8 @@ namespace GourmetProject.Gameplay.Scoring
                     ctx.DiningTable,
                     _self,
                     _rule,
-                    SkillScopeVisualMode.ResolvedTargets);
+                    SkillScopeVisualMode.ResolvedTargets,
+                    ctx.IsCategory);
             }
 
             string category = SkillConditionEvaluator.ParseCategoryParam(_rule.ActionParams);
@@ -1023,6 +1026,7 @@ namespace GourmetProject.Gameplay.Scoring
                 .ToList();
             if (!randomTargets || _rule.ActionCount <= 0 || resolved.Count <= _rule.ActionCount)
             {
+                ctx.UpdateTraceVisualTargets(resolved);
                 return resolved;
             }
 
@@ -1039,6 +1043,7 @@ namespace GourmetProject.Gameplay.Scoring
                 resolved.RemoveAt(index);
             }
 
+            ctx.UpdateTraceVisualTargets(selected);
             return selected;
         }
 

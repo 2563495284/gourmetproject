@@ -21,9 +21,9 @@ namespace GourmetProject.Game.UI.Development
         {
             "Sprites/Dishes/jelly",
             "Sprites/Dishes/cupcake",
-            "Sprites/Dishes/chocolate_strip",
+            "Sprites/Dishes/chocolate_wafer",
         };
-        private static readonly string[] DishNames = { "果冻", "糖霜蛋糕", "巧克力条" };
+        private static readonly string[] DishNames = { "果冻", "糖霜蛋糕", "巧克力威化" };
 
         private readonly RawImage[] _previews = new RawImage[4];
         private readonly Button[] _flavorButtons = new Button[FlavorVisualCatalog.Capacity];

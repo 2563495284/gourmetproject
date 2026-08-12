@@ -182,11 +182,11 @@
     ]
   },
   {
-    "id": "codename_general_01",
-    "name": "通用01",
+    "id": "caramel_pudding",
+    "name": "焦糖布丁",
     "deliciousness": 20,
     "allowRotate": false,
-    "skills": "sk_codename_general_01",
+    "skills": "sk_caramel_pudding",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -276,11 +276,11 @@
     ]
   },
   {
-    "id": "cream",
-    "name": "奶油",
+    "id": "cream_puff",
+    "name": "奶油泡芙",
     "deliciousness": 20,
     "allowRotate": false,
-    "skills": "sk_cream",
+    "skills": "sk_cream_puff",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -295,11 +295,11 @@
     ]
   },
   {
-    "id": "codename_general_02",
-    "name": "通用02",
+    "id": "ice_cream",
+    "name": "冰淇淋",
     "deliciousness": 100,
     "allowRotate": false,
-    "skills": "sk_codename_general_02",
+    "skills": "sk_ice_cream",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -332,11 +332,11 @@
     ]
   },
   {
-    "id": "baguette",
-    "name": "法棍",
+    "id": "osmanthus_cake",
+    "name": "桂花糕",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_baguette",
+    "skills": "sk_osmanthus_cake",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -368,11 +368,11 @@
     ]
   },
   {
-    "id": "cake_slice",
-    "name": "蛋糕切角",
+    "id": "napoleon_cake",
+    "name": "拿破仑蛋糕",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_cake_slice",
+    "skills": "sk_napoleon_cake",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -386,11 +386,11 @@
     ]
   },
   {
-    "id": "long_cake",
-    "name": "长条蛋糕",
+    "id": "honey_cake",
+    "name": "蜂蜜蛋糕",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_long_cake",
+    "skills": "sk_honey_cake",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -404,11 +404,11 @@
     ]
   },
   {
-    "id": "codename_cake_01",
-    "name": "蛋糕01",
+    "id": "tree_ring_cake",
+    "name": "年轮蛋糕",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_cake_01",
+    "skills": "sk_tree_ring_cake",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -422,11 +422,11 @@
     ]
   },
   {
-    "id": "codename_transfer_01",
-    "name": "传递01",
+    "id": "nougat",
+    "name": "牛轧糖",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_transfer_01",
+    "skills": "sk_nougat",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -440,11 +440,11 @@
     ]
   },
   {
-    "id": "codename_serving_01",
-    "name": "份数01",
+    "id": "hawthorn_cake",
+    "name": "山楂糕",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_serving_01",
+    "skills": "sk_hawthorn_cake",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -458,11 +458,11 @@
     ]
   },
   {
-    "id": "codename_general_03",
-    "name": "通用03",
+    "id": "souffle",
+    "name": "舒芙蕾",
     "deliciousness": 300,
     "allowRotate": false,
-    "skills": "sk_codename_general_03",
+    "skills": "sk_souffle",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -476,11 +476,11 @@
     ]
   },
   {
-    "id": "codename_general_04",
-    "name": "通用04",
+    "id": "fruit_tart",
+    "name": "水果挞",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_general_04",
+    "skills": "sk_fruit_tart",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -494,11 +494,11 @@
     ]
   },
   {
-    "id": "codename_general_05",
-    "name": "通用05",
+    "id": "strawberry_sundae",
+    "name": "草莓圣代",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_general_05",
+    "skills": "sk_strawberry_sundae",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -514,11 +514,11 @@
     ]
   },
   {
-    "id": "codename_general_06",
-    "name": "通用06",
+    "id": "rock_sugar_pear",
+    "name": "冰糖雪梨",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_general_06",
+    "skills": "sk_rock_sugar_pear",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -534,11 +534,11 @@
     ]
   },
   {
-    "id": "codename_transfer_02",
-    "name": "传递02",
+    "id": "popping_candy",
+    "name": "跳跳糖",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_transfer_02",
+    "skills": "sk_popping_candy",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -554,11 +554,11 @@
     ]
   },
   {
-    "id": "codename_cake_02",
-    "name": "蛋糕02",
+    "id": "mille_crepe_cake",
+    "name": "千层蛋糕",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_cake_02",
+    "skills": "sk_mille_crepe_cake",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -574,11 +574,11 @@
     ]
   },
   {
-    "id": "codename_serving_02",
-    "name": "份数02",
+    "id": "soybean_glutinous_roll",
+    "name": "驴打滚",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_serving_02",
+    "skills": "sk_soybean_glutinous_roll",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -594,11 +594,11 @@
     ]
   },
   {
-    "id": "eclair",
-    "name": "闪电泡芙",
+    "id": "sachima",
+    "name": "沙琪玛",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_eclair",
+    "skills": "sk_sachima",
     "category": "",
     "countAs": 3,
     "shapeRows": [
@@ -634,11 +634,11 @@
     ]
   },
   {
-    "id": "chocolate_strip",
-    "name": "巧克力条",
+    "id": "chocolate_wafer",
+    "name": "巧克力威化",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_chocolate_strip",
+    "skills": "sk_chocolate_wafer",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -674,11 +674,11 @@
     ]
   },
   {
-    "id": "codename_cake_03",
-    "name": "蛋糕03",
+    "id": "fondant_cake",
+    "name": "翻糖蛋糕",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_cake_03",
+    "skills": "sk_fondant_cake",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -693,11 +693,11 @@
     ]
   },
   {
-    "id": "codename_cake_04",
-    "name": "蛋糕04",
+    "id": "matcha_cake",
+    "name": "抹茶蛋糕",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_cake_04",
+    "skills": "sk_matcha_cake",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -712,11 +712,11 @@
     ]
   },
   {
-    "id": "codename_serving_03",
-    "name": "份数03",
+    "id": "mung_bean_cake",
+    "name": "绿豆糕",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_serving_03",
+    "skills": "sk_mung_bean_cake",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -731,11 +731,11 @@
     ]
   },
   {
-    "id": "codename_serving_04",
-    "name": "份数04",
+    "id": "egg_yolk_pastry",
+    "name": "蛋黄酥",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_serving_04",
+    "skills": "sk_egg_yolk_pastry",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -750,11 +750,11 @@
     ]
   },
   {
-    "id": "codename_transfer_03",
-    "name": "传递03",
+    "id": "chocolate_truffle",
+    "name": "松露巧克力",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_transfer_03",
+    "skills": "sk_chocolate_truffle",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -769,11 +769,11 @@
     ]
   },
   {
-    "id": "codename_transfer_04",
-    "name": "传递04",
+    "id": "liquor_chocolate",
+    "name": "酒心巧克力",
     "deliciousness": 30,
     "allowRotate": false,
-    "skills": "sk_codename_transfer_04",
+    "skills": "sk_liquor_chocolate",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -826,11 +826,11 @@
     ]
   },
   {
-    "id": "maple_sugar",
-    "name": "枫糖",
+    "id": "toffee_candy",
+    "name": "太妃糖",
     "deliciousness": 40,
     "allowRotate": false,
-    "skills": "sk_maple_sugar",
+    "skills": "sk_toffee_candy",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -864,11 +864,11 @@
     ]
   },
   {
-    "id": "waffle",
-    "name": "华夫饼",
+    "id": "brown_sugar_steamed_cake",
+    "name": "红糖发糕",
     "deliciousness": 40,
     "allowRotate": false,
-    "skills": "sk_waffle",
+    "skills": "sk_brown_sugar_steamed_cake",
     "category": "",
     "countAs": 5,
     "shapeRows": [
@@ -922,11 +922,11 @@
     ]
   },
   {
-    "id": "codename_general_07",
-    "name": "通用07",
+    "id": "fruit_shaved_ice",
+    "name": "水果刨冰",
     "deliciousness": 40,
     "allowRotate": false,
-    "skills": "sk_codename_general_07",
+    "skills": "sk_fruit_shaved_ice",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -941,11 +941,11 @@
     ]
   },
   {
-    "id": "codename_general_08",
-    "name": "通用08",
+    "id": "coconut_milk_jelly",
+    "name": "椰奶冻",
     "deliciousness": 40,
     "allowRotate": false,
-    "skills": "sk_codename_general_08",
+    "skills": "sk_coconut_milk_jelly",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -979,11 +979,11 @@
     ]
   },
   {
-    "id": "chocolate_sauce",
-    "name": "巧克力酱",
+    "id": "nama_chocolate",
+    "name": "生巧克力",
     "deliciousness": 60,
     "allowRotate": false,
-    "skills": "sk_chocolate_sauce",
+    "skills": "sk_nama_chocolate",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -1037,11 +1037,11 @@
     ]
   },
   {
-    "id": "parfait",
-    "name": "芭菲",
+    "id": "fermented_rice_balls",
+    "name": "酒酿圆子",
     "deliciousness": 60,
     "allowRotate": false,
-    "skills": "sk_parfait",
+    "skills": "sk_fermented_rice_balls",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -1097,11 +1097,11 @@
     ]
   },
   {
-    "id": "apple_pie",
-    "name": "苹果派",
+    "id": "double_skin_milk",
+    "name": "双皮奶",
     "deliciousness": 100,
     "allowRotate": false,
-    "skills": "sk_apple_pie",
+    "skills": "sk_double_skin_milk",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -1138,8 +1138,8 @@
     ]
   },
   {
-    "id": "mantou",
-    "name": "馒头",
+    "id": "custard_bun",
+    "name": "奶黄包",
     "deliciousness": 10,
     "allowRotate": false,
     "skills": "",

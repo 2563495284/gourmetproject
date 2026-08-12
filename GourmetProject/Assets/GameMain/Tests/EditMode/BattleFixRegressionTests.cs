@@ -78,11 +78,11 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void Parfait_AddsOccupiedCellsMinusOne_OnTopOfStaticServings()
+        public void FermentedRiceBalls_AddsOccupiedCellsMinusOne_OnTopOfStaticServings()
         {
-            const string skillId = "skill_parfait";
+            const string skillId = "skill_fermented_rice_balls";
             SkillRuleDef rule = RuleFull(
-                "parfait",
+                "fermented_rice_balls",
                 skillId,
                 SkillConditionType.None,
                 SkillScope.Self,
@@ -95,23 +95,23 @@ namespace GourmetProject.Tests.EditMode
                 1f,
                 "target:occupiedcells;offset:-1");
             var skill = Skill(skillId, rule);
-            DishInstance parfait = Dish(1, "parfait", 0, 0, new[] { skillId }, Array.Empty<string>());
+            DishInstance fermentedRiceBalls = Dish(1, "fermented_rice_balls", 0, 0, new[] { skillId }, Array.Empty<string>());
             DishShape threeCells = DishShape.FromRows(new[] { "XXX" });
             DishInstance mango = Dish(2, "mango", 0, 1, Array.Empty<string>(), Array.Empty<string>(), threeCells, countAs: 8);
             var table = new DiningTable(4, 1);
-            table.Place(parfait);
+            table.Place(fermentedRiceBalls);
             table.Place(mango);
 
             ScoreResult result = new ScoreCalculator().Calculate(
                 table,
-                Database(dishes: new[] { parfait.Def, mango.Def }, skills: new[] { skill }));
+                Database(dishes: new[] { fermentedRiceBalls.Def, mango.Def }, skills: new[] { skill }));
 
-            Assert.That(result.DishScores.Single(score => score.DishInstanceId == parfait.Id).EffectiveCountAs, Is.EqualTo(1));
+            Assert.That(result.DishScores.Single(score => score.DishInstanceId == fermentedRiceBalls.Id).EffectiveCountAs, Is.EqualTo(1));
             Assert.That(result.DishScores.Single(score => score.DishInstanceId == mango.Id).EffectiveCountAs, Is.EqualTo(10));
         }
 
         [Test]
-        public void ApplePie_UsesEachTargetsOwnEffectiveServings_WithFractions()
+        public void DoubleSkinMilk_UsesEachTargetsOwnEffectiveServings_WithFractions()
         {
             const string skillId = "skill_apple";
             SkillRuleDef rule = RuleFull(

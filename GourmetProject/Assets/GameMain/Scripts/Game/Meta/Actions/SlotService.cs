@@ -390,6 +390,12 @@ namespace GourmetProject.Game.Meta
             return config.PaidCost;
         }
 
+        public static int CostForNextSpin(GameRun run, SlotMachineConfig config, int spinsUsed)
+        {
+            int baseCost = CostForNextSpin(config, spinsUsed);
+            return run == null ? baseCost : new ItemRuntime(run).ModifySlotSpinCost(baseCost);
+        }
+
         public static string FormatOptionText(
             GameRun run,
             SlotMachineConfig config,
@@ -409,7 +415,7 @@ namespace GourmetProject.Game.Meta
             }
 
             int safeSpins = Math.Max(0, Math.Min(spinsUsed, config.MaxSpins));
-            int cost = CostForNextSpin(config, safeSpins);
+            int cost = CostForNextSpin(run, config, safeSpins);
             string costText = cost <= 0
                 ? "免费抽一次"
                 : $"投入 {cost} 金币";

@@ -228,7 +228,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_codename_general_01_1",
+    "id": "sk_caramel_pudding_1",
     "trigger": 0,
     "condType": 6,
     "condScope": 0,
@@ -380,7 +380,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_cream_1",
+    "id": "sk_cream_puff_1",
     "trigger": 0,
     "condType": 1,
     "condScope": 4,
@@ -399,7 +399,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_general_02_1",
+    "id": "sk_ice_cream_1",
     "trigger": 0,
     "condType": 3,
     "condScope": 0,
@@ -437,7 +437,7 @@
     "termId": ""
   },
   {
-    "id": "sk_baguette_1",
+    "id": "sk_osmanthus_cake_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 12,
@@ -494,7 +494,7 @@
     "termId": "term_sweet_transfer"
   },
   {
-    "id": "sk_cake_slice_1",
+    "id": "sk_napoleon_cake_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 10,
@@ -515,7 +515,7 @@
     "termId": ""
   },
   {
-    "id": "sk_cake_slice_2",
+    "id": "sk_napoleon_cake_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 13,
@@ -534,7 +534,7 @@
     "termId": ""
   },
   {
-    "id": "sk_long_cake_1",
+    "id": "sk_honey_cake_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 12,
@@ -553,7 +553,7 @@
     "termId": ""
   },
   {
-    "id": "sk_long_cake_2",
+    "id": "sk_honey_cake_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -572,7 +572,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_codename_cake_01_1",
+    "id": "sk_tree_ring_cake_1",
     "trigger": 0,
     "condType": 2,
     "condScope": 4,
@@ -591,7 +591,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_codename_transfer_01_1",
+    "id": "sk_nougat_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -610,7 +610,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_transfer_01_2",
+    "id": "sk_nougat_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -629,7 +629,7 @@
     "termId": "term_sweet_transfer"
   },
   {
-    "id": "sk_codename_serving_01_1",
+    "id": "sk_hawthorn_cake_1",
     "trigger": 0,
     "condType": 5,
     "condScope": 4,
@@ -650,7 +650,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_general_03_1",
+    "id": "sk_souffle_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -669,7 +669,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_general_04_1",
+    "id": "sk_fruit_tart_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -690,7 +690,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_general_05_1",
+    "id": "sk_strawberry_sundae_1",
     "trigger": 0,
     "condType": 10,
     "condScope": 0,
@@ -709,7 +709,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_general_06_1",
+    "id": "sk_rock_sugar_pear_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -728,7 +728,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_general_06_2",
+    "id": "sk_rock_sugar_pear_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -747,7 +747,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_transfer_02_1",
+    "id": "sk_popping_candy_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -768,7 +768,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_cake_02_1",
+    "id": "sk_mille_crepe_cake_1",
     "trigger": 0,
     "condType": 15,
     "condScope": 14,
@@ -787,7 +787,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_codename_serving_02_1",
+    "id": "sk_soybean_glutinous_roll_1",
     "trigger": 0,
     "condType": 4,
     "condScope": 12,
@@ -808,7 +808,7 @@
     "termId": ""
   },
   {
-    "id": "sk_eclair_1",
+    "id": "sk_sachima_1",
     "trigger": 0,
     "condType": 4,
     "condScope": 14,
@@ -850,7 +850,7 @@
     "termId": ""
   },
   {
-    "id": "sk_chocolate_strip_1",
+    "id": "sk_chocolate_wafer_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 12,
@@ -869,7 +869,7 @@
     "termId": ""
   },
   {
-    "id": "sk_chocolate_strip_2",
+    "id": "sk_chocolate_wafer_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 12,
@@ -928,7 +928,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_cake_03_1",
+    "id": "sk_fondant_cake_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -949,7 +949,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_cake_03_2",
+    "id": "sk_fondant_cake_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -968,7 +968,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_codename_cake_04_1",
+    "id": "sk_matcha_cake_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -989,7 +989,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_codename_serving_03_1",
+    "id": "sk_mung_bean_cake_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -1008,7 +1008,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_serving_04_1",
+    "id": "sk_egg_yolk_pastry_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -1029,7 +1029,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_transfer_03_1",
+    "id": "sk_chocolate_truffle_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -1050,7 +1050,7 @@
     "termId": "term_sweet_transfer"
   },
   {
-    "id": "sk_codename_transfer_04_1",
+    "id": "sk_liquor_chocolate_1",
     "trigger": 0,
     "condType": 4,
     "condScope": 13,
@@ -1069,7 +1069,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_transfer_04_2",
+    "id": "sk_liquor_chocolate_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -1128,7 +1128,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_maple_sugar_1",
+    "id": "sk_toffee_candy_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 4,
@@ -1170,7 +1170,7 @@
     "termId": ""
   },
   {
-    "id": "sk_waffle_1",
+    "id": "sk_brown_sugar_steamed_cake_1",
     "trigger": 0,
     "condType": 4,
     "condScope": 14,
@@ -1267,7 +1267,7 @@
     "termId": "term_sweet_transfer"
   },
   {
-    "id": "sk_codename_general_07_1",
+    "id": "sk_fruit_shaved_ice_1",
     "trigger": 0,
     "condType": 10,
     "condScope": 13,
@@ -1286,7 +1286,7 @@
     "termId": ""
   },
   {
-    "id": "sk_codename_general_08_1",
+    "id": "sk_coconut_milk_jelly_1",
     "trigger": 0,
     "condType": 3,
     "condScope": 0,
@@ -1349,7 +1349,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_chocolate_sauce_1",
+    "id": "sk_nama_chocolate_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -1368,7 +1368,7 @@
     "termId": ""
   },
   {
-    "id": "sk_chocolate_sauce_2",
+    "id": "sk_nama_chocolate_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 19,
@@ -1448,7 +1448,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_parfait_1",
+    "id": "sk_fermented_rice_balls_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -1530,7 +1530,7 @@
     "termId": "term_sweet_transfer"
   },
   {
-    "id": "sk_apple_pie_1",
+    "id": "sk_double_skin_milk_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,

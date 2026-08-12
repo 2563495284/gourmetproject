@@ -1118,7 +1118,7 @@ namespace GourmetProject.Game.Orchestration
         {
             int repeatTotal = FoodService.IsBossAction(_run?.Tables, action)
                 ? 1
-                : new ItemRuntime(_run).TimelineNodeRepeatCount();
+                : new ItemRuntime(_run).TimelineNodeRepeatCount(action.Behavior);
             ExecutePlacedActionPass(node, action, 1, repeatTotal, ProcessNextNode);
         }
 
@@ -1266,7 +1266,8 @@ namespace GourmetProject.Game.Orchestration
             Action onNodeDone)
         {
             RunPersistence.Save(_run);
-            new ItemRuntime(_run).FlashTriggered(model => model.TimelineNodeRepeatCount() > 1);
+            new ItemRuntime(_run).FlashTriggered(
+                model => model.TimelineNodeRepeatCount(action.Behavior) > 1);
             _view.ShowTimelineNodeCard(
                 node,
                 InterestMaxGain(),
@@ -1567,7 +1568,7 @@ namespace GourmetProject.Game.Orchestration
             Action onDone)
         {
             int safeSpins = System.Math.Max(0, System.Math.Min(spinsUsed, config.MaxSpins));
-            int cost = SlotService.CostForNextSpin(config, safeSpins);
+            int cost = SlotService.CostForNextSpin(_run, config, safeSpins);
             bool canAfford = cost <= 0 || _run.Gold >= cost;
             bool canSpin = safeSpins < config.MaxSpins && canAfford;
             var optionTexts = new List<string>(config.Options.Count);
@@ -1637,7 +1638,7 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            int cost = SlotService.CostForNextSpin(config, expectedSpinsUsed);
+            int cost = SlotService.CostForNextSpin(_run, config, expectedSpinsUsed);
             if (cost > 0 && _run.Gold < cost)
             {
                 ShowSlotMachine(context, config, expectedSpinsUsed, onDone);

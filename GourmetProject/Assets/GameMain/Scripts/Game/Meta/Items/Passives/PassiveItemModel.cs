@@ -125,6 +125,9 @@ namespace GourmetProject.Game.Meta.Passives
 
         public virtual float ModifyDeletePrice(float price) => price;
 
+        /// <summary>抽奖机付费抽奖价格修正；免费抽奖不会调用出正数。</summary>
+        public virtual float ModifySlotSpinCost(float cost) => cost;
+
         /// <summary>删牌固定价（取最低）。返回 false 表示不提供固定价。</summary>
         public virtual bool TryGetRemovePriceFixed(out int fixedPrice)
         {
@@ -179,6 +182,9 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>自然经过的非 星级评鉴节点执行次数。</summary>
         public virtual int TimelineNodeRepeatCount() => 1;
 
+        /// <summary>按节点行为决定执行次数；默认兼容旧的无参数钩子。</summary>
+        public virtual int TimelineNodeRepeatCount(cfg.ActionBehavior behavior) => TimelineNodeRepeatCount();
+
         /// <summary>普通行动经过节点日时，时间轴停摆概率。</summary>
         public virtual float TimelineStopChance() => 0f;
 
@@ -208,6 +214,9 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>每场经营挑战可额外丢弃的出菜数量（各装饰品和消耗品累加）。</summary>
         public virtual int FoodDiscardLimitBonus() => 0;
 
+        /// <summary>持有期间提供的红心上限加成。</summary>
+        public virtual int HeartCapacityBonus() => 0;
+
         // ================= 奖励 / 多选一族 =================
 
         /// <summary>多选一可选「数量」增减（分发器累加）。</summary>
@@ -215,6 +224,11 @@ namespace GourmetProject.Game.Meta.Passives
 
         /// <summary>多选一可选「次数」增加（分发器累加）。</summary>
         public virtual int ChoiceTimesBonus() => 0;
+
+        /// <summary>玩家明确放弃了至少一个未领取完的奖励组。</summary>
+        public virtual void OnRewardAbandoned()
+        {
+        }
 
         /// <summary>经营挑战胜利奖励生成后，允许装饰品追加奖励组。</summary>
         public virtual RewardOffer ModifyBattleRewardOffer(
@@ -314,6 +328,9 @@ namespace GourmetProject.Game.Meta.Passives
             value = 0f;
             return false;
         }
+
+        /// <summary>每次甜蜜传递额外选择的目标数。</summary>
+        public virtual int SweetTransferExtraTargetCount() => 0;
 
         /// <summary>本次结算每个食物额外「视为食物数」加成（分发器累加）。</summary>
         public virtual int ExtraCountAsPerDish() => 0;

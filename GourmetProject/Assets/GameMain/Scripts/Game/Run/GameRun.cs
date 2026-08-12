@@ -232,13 +232,15 @@ namespace GourmetProject.Game.Run
         private int _heartCapacity;
         private int _heartsRemaining;
 
-        public int HeartCapacity => _heartCapacity;
+        public int HeartCapacity
+            => System.Math.Max(1, _heartCapacity + new ItemRuntime(this).HeartCapacityBonus());
 
-        public int HeartsRemaining => _heartsRemaining;
+        public int HeartsRemaining => System.Math.Min(_heartsRemaining, HeartCapacity);
 
         /// <summary>扣除指定数量爱心；最低截断至 0。</summary>
         public bool TryLoseHearts(int amount, out int before, out int after)
         {
+            _heartsRemaining = HeartsRemaining;
             before = _heartsRemaining;
             if (_heartsRemaining <= 0 || amount <= 0)
             {
@@ -259,18 +261,18 @@ namespace GourmetProject.Game.Run
         {
             if (amount > 0)
             {
-                _heartsRemaining = System.Math.Min(_heartCapacity, _heartsRemaining + amount);
+                _heartsRemaining = System.Math.Min(HeartCapacity, HeartsRemaining + amount);
             }
 
-            return _heartsRemaining;
+            return HeartsRemaining;
         }
 
         /// <summary>调整爱心上限；上限至少为 1，降低上限时同步压低当前值。</summary>
         public int AdjustHeartCapacity(int delta)
         {
             _heartCapacity = System.Math.Max(1, _heartCapacity + delta);
-            _heartsRemaining = System.Math.Min(_heartsRemaining, _heartCapacity);
-            return _heartCapacity;
+            _heartsRemaining = System.Math.Min(_heartsRemaining, HeartCapacity);
+            return HeartCapacity;
         }
 
         public int FoodFlavorLimit
@@ -2156,7 +2158,7 @@ namespace GourmetProject.Game.Run
                 WeekIndex = WeekIndex,
                 Gold = Gold,
                 HeartCapacity = _heartCapacity,
-                HeartsRemaining = _heartsRemaining,
+                HeartsRemaining = HeartsRemaining,
                 PendingHeartBreak = ClonePendingHeartBreak(_pendingHeartBreak),
                 InterestThreshold = _interestThreshold,
                 InterestGoldPer = _interestGoldPer,
@@ -2269,7 +2271,8 @@ namespace GourmetProject.Game.Run
                 : data.RunId;
             run.Gold = data.Gold;
             run._heartCapacity = System.Math.Max(1, data.HeartCapacity);
-            run._heartsRemaining = System.Math.Max(0, System.Math.Min(data.HeartsRemaining, run._heartCapacity));
+            // 装饰品模型尚未恢复，不能先按基础上限截断；待持有列表重建后再按有效上限收口。
+            run._heartsRemaining = System.Math.Max(0, data.HeartsRemaining);
             run._pendingHeartBreak = ClonePendingHeartBreak(data.PendingHeartBreak);
             run._interestThreshold = data.InterestThreshold >= 0
                 ? data.InterestThreshold
@@ -2374,6 +2377,8 @@ namespace GourmetProject.Game.Run
                     }
                 }
             }
+
+            run._heartsRemaining = System.Math.Min(run._heartsRemaining, run.HeartCapacity);
 
             // 这两个旧全局计数只有对应被动仍在场时才有语义。配置移除/旧档缺项时清零，
             // 避免被跳过的未知装饰品和消耗品继续从全局字段暗中生效；不发金币或其它补偿。
@@ -3402,6 +3407,19 @@ namespace GourmetProject.Game.Run
             return _recipe.Count - 1;
         }
 
+        /// <summary>替换食谱格的食物定义，同时保留该格后天风味、额外技能与永久分数修正。</summary>
+        public bool ReplaceRecipeDishAt(int dishIndex, string dishId)
+        {
+            if (dishIndex < 0 || dishIndex >= _recipe.Count || Database.GetDish(dishId) == null)
+            {
+                return false;
+            }
+
+            _recipe[dishIndex].ReplaceDishId(dishId);
+            RebuildBonusDishCache();
+            return true;
+        }
+
         public bool AddBonusDish(string dishId, string flavorId)
         {
             if (Database.GetDish(dishId) == null)
@@ -3703,6 +3721,7 @@ namespace GourmetProject.Game.Run
             var results = new List<ItemAcquireResult>();
             if (itemIds == null)
             {
+                _heartsRemaining = System.Math.Min(_heartsRemaining, HeartCapacity);
                 return results;
             }
 
@@ -3714,6 +3733,7 @@ namespace GourmetProject.Game.Run
                 }
             }
 
+            _heartsRemaining = System.Math.Min(_heartsRemaining, HeartCapacity);
             return results;
         }
 
@@ -3730,6 +3750,7 @@ namespace GourmetProject.Game.Run
                 {
                     _items[i].Model?.OnRemoved();
                     _items.RemoveAt(i);
+                    _heartsRemaining = System.Math.Min(_heartsRemaining, HeartCapacity);
                     return true;
                 }
             }

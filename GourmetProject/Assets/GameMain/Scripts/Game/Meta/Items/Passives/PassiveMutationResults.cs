@@ -12,6 +12,11 @@ namespace GourmetProject.Game.Meta.Passives
 
         public List<RecipeMutationEntry> Entries { get; } = new List<RecipeMutationEntry>();
 
+        /// <summary>涉及增删导致索引整体移动时使用的完整食谱前后快照。</summary>
+        public List<RecipeDishSnapshot> BeforeRecipe { get; } = new List<RecipeDishSnapshot>();
+
+        public List<RecipeDishSnapshot> AfterRecipe { get; } = new List<RecipeDishSnapshot>();
+
         public bool HasChanges => Entries.Count > 0;
     }
 

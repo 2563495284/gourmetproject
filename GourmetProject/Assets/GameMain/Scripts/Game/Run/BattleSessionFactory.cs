@@ -61,6 +61,7 @@ namespace GourmetProject.Game.Run
             if (layers > 0) session.SeedHappyCakeLayers(layers);
             session.SweetTransferTargetMultiplier = items.SweetTransferTargetMultiplier();
             session.SweetTransferSourceMultiplier = items.SweetTransferSourceMultiplier();
+            session.SweetTransferExtraTargetCount = items.SweetTransferExtraTargetCount();
             model?.ApplyToBattle(session);
             ApplyPassiveItems(run, session);
             return session;
@@ -148,6 +149,7 @@ namespace GourmetProject.Game.Run
 
             session.SweetTransferTargetMultiplier = itemRuntime.SweetTransferTargetMultiplier();
             session.SweetTransferSourceMultiplier = itemRuntime.SweetTransferSourceMultiplier();
+            session.SweetTransferExtraTargetCount = itemRuntime.SweetTransferExtraTargetCount();
 
             bossDebuffModel?.ApplyToBattle(session);
 
@@ -216,6 +218,8 @@ namespace GourmetProject.Game.Run
             session.CakeLayerAccelBonus = itemRuntime.CakeAccelBonus();
             session.SweetTransferTargetMultiplier = itemRuntime.SweetTransferTargetMultiplier();
             session.SweetTransferSourceMultiplier = itemRuntime.SweetTransferSourceMultiplier();
+            session.SweetTransferExtraTargetCount = itemRuntime.SweetTransferExtraTargetCount();
+            session.ConfigureFoodDiscardLimit(itemRuntime.FoodDiscardCapacity());
             session.SeedHappyCakeLayers(System.Math.Max(0, initialHappyCakeLayers + itemRuntime.CakeInitialLayers()));
 
             cfg.BossDebuff bossDebuff = ResolveBossDebuff(run, bossDebuffId);

@@ -25,6 +25,23 @@ namespace GourmetProject.Gameplay.Battle
         public int TargetInstanceId { get; }
     }
 
+    /// <summary>一次成功丢弃及其在局外食谱中的来源。</summary>
+    public readonly struct DishDiscardOccurrence
+    {
+        public DishDiscardOccurrence(int sourceBookIndex, int sourceDishIndex, string dishId)
+        {
+            SourceBookIndex = sourceBookIndex;
+            SourceDishIndex = sourceDishIndex;
+            DishId = dishId ?? string.Empty;
+        }
+
+        public int SourceBookIndex { get; }
+
+        public int SourceDishIndex { get; }
+
+        public string DishId { get; }
+    }
+
     /// <summary>营业成败已确定后完成的一次食谱移除判定。</summary>
     public readonly struct RecipeRemovalOutcome
     {
@@ -365,6 +382,8 @@ namespace GourmetProject.Gameplay.Battle
 
         public event Action<DishInstance, int> Served;
 
+        public event Action<DishDiscardOccurrence> DishDiscarded;
+
         /// <summary>欢乐蛋糕层数变化（旧值, 新值），供表现层驱动 HUD 与场景蛋糕演出。</summary>
         public event Action<int, int> HappyCakeLayersChanged;
 
@@ -418,6 +437,10 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             SetTrackedStatus(PreparedServe.Entry, BattleRecipeEntryStatus.Discarded);
+            DishDiscarded?.Invoke(new DishDiscardOccurrence(
+                PreparedServe.Entry.SourceBookIndex,
+                PreparedServe.Entry.SourceDishIndex,
+                PreparedServe.Entry.DishId));
             PreparedServe = null;
             FoodDiscardsUsed++;
             return true;
@@ -442,6 +465,10 @@ namespace GourmetProject.Gameplay.Battle
 
             DiningTable.RemoveDish(dish);
             MarkDishStatusBeforePendingRemoval(dish.Id, BattleRecipeEntryStatus.Discarded);
+            DishDiscarded?.Invoke(new DishDiscardOccurrence(
+                dish.SourceSlotIndex,
+                dish.SourceDishIndex,
+                dish.Def?.Id));
             _pendingDishPlacements.Remove(dish.Id);
             FoodDiscardsUsed++;
             ReevaluateLastServedDishMultipliers();
@@ -464,6 +491,10 @@ namespace GourmetProject.Gameplay.Battle
 
             _temporaryAreaDishes.Remove(dish);
             MarkDishStatusBeforePendingRemoval(dish.Id, BattleRecipeEntryStatus.Discarded);
+            DishDiscarded?.Invoke(new DishDiscardOccurrence(
+                dish.SourceSlotIndex,
+                dish.SourceDishIndex,
+                dish.Def?.Id));
             _pendingDishPlacements.Remove(dish.Id);
             FoodDiscardsUsed++;
             ReevaluateLastServedDishMultipliers();
@@ -475,6 +506,9 @@ namespace GourmetProject.Gameplay.Battle
 
         /// <summary>每成功传递一个目标，给来源永久倍率累加的数值（如 0.1）。</summary>
         public float SweetTransferSourceMultiplier { get; set; }
+
+        /// <summary>装饰品为每次甜蜜传递追加的目标数量。</summary>
+        public int SweetTransferExtraTargetCount { get; set; }
 
         public void AddPendingGold(float amount)
         {
@@ -904,7 +938,13 @@ namespace GourmetProject.Gameplay.Battle
             if (!instance.SkillsDisabled)
             {
                 ServeRuleResolver.ServeResolveResult serveResult =
-                    ServeRuleResolver.ResolveOnServe(DiningTable, _db, BuildHistory(), instance, HappyCakeLayers);
+                    ServeRuleResolver.ResolveOnServe(
+                        DiningTable,
+                        _db,
+                        BuildHistory(),
+                        instance,
+                        HappyCakeLayers,
+                        SweetTransferExtraTargetCount);
                 PendingGold += serveResult.Gold;
                 SetHappyCakeLayers(HappyCakeLayers + serveResult.HappyCakeLayerDelta + AccelFor(serveResult.HappyCakeLayerDelta));
                 ApplyTransferRequests(serveResult.TransferRequests);
@@ -1044,7 +1084,7 @@ namespace GourmetProject.Gameplay.Battle
 
         private ScoreResult CalculatePreviewScore()
         {
-            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), passiveItemCount: PassiveItemCount);
+            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount);
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
@@ -1053,7 +1093,7 @@ namespace GourmetProject.Gameplay.Battle
             ConfirmAllPendingTableDishes();
             ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
                 ? ZeroScoreResult()
-                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets, randomIntegerSelector: SelectRandomInteger, passiveItemCount: PassiveItemCount);
+                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets, randomIntegerSelector: SelectRandomInteger, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount);
             ApplySideEffects(result);
             LastResult = result;
             IsSettled = true;
