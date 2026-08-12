@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
+using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using UnityEngine;
@@ -130,7 +131,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void RenderTrace(BattleScopeHighlightChannel channel, SkillExecutionTrace trace, int index, bool persistent)
         {
-            if (trace == null)
+            if (trace == null || !CanRenderTrace(trace))
             {
                 return;
             }
@@ -180,6 +181,26 @@ namespace GourmetProject.Game.Presentation.Battle
                 BattleScopeRegionRole.Action,
                 material);
             RenderTargetDishes(channel, trace, targetColor, visualIndex);
+        }
+
+        private bool CanRenderTrace(SkillExecutionTrace trace)
+        {
+            if (_activeDishViews == null
+                || trace.RuntimeSelfDishInstanceId <= 0
+                || !_activeDishViews.TryGetValue(trace.RuntimeSelfDishInstanceId, out DishPieceView view)
+                || view == null
+                || view.Instance == null)
+            {
+                // 尚未放上餐桌的实时摆放预览没有 DishPieceView，由构建入口直接检查 DishInstance。
+                return true;
+            }
+
+            return CanDisplayScopeForDish(view.Instance);
+        }
+
+        internal static bool CanDisplayScopeForDish(DishInstance dish)
+        {
+            return dish != null && !dish.SkillsDisabled && !dish.ExcludedFromScore;
         }
 
         private void RenderTargetDishes(

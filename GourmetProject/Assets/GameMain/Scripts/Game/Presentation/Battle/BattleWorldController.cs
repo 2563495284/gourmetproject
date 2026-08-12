@@ -3213,7 +3213,9 @@ namespace GourmetProject.Game.Presentation.Battle
             SkillScopeVisualMode visualMode = SkillScopeVisualMode.CandidateScope)
         {
             var traces = new List<SkillExecutionTrace>();
-            if (dish == null || _session?.Database == null || _session.DiningTable == null)
+            if (!BattleScopeHighlightController.CanDisplayScopeForDish(dish)
+                || _session?.Database == null
+                || _session.DiningTable == null)
             {
                 return traces;
             }

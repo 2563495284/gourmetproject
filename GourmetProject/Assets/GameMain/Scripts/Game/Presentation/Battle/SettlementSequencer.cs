@@ -1843,6 +1843,79 @@ namespace GourmetProject.Game.Presentation.Battle
             return speed * (doubleSpeed ? 2f : 1f);
         }
 
+        internal static float CameraFollowFactorFor(SettlementPacePhase phase)
+        {
+            return phase switch
+            {
+                SettlementPacePhase.TargetReached => 0.10f,
+                SettlementPacePhase.DoubleTarget => 0.14f,
+                _ => 0f,
+            };
+        }
+
+        internal static float CameraImpactStrengthFor(
+            SettlementPacePhase phase,
+            SettlementImpactTier tier)
+        {
+            return phase switch
+            {
+                SettlementPacePhase.TargetReached => tier switch
+                {
+                    SettlementImpactTier.Strong => 0.025f,
+                    SettlementImpactTier.Chain => 0.05f,
+                    SettlementImpactTier.Finale => 0.06f,
+                    _ => 0f,
+                },
+                SettlementPacePhase.DoubleTarget => tier switch
+                {
+                    SettlementImpactTier.Normal => 0.025f,
+                    SettlementImpactTier.Strong => 0.055f,
+                    SettlementImpactTier.Chain => 0.075f,
+                    SettlementImpactTier.Finale => 0.09f,
+                    _ => 0f,
+                },
+                _ => 0f,
+            };
+        }
+
+        internal static float CameraTransitionShakeStrengthFor(SettlementPacePhase phase) =>
+            phase == SettlementPacePhase.DoubleTarget ? 0.085f : 0f;
+
+        internal static float CameraFinaleShakeStrengthFor(SettlementPacePhase phase) =>
+            phase == SettlementPacePhase.DoubleTarget ? 0.08f : 0f;
+
+        internal static float CameraHomeScaleFor(SettlementPacePhase phase)
+        {
+            return phase switch
+            {
+                SettlementPacePhase.DoubleTarget => 0.985f,
+                _ => 1f,
+            };
+        }
+
+        internal static float CameraFocusScaleFor(SettlementPacePhase phase)
+        {
+            return phase switch
+            {
+                SettlementPacePhase.TargetReached => 0.985f,
+                SettlementPacePhase.DoubleTarget => 0.965f,
+                _ => 1f,
+            };
+        }
+
+        internal static float CameraTransitionPunchScaleFor(SettlementPacePhase phase) =>
+            phase == SettlementPacePhase.DoubleTarget ? 0.978f : 1f;
+
+        internal static float CameraFinaleScaleFor(SettlementPacePhase phase)
+        {
+            return phase switch
+            {
+                SettlementPacePhase.TargetReached => 0.992f,
+                SettlementPacePhase.DoubleTarget => 0.97f,
+                _ => 1f,
+            };
+        }
+
         private void NotifySettlementCue(SettlementCueKind kind, float speed, float normalized)
         {
             // 预留音效入口：后续可在这里按 kind 播放结算音效，并用 speed 映射 pitch。
@@ -3081,8 +3154,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     return;
                 }
 
-                _phaseHomeOrthographicSize = _baseOrthographicSize * HomeScaleFor(phase);
-                _focusOrthographicSize = _baseOrthographicSize * FocusScaleFor(phase);
+                _phaseHomeOrthographicSize = _baseOrthographicSize * CameraHomeScaleFor(phase);
+                _focusOrthographicSize = _baseOrthographicSize * CameraFocusScaleFor(phase);
                 if (!playTransition || phase == SettlementPacePhase.BelowTarget)
                 {
                     SetOrthographicSize(_phaseHomeOrthographicSize);
@@ -3090,25 +3163,39 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 _motion?.Kill();
-                float strength = phase == SettlementPacePhase.DoubleTarget ? 0.12f : 0.085f;
-                float transitionDuration = Scaled(
-                    phase == SettlementPacePhase.DoubleTarget ? 0.20f : 0.16f);
-                float punchSize = _focusOrthographicSize
-                    * (phase == SettlementPacePhase.DoubleTarget ? 0.970f : 0.978f);
-                Sequence sequence = DOTween.Sequence()
-                    .Append(_camera.transform.DOShakePosition(
+                float strength = CameraTransitionShakeStrengthFor(phase);
+                float punchScale = CameraTransitionPunchScaleFor(phase);
+                if (strength <= 0f && Mathf.Approximately(punchScale, 1f))
+                {
+                    return;
+                }
+
+                float transitionDuration = Scaled(0.16f);
+                float punchSize = _focusOrthographicSize * punchScale;
+                Sequence sequence = DOTween.Sequence();
+                Tween punchTween = DOVirtual.Float(
+                        _camera.orthographicSize,
+                        punchSize,
+                        transitionDuration * 0.55f,
+                        SetOrthographicSize)
+                    .SetEase(Ease.OutQuad);
+                if (strength > 0f)
+                {
+                    sequence.Append(_camera.transform.DOShakePosition(
                         transitionDuration,
                         strength,
-                        vibrato: phase == SettlementPacePhase.DoubleTarget ? 16 : 12,
+                        vibrato: 12,
                         randomness: 30f,
                         snapping: false,
-                        fadeOut: true))
-                    .Join(DOVirtual.Float(
-                            _camera.orthographicSize,
-                            punchSize,
-                            transitionDuration * 0.55f,
-                            SetOrthographicSize)
-                        .SetEase(Ease.OutQuad))
+                        fadeOut: true));
+                    sequence.Join(punchTween);
+                }
+                else
+                {
+                    sequence.Append(punchTween);
+                }
+
+                sequence
                     .Append(DOVirtual.Float(
                             _camera.orthographicSize,
                             _focusOrthographicSize,
@@ -3131,8 +3218,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 Vector3 towardSource = Vector3.ClampMagnitude(worldPosition - _tableCenter, 1.6f);
                 towardSource.z = 0f;
-                _focusPosition = _basePosition + towardSource * FollowFactorFor(_phase);
-                _focusOrthographicSize = _baseOrthographicSize * FocusScaleFor(_phase);
+                _focusPosition = _basePosition + towardSource * CameraFollowFactorFor(_phase);
+                _focusOrthographicSize = _baseOrthographicSize * CameraFocusScaleFor(_phase);
                 TweenTo(
                     _focusPosition,
                     _focusOrthographicSize,
@@ -3147,7 +3234,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     return;
                 }
 
-                float strength = ImpactStrengthFor(_phase, tier);
+                float strength = CameraImpactStrengthFor(_phase, tier);
                 if (strength <= 0f)
                 {
                     return;
@@ -3213,18 +3300,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 _motion?.Kill();
                 float pushDuration = Mathf.Clamp(duration * 0.22f, 0.05f, 0.22f);
                 float restoreDuration = Mathf.Clamp(duration * 0.34f, 0.08f, 0.36f);
-                float finaleStrength = _phase switch
-                {
-                    SettlementPacePhase.TargetReached => 0.08f,
-                    SettlementPacePhase.DoubleTarget => 0.11f,
-                    _ => 0f,
-                };
-                float finaleScale = _phase switch
-                {
-                    SettlementPacePhase.TargetReached => 0.97f,
-                    SettlementPacePhase.DoubleTarget => 0.95f,
-                    _ => 0.992f,
-                };
+                float finaleStrength = CameraFinaleShakeStrengthFor(_phase);
+                float finaleScale = CameraFinaleScaleFor(_phase);
                 Sequence sequence = DOTween.Sequence()
                     .Append(_camera.transform.DOMove(_basePosition, pushDuration).SetEase(Ease.OutCubic))
                     .Join(DOVirtual.Float(
@@ -3238,7 +3315,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     sequence.Append(_camera.transform.DOShakePosition(
                         Mathf.Max(0.04f, duration * 0.17f),
                         finaleStrength,
-                        vibrato: _phase == SettlementPacePhase.DoubleTarget ? 16 : 12,
+                        vibrato: 12,
                         randomness: 28f,
                         snapping: false,
                         fadeOut: true));
@@ -3277,69 +3354,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
             private float Scaled(float duration) =>
                 Mathf.Max(0.015f, duration / Mathf.Max(0.0001f, _speed));
-
-            private static float HomeScaleFor(SettlementPacePhase phase)
-            {
-                return phase switch
-                {
-                    SettlementPacePhase.TargetReached => 0.985f,
-                    SettlementPacePhase.DoubleTarget => 0.970f,
-                    _ => 1f,
-                };
-            }
-
-            private static float FocusScaleFor(SettlementPacePhase phase)
-            {
-                return phase switch
-                {
-                    SettlementPacePhase.TargetReached => 0.965f,
-                    SettlementPacePhase.DoubleTarget => 0.945f,
-                    _ => 0.985f,
-                };
-            }
-
-            private static float FollowFactorFor(SettlementPacePhase phase)
-            {
-                return phase switch
-                {
-                    SettlementPacePhase.TargetReached => 0.14f,
-                    SettlementPacePhase.DoubleTarget => 0.18f,
-                    _ => 0.10f,
-                };
-            }
-
-            private static float ImpactStrengthFor(
-                SettlementPacePhase phase,
-                SettlementImpactTier tier)
-            {
-                return phase switch
-                {
-                    SettlementPacePhase.TargetReached => tier switch
-                    {
-                        SettlementImpactTier.Normal => 0.025f,
-                        SettlementImpactTier.Strong => 0.055f,
-                        SettlementImpactTier.Chain => 0.075f,
-                        SettlementImpactTier.Finale => 0.09f,
-                        _ => 0f,
-                    },
-                    SettlementPacePhase.DoubleTarget => tier switch
-                    {
-                        SettlementImpactTier.Base => 0.012f,
-                        SettlementImpactTier.Normal => 0.04f,
-                        SettlementImpactTier.Strong => 0.07f,
-                        SettlementImpactTier.Chain => 0.095f,
-                        SettlementImpactTier.Finale => 0.11f,
-                        _ => 0f,
-                    },
-                    _ => tier switch
-                    {
-                        SettlementImpactTier.Strong => 0.025f,
-                        SettlementImpactTier.Chain => 0.05f,
-                        SettlementImpactTier.Finale => 0.06f,
-                        _ => 0f,
-                    },
-                };
-            }
 
             private void TweenTo(Vector3 position, float orthographicSize, float duration, Ease ease)
             {
