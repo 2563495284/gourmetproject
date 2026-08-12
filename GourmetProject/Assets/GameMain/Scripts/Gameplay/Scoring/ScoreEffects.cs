@@ -47,7 +47,7 @@ namespace GourmetProject.Gameplay.Scoring
         }
     }
 
-    /// <summary>结算时获得 EffectValue 金币（锈）。金币是对外副作用，仅累积到 ScoreResult.GoldDelta。</summary>
+    /// <summary>结算时获得 EffectValue 金币。金币是对外副作用，仅累积到 ScoreResult.GoldDelta。</summary>
     public sealed class GrantGoldEffect : IScoreEffect
     {
         public void Apply(ScoreContext ctx) => ctx.GrantGold(ctx.EffectDef.EffectValue);

@@ -308,7 +308,7 @@ namespace GourmetProject.Gameplay.Board
             return true;
         }
 
-        /// <summary>枚举某食物在当前餐桌上的全部合法摆放（朝向 × 原点）。</summary>
+        /// <summary>枚举某食物以基础朝向（rotation=0）在当前餐桌上的全部合法原点。</summary>
         public List<Placement> FindValidPlacements(DishDef def)
         {
             if (def == null)
@@ -317,29 +317,14 @@ namespace GourmetProject.Gameplay.Board
             }
 
             var placements = new List<Placement>();
-
-            if (def.AllowRotate)
-            {
-                // 允许旋转：上菜筛选枚举全部去重朝向（设计案：允许 90° 任意旋转）。
-                IReadOnlyList<DishShape> orientations = def.Shape.GetOrientations(allowRotate: true);
-                for (int r = 0; r < orientations.Count; r++)
-                {
-                    AddPlacementsForOrientation(orientations[r], r, placements);
-                }
-            }
-            else
-            {
-                // 不允许旋转：只以变体配置的固定朝向摆放，RotationIndex 用固定值。
-                int rot = def.RotationIndex;
-                AddPlacementsForOrientation(def.Shape.RotatedBy(rot), rot, placements);
-            }
+            AddPlacementsForOrientation(def.Shape, 0, placements);
 
             return placements;
         }
 
         /// <summary>
         /// 「麻」专用：把食物基础形状**逆时针**旋转 <paramref name="ccwSteps"/> 个 90°，
-        /// 强制以该唯一朝向枚举全部合法原点（覆盖 AllowRotate 的自由旋转）。返回空列表表示旋转后放不下。
+        /// 并以该唯一朝向枚举全部合法原点。返回空列表表示旋转后放不下。
         /// </summary>
         public List<Placement> FindValidPlacementsRotatedCcw(DishDef def, int ccwSteps)
         {
@@ -348,8 +333,7 @@ namespace GourmetProject.Gameplay.Board
                 throw new ArgumentNullException(nameof(def));
             }
 
-            int cw = ((4 - (ccwSteps % 4)) % 4);
-            int rotationIndex = ((def.RotationIndex + cw) % 4 + 4) % 4;
+            int rotationIndex = (4 - (ccwSteps % 4)) % 4;
             var placements = new List<Placement>();
             AddPlacementsForOrientation(def.Shape.RotatedBy(rotationIndex), rotationIndex, placements);
             return placements;

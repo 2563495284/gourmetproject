@@ -15,7 +15,7 @@ namespace cfg
 public partial class Tables
 {
     /// <summary>
-    /// 食物本体：物理属性（id/name/deliciousness/icon/allowRotate/shapeRows）与固有技能（skills→TbSkill）。
+    /// 食物本体：物理属性（id/name/deliciousness/shapeRows）与固有技能（skills→TbSkill）。
     /// </summary>
     public TbDishBase TbDishBase {get; }
     /// <summary>

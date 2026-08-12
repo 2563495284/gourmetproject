@@ -79,7 +79,7 @@ namespace GourmetProject.Gameplay.Model
             return new DishShape(rotated);
         }
 
-        /// <summary>顺时针旋转指定次数（每次 90°），返回归一化后的新形状。次数按 4 取模，不去重、不受 allowRotate 影响。</summary>
+        /// <summary>顺时针旋转指定次数（每次 90°），返回归一化后的新形状。次数按 4 取模。</summary>
         public DishShape RotatedBy(int times)
         {
             int t = ((times % 4) + 4) % 4;
@@ -90,46 +90,6 @@ namespace GourmetProject.Gameplay.Model
             }
 
             return current;
-        }
-
-        /// <summary>返回该形状的全部不同朝向（最多 4 个，去重）。allowRotate=false 时仅返回自身。</summary>
-        public IReadOnlyList<DishShape> GetOrientations(bool allowRotate)
-        {
-            var result = new List<DishShape> { this };
-            if (!allowRotate)
-            {
-                return result;
-            }
-
-            DishShape current = this;
-            for (int i = 0; i < 3; i++)
-            {
-                current = current.Rotate90();
-                if (!result.Any(s => s.CellsEqual(current)))
-                {
-                    result.Add(current);
-                }
-            }
-
-            return result;
-        }
-
-        private bool CellsEqual(DishShape other)
-        {
-            if (other._cells.Length != _cells.Length)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < _cells.Length; i++)
-            {
-                if (!_cells[i].Equals(other._cells[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         private static GridPos[] Normalize(IEnumerable<GridPos> cells)

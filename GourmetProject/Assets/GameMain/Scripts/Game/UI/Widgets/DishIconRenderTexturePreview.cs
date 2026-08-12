@@ -215,7 +215,7 @@ namespace GourmetProject.Game.UI.Widgets
 
             int rotationIndex = rotationIndexOverride
                 ?? FlavorStainPalette.DisplayRotationIndex(
-                    dish.RotationIndex,
+                    0,
                     displayFlavors);
             DishShape displayShape = dish.Shape.RotatedBy(rotationIndex);
             return new Vector2Int(displayShape.Width, displayShape.Height);

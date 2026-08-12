@@ -24,7 +24,6 @@ namespace GourmetProject.Gameplay.Scoring
             registry.Register(FlavorEffectType.PerEmptyCell, new PerEmptyCellEffect());
             registry.Register(FlavorEffectType.PerOccupiedCell, new PerOccupiedCellEffect());
             registry.Register(FlavorEffectType.PerDishOnBoard, new PerDishOnBoardEffect());
-            registry.Register(FlavorEffectType.GrantGold, new GrantGoldEffect());
             return registry;
         }
     }

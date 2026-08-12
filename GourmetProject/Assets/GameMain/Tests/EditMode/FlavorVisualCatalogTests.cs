@@ -17,7 +17,7 @@ namespace GourmetProject.Tests.EditMode
                 "t_bitter",
                 "t_salty",
                 "t_numb",
-                "t_rust",
+                "t_fresh",
                 "t_spicy",
             };
 
@@ -57,7 +57,7 @@ namespace GourmetProject.Tests.EditMode
 
             List<string> ids = FlavorVisualCatalog.FlavorIdsForMask(mask);
 
-            Assert.That(ids, Is.EqualTo(new[] { "t_sweet", "t_salty", "t_rust", "t_spicy" }));
+            Assert.That(ids, Is.EqualTo(new[] { "t_sweet", "t_salty", "t_fresh", "t_spicy" }));
         }
 
         [Test]

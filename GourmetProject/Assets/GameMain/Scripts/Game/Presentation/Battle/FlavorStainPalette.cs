@@ -30,7 +30,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly Dictionary<string, Color> Colors = new()
         {
             { "t_sour", new Color(0.36f, 0.82f, 0.30f, 0.85f) },   // 酸：绿
-            { "t_rust", new Color(0.72f, 0.38f, 0.14f, 0.88f) },   // 锈：锈橙
+            { "t_fresh", new Color(1.00f, 0.58f, 0.12f, 0.88f) },  // 鲜：橙黄
             { "t_sweet", new Color(1.00f, 0.55f, 0.72f, 0.80f) },  // 甜：粉桃
             { "t_bitter", new Color(0.28f, 0.24f, 0.16f, 0.88f) }, // 苦：墨褐
             { "t_numb", new Color(0.60f, 0.40f, 0.78f, 0.82f) },   // 麻：花椒紫褐

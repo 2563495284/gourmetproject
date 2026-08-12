@@ -25,7 +25,9 @@ namespace GourmetProject.Game.Meta
 
             int count = Math.Max(1, slot.ChoiceCount);
             // 多选一「可选数量」增减（琳琅满目 / 选择困难 / 少选择）：仅作用于食物多选一。
-            if (slot.Kind == cfg.RewardKind.DishChoice && context.Run != null)
+            if (context.ApplyChoiceCountModifiers
+                && slot.Kind == cfg.RewardKind.DishChoice
+                && context.Run != null)
             {
                 count = Math.Max(1, count + new ItemRuntime(context.Run).ChoiceCountDelta());
             }
@@ -39,7 +41,9 @@ namespace GourmetProject.Game.Meta
                 return result;
             }
 
-            if (context.Run != null && context.ConsumeEventChoiceCountDelta)
+            if (context.ApplyChoiceCountModifiers
+                && context.Run != null
+                && context.ConsumeEventChoiceCountDelta)
             {
                 count = Math.Max(1, count + context.Run.ConsumeEventChoiceCountDelta());
             }

@@ -20,10 +20,8 @@ namespace GourmetProject.Gameplay.Model
             float baseWeight,
             IReadOnlyList<string> skillIds,
             string flavorId,
-            bool allowRotate,
             string baseId = null,
             int price = 0,
-            int rotationIndex = 0,
             string category = null,
             int countAs = 1,
             int sortOrder = 0,
@@ -38,10 +36,8 @@ namespace GourmetProject.Gameplay.Model
             BaseWeight = baseWeight;
             SkillIds = skillIds ?? Array.Empty<string>();
             FlavorId = flavorId ?? string.Empty;
-            AllowRotate = allowRotate;
             BaseId = baseId ?? id;
             Price = price;
-            RotationIndex = ((rotationIndex % 4) + 4) % 4;
             Category = category ?? string.Empty;
             CountAs = countAs < 1 ? 1 : countAs;
             SortOrder = sortOrder;
@@ -85,14 +81,6 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>是否带有风味。</summary>
         public bool HasFlavor => !string.IsNullOrEmpty(FlavorId);
 
-        public bool AllowRotate { get; }
-
-        /// <summary>
-        /// 变体固定旋转朝向（0=原始，1/2/3=顺时针 90° 的次数）。<see cref="AllowRotate"/> 为 false 时，
-        /// 自动上菜只以该朝向摆放；为 true 时该值不生效（枚举全部朝向），两者预期互斥。
-        /// </summary>
-        public int RotationIndex { get; }
-
         /// <summary>食物分类（如 cake）；空串=无分类。供分类检测/定向。</summary>
         public string Category { get; }
 
@@ -106,7 +94,7 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>食谱中的展示顺序；数值越小越靠前。</summary>
         public int SortOrder { get; }
 
-        /// <summary>流派 0/1/2 的配置权重，固定三项且总和为 1。</summary>
+        /// <summary>流派 0/1/2 的非负绝对点数，固定三项；整套食谱累加后再换算占比。</summary>
         public IReadOnlyList<float> ArchetypeWeights { get; }
 
         /// <summary>要求隐藏分是否落在本食物隐藏分范围内。</summary>

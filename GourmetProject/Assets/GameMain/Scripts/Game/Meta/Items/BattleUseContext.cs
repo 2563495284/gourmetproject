@@ -249,6 +249,17 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
+        public bool AddNextBusinessRewardDoubleStack()
+        {
+            if (Run == null)
+            {
+                return false;
+            }
+
+            Run.AddNextBusinessRewardDoubleStack();
+            return true;
+        }
+
         /// <summary>餐桌菜目标的 <see cref="ActiveTarget.Id"/> 为 <see cref="Gameplay.Board.DishInstance.Id"/> 的字符串形式。</summary>
         private static bool TryGetDishId(ActiveTarget target, out int dishId)
         {

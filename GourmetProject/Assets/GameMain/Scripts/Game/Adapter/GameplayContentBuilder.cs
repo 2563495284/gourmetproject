@@ -41,7 +41,6 @@ namespace GourmetProject.Game.Adapter
                         family.BaseWeight,
                         family.Price,
                         family.HiddenRange,
-                        family.Rotation,
                         baseDish));
 
                 foreach (string flavorId in SplitPipeList(family.FlavorIds))
@@ -59,12 +58,11 @@ namespace GourmetProject.Game.Adapter
                             family.FlavoredBaseWeight,
                             family.FlavoredPrice,
                             family.FlavoredHiddenRange,
-                            family.Rotation,
                             baseDish));
                 }
             }
 
-            // 没有食物族的本体是系统机制可直接生成的独立食物（例如 Boss 碳水餐的 custard_bun）。
+            // 没有食物族的本体是系统机制可直接生成的独立食物（例如 Boss 碳水餐的 mantou）。
             foreach (cfg.DishBase baseDish in tables.TbDishBase.DataList)
             {
                 if (!referencedBaseIds.Contains(baseDish.Id))
@@ -152,7 +150,6 @@ namespace GourmetProject.Game.Adapter
             float baseWeight,
             int price,
             cfg.HiddenRange hiddenRange,
-            cfg.DishRotation rotation,
             cfg.DishBase b)
         {
             return new DishDef(
@@ -165,10 +162,8 @@ namespace GourmetProject.Game.Adapter
                 baseWeight,
                 SplitPipeList(b.Skills),
                 flavorId,
-                b.AllowRotate,
                 b.Id,
                 price,
-                (int)rotation,
                 b.Category,
                 b.CountAs,
                 b.SortOrder,
@@ -187,9 +182,7 @@ namespace GourmetProject.Game.Adapter
                 0f,
                 SplitPipeList(b.Skills),
                 string.Empty,
-                b.AllowRotate,
                 b.Id,
-                0,
                 0,
                 b.Category,
                 b.CountAs,
@@ -206,7 +199,6 @@ namespace GourmetProject.Game.Adapter
                     $"食物 '{dish?.Id}' 的 archetypeWeights 必须恰好包含 3 项。");
             }
 
-            float sum = 0f;
             var result = new float[3];
             for (int i = 0; i < result.Length; i++)
             {
@@ -218,13 +210,6 @@ namespace GourmetProject.Game.Adapter
                 }
 
                 result[i] = value;
-                sum += value;
-            }
-
-            if (System.Math.Abs(sum - 1f) > 0.001f)
-            {
-                throw new System.InvalidOperationException(
-                    $"食物 '{dish.Id}' 的 archetypeWeights 总和必须为 1，当前为 {sum}。");
             }
 
             return result;

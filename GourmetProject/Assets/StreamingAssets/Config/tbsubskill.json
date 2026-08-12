@@ -633,7 +633,7 @@
     "trigger": 0,
     "condType": 5,
     "condScope": 4,
-    "condUnit": 2,
+    "condUnit": 0,
     "condMode": 0,
     "condParam": "eq:2",
     "actionType": 1,
@@ -646,7 +646,7 @@
       "size:2"
     ],
     "signed": true,
-    "descTemplate": "每有 1 个占 2 格的食物\n此类食物分数 {0}",
+    "descTemplate": "每有 1 {unit}占 2 格的食物\n此类食物分数 {0}",
     "termId": ""
   },
   {
@@ -709,7 +709,7 @@
     "termId": ""
   },
   {
-    "id": "sk_rock_sugar_pear_1",
+    "id": "sk_red_bean_ice_pop_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -728,7 +728,7 @@
     "termId": ""
   },
   {
-    "id": "sk_rock_sugar_pear_2",
+    "id": "sk_red_bean_ice_pop_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -743,7 +743,7 @@
     ],
     "actionParam": [],
     "signed": false,
-    "descTemplate": "营业结束后，1/10 概率移除食物",
+    "descTemplate": "营业结束后\n1/10 概率移除食物",
     "termId": ""
   },
   {
@@ -764,7 +764,7 @@
       "when:receive-transfer"
     ],
     "signed": true,
-    "descTemplate": "结算后，{ascope}获得甜蜜传递的食物\n分数 {0}",
+    "descTemplate": "结算后\n{ascope}获得甜蜜传递的食物\n分数 {0}",
     "termId": ""
   },
   {
@@ -779,7 +779,7 @@
     "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
-      10
+      15
     ],
     "actionParam": [],
     "signed": true,
@@ -846,7 +846,7 @@
       "when:transfer;resultscope:TransferSource"
     ],
     "signed": false,
-    "descTemplate": "结算后，{cscope}发动甜蜜传递的食物\n自身倍率 ×{0}",
+    "descTemplate": "结算后\n{cscope}发动甜蜜传递的食物\n自身倍率 ×{0}",
     "termId": ""
   },
   {
@@ -924,11 +924,11 @@
       "cat:cake"
     ],
     "signed": false,
-    "descTemplate": "将自身分数加至{cat}类食物上",
+    "descTemplate": "将自身分数\n加至{cat}类食物上",
     "termId": ""
   },
   {
-    "id": "sk_fondant_cake_1",
+    "id": "sk_red_velvet_cake_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -949,7 +949,7 @@
     "termId": ""
   },
   {
-    "id": "sk_fondant_cake_2",
+    "id": "sk_red_velvet_cake_2",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -1046,7 +1046,7 @@
       "modifier:add-targets"
     ],
     "signed": false,
-    "descTemplate": "结算后，{ascope}食物发动甜蜜传递时\n额外选择 1 个目标",
+    "descTemplate": "结算后\n{ascope}食物发动甜蜜传递时\n额外选择 1 个目标",
     "termId": "term_sweet_transfer"
   },
   {
@@ -1345,7 +1345,7 @@
       "tiervals:15|30|50"
     ],
     "signed": true,
-    "descTemplate": "{cat}数量达 {tiers} 时\n欢乐蛋糕 {tiervals} 层",
+    "descTemplate": "{cat}达到 {tiers} 个时\n欢乐蛋糕 {tiervals} 层",
     "termId": "clb"
   },
   {
@@ -1448,7 +1448,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_fermented_rice_balls_1",
+    "id": "sk_purple_rice_pudding_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -1547,7 +1547,7 @@
       "source:target-countas"
     ],
     "signed": true,
-    "descTemplate": "{ascope}食物把自身份数的 1/2 加入倍率",
+    "descTemplate": "{ascope}食物\n把自身份数的 1/2 记入倍率",
     "termId": ""
   },
   {
@@ -1568,7 +1568,7 @@
       "cat:cake"
     ],
     "signed": false,
-    "descTemplate": "{ascope}获得 {0} 种不同的{cat}技能",
+    "descTemplate": "{ascope}获得 {0} 种{cat}技能\n并结算",
     "termId": ""
   }
 ]

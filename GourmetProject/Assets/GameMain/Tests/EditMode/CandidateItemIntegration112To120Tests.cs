@@ -338,8 +338,7 @@ namespace GourmetProject.Tests.EditMode
                 0,
                 1f,
                 Array.Empty<string>(),
-                string.Empty,
-                allowRotate: false);
+                string.Empty);
         }
 
         private static GameplayDatabase Database(params DishDef[] dishes)

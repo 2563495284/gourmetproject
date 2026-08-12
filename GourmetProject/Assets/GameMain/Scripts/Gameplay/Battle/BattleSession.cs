@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BreakInfinity;
 using GourmetProject.Core.Rng;
 using GourmetProject.Gameplay.Board;
@@ -730,6 +731,16 @@ namespace GourmetProject.Gameplay.Battle
                 }
 
                 List<ServeCandidate> rollCandidates = PreferNonCookieCandidates(candidates);
+                List<ServeCandidate> freshCandidates = rollCandidates
+                    .Where(candidate => HasFlavorEffect(
+                        candidate.Dish,
+                        slot.Entries[candidate.SlotEntryIndex],
+                        FlavorEffectType.ServePriority))
+                    .ToList();
+                if (freshCandidates.Count > 0)
+                {
+                    rollCandidates = freshCandidates;
+                }
                 var weights = new List<float>(rollCandidates.Count);
                 foreach (ServeCandidate candidate in rollCandidates)
                 {
@@ -813,6 +824,23 @@ namespace GourmetProject.Gameplay.Battle
             return dish != null
                 && (_serveCookieDishIds.Contains(dish.Id)
                     || _serveCookieDishIds.Contains(dish.BaseId));
+        }
+
+        private bool HasFlavorEffect(
+            DishDef dish,
+            RecipeSlotEntry entry,
+            FlavorEffectType effectType)
+        {
+            foreach (string flavorId in ComposeServeFlavors(dish, entry))
+            {
+                FlavorDef flavor = _db.GetFlavor(flavorId);
+                if (flavor != null && flavor.EffectType == effectType)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private bool ShouldInsertDishOnNextBellPrepare()
@@ -2116,25 +2144,20 @@ namespace GourmetProject.Gameplay.Battle
                 return false;
             }
 
-            IReadOnlyList<DishShape> orientations = def.Shape.GetOrientations(def.AllowRotate);
-            for (int i = 0; i < orientations.Count; i++)
+            const int rotationIndex = 0;
+            DishShape shape = def.Shape;
+            if (!DiningTable.CanPlace(shape, origin))
             {
-                DishShape shape = orientations[i];
-                var placement = new Placement(shape, i, origin);
-                if (!DiningTable.CanPlace(shape, origin))
-                {
-                    continue;
-                }
-
-                IReadOnlyList<string> flavors = string.IsNullOrEmpty(def.FlavorId)
-                    ? Array.Empty<string>()
-                    : new[] { def.FlavorId };
-                var instance = new DishInstance(_nextInstanceId++, def, placement, def.SkillIds, flavors);
-                DiningTable.Place(instance);
-                return true;
+                return false;
             }
 
-            return false;
+            var placement = new Placement(shape, rotationIndex, origin);
+            IReadOnlyList<string> flavors = string.IsNullOrEmpty(def.FlavorId)
+                ? Array.Empty<string>()
+                : new[] { def.FlavorId };
+            var instance = new DishInstance(_nextInstanceId++, def, placement, def.SkillIds, flavors);
+            DiningTable.Place(instance);
+            return true;
         }
 
         /// <summary>当前所有食谱槽是否都无法再上菜（用于提示玩家结算）。</summary>

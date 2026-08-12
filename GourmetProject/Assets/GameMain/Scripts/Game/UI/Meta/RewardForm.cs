@@ -677,6 +677,31 @@ namespace GourmetProject.Game.UI.Meta
             RefreshOffer();
         }
 
+        private void ClaimBonusGold()
+        {
+            if (_offer == null || !_offer.HasBonusGold || _offer.BonusGoldClaimed)
+            {
+                return;
+            }
+
+            if (_genericMode)
+            {
+                _run.Gold += _offer.BonusGold;
+                _offer.MarkBonusGoldClaimed();
+            }
+            else
+            {
+                using (RunPersistence.SuppressSave())
+                {
+                    RewardGranter.ApplyBonusGold(_run, _offer);
+                }
+            }
+
+            CacheCurrentOffer();
+            RefreshBattlePersistentHud();
+            RefreshOffer();
+        }
+
         private void ClaimChoice(
             int groupIndex,
             int index,
@@ -1243,7 +1268,14 @@ namespace GourmetProject.Game.UI.Meta
                 if (_spawnedRows[i] != null)
                 {
                     _spawnedRows[i].gameObject.SetActive(false);
-                    Destroy(_spawnedRows[i].gameObject);
+                    if (Application.isPlaying)
+                    {
+                        Destroy(_spawnedRows[i].gameObject);
+                    }
+                    else
+                    {
+                        DestroyImmediate(_spawnedRows[i].gameObject);
+                    }
                 }
             }
 
@@ -1256,6 +1288,7 @@ namespace GourmetProject.Game.UI.Meta
 
             _rewardRowTemplate.gameObject.SetActive(false);
             AddFixedGoldRow();
+            AddBonusGoldRow();
 
             for (int i = 0; i < _offer.FixedGroups.Count; i++)
             {
@@ -1420,6 +1453,30 @@ namespace GourmetProject.Game.UI.Meta
                 true,
                 false,
                 ClaimBaseGold);
+            row.DisableTipTrigger();
+        }
+
+        private void AddBonusGoldRow()
+        {
+            if (!_offer.HasBonusGold || _offer.BonusGoldClaimed)
+            {
+                return;
+            }
+
+            RewardChoiceRowView row = CreateRewardRow();
+            if (row == null)
+            {
+                return;
+            }
+
+            row.Bind(
+                $"翻倍金币 +{_offer.BonusGold}",
+                "点击领取",
+                LoadBaseGoldIcon(),
+                false,
+                true,
+                false,
+                ClaimBonusGold);
             row.DisableTipTrigger();
         }
 

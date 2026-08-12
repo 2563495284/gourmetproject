@@ -57,6 +57,12 @@ namespace GourmetProject.Game.Run
         /// <summary>剩余半日券层数；每次完成普通行动消费一层。</summary>
         public int NextDailyActionHalfCostStacks;
 
+        /// <summary>旧实验版本字段；读取时迁移到 NextBusinessRewardDoubleStacks，之后不再写入。</summary>
+        public int NextBusinessSpecificRewardDoubleStacks;
+
+        /// <summary>待生效的营业奖励翻倍层数；每场符合条件的日常或火热营业消费一层。</summary>
+        public int NextBusinessRewardDoubleStacks;
+
         /// <summary>行动选择页剩余刷新次数。</summary>
         public int ActionRerollCount = -1;
 
@@ -101,6 +107,9 @@ namespace GourmetProject.Game.Run
 
         /// <summary>下一次营业基础金币倍率；旧存档缺失时为 1。</summary>
         public float NextBusinessGoldMultiplier = 1f;
+
+        /// <summary>后续逐场营业基础金币倍率；索引 0 表示下一场。</summary>
+        public List<float> NextBusinessGoldMultipliers = new List<float>();
 
         /// <summary>本周后续营业基础金币倍率；旧存档缺失时为 1。</summary>
         public float CurrentWeekBusinessGoldMultiplier = 1f;
@@ -461,7 +470,13 @@ namespace GourmetProject.Game.Run
     public sealed class RewardOfferSaveData
     {
         public int BaseGold;
+        public int RawBaseGold;
+        public int RawBonusGold;
+        public int BonusGold;
+        public RewardDoubleTarget DoubleRewardTarget;
+        public bool GoldAmountsResolved;
         public bool BaseGoldClaimed;
+        public bool BonusGoldClaimed = true;
         public int MainChoiceIndex = -1;
         public int ExtraChoiceIndex = -1;
         public int BonusChoiceIndex = -1;
@@ -570,6 +585,9 @@ namespace GourmetProject.Game.Run
         public float ScoreMultiplier = 1f;
         public BigNumberSaveData ScoreMultiplierBig;
         public int ScoreEffectiveCountAs = 1;
+        public float ScoreExtraSettlementContribution;
+        public BigNumberSaveData ScoreExtraSettlementContributionBig;
+        public int ScoreExtraSettlementCount;
     }
 
     [Serializable]

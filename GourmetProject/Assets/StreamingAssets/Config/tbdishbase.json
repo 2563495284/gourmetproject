@@ -3,7 +3,6 @@
     "id": "arrow_cookie_1",
     "name": "右箭头饼干",
     "deliciousness": 10,
-    "allowRotate": false,
     "skills": "sk_arrow_cookie_1",
     "category": "",
     "countAs": 1,
@@ -12,16 +11,15 @@
     ],
     "sortOrder": 10,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "arrow_cookie_2",
     "name": "左箭头饼干",
     "deliciousness": 10,
-    "allowRotate": false,
     "skills": "sk_arrow_cookie_2",
     "category": "",
     "countAs": 1,
@@ -30,16 +28,15 @@
     ],
     "sortOrder": 20,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "arrow_cookie_3",
     "name": "下箭头饼干",
     "deliciousness": 10,
-    "allowRotate": false,
     "skills": "sk_arrow_cookie_3",
     "category": "",
     "countAs": 1,
@@ -49,16 +46,15 @@
     ],
     "sortOrder": 30,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "arrow_cookie_4",
     "name": "上箭头饼干",
     "deliciousness": 10,
-    "allowRotate": false,
     "skills": "sk_arrow_cookie_4",
     "category": "",
     "countAs": 1,
@@ -68,16 +64,15 @@
     ],
     "sortOrder": 40,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "jelly",
     "name": "果冻",
     "deliciousness": 20,
-    "allowRotate": false,
     "skills": "sk_jelly",
     "category": "",
     "countAs": 1,
@@ -86,16 +81,15 @@
     ],
     "sortOrder": 50,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "cupcake",
     "name": "糖霜蛋糕",
     "deliciousness": 20,
-    "allowRotate": false,
     "skills": "sk_cupcake",
     "category": "cake",
     "countAs": 1,
@@ -104,16 +98,15 @@
     ],
     "sortOrder": 60,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      2,
+      0,
+      0
     ]
   },
   {
     "id": "eggtart",
     "name": "蛋挞",
     "deliciousness": 20,
-    "allowRotate": false,
     "skills": "sk_eggtart",
     "category": "",
     "countAs": 1,
@@ -122,16 +115,15 @@
     ],
     "sortOrder": 70,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      2,
+      0
     ]
   },
   {
     "id": "sugarbean",
     "name": "糖豆",
     "deliciousness": 20,
-    "allowRotate": false,
     "skills": "sk_sugarbean",
     "category": "",
     "countAs": 1,
@@ -140,16 +132,15 @@
     ],
     "sortOrder": 80,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      2,
+      0
     ]
   },
   {
     "id": "cheesecake",
     "name": "芝士蛋糕",
     "deliciousness": 20,
-    "allowRotate": false,
     "skills": "sk_cheesecake",
     "category": "cake",
     "countAs": 1,
@@ -158,16 +149,15 @@
     ],
     "sortOrder": 90,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      2
     ]
   },
   {
     "id": "mousse",
     "name": "慕斯蛋糕",
     "deliciousness": 20,
-    "allowRotate": false,
     "skills": "sk_mousse",
     "category": "cake",
     "countAs": 1,
@@ -176,16 +166,15 @@
     ],
     "sortOrder": 100,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      1,
+      1
     ]
   },
   {
     "id": "caramel_pudding",
     "name": "焦糖布丁",
     "deliciousness": 20,
-    "allowRotate": false,
     "skills": "sk_caramel_pudding",
     "category": "",
     "countAs": 1,
@@ -194,16 +183,15 @@
     ],
     "sortOrder": 110,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "fruit_candy",
     "name": "水果糖",
     "deliciousness": 20,
-    "allowRotate": false,
     "skills": "sk_fruit_candy",
     "category": "",
     "countAs": 1,
@@ -213,16 +201,15 @@
     ],
     "sortOrder": 120,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      2,
+      0,
+      0
     ]
   },
   {
     "id": "choco_bar",
     "name": "巧克力棒",
     "deliciousness": 20,
-    "allowRotate": false,
     "skills": "sk_choco_bar",
     "category": "",
     "countAs": 1,
@@ -232,16 +219,15 @@
     ],
     "sortOrder": 130,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      2,
+      0,
+      0
     ]
   },
   {
     "id": "mochi",
     "name": "麻薯",
     "deliciousness": 20,
-    "allowRotate": false,
     "skills": "sk_mochi",
     "category": "",
     "countAs": 2,
@@ -251,16 +237,15 @@
     ],
     "sortOrder": 140,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      2,
+      0
     ]
   },
   {
     "id": "cup_cake",
     "name": "杯子蛋糕",
     "deliciousness": 20,
-    "allowRotate": false,
     "skills": "sk_cup_cake",
     "category": "cake",
     "countAs": 1,
@@ -270,16 +255,15 @@
     ],
     "sortOrder": 150,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      2
     ]
   },
   {
     "id": "cream_puff",
     "name": "奶油泡芙",
     "deliciousness": 20,
-    "allowRotate": false,
     "skills": "sk_cream_puff",
     "category": "",
     "countAs": 1,
@@ -289,16 +273,15 @@
     ],
     "sortOrder": 160,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "ice_cream",
     "name": "冰淇淋",
     "deliciousness": 100,
-    "allowRotate": false,
     "skills": "sk_ice_cream",
     "category": "",
     "countAs": 1,
@@ -308,16 +291,15 @@
     ],
     "sortOrder": 170,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "eggroll",
     "name": "蛋卷",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_eggroll",
     "category": "",
     "countAs": 3,
@@ -326,16 +308,15 @@
     ],
     "sortOrder": 180,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      3,
+      0
     ]
   },
   {
     "id": "osmanthus_cake",
     "name": "桂花糕",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_osmanthus_cake",
     "category": "",
     "countAs": 1,
@@ -344,16 +325,15 @@
     ],
     "sortOrder": 190,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      3,
+      0
     ]
   },
   {
     "id": "tanghulu",
     "name": "糖葫芦",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_tanghulu",
     "category": "",
     "countAs": 1,
@@ -362,16 +342,15 @@
     ],
     "sortOrder": 200,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      3,
+      0,
+      0
     ]
   },
   {
     "id": "napoleon_cake",
     "name": "拿破仑蛋糕",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_napoleon_cake",
     "category": "cake",
     "countAs": 1,
@@ -380,16 +359,15 @@
     ],
     "sortOrder": 210,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      3
     ]
   },
   {
     "id": "honey_cake",
     "name": "蜂蜜蛋糕",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_honey_cake",
     "category": "cake",
     "countAs": 1,
@@ -398,16 +376,15 @@
     ],
     "sortOrder": 220,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      3
     ]
   },
   {
     "id": "tree_ring_cake",
     "name": "年轮蛋糕",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_tree_ring_cake",
     "category": "cake",
     "countAs": 1,
@@ -416,16 +393,15 @@
     ],
     "sortOrder": 230,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      3
     ]
   },
   {
     "id": "nougat",
     "name": "牛轧糖",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_nougat",
     "category": "",
     "countAs": 1,
@@ -434,16 +410,15 @@
     ],
     "sortOrder": 240,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      3,
+      0,
+      0
     ]
   },
   {
     "id": "hawthorn_cake",
     "name": "山楂糕",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_hawthorn_cake",
     "category": "",
     "countAs": 1,
@@ -452,16 +427,15 @@
     ],
     "sortOrder": 250,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      3,
+      0
     ]
   },
   {
     "id": "souffle",
     "name": "舒芙蕾",
-    "deliciousness": 300,
-    "allowRotate": false,
+    "deliciousness": 270,
     "skills": "sk_souffle",
     "category": "",
     "countAs": 1,
@@ -470,16 +444,15 @@
     ],
     "sortOrder": 260,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "fruit_tart",
     "name": "水果挞",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_fruit_tart",
     "category": "",
     "countAs": 1,
@@ -488,16 +461,15 @@
     ],
     "sortOrder": 270,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "strawberry_sundae",
     "name": "草莓圣代",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_strawberry_sundae",
     "category": "",
     "countAs": 1,
@@ -508,17 +480,16 @@
     ],
     "sortOrder": 280,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
-    "id": "rock_sugar_pear",
-    "name": "冰糖雪梨",
+    "id": "red_bean_ice_pop",
+    "name": "红豆冰棒",
     "deliciousness": 30,
-    "allowRotate": false,
-    "skills": "sk_rock_sugar_pear",
+    "skills": "sk_red_bean_ice_pop",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -528,16 +499,15 @@
     ],
     "sortOrder": 290,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "popping_candy",
     "name": "跳跳糖",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_popping_candy",
     "category": "",
     "countAs": 1,
@@ -548,16 +518,15 @@
     ],
     "sortOrder": 300,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      3,
+      0,
+      0
     ]
   },
   {
     "id": "mille_crepe_cake",
     "name": "千层蛋糕",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_mille_crepe_cake",
     "category": "cake",
     "countAs": 1,
@@ -568,16 +537,15 @@
     ],
     "sortOrder": 310,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      3
     ]
   },
   {
     "id": "soybean_glutinous_roll",
     "name": "驴打滚",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_soybean_glutinous_roll",
     "category": "",
     "countAs": 1,
@@ -588,16 +556,15 @@
     ],
     "sortOrder": 320,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      3,
+      0
     ]
   },
   {
     "id": "sachima",
     "name": "沙琪玛",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_sachima",
     "category": "",
     "countAs": 3,
@@ -608,16 +575,15 @@
     ],
     "sortOrder": 330,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      3,
+      0
     ]
   },
   {
     "id": "gummy",
     "name": "软糖",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_gummy",
     "category": "",
     "countAs": 1,
@@ -628,16 +594,15 @@
     ],
     "sortOrder": 340,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      3,
+      0,
+      0
     ]
   },
   {
     "id": "chocolate_wafer",
     "name": "巧克力威化",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_chocolate_wafer",
     "category": "",
     "countAs": 1,
@@ -648,16 +613,15 @@
     ],
     "sortOrder": 350,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      3,
+      0,
+      0
     ]
   },
   {
     "id": "cake_roll",
     "name": "蛋糕卷",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_cake_roll",
     "category": "cake",
     "countAs": 1,
@@ -668,17 +632,16 @@
     ],
     "sortOrder": 360,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      3
     ]
   },
   {
-    "id": "fondant_cake",
-    "name": "翻糖蛋糕",
+    "id": "red_velvet_cake",
+    "name": "红丝绒蛋糕",
     "deliciousness": 30,
-    "allowRotate": false,
-    "skills": "sk_fondant_cake",
+    "skills": "sk_red_velvet_cake",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -687,16 +650,15 @@
     ],
     "sortOrder": 370,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      4
     ]
   },
   {
     "id": "matcha_cake",
     "name": "抹茶蛋糕",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_matcha_cake",
     "category": "cake",
     "countAs": 1,
@@ -706,16 +668,15 @@
     ],
     "sortOrder": 380,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      4
     ]
   },
   {
     "id": "mung_bean_cake",
     "name": "绿豆糕",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_mung_bean_cake",
     "category": "",
     "countAs": 1,
@@ -725,16 +686,15 @@
     ],
     "sortOrder": 390,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      4,
+      0
     ]
   },
   {
     "id": "egg_yolk_pastry",
     "name": "蛋黄酥",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_egg_yolk_pastry",
     "category": "",
     "countAs": 1,
@@ -744,16 +704,15 @@
     ],
     "sortOrder": 400,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      2,
+      2,
+      0
     ]
   },
   {
     "id": "chocolate_truffle",
     "name": "松露巧克力",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_chocolate_truffle",
     "category": "",
     "countAs": 1,
@@ -763,16 +722,15 @@
     ],
     "sortOrder": 410,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      4,
+      0,
+      0
     ]
   },
   {
     "id": "liquor_chocolate",
     "name": "酒心巧克力",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_liquor_chocolate",
     "category": "",
     "countAs": 1,
@@ -782,16 +740,15 @@
     ],
     "sortOrder": 420,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      4,
+      0,
+      0
     ]
   },
   {
     "id": "palmier",
     "name": "蝴蝶酥",
     "deliciousness": 30,
-    "allowRotate": false,
     "skills": "sk_palmier",
     "category": "",
     "countAs": 1,
@@ -801,16 +758,15 @@
     ],
     "sortOrder": 430,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "chiffion",
     "name": "戚风蛋糕",
     "deliciousness": 40,
-    "allowRotate": false,
     "skills": "sk_chiffion",
     "category": "cake",
     "countAs": 1,
@@ -820,16 +776,15 @@
     ],
     "sortOrder": 440,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      4
     ]
   },
   {
     "id": "toffee_candy",
     "name": "太妃糖",
     "deliciousness": 40,
-    "allowRotate": false,
     "skills": "sk_toffee_candy",
     "category": "",
     "countAs": 1,
@@ -839,16 +794,15 @@
     ],
     "sortOrder": 450,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      4,
+      0,
+      0
     ]
   },
   {
     "id": "taosu",
     "name": "桃酥",
     "deliciousness": 40,
-    "allowRotate": false,
     "skills": "sk_taosu",
     "category": "",
     "countAs": 6,
@@ -858,16 +812,15 @@
     ],
     "sortOrder": 460,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      4,
+      0
     ]
   },
   {
     "id": "brown_sugar_steamed_cake",
     "name": "红糖发糕",
     "deliciousness": 40,
-    "allowRotate": false,
     "skills": "sk_brown_sugar_steamed_cake",
     "category": "",
     "countAs": 5,
@@ -877,16 +830,15 @@
     ],
     "sortOrder": 470,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      4,
+      0
     ]
   },
   {
     "id": "cream_cake",
     "name": "奶油蛋糕",
     "deliciousness": 40,
-    "allowRotate": false,
     "skills": "sk_cream_cake",
     "category": "cake",
     "countAs": 1,
@@ -896,16 +848,15 @@
     ],
     "sortOrder": 480,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      4
     ]
   },
   {
     "id": "candycane",
     "name": "拐杖糖",
     "deliciousness": 40,
-    "allowRotate": false,
     "skills": "sk_candycane",
     "category": "",
     "countAs": 1,
@@ -916,16 +867,15 @@
     ],
     "sortOrder": 490,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      4,
+      0,
+      0
     ]
   },
   {
     "id": "fruit_shaved_ice",
     "name": "水果刨冰",
     "deliciousness": 40,
-    "allowRotate": false,
     "skills": "sk_fruit_shaved_ice",
     "category": "",
     "countAs": 1,
@@ -935,16 +885,15 @@
     ],
     "sortOrder": 500,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "coconut_milk_jelly",
     "name": "椰奶冻",
     "deliciousness": 40,
-    "allowRotate": false,
     "skills": "sk_coconut_milk_jelly",
     "category": "",
     "countAs": 1,
@@ -954,16 +903,15 @@
     ],
     "sortOrder": 510,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   },
   {
     "id": "black_forest_cake",
     "name": "黑森林蛋糕",
     "deliciousness": 60,
-    "allowRotate": false,
     "skills": "sk_black_forest_cake",
     "category": "cake",
     "countAs": 1,
@@ -973,16 +921,15 @@
     ],
     "sortOrder": 520,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      6
     ]
   },
   {
     "id": "nama_chocolate",
     "name": "生巧克力",
     "deliciousness": 60,
-    "allowRotate": false,
     "skills": "sk_nama_chocolate",
     "category": "",
     "countAs": 1,
@@ -992,16 +939,15 @@
     ],
     "sortOrder": 530,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      6,
+      0,
+      0
     ]
   },
   {
     "id": "mango_sago",
     "name": "杨枝甘露",
     "deliciousness": 60,
-    "allowRotate": false,
     "skills": "sk_mango_sago",
     "category": "",
     "countAs": 8,
@@ -1011,16 +957,15 @@
     ],
     "sortOrder": 540,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      6,
+      0
     ]
   },
   {
     "id": "fruit_cake",
     "name": "水果蛋糕",
     "deliciousness": 60,
-    "allowRotate": false,
     "skills": "sk_fruit_cake",
     "category": "cake",
     "countAs": 1,
@@ -1031,17 +976,16 @@
     ],
     "sortOrder": 550,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      6
     ]
   },
   {
-    "id": "fermented_rice_balls",
-    "name": "酒酿圆子",
+    "id": "purple_rice_pudding",
+    "name": "紫米露",
     "deliciousness": 60,
-    "allowRotate": false,
-    "skills": "sk_fermented_rice_balls",
+    "skills": "sk_purple_rice_pudding",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -1051,16 +995,15 @@
     ],
     "sortOrder": 560,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      6,
+      0
     ]
   },
   {
     "id": "marshmallow",
     "name": "棉花糖",
     "deliciousness": 60,
-    "allowRotate": false,
     "skills": "sk_marshmallow",
     "category": "",
     "countAs": 1,
@@ -1071,16 +1014,15 @@
     ],
     "sortOrder": 570,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      6,
+      0,
+      0
     ]
   },
   {
     "id": "big_lollipop",
     "name": "大棒棒糖",
     "deliciousness": 100,
-    "allowRotate": false,
     "skills": "sk_big_lollipop",
     "category": "",
     "countAs": 1,
@@ -1091,16 +1033,15 @@
     ],
     "sortOrder": 580,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      6,
+      0,
+      0
     ]
   },
   {
     "id": "double_skin_milk",
     "name": "双皮奶",
     "deliciousness": 100,
-    "allowRotate": false,
     "skills": "sk_double_skin_milk",
     "category": "",
     "countAs": 1,
@@ -1111,16 +1052,15 @@
     ],
     "sortOrder": 590,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      6,
+      0
     ]
   },
   {
     "id": "double_cake",
     "name": "双层蛋糕",
     "deliciousness": 100,
-    "allowRotate": false,
     "skills": "sk_double_cake",
     "category": "cake",
     "countAs": 1,
@@ -1132,16 +1072,15 @@
     ],
     "sortOrder": 600,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      6
     ]
   },
   {
-    "id": "custard_bun",
-    "name": "奶黄包",
+    "id": "mantou",
+    "name": "馒头",
     "deliciousness": 10,
-    "allowRotate": false,
     "skills": "",
     "category": "",
     "countAs": 1,
@@ -1150,9 +1089,9 @@
     ],
     "sortOrder": 10000,
     "archetypeWeights": [
-      0.333333,
-      0.333333,
-      0.333334
+      0,
+      0,
+      0
     ]
   }
 ]

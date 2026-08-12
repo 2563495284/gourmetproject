@@ -24,14 +24,12 @@
     "sortOrder": 40
   },
   {
-    "id": "t_rust",
+    "id": "t_fresh",
     "name": "鲜",
-    "desc": "结算时\n+10 金币",
+    "desc": "优先出菜",
     "effectType": 7,
     "effectParam": [],
-    "effectValue": [
-      10
-    ],
+    "effectValue": [],
     "termId": "",
     "sortOrder": 60
   },
@@ -50,11 +48,11 @@
   {
     "id": "t_sour",
     "name": "酸",
-    "desc": "结算开始时，若在食谱中\n场上食物倍率 ×1.5",
+    "desc": "结算开始时，若仍在食谱中\n场上食物倍率 +0.5",
     "effectType": 10,
     "effectParam": [],
     "effectValue": [
-      1.5
+      0.5
     ],
     "termId": "",
     "sortOrder": 20
@@ -62,11 +60,11 @@
   {
     "id": "t_salty",
     "name": "咸",
-    "desc": "结算开始时，若在食谱中\n场上食物基础分数 +20",
+    "desc": "有 20% 概率额外结算 1 次",
     "effectType": 11,
     "effectParam": [],
     "effectValue": [
-      20
+      0.2
     ],
     "termId": "",
     "sortOrder": 30

@@ -1162,5 +1162,257 @@
     "autoEnd": true,
     "branchWeight": 0,
     "branchPageText": ""
+  },
+  {
+    "id": "opt_twin_peaks_coffee",
+    "eventId": "ev_twin_peaks_diner",
+    "parentId": "",
+    "text": "喝黑咖啡",
+    "resultText": "咖啡苦得恰到好处，你一下清醒过来，连夜整理了下一次营业安排。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_twin_peaks_coffee_reward",
+    "eventId": "ev_twin_peaks_diner",
+    "parentId": "opt_twin_peaks_coffee",
+    "text": "下两次营业金币+60%",
+    "resultText": "下两次营业基础金币×1.6。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      30
+    ],
+    "effectValues": [
+      0.6
+    ],
+    "effectParams": [
+      "Next:2"
+    ],
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_twin_peaks_pie",
+    "eventId": "ev_twin_peaks_diner",
+    "parentId": "",
+    "text": "点樱桃派",
+    "resultText": "樱桃派美味可口，一天的疲惫一扫而空",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_twin_peaks_pie_reward",
+    "eventId": "ev_twin_peaks_diner",
+    "parentId": "opt_twin_peaks_pie",
+    "text": "恢复1颗红心",
+    "resultText": "恢复1颗红心，不超过红心上限。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      37
+    ],
+    "effectValues": [
+      1
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_twin_peaks_log",
+    "eventId": "ev_twin_peaks_diner",
+    "parentId": "",
+    "text": "听听木头怎么说",
+    "resultText": "木头女士转述了一段古怪配方。你回去试了一夜，食谱里原有的菜竟都变得更好吃了。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_twin_peaks_log_reward",
+    "eventId": "ev_twin_peaks_diner",
+    "parentId": "opt_twin_peaks_log",
+    "text": "所有食物分数永久+10",
+    "resultText": "触发时食谱中已有的全部食物永久分数+10",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      31
+    ],
+    "effectValues": [
+      10
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_chuka_ichiban_fried_rice",
+    "eventId": "ev_chuka_ichiban_trial",
+    "parentId": "",
+    "text": "颠一锅黄金炒饭",
+    "resultText": "蛋液裹住每一粒米，揭盖时金光一闪。旅人把碗吃得干干净净，还在桌上留下赏钱。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_chuka_ichiban_fried_rice_reward",
+    "eventId": "ev_chuka_ichiban_trial",
+    "parentId": "opt_chuka_ichiban_fried_rice",
+    "text": "收下80金币赏钱",
+    "resultText": "旅人因黄金炒饭心满意足，留下80金币。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      1
+    ],
+    "effectValues": [
+      80
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_chuka_ichiban_mapo_tofu",
+    "eventId": "ev_chuka_ichiban_trial",
+    "parentId": "",
+    "text": "补齐麻婆豆腐的第六味",
+    "resultText": "你把大豆炒得酥香，让麻、辣、香、色、烫之外又添一层爽脆。小当家笑着点了点头。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_chuka_ichiban_mapo_tofu_reward",
+    "eventId": "ev_chuka_ichiban_trial",
+    "parentId": "opt_chuka_ichiban_mapo_tofu",
+    "text": "给1个食物添加随机风味",
+    "resultText": "从“酥”的灵感中举一反三，为食谱中1个食物添加随机风味。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      14
+    ],
+    "effectValues": [
+      1
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_chuka_ichiban_dumpling",
+    "eventId": "ev_chuka_ichiban_trial",
+    "parentId": "",
+    "text": "蒸一笼大宇宙烧卖",
+    "resultText": "一只烧卖占满了蒸笼，切开正好够全店分。众人围桌大笑，收档前的疲惫一扫而空。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_chuka_ichiban_dumpling_reward",
+    "eventId": "ev_chuka_ichiban_trial",
+    "parentId": "opt_chuka_ichiban_dumpling",
+    "text": "恢复1颗红心",
+    "resultText": "大家分享烧卖后重新打起精神。恢复1颗红心，不超过红心上限。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      37
+    ],
+    "effectValues": [
+      1
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   }
 ]

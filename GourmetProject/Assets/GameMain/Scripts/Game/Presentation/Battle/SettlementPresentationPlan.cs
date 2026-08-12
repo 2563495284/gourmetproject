@@ -40,7 +40,8 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             return kind switch
             {
-                ScoreLineKind.DishBase or ScoreLineKind.DishFlat or ScoreLineKind.FinalFlat => BaseScore,
+                ScoreLineKind.DishBase or ScoreLineKind.DishFlat or ScoreLineKind.FinalFlat
+                    or ScoreLineKind.ExtraSettlement => BaseScore,
                 ScoreLineKind.DishPermanentFlat => PermanentScore,
                 ScoreLineKind.DishMultiplierAdd => AddMultiplier,
                 ScoreLineKind.DishMultiplier or ScoreLineKind.FinalMultiplier => MultiplyMultiplier,
@@ -609,6 +610,7 @@ namespace GourmetProject.Game.Presentation.Battle
             public BigDouble Base;
             public BigDouble Flat;
             public BigDouble Multiplier = BigDouble.One;
+            public BigDouble ExtraContribution;
             public bool HasBase;
         }
 
@@ -653,7 +655,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     if (state.HasBase)
                     {
-                        raw += DishScore.CeilContribution(state.Base + state.Flat, state.Multiplier);
+                        raw += DishScore.CeilContribution(state.Base + state.Flat, state.Multiplier)
+                            + state.ExtraContribution;
                     }
                 }
 
@@ -693,6 +696,10 @@ namespace GourmetProject.Game.Presentation.Battle
                     state = EnsureDish(line.DishInstanceId);
                     state.Multiplier = line.After;
                     break;
+                case ScoreLineKind.ExtraSettlement:
+                    state = EnsureDish(line.DishInstanceId);
+                    state.ExtraContribution = line.After;
+                    break;
                 case ScoreLineKind.FinalFlat:
                     _finalFlat = line.After;
                     break;
@@ -711,7 +718,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 return BigDouble.Zero;
             }
 
-            return DishScore.CeilContribution(state.Base + state.Flat, state.Multiplier);
+            return DishScore.CeilContribution(state.Base + state.Flat, state.Multiplier)
+                + state.ExtraContribution;
         }
 
         private DishState EnsureDish(int dishInstanceId)

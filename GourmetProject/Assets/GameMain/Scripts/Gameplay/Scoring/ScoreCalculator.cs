@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using BreakInfinity;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
@@ -61,15 +62,34 @@ namespace GourmetProject.Gameplay.Scoring
 
             foreach (DishInstance dish in snapshot.DishesInDefaultOrder)
             {
-                ctx.BeginDish(dish);
-                RunDishPhase(ctx, entries, ScorePhase.BeforeDish, dish);
-                ctx.RecordDishBase();
-                RunDishPhase(ctx, entries, ScorePhase.DishBase, dish);
-                RunDishPhase(ctx, entries, ScorePhase.DishSkills, dish);
-                RunDishPhase(ctx, entries, ScorePhase.DishFlavor, dish);
-                RunDishPhase(ctx, entries, ScorePhase.Materials, dish);
-                RunDishPhase(ctx, entries, ScorePhase.AfterDish, dish);
-                ctx.CompleteDish();
+                BigDouble flatBaseline = ctx.CurrentFlatOf(dish);
+                BigDouble multiplierBaseline = ctx.GetCurrentMultiplier(dish);
+                RunDishSettlement(ctx, entries, dish, recordBase: true);
+
+                if (snapshot.RandomIntegerSelector == null)
+                {
+                    continue;
+                }
+
+                foreach (string flavorId in dish.FlavorIds)
+                {
+                    FlavorDef salty = snapshot.Db.GetFlavor(flavorId);
+                    if (salty?.EffectType != FlavorEffectType.ExtraSettlementChance)
+                    {
+                        continue;
+                    }
+
+                    int threshold = System.Math.Max(0, System.Math.Min(10000,
+                        (int)System.Math.Round(salty.EffectValue * 10000f)));
+                    if (threshold <= 0 || snapshot.RandomIntegerSelector(0, 9999) >= threshold)
+                    {
+                        continue;
+                    }
+
+                    ctx.BeginExtraSettlement(dish, flatBaseline, multiplierBaseline);
+                    RunDishSettlement(ctx, entries, dish, recordBase: false);
+                    ctx.CompleteExtraSettlement(dish, salty);
+                }
             }
 
             RunGlobalPhase(ctx, entries, ScorePhase.AfterAllDishes);
@@ -78,6 +98,26 @@ namespace GourmetProject.Gameplay.Scoring
             RunGlobalPhase(ctx, entries, ScorePhase.Final);
             ctx.EmitEvent(ScoreEventType.CalculationFinished, "结束分数结算");
             return ctx.ToResult();
+        }
+
+        private static void RunDishSettlement(
+            ScoreContext ctx,
+            IEnumerable<ScoreEffectEntry> entries,
+            DishInstance dish,
+            bool recordBase)
+        {
+            ctx.BeginDish(dish);
+            RunDishPhase(ctx, entries, ScorePhase.BeforeDish, dish);
+            if (recordBase)
+            {
+                ctx.RecordDishBase();
+            }
+            RunDishPhase(ctx, entries, ScorePhase.DishBase, dish);
+            RunDishPhase(ctx, entries, ScorePhase.DishSkills, dish);
+            RunDishPhase(ctx, entries, ScorePhase.DishFlavor, dish);
+            RunDishPhase(ctx, entries, ScorePhase.Materials, dish);
+            RunDishPhase(ctx, entries, ScorePhase.AfterDish, dish);
+            ctx.CompleteDish();
         }
 
         private List<ScoreEffectEntry> CollectEntries(ScoreSnapshot snapshot)

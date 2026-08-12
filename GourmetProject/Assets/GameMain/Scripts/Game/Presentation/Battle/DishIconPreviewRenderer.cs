@@ -254,7 +254,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ComposeFlavorIds(dish, flavorIds);
             int rotationIndex = rotationIndexOverride
                 ?? FlavorStainPalette.DisplayRotationIndex(
-                    dish.RotationIndex,
+                    0,
                     _flavorScratch);
             DishShape displayShape = dish.Shape.RotatedBy(rotationIndex);
             Vector2Int boardSize = new(displayShape.Width, displayShape.Height);

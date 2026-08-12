@@ -856,7 +856,9 @@ namespace GourmetProject.Game.UI.Battle
                 return false;
             }
 
-            if (item.EffectType == ItemEffectTypes.RerollAction && !_host.IsDailyActionSelectionActive)
+            if ((item.EffectType == ItemEffectTypes.RerollAction
+                    || item.EffectType == ItemEffectTypes.DoubleNextBusinessReward)
+                && !_host.IsDailyActionSelectionActive)
             {
                 reason = "只能在普通行动选择时使用。";
                 return false;

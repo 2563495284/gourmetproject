@@ -117,5 +117,8 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>能力：为下一次普通行动增加一层半日 Buff。</summary>
         bool AddNextActionHalfCostStack();
+
+        /// <summary>能力：为下一次日常或火热营业增加一层随机奖励翻倍。</summary>
+        bool AddNextBusinessRewardDoubleStack();
     }
 }

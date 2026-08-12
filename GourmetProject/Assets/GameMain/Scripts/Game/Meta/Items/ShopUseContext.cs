@@ -175,6 +175,17 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
+        public bool AddNextBusinessRewardDoubleStack()
+        {
+            if (Run == null)
+            {
+                return false;
+            }
+
+            Run.AddNextBusinessRewardDoubleStack();
+            return true;
+        }
+
         private IReadOnlyList<ActiveTarget> EnumerateCurrentAndFutureDays()
         {
             var targets = new List<ActiveTarget>();

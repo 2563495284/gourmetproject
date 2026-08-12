@@ -542,6 +542,9 @@ namespace GourmetProject.Game.UI.Battle
                     ScoreMultiplier = BigNumberSaveData.ToLegacyFloat(dishScore?.Multiplier ?? BigDouble.One),
                     ScoreMultiplierBig = BigNumberSaveData.From(dishScore?.Multiplier ?? BigDouble.One),
                     ScoreEffectiveCountAs = dishScore?.EffectiveCountAs ?? Math.Max(1, dish.EffectiveCountAs),
+                    ScoreExtraSettlementContribution = BigNumberSaveData.ToLegacyFloat(dishScore?.ExtraSettlementContribution ?? BigDouble.Zero),
+                    ScoreExtraSettlementContributionBig = BigNumberSaveData.From(dishScore?.ExtraSettlementContribution ?? BigDouble.Zero),
+                    ScoreExtraSettlementCount = dishScore?.ExtraSettlementCount ?? 0,
                 });
             }
 
@@ -664,7 +667,9 @@ namespace GourmetProject.Game.UI.Battle
                     SavedValue(dish.ScoreBaseValueBig, dish.ScoreBaseValue),
                     SavedValue(dish.ScoreFlatBonusBig, dish.ScoreFlatBonus),
                     SavedValue(dish.ScoreMultiplierBig, dish.ScoreMultiplier),
-                    dish.ScoreEffectiveCountAs));
+                    dish.ScoreEffectiveCountAs,
+                    SavedValue(dish.ScoreExtraSettlementContributionBig, dish.ScoreExtraSettlementContribution),
+                    dish.ScoreExtraSettlementCount));
             }
 
             return result;

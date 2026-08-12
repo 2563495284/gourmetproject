@@ -89,8 +89,7 @@ namespace GourmetProject.Tests.EditMode
                 0,
                 1f,
                 Array.Empty<string>(),
-                string.Empty,
-                allowRotate: false);
+                string.Empty);
             var database = new GameplayDatabase(
                 new[] { dish },
                 Array.Empty<SkillDef>(),
@@ -147,8 +146,7 @@ namespace GourmetProject.Tests.EditMode
                     0,
                     1f,
                     Array.Empty<string>(),
-                    string.Empty,
-                    allowRotate: false);
+                    string.Empty);
                 var instance = new DishInstance(
                     1,
                     dish,

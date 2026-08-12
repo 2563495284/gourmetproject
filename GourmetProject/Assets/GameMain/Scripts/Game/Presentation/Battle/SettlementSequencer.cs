@@ -653,7 +653,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 || kind == ScoreLineKind.DishFlat
                 || kind == ScoreLineKind.DishPermanentFlat
                 || kind == ScoreLineKind.DishMultiplier
-                || kind == ScoreLineKind.DishMultiplierAdd;
+                || kind == ScoreLineKind.DishMultiplierAdd
+                || kind == ScoreLineKind.ExtraSettlement;
         }
 
         private static SettlementCueKind CueKindFor(ScoreLine line)
@@ -2261,6 +2262,18 @@ namespace GourmetProject.Game.Presentation.Battle
                         sourceName: sourceName);
                     return true;
 
+                case ScoreLineKind.ExtraSettlement:
+                    cue = new SettlementCue(
+                        SettlementCueKind.Source,
+                        $"额外结算 {FormatSigned(line.Value)}",
+                        rise: 0.4f,
+                        duration: 0.9f,
+                        feedbackKind: SettlementDishFeedbackKind.GenericValueChanged,
+                        valueChange: DishValueChange.ExtraContribution(line.After),
+                        sourceName: sourceName,
+                        effectColor: SettlementColorPalette.BaseScore);
+                    return true;
+
                 case ScoreLineKind.FinalFlat:
                     cue = new SettlementCue(
                         SettlementCueKind.FinalModifier,
@@ -2702,6 +2715,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Base = 1,
             FlatBonus = 2,
             Multiplier = 3,
+            ExtraContribution = 4,
         }
 
         private readonly struct DishValueChange
@@ -2730,6 +2744,11 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 return new DishValueChange(DishValueChangeKind.Multiplier, value);
             }
+
+            public static DishValueChange ExtraContribution(BigDouble value)
+            {
+                return new DishValueChange(DishValueChangeKind.ExtraContribution, value);
+            }
         }
 
         private sealed class DishValuePlaybackAccumulator
@@ -2746,7 +2765,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
             private BigDouble Multiplier { get; set; }
 
-            public BigDouble Contribution => DishScore.CeilContribution(BaseScore + FlatBonus, Multiplier);
+            private BigDouble ExtraContribution { get; set; }
+
+            public BigDouble Contribution => DishScore.CeilContribution(BaseScore + FlatBonus, Multiplier)
+                + ExtraContribution;
 
             public void Apply(DishValueChange change)
             {
@@ -2760,6 +2782,9 @@ namespace GourmetProject.Game.Presentation.Battle
                         break;
                     case DishValueChangeKind.Multiplier:
                         Multiplier = change.Value;
+                        break;
+                    case DishValueChangeKind.ExtraContribution:
+                        ExtraContribution = change.Value;
                         break;
                 }
             }

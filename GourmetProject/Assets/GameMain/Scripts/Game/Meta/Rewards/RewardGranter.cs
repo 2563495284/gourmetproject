@@ -38,7 +38,90 @@ namespace GourmetProject.Game.Meta
                 baseGold,
                 fixedGroups,
                 specificGroup);
-            return new ItemRuntime(run).ModifyBattleRewardOffer(offer, actionContext, rng);
+            offer = new ItemRuntime(run).ModifyBattleRewardOffer(offer, actionContext, rng);
+            TryApplyRewardDouble(run, actionContext, context, package, goldRange, offer);
+            return offer;
+        }
+
+        private static void TryApplyRewardDouble(
+            GameRun run,
+            ActionExecutionContext actionContext,
+            RewardContext context,
+            cfg.RewardPackage package,
+            GoldRange goldRange,
+            RewardOffer offer)
+        {
+            if (run == null
+                || offer == null
+                || context.Rng == null
+                || run.NextBusinessRewardDoubleStacks <= 0
+                || actionContext?.IsDailyAction != true
+                || !IsNormalOrSuperBusiness(run.Tables, actionContext.Action))
+            {
+                return;
+            }
+
+            if (!run.TryConsumeNextBusinessRewardDoubleStack())
+            {
+                return;
+            }
+
+            RewardDoubleTarget target = (RewardDoubleTarget)(context.Rng.Range(0, 3) + 1);
+            var doubledContext = new RewardContext(
+                context.Tables,
+                context.Run,
+                context.Week,
+                context.Package,
+                context.Rng,
+                context.BaseGold,
+                context.ActionContext,
+                context.Progress,
+                consumeEventChoiceCountDelta: false,
+                applyChoiceCountModifiers: false);
+
+            switch (target)
+            {
+                case RewardDoubleTarget.BaseDish:
+                    offer.ConfigureDoubleReward(target);
+                    foreach (string groupId in FixedSlotGroupIds(package))
+                    {
+                        AddDoubledGroup(offer, RollSlotGroup(doubledContext, groupId));
+                    }
+                    break;
+                case RewardDoubleTarget.BaseGold:
+                    int rawBonusGold = context.Rng.Range(goldRange.Min, goldRange.Max + 1);
+                    offer.ConfigureDoubleReward(target, rawBonusGold);
+                    ResolveBusinessGoldAmounts(run, offer, actionContext);
+                    break;
+                case RewardDoubleTarget.Specific:
+                    offer.ConfigureDoubleReward(target);
+                    AddDoubledGroup(offer, RollSlotGroup(doubledContext, package?.SpecificSlotGroupId));
+                    break;
+            }
+        }
+
+        private static void AddDoubledGroup(RewardOffer offer, RewardChoiceGroup doubled)
+        {
+            if (offer == null || doubled == null || !doubled.HasChoices)
+            {
+                return;
+            }
+
+            offer.AddFixedGroup(new RewardChoiceGroup(
+                string.IsNullOrWhiteSpace(doubled.Title) ? "翻倍奖励" : $"翻倍奖励 · {doubled.Title}",
+                doubled.Choices,
+                doubled.RequiredChoiceCount,
+                description: doubled.Description,
+                ruleText: doubled.RuleText,
+                sourceSlotId: doubled.SourceSlotId));
+        }
+
+        private static bool IsNormalOrSuperBusiness(cfg.Tables tables, cfg.GameAction action)
+        {
+            cfg.Food food = FoodService.Resolve(tables, action);
+            return food != null
+                && (food.ActionKind == cfg.FoodActionKind.Normal
+                    || food.ActionKind == cfg.FoodActionKind.Super);
         }
 
         /// <summary>
@@ -196,6 +279,12 @@ namespace GourmetProject.Game.Meta
                 ApplyBaseGold(run, offer)
             };
 
+            string doubledGoldText = ApplyBonusGold(run, offer);
+            if (!string.IsNullOrEmpty(doubledGoldText))
+            {
+                lines.Add(doubledGoldText);
+            }
+
             string mainText = ApplyChoice(run, mainChoice);
             if (!string.IsNullOrEmpty(mainText))
             {
@@ -224,9 +313,51 @@ namespace GourmetProject.Game.Meta
                 return string.Empty;
             }
 
+            if (offer.GoldAmountsResolved)
+            {
+                run.Gold += offer.BaseGold;
+                offer.MarkBaseGoldClaimed();
+                return $"金币 +{offer.BaseGold}";
+            }
+
+            ResolveBusinessGoldAmounts(run, offer);
+            run.Gold += offer.BaseGold;
+            offer.MarkBaseGoldClaimed();
+            return $"金币 +{offer.BaseGold}";
+        }
+
+        public static string ApplyBonusGold(GameRun run, RewardOffer offer)
+        {
+            if (run == null || offer == null || !offer.HasBonusGold || offer.BonusGoldClaimed)
+            {
+                return string.Empty;
+            }
+
+            if (!offer.GoldAmountsResolved)
+            {
+                ResolveBusinessGoldAmounts(run, offer);
+            }
+
+            run.Gold += offer.BonusGold;
+            offer.MarkBonusGoldClaimed();
+            return $"翻倍金币 +{offer.BonusGold}";
+        }
+
+        private static void ResolveBusinessGoldAmounts(
+            GameRun run,
+            RewardOffer offer,
+            ActionExecutionContext actionContext = null)
+        {
+            if (run == null || offer == null || offer.GoldAmountsResolved)
+            {
+                return;
+            }
+
             // 营业基础金币按装饰品和消耗品修正（利润提成 / 克扣工钱）；星级评鉴和其它奖励不属于营业。
             var itemRuntime = new ItemRuntime(run);
-            cfg.Food food = FoodService.Resolve(run.Tables, run.LastActionContext?.Action);
+            cfg.Food food = FoodService.Resolve(
+                run.Tables,
+                (actionContext ?? run.LastActionContext)?.Action);
             bool isBusiness = food != null
                 && (food.ActionKind == cfg.FoodActionKind.Normal
                     || food.ActionKind == cfg.FoodActionKind.Super);
@@ -236,9 +367,15 @@ namespace GourmetProject.Game.Meta
                 ? run.CurrentWeekBusinessGoldMultiplier * run.ConsumeNextBusinessGoldMultiplier()
                 : (isBoss ? run.BossBaseGoldMultiplier : 1f);
             int gold = (int)System.Math.Round(
-                offer.BaseGold * itemMultiplier * eventMultiplier,
+                offer.RawBaseGold * itemMultiplier * eventMultiplier,
                 System.MidpointRounding.AwayFromZero);
             gold = System.Math.Max(0, gold);
+            int bonusGold = offer.HasBonusGold
+                ? (int)System.Math.Round(
+                    offer.RawBonusGold * itemMultiplier * eventMultiplier,
+                    System.MidpointRounding.AwayFromZero)
+                : 0;
+            bonusGold = System.Math.Max(0, bonusGold);
             if (isBusiness && System.Math.Abs(itemMultiplier - 1f) > 0.0001f)
             {
                 itemRuntime.FlashTriggered(m => System.Math.Abs(m.MealRewardGoldPct()) > 0.0001f);
@@ -250,10 +387,7 @@ namespace GourmetProject.Game.Meta
                 gold += eventBonusGold;
             }
 
-            run.Gold += gold;
-
-            offer.MarkBaseGoldClaimed();
-            return $"金币 +{gold}";
+            offer.LockGoldAmounts(gold, bonusGold);
         }
 
         public static string ApplyChoice(GameRun run, RewardChoice choice)
@@ -410,7 +544,10 @@ namespace GourmetProject.Game.Meta
             int requiredPickCount = choices.Count > 0
                 ? System.Math.Min(choices.Count, System.Math.Max(1, chosen.RequiredPickCount))
                 : 0;
-            if (requiredPickCount > 0 && chosen.Kind == cfg.RewardKind.DishChoice && context.Run != null)
+            if (requiredPickCount > 0
+                && context.ApplyChoiceCountModifiers
+                && chosen.Kind == cfg.RewardKind.DishChoice
+                && context.Run != null)
             {
                 requiredPickCount = System.Math.Min(
                     choices.Count,

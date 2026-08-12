@@ -155,5 +155,39 @@
     "slotEmptyProbability": 0,
     "slotRewardSlotIds": [],
     "slotRewardProbabilities": []
+  },
+  {
+    "id": "ev_twin_peaks_diner",
+    "name": "双R餐厅的夜晚",
+    "desc": "雨夜，你走进双R餐厅。黑咖啡刚煮好，樱桃派只剩最后一块；角落里的木头女士似乎有话要说。",
+    "eventTypes": [
+      0,
+      2
+    ],
+    "preconditions": "",
+    "weight": 1,
+    "repeatable": true,
+    "bgSprite": "",
+    "resultText": "",
+    "slotEmptyProbability": 0,
+    "slotRewardSlotIds": [],
+    "slotRewardProbabilities": []
+  },
+  {
+    "id": "ev_chuka_ichiban_trial",
+    "name": "最后一灶也会发光",
+    "desc": "阳泉酒家收档前又来了一桌客人。小当家把最后一眼灶火让给你：“用哪道料理招待他们？”",
+    "eventTypes": [
+      0,
+      2
+    ],
+    "preconditions": "",
+    "weight": 1,
+    "repeatable": true,
+    "bgSprite": "",
+    "resultText": "",
+    "slotEmptyProbability": 0,
+    "slotRewardSlotIds": [],
+    "slotRewardProbabilities": []
   }
 ]

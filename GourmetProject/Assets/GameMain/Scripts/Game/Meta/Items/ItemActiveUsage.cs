@@ -102,6 +102,7 @@ namespace GourmetProject.Game.Meta
             switch (effectType)
             {
                 case ItemEffectTypes.RerollAction:
+                case ItemEffectTypes.DoubleNextBusinessReward:
                 case ItemEffectTypes.ResetBossDebuff:
                 case ItemEffectTypes.TimelineExecuteNext:
                 case ItemEffectTypes.TimelineExecuteFuture:
@@ -122,6 +123,7 @@ namespace GourmetProject.Game.Meta
             switch (effectType)
             {
                 case ItemEffectTypes.RerollAction:
+                case ItemEffectTypes.DoubleNextBusinessReward:
                     return ctx == ActiveUseContextKind.ActionSelect;
                 case ItemEffectTypes.ResetBossDebuff:
                     return ctx == ActiveUseContextKind.ActionSelect

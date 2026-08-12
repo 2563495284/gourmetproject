@@ -53,7 +53,7 @@ namespace cfg
         /// </summary>
         PermanentAddFlat = 10,
         /// <summary>
-        /// 目标&quot;视为食物数&quot;+X*count
+        /// 目标有效份数+X*count
         /// </summary>
         AddCountAs = 12,
         /// <summary>

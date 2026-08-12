@@ -451,8 +451,7 @@ namespace GourmetProject.Tests.EditMode
                 0,
                 1f,
                 Array.Empty<string>(),
-                string.Empty,
-                false);
+                string.Empty);
             var slot = new RecipeBookSlot(def.Id);
             slot.AddScoreFlat(60f);
             slot.MultiplyScore(1.5f);

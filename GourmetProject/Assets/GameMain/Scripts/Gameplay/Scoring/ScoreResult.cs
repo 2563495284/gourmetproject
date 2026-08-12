@@ -15,7 +15,9 @@ namespace GourmetProject.Gameplay.Scoring
             BigDouble baseValue,
             BigDouble flatBonus,
             BigDouble multiplier,
-            int effectiveCountAs = 1)
+            int effectiveCountAs = 1,
+            BigDouble extraSettlementContribution = default,
+            int extraSettlementCount = 0)
         {
             DishInstanceId = dishInstanceId;
             DishId = dishId;
@@ -23,6 +25,8 @@ namespace GourmetProject.Gameplay.Scoring
             FlatBonus = flatBonus;
             Multiplier = multiplier;
             EffectiveCountAs = System.Math.Max(1, effectiveCountAs);
+            ExtraSettlementContribution = extraSettlementContribution;
+            ExtraSettlementCount = System.Math.Max(0, extraSettlementCount);
         }
 
         public int DishInstanceId { get; }
@@ -38,8 +42,13 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>本次结算使用的实际「视为食物数」（含 live AddCountAs 与全局加成）。</summary>
         public int EffectiveCountAs { get; }
 
-        /// <summary>本食物最终贡献 = (美味值 + 加法) × 倍率 后向上取整。</summary>
-        public BigDouble Contribution => CeilContribution(BaseValue + FlatBonus, Multiplier);
+        public BigDouble ExtraSettlementContribution { get; }
+
+        public int ExtraSettlementCount { get; }
+
+        /// <summary>本食物最终贡献 = 主结算向上取整贡献 + 各次咸味独立额外结算贡献。</summary>
+        public BigDouble Contribution => CeilContribution(BaseValue + FlatBonus, Multiplier)
+            + ExtraSettlementContribution;
 
         public static BigDouble CeilContribution(BigDouble score, BigDouble multiplier)
         {

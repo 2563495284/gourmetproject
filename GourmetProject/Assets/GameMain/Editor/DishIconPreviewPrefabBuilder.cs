@@ -71,7 +71,6 @@ namespace GourmetProject.Editor
                     1f,
                     Array.Empty<string>(),
                     string.Empty,
-                    false,
                     baseId: "donut");
 
                 preview.gameObject.SetActive(true);

@@ -111,8 +111,7 @@ namespace GourmetProject.Tests.PlayMode
                 0,
                 1f,
                 System.Array.Empty<string>(),
-                "t_sour",
-                allowRotate: false);
+                "t_sour");
             string[] flavors = { "t_sour", "t_spicy" };
             RenderTexture renderTexture = null;
             Texture2D readback = null;

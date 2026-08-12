@@ -23,6 +23,8 @@ namespace GourmetProject.Game.Run
     /// </summary>
     public sealed class GameRun : IPreconditionContext
     {
+        public const int MaxQueuedBusinessGoldEffects = 100;
+
         public event System.Action<RunContentAcquisition> ContentAcquired;
         private readonly cfg.Tables _tables;
 
@@ -95,6 +97,7 @@ namespace GourmetProject.Game.Run
         private PendingGenericRewardContinuationKind _pendingGenericRewardContinuation;
         private int _activeUseIndex;
         private int _nextDailyActionHalfCostStacks;
+        private int _nextBusinessRewardDoubleStacks;
         private readonly List<string> _pendingExtraTimelineNodeIds = new List<string>();
         private int _interestThreshold;
         private int _interestGoldPer;
@@ -118,7 +121,7 @@ namespace GourmetProject.Game.Run
         private int _eventChoiceCountDelta;
         private float _nextFoodTargetScoreHiddenOffset;
         private int _nextMealRewardGold;
-        private float _nextBusinessGoldMultiplier = 1f;
+        private readonly List<float> _nextBusinessGoldMultipliers = new List<float>();
         private float _currentWeekBusinessGoldMultiplier = 1f;
         private int _currentWeekBusinessGoldWeek;
         private float _bossTargetScorePct;
@@ -632,13 +635,13 @@ namespace GourmetProject.Game.Run
 
         public void AddBusinessGoldPct(float pct, bool nextBusiness)
         {
-            float multiplier = System.Math.Max(0f, 1f + pct);
             if (nextBusiness)
             {
-                _nextBusinessGoldMultiplier *= multiplier;
+                AddBusinessGoldPct(pct, 1);
                 return;
             }
 
+            float multiplier = System.Math.Max(0f, 1f + pct);
             if (_currentWeekBusinessGoldWeek != WeekIndex)
             {
                 _currentWeekBusinessGoldWeek = WeekIndex;
@@ -648,10 +651,37 @@ namespace GourmetProject.Game.Run
             _currentWeekBusinessGoldMultiplier *= multiplier;
         }
 
+        /// <summary>
+        /// 为接下来指定次数的营业分别叠加基础金币倍率。不同持续次数的效果按每一场独立叠加。
+        /// </summary>
+        public void AddBusinessGoldPct(float pct, int nextBusinessCount)
+        {
+            if (nextBusinessCount <= 0 || nextBusinessCount > MaxQueuedBusinessGoldEffects)
+            {
+                return;
+            }
+
+            float multiplier = System.Math.Max(0f, 1f + pct);
+            while (_nextBusinessGoldMultipliers.Count < nextBusinessCount)
+            {
+                _nextBusinessGoldMultipliers.Add(1f);
+            }
+
+            for (int index = 0; index < nextBusinessCount; index++)
+            {
+                _nextBusinessGoldMultipliers[index] *= multiplier;
+            }
+        }
+
         public float ConsumeNextBusinessGoldMultiplier()
         {
-            float multiplier = System.Math.Max(0f, _nextBusinessGoldMultiplier);
-            _nextBusinessGoldMultiplier = 1f;
+            if (_nextBusinessGoldMultipliers.Count == 0)
+            {
+                return 1f;
+            }
+
+            float multiplier = System.Math.Max(0f, _nextBusinessGoldMultipliers[0]);
+            _nextBusinessGoldMultipliers.RemoveAt(0);
             return multiplier;
         }
 
@@ -889,6 +919,8 @@ namespace GourmetProject.Game.Run
 
         public int NextDailyActionHalfCostStacks => _nextDailyActionHalfCostStacks;
 
+        public int NextBusinessRewardDoubleStacks => _nextBusinessRewardDoubleStacks;
+
         public IReadOnlyList<string> PendingExtraTimelineNodeIds => _pendingExtraTimelineNodeIds;
 
         public void AddNextDailyActionHalfCostStack()
@@ -904,6 +936,22 @@ namespace GourmetProject.Game.Run
             }
 
             _nextDailyActionHalfCostStacks--;
+            return true;
+        }
+
+        public void AddNextBusinessRewardDoubleStack()
+        {
+            _nextBusinessRewardDoubleStacks++;
+        }
+
+        public bool TryConsumeNextBusinessRewardDoubleStack()
+        {
+            if (_nextBusinessRewardDoubleStacks <= 0)
+            {
+                return false;
+            }
+
+            _nextBusinessRewardDoubleStacks--;
             return true;
         }
 
@@ -2166,6 +2214,7 @@ namespace GourmetProject.Game.Run
                 RetainedHappyCakeLayers = _retainedHappyCakeLayers,
                 ActiveUseIndex = _activeUseIndex,
                 NextDailyActionHalfCostStacks = _nextDailyActionHalfCostStacks,
+                NextBusinessRewardDoubleStacks = _nextBusinessRewardDoubleStacks,
                 ActionRerollCount = _actionRerollCount,
                 LoanDebt = _loanDebt,
                 MealBonusRemaining = _mealBonusRemaining,
@@ -2180,7 +2229,10 @@ namespace GourmetProject.Game.Run
                 EventChoiceCountDelta = _eventChoiceCountDelta,
                 NextFoodTargetScoreHiddenOffset = _nextFoodTargetScoreHiddenOffset,
                 NextMealRewardGold = _nextMealRewardGold,
-                NextBusinessGoldMultiplier = _nextBusinessGoldMultiplier,
+                NextBusinessGoldMultiplier = _nextBusinessGoldMultipliers.Count > 0
+                    ? _nextBusinessGoldMultipliers[0]
+                    : 1f,
+                NextBusinessGoldMultipliers = new List<float>(_nextBusinessGoldMultipliers),
                 CurrentWeekBusinessGoldMultiplier = _currentWeekBusinessGoldMultiplier,
                 CurrentWeekBusinessGoldWeek = _currentWeekBusinessGoldWeek,
                 BossTargetScorePct = _bossTargetScorePct,
@@ -2286,6 +2338,9 @@ namespace GourmetProject.Game.Run
             run._retainedHappyCakeLayers = System.Math.Max(0, data.RetainedHappyCakeLayers);
             run._activeUseIndex = data.ActiveUseIndex;
             run._nextDailyActionHalfCostStacks = System.Math.Max(0, data.NextDailyActionHalfCostStacks);
+            run._nextBusinessRewardDoubleStacks = System.Math.Max(
+                System.Math.Max(0, data.NextBusinessRewardDoubleStacks),
+                System.Math.Max(0, data.NextBusinessSpecificRewardDoubleStacks));
             run._actionRerollCount = data.ActionRerollCount >= 0
                 ? data.ActionRerollCount
                 : System.Math.Max(0, tables.TbGameBase.InitialActionRerollCount);
@@ -2302,7 +2357,22 @@ namespace GourmetProject.Game.Run
             run._eventChoiceCountDelta = data.EventChoiceCountDelta;
             run._nextFoodTargetScoreHiddenOffset = data.NextFoodTargetScoreHiddenOffset;
             run._nextMealRewardGold = data.NextMealRewardGold;
-            run._nextBusinessGoldMultiplier = System.Math.Max(0f, data.NextBusinessGoldMultiplier);
+            if (data.NextBusinessGoldMultipliers != null && data.NextBusinessGoldMultipliers.Count > 0)
+            {
+                int multiplierCount = System.Math.Min(
+                    data.NextBusinessGoldMultipliers.Count,
+                    MaxQueuedBusinessGoldEffects);
+                for (int index = 0; index < multiplierCount; index++)
+                {
+                    run._nextBusinessGoldMultipliers.Add(
+                        System.Math.Max(0f, data.NextBusinessGoldMultipliers[index]));
+                }
+            }
+            else if (System.Math.Abs(data.NextBusinessGoldMultiplier - 1f) > 0.0001f)
+            {
+                // 兼容只保存单次倍率的旧存档。
+                run._nextBusinessGoldMultipliers.Add(System.Math.Max(0f, data.NextBusinessGoldMultiplier));
+            }
             run._currentWeekBusinessGoldMultiplier = System.Math.Max(0f, data.CurrentWeekBusinessGoldMultiplier);
             run._currentWeekBusinessGoldWeek = data.CurrentWeekBusinessGoldWeek;
             run._bossTargetScorePct = data.BossTargetScorePct;
@@ -2631,7 +2701,13 @@ namespace GourmetProject.Game.Run
             return new RewardOfferSaveData
             {
                 BaseGold = offer.BaseGold,
+                RawBaseGold = offer.RawBaseGold,
+                RawBonusGold = offer.RawBonusGold,
+                BonusGold = offer.BonusGold,
+                DoubleRewardTarget = offer.DoubleRewardTarget,
+                GoldAmountsResolved = offer.GoldAmountsResolved,
                 BaseGoldClaimed = offer.BaseGoldClaimed,
+                BonusGoldClaimed = offer.BonusGoldClaimed,
                 MainChoiceIndex = offer.MainChoiceIndex,
                 ExtraChoiceIndex = offer.ExtraChoiceIndex,
                 BonusChoiceIndex = offer.BonusChoiceIndex,
@@ -2732,7 +2808,13 @@ namespace GourmetProject.Game.Run
                     data.BaseGold,
                     FromGroupSaveData(data.FixedGroups),
                     FromGroupSaveData(data.SpecificGroup),
-                    data.BaseGoldClaimed);
+                    data.BaseGoldClaimed,
+                    data.DoubleRewardTarget,
+                    ResolveRawBaseGold(data),
+                    data.RawBonusGold,
+                    data.BonusGold,
+                    data.BonusGoldClaimed,
+                    data.GoldAmountsResolved);
             }
 
             return new RewardOffer(
@@ -2753,6 +2835,19 @@ namespace GourmetProject.Game.Run
                     data.MainChoiceIndices,
                     data.ExtraChoiceIndices,
                     data.BonusChoiceIndices);
+        }
+
+        private static int ResolveRawBaseGold(RewardOfferSaveData data)
+        {
+            if (data == null)
+            {
+                return 0;
+            }
+
+            // 旧存档只保存 BaseGold；新存档在生成奖励时同时保存倍率前原值。
+            return data.GoldAmountsResolved || data.RawBaseGold > 0 || data.BaseGold == 0
+                ? data.RawBaseGold
+                : data.BaseGold;
         }
 
         private static List<RewardChoiceGroup> FromGroupSaveData(List<RewardChoiceGroupSaveData> groups)
@@ -2909,14 +3004,14 @@ namespace GourmetProject.Game.Run
                 result.Dishes.Add(new PendingRewardBattleDishSaveData
                 {
                     Id = dish.Id,
-                    DishId = dish.DishId,
+                    DishId = ContentIdAliases.NormalizeDishId(dish.DishId),
                     OriginX = dish.OriginX,
                     OriginY = dish.OriginY,
                     Rotation = dish.Rotation,
                     SourceSlotIndex = dish.SourceSlotIndex,
                     SourceDishIndex = dish.SourceDishIndex,
                     SkillIds = dish.SkillIds != null ? new List<string>(dish.SkillIds) : new List<string>(),
-                    FlavorIds = dish.FlavorIds != null ? new List<string>(dish.FlavorIds) : new List<string>(),
+                    FlavorIds = ContentIdAliases.NormalizeFlavorIds(dish.FlavorIds),
                     RuntimeCountAsBonus = dish.RuntimeCountAsBonus,
                     PermanentFlatBonus = dish.PermanentFlatBonus,
                     PermanentFlatBonusBig = dish.PermanentFlatBonusBig?.Clone(),
@@ -2939,6 +3034,9 @@ namespace GourmetProject.Game.Run
                     ScoreMultiplier = dish.ScoreMultiplier,
                     ScoreMultiplierBig = dish.ScoreMultiplierBig?.Clone(),
                     ScoreEffectiveCountAs = dish.ScoreEffectiveCountAs,
+                    ScoreExtraSettlementContribution = dish.ScoreExtraSettlementContribution,
+                    ScoreExtraSettlementContributionBig = dish.ScoreExtraSettlementContributionBig?.Clone(),
+                    ScoreExtraSettlementCount = dish.ScoreExtraSettlementCount,
                 });
             }
 

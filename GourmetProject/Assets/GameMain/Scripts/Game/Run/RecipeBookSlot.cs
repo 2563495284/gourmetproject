@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using BreakInfinity;
+using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Game.Run
 {
@@ -17,7 +18,7 @@ namespace GourmetProject.Game.Run
 
         public RecipeBookSlot(string dishId)
         {
-            DishId = dishId ?? string.Empty;
+            DishId = ContentIdAliases.NormalizeDishId(dishId) ?? string.Empty;
         }
 
         public string DishId { get; private set; }
@@ -37,7 +38,7 @@ namespace GourmetProject.Game.Run
         {
             if (!string.IsNullOrEmpty(dishId))
             {
-                DishId = dishId;
+                DishId = ContentIdAliases.NormalizeDishId(dishId);
             }
         }
 
@@ -54,7 +55,7 @@ namespace GourmetProject.Game.Run
                 _extraFlavorIds.RemoveAt(0);
             }
 
-            _extraFlavorIds.Add(flavorId);
+            _extraFlavorIds.Add(ContentIdAliases.NormalizeFlavorId(flavorId));
         }
 
         public bool RemoveOldestFlavor()
@@ -81,7 +82,7 @@ namespace GourmetProject.Game.Run
                 return true;
             }
 
-            return _extraFlavorIds.Remove(flavorId);
+            return _extraFlavorIds.Remove(ContentIdAliases.NormalizeFlavorId(flavorId));
         }
 
         public bool ReplaceFlavor(string toFlavorId)
@@ -93,11 +94,11 @@ namespace GourmetProject.Game.Run
 
             if (_extraFlavorIds.Count == 0)
             {
-                _extraFlavorIds.Add(toFlavorId);
+                _extraFlavorIds.Add(ContentIdAliases.NormalizeFlavorId(toFlavorId));
             }
             else
             {
-                _extraFlavorIds[_extraFlavorIds.Count - 1] = toFlavorId;
+                _extraFlavorIds[_extraFlavorIds.Count - 1] = ContentIdAliases.NormalizeFlavorId(toFlavorId);
             }
 
             return true;

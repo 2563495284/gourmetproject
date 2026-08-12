@@ -69,6 +69,72 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void DiningTable_UsesOnlyCanonicalDishOrientation()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "XX" });
+            DishDef dish = DishWithShape("horizontal", shape);
+            var horizontalTable = new DiningTable(2, 1);
+
+            List<Placement> placements = horizontalTable.FindValidPlacements(dish);
+
+            Assert.That(placements, Has.Count.EqualTo(1));
+            Assert.That(placements[0].RotationIndex, Is.Zero);
+            Assert.That(placements[0].Orientation.Width, Is.EqualTo(2));
+            Assert.That(placements[0].Orientation.Height, Is.EqualTo(1));
+            Assert.That(new DiningTable(1, 2).FindValidPlacements(dish), Is.Empty);
+        }
+
+        [Test]
+        public void GenerateDishAt_UsesCanonicalShapeAndDoesNotTryOtherOrientations()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "XX" });
+            DishDef dish = DishWithShape("horizontal", shape);
+            var horizontalTable = new DiningTable(2, 1);
+            var horizontalSession = new BattleSession(
+                horizontalTable,
+                Database(dishes: new[] { dish }),
+                new Xoshiro256SS(11UL),
+                Array.Empty<RecipeSlot>(),
+                requiredScore: 0);
+
+            Assert.That(horizontalSession.GenerateDishAt(dish.Id, new GridPos(0, 0)), Is.True);
+            DishInstance generated = horizontalTable.Dishes.Single();
+            Assert.That(generated.Placement.RotationIndex, Is.Zero);
+            Assert.That(generated.Placement.Orientation.Width, Is.EqualTo(2));
+            Assert.That(generated.Placement.Orientation.Height, Is.EqualTo(1));
+
+            var verticalSession = new BattleSession(
+                new DiningTable(1, 2),
+                Database(dishes: new[] { dish }),
+                new Xoshiro256SS(12UL),
+                Array.Empty<RecipeSlot>(),
+                requiredScore: 0);
+
+            Assert.That(verticalSession.GenerateDishAt(dish.Id, new GridPos(0, 0)), Is.False);
+        }
+
+        [Test]
+        public void NumbRotation_RotatesCanonicalShapeCounterClockwise()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "XX" });
+            DishDef dish = DishWithShape("horizontal", shape);
+            var table = new DiningTable(1, 2);
+
+            Assert.That(table.FindValidPlacements(dish), Is.Empty);
+
+            List<Placement> placements = table.FindValidPlacementsRotatedCcw(dish, ccwSteps: 1);
+
+            Assert.That(placements, Has.Count.EqualTo(1));
+            Assert.That(placements[0].RotationIndex, Is.EqualTo(3));
+            Assert.That(placements[0].Orientation.Width, Is.EqualTo(1));
+            Assert.That(placements[0].Orientation.Height, Is.EqualTo(2));
+
+            List<Placement> wrappedPlacements = table.FindValidPlacementsRotatedCcw(dish, ccwSteps: 5);
+            Assert.That(wrappedPlacements, Has.Count.EqualTo(1));
+            Assert.That(wrappedPlacements[0].RotationIndex, Is.EqualTo(3));
+        }
+
+        [Test]
         public void ActiveAddCountAs_AffectsOnlyRulesAfterItExecutes()
         {
             ScoreResult result = CalculateCountAsSequence();
@@ -78,11 +144,11 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void FermentedRiceBalls_AddsOccupiedCellsMinusOne_OnTopOfStaticServings()
+        public void PurpleRicePudding_AddsOccupiedCellsMinusOne_OnTopOfStaticServings()
         {
-            const string skillId = "skill_fermented_rice_balls";
+            const string skillId = "sk_purple_rice_pudding";
             SkillRuleDef rule = RuleFull(
-                "fermented_rice_balls",
+                "purple_rice_pudding",
                 skillId,
                 SkillConditionType.None,
                 SkillScope.Self,
@@ -95,18 +161,18 @@ namespace GourmetProject.Tests.EditMode
                 1f,
                 "target:occupiedcells;offset:-1");
             var skill = Skill(skillId, rule);
-            DishInstance fermentedRiceBalls = Dish(1, "fermented_rice_balls", 0, 0, new[] { skillId }, Array.Empty<string>());
+            DishInstance purpleRicePudding = Dish(1, "purple_rice_pudding", 0, 0, new[] { skillId }, Array.Empty<string>());
             DishShape threeCells = DishShape.FromRows(new[] { "XXX" });
             DishInstance mango = Dish(2, "mango", 0, 1, Array.Empty<string>(), Array.Empty<string>(), threeCells, countAs: 8);
             var table = new DiningTable(4, 1);
-            table.Place(fermentedRiceBalls);
+            table.Place(purpleRicePudding);
             table.Place(mango);
 
             ScoreResult result = new ScoreCalculator().Calculate(
                 table,
-                Database(dishes: new[] { fermentedRiceBalls.Def, mango.Def }, skills: new[] { skill }));
+                Database(dishes: new[] { purpleRicePudding.Def, mango.Def }, skills: new[] { skill }));
 
-            Assert.That(result.DishScores.Single(score => score.DishInstanceId == fermentedRiceBalls.Id).EffectiveCountAs, Is.EqualTo(1));
+            Assert.That(result.DishScores.Single(score => score.DishInstanceId == purpleRicePudding.Id).EffectiveCountAs, Is.EqualTo(1));
             Assert.That(result.DishScores.Single(score => score.DishInstanceId == mango.Id).EffectiveCountAs, Is.EqualTo(10));
         }
 
@@ -788,6 +854,20 @@ namespace GourmetProject.Tests.EditMode
                 string.Empty);
         }
 
+        private static DishDef DishWithShape(string id, DishShape shape)
+        {
+            return new DishDef(
+                id,
+                id,
+                0,
+                shape,
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty);
+        }
+
         private static DishInstance Dish(
             int instanceId,
             string id,
@@ -810,7 +890,6 @@ namespace GourmetProject.Tests.EditMode
                 1f,
                 skillIds,
                 string.Empty,
-                allowRotate: true,
                 countAs: countAs);
             return new DishInstance(
                 instanceId,

@@ -153,7 +153,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
     public sealed class CarbMealBossDebuffModel : BossDebuffModel
     {
         public override void ApplyToBattle(BattleSession session)
-            => session.ConfigureInsertedDishSequence("custard_bun", windowSize: 5, countPerWindow: 1);
+            => session.ConfigureInsertedDishSequence("mantou", windowSize: 5, countPerWindow: 1);
     }
 
     [Preserve]

@@ -116,11 +116,32 @@ namespace GourmetProject.Game.Meta
                     return CollectInterest(run, effectParam);
 
                 case cfg.EffectType.AddBusinessGoldPct:
-                    bool nextBusiness = string.Equals(effectParam, "Next", StringComparison.OrdinalIgnoreCase);
-                    run.AddBusinessGoldPct(effectValue, nextBusiness);
-                    return nextBusiness
-                        ? $"下一次营业基础金币 {FormatMultiplier(effectValue)}。"
-                        : $"本周后续营业基础金币 {FormatMultiplier(effectValue)}。";
+                    if (TryParseNextBusinessCount(effectParam, out int nextBusinessCount))
+                    {
+                        run.AddBusinessGoldPct(effectValue, nextBusinessCount);
+                        return nextBusinessCount == 1
+                            ? $"下一次营业基础金币 {FormatMultiplier(effectValue)}。"
+                            : $"后续 {nextBusinessCount} 次营业基础金币 {FormatMultiplier(effectValue)}。";
+                    }
+
+                    if (string.Equals(effectParam, "CurrentWeek", StringComparison.OrdinalIgnoreCase))
+                    {
+                        run.AddBusinessGoldPct(effectValue, nextBusiness: false);
+                        return $"本周后续营业基础金币 {FormatMultiplier(effectValue)}。";
+                    }
+
+                    return $"营业金币效果参数无效：{effectParam}。";
+
+                case cfg.EffectType.RestoreHearts:
+                    if (value <= 0)
+                    {
+                        return "未恢复红心。";
+                    }
+
+                    int beforeHearts = run.HeartsRemaining;
+                    int afterHearts = run.RestoreHearts(value);
+                    int restoredHearts = afterHearts - beforeHearts;
+                    return restoredHearts > 0 ? $"恢复{restoredHearts}颗红心。" : "红心已满。";
 
                 case cfg.EffectType.AddAllRecipeScoreFlat:
                     return AddAllRecipeScoreFlat(run, effectValue);
@@ -182,6 +203,31 @@ namespace GourmetProject.Game.Meta
             }
 
             return $"隐藏分修正 {FormatSigned(amount)}（{PurposeLabel(param)}）。";
+        }
+
+        private static bool TryParseNextBusinessCount(string param, out int count)
+        {
+            if (string.Equals(param, "Next", StringComparison.OrdinalIgnoreCase))
+            {
+                count = 1;
+                return true;
+            }
+
+            const string prefix = "Next:";
+            if (param.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(
+                    param.Substring(prefix.Length),
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out count)
+                && count > 0
+                && count <= GameRun.MaxQueuedBusinessGoldEffects)
+            {
+                return true;
+            }
+
+            count = 0;
+            return false;
         }
 
         private static IEnumerable<HiddenScorePurpose> ResolvePurposes(string param)

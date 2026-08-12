@@ -21,6 +21,10 @@ namespace cfg
         Rare = 2,
         Epic = 3,
         Legendary = 4,
+        /// <summary>
+        /// 诅咒品质
+        /// </summary>
+        Negative = 5,
     }
 
 } 

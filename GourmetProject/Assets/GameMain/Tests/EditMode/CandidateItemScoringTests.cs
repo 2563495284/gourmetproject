@@ -280,7 +280,6 @@ namespace GourmetProject.Tests.EditMode
                 1f,
                 skills ?? Array.Empty<string>(),
                 string.Empty,
-                allowRotate: false,
                 baseId: baseId);
             return new DishInstance(
                 instanceId,

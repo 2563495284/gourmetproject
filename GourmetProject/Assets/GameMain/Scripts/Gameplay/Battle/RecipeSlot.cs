@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using BreakInfinity;
+using GourmetProject.Gameplay.Model;
 using System.Linq;
 
 namespace GourmetProject.Gameplay.Battle
@@ -112,8 +113,8 @@ namespace GourmetProject.Gameplay.Battle
             int sourceBookIndex = -1,
             int sourceDishIndex = -1)
         {
-            DishId = dishId ?? string.Empty;
-            _extraFlavorIds = extraFlavorIds != null ? new List<string>(extraFlavorIds) : new List<string>();
+            DishId = ContentIdAliases.NormalizeDishId(dishId) ?? string.Empty;
+            _extraFlavorIds = ContentIdAliases.NormalizeFlavorIds(extraFlavorIds);
             _extraSkillIds = extraSkillIds != null ? new List<string>(extraSkillIds) : new List<string>();
             ScoreMultiplier = scoreMultiplier > BigDouble.Zero ? scoreMultiplier : BigDouble.One;
             ScoreFlatBonus = scoreFlatBonus;

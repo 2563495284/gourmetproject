@@ -26,7 +26,6 @@ public sealed partial class DishVariant : Luban.BeanBase
         { if(!_buf["flavoredBaseWeight"].IsNumber) { throw new SerializationException(); }  FlavoredBaseWeight = _buf["flavoredBaseWeight"]; }
         { if(!_buf["flavoredPrice"].IsNumber) { throw new SerializationException(); }  FlavoredPrice = _buf["flavoredPrice"]; }
         { if(!_buf["flavoredHiddenRange"].IsObject) { throw new SerializationException(); }  FlavoredHiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["flavoredHiddenRange"]);  }
-        { if(!_buf["rotation"].IsNumber) { throw new SerializationException(); }  Rotation = (DishRotation)_buf["rotation"].AsInt; }
     }
 
     public static DishVariant DeserializeDishVariant(JSONNode _buf)
@@ -70,10 +69,6 @@ public sealed partial class DishVariant : Luban.BeanBase
     /// 风味变体共用出现隐藏分区间(单元格:min,max)
     /// </summary>
     public readonly HiddenRange FlavoredHiddenRange;
-    /// <summary>
-    /// 共用固定旋转朝向(整格四向)
-    /// </summary>
-    public readonly DishRotation Rotation;
    
     public const int __ID__ = -26435221;
     public override int GetTypeId() => __ID__;
@@ -96,7 +91,6 @@ public sealed partial class DishVariant : Luban.BeanBase
         + "flavoredBaseWeight:" + FlavoredBaseWeight + ","
         + "flavoredPrice:" + FlavoredPrice + ","
         + "flavoredHiddenRange:" + FlavoredHiddenRange + ","
-        + "rotation:" + Rotation + ","
         + "}";
     }
 }

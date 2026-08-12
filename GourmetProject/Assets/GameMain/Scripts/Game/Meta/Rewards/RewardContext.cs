@@ -17,7 +17,8 @@ namespace GourmetProject.Game.Meta
             int baseGold = 0,
             ActionExecutionContext actionContext = null,
             MetaProgressSaveData progress = null,
-            bool consumeEventChoiceCountDelta = true)
+            bool consumeEventChoiceCountDelta = true,
+            bool applyChoiceCountModifiers = true)
         {
             Tables = tables;
             Run = run;
@@ -28,6 +29,7 @@ namespace GourmetProject.Game.Meta
             ActionContext = actionContext;
             Progress = progress;
             ConsumeEventChoiceCountDelta = consumeEventChoiceCountDelta;
+            ApplyChoiceCountModifiers = applyChoiceCountModifiers;
         }
 
         public cfg.Tables Tables { get; }
@@ -47,6 +49,9 @@ namespace GourmetProject.Game.Meta
         public MetaProgressSaveData Progress { get; }
 
         public bool ConsumeEventChoiceCountDelta { get; }
+
+        /// <summary>是否应用装饰品及事件带来的候选数量修正；翻倍奖励重抽使用标准数量。</summary>
+        public bool ApplyChoiceCountModifiers { get; }
 
         public int RewardHiddenScore => DishHiddenScore;
 

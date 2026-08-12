@@ -37,12 +37,11 @@ namespace GourmetProject.Game.Analytics
             double a = 0d;
             double b = 0d;
             double c = 0d;
-            int count = 0;
             foreach (RecipeBookSlot slot in run.RecipeEntries)
             {
                 DishDef dish = run.Database?.GetDish(slot?.DishId);
                 IReadOnlyList<float> weights = dish?.ArchetypeWeights;
-                if (!IsValidWeights(weights))
+                if (!IsValidPointVector(weights))
                 {
                     return ArchetypeVector.Mixed;
                 }
@@ -50,17 +49,17 @@ namespace GourmetProject.Game.Analytics
                 a += weights[0];
                 b += weights[1];
                 c += weights[2];
-                count++;
             }
 
-            if (count == 0)
+            double total = a + b + c;
+            if (total <= 0d)
             {
                 return ArchetypeVector.Mixed;
             }
 
-            a /= count;
-            b /= count;
-            c /= count;
+            a /= total;
+            b /= total;
+            c /= total;
             return Classify(
                 a,
                 b,
@@ -111,14 +110,13 @@ namespace GourmetProject.Game.Analytics
             return new ArchetypeVector(share0, share1, share2, id, lead);
         }
 
-        private static bool IsValidWeights(IReadOnlyList<float> weights)
+        private static bool IsValidPointVector(IReadOnlyList<float> weights)
         {
             if (weights == null || weights.Count != 3)
             {
                 return false;
             }
 
-            double sum = 0d;
             for (int i = 0; i < weights.Count; i++)
             {
                 double value = weights[i];
@@ -127,10 +125,8 @@ namespace GourmetProject.Game.Analytics
                     return false;
                 }
 
-                sum += value;
             }
-
-            return Math.Abs(sum - 1d) <= 0.001d;
+            return true;
         }
 
         private static bool IsFinite(double value)

@@ -52,7 +52,7 @@ namespace GourmetProject.Game.Presentation.Battle
             new("t_bitter", "苦", FlavorVisualKind.Bitter, new Color(0.34f, 0.29f, 0.12f, 1f)),
             new("t_salty", "咸", FlavorVisualKind.Salty, new Color(0.80f, 0.95f, 1.00f, 1f)),
             new("t_numb", "麻", FlavorVisualKind.Numb, new Color(0.62f, 0.34f, 0.94f, 1f)),
-            new("t_rust", "鲜", FlavorVisualKind.Umami, new Color(1.00f, 0.58f, 0.12f, 1f)),
+            new("t_fresh", "鲜", FlavorVisualKind.Umami, new Color(1.00f, 0.58f, 0.12f, 1f)),
             new("t_spicy", "辣", FlavorVisualKind.Spicy, new Color(1.00f, 0.20f, 0.09f, 1f)),
         };
 

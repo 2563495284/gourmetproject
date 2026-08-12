@@ -11,8 +11,8 @@ namespace GourmetProject.Gameplay.Model
         PerOccupiedCell = 5,
         PerDishOnBoard = 6,
 
-        /// <summary>结算时获得 EffectValue 金币（锈）。</summary>
-        GrantGold = 7,
+        /// <summary>鲜：同一食谱槽中优先从可摆放的鲜味食物候选里出菜。</summary>
+        ServePriority = 7,
 
         /// <summary>贡献 EffectValue 到该菜结算优先级层级（甜=+1、苦=-1）。不产生分数效果，由结算前排序读取。</summary>
         SettlementLayer = 8,
@@ -20,11 +20,11 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>麻：使食物逆时针旋转 EffectValue×90 度（默认 1）。不产生分数效果，由上菜时读取并旋转形状。</summary>
         Rotate = 9,
 
-        /// <summary>酸：结算开始时，未上菜则使场上全部食物倍率 ×EffectValue（1.5）。由未上菜结算源读取。</summary>
-        SourRecipeMult = 10,
+        /// <summary>酸：结算开始时，未上菜则使场上全部食物倍率 +EffectValue。由未上菜结算源读取。</summary>
+        RecipeAddMultFlat = 10,
 
-        /// <summary>咸：结算开始时，未上菜则使场上全部食物基础分 +EffectValue（20）。由未上菜结算源读取。</summary>
-        SaltyRecipeFlat = 11,
+        /// <summary>咸：每层独立按 EffectValue 概率令本菜额外完整结算一次。</summary>
+        ExtraSettlementChance = 11,
     }
 
     /// <summary>
@@ -192,8 +192,7 @@ namespace GourmetProject.Gameplay.Model
         public static bool IsMultiplier(this FlavorEffectType type)
         {
             return type == FlavorEffectType.AddMult
-                || type == FlavorEffectType.PerDishOnBoard
-                || type == FlavorEffectType.SourRecipeMult;
+                || type == FlavorEffectType.PerDishOnBoard;
         }
     }
 

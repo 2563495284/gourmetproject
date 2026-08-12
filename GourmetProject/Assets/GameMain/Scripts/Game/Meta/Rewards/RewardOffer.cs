@@ -3,6 +3,14 @@ using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Meta
 {
+    public enum RewardDoubleTarget
+    {
+        None = 0,
+        BaseDish = 1,
+        BaseGold = 2,
+        Specific = 3,
+    }
+
     /// <summary>
     /// 一次过关奖励的完整候选。金币是固定发放；主奖励/额外奖励由玩家选择后再应用。
     /// </summary>
@@ -31,6 +39,7 @@ namespace GourmetProject.Game.Meta
             IReadOnlyList<int> bonusChoiceIndices = null)
         {
             BaseGold = baseGold;
+            RawBaseGold = baseGold;
             _fixedGroups = new List<RewardChoiceGroup>
             {
                 new RewardChoiceGroup(GroupTitleFor(mainChoices, "基础食物"), mainChoices, mainRequiredChoiceCount, MergeIndices(mainChoiceIndices, mainChoiceIndex), mainChoiceSkipped),
@@ -42,23 +51,54 @@ namespace GourmetProject.Game.Meta
 
             _specificGroup = new RewardChoiceGroup("特定奖励", extraChoices, extraRequiredChoiceCount, MergeIndices(extraChoiceIndices, extraChoiceIndex), extraChoiceSkipped);
             BaseGoldClaimed = baseGoldClaimed;
+            BonusGoldClaimed = true;
         }
 
         public RewardOffer(
             int baseGold,
             IReadOnlyList<RewardChoiceGroup> fixedGroups,
             RewardChoiceGroup specificGroup,
-            bool baseGoldClaimed = false)
+            bool baseGoldClaimed = false,
+            RewardDoubleTarget doubleRewardTarget = RewardDoubleTarget.None,
+            int rawBaseGold = -1,
+            int rawBonusGold = 0,
+            int bonusGold = 0,
+            bool bonusGoldClaimed = false,
+            bool goldAmountsResolved = false)
         {
-            BaseGold = baseGold;
+            BaseGold = System.Math.Max(0, baseGold);
+            RawBaseGold = rawBaseGold >= 0 ? rawBaseGold : BaseGold;
+            RawBonusGold = System.Math.Max(0, rawBonusGold);
+            BonusGold = System.Math.Max(0, bonusGold);
+            DoubleRewardTarget = doubleRewardTarget;
             _fixedGroups = new List<RewardChoiceGroup>(fixedGroups ?? System.Array.Empty<RewardChoiceGroup>());
             _specificGroup = specificGroup ?? new RewardChoiceGroup("特定奖励", null, 0);
             BaseGoldClaimed = baseGoldClaimed;
+            BonusGoldClaimed = doubleRewardTarget != RewardDoubleTarget.BaseGold || bonusGoldClaimed;
+            GoldAmountsResolved = goldAmountsResolved;
         }
 
-        public int BaseGold { get; }
+        /// <summary>领奖界面显示和实际领取的基础金币；营业奖励生成后为已锁定的最终值。</summary>
+        public int BaseGold { get; private set; }
+
+        /// <summary>应用营业金币倍率与固定加成前的基础金币随机值。</summary>
+        public int RawBaseGold { get; private set; }
+
+        /// <summary>翻倍目标为基础金币时，重新随机出的倍率前金币值。</summary>
+        public int RawBonusGold { get; private set; }
+
+        /// <summary>翻倍目标为基础金币时，独立取整并锁定的最终额外金币。</summary>
+        public int BonusGold { get; private set; }
+
+        public RewardDoubleTarget DoubleRewardTarget { get; private set; }
+
+        public bool GoldAmountsResolved { get; private set; }
 
         public bool BaseGoldClaimed { get; private set; }
+
+        public bool BonusGoldClaimed { get; private set; }
+
+        public bool HasBonusGold => DoubleRewardTarget == RewardDoubleTarget.BaseGold;
 
         public int MainChoiceIndex => MainGroup.FirstClaimedIndex;
 
@@ -118,12 +158,38 @@ namespace GourmetProject.Game.Meta
 
         public bool IsFullyClaimed =>
             BaseGoldClaimed &&
+            BonusGoldClaimed &&
             FixedGroupsResolved &&
             SpecificGroup.IsResolved;
 
         public void MarkBaseGoldClaimed()
         {
             BaseGoldClaimed = true;
+        }
+
+        public void MarkBonusGoldClaimed()
+        {
+            if (HasBonusGold)
+            {
+                BonusGoldClaimed = true;
+            }
+        }
+
+        internal void ConfigureDoubleReward(RewardDoubleTarget target, int rawBonusGold = 0)
+        {
+            DoubleRewardTarget = target;
+            RawBonusGold = target == RewardDoubleTarget.BaseGold
+                ? System.Math.Max(0, rawBonusGold)
+                : 0;
+            BonusGold = RawBonusGold;
+            BonusGoldClaimed = target != RewardDoubleTarget.BaseGold;
+        }
+
+        internal void LockGoldAmounts(int baseGold, int bonusGold)
+        {
+            BaseGold = System.Math.Max(0, baseGold);
+            BonusGold = HasBonusGold ? System.Math.Max(0, bonusGold) : 0;
+            GoldAmountsResolved = true;
         }
 
         public void MarkMainChoiceClaimed(int index)

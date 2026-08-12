@@ -168,6 +168,7 @@ namespace GourmetProject.Game.Balance
             int before = run.Gold;
             RewardOffer offer = RewardGranter.GenerateOffer(run, run.CurrentWeek, rng, context);
             RewardGranter.ApplyBaseGold(run, offer);
+            RewardGranter.ApplyBonusGold(run, offer);
             ClaimGroups(run, offer, archetype, request.PlayerLevel, rng, stage);
             AutoAttachPendingFragment(run);
             stage.GoldEarned += Math.Max(0, run.Gold - before);
@@ -366,6 +367,7 @@ namespace GourmetProject.Game.Balance
             {
                 int before = run.Gold;
                 RewardGranter.ApplyBaseGold(run, offer);
+                RewardGranter.ApplyBonusGold(run, offer);
                 ClaimGroups(run, offer, archetype, level, rng, stage);
                 AutoAttachPendingFragment(run);
                 stage.GoldEarned += Math.Max(0, run.Gold - before);

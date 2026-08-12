@@ -120,6 +120,11 @@ namespace GourmetProject.Game.Meta
                         ? new ActiveItemUseResult(true, false, $"{item.Name}：已重掷当前行动选项。", actionChoicesChanged: true)
                         : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法重掷行动。");
 
+                case ItemEffectTypes.DoubleNextBusinessReward:
+                    return ctx.AddNextBusinessRewardDoubleStack()
+                        ? new ActiveItemUseResult(true, false, $"{item.Name}：下一次营业将随机额外重抽一类奖励。")
+                        : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法使用。");
+
                 case ItemEffectTypes.HalfNextActionCost:
                     return ctx.AddNextActionHalfCostStack()
                         ? new ActiveItemUseResult(true, false, $"{item.Name}：下一次普通行动耗时减半。", actionChoicesChanged: true)

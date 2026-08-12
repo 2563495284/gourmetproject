@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using GourmetProject.Game.Adapter;
+using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.Save;
 using GourmetProject.Game.Tutorial;
@@ -100,6 +101,99 @@ namespace GourmetProject.Tests.EditMode
             GameRun wrapper = CreateRun();
             Assert.That(wrapper.TryLoseHeart(out before, out after), Is.True);
             Assert.That(before - after, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TimedBusinessGoldMultiplier_AppliesPerBusinessAndSurvivesSave()
+        {
+            GameRun run = CreateRun();
+            EffectResolver.Apply(run, cfg.EffectType.AddBusinessGoldPct, 0.2f, "Next", null);
+            string feedback = EffectResolver.Apply(run, cfg.EffectType.AddBusinessGoldPct, 0.5f, "Next:2", null);
+
+            Assert.That(feedback, Is.EqualTo("后续 2 次营业基础金币 ×1.5。"));
+
+            Assert.That(run.ConsumeNextBusinessGoldMultiplier(), Is.EqualTo(1.8f).Within(0.0001f));
+
+            RunSaveData save = run.ToSaveData();
+            GameRun restored = GameRun.FromSaveData(_tables, _database, save);
+
+            Assert.That(restored.ConsumeNextBusinessGoldMultiplier(), Is.EqualTo(1.5f).Within(0.0001f));
+            Assert.That(restored.ConsumeNextBusinessGoldMultiplier(), Is.EqualTo(1f).Within(0.0001f));
+        }
+
+        [Test]
+        public void TimedBusinessGoldMultiplier_RejectsInvalidCountAndMigratesLegacySave()
+        {
+            GameRun run = CreateRun();
+            string invalid = EffectResolver.Apply(run, cfg.EffectType.AddBusinessGoldPct, 0.5f, "Next:0", null);
+
+            Assert.That(invalid, Does.Contain("参数无效"));
+            Assert.That(run.CurrentWeekBusinessGoldMultiplier, Is.EqualTo(1f));
+            Assert.That(run.ConsumeNextBusinessGoldMultiplier(), Is.EqualTo(1f));
+
+            string oversized = EffectResolver.Apply(run, cfg.EffectType.AddBusinessGoldPct, 0.5f, "Next:2147483647", null);
+            Assert.That(oversized, Does.Contain("参数无效"));
+
+            RunSaveData legacySave = run.ToSaveData();
+            legacySave.NextBusinessGoldMultipliers = null;
+            legacySave.NextBusinessGoldMultiplier = 1.6f;
+            GameRun restored = GameRun.FromSaveData(_tables, _database, legacySave);
+
+            Assert.That(restored.ConsumeNextBusinessGoldMultiplier(), Is.EqualTo(1.6f).Within(0.0001f));
+            Assert.That(restored.ConsumeNextBusinessGoldMultiplier(), Is.EqualTo(1f));
+        }
+
+        [Test]
+        public void RestoreHeartsEffect_RestoresActualAmountAndStopsAtCapacity()
+        {
+            GameRun run = CreateRun();
+            Assert.That(run.TryLoseHeart(out _, out _), Is.True);
+
+            string restored = EffectResolver.Apply(run, cfg.EffectType.RestoreHearts, 1f, "-", null);
+            Assert.That(run.HeartsRemaining, Is.EqualTo(run.HeartCapacity));
+            Assert.That(restored, Is.EqualTo("恢复1颗红心。"));
+
+            string full = EffectResolver.Apply(run, cfg.EffectType.RestoreHearts, 1f, "-", null);
+            Assert.That(run.HeartsRemaining, Is.EqualTo(run.HeartCapacity));
+            Assert.That(full, Is.EqualTo("红心已满。"));
+        }
+
+        [Test]
+        public void TwinPeaksRewards_LoadWithImplementedEffects()
+        {
+            cfg.EventOption coffee = _tables.TbEventOption.Get("opt_twin_peaks_coffee_reward");
+            Assert.That(coffee.EffectTypes, Is.EqualTo(new[] { cfg.EffectType.AddBusinessGoldPct }));
+            Assert.That(coffee.EffectValues.Single(), Is.EqualTo(0.6f).Within(0.0001f));
+            Assert.That(coffee.EffectParams.Single(), Is.EqualTo("Next:2"));
+
+            cfg.EventOption pie = _tables.TbEventOption.Get("opt_twin_peaks_pie_reward");
+            Assert.That(pie.Text, Is.EqualTo("恢复1颗红心"));
+            Assert.That(pie.EffectTypes, Is.EqualTo(new[] { cfg.EffectType.RestoreHearts }));
+            Assert.That(pie.EffectValues.Single(), Is.EqualTo(1f));
+
+            cfg.EventOption log = _tables.TbEventOption.Get("opt_twin_peaks_log_reward");
+            Assert.That(log.EffectTypes, Is.EqualTo(new[] { cfg.EffectType.AddAllRecipeScoreFlat }));
+            Assert.That(log.EffectValues.Single(), Is.EqualTo(10f));
+        }
+
+        [Test]
+        public void ChukaIchibanRewards_LoadWithImplementedEffects()
+        {
+            cfg.GameEvent cookingTrial = _tables.TbEvent.Get("ev_chuka_ichiban_trial");
+            Assert.That(cookingTrial.Name, Is.EqualTo("最后一灶也会发光"));
+
+            cfg.EventOption friedRice = _tables.TbEventOption.Get("opt_chuka_ichiban_fried_rice_reward");
+            Assert.That(friedRice.EffectTypes, Is.EqualTo(new[] { cfg.EffectType.GainGold }));
+            Assert.That(friedRice.EffectValues.Single(), Is.EqualTo(80f));
+
+            cfg.EventOption mapoTofu = _tables.TbEventOption.Get("opt_chuka_ichiban_mapo_tofu_reward");
+            Assert.That(mapoTofu.EffectTypes, Is.EqualTo(new[] { cfg.EffectType.AddRandomRecipeFlavor }));
+            Assert.That(mapoTofu.EffectValues.Single(), Is.EqualTo(1f));
+
+            cfg.EventOption dumpling = _tables.TbEventOption.Get("opt_chuka_ichiban_dumpling_reward");
+            Assert.That(dumpling.Text, Is.EqualTo("恢复1颗红心"));
+            Assert.That(dumpling.EffectTypes, Is.EqualTo(new[] { cfg.EffectType.RestoreHearts }));
+            Assert.That(dumpling.EffectValues.Single(), Is.EqualTo(1f));
         }
 
         [Test]

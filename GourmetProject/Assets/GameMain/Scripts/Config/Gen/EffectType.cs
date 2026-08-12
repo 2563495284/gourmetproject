@@ -137,7 +137,7 @@ namespace cfg
         /// </summary>
         CollectInterest = 29,
         /// <summary>
-        /// 营业基础金币百分比修正(value=百分比,param=Next/CurrentWeek)
+        /// 营业基础金币百分比修正(value=百分比,param=Next/Next:N/CurrentWeek)
         /// </summary>
         AddBusinessGoldPct = 30,
         /// <summary>
@@ -164,6 +164,10 @@ namespace cfg
         /// 递增扣除金币(value=首次金额,param=counterId|每次增量；不足扣到0)
         /// </summary>
         LoseEscalatingGold = 36,
+        /// <summary>
+        /// 恢复当前红心(value=数量；不超过上限)
+        /// </summary>
+        RestoreHearts = 37,
     }
 
 } 

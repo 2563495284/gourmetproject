@@ -112,8 +112,8 @@
     "subSkills": "sk_strawberry_sundae_1"
   },
   {
-    "id": "sk_rock_sugar_pear",
-    "subSkills": "sk_rock_sugar_pear_1|sk_rock_sugar_pear_2"
+    "id": "sk_red_bean_ice_pop",
+    "subSkills": "sk_red_bean_ice_pop_1|sk_red_bean_ice_pop_2"
   },
   {
     "id": "sk_popping_candy",
@@ -144,8 +144,8 @@
     "subSkills": "sk_cake_roll_1|sk_cake_roll_2"
   },
   {
-    "id": "sk_fondant_cake",
-    "subSkills": "sk_fondant_cake_1|sk_fondant_cake_2"
+    "id": "sk_red_velvet_cake",
+    "subSkills": "sk_red_velvet_cake_1|sk_red_velvet_cake_2"
   },
   {
     "id": "sk_matcha_cake",
@@ -220,8 +220,8 @@
     "subSkills": "sk_fruit_cake_1|sk_fruit_cake_2"
   },
   {
-    "id": "sk_fermented_rice_balls",
-    "subSkills": "sk_fermented_rice_balls_1"
+    "id": "sk_purple_rice_pudding",
+    "subSkills": "sk_purple_rice_pudding_1"
   },
   {
     "id": "sk_marshmallow",

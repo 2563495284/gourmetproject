@@ -20,7 +20,6 @@ public sealed partial class DishBase : Luban.BeanBase
         { if(!_buf["id"].IsString) { throw new SerializationException(); }  Id = _buf["id"]; }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
         { if(!_buf["deliciousness"].IsNumber) { throw new SerializationException(); }  Deliciousness = _buf["deliciousness"]; }
-        { if(!_buf["allowRotate"].IsBoolean) { throw new SerializationException(); }  AllowRotate = _buf["allowRotate"]; }
         { if(!_buf["skills"].IsString) { throw new SerializationException(); }  Skills = _buf["skills"]; }
         { if(!_buf["category"].IsString) { throw new SerializationException(); }  Category = _buf["category"]; }
         { if(!_buf["countAs"].IsNumber) { throw new SerializationException(); }  CountAs = _buf["countAs"]; }
@@ -47,15 +46,11 @@ public sealed partial class DishBase : Luban.BeanBase
     /// </summary>
     public readonly int Deliciousness;
     /// <summary>
-    /// 是否允许旋转摆放
-    /// </summary>
-    public readonly bool AllowRotate;
-    /// <summary>
     /// 技能ID列表(| 分隔)
     /// </summary>
     public readonly string Skills;
     /// <summary>
-    /// 食物分类(如cake;空=无)
+    /// 食物分类
     /// </summary>
     public readonly string Category;
     /// <summary>
@@ -67,11 +62,11 @@ public sealed partial class DishBase : Luban.BeanBase
     /// </summary>
     public readonly System.Collections.Generic.List<string> ShapeRows;
     /// <summary>
-    /// 食谱展示顺序(升序:从上到下、从左到右)
+    /// 食谱展示顺序
     /// </summary>
     public readonly int SortOrder;
     /// <summary>
-    /// 流派0/1/2占比（固定3项，和为1）
+    /// 流派0/1/2占比（传递、份数、蛋糕）
     /// </summary>
     public readonly System.Collections.Generic.List<float> ArchetypeWeights;
    
@@ -88,7 +83,6 @@ public sealed partial class DishBase : Luban.BeanBase
         + "id:" + Id + ","
         + "name:" + Name + ","
         + "deliciousness:" + Deliciousness + ","
-        + "allowRotate:" + AllowRotate + ","
         + "skills:" + Skills + ","
         + "category:" + Category + ","
         + "countAs:" + CountAs + ","

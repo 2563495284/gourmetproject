@@ -55,11 +55,19 @@ namespace GourmetProject.Gameplay.Data
 
         public IReadOnlyCollection<TableFragmentDef> AllFragments => _fragments.Values;
 
-        public DishDef GetDish(string id) => _dishes.TryGetValue(id, out DishDef d) ? d : null;
+        public DishDef GetDish(string id)
+        {
+            id = ContentIdAliases.NormalizeDishId(id);
+            return id != null && _dishes.TryGetValue(id, out DishDef d) ? d : null;
+        }
 
         public SkillDef GetSkill(string id) => id != null && _skills.TryGetValue(id, out SkillDef s) ? s : null;
 
-        public FlavorDef GetFlavor(string id) => id != null && _flavors.TryGetValue(id, out FlavorDef f) ? f : null;
+        public FlavorDef GetFlavor(string id)
+        {
+            id = ContentIdAliases.NormalizeFlavorId(id);
+            return id != null && _flavors.TryGetValue(id, out FlavorDef f) ? f : null;
+        }
 
         public MaterialDef GetMaterial(string id) => id != null && _materials.TryGetValue(id, out MaterialDef c) ? c : null;
 
@@ -67,7 +75,8 @@ namespace GourmetProject.Gameplay.Data
 
         public TableFragmentDef GetFragment(string id) => id != null && _fragments.TryGetValue(id, out TableFragmentDef f) ? f : null;
 
-        public bool TryGetDish(string id, out DishDef dish) => _dishes.TryGetValue(id, out dish);
+        public bool TryGetDish(string id, out DishDef dish)
+            => _dishes.TryGetValue(ContentIdAliases.NormalizeDishId(id), out dish);
 
         private static Dictionary<string, T> ToMap<T>(IEnumerable<T> items, Func<T, string> keySelector, string paramName)
         {

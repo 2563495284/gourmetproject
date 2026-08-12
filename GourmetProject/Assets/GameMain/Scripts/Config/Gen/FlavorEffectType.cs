@@ -24,9 +24,9 @@ namespace cfg
         PerOccupiedCell = 5,
         PerDishOnBoard = 6,
         /// <summary>
-        /// 结算时获得金币(锈)
+        /// 鲜：可摆放候选中严格优先出菜，无鲜菜时回退普通候选
         /// </summary>
-        GrantGold = 7,
+        ServePriority = 7,
         /// <summary>
         /// 结算优先级层级增量(甜 +1/苦 -1)，不产生分数效果
         /// </summary>
@@ -36,13 +36,13 @@ namespace cfg
         /// </summary>
         Rotate = 9,
         /// <summary>
-        /// 酸：结算开始时，未上菜则场上全部食物倍率&#215;value
+        /// 酸：结算开始时，每层未上菜酸使场上全部食物倍率+值
         /// </summary>
-        SourRecipeMult = 10,
+        RecipeAddMultFlat = 10,
         /// <summary>
-        /// 咸：结算开始时，未上菜则场上全部食物基础分+value
+        /// 咸：每层独立按概率使本菜额外完整结算1次
         /// </summary>
-        SaltyRecipeFlat = 11,
+        ExtraSettlementChance = 11,
     }
 
 } 

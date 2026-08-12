@@ -35,7 +35,7 @@ namespace GourmetProject.Gameplay.Board
                 {
                     if (!string.IsNullOrEmpty(f))
                     {
-                        _flavorIds.Add(f);
+                        _flavorIds.Add(ContentIdAliases.NormalizeFlavorId(f));
                     }
                 }
             }
@@ -113,7 +113,7 @@ namespace GourmetProject.Gameplay.Board
         {
             if (!string.IsNullOrEmpty(flavorId))
             {
-                _flavorIds.Add(flavorId);
+                _flavorIds.Add(ContentIdAliases.NormalizeFlavorId(flavorId));
             }
         }
 
@@ -131,7 +131,7 @@ namespace GourmetProject.Gameplay.Board
                 _flavorIds.RemoveAt(0);
             }
 
-            _flavorIds.Add(flavorId);
+            _flavorIds.Add(ContentIdAliases.NormalizeFlavorId(flavorId));
         }
 
         public bool RemoveFlavor(string flavorId)
@@ -147,7 +147,7 @@ namespace GourmetProject.Gameplay.Board
                 return true;
             }
 
-            return _flavorIds.Remove(flavorId);
+            return _flavorIds.Remove(ContentIdAliases.NormalizeFlavorId(flavorId));
         }
 
         public bool ReplaceFlavor(string toFlavorId)
@@ -159,11 +159,11 @@ namespace GourmetProject.Gameplay.Board
 
             if (_flavorIds.Count == 0)
             {
-                _flavorIds.Add(toFlavorId);
+                _flavorIds.Add(ContentIdAliases.NormalizeFlavorId(toFlavorId));
             }
             else
             {
-                _flavorIds[_flavorIds.Count - 1] = toFlavorId;
+                _flavorIds[_flavorIds.Count - 1] = ContentIdAliases.NormalizeFlavorId(toFlavorId);
             }
 
             return true;

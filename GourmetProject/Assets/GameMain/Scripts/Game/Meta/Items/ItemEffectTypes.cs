@@ -113,6 +113,7 @@ namespace GourmetProject.Game.Meta
         public const string FamilyPack = "FamilyPack";
         public const string RandomizeItems = "RandomizeItems";
         public const string RerollAction = "RerollAction";
+        public const string DoubleNextBusinessReward = "DoubleNextBusinessReward";
         public const string HalfNextActionCost = "HalfNextActionCost";
         public const string ChoiceCountBonus = "ChoiceCountBonus";
         public const string ChoiceTimesBonus = "ChoiceTimesBonus";
@@ -169,6 +170,7 @@ namespace GourmetProject.Game.Meta
             RemoveFlavor,
             // —— 排程小票（Global，局外/地图专用，由情境限制）——
             RerollAction,
+            DoubleNextBusinessReward,
             HalfNextActionCost,
             ResetBossDebuff,
             TimelineExecuteNext,

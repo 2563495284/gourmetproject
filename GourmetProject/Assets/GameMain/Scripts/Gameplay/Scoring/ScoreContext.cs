@@ -25,6 +25,8 @@ namespace GourmetProject.Gameplay.Scoring
             public BigDouble Base;
             public BigDouble Flat;
             public BigDouble Mult = BigDouble.One;
+            public BigDouble ExtraSettlementContribution;
+            public int ExtraSettlementCount;
         }
 
         private readonly Dictionary<int, DishAccumulator> _accums = new Dictionary<int, DishAccumulator>();
@@ -52,6 +54,9 @@ namespace GourmetProject.Gameplay.Scoring
         private int _commandsExecuted;
         private int _nextExecutionGroupId;
         private int _currentExecutionGroupId;
+        private int _extraSettlementDishId;
+        private BigDouble _extraSettlementRestoreFlat;
+        private BigDouble _extraSettlementRestoreMultiplier = BigDouble.One;
 
         public ScoreContext(ScoreSnapshot snapshot)
         {
@@ -437,6 +442,66 @@ namespace GourmetProject.Gameplay.Scoring
                 0f,
                 baseScore,
                 $"{Dish.Def.Name} 基础分数 {baseScore}"));
+        }
+
+        /// <summary>
+        /// 把一轮完整逐菜阶段与本轮开始前的累加器差值折算为独立贡献并追加。
+        /// 该贡献独立向上取整，不与主轮的加法/倍率发生复利。
+        /// </summary>
+        public void CompleteExtraSettlement(
+            DishInstance dish,
+            FlavorDef saltyFlavor)
+        {
+            if (dish == null || !_accums.TryGetValue(dish.Id, out DishAccumulator accumulator))
+            {
+                _extraSettlementDishId = 0;
+                return;
+            }
+
+            BigDouble contribution = DishScore.CeilContribution(
+                dish.BaseScoreBeforeSettlement + accumulator.Flat,
+                accumulator.Mult);
+
+            accumulator.Flat = _extraSettlementRestoreFlat;
+            accumulator.Mult = _extraSettlementRestoreMultiplier;
+            BigDouble before = accumulator.ExtraSettlementContribution;
+            accumulator.ExtraSettlementContribution += contribution;
+            accumulator.ExtraSettlementCount++;
+            _extraSettlementDishId = 0;
+            _lines.Add(new ScoreLine(
+                ScorePhase.AfterDish,
+                ScoreLineKind.ExtraSettlement,
+                ScoreSource.DishFlavor(saltyFlavor, dish),
+                dish.Id,
+                dish.Def.Id,
+                null,
+                contribution,
+                before,
+                accumulator.ExtraSettlementContribution,
+                $"咸味额外结算第 {accumulator.ExtraSettlementCount} 次 +{contribution}",
+                executionGroupId: ++_nextExecutionGroupId));
+        }
+
+        public BigDouble CurrentFlatOf(DishInstance dish)
+            => dish != null && _accums.TryGetValue(dish.Id, out DishAccumulator a)
+                ? a.Flat
+                : BigDouble.Zero;
+
+        public void BeginExtraSettlement(
+            DishInstance dish,
+            BigDouble flatBaseline,
+            BigDouble multiplierBaseline)
+        {
+            _extraSettlementDishId = dish?.Id ?? 0;
+            if (dish == null || !_accums.TryGetValue(dish.Id, out DishAccumulator accumulator))
+            {
+                return;
+            }
+
+            _extraSettlementRestoreFlat = accumulator.Flat;
+            _extraSettlementRestoreMultiplier = accumulator.Mult;
+            accumulator.Flat = flatBaseline;
+            accumulator.Mult = multiplierBaseline;
         }
 
         public void Apply(ScoreEffectEntry entry)
@@ -1046,7 +1111,9 @@ namespace GourmetProject.Gameplay.Scoring
                     a.Base,
                     a.Flat,
                     a.Mult,
-                    GetEffectiveCountAs(a.Dish));
+                    GetEffectiveCountAs(a.Dish),
+                    a.ExtraSettlementContribution,
+                    a.ExtraSettlementCount);
                 _dishScores.Add(score);
                 RawSum += score.Contribution;
             }
@@ -1283,6 +1350,16 @@ namespace GourmetProject.Gameplay.Scoring
             ScoreSource sourceOverride = null,
             SkillExecutionTrace traceOverride = null)
         {
+            if (accum != null
+                && accum.Dish.Id == _extraSettlementDishId
+                && (kind == ScoreLineKind.DishFlat
+                    || kind == ScoreLineKind.DishPermanentFlat
+                    || kind == ScoreLineKind.DishMultiplier
+                    || kind == ScoreLineKind.DishMultiplierAdd))
+            {
+                return;
+            }
+
             int dishInstanceId = accum != null ? accum.Dish.Id : (Dish != null ? Dish.Id : 0);
             string dishId = accum != null ? accum.Dish.Def.Id : (Dish != null ? Dish.Def.Id : string.Empty);
             ScoreSource lineSource = sourceOverride ?? Source;
