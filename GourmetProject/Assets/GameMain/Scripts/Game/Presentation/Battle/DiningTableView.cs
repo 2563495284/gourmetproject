@@ -22,6 +22,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const int TransientRegionOutlineLayer = 999;
         private const float FragmentPlacementFeedbackFillAlpha = 1.0f;
         private const float FragmentOverlapFeedbackFillAlpha = 0f;
+        private const float FragmentOverlapOutlineInflate = 1.08f;
 
         private bool _voidAsPlaceholder;
 
@@ -329,7 +330,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 overlay.SetOutline(
                     color,
                     center ? 0.12f : 0.08f,
-                    FragmentFeedbackFillAlpha(dishPlacement, entry.Key, entry.Value));
+                    FragmentFeedbackFillAlpha(dishPlacement, entry.Key, entry.Value),
+                    FragmentFeedbackOutlineInflate(dishPlacement, entry.Key, entry.Value));
                 overlay.SetSorting(BattleSorting.Fx, DragFeedbackSortingOrder);
             }
 
@@ -364,6 +366,18 @@ namespace GourmetProject.Game.Presentation.Battle
             return state == GridPlacementFeedbackState.Blocked && _board?.Exists(position) == true
                 ? FragmentOverlapFeedbackFillAlpha
                 : FragmentPlacementFeedbackFillAlpha;
+        }
+
+        private float FragmentFeedbackOutlineInflate(
+            bool dishPlacement,
+            GridPos position,
+            GridPlacementFeedbackState state)
+        {
+            return !dishPlacement
+                && state == GridPlacementFeedbackState.Blocked
+                && _board?.Exists(position) == true
+                    ? FragmentOverlapOutlineInflate
+                    : 1f;
         }
 
         public void SetTargetHighlight(GridPos pos, bool selected, bool hovered)

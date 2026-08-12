@@ -1649,7 +1649,7 @@ namespace GourmetProject.Game.UI.Battle
                 Array.Empty<bool>(),
                 onPick: null,
                 onEnd: onComplete,
-                autoContinueDelaySeconds: 1.5f));
+                autoContinueDelaySeconds: 0.5f));
         }
 
         public void ExitEventPage(Action onExited)
