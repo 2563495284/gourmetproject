@@ -103,8 +103,53 @@ namespace GourmetProject.Tests.EditMode
 
             view.EffectFeedbackCompletion.Invoke();
 
+            Assert.That(view.EventExitCompletion, Is.Not.Null);
+            Assert.That(completed, Is.False, "事件页退场完成前不应提交行动或推进时间轴。");
+
+            view.EventExitCompletion.Invoke();
+
             Assert.That(completed, Is.True);
             Assert.That(run.HasUsedEvent(ev.Id), Is.True);
+        }
+
+        [Test]
+        public void RecoveredBattleReward_PreservesPreviousDayForTimelineAdvance()
+        {
+            var run = new GameRun(
+                _tables,
+                _database,
+                "glutton_dog",
+                "recovered-battle-timeline-presentation-test",
+                1)
+            {
+                CurrentTimelineId = "test_timeline",
+                TimelineLengthDays = 7f,
+                CurrentDay = 1f,
+            };
+            cfg.GameAction action = _tables.TbAction.Get("act_food_gold");
+            var context = new ActionExecutionContext(
+                action,
+                stepIndex: 0,
+                runStepIndex: 0,
+                actionGroupId: "test_group",
+                costDays: 1f);
+            run.SetLastActionContext(context);
+            var view = new RecordingWeekLoopView();
+            var controller = new WeekLoopController(run, view);
+
+            MethodInfo continueMethod = typeof(WeekLoopController).GetMethod(
+                "ContinueAfterRecoveredBattleReward",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(continueMethod, Is.Not.Null);
+            using (RunPersistence.SuppressSave())
+            {
+                continueMethod.Invoke(controller, null);
+            }
+
+            Assert.That(run.CurrentDay, Is.EqualTo(2f).Within(0.001f));
+            Assert.That(view.TimelineAdvanceCount, Is.EqualTo(1));
+            Assert.That(view.TimelineAdvanceFromDay, Is.EqualTo(1f).Within(0.001f));
+            Assert.That(view.TimelineAdvanceToDay, Is.EqualTo(2f).Within(0.001f));
         }
 
         private sealed class RecordingWeekLoopView : IWeekLoopView
@@ -112,6 +157,14 @@ namespace GourmetProject.Tests.EditMode
             public Action RecipeMutationCompletion { get; private set; }
 
             public Action EffectFeedbackCompletion { get; private set; }
+
+            public Action EventExitCompletion { get; private set; }
+
+            public int TimelineAdvanceCount { get; private set; }
+
+            public float TimelineAdvanceFromDay { get; private set; }
+
+            public float TimelineAdvanceToDay { get; private set; }
 
             public BigDouble LastBattleTotal => 0;
 
@@ -140,7 +193,12 @@ namespace GourmetProject.Tests.EditMode
                 float fromDay,
                 float toDay,
                 string arrivingNodeId,
-                Action onDone) { }
+                Action onDone)
+            {
+                TimelineAdvanceCount++;
+                TimelineAdvanceFromDay = fromDay;
+                TimelineAdvanceToDay = toDay;
+            }
 
             public void PlayTimelineNodeCue(
                 string nodeId,
@@ -183,6 +241,11 @@ namespace GourmetProject.Tests.EditMode
                 Action onComplete)
             {
                 EffectFeedbackCompletion = onComplete;
+            }
+
+            public void ExitEventPage(Action onExited)
+            {
+                EventExitCompletion = onExited;
             }
 
             public void ShowEventRecipeMutation(

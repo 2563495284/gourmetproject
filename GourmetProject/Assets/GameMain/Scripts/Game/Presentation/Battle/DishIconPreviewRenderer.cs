@@ -30,17 +30,22 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private readonly List<SpriteRenderer> _cellPool = new();
         private readonly List<string> _flavorScratch = new();
+        private readonly Dictionary<RenderTexture, BadgePreviewState> _badgesByTarget = new();
+        private readonly List<RenderTexture> _staleBadgeTargets = new();
         private Camera _camera;
         private int _previewLayer;
         private Transform _boardRoot;
         private Transform _dishRoot;
         private SpriteRenderer _dishRenderer;
         private MaterialPropertyBlock _dishFlavorBlock;
-        private DishValueBadgeView _badge;
-        private DishValueBadgeView _badgeSourcePrefab;
-        private BigDouble _badgeValue;
-        private string _badgeText;
-        private bool _hasBadgeValue;
+
+        private sealed class BadgePreviewState
+        {
+            public DishValueBadgeView View;
+            public DishValueBadgeView SourcePrefab;
+            public BigDouble Value;
+            public bool HasValue;
+        }
 
         public static RenderTexture Render(
             DishDef dish,
@@ -267,7 +272,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             BuildDish(dish.Shape, rotationIndex, sprite, dish.Id);
-            BuildBadge(badgePrefab, displayShape, deliciousness);
 
             int textureWidth = boardWidth * pixelsPerCell;
             int textureHeight = boardHeight * pixelsPerCell;
@@ -300,6 +304,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 };
                 texture.Create();
             }
+
+            BuildBadge(texture, badgePrefab, displayShape, deliciousness);
 
             _camera.clearFlags = CameraClearFlags.SolidColor;
             _camera.backgroundColor = backgroundColor;
@@ -443,56 +449,95 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         private void BuildBadge(
+            RenderTexture target,
             DishValueBadgeView badgePrefab,
             DishShape displayShape,
             BigDouble deliciousness)
         {
-            if (badgePrefab == null)
+            if (target == null || badgePrefab == null)
             {
                 return;
             }
 
-            if (_badge == null || !ReferenceEquals(_badgeSourcePrefab, badgePrefab))
+            PruneBadgeStates();
+            if (!_badgesByTarget.TryGetValue(target, out BadgePreviewState state)
+                || state?.View == null
+                || !ReferenceEquals(state.SourcePrefab, badgePrefab))
             {
-                if (_badge != null)
+                if (state?.View != null)
                 {
-                    if (Application.isPlaying)
-                    {
-                        Destroy(_badge.gameObject);
-                    }
-                    else
-                    {
-                        DestroyImmediate(_badge.gameObject);
-                    }
+                    DestroyBadge(state.View);
                 }
 
-                _badge = Instantiate(badgePrefab, transform);
-                _badgeSourcePrefab = badgePrefab;
-                _hasBadgeValue = false;
-                if (_badge == null)
+                DishValueBadgeView view = Instantiate(badgePrefab, transform);
+                if (view == null)
                 {
                     return;
                 }
 
-                _badge.gameObject.hideFlags = HideFlags.HideAndDontSave;
-                SetLayerRecursively(_badge.gameObject, _previewLayer);
+                view.gameObject.hideFlags = HideFlags.HideAndDontSave;
+                SetLayerRecursively(view.gameObject, _previewLayer);
+                state = new BadgePreviewState
+                {
+                    View = view,
+                    SourcePrefab = badgePrefab,
+                };
+                _badgesByTarget[target] = state;
             }
 
-            _badge.gameObject.SetActive(true);
-            _badge.transform.localScale = Vector3.one * BadgeScale;
-            float badgeTopExtent = _badge.TopExtent
-                * Mathf.Abs(_badge.transform.localScale.y);
-            _badge.transform.localPosition = DishBadgeLayout.PositionFromShapeCenter(
+            state.View.gameObject.SetActive(true);
+            state.View.transform.localScale = Vector3.one * BadgeScale;
+            float badgeTopExtent = state.View.TopExtent
+                * Mathf.Abs(state.View.transform.localScale.y);
+            state.View.transform.localPosition = DishBadgeLayout.PositionFromShapeCenter(
                 displayShape,
                 CellSize,
                 CellSize,
                 badgeTopExtent);
-            if (!_hasBadgeValue || _badgeValue != deliciousness)
+            if (!state.HasValue || state.Value != deliciousness)
             {
-                _badgeValue = deliciousness;
-                _badgeText = DishValueDisplay.Format(deliciousness);
-                _hasBadgeValue = true;
-                _badge.SetValue(_badgeText);
+                state.Value = deliciousness;
+                state.HasValue = true;
+                state.View.SetValue(DishValueDisplay.Format(deliciousness));
+            }
+        }
+
+        private void PruneBadgeStates()
+        {
+            _staleBadgeTargets.Clear();
+            foreach (KeyValuePair<RenderTexture, BadgePreviewState> entry in _badgesByTarget)
+            {
+                if (entry.Key == null || !entry.Key.IsCreated() || entry.Value?.View == null)
+                {
+                    if (entry.Value?.View != null)
+                    {
+                        DestroyBadge(entry.Value.View);
+                    }
+                    _staleBadgeTargets.Add(entry.Key);
+                }
+            }
+
+            for (int i = 0; i < _staleBadgeTargets.Count; i++)
+            {
+                _badgesByTarget.Remove(_staleBadgeTargets[i]);
+            }
+            _staleBadgeTargets.Clear();
+        }
+
+        private static void DestroyBadge(DishValueBadgeView badge)
+        {
+            if (badge == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(badge.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(badge.gameObject);
             }
         }
 
@@ -520,9 +565,12 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _flavorScratch.Clear();
-            if (_badge != null)
+            foreach (BadgePreviewState state in _badgesByTarget.Values)
             {
-                _badge.gameObject.SetActive(false);
+                if (state?.View != null)
+                {
+                    state.View.gameObject.SetActive(false);
+                }
             }
 
             _dishRenderer.SetPropertyBlock(null);

@@ -225,7 +225,9 @@ Shader "GourmetProject/SpriteOutline"
                     float flowDistance = abs(flowPhase - 0.5);
                     float flowWidth = max(0.02, _GridFlowWidth);
                     float flowBand = 1.0 - smoothstep(flowWidth * 0.24, flowWidth, flowDistance);
-                    float flowBoost = 1.0 + flowBand * _GridFlowIntensity;
+                    float flowEnabled = step(0.001, _GridFlowIntensity);
+                    float flowMask = flowBand * flowEnabled;
+                    float flowWhiten = flowBand * saturate(_GridFlowIntensity * 1.15);
 
                     float stripeWave = 0.5 + 0.5 * sin(
                         ((sourceUv.x - sourceUv.y) * _GridStripeDensity
@@ -239,7 +241,7 @@ Shader "GourmetProject/SpriteOutline"
                     half coreAlpha = (half)saturate(
                         core
                         * _OutlineColor.a
-                        * lerp(0.92, 1.0, flowBand)
+                        * lerp(0.86, 1.0, flowMask)
                         * reveal);
                     half glowAlpha = (half)saturate(
                         softGlow
@@ -253,8 +255,14 @@ Shader "GourmetProject/SpriteOutline"
                     half3 outlineRgb = (half3)(
                         _OutlineColor.rgb
                         * _GlowIntensity
-                        * wave
-                        * flowBoost);
+                        * wave);
+                    // 单纯乘亮度会让洋红、青色等高饱和语义色迅速裁平，流光看起来像静态实线。
+                    // 高亮头部向白色过渡，确保所有颜色、Action/Condition 两种范围都能看清循环方向。
+                    half3 flowHighlightRgb = (half3)(
+                        half3(1.0, 1.0, 1.0)
+                        * max(1.0, _GlowIntensity)
+                        * wave);
+                    outlineRgb = lerp(outlineRgb, flowHighlightRgb, flowWhiten);
                     half edgeBlend = alpha > 0.0001 ? saturate(edgeAlpha / alpha) : 0;
                     half3 rgb = lerp(fillRgb, outlineRgb, edgeBlend);
                     clip(alpha - 0.001);

@@ -50,8 +50,8 @@ namespace GourmetProject.Game.Presentation.Battle
             FlowSpeed = 0.32f,
             FlowWidth = 0.18f,
             FlowIntensity = 0.36f,
-            RevealDuration = 0.14f,
-            FadeOutDuration = 0.12f,
+            RevealDuration = 0f,
+            FadeOutDuration = 0f,
         };
         [SerializeField] private ScopeChannelStyle _flashStyle = new ScopeChannelStyle
         {
@@ -215,7 +215,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ActiveRole = role;
             _activeFadeOutDuration = profile.FadeOutDuration;
             gameObject.SetActive(true);
-            if (Application.isPlaying)
+            if (Application.isPlaying && !UsesImmediateVisibility(channel))
             {
                 StartFadeIn(profile.RevealDuration);
             }
@@ -237,6 +237,11 @@ namespace GourmetProject.Game.Presentation.Battle
             };
 
             ScopeVisualProfile profile = style.ToProfile();
+            if (UsesImmediateVisibility(channel))
+            {
+                profile = profile.WithVisibilityTiming(0f, 0f);
+            }
+
             if (role != BattleScopeRegionRole.Condition)
             {
                 return profile;
@@ -260,13 +265,18 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void Hide()
         {
-            if (!Application.isPlaying)
+            if (!Application.isPlaying || UsesImmediateVisibility(ActiveChannel))
             {
                 HideImmediate();
                 return;
             }
 
             StartFadeOut();
+        }
+
+        internal static bool UsesImmediateVisibility(BattleScopeHighlightChannel channel)
+        {
+            return channel == BattleScopeHighlightChannel.Persistent;
         }
 
         internal void StartFadeIn(float duration)
@@ -499,8 +509,8 @@ namespace GourmetProject.Game.Presentation.Battle
             [Range(0f, 4f)] public float FlowSpeed;
             [Range(0.02f, 0.5f)] public float FlowWidth;
             [Range(0f, 1f)] public float FlowIntensity;
-            [Range(0.01f, 0.5f)] public float RevealDuration;
-            [Range(0.01f, 0.5f)] public float FadeOutDuration;
+            [Range(0f, 0.5f)] public float RevealDuration;
+            [Range(0f, 0.5f)] public float FadeOutDuration;
 
             public ScopeVisualProfile ToProfile()
             {
@@ -566,6 +576,24 @@ namespace GourmetProject.Game.Presentation.Battle
             public float FlowIntensity { get; }
             public float RevealDuration { get; }
             public float FadeOutDuration { get; }
+
+            public ScopeVisualProfile WithVisibilityTiming(float revealDuration, float fadeOutDuration)
+            {
+                return new ScopeVisualProfile(
+                    OutlinePixels,
+                    OutlineAlpha,
+                    FillAlpha,
+                    GlowPixels,
+                    GlowAlpha,
+                    GlowIntensity,
+                    PulseSpeed,
+                    PulseAmplitude,
+                    FlowSpeed,
+                    FlowWidth,
+                    FlowIntensity,
+                    revealDuration,
+                    fadeOutDuration);
+            }
         }
     }
 }

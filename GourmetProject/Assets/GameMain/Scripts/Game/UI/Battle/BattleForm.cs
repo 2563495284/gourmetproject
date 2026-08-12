@@ -1630,6 +1630,28 @@ namespace GourmetProject.Game.UI.Battle
                 autoContinueDelaySeconds: 1.5f));
         }
 
+        public void ExitEventPage(Action onExited)
+        {
+            if (_current != GameplayView.Event)
+            {
+                onExited?.Invoke();
+                return;
+            }
+
+            ClearTimelineNodeCard();
+            _deck?.Clear();
+            _deck?.SetCardsActive(false);
+            SwitchTo(
+                GameplayView.ActionSelect,
+                () =>
+                {
+                    ClearTimelineNodeCard();
+                    _deck?.Clear();
+                    _deck?.SetCardsActive(false);
+                },
+                onExited);
+        }
+
         public void ShowEventRecipeMutation(
             RecipeMutationResult result,
             Action onComplete)

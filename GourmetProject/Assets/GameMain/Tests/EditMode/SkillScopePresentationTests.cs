@@ -96,12 +96,21 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(settlement.FlowSpeed, Is.GreaterThan(persistent.FlowSpeed));
                 Assert.That(settlement.GlowAlpha, Is.GreaterThan(flash.GlowAlpha));
                 Assert.That(flash.GlowAlpha, Is.GreaterThan(persistent.GlowAlpha));
-                Assert.That(persistent.RevealDuration, Is.InRange(0.12f, 0.16f));
+                Assert.That(persistent.RevealDuration, Is.Zero);
                 Assert.That(flash.RevealDuration, Is.InRange(0.10f, 0.16f));
                 Assert.That(settlement.RevealDuration, Is.InRange(0.12f, 0.16f));
-                Assert.That(persistent.FadeOutDuration, Is.InRange(0.10f, 0.16f));
+                Assert.That(persistent.FadeOutDuration, Is.Zero);
                 Assert.That(flash.FadeOutDuration, Is.InRange(0.10f, 0.16f));
                 Assert.That(settlement.FadeOutDuration, Is.InRange(0.10f, 0.16f));
+                Assert.That(
+                    BattleScopeRegionOutlineView.UsesImmediateVisibility(BattleScopeHighlightChannel.Persistent),
+                    Is.True);
+                Assert.That(
+                    BattleScopeRegionOutlineView.UsesImmediateVisibility(BattleScopeHighlightChannel.Flash),
+                    Is.False);
+                Assert.That(
+                    BattleScopeRegionOutlineView.UsesImmediateVisibility(BattleScopeHighlightChannel.Settlement),
+                    Is.False);
                 Assert.That(condition.FillAlpha, Is.Zero);
                 Assert.That(condition.OutlineAlpha, Is.LessThan(settlement.OutlineAlpha));
                 Assert.That(condition.GlowAlpha, Is.LessThan(settlement.GlowAlpha));
@@ -149,7 +158,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(block.GetFloat(Shader.PropertyToID("_FillAlpha")), Is.EqualTo(0.06f).Within(0.001f));
                 Assert.That(block.GetFloat(Shader.PropertyToID("_GridGlowAlpha")), Is.GreaterThan(0f));
                 Assert.That(block.GetFloat(Shader.PropertyToID("_GridFlowSpeed")), Is.GreaterThan(0f));
-                Assert.That(block.GetFloat(Shader.PropertyToID("_GridRevealDuration")), Is.InRange(0.12f, 0.16f));
+                Assert.That(block.GetFloat(Shader.PropertyToID("_GridRevealDuration")), Is.Zero);
                 Assert.That(block.GetFloat(Shader.PropertyToID("_GridVisibility")), Is.EqualTo(1f));
 
                 view.Show(
@@ -176,6 +185,62 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
+        [TestCase(BattleScopeHighlightChannel.Persistent, false)]
+        [TestCase(BattleScopeHighlightChannel.Persistent, true)]
+        [TestCase(BattleScopeHighlightChannel.Flash, false)]
+        [TestCase(BattleScopeHighlightChannel.Flash, true)]
+        [TestCase(BattleScopeHighlightChannel.Settlement, false)]
+        [TestCase(BattleScopeHighlightChannel.Settlement, true)]
+        public void ScopeRegion_AllRenderedRangeStylesKeepFlowEnabled(
+            BattleScopeHighlightChannel channel,
+            bool condition)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/Content/Prefabs/Battle/ScopeRegionOutline.prefab");
+            Assert.That(prefab, Is.Not.Null);
+
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                BattleScopeRegionOutlineView view = instance.GetComponent<BattleScopeRegionOutlineView>();
+                SpriteRenderer renderer = instance.GetComponent<SpriteRenderer>();
+                Assert.That(view, Is.Not.Null);
+                Assert.That(renderer, Is.Not.Null);
+
+                IReadOnlyList<GridPos> cells = new[] { new GridPos(0, 0) };
+                BattleScopeRegionRole role = condition
+                    ? BattleScopeRegionRole.Condition
+                    : BattleScopeRegionRole.Action;
+                view.Show(
+                    channel,
+                    role,
+                    0,
+                    cells,
+                    0,
+                    0,
+                    0,
+                    0,
+                    Vector3.zero,
+                    Vector2.one,
+                    new Color(1f, 0.33f, 0.70f, 0.96f),
+                    0.05f,
+                    null);
+
+                var block = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(block);
+                Assert.That(renderer.sharedMaterial, Is.Not.Null);
+                Assert.That(renderer.sharedMaterial.shader.name, Is.EqualTo("GourmetProject/SpriteOutline"));
+                Assert.That(block.GetFloat(Shader.PropertyToID("_UseGridMask")), Is.EqualTo(1f));
+                Assert.That(block.GetFloat(Shader.PropertyToID("_GridFlowSpeed")), Is.GreaterThan(0f));
+                Assert.That(block.GetFloat(Shader.PropertyToID("_GridFlowWidth")), Is.GreaterThan(0f));
+                Assert.That(block.GetFloat(Shader.PropertyToID("_GridFlowIntensity")), Is.GreaterThan(0f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
         [Test]
         public void ScopeRegion_FadeInAndOutKeepObjectAliveUntilVisibilityReachesZero()
         {
@@ -192,7 +257,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(renderer, Is.Not.Null);
                 IReadOnlyList<GridPos> cells = new[] { new GridPos(0, 0) };
                 view.Show(
-                    BattleScopeHighlightChannel.Persistent,
+                    BattleScopeHighlightChannel.Settlement,
                     0,
                     cells,
                     0,
@@ -206,7 +271,7 @@ namespace GourmetProject.Tests.EditMode
                     null);
 
                 BattleScopeRegionOutlineView.ScopeVisualProfile profile = view.ResolveProfile(
-                    BattleScopeHighlightChannel.Persistent,
+                    BattleScopeHighlightChannel.Settlement,
                     BattleScopeRegionRole.Action);
                 view.StartFadeIn(profile.RevealDuration);
                 Assert.That(view.ActiveVisibility, Is.Zero.Within(0.001f));

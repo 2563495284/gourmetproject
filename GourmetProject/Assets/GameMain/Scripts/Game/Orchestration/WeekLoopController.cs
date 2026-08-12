@@ -91,6 +91,9 @@ namespace GourmetProject.Game.Orchestration
             string bgSprite,
             Action onComplete);
 
+        /// <summary>事件完整结束时先退出事件页；退场完成后才允许提交行动并推进时间轴。</summary>
+        void ExitEventPage(Action onExited);
+
         /// <summary>展示事件造成的食谱食物变化；全部动画结束后回调。</summary>
         void ShowEventRecipeMutation(
             RecipeMutationResult result,
@@ -861,9 +864,9 @@ namespace GourmetProject.Game.Orchestration
             }
 
             _run.ClearPendingActionExecution();
-            ActionExecutor.Commit(_run, context);
+            float previousDay = ActionExecutor.Commit(_run, context);
             RunPersistence.Save(_run);
-            ResolveNodes(PromptNextAction);
+            ResolveNodes(PromptNextAction, previousDay);
         }
 
         private void EnsurePendingBattleReward(ActionExecutionContext actionContext)
@@ -1997,7 +2000,7 @@ namespace GourmetProject.Game.Orchestration
             _view.ShowDirectPassiveItemAcquire(
                 directReward?.Item,
                 directReward?.AcquireResult ?? default,
-                () => ContinueAfterEventRewards(onDone));
+                () => ExitEventAndContinueAfterRewards(onDone));
         }
 
         private void ContinueResolvedEventOption(
@@ -2197,7 +2200,12 @@ namespace GourmetProject.Game.Orchestration
         private void FinishEventAndContinue(cfg.GameEvent ev, EventResolveResult result, Action onDone)
         {
             EventService.OnEventFinished(_run, ev, result);
-            ContinueAfterEventRewards(onDone);
+            ExitEventAndContinueAfterRewards(onDone);
+        }
+
+        private void ExitEventAndContinueAfterRewards(Action onDone)
+        {
+            _view.ExitEventPage(() => ContinueAfterEventRewards(onDone));
         }
 
         private void ContinueAfterEventRewards(Action onDone)

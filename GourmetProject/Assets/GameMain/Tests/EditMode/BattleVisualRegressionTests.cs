@@ -4,12 +4,14 @@ using System.Threading;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Meta;
+using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -79,6 +81,117 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void DishValueBadge_SetValueImmediatelyRefreshesTextMesh()
+        {
+            const string path =
+                "Assets/GameMain/Content/Prefabs/Battle/DishValueBadge.prefab";
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            Assert.That(prefab, Is.Not.Null);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+
+            try
+            {
+                DishValueBadgeView badge = instance.GetComponent<DishValueBadgeView>();
+                TextMeshPro valueText = instance.GetComponentInChildren<TextMeshPro>(true);
+                Assert.That(badge, Is.Not.Null);
+                Assert.That(valueText, Is.Not.Null);
+
+                valueText.text = "20";
+                valueText.ForceMeshUpdate(true, true);
+                badge.SetValue("300");
+
+                Assert.That(valueText.textInfo.characterCount, Is.EqualTo(3));
+                Assert.That(valueText.textInfo.characterInfo[0].character, Is.EqualTo('3'));
+                Assert.That(valueText.textInfo.characterInfo[1].character, Is.EqualTo('0'));
+                Assert.That(valueText.textInfo.characterInfo[2].character, Is.EqualTo('0'));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void DishIconPreview_SequentialValuesRenderDistinctBadges()
+        {
+            const string badgePath =
+                "Assets/GameMain/Content/Prefabs/Battle/DishValueBadge.prefab";
+            GameObject badgePrefabObject = AssetDatabase.LoadAssetAtPath<GameObject>(badgePath);
+            Assert.That(badgePrefabObject, Is.Not.Null);
+            DishValueBadgeView badgePrefab = badgePrefabObject.GetComponent<DishValueBadgeView>();
+            Assert.That(badgePrefab, Is.Not.Null);
+
+            var sourceTexture = new Texture2D(16, 16, TextureFormat.RGBA32, false);
+            var pixels = new Color32[16 * 16];
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = new Color32(242, 224, 190, 255);
+            }
+            sourceTexture.SetPixels32(pixels);
+            sourceTexture.Apply();
+            Sprite sprite = Sprite.Create(
+                sourceTexture,
+                new Rect(0f, 0f, 16f, 16f),
+                new Vector2(0.5f, 0.5f),
+                16f);
+            var cellObject = new GameObject("CellPrefab");
+            SpriteRenderer cell = cellObject.AddComponent<SpriteRenderer>();
+            cell.sprite = sprite;
+            var dish = new DishDef(
+                "rt_badge_test",
+                "RT Badge Test",
+                20,
+                DishShape.FromRows(new[] { "X" }),
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty,
+                allowRotate: false);
+            RenderTexture first = null;
+            RenderTexture second = null;
+            RenderTexture third = null;
+            Texture2D readback = null;
+
+            try
+            {
+                DestroyPreviewRigs();
+                first = DishIconPreviewRenderer.Render(
+                    dish, sprite, 20, null, cell, badgePrefab, 96, DishIconPreviewMode.Card);
+                second = DishIconPreviewRenderer.Render(
+                    dish, sprite, 75, null, cell, badgePrefab, 96, DishIconPreviewMode.Card);
+                third = DishIconPreviewRenderer.Render(
+                    dish, sprite, 300, null, cell, badgePrefab, 96, DishIconPreviewMode.Card);
+
+                Assert.That(first, Is.Not.Null);
+                Assert.That(second, Is.Not.Null);
+                Assert.That(third, Is.Not.Null);
+                readback = new Texture2D(96, 96, TextureFormat.RGBA32, false);
+                long firstChecksum = ReadbackChecksum(first, readback);
+                long secondChecksum = ReadbackChecksum(second, readback);
+                long thirdChecksum = ReadbackChecksum(third, readback);
+
+                Assert.That(secondChecksum, Is.Not.EqualTo(firstChecksum),
+                    "连续候选预览不能沿用第一张卡的美味值。");
+                Assert.That(thirdChecksum, Is.Not.EqualTo(firstChecksum),
+                    "300 分候选不能显示成第一张卡的美味值。");
+                Assert.That(thirdChecksum, Is.Not.EqualTo(secondChecksum),
+                    "每张候选卡必须渲染自己的真实美味值。");
+            }
+            finally
+            {
+                ReleaseImmediate(first);
+                ReleaseImmediate(second);
+                ReleaseImmediate(third);
+                if (readback != null) UnityEngine.Object.DestroyImmediate(readback);
+                UnityEngine.Object.DestroyImmediate(sprite);
+                UnityEngine.Object.DestroyImmediate(sourceTexture);
+                UnityEngine.Object.DestroyImmediate(cellObject);
+                DestroyPreviewRigs();
+            }
+        }
+
+        [Test]
         public void PreparedServe_AlreadyContainsPermanentRecipeScoreModifiers()
         {
             var dish = new DishDef(
@@ -122,6 +235,49 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(preplaced.Outcome, Is.EqualTo(ServeOutcome.Placed));
             Assert.That(preplaced.Dish.PermanentFlatBonus.ToDouble(), Is.EqualTo(4d));
             Assert.That(preplaced.Dish.PermanentMultBonus.ToDouble(), Is.EqualTo(1.5d));
+        }
+
+        private static long ReadbackChecksum(RenderTexture source, Texture2D target)
+        {
+            RenderTexture previous = RenderTexture.active;
+            RenderTexture.active = source;
+            target.ReadPixels(new Rect(0f, 0f, source.width, source.height), 0, 0, false);
+            target.Apply(false, false);
+            RenderTexture.active = previous;
+
+            Color32[] pixels = target.GetPixels32();
+            long checksum = 17;
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                Color32 pixel = pixels[i];
+                checksum = unchecked(checksum * 31 + pixel.r);
+                checksum = unchecked(checksum * 31 + pixel.g);
+                checksum = unchecked(checksum * 31 + pixel.b);
+                checksum = unchecked(checksum * 31 + pixel.a);
+            }
+            return checksum;
+        }
+
+        private static void ReleaseImmediate(RenderTexture texture)
+        {
+            if (texture == null)
+            {
+                return;
+            }
+
+            texture.Release();
+            UnityEngine.Object.DestroyImmediate(texture);
+        }
+
+        private static void DestroyPreviewRigs()
+        {
+            foreach (DishIconPreviewRenderer rig in Resources.FindObjectsOfTypeAll<DishIconPreviewRenderer>())
+            {
+                if (rig != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(rig.gameObject);
+                }
+            }
         }
 
         [Test]
