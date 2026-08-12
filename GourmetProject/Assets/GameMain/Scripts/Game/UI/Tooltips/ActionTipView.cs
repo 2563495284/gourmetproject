@@ -1,3 +1,5 @@
+using DG.Tweening;
+using GameStartStudio.UI;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -17,12 +19,16 @@ namespace GourmetProject.Game.UI.Tooltips
     /// </summary>
     public abstract class ActionTipView : MonoBehaviour
     {
+        private const float ShowDuration = 0.12f;
+        private const float HideDuration = 0.08f;
+
         [Header("Root")]
         [SerializeField] private CanvasGroup _canvasGroup;
 
         [Header("卡片内容")]
         [SerializeField] private TMP_Text _titleText;
         [SerializeField] private TMP_Text _descText;
+        [SerializeField] private TmpTextVertexAnimator _titleAnimator;
 
         [Header("底部信息行（可空：装饰品和消耗品 Tips 无此行）")]
         [SerializeField] private GameObject _footerRoot;
@@ -31,27 +37,57 @@ namespace GourmetProject.Game.UI.Tooltips
         protected TMP_Text TitleText => _titleText;
         protected TMP_Text DescText => _descText;
 
+        private Tween _visibilityTween;
+
         /// <summary>显示 Tips（不吃射线，纯展示）。</summary>
         public void Show()
         {
+            bool wasActive = gameObject.activeSelf;
             gameObject.SetActive(true);
             if (_canvasGroup != null)
             {
-                _canvasGroup.alpha = 1f;
+                KillVisibilityTween();
+                if (!wasActive)
+                {
+                    _canvasGroup.alpha = 0f;
+                }
+
                 _canvasGroup.blocksRaycasts = false;
                 _canvasGroup.interactable = false;
+                _visibilityTween = _canvasGroup
+                    .DOFade(1f, ShowDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetUpdate(true)
+                    .SetLink(gameObject)
+                    .OnComplete(() => _visibilityTween = null);
             }
         }
 
         /// <summary>隐藏 Tips。</summary>
         public void Hide()
         {
-            if (_canvasGroup != null)
+            if (!gameObject.activeSelf)
             {
-                _canvasGroup.alpha = 0f;
+                return;
             }
 
-            gameObject.SetActive(false);
+            if (_canvasGroup == null || !Application.isPlaying)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
+            KillVisibilityTween();
+            _visibilityTween = _canvasGroup
+                .DOFade(0f, HideDuration)
+                .SetEase(Ease.InQuad)
+                .SetUpdate(true)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    _visibilityTween = null;
+                    gameObject.SetActive(false);
+                });
         }
 
         /// <summary>设置标题与描述框正文。</summary>
@@ -60,12 +96,40 @@ namespace GourmetProject.Game.UI.Tooltips
             if (_titleText != null)
             {
                 _titleText.text = title ?? string.Empty;
+                EnsureTitleAnimator();
+                _titleAnimator?.Rebuild();
             }
 
             if (_descText != null)
             {
                 _descText.text = desc ?? string.Empty;
             }
+        }
+
+        private void OnDisable()
+        {
+            KillVisibilityTween();
+        }
+
+        private void EnsureTitleAnimator()
+        {
+            if (_titleAnimator == null && _titleText != null)
+            {
+                _titleAnimator = _titleText.GetComponent<TmpTextVertexAnimator>();
+            }
+
+            _titleAnimator?.SetPreset(TmpTextAnimationPreset.TipTitle);
+        }
+
+        private void KillVisibilityTween()
+        {
+            if (_visibilityTween == null)
+            {
+                return;
+            }
+
+            _visibilityTween.Kill();
+            _visibilityTween = null;
         }
 
         /// <summary>设置底部信息行；<paramref name="footer"/> 为空则隐藏整行。</summary>
