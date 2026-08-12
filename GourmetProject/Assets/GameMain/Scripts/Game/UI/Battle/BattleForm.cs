@@ -358,6 +358,7 @@ namespace GourmetProject.Game.UI.Battle
             CancelPassivePresentations();
             _activeItemUse?.Dispose();
             _rewardPeekOnly = false;
+            _axisBinder?.EndAdvanceSequence();
             _timelineAxisFocus?.Cancel();
             _actionAxisBar?.CancelPresentation();
             _deck?.KillAllTweens();
@@ -444,6 +445,12 @@ namespace GourmetProject.Game.UI.Battle
         public void OnSlotRewardConfirmed()
         {
             _loop?.OnSlotRewardConfirmed();
+        }
+
+        /// <summary>事件奖励领取完成后，恢复并结束仍在底层显示的事件页。</summary>
+        public void OnEventRewardConfirmed()
+        {
+            _loop?.OnEventRewardConfirmed();
         }
 
         public void CloseRewardOperationPages()
@@ -848,6 +855,11 @@ namespace GourmetProject.Game.UI.Battle
             SwitchTo(GameplayView.Shop);
         }
 
+        public void OpenRewardForm(RewardFormOpenArgs args)
+        {
+            GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, args);
+        }
+
         /// <summary>时间轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
         public void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
         {
@@ -929,6 +941,16 @@ namespace GourmetProject.Game.UI.Battle
             {
                 _axisBinder.PlayAdvance(_run, fromDay, toDay, arrivingNodeId, onDone);
             }
+        }
+
+        public void BeginTimelineAdvanceSequence(float fromDay)
+        {
+            _axisBinder?.BeginAdvanceSequence(fromDay);
+        }
+
+        public void EndTimelineAdvanceSequence()
+        {
+            _axisBinder?.EndAdvanceSequence();
         }
 
         /// <summary>

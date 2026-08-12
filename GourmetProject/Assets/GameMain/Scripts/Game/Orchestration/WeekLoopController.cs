@@ -35,6 +35,9 @@ namespace GourmetProject.Game.Orchestration
 
         void OpenShop();
 
+        /// <summary>打开通用奖励弹窗；事件奖励需要在弹窗完成后再结束事件页。</summary>
+        void OpenRewardForm(RewardFormOpenArgs args);
+
         /// <summary>时间轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
         void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick);
 
@@ -48,6 +51,12 @@ namespace GourmetProject.Game.Orchestration
             float toDay,
             string arrivingNodeId,
             Action onDone);
+
+        /// <summary>锁定本次推进演出的视觉游标，避免节点页面重建时读取错误日期。</summary>
+        void BeginTimelineAdvanceSequence(float fromDay);
+
+        /// <summary>推进与所经过节点均处理完成后解除视觉游标锁。</summary>
+        void EndTimelineAdvanceSequence();
 
         void PlayTimelineNodeCue(
             string nodeId,
@@ -121,6 +130,7 @@ namespace GourmetProject.Game.Orchestration
 
         private Action _afterNodes;
         private Action _afterBattleWin;
+        private Action _afterEventReward;
         private Action _beforeBattleReward;
         private Action _afterShop;
         private bool _currentBattleIsBoss;
@@ -198,6 +208,13 @@ namespace GourmetProject.Game.Orchestration
                     UIForms.Reward,
                     UIForms.GroupDialog,
                     RewardFormOpenArgs.GenericQueue(continuation));
+                return;
+            }
+
+            // RewardForm 已清空队列、但事件完成回调尚未落盘时，从事件专用续接点恢复。
+            if (_run.PendingGenericRewardContinuation == PendingGenericRewardContinuationKind.Event)
+            {
+                ContinueAfterRecoveredEventReward();
                 return;
             }
 
@@ -768,6 +785,43 @@ namespace GourmetProject.Game.Orchestration
                 restoringPending: true);
         }
 
+        /// <summary>事件奖励领取完毕：先完成并退出事件，再提交行动和推进时间轴。</summary>
+        public void OnEventRewardConfirmed()
+        {
+            Action cb = _afterEventReward;
+            _afterEventReward = null;
+            if (cb != null)
+            {
+                cb.Invoke();
+                return;
+            }
+
+            ContinueAfterRecoveredEventReward();
+        }
+
+        private void ContinueAfterRecoveredEventReward()
+        {
+            PendingActionExecutionSaveData pending = _run?.GetPendingActionExecution();
+            cfg.GameEvent ev = pending?.OutcomeKind == ActionOutcomeKind.Event
+                && !string.IsNullOrEmpty(pending.EventId)
+                    ? _run.Tables?.TbEvent.GetOrDefault(pending.EventId)
+                    : null;
+            EventService.OnEventFinished(_run, ev, EventResolveResult.Immediate(string.Empty));
+            if (_run != null)
+            {
+                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
+                RunPersistence.Save(_run);
+            }
+
+            if (pending == null)
+            {
+                DrainPendingExtraNodes(PromptNextAction);
+                return;
+            }
+
+            DrainPendingExtraNodes(ContinueAfterRecoveredBattleReward);
+        }
+
         private void ContinueBattleWin()
         {
             Action cb = _afterBattleWin;
@@ -936,6 +990,19 @@ namespace GourmetProject.Game.Orchestration
                 : _timelinePresentationTarget;
             _timelinePresentationActive = presentationFromDay.HasValue
                 && _timelinePresentationTarget > _timelinePresentationCursor + TimelineMath.Epsilon;
+            if (_timelinePresentationActive)
+            {
+                _view.BeginTimelineAdvanceSequence(_timelinePresentationCursor);
+                float fromDay = _timelinePresentationCursor;
+                _timelinePresentationCursor = _timelinePresentationTarget;
+                _view.PlayTimelineAdvance(
+                    fromDay,
+                    _timelinePresentationTarget,
+                    null,
+                    Once(ProcessNextNode));
+                return;
+            }
+
             ProcessNextNode();
         }
 
@@ -947,19 +1014,6 @@ namespace GourmetProject.Game.Orchestration
             if (node == null)
             {
                 FinishTimelineNodeSequence();
-                return;
-            }
-
-            if (_timelinePresentationActive
-                && node.Day > _timelinePresentationCursor + TimelineMath.Epsilon)
-            {
-                float fromDay = _timelinePresentationCursor;
-                _timelinePresentationCursor = node.Day;
-                _view.PlayTimelineAdvance(
-                    fromDay,
-                    node.Day,
-                    node.Id,
-                    Once(() => ProcessArrivedNode(node)));
                 return;
             }
 
@@ -1028,20 +1082,8 @@ namespace GourmetProject.Game.Orchestration
 
         private void FinishTimelineNodeSequence()
         {
-            if (_timelinePresentationActive
-                && _timelinePresentationTarget > _timelinePresentationCursor + TimelineMath.Epsilon)
-            {
-                float fromDay = _timelinePresentationCursor;
-                _timelinePresentationCursor = _timelinePresentationTarget;
-                _view.PlayTimelineAdvance(
-                    fromDay,
-                    _timelinePresentationTarget,
-                    null,
-                    Once(FinishTimelineNodeSequence));
-                return;
-            }
-
             _timelinePresentationActive = false;
+            _view.EndTimelineAdvanceSequence();
             RunPersistence.Save(_run);
             Action cb = _afterNodes;
             _afterNodes = null;
@@ -2199,25 +2241,42 @@ namespace GourmetProject.Game.Orchestration
 
         private void FinishEventAndContinue(cfg.GameEvent ev, EventResolveResult result, Action onDone)
         {
-            EventService.OnEventFinished(_run, ev, result);
-            ExitEventAndContinueAfterRewards(onDone);
+            if (_run != null && _run.HasPendingGenericRewards)
+            {
+                _afterEventReward = () => CompleteEventAndExit(
+                    ev,
+                    result,
+                    onDone,
+                    persistEventRewardCompletion: true);
+                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.Event;
+                RunPersistence.Save(_run);
+                _view.OpenRewardForm(
+                    RewardFormOpenArgs.GenericQueue(PendingGenericRewardContinuationKind.Event));
+                return;
+            }
+
+            CompleteEventAndExit(ev, result, onDone);
         }
 
         private void ExitEventAndContinueAfterRewards(Action onDone)
         {
-            _view.ExitEventPage(() => ContinueAfterEventRewards(onDone));
+            _view.ExitEventPage(() => DrainPendingExtraNodes(onDone));
         }
 
-        private void ContinueAfterEventRewards(Action onDone)
+        private void CompleteEventAndExit(
+            cfg.GameEvent ev,
+            EventResolveResult result,
+            Action onDone,
+            bool persistEventRewardCompletion = false)
         {
-            if (_run != null && _run.HasPendingGenericRewards)
+            EventService.OnEventFinished(_run, ev, result);
+            if (persistEventRewardCompletion && _run != null)
             {
-                _afterBattleWin = () => DrainPendingExtraNodes(onDone);
-                GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.GenericQueue(confirmBattleRewardAfterDone: true));
-                return;
+                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
+                RunPersistence.Save(_run);
             }
 
-            DrainPendingExtraNodes(onDone);
+            ExitEventAndContinueAfterRewards(onDone);
         }
 
         private void ShowEventPage(

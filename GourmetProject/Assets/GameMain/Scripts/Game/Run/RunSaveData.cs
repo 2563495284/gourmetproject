@@ -377,6 +377,7 @@ namespace GourmetProject.Game.Run
         None = 0,
         Battle = 1,
         Slot = 2,
+        Event = 3,
     }
 
     [Serializable]

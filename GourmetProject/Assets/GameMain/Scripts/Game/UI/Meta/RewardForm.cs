@@ -434,7 +434,12 @@ namespace GourmetProject.Game.UI.Meta
                 }
 
                 PendingGenericRewardContinuationKind continuation = _genericRewardContinuation;
-                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
+                // 事件必须在 RewardForm 完整关闭后才结束；保留续接标记到事件回调落盘，
+                // 这样在“奖励队列已清空、事件尚未完成”的中断窗口也能正确恢复。
+                if (continuation != PendingGenericRewardContinuationKind.Event)
+                {
+                    _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
+                }
                 if (_confirmBattleRewardAfterGeneric)
                 {
                     _run.ClearPendingRewardBattleView();
@@ -450,6 +455,10 @@ namespace GourmetProject.Game.UI.Meta
                     else if (continuation == PendingGenericRewardContinuationKind.Slot)
                     {
                         BattleForm.Active?.OnSlotRewardConfirmed();
+                    }
+                    else if (continuation == PendingGenericRewardContinuationKind.Event)
+                    {
+                        BattleForm.Active?.OnEventRewardConfirmed();
                     }
                     else if (!closeForm)
                     {

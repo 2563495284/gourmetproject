@@ -17,6 +17,7 @@ namespace GourmetProject.Game.UI.Battle.View
     {
         private readonly ActionAxisBar _axis;
         private readonly Func<TimelineNodeTipView> _timelineTip;
+        private float? _presentationDay;
 
         public TimelineAxisBinder(
             ActionAxisBar axis,
@@ -31,7 +32,18 @@ namespace GourmetProject.Game.UI.Battle.View
             _axis?.Build(
                 run,
                 (node, go) => ConfigureNodeTip(run, node, go),
-                executingNodeId);
+                executingNodeId,
+                _presentationDay);
+        }
+
+        public void BeginAdvanceSequence(float fromDay)
+        {
+            _presentationDay = Mathf.Max(0f, fromDay);
+        }
+
+        public void EndAdvanceSequence()
+        {
+            _presentationDay = null;
         }
 
         public void BuildPresentation(
@@ -72,6 +84,7 @@ namespace GourmetProject.Game.UI.Battle.View
             string arrivingNodeId,
             Action onComplete)
         {
+            _presentationDay = Mathf.Max(0f, toDay);
             TimelineAxisViewState target = CreateState(
                 run,
                 currentDay: toDay,
@@ -93,6 +106,7 @@ namespace GourmetProject.Game.UI.Battle.View
         {
             TimelineAxisViewState target = CreateState(
                 run,
+                currentDay: _presentationDay,
                 executingNodeId: kind == TimelinePresentationCueKind.TriggerStart ? nodeId : null);
             _axis?.PlayCue(TimelinePresentationCue.Node(kind, nodeId, target), onComplete);
             if (_axis == null)
@@ -117,13 +131,13 @@ namespace GourmetProject.Game.UI.Battle.View
                 run,
                 result.Before,
                 result.BeforeLengthDays,
-                run?.CurrentDay,
+                _presentationDay ?? run?.CurrentDay,
                 executingNodeId);
             TimelineAxisViewState after = CreateState(
                 run,
                 result.After,
                 result.AfterLengthDays,
-                run?.CurrentDay,
+                _presentationDay ?? run?.CurrentDay,
                 executingNodeId);
             _axis.BindState(before, run, (node, go) => ConfigureNodeTip(run, node, go), animate: false);
             IReadOnlyList<TimelinePresentationCue> cues = TimelineAxisPresentationPlanner.BuildMutation(
