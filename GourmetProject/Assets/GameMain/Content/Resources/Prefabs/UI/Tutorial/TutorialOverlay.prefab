@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7917320176017909893}
   - component: {fileID: 4486195877331241066}
   - component: {fileID: 4588460991401962246}
+  - component: {fileID: 3898411680962816808}
   m_Layer: 5
   m_Name: DialoguePanel
   m_TagString: Untagged
@@ -76,6 +77,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &3898411680962816808
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 32880441798148864}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ad2b5f1e9d5b41e78662f00645e559c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Tutorial.TutorialOverlayClickSurface
 --- !u!1 &441326633779458468
 GameObject:
   m_ObjectHideFlags: 0
@@ -87,6 +100,7 @@ GameObject:
   - component: {fileID: 398128659068142157}
   - component: {fileID: 833036377684611112}
   - component: {fileID: 3931992682076780726}
+  - component: {fileID: 5808515789744218168}
   m_Layer: 5
   m_Name: HoleInputBlocker
   m_TagString: Untagged
@@ -151,6 +165,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &5808515789744218168
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 441326633779458468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ad2b5f1e9d5b41e78662f00645e559c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Tutorial.TutorialOverlayClickSurface
 --- !u!1 &2201298345001875091
 GameObject:
   m_ObjectHideFlags: 0
@@ -162,6 +188,7 @@ GameObject:
   - component: {fileID: 2251631120510270117}
   - component: {fileID: 8495332102865797832}
   - component: {fileID: 8369418378952263199}
+  - component: {fileID: 4224316342334725574}
   m_Layer: 5
   m_Name: Mask2
   m_TagString: Untagged
@@ -226,6 +253,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &4224316342334725574
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2201298345001875091}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ad2b5f1e9d5b41e78662f00645e559c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Tutorial.TutorialOverlayClickSurface
 --- !u!1 &2764129280575348134
 GameObject:
   m_ObjectHideFlags: 0
@@ -340,11 +379,11 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6587653483058035311}
-  m_Father: {fileID: 1253614864803497517}
+  m_Father: {fileID: 4487800657916857117}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -111.1}
+  m_AnchoredPosition: {x: -348, y: -107.1}
   m_SizeDelta: {x: 190, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &9109715211187601868
@@ -414,8 +453,7 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 6923222004158903972}
+  m_Children: []
   m_Father: {fileID: 4487800657916857117}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -472,6 +510,7 @@ GameObject:
   - component: {fileID: 8998782827369135245}
   - component: {fileID: 1199684095265443574}
   - component: {fileID: 8664878773225161291}
+  - component: {fileID: 5373445811253935519}
   m_Layer: 5
   m_Name: Mask0
   m_TagString: Untagged
@@ -536,6 +575,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &5373445811253935519
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4516087721988718401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ad2b5f1e9d5b41e78662f00645e559c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Tutorial.TutorialOverlayClickSurface
 --- !u!1 &5944094962688262759
 GameObject:
   m_ObjectHideFlags: 0
@@ -547,6 +598,7 @@ GameObject:
   - component: {fileID: 2065719602555898380}
   - component: {fileID: 1509373529010363897}
   - component: {fileID: 982662788734321291}
+  - component: {fileID: 2920774560134059239}
   m_Layer: 5
   m_Name: Mask1
   m_TagString: Untagged
@@ -611,6 +663,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &2920774560134059239
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5944094962688262759}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ad2b5f1e9d5b41e78662f00645e559c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Tutorial.TutorialOverlayClickSurface
 --- !u!1 &6275452613240650420
 GameObject:
   m_ObjectHideFlags: 0
@@ -711,7 +775,7 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_characterHorizontalScale: 1
@@ -896,6 +960,7 @@ GameObject:
   - component: {fileID: 7763010675943424450}
   - component: {fileID: 991218741392421800}
   - component: {fileID: 4242795681997001982}
+  - component: {fileID: 4061520806129639690}
   m_Layer: 5
   m_Name: Mask3
   m_TagString: Untagged
@@ -960,6 +1025,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &4061520806129639690
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8139211134075243059}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ad2b5f1e9d5b41e78662f00645e559c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Tutorial.TutorialOverlayClickSurface
 --- !u!1 &8481980292681014637
 GameObject:
   m_ObjectHideFlags: 0
@@ -990,6 +1067,7 @@ RectTransform:
   m_Children:
   - {fileID: 7917320176017909893}
   - {fileID: 1253614864803497517}
+  - {fileID: 6923222004158903972}
   m_Father: {fileID: 5170050271623245711}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}

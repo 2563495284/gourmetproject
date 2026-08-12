@@ -321,12 +321,11 @@ namespace GourmetProject.Game.Tutorial
         private readonly GameObject _instance;
         private readonly RectTransform _root;
         private readonly Image[] _masks;
-        private readonly Image[] _progressDots;
         private readonly Image _holeBlocker;
         private readonly RectTransform _tip;
         private readonly Image _mascot;
         private readonly TMP_Text _message;
-        private readonly Button _continue;
+        private readonly TutorialOverlayClickSurface[] _clickSurfaces;
         private Action _advance;
         private TutorialStepDefinition _step;
         private Rect _lastHole;
@@ -364,10 +363,10 @@ namespace GourmetProject.Game.Tutorial
             _tip = Require<RectTransform>(instance.transform, "DangDangDialogue");
             _mascot = Require<Image>(instance.transform, "DangDangDialogue/DangDang");
             _message = Require<TMP_Text>(instance.transform, "DangDangDialogue/DialoguePanel/Message");
-            _continue = Require<Button>(instance.transform, "DangDangDialogue/DialoguePanel/Continue");
-            Transform progress = RequireTransform(instance.transform, "DangDangDialogue/DialoguePanel/Progress");
-            _progressDots = progress.GetComponentsInChildren<Image>(includeInactive: true);
-            _continue.onClick.AddListener(OnContinueClicked);
+            _clickSurfaces = instance.GetComponentsInChildren<TutorialOverlayClickSurface>(includeInactive: true);
+            if (_clickSurfaces.Length == 0)
+                throw new InvalidOperationException("Tutorial overlay prefab does not provide any click surfaces.");
+            foreach (TutorialOverlayClickSurface surface in _clickSurfaces) surface.Bind(OnOverlayClicked);
             Canvas.willRenderCanvases += RefreshTrackedLayout;
         }
 
@@ -379,8 +378,6 @@ namespace GourmetProject.Game.Tutorial
             _message.text = step.Message;
             _mascot.sprite = LoadMascot(step.Pose);
             _mascot.enabled = _mascot.sprite != null;
-            _continue.gameObject.SetActive(step.Mode == TutorialAdvanceMode.Continue);
-            RefreshProgress(stepIndex, stepCount);
             Canvas.ForceUpdateCanvases();
             Vector2Int canvasSize = GetCanvasSize();
             bool hasHole = TryResolveHole(step.Anchors, out Rect hole);
@@ -418,11 +415,14 @@ namespace GourmetProject.Game.Tutorial
         public void Dispose()
         {
             Canvas.willRenderCanvases -= RefreshTrackedLayout;
-            if (_continue != null) _continue.onClick.RemoveListener(OnContinueClicked);
+            foreach (TutorialOverlayClickSurface surface in _clickSurfaces) surface?.Unbind();
             if (_instance != null) UnityEngine.Object.Destroy(_instance);
         }
 
-        private void OnContinueClicked() => _advance?.Invoke();
+        private void OnOverlayClicked()
+        {
+            if (_step?.Mode == TutorialAdvanceMode.Continue) _advance?.Invoke();
+        }
 
         private bool TryResolveHole(IReadOnlyList<string> ids, out Rect result)
         {
@@ -505,25 +505,6 @@ namespace GourmetProject.Game.Tutorial
             int width = Mathf.RoundToInt(rect.width);
             int height = Mathf.RoundToInt(rect.height);
             return new Vector2Int(width > 0 ? width : Screen.width, height > 0 ? height : Screen.height);
-        }
-
-        private void RefreshProgress(int current, int count)
-        {
-            count = Mathf.Max(1, count);
-            if (count > _progressDots.Length)
-            {
-                Debug.LogError($"Tutorial sequence has {count} steps, but the overlay prefab only provides {_progressDots.Length} progress dots.");
-                count = _progressDots.Length;
-            }
-
-            Sprite active = LoadSprite("Sprites/UI/Tutorial/Components/dialogue_progress_active");
-            Sprite inactive = LoadSprite("Sprites/UI/Tutorial/Components/dialogue_progress_inactive");
-            for (int i = 0; i < _progressDots.Length; i++)
-            {
-                Image dot = _progressDots[i];
-                dot.gameObject.SetActive(i < count);
-                if (i < count) dot.sprite = i == current ? active : inactive;
-            }
         }
 
         private static Sprite LoadMascot(TutorialMascotPose pose)

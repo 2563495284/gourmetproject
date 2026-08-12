@@ -19,6 +19,7 @@ namespace GourmetProject.Tests.PlayMode
             TutorialAnchorRegistry.Register("tutorial.test.anchor", anchor);
 
             TutorialOverlayView overlay = TutorialOverlayView.Create();
+            int continueCount = 0;
             var info = new TutorialStepDefinition(
                 "信息说明",
                 TutorialMascotPose.Remind,
@@ -28,15 +29,20 @@ namespace GourmetProject.Tests.PlayMode
                 exitCommand: null,
                 allowTargetInteraction: false,
                 "tutorial.test.anchor");
-            overlay.Show(info, 0, 1, () => { });
+            overlay.Show(info, 0, 1, () => continueCount++);
             yield return null;
 
             Transform blocker = overlay.transform.Find("HoleInputBlocker");
             Image mascot = overlay.transform.Find("DangDangDialogue/DangDang")?.GetComponent<Image>();
+            TutorialOverlayClickSurface maskSurface = overlay.transform.Find("Mask0")?.GetComponent<TutorialOverlayClickSurface>();
             Assert.That(blocker, Is.Not.Null);
             Assert.That(blocker.gameObject.activeSelf, Is.True);
             Assert.That(mascot, Is.Not.Null);
             Assert.That(mascot.sprite, Is.Not.Null);
+            Assert.That(maskSurface, Is.Not.Null);
+
+            maskSurface.OnPointerClick(null);
+            Assert.That(continueCount, Is.EqualTo(1));
 
             var signal = new TutorialStepDefinition(
                 "操作说明",
@@ -51,6 +57,8 @@ namespace GourmetProject.Tests.PlayMode
             yield return null;
 
             Assert.That(blocker.gameObject.activeSelf, Is.False);
+            maskSurface.OnPointerClick(null);
+            Assert.That(continueCount, Is.EqualTo(1), "Signal steps must ignore overlay clicks.");
 
             TutorialAnchorRegistry.Unregister("tutorial.test.anchor", anchor);
             overlay.Dispose();
