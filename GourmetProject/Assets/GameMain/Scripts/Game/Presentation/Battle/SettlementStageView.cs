@@ -27,9 +27,12 @@ namespace GourmetProject.Game.Presentation.Battle
         private DiningTableCoordinateMapper _mapper;
         private Transform _fxRoot;
         private float _visualScale = 1f;
-        private SettlementStageLabelView _labelPrefab;
-        private SettlementStageLabelView _finaleLabelPrefab;
-        private SpriteRenderer _spritePrefab;
+
+        [Header("固定资源（prefab 绑定）")]
+        [SerializeField] private SettlementStageLabelView _labelPrefab;
+        [SerializeField] private SettlementStageLabelView _finaleLabelPrefab;
+        [SerializeField] private SpriteRenderer _spritePrefab;
+
         private GameObject _groupSpotlight;
         private GameObject _groupLabel;
         private SettlementEffectGroup _resultHitSoundGroup;
@@ -38,18 +41,12 @@ namespace GourmetProject.Game.Presentation.Battle
             IReadOnlyDictionary<int, DishPieceView> dishViews,
             DiningTableCoordinateMapper mapper,
             Transform fxRoot,
-            SettlementStageLabelView labelPrefab,
-            SettlementStageLabelView finaleLabelPrefab,
-            SpriteRenderer spritePrefab,
             float visualScale = 1f)
         {
             ClearImmediate();
             _dishViews = dishViews;
             _mapper = mapper;
             _fxRoot = fxRoot != null ? fxRoot : transform;
-            _labelPrefab = labelPrefab;
-            _finaleLabelPrefab = finaleLabelPrefab;
-            _spritePrefab = spritePrefab;
             _visualScale = Mathf.Max(0.0001f, visualScale);
         }
 

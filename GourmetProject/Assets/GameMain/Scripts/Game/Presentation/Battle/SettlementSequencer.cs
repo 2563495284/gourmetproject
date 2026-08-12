@@ -45,9 +45,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [FormerlySerializedAs("_floatingTextPrefab")]
         [SerializeField] private FloatingTextView _settlementEffectLabelPrefab;
         [SerializeField] private SweetTransferParticleView _sweetTransferParticlePrefab;
-        [SerializeField] private SettlementStageLabelView _settlementStageLabelPrefab;
-        [SerializeField] private SettlementStageLabelView _settlementFinaleLabelPrefab;
-        [SerializeField] private SpriteRenderer _settlementStageSpritePrefab;
+        [SerializeField] private SettlementStageView _settlementStagePrefab;
 
         [Header("餐桌舞台节拍（统一速度下的秒数）")]
         [SerializeField] private float _baseDishDuration = 0.38f;
@@ -193,8 +191,18 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
+            if (!EnsureStage())
+            {
+                return;
+            }
+
             renderScore?.Invoke(0);
             _visualScale = Mathf.Max(0.0001f, visualScale);
+            _stage.Configure(
+                dishViews,
+                mapper,
+                fxRoot,
+                _visualScale);
             SettlementPresentationPlan plan = SettlementPresentationPlan.Build(result);
             var playback = new SettlementPlaybackState(plan.ResultBeatCount, scoreFire);
             var ledger = new SettlementRunningLedger(result.DishScores, baselineSnapshot);
@@ -219,16 +227,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 _currentPacePhase,
                 _currentSettlementSpeed,
                 playTransition: false);
-            EnsureStage();
-            _stage.Configure(
-                dishViews,
-                mapper,
-                fxRoot,
-                _settlementStageLabelPrefab,
-                _settlementFinaleLabelPrefab,
-                _settlementStageSpritePrefab,
-                _visualScale);
-
             try
             {
                 var baseTasks = new List<Awaitable>(plan.BaseBeats.Count);
@@ -612,17 +610,22 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearRetainedDishValueBadges();
         }
 
-        private void EnsureStage()
+        private bool EnsureStage()
         {
-            if (_stage == null)
+            if (_stage != null)
             {
-                _stage = GetComponent<SettlementStageView>();
+                return true;
             }
 
-            if (_stage == null)
+            if (_settlementStagePrefab == null)
             {
-                _stage = gameObject.AddComponent<SettlementStageView>();
+                Debug.LogError($"{nameof(SettlementSequencer)} 缺少结算舞台 prefab。", this);
+                return false;
             }
+
+            _stage = Instantiate(_settlementStagePrefab, transform, false);
+            _stage.name = "SettlementStage";
+            return true;
         }
 
         private static SettlementScopeSignal ScopeFor(SettlementEffectGroup group)
