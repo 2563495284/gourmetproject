@@ -13,15 +13,15 @@ namespace GourmetProject.Editor
 {
     internal static class DishIconPreviewPrefabBuilder
     {
-        private const string RewardPrefabPath = "Assets/GameMain/Content/Prefabs/UI/RewardDishPanel.prefab";
-        private const string ShopFoodPrefabPath = "Assets/GameMain/Content/Prefabs/UI/ShopFoodBuyItemView.prefab";
-        private const string ShopBuyCardPrefabPath = "Assets/GameMain/Content/Prefabs/UI/ShopBuyCardView.prefab";
-        private const string RecipeEditDishPrefabPath = "Assets/GameMain/Content/Prefabs/UI/RecipeEditDishView.prefab";
-        private const string RewardFormPrefabPath = "Assets/GameMain/Content/Prefabs/UI/RewardForm.prefab";
+        private const string RewardPrefabPath = "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/RewardDishPanel.prefab";
+        private const string ShopFoodPrefabPath = "Assets/GameMain/Content/Prefabs/UI/Meta/Shop/ShopFoodBuyItemView.prefab";
+        private const string ShopBuyCardPrefabPath = "Assets/GameMain/Content/Prefabs/UI/Meta/Shop/ShopBuyCardView.prefab";
+        private const string RecipeEditDishPrefabPath = "Assets/GameMain/Content/Prefabs/UI/Meta/Recipes/RecipeEditDishView.prefab";
+        private const string RewardFormPrefabPath = "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/RewardForm.prefab";
         private const string ServingOutletPrefabPath = "Assets/GameMain/Content/Prefabs/UI/Hud/ServingOutlet.prefab";
-        private const string DishPiecePrefabPath = "Assets/GameMain/Content/Prefabs/Battle/DishPiece.prefab";
-        private const string CellPrefabPath = "Assets/GameMain/Content/Prefabs/Battle/DiningTableCell.prefab";
-        private const string BadgePrefabPath = "Assets/GameMain/Content/Prefabs/Battle/DishValueBadge.prefab";
+        private const string DishPiecePrefabPath = "Assets/GameMain/Content/Prefabs/Battle/Dishes/DishPiece.prefab";
+        private const string CellPrefabPath = "Assets/GameMain/Content/Prefabs/Battle/Board/DiningTableCell.prefab";
+        private const string BadgePrefabPath = "Assets/GameMain/Content/Prefabs/Battle/Dishes/DishValueBadge.prefab";
         [MenuItem("GourmetProject/UI/Rebuild Dish Icon Previews")]
         private static void RebuildDishIconPreviews()
         {

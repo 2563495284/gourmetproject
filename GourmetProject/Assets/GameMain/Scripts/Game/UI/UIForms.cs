@@ -15,24 +15,24 @@ namespace GourmetProject.Game.UI
         public const string GroupTransition = "Transition";
 
         // 界面预制体资源路径（编辑器资源模式下直接用工程内路径）。
-        public const string MainMenu = "Assets/GameMain/Content/Prefabs/UI/MainMenuForm.prefab";
-        public const string CharacterSelect = "Assets/GameMain/Content/Prefabs/UI/CharacterSelectForm.prefab";
-        public const string Settings = "Assets/GameMain/Content/Prefabs/UI/SettingsForm.prefab";
-        public const string ConfirmDialog = "Assets/GameMain/Content/Prefabs/UI/ConfirmDialogForm.prefab";
-        public const string CartoonSceneTransition = "Assets/GameMain/Content/Prefabs/UI/CartoonSceneTransitionForm.prefab";
-        public const string OpeningComic = "Assets/GameMain/Content/Prefabs/UI/OpeningComicForm.prefab";
+        public const string MainMenu = "Assets/GameMain/Content/Prefabs/UI/Menu/MainMenuForm.prefab";
+        public const string CharacterSelect = "Assets/GameMain/Content/Prefabs/UI/Menu/CharacterSelectForm.prefab";
+        public const string Settings = "Assets/GameMain/Content/Prefabs/UI/Settings/SettingsForm.prefab";
+        public const string ConfirmDialog = "Assets/GameMain/Content/Prefabs/UI/Common/ConfirmDialogForm.prefab";
+        public const string CartoonSceneTransition = "Assets/GameMain/Content/Prefabs/UI/Common/CartoonSceneTransitionForm.prefab";
+        public const string OpeningComic = "Assets/GameMain/Content/Prefabs/UI/Menu/OpeningComicForm.prefab";
 
         // 玩法界面。
-        public const string Battle = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
-        public const string TimelineLab = "Assets/GameMain/Content/Prefabs/UI/TimelinePresentationLabForm.prefab";
-        public const string FlavorLab = "Assets/GameMain/Content/Prefabs/UI/FlavorPresentationLabForm.prefab";
+        public const string Battle = "Assets/GameMain/Content/Prefabs/UI/Battle/BattleForm.prefab";
+        public const string TimelineLab = "Assets/GameMain/Content/Prefabs/UI/Development/TimelinePresentationLabForm.prefab";
+        public const string FlavorLab = "Assets/GameMain/Content/Prefabs/UI/Development/FlavorPresentationLabForm.prefab";
 
         // 时间轴节点 / 装饰品和消耗品 hover Tips（同为 View，配合 TipHoverTrigger 悬停显示）。
-        public const string TimelineNodeTip = "Assets/GameMain/Content/Prefabs/UI/TipsView/TimelineNodeTipView.prefab";
-        public const string ItemTip = "Assets/GameMain/Content/Prefabs/UI/TipsView/ItemTipView.prefab";
-        public const string Reward = "Assets/GameMain/Content/Prefabs/UI/RewardForm.prefab";
-        public const string Result = "Assets/GameMain/Content/Prefabs/UI/ResultForm.prefab";
-        public const string HeartBreak = "Assets/GameMain/Content/Prefabs/UI/HeartBreakForm.prefab";
+        public const string TimelineNodeTip = "Assets/GameMain/Content/Prefabs/UI/Tooltips/TimelineNodeTipView.prefab";
+        public const string ItemTip = "Assets/GameMain/Content/Prefabs/UI/Tooltips/ItemTipView.prefab";
+        public const string Reward = "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/RewardForm.prefab";
+        public const string Result = "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/ResultForm.prefab";
+        public const string HeartBreak = "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/HeartBreakForm.prefab";
 
         // 玩家总档槽位。保留此别名供旧调用兼容；新持久化代码统一经 GameSavePersistence 访问。
         public const string GameSaveSlot = GameSavePersistence.Slot;

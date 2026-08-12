@@ -17,7 +17,7 @@ namespace GourmetProject.Game.Editor
     {
         private const string SourceRoot = "Assets/GameMain/Content/Art/OpeningComic/Source";
         private const string OutputRoot = "Assets/GameMain/Content/Resources/Sprites/UI/OpeningComic";
-        private const string PrefabPath = "Assets/GameMain/Content/Prefabs/UI/OpeningComicForm.prefab";
+        private const string PrefabPath = "Assets/GameMain/Content/Prefabs/UI/Menu/OpeningComicForm.prefab";
         private const string FontPath = "Assets/GameMain/Content/Resources/Fonts/AlimamaShuHeiTi-Bold SDF.asset";
         private const int TransparentPadding = 12;
 
