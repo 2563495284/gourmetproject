@@ -1,0 +1,736 @@
+{
+  "expected": 27,
+  "present": 27,
+  "valid": 27,
+  "items": [
+    {
+      "index": 1,
+      "id": "item_transfer_extra_targets",
+      "name": "三层糖果塔",
+      "path": "final/transfer_extra_targets.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        61,
+        31,
+        451,
+        490
+      ],
+      "minimum_margin": 22,
+      "bbox_coverage": 0.6829,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 2,
+      "id": "item_flavored_flat",
+      "name": "风味评分牌",
+      "path": "final/flavored_flat.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        67,
+        21,
+        435,
+        481
+      ],
+      "minimum_margin": 21,
+      "bbox_coverage": 0.6458,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 3,
+      "id": "item_flavored_count_as",
+      "name": "双层品鉴碟",
+      "path": "final/flavored_count_as.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        69,
+        39,
+        441,
+        480
+      ],
+      "minimum_margin": 32,
+      "bbox_coverage": 0.6258,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 4,
+      "id": "item_active_count_flat_all",
+      "name": "备品清单板",
+      "path": "final/active_count_flat_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        83,
+        20,
+        413,
+        492
+      ],
+      "minimum_margin": 20,
+      "bbox_coverage": 0.5942,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 5,
+      "id": "item_empty_active_slot_mult_all",
+      "name": "留白备品柜",
+      "path": "final/empty_active_slot_mult_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        26,
+        46,
+        479,
+        466
+      ],
+      "minimum_margin": 26,
+      "bbox_coverage": 0.7258,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 6,
+      "id": "item_edge_flat",
+      "name": "滚边桌布",
+      "path": "final/edge_flat.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        22,
+        35,
+        495,
+        466
+      ],
+      "minimum_margin": 17,
+      "bbox_coverage": 0.7777,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 7,
+      "id": "item_non_edge_mult",
+      "name": "中央餐台模型",
+      "path": "final/non_edge_mult.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        39,
+        50,
+        473,
+        473
+      ],
+      "minimum_margin": 39,
+      "bbox_coverage": 0.7003,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 8,
+      "id": "item_gold_per5_flat_all",
+      "name": "镶币菜单框",
+      "path": "final/gold_per5_flat_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        77,
+        16,
+        442,
+        493
+      ],
+      "minimum_margin": 16,
+      "bbox_coverage": 0.6642,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 9,
+      "id": "item_empty_cell_flat_all",
+      "name": "留白拼桌图",
+      "path": "final/empty_cell_flat_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        31,
+        57,
+        482,
+        463
+      ],
+      "minimum_margin": 30,
+      "bbox_coverage": 0.6985,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 10,
+      "id": "item_unused_discard_mult_all",
+      "name": "备用垃圾袋架",
+      "path": "final/unused_discard_mult_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        62,
+        19,
+        439,
+        500
+      ],
+      "minimum_margin": 12,
+      "bbox_coverage": 0.6917,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 11,
+      "id": "item_unused_discard_flat_all",
+      "name": "磁吸垃圾夹",
+      "path": "final/unused_discard_flat_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        53,
+        15,
+        464,
+        497
+      ],
+      "minimum_margin": 15,
+      "bbox_coverage": 0.7557,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 12,
+      "id": "item_skip_reward_dish_luck",
+      "name": "空盘回执",
+      "path": "final/skip_reward_dish_luck.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        27,
+        51,
+        493,
+        468
+      ],
+      "minimum_margin": 19,
+      "bbox_coverage": 0.7413,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 13,
+      "id": "item_skip_reward_passive_luck",
+      "name": "空柜寄售牌",
+      "path": "final/skip_reward_passive_luck.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        84,
+        30,
+        429,
+        490
+      ],
+      "minimum_margin": 22,
+      "bbox_coverage": 0.6054,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 14,
+      "id": "item_super_material_spread",
+      "name": "蜂巢桌垫",
+      "path": "final/super_material_spread.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        36,
+        37,
+        475,
+        486
+      ],
+      "minimum_margin": 26,
+      "bbox_coverage": 0.7519,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 15,
+      "id": "item_count_as_cake",
+      "name": "万能蛋糕模",
+      "path": "final/count_as_cake.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        16,
+        47,
+        495,
+        479
+      ],
+      "minimum_margin": 16,
+      "bbox_coverage": 0.7894,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 16,
+      "id": "item_super_fragment_reward",
+      "name": "折叠加桌券",
+      "path": "final/super_fragment_reward.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        26,
+        20,
+        474,
+        492
+      ],
+      "minimum_margin": 20,
+      "bbox_coverage": 0.8066,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 17,
+      "id": "item_settle_permanent_flat_all",
+      "name": "老字号记分牌",
+      "path": "final/settle_permanent_flat_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        21,
+        57,
+        497,
+        458
+      ],
+      "minimum_margin": 15,
+      "bbox_coverage": 0.7281,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 18,
+      "id": "item_same_base_mult_all",
+      "name": "双份餐铃",
+      "path": "final/same_base_mult_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        16,
+        120,
+        496,
+        391
+      ],
+      "minimum_margin": 16,
+      "bbox_coverage": 0.4962,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 19,
+      "id": "item_remove_arrow_cookie_2",
+      "name": "饼干回收盒",
+      "path": "final/remove_arrow_cookie_2.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        42,
+        31,
+        472,
+        484
+      ],
+      "minimum_margin": 28,
+      "bbox_coverage": 0.7431,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 20,
+      "id": "item_remove_arrow_cookie_all",
+      "name": "曲奇粉碎机",
+      "path": "final/remove_arrow_cookie_all.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        51,
+        22,
+        498,
+        480
+      ],
+      "minimum_margin": 14,
+      "bbox_coverage": 0.781,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 21,
+      "id": "item_randomize_recipe_dishes",
+      "name": "万花筒菜单板",
+      "path": "final/randomize_recipe_dishes.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        69,
+        14,
+        441,
+        498
+      ],
+      "minimum_margin": 14,
+      "bbox_coverage": 0.6868,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 22,
+      "id": "item_discard_dish_flat",
+      "name": "退菜改良簿",
+      "path": "final/discard_dish_flat.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        30,
+        76,
+        489,
+        420
+      ],
+      "minimum_margin": 23,
+      "bbox_coverage": 0.6023,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 23,
+      "id": "item_heart_capacity",
+      "name": "心形烛台",
+      "path": "final/heart_capacity.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        138,
+        16,
+        374,
+        494
+      ],
+      "minimum_margin": 16,
+      "bbox_coverage": 0.4303,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 24,
+      "id": "item_heart_capacity_deluxe",
+      "name": "珐琅心盘",
+      "path": "final/heart_capacity_deluxe.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        15,
+        85,
+        493,
+        443
+      ],
+      "minimum_margin": 15,
+      "bbox_coverage": 0.6528,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 25,
+      "id": "item_restore_heart",
+      "name": "壁挂急救箱",
+      "path": "final/restore_heart.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        87,
+        73,
+        406,
+        421
+      ],
+      "minimum_margin": 73,
+      "bbox_coverage": 0.4235,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 26,
+      "id": "item_restore_hearts",
+      "name": "全套急救柜",
+      "path": "final/restore_hearts.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        17,
+        30,
+        493,
+        466
+      ],
+      "minimum_margin": 17,
+      "bbox_coverage": 0.7917,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    },
+    {
+      "index": 27,
+      "id": "item_slot_cost_discount",
+      "name": "投币优惠牌",
+      "path": "final/slot_cost_discount.png",
+      "exists": true,
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "bbox": [
+        51,
+        41,
+        454,
+        474
+      ],
+      "minimum_margin": 38,
+      "bbox_coverage": 0.6657,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "valid": true
+    }
+  ]
+}

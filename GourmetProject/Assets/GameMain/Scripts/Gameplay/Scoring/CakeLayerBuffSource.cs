@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 
@@ -57,7 +58,9 @@ namespace GourmetProject.Gameplay.Scoring
                 }
 
                 float value = buff.ValuePerLayer * layers;
-                List<DishInstance> targets = SkillConditionEvaluator.CategoryDishes(ctx.DiningTable, buff.Category);
+                List<DishInstance> targets = ctx.DiningTable.Dishes
+                    .Where(dish => ctx.IsCategory(dish, buff.Category))
+                    .ToList();
                 foreach (DishInstance target in targets)
                 {
                     switch (buff.EffectType)

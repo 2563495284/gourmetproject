@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using BreakInfinity;
 using DG.Tweening;
@@ -3790,6 +3791,20 @@ namespace GourmetProject.Game.UI.Battle
             RecipeMutationResult result,
             bool before)
         {
+            IReadOnlyList<RecipeDishSnapshot> fullRecipe = before
+                ? result.BeforeRecipe
+                : result.AfterRecipe;
+            if (fullRecipe != null && fullRecipe.Count > 0)
+            {
+                var fullEntries = new List<RecipeReadonlyDishEntry>(fullRecipe.Count);
+                foreach (RecipeDishSnapshot snapshot in fullRecipe)
+                {
+                    fullEntries.Add(new RecipeReadonlyDishEntry(RecipeSlotFromSnapshot(snapshot)));
+                }
+
+                return fullEntries;
+            }
+
             var mutations = new Dictionary<int, RecipeMutationEntry>();
             foreach (RecipeMutationEntry entry in result.Entries)
             {
@@ -5152,7 +5167,7 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
-        private void OnSettlementComplete(ScoreResult result)
+        private async void OnSettlementComplete(ScoreResult result)
         {
             if (_discardSettlementCallbacks || Active != this || _loop == null)
             {
@@ -5174,6 +5189,42 @@ namespace GourmetProject.Game.UI.Battle
             if (_hoveredDishPiece != null)
             {
                 RebindHoveredDishTips(_hoveredDishPiece);
+            }
+
+            // 美味值已汇总且营业成败已经可以判定后，逐条展示移除判定，再统一按倒序修改食谱。
+            if (_session != null && _session.LastRecipeRemovalOutcomes.Count > 0)
+            {
+                var removedIndices = new HashSet<int>();
+                foreach (RecipeRemovalOutcome outcome in _session.LastRecipeRemovalOutcomes)
+                {
+                    ShowActiveItemMessage(outcome.Removed ? "移除" : "不移除");
+                    if (outcome.Removed && outcome.Request.SourceDishIndex >= 0)
+                    {
+                        removedIndices.Add(outcome.Request.SourceDishIndex);
+                    }
+
+                    try
+                    {
+                        await Awaitable.WaitForSecondsAsync(0.75f, destroyCancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+
+                    if (_discardSettlementCallbacks || Active != this)
+                    {
+                        return;
+                    }
+                }
+
+                if (_run != null)
+                {
+                    foreach (int dishIndex in removedIndices.OrderByDescending(index => index))
+                    {
+                        _run.RemoveBonusDishAt(dishIndex);
+                    }
+                }
             }
 
             // 结算侧效果写回局外状态：金币入账（经济运营 + 上菜 OnServe）、大局结算历史累计。

@@ -63,14 +63,34 @@ namespace GourmetProject.Gameplay.Scoring
                     ItemScoreEffectType.AllDishFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.AllDishMultFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.CountThresholdAllDishMult => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.TagBonus => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.TagMultFlat => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.TagCountAsBonus => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.AllDishTemporaryCategory => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.AllDishFlatPerUnusedDiscard => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.AllDishMultPerUnusedDiscard => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.AllDishFlatPerEmptyCell => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.SameBaseDishMultFlat => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.CountThresholdFinalMult => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.PerDishPermanentFlat => ScorePhase.BeforeDish,
                     _ => ScorePhase.AfterAllDishes,
+                };
+
+                int priority = spec.Type switch
+                {
+                    ItemScoreEffectType.TagCountAsBonus => -100,
+                    ItemScoreEffectType.AllDishTemporaryCategory => -100,
+                    ItemScoreEffectType.CountThresholdAllDishMult => -50,
+                    ItemScoreEffectType.CountThresholdFinalMult => -50,
+                    _ => 0,
                 };
 
                 collector.Add(new ScoreEffectEntry(
                     phase,
                     ScoreSource.Relic(spec.ItemId, spec.ItemName),
                     new ItemScoreEffect(spec),
-                    dish: null));
+                    dish: null,
+                    priority: priority));
             }
         }
     }
@@ -87,8 +107,8 @@ namespace GourmetProject.Gameplay.Scoring
 
         public void Apply(ScoreContext ctx)
         {
-            List<DishInstance> dishes = ctx.DiningTable.Dishes.ToList();
-            if (dishes.Count == 0)
+            List<DishInstance> dishes = ctx.Snapshot.DishesInDefaultOrder.ToList();
+            if (dishes.Count == 0 && _spec.Type != ItemScoreEffectType.CountThresholdFinalMult)
             {
                 return;
             }
@@ -122,9 +142,96 @@ namespace GourmetProject.Gameplay.Scoring
                 case ItemScoreEffectType.TagBonus:
                     foreach (DishInstance d in dishes)
                     {
-                        if (ItemDishMatcher.Matches(d, _spec.Param))
+                        if (ItemDishMatcher.Matches(d, _spec.Param, ctx))
                         {
                             ctx.AddFlatTo(d, value);
+                        }
+                    }
+
+                    break;
+
+                case ItemScoreEffectType.TagMultFlat:
+                    foreach (DishInstance d in dishes)
+                    {
+                        if (ItemDishMatcher.Matches(d, _spec.Param, ctx))
+                        {
+                            ctx.AddMultFlatTo(d, value);
+                        }
+                    }
+
+                    break;
+
+                case ItemScoreEffectType.TagCountAsBonus:
+                {
+                    int countAs = (int)Math.Round(value, MidpointRounding.AwayFromZero);
+                    foreach (DishInstance d in dishes)
+                    {
+                        if (ItemDishMatcher.Matches(d, _spec.Param, ctx))
+                        {
+                            ctx.AddLiveCountAs(d, countAs);
+                        }
+                    }
+
+                    break;
+                }
+
+                case ItemScoreEffectType.AllDishTemporaryCategory:
+                {
+                    string category = ParseStringParam(_spec.Param, "category", _spec.Param);
+                    foreach (DishInstance d in dishes)
+                    {
+                        ctx.AddLiveCategory(d, category);
+                    }
+
+                    break;
+                }
+
+                case ItemScoreEffectType.AllDishFlatPerUnusedDiscard:
+                {
+                    float add = value * ctx.Snapshot.RemainingFoodDiscards;
+                    foreach (DishInstance d in dishes)
+                    {
+                        ctx.AddFlatTo(d, add);
+                    }
+
+                    break;
+                }
+
+                case ItemScoreEffectType.AllDishMultPerUnusedDiscard:
+                {
+                    float add = value * ctx.Snapshot.RemainingFoodDiscards;
+                    foreach (DishInstance d in dishes)
+                    {
+                        ctx.AddMultFlatTo(d, add);
+                    }
+
+                    break;
+                }
+
+                case ItemScoreEffectType.AllDishFlatPerEmptyCell:
+                {
+                    float add = value * ctx.DiningTable.EmptyCellCount;
+                    foreach (DishInstance d in dishes)
+                    {
+                        ctx.AddFlatTo(d, add);
+                    }
+
+                    break;
+                }
+
+                case ItemScoreEffectType.SameBaseDishMultFlat:
+                    foreach (IGrouping<string, DishInstance> group in dishes.GroupBy(
+                                 d => d.Def?.BaseId ?? d.Def?.Id ?? string.Empty,
+                                 StringComparer.OrdinalIgnoreCase))
+                    {
+                        if (group.Count() < 2)
+                        {
+                            continue;
+                        }
+
+                        foreach (DishInstance d in group)
+                        {
+                            ctx.AddMultFlatTo(d, value);
                         }
                     }
 
@@ -134,6 +241,14 @@ namespace GourmetProject.Gameplay.Scoring
                     foreach (DishInstance d in dishes)
                     {
                         ctx.AddPermanentFlatTo(d, value);
+                    }
+
+                    break;
+
+                case ItemScoreEffectType.PerDishPermanentFlat:
+                    if (ctx.Dish != null)
+                    {
+                        ctx.AddPermanentFlatTo(ctx.Dish, value);
                     }
 
                     break;
@@ -153,9 +268,25 @@ namespace GourmetProject.Gameplay.Scoring
                     int count = dishes.Sum(ctx.GetEffectiveCountAs);
                     if (MatchesThreshold(count, _spec.Param))
                     {
-                        foreach (DishInstance d in ctx.Snapshot.DishesInDefaultOrder)
+                        foreach (DishInstance d in dishes)
                         {
                             ctx.MultiplyTo(d, value);
+                        }
+                    }
+
+                    break;
+                }
+
+                case ItemScoreEffectType.CountThresholdFinalMult:
+                {
+                    // CountAs 类效果先执行；随后按本次结算的实际份数检查门槛，
+                    // 命中后为每道参与结算的食物增加倍率加区。
+                    int count = dishes.Sum(ctx.GetEffectiveCountAs);
+                    if (MatchesThreshold(count, _spec.Param))
+                    {
+                        foreach (DishInstance d in dishes)
+                        {
+                            ctx.AddMultFlatTo(d, value);
                         }
                     }
 
@@ -288,6 +419,30 @@ namespace GourmetProject.Gameplay.Scoring
 
             return fallback;
         }
+
+        private static string ParseStringParam(string param, string key, string fallback)
+        {
+            if (string.IsNullOrEmpty(param))
+            {
+                return fallback ?? string.Empty;
+            }
+
+            foreach (string token in param.Split(';', ',', '|'))
+            {
+                int idx = token.IndexOf(':');
+                if (idx < 0)
+                {
+                    continue;
+                }
+
+                if (string.Equals(token.Substring(0, idx).Trim(), key, StringComparison.OrdinalIgnoreCase))
+                {
+                    return token.Substring(idx + 1).Trim();
+                }
+            }
+
+            return fallback ?? string.Empty;
+        }
     }
 
     /// <summary>装饰品和消耗品标签匹配：把 effectParam 解析为对餐桌食物的判定（分类/风味/技能）。</summary>
@@ -298,7 +453,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// <c>cat:xxx</c>（分类）、<c>flavor:xxx</c>（风味 id）、<c>skill:xxx</c>（含某技能 id）。
         /// 无前缀时依次尝试分类/风味/技能。空 param 匹配所有食物。
         /// </summary>
-        public static bool Matches(DishInstance dish, string param)
+        public static bool Matches(DishInstance dish, string param, ScoreContext ctx = null)
         {
             if (dish == null)
             {
@@ -310,6 +465,11 @@ namespace GourmetProject.Gameplay.Scoring
                 return true;
             }
 
+            if (string.Equals(param, "flavored", StringComparison.OrdinalIgnoreCase))
+            {
+                return dish.FlavorIds.Count > 0;
+            }
+
             int idx = param.IndexOf(':');
             if (idx > 0)
             {
@@ -319,15 +479,29 @@ namespace GourmetProject.Gameplay.Scoring
                 {
                     case "cat":
                     case "category":
-                        return dish.Def.IsCategory(body);
+                        return ctx?.IsCategory(dish, body) ?? dish.IsCategory(body);
                     case "flavor":
+                        if (string.Equals(body, "any", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return dish.FlavorIds.Count > 0;
+                        }
+
                         return HasFlavor(dish, body);
                     case "skill":
                         return HasSkill(dish, body);
+                    case "position":
+                    {
+                        bool edge = ctx?.DiningTable != null
+                            && SkillConditionEvaluator.IsOnEdge(ctx.DiningTable, dish);
+                        return string.Equals(body, "edge", StringComparison.OrdinalIgnoreCase)
+                            ? edge
+                            : (string.Equals(body, "non-edge", StringComparison.OrdinalIgnoreCase)
+                               || string.Equals(body, "nonedge", StringComparison.OrdinalIgnoreCase)) && !edge;
+                    }
                 }
             }
 
-            return dish.Def.IsCategory(param)
+            return (ctx?.IsCategory(dish, param) ?? dish.IsCategory(param))
                 || HasFlavor(dish, param)
                 || HasSkill(dish, param);
         }

@@ -138,5 +138,22 @@
     "slotEmptyProbability": 0,
     "slotRewardSlotIds": [],
     "slotRewardProbabilities": []
+  },
+  {
+    "id": "ev_last_supper",
+    "name": "最后的晚餐",
+    "desc": "12位厨师围坐在长桌前。主厨刚举起酒杯，便宣布：“你们中有人把秘方卖给了对面餐厅。”众人立刻放下餐具，互相指认起来。",
+    "eventTypes": [
+      0,
+      2
+    ],
+    "preconditions": "",
+    "weight": 1,
+    "repeatable": true,
+    "bgSprite": "",
+    "resultText": "",
+    "slotEmptyProbability": 0,
+    "slotRewardSlotIds": [],
+    "slotRewardProbabilities": []
   }
 ]

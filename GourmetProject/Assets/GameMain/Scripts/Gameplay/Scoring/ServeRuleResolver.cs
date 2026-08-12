@@ -40,7 +40,12 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>对刚上桌的实例执行其 OnServe 规则，返回本次上菜产生的金币/全局层数增量与技能复制请求。</summary>
         public static ServeResolveResult ResolveOnServe(
-            GpTable board, GameplayDatabase db, IScoreHistory history, DishInstance served, int currentHappyCakeLayers)
+            GpTable board,
+            GameplayDatabase db,
+            IScoreHistory history,
+            DishInstance served,
+            int currentHappyCakeLayers,
+            int itemExtraTargetCount = 0)
         {
             if (served == null)
             {
@@ -86,6 +91,7 @@ namespace GourmetProject.Gameplay.Scoring
                         sourceName,
                         count,
                         running,
+                        itemExtraTargetCount,
                         ref gold,
                         ref layerDelta,
                         ref copyRequests,
@@ -99,7 +105,8 @@ namespace GourmetProject.Gameplay.Scoring
         private static void ApplyServeAction(
             GpTable board, GameplayDatabase db, IScoreHistory history, SkillRuleDef rule, DishInstance self,
             string sourceName, int count,
-            int runningLayers, ref float gold, ref int layerDelta, ref List<CopySkillRequest> copyRequests,
+            int runningLayers, int itemExtraTargetCount,
+            ref float gold, ref int layerDelta, ref List<CopySkillRequest> copyRequests,
             ref List<SkillTransferRequest> transferRequests)
         {
             // 阶梯规则：count 为满足档序号，取对应档值并按触发一次应用。
@@ -176,7 +183,7 @@ namespace GourmetProject.Gameplay.Scoring
                                     history,
                                     self,
                                     runningLayers,
-                                    rule.Trigger));
+                                    rule.Trigger) + System.Math.Max(0, itemExtraTargetCount));
                             transferRequests ??= new List<SkillTransferRequest>();
                             transferRequests.Add(new SkillTransferRequest(
                                 self.Id,
@@ -201,6 +208,7 @@ namespace GourmetProject.Gameplay.Scoring
                             source,
                             sourceName,
                             runningLayers,
+                            itemExtraTargetCount,
                             ref transferRequests);
                     }
 
@@ -237,6 +245,7 @@ namespace GourmetProject.Gameplay.Scoring
             DishInstance source,
             string sourceName,
             int runningLayers,
+            int itemExtraTargetCount,
             ref List<SkillTransferRequest> transferRequests)
         {
             foreach (string skillId in source.SkillIds)
@@ -295,7 +304,7 @@ namespace GourmetProject.Gameplay.Scoring
                             history,
                             source,
                             runningLayers,
-                            transferRule.Trigger));
+                            transferRule.Trigger) + System.Math.Max(0, itemExtraTargetCount));
                     transferRequests ??= new List<SkillTransferRequest>();
                     transferRequests.Add(new SkillTransferRequest(
                         source.Id,

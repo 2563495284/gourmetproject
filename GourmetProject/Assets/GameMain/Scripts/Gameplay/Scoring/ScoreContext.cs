@@ -41,6 +41,10 @@ namespace GourmetProject.Gameplay.Scoring
         private readonly Dictionary<int, BigDouble> _permanentFlatDeltas = new Dictionary<int, BigDouble>();
         private readonly Dictionary<int, BigDouble> _permanentMultDeltas = new Dictionary<int, BigDouble>();
         private readonly Dictionary<int, int> _liveCountAs = new Dictionary<int, int>();
+        private readonly Dictionary<int, HashSet<string>> _liveTemporaryCategories = new Dictionary<int, HashSet<string>>();
+        private readonly List<TemporaryCategorySideEffect> _temporaryCategories = new List<TemporaryCategorySideEffect>();
+        private readonly List<RecipeRemovalRequest> _recipeRemovalRequests = new List<RecipeRemovalRequest>();
+        private int _emptyCountAsPerCell;
         private DishAccumulator _current;
         private bool _initialFinalModifiersRecorded;
         private bool _finalized;
@@ -91,39 +95,79 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
-        /// <summary>AddCountAs 在规则实际执行到时修改 live 值，只影响后续规则。</summary>
-        public void ApplyLiveCountAs(SkillRuleDef rule, DishInstance self, int count, float value)
+        /// <summary>装饰品在结算开场为指定食物增加本次结算的有效份数。</summary>
+        public void AddLiveCountAs(DishInstance dish, int delta)
         {
-            if (rule == null || self == null || count <= 0 || value == 0f)
+            if (dish == null || delta == 0)
             {
                 return;
             }
 
-            foreach (DishInstance target in CountAsTargets(rule, self))
+            _liveCountAs[dish.Id] = Math.Max(1, GetEffectiveCountAs(dish) + delta);
+        }
+
+        /// <summary>AddCountAs 在规则实际执行到时修改 live 值，只影响后续规则。</summary>
+        public void ApplyLiveCountAs(
+            SkillRuleDef rule,
+            DishInstance self,
+            int count,
+            float value,
+            IReadOnlyList<DishInstance> targets)
+        {
+            if (rule == null || self == null || count <= 0 || value == 0f || targets == null)
             {
-                float basis = HasActionParam(rule, "target:occupiedcells")
-                    ? target.OccupiedCells.Count
-                    : 1f;
+                return;
+            }
+
+            foreach (DishInstance target in targets)
+            {
+                float basis;
+                if (HasActionParam(rule, "target:occupiedcells"))
+                {
+                    basis = target.OccupiedCells.Count + ActionIntParam(rule, "offset", 0);
+                }
+                else if (HasActionParam(rule, "source:target-skill-count"))
+                {
+                    basis = target.SkillIds.Count + target.TransferredSkills.Count;
+                }
+                else
+                {
+                    basis = 1f;
+                }
+
                 int delta = (int)Math.Round(value * count * basis, MidpointRounding.AwayFromZero);
                 if (delta == 0)
                 {
                     continue;
                 }
 
-                int current = GetEffectiveCountAs(target);
-                _liveCountAs[target.Id] = Math.Max(1, current + delta);
+                AddLiveCountAs(target, delta);
             }
         }
 
-        private List<DishInstance> CountAsTargets(SkillRuleDef rule, DishInstance self)
+        private static int ActionIntParam(SkillRuleDef rule, string key, int defaultValue)
         {
-            return SkillScopeResolver.ResolveActionTargetDishes(
-                    Db,
-                    DiningTable,
-                    self,
-                    rule,
-                    SkillScopeVisualMode.ResolvedTargets)
-                .ToList();
+            if (rule?.ActionParams == null)
+            {
+                return defaultValue;
+            }
+
+            string prefix = key + ":";
+            foreach (string param in rule.ActionParams)
+            {
+                if (string.IsNullOrEmpty(param)) continue;
+                foreach (string raw in param.Split(';'))
+                {
+                    string segment = raw.Trim();
+                    if (segment.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                        && int.TryParse(segment.Substring(prefix.Length), out int value))
+                    {
+                        return value;
+                    }
+                }
+            }
+
+            return defaultValue;
         }
 
         private static bool HasActionParam(SkillRuleDef rule, string token)
@@ -164,6 +208,38 @@ namespace GourmetProject.Gameplay.Scoring
 
         public SkillExecutionTrace Trace { get; private set; }
 
+        /// <summary>用规则运行时实际命中的食物刷新当前演出范围。</summary>
+        public void UpdateTraceVisualTargets(IReadOnlyList<DishInstance> targets)
+        {
+            if (Trace == null || targets == null)
+            {
+                return;
+            }
+
+            var ids = new List<int>();
+            var cells = new List<GridPos>();
+            var seenIds = new HashSet<int>();
+            var seenCells = new HashSet<GridPos>();
+            foreach (DishInstance target in targets)
+            {
+                if (target == null || !seenIds.Add(target.Id))
+                {
+                    continue;
+                }
+
+                ids.Add(target.Id);
+                foreach (GridPos cell in target.OccupiedCells)
+                {
+                    if (seenCells.Add(cell))
+                    {
+                        cells.Add(cell);
+                    }
+                }
+            }
+
+            Trace = Trace.WithVisualTargets(ids, cells);
+        }
+
         public BigDouble FlatBonus => _current?.Flat ?? BigDouble.Zero;
 
         public BigDouble Multiplier => _current?.Mult ?? BigDouble.One;
@@ -198,6 +274,114 @@ namespace GourmetProject.Gameplay.Scoring
         public IReadOnlyList<SkillTransferSideEffect> SkillTransfers => _skillTransfers;
 
         public IReadOnlyList<CopySkillRequest> CopySkillRequests => _copySkillRequests;
+
+        public IReadOnlyList<TemporaryCategorySideEffect> TemporaryCategories => _temporaryCategories;
+
+        public IReadOnlyList<RecipeRemovalRequest> RecipeRemovalRequests => _recipeRemovalRequests;
+
+        /// <summary>当前结算中每个空格额外提供的有效份数；同类效果相加，结算结束即丢弃。</summary>
+        public int EmptyCountAsPerCell => _emptyCountAsPerCell;
+
+        public void AddEmptyCountAsPerCell(int value)
+        {
+            if (value > 0)
+            {
+                _emptyCountAsPerCell += value;
+            }
+        }
+
+        public int EmptyCountAsInScope(DishInstance self, SkillScope scope)
+        {
+            if (_emptyCountAsPerCell <= 0 || self == null)
+            {
+                return 0;
+            }
+
+            int emptyCells;
+            if (scope == SkillScope.All || scope == SkillScope.Empty)
+            {
+                emptyCells = DiningTable.EmptyCellCount;
+            }
+            else
+            {
+                emptyCells = SkillConditionEvaluator.ScopeCells(DiningTable, self, scope)
+                    .Count(DiningTable.IsEmpty);
+            }
+
+            return emptyCells * _emptyCountAsPerCell;
+        }
+
+        public bool IsCategory(DishInstance dish, string category)
+        {
+            if (dish == null || string.IsNullOrEmpty(category))
+            {
+                return false;
+            }
+
+            if (dish.IsCategory(category))
+            {
+                return true;
+            }
+
+            return _liveTemporaryCategories.TryGetValue(dish.Id, out HashSet<string> categories)
+                && categories.Contains(category);
+        }
+
+        public void AddTemporaryCategory(DishInstance dish, string category)
+        {
+            if (dish == null || string.IsNullOrEmpty(category) || IsCategory(dish, category))
+            {
+                return;
+            }
+
+            if (!_liveTemporaryCategories.TryGetValue(dish.Id, out HashSet<string> categories))
+            {
+                categories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                _liveTemporaryCategories[dish.Id] = categories;
+            }
+
+            if (categories.Add(category))
+            {
+                _temporaryCategories.Add(new TemporaryCategorySideEffect(dish.Id, category));
+                EmitEvent(ScoreEventType.CommandExecuted, $"{dish.Def.Name} 临时视为 {category}");
+            }
+        }
+
+        /// <summary>
+        /// 仅在当前计分上下文中追加分类，不产出会写回 DishInstance 的副作用。
+        /// 适用于“持有装饰品时，本次结算视为某分类”这类非持久效果。
+        /// </summary>
+        public void AddLiveCategory(DishInstance dish, string category)
+        {
+            if (dish == null || string.IsNullOrEmpty(category) || IsCategory(dish, category))
+            {
+                return;
+            }
+
+            if (!_liveTemporaryCategories.TryGetValue(dish.Id, out HashSet<string> categories))
+            {
+                categories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                _liveTemporaryCategories[dish.Id] = categories;
+            }
+
+            categories.Add(category);
+        }
+
+        public void RequestRecipeRemoval(DishInstance dish, float probability)
+        {
+            if (dish == null || dish.SourceDishIndex < 0 || probability <= 0f)
+            {
+                return;
+            }
+
+            _recipeRemovalRequests.Add(new RecipeRemovalRequest(
+                dish.Id,
+                dish.SourceDishIndex,
+                dish.Def.Id,
+                dish.Def.Name,
+                probability));
+            EmitEvent(ScoreEventType.CommandExecuted, $"登记 {dish.Def.Name} 营业后移除判定");
+        }
 
         /// <summary>本次结算登记的永久加法分增量（实例 Id → 累加值）。正式结算后写回实例。</summary>
         public IReadOnlyDictionary<int, BigDouble> PermanentFlatDeltas => _permanentFlatDeltas;
@@ -522,6 +706,27 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             return result;
+        }
+
+        public IReadOnlyList<SweetTransferBuffRegistration> SweetTransferReceiverBuffsFor(
+            IReadOnlyList<DishInstance> transferTargets)
+        {
+            if (transferTargets == null || transferTargets.Count == 0 || _sweetTransferBuffs.Count == 0)
+            {
+                return Array.Empty<SweetTransferBuffRegistration>();
+            }
+
+            var targetIds = new HashSet<int>(transferTargets.Where(d => d != null).Select(d => d.Id));
+            if (targetIds.Count == 0)
+            {
+                return Array.Empty<SweetTransferBuffRegistration>();
+            }
+
+            return _sweetTransferBuffs
+                .Where(registration => registration?.Rule != null
+                    && HasActionParam(registration.Rule, "when:receive-transfer")
+                    && registration.TargetDishInstanceIds.Any(targetIds.Contains))
+                .ToArray();
         }
 
         public void RecordSweetTransferBuffTriggered(
@@ -891,7 +1096,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         public ScoreResult ToResult()
         {
-            return new ScoreResult(_dishScores, RawSum, FinalFlat, FinalMultiplier, _lines, _events, GoldDelta, _happyCakeLayerDelta, _skillTransfers, _permanentFlatDeltas, _permanentMultDeltas, _silverItemRolls, _copySkillRequests);
+            return new ScoreResult(_dishScores, RawSum, FinalFlat, FinalMultiplier, _lines, _events, GoldDelta, _happyCakeLayerDelta, _skillTransfers, _permanentFlatDeltas, _permanentMultDeltas, _silverItemRolls, _copySkillRequests, _temporaryCategories, _recipeRemovalRequests);
         }
 
         // ------- 命令实际改分（internal，供命令调用） -------

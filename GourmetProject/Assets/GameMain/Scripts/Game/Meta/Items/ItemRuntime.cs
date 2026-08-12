@@ -82,6 +82,22 @@ namespace GourmetProject.Game.Meta
             return ClampPrice(price);
         }
 
+        public int ModifySlotSpinCost(int baseCost)
+        {
+            if (baseCost <= 0)
+            {
+                return 0;
+            }
+
+            float cost = baseCost;
+            foreach (PassiveItemModel m in Models)
+            {
+                cost = m.ModifySlotSpinCost(cost);
+            }
+
+            return System.Math.Max(1, (int)System.Math.Floor(System.Math.Max(0f, cost) + 0.0001f));
+        }
+
         /// <summary>是否禁止删除食物（负面「囤积癖」）。</summary>
         public bool BlockRemoveDish() => AnyFlag(m => m.BlockRemoveDish());
 
@@ -234,6 +250,9 @@ namespace GourmetProject.Game.Meta
 
         public int TimelineNodeRepeatCount() => System.Math.Max(1, MaxInt(m => m.TimelineNodeRepeatCount()));
 
+        public int TimelineNodeRepeatCount(cfg.ActionBehavior behavior)
+            => System.Math.Max(1, MaxInt(m => m.TimelineNodeRepeatCount(behavior)));
+
         public float TimelineStopChance()
         {
             float chance = SumFloat(m => m.TimelineStopChance());
@@ -297,6 +316,8 @@ namespace GourmetProject.Game.Meta
         /// <summary>每场经营挑战可额外丢弃的出菜数量（各装饰品和消耗品累加）。</summary>
         public int FoodDiscardLimitBonus() => SumInt(m => m.FoodDiscardLimitBonus());
 
+        public int HeartCapacityBonus() => SumInt(m => m.HeartCapacityBonus());
+
         /// <summary>
         /// 当前每场营业 / 星级评鉴的食物丢弃次数上限。
         /// 局外 HUD 与新建经营挑战会话共用这一个入口，避免两边数值漂移。
@@ -319,6 +340,14 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>多选一可选「次数」增加（各模型累加）。</summary>
         public int ChoiceTimesBonus() => SumInt(m => m.ChoiceTimesBonus());
+
+        public void NotifyRewardAbandoned()
+        {
+            foreach (PassiveItemModel m in Models)
+            {
+                m.OnRewardAbandoned();
+            }
+        }
 
         public RewardOffer ModifyBattleRewardOffer(
             RewardOffer offer,
@@ -384,6 +413,9 @@ namespace GourmetProject.Game.Meta
 
             return total;
         }
+
+        public int SweetTransferExtraTargetCount()
+            => System.Math.Max(0, SumInt(m => m.SweetTransferExtraTargetCount()));
 
         // ================= 事件 / 行动概率族 =================
 

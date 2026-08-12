@@ -1036,5 +1036,131 @@
     "autoEnd": true,
     "branchWeight": 40,
     "branchPageText": "绿色蘑菇化成一股清香。你连过三关，主厨惊讶地捧出了珍藏礼物。"
+  },
+  {
+    "id": "opt_last_supper_toast",
+    "eventId": "ev_last_supper",
+    "parentId": "",
+    "text": "举杯饮酒",
+    "resultText": "你举杯平息了争执。众厨师感谢你缓和气氛，约好下次到你的餐厅聚餐。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_last_supper_toast_reward",
+    "eventId": "ev_last_supper",
+    "parentId": "opt_last_supper_toast",
+    "text": "下次营业金币+60%",
+    "resultText": "众厨师如约来访。下一次营业获得的基础金币提高60%。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      30
+    ],
+    "effectValues": [
+      0.6
+    ],
+    "effectParams": [
+      "Next"
+    ],
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_last_supper_accuse",
+    "eventId": "ev_last_supper",
+    "parentId": "",
+    "text": "指认别人",
+    "resultText": "你指出那位袖口沾着对面餐厅印泥的厨师。他只好交出收到的定金。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_last_supper_accuse_reward",
+    "eventId": "ev_last_supper",
+    "parentId": "opt_last_supper_accuse",
+    "text": "收下定金",
+    "resultText": "获得100金币。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      1
+    ],
+    "effectValues": [
+      100
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_last_supper_share",
+    "eventId": "ev_last_supper",
+    "parentId": "",
+    "text": "分食面包",
+    "resultText": "你把面包分给众人。十二位厨师各自用拿手菜回礼，你从中带走了两道。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      0
+    ],
+    "effectValues": [
+      0
+    ],
+    "effectParams": [
+      "-"
+    ],
+    "autoEnd": false,
+    "branchWeight": 0,
+    "branchPageText": ""
+  },
+  {
+    "id": "opt_last_supper_share_reward",
+    "eventId": "ev_last_supper",
+    "parentId": "opt_last_supper_share",
+    "text": "收下两道回礼",
+    "resultText": "从众人的回礼中获得2个随机风味食物。",
+    "condition": "",
+    "conditionText": "",
+    "effectTypes": [
+      23
+    ],
+    "effectValues": [
+      2
+    ],
+    "effectParams": [
+      "flavored_dish_2|众人的回礼"
+    ],
+    "autoEnd": true,
+    "branchWeight": 0,
+    "branchPageText": ""
   }
 ]

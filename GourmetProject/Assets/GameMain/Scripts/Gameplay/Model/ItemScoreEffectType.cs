@@ -51,5 +51,32 @@ namespace GourmetProject.Gameplay.Model
 
         /// <summary>结算开始时，所有参与结算的食物倍率加区 +value。</summary>
         AllDishMultFlat = 14,
+
+        /// <summary>结算开始时，匹配 param 的食物倍率加区 +value。</summary>
+        TagMultFlat = 15,
+
+        /// <summary>结算开始时，匹配 param 的食物额外视为 +value 份。</summary>
+        TagCountAsBonus = 16,
+
+        /// <summary>结算开始时，所有食物临时视为 param 指定的分类。</summary>
+        AllDishTemporaryCategory = 17,
+
+        /// <summary>每个未使用的丢弃次数令所有食物分数 +value。</summary>
+        AllDishFlatPerUnusedDiscard = 18,
+
+        /// <summary>每个未使用的丢弃次数令所有食物倍率 +value。</summary>
+        AllDishMultPerUnusedDiscard = 19,
+
+        /// <summary>每个餐桌空格令所有食物分数 +value。</summary>
+        AllDishFlatPerEmptyCell = 20,
+
+        /// <summary>同本体食物出现至少两份时，各自倍率 +value。</summary>
+        SameBaseDishMultFlat = 21,
+
+        /// <summary>每道食物开始结算时，自身永久分数 +value。</summary>
+        PerDishPermanentFlat = 22,
+
+        /// <summary>食物数量与阈值比较满足时，所有食物倍率加区 +value（param: "lte:N" 或 "gte:N"）。</summary>
+        CountThresholdFinalMult = 23,
     }
 }

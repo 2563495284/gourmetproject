@@ -407,6 +407,11 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnContinue()
         {
+            if (_offer != null && !_offer.IsFullyClaimed)
+            {
+                new ItemRuntime(_run).NotifyRewardAbandoned();
+            }
+
             CompleteRewards(closeForm: true);
         }
 

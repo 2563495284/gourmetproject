@@ -78,6 +78,459 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(result.DishScores.Single().EffectiveCountAs, Is.EqualTo(2));
         }
 
+        [Test]
+        public void FermentedRiceBalls_AddsOccupiedCellsMinusOne_OnTopOfStaticServings()
+        {
+            const string skillId = "skill_fermented_rice_balls";
+            SkillRuleDef rule = RuleFull(
+                "fermented_rice_balls",
+                skillId,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.AddCountAs,
+                SkillScope.All,
+                0,
+                1f,
+                "target:occupiedcells;offset:-1");
+            var skill = Skill(skillId, rule);
+            DishInstance fermentedRiceBalls = Dish(1, "fermented_rice_balls", 0, 0, new[] { skillId }, Array.Empty<string>());
+            DishShape threeCells = DishShape.FromRows(new[] { "XXX" });
+            DishInstance mango = Dish(2, "mango", 0, 1, Array.Empty<string>(), Array.Empty<string>(), threeCells, countAs: 8);
+            var table = new DiningTable(4, 1);
+            table.Place(fermentedRiceBalls);
+            table.Place(mango);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                Database(dishes: new[] { fermentedRiceBalls.Def, mango.Def }, skills: new[] { skill }));
+
+            Assert.That(result.DishScores.Single(score => score.DishInstanceId == fermentedRiceBalls.Id).EffectiveCountAs, Is.EqualTo(1));
+            Assert.That(result.DishScores.Single(score => score.DishInstanceId == mango.Id).EffectiveCountAs, Is.EqualTo(10));
+        }
+
+        [Test]
+        public void DoubleSkinMilk_UsesEachTargetsOwnEffectiveServings_WithFractions()
+        {
+            const string skillId = "skill_apple";
+            SkillRuleDef rule = RuleFull(
+                "apple",
+                skillId,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.AddMultFlat,
+                SkillScope.All,
+                0,
+                0.5f,
+                "source:target-countas");
+            var skill = Skill(skillId, rule);
+            DishInstance one = Dish(1, "one", 1, 0, new[] { skillId }, Array.Empty<string>(), countAs: 1);
+            DishInstance two = Dish(2, "two", 1, 1, Array.Empty<string>(), Array.Empty<string>(), countAs: 2);
+            DishInstance three = Dish(3, "three", 1, 2, Array.Empty<string>(), Array.Empty<string>(), countAs: 3);
+            var table = new DiningTable(3, 1);
+            table.Place(one);
+            table.Place(two);
+            table.Place(three);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                Database(dishes: new[] { one.Def, two.Def, three.Def }, skills: new[] { skill }));
+
+            Assert.That(result.DishScores.Single(score => score.DishInstanceId == one.Id).Multiplier.ToDouble(), Is.EqualTo(1.5d).Within(0.0001d));
+            Assert.That(result.DishScores.Single(score => score.DishInstanceId == two.Id).Multiplier.ToDouble(), Is.EqualTo(2d).Within(0.0001d));
+            Assert.That(result.DishScores.Single(score => score.DishInstanceId == three.Id).Multiplier.ToDouble(), Is.EqualTo(2.5d).Within(0.0001d));
+        }
+
+        [Test]
+        public void FruitCake_HalfOfFifteenExistingCells_RoundsUpToEightLayers()
+        {
+            const string skillId = "skill_fruit_cake";
+            SkillRuleDef rule = RuleFull(
+                "fruit_cake",
+                skillId,
+                SkillConditionType.OccupiedCell,
+                SkillScope.All,
+                CountUnit.Instances,
+                CountMode.Per,
+                "source:board",
+                SkillActionType.AddLayer,
+                SkillScope.CakeBuff,
+                0,
+                0.5f,
+                "round:ceil");
+            var skill = Skill(skillId, rule);
+            DishInstance dish = Dish(1, "fruit_cake", 0, 0, new[] { skillId }, Array.Empty<string>());
+            var table = new DiningTable(5, 3);
+            table.Place(dish);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                Database(dishes: new[] { dish.Def }, skills: new[] { skill }));
+
+            Assert.That(result.HappyCakeLayerDelta, Is.EqualTo(8));
+        }
+
+        [Test]
+        public void Cake03_RandomlySelectsOneDistinctLeftDish_WithoutCellWeight()
+        {
+            const string skillId = "skill_cake_03";
+            SkillRuleDef rule = RuleFull(
+                "cake_03_category",
+                skillId,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.AddTemporaryCategory,
+                SkillScope.Left,
+                1,
+                0f,
+                "cat:cake;target:random");
+            SkillDef skill = Skill(skillId, rule);
+            DishInstance oneCell = Dish(1, "one_cell", 0, 0, Array.Empty<string>(), Array.Empty<string>());
+            DishInstance twoCells = Dish(
+                2,
+                "two_cells",
+                0,
+                3,
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                DishShape.FromRows(new[] { "XX" }));
+            DishInstance cake = Dish(3, "cake_03", 0, 6, new[] { skillId }, Array.Empty<string>());
+            var table = new DiningTable(8, 1);
+            table.Place(oneCell);
+            table.Place(twoCells);
+            table.Place(cake);
+            int randomCalls = 0;
+
+            ScoreResult preview = new ScoreCalculator().Calculate(
+                table,
+                Database(dishes: new[] { oneCell.Def, twoCells.Def, cake.Def }, skills: new[] { skill }));
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                Database(dishes: new[] { oneCell.Def, twoCells.Def, cake.Def }, skills: new[] { skill }),
+                randomIntegerSelector: (min, max) =>
+                {
+                    randomCalls++;
+                    Assert.That(min, Is.Zero);
+                    Assert.That(max, Is.EqualTo(1));
+                    return max;
+                });
+
+            Assert.That(preview.TemporaryCategories.Single().DishInstanceId, Is.EqualTo(oneCell.Id));
+            Assert.That(result.TemporaryCategories.Single().DishInstanceId, Is.EqualTo(twoCells.Id));
+            Assert.That(result.TemporaryCategories.Single().Category, Is.EqualTo("cake"));
+            Assert.That(randomCalls, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Cake03_WithNoLeftCandidate_StillConsumesTenLayers()
+        {
+            const string skillId = "skill_cake_03";
+            SkillRuleDef categoryRule = RuleFull(
+                "cake_03_category",
+                skillId,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.AddTemporaryCategory,
+                SkillScope.Left,
+                1,
+                0f,
+                "cat:cake;target:random");
+            SkillRuleDef consumeRule = new SkillRuleDef(
+                "cake_03_consume",
+                skillId,
+                1,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.ConsumeLayer,
+                SkillScope.CakeBuff,
+                0,
+                new[] { 10f },
+                Array.Empty<string>());
+            SkillDef skill = Skill(skillId, categoryRule, consumeRule);
+            DishInstance cake = Dish(1, "cake_03", 0, 0, new[] { skillId }, Array.Empty<string>());
+            var table = new DiningTable(3, 1);
+            table.Place(cake);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                Database(dishes: new[] { cake.Def }, skills: new[] { skill }),
+                initialHappyCakeLayers: 20);
+
+            Assert.That(result.TemporaryCategories, Is.Empty);
+            Assert.That(result.HappyCakeLayerDelta, Is.EqualTo(-10));
+        }
+
+        [Test]
+        public void MultipleCake03Dishes_RollTheirLeftTargetsIndependently()
+        {
+            const string skillId = "skill_cake_03";
+            SkillRuleDef rule = RuleFull(
+                "cake_03_category",
+                skillId,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.AddTemporaryCategory,
+                SkillScope.Left,
+                1,
+                0f,
+                "cat:cake;target:random");
+            SkillDef skill = Skill(skillId, rule);
+            DishInstance topLeft = Dish(1, "top_left", 0, 0, Array.Empty<string>(), Array.Empty<string>(), y: 0);
+            DishInstance topRight = Dish(2, "top_right", 0, 2, Array.Empty<string>(), Array.Empty<string>(), y: 0);
+            DishInstance topCake = Dish(3, "top_cake", 0, 4, new[] { skillId }, Array.Empty<string>(), y: 0);
+            DishInstance bottomLeft = Dish(4, "bottom_left", 0, 0, Array.Empty<string>(), Array.Empty<string>(), y: 1);
+            DishInstance bottomRight = Dish(5, "bottom_right", 0, 2, Array.Empty<string>(), Array.Empty<string>(), y: 1);
+            DishInstance bottomCake = Dish(6, "bottom_cake", 0, 4, new[] { skillId }, Array.Empty<string>(), y: 1);
+            var table = new DiningTable(5, 2);
+            table.Place(topLeft);
+            table.Place(topRight);
+            table.Place(topCake);
+            table.Place(bottomLeft);
+            table.Place(bottomRight);
+            table.Place(bottomCake);
+            int randomCalls = 0;
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                Database(
+                    dishes: new[]
+                    {
+                        topLeft.Def,
+                        topRight.Def,
+                        topCake.Def,
+                        bottomLeft.Def,
+                        bottomRight.Def,
+                        bottomCake.Def
+                    },
+                    skills: new[] { skill }),
+                randomIntegerSelector: (min, max) =>
+                {
+                    randomCalls++;
+                    return max;
+                });
+
+            Assert.That(randomCalls, Is.EqualTo(2));
+            Assert.That(
+                result.TemporaryCategories.Select(effect => effect.DishInstanceId),
+                Is.EquivalentTo(new[] { topRight.Id, bottomRight.Id }));
+        }
+
+        [Test]
+        public void EmptyCellServings_StackToFourPerCell_AndResetWithContext()
+        {
+            SkillRuleDef emptyRule = RuleFull(
+                "empty",
+                "skill_empty",
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.AddEmptyCountAs,
+                SkillScope.All,
+                0,
+                2f,
+                string.Empty);
+            SkillRuleDef countRule = RuleFull(
+                "count",
+                "skill_count",
+                SkillConditionType.DishCount,
+                SkillScope.All,
+                CountUnit.Instances,
+                CountMode.Per,
+                string.Empty,
+                SkillActionType.AddFlat,
+                SkillScope.Self,
+                0,
+                1f,
+                string.Empty);
+            SkillDef emptySkill = Skill("skill_empty", emptyRule);
+            SkillDef countSkill = Skill("skill_count", countRule);
+            DishInstance first = Dish(1, "first", 0, 0, new[] { "skill_empty" }, Array.Empty<string>());
+            DishInstance second = Dish(2, "second", 0, 1, new[] { "skill_empty" }, Array.Empty<string>());
+            DishInstance counter = Dish(3, "counter", 0, 2, new[] { "skill_count" }, Array.Empty<string>());
+            var table = new DiningTable(5, 1);
+            table.Place(first);
+            table.Place(second);
+            table.Place(counter);
+            GameplayDatabase db = Database(
+                dishes: new[] { first.Def, second.Def, counter.Def },
+                skills: new[] { emptySkill, countSkill });
+
+            ScoreResult result = new ScoreCalculator().Calculate(table, db);
+            ScoreResult secondCalculation = new ScoreCalculator().Calculate(table, db);
+
+            Assert.That(result.DishScores.Single(score => score.DishInstanceId == counter.Id).FlatBonus.ToDouble(), Is.EqualTo(11d));
+            Assert.That(secondCalculation.DishScores.Single(score => score.DishInstanceId == counter.Id).FlatBonus.ToDouble(), Is.EqualTo(11d));
+        }
+
+        [Test]
+        public void PhysicalInstances_DoNotUseEffectiveServings()
+        {
+            const string skillId = "skill_physical";
+            SkillRuleDef rule = RuleFull(
+                "physical",
+                skillId,
+                SkillConditionType.DishCount,
+                SkillScope.All,
+                CountUnit.PhysicalInstances,
+                CountMode.Per,
+                string.Empty,
+                SkillActionType.AddFlat,
+                SkillScope.Self,
+                0,
+                1f,
+                string.Empty);
+            var skill = Skill(skillId, rule);
+            DishInstance source = Dish(1, "source", 0, 0, new[] { skillId }, Array.Empty<string>(), countAs: 3);
+            DishInstance other = Dish(2, "other", 0, 1, Array.Empty<string>(), Array.Empty<string>(), countAs: 8);
+            var table = new DiningTable(2, 1);
+            table.Place(source);
+            table.Place(other);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                Database(dishes: new[] { source.Def, other.Def }, skills: new[] { skill }));
+
+            Assert.That(result.DishScores.Single(score => score.DishInstanceId == source.Id).FlatBonus.ToDouble(), Is.EqualTo(2d));
+        }
+
+        [Test]
+        public void Gummy_MultipliesOnlySuccessfulTransferSource_OncePerSuccess()
+        {
+            SkillRuleDef gummyRule = RuleFull(
+                "gummy",
+                "skill_gummy",
+                SkillConditionType.None,
+                SkillScope.ColumnAndSelf,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.AddMult,
+                SkillScope.ColumnAndSelf,
+                0,
+                1.5f,
+                "when:transfer;resultscope:TransferSource");
+            SkillRuleDef payload = RuleFull(
+                "payload",
+                "skill_transfer",
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.AddFlat,
+                SkillScope.Self,
+                0,
+                1f,
+                string.Empty);
+            SkillRuleDef firstTransfer = RuleFull(
+                "transfer_1",
+                "skill_transfer",
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.TransferSkills,
+                SkillScope.Other,
+                1,
+                0f,
+                string.Empty);
+            SkillRuleDef secondTransfer = new SkillRuleDef(
+                "transfer_2",
+                "skill_transfer",
+                2,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.TransferSkills,
+                SkillScope.Other,
+                1,
+                new[] { 0f },
+                Array.Empty<string>());
+            SkillDef gummySkill = Skill("skill_gummy", gummyRule);
+            SkillDef transferSkill = Skill("skill_transfer", payload, firstTransfer, secondTransfer);
+            DishInstance gummy = Dish(1, "gummy", 0, 0, new[] { "skill_gummy" }, Array.Empty<string>(), y: 0);
+            DishInstance target = Dish(2, "target", 0, 1, Array.Empty<string>(), Array.Empty<string>(), y: 0);
+            DishInstance source = Dish(3, "source", 0, 0, new[] { "skill_transfer" }, Array.Empty<string>(), y: 1);
+            var table = new DiningTable(2, 2);
+            table.Place(gummy);
+            table.Place(target);
+            table.Place(source);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                Database(
+                    dishes: new[] { gummy.Def, target.Def, source.Def },
+                    skills: new[] { gummySkill, transferSkill }));
+
+            Assert.That(result.DishScores.Single(score => score.DishInstanceId == source.Id).Multiplier.ToDouble(), Is.EqualTo(2.25d).Within(0.0001d));
+            Assert.That(result.DishScores.Single(score => score.DishInstanceId == gummy.Id).Multiplier.ToDouble(), Is.EqualTo(1d).Within(0.0001d));
+        }
+
+        [Test]
+        public void RecipeRemoval_IsRolledOnlyByOfficialSettlement_AndKeepsRecipeIndex()
+        {
+            const string skillId = "skill_remove";
+            SkillRuleDef rule = RuleFull(
+                "remove",
+                skillId,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.RequestRecipeRemoval,
+                SkillScope.Self,
+                0,
+                1f,
+                string.Empty);
+            SkillDef skill = Skill(skillId, rule);
+            DishInstance dish = Dish(1, "remove_me", 1, 0, new[] { skillId }, Array.Empty<string>());
+            dish.SetSourceRecipeIndex(0, 4);
+            var table = new DiningTable(1, 1);
+            table.Place(dish);
+            GameplayDatabase db = Database(dishes: new[] { dish.Def }, skills: new[] { skill });
+            var session = new BattleSession(
+                table,
+                db,
+                new Xoshiro256SS(123UL),
+                Array.Empty<RecipeSlot>(),
+                requiredScore: 1);
+
+            Assert.That(session.PreviewScore().RecipeRemovalRequests.Count, Is.EqualTo(1));
+            Assert.That(session.LastRecipeRemovalOutcomes, Is.Empty);
+
+            session.Settle();
+
+            Assert.That(session.IsWin, Is.True);
+            Assert.That(session.LastRecipeRemovalOutcomes.Count, Is.EqualTo(1));
+            Assert.That(session.LastRecipeRemovalOutcomes[0].Removed, Is.True);
+            Assert.That(session.LastRecipeRemovalOutcomes[0].Request.SourceDishIndex, Is.EqualTo(4));
+        }
+
         [TestCase(999999999d, "999999999")]
         [TestCase(1000000000d, "1e9")]
         [TestCase(-1236000000d, "-1.24e9")]
@@ -362,6 +815,47 @@ namespace GourmetProject.Tests.EditMode
                 Array.Empty<string>());
         }
 
+        private static SkillRuleDef RuleFull(
+            string id,
+            string skillId,
+            SkillConditionType condition,
+            SkillScope conditionScope,
+            CountUnit countUnit,
+            CountMode countMode,
+            string conditionParam,
+            SkillActionType action,
+            SkillScope actionScope,
+            int actionCount,
+            float value,
+            string actionParam)
+        {
+            return new SkillRuleDef(
+                id,
+                skillId,
+                0,
+                SkillTrigger.OnSettle,
+                condition,
+                conditionScope,
+                countUnit,
+                countMode,
+                conditionParam,
+                action,
+                actionScope,
+                actionCount,
+                new[] { value },
+                string.IsNullOrEmpty(actionParam) ? Array.Empty<string>() : new[] { actionParam });
+        }
+
+        private static SkillDef Skill(string id, params SkillRuleDef[] rules)
+        {
+            return new SkillDef(
+                id,
+                id,
+                string.Empty,
+                Array.Empty<string>(),
+                rules);
+        }
+
         private static FlavorDef Flavor(string id, FlavorEffectType type, float value)
         {
             return new FlavorDef(
@@ -381,7 +875,9 @@ namespace GourmetProject.Tests.EditMode
             int x,
             IReadOnlyList<string> skillIds,
             IReadOnlyList<string> flavorIds,
-            DishShape shape = null)
+            DishShape shape = null,
+            int countAs = 1,
+            int y = 0)
         {
             shape ??= DishShape.FromRows(new[] { "X" });
             var def = new DishDef(
@@ -394,11 +890,12 @@ namespace GourmetProject.Tests.EditMode
                 1f,
                 skillIds,
                 string.Empty,
-                allowRotate: true);
+                allowRotate: true,
+                countAs: countAs);
             return new DishInstance(
                 instanceId,
                 def,
-                new Placement(shape, 0, new GridPos(x, 0)),
+                new Placement(shape, 0, new GridPos(x, y)),
                 skillIds,
                 flavorIds);
         }

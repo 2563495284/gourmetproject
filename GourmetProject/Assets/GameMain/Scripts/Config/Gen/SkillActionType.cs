@@ -72,6 +72,18 @@ namespace cfg
         /// 目标美味值加上自身当前分数（基础分+固定加分，不含倍率）
         /// </summary>
         AddCurrentScore = 18,
+        /// <summary>
+        /// 登记营业成败判定后的食谱移除请求
+        /// </summary>
+        RequestRecipeRemoval = 19,
+        /// <summary>
+        /// 当前结算每个空格提供X份；同类效果相加
+        /// </summary>
+        AddEmptyCountAs = 20,
+        /// <summary>
+        /// 目标在本场临时增加指定分类
+        /// </summary>
+        AddTemporaryCategory = 21,
     }
 
 } 

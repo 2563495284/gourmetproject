@@ -17,6 +17,8 @@ namespace GourmetProject.Gameplay.Board
         private readonly List<string> _flavorIds;
         private readonly Dictionary<string, string> _skillSources = new Dictionary<string, string>();
         private readonly List<TransferredSkill> _transferredSkills = new List<TransferredSkill>();
+        private readonly HashSet<string> _temporaryCategories =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, float> _serveMultiplierFlatBySource =
             new Dictionary<string, float>(StringComparer.Ordinal);
 
@@ -50,6 +52,21 @@ namespace GourmetProject.Gameplay.Board
         public int ServeOrder { get; private set; }
 
         public DishDef Def { get; }
+
+        /// <summary>判断静态或本场临时分类；临时分类只在当前经营挑战内有效。</summary>
+        public bool IsCategory(string category)
+        {
+            return !string.IsNullOrEmpty(category)
+                && (Def.IsCategory(category) || _temporaryCategories.Contains(category));
+        }
+
+        public void AddTemporaryCategory(string category)
+        {
+            if (!string.IsNullOrEmpty(category))
+            {
+                _temporaryCategories.Add(category);
+            }
+        }
 
         public Placement Placement { get; private set; }
 

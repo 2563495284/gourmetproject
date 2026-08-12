@@ -11,11 +11,11 @@ namespace GourmetProject.Gameplay.Model
     ///
     /// 支持的占位符（同时兼容 {token} 与 ${token}）：
     ///   {0}{1}..  actionValue[i]（signed=true 补正负号，倍率类 signed=false 原样，配合模板里的 ×）
-    ///   {value}   首个 actionValue 的无符号格式（用于“额外视为 N 个”这类已含增量语义的文案）
+    ///   {value}   首个 actionValue 的无符号格式（用于“额外视为 N 份”这类已含增量语义的文案）
     ///   {cscope}  前提作用域词（自身/相邻/周围/同行/同列/本行/本列/全场/其他/欢乐蛋糕）
     ///   {ascope}  行为目标短语（不含「食物」）：自身/相邻所有/相邻 2 个/所有/2 个
-    ///   {unit}    计数单位：个 / 种；{thr} 阈值；{count} 目标数
-    ///   {countas} 本体「视为N个食物」总数（=actionValue+1，因 base countAs 恒为 1，actionValue 存增量 N-1）
+    ///   {unit}    计数单位：份 / 个 / 种；{thr} 阈值；{count} 目标数
+    ///   {countas} 兼容旧配置：把 AddCountAs 增量 actionValue 显示为基础 1 份加增量后的总数
     ///   {atargets}/{targets} 旧模板兼容别名：等价于 {ascope}食物
     ///   {tiers}   condParam 里 tiers: 解析为 3/5/8；{tiervals} actionParam 里 tiervals: 解析为 1.5/2.5/5
     ///   {floor}   actionParam 里 multfloor:/floor: 的值；{cat} 分类名（cake→蛋糕）
@@ -86,9 +86,9 @@ namespace GourmetProject.Gameplay.Model
                     case "ascope": return ActionScopePhrase(rule.ActionScope, rule.ActionCount);
                     case "atargets":
                     case "targets": return ActionScopePhrase(rule.ActionScope, rule.ActionCount) + "食物";
-                    case "unit": return rule.CondUnit == CountUnit.Kinds ? "种" : "个";
+                    case "unit": return CountUnitWord(rule);
                     case "value": return rule.ActionValue.ToString(PlainFormat, CultureInfo.InvariantCulture);
-                    // 本体「视为N个食物」：actionValue 存的是相对 base(=1) 的增量 N-1，显示总数 N。
+                    // 本体「视为N份食物」：actionValue 存的是相对 base(=1) 的增量 N-1，显示总数 N。
                     case "countas": return ((int)System.Math.Round(rule.ActionValue, System.MidpointRounding.AwayFromZero) + 1).ToString(CultureInfo.InvariantCulture);
                     case "thr": return SkillConditionParamParser.ThresholdOrDefault(rule.CondParam).ToString(CultureInfo.InvariantCulture);
                     case "count": return rule.ActionCount.ToString(CultureInfo.InvariantCulture);
@@ -207,6 +207,26 @@ namespace GourmetProject.Gameplay.Model
                 case "": return string.Empty;
                 default: return cat;
             }
+        }
+
+        private static string CountUnitWord(SkillRuleDef rule)
+        {
+            if (rule.CondUnit == CountUnit.Kinds)
+            {
+                return "种";
+            }
+
+            if (rule.CondUnit == CountUnit.PhysicalInstances
+                || rule.CondType == SkillConditionType.SkillCount
+                || rule.CondType == SkillConditionType.SkillTypeCount
+                || rule.CondType == SkillConditionType.TagCount
+                || rule.CondType == SkillConditionType.EmptyCell
+                || rule.CondType == SkillConditionType.OccupiedCell)
+            {
+                return "个";
+            }
+
+            return "份";
         }
 
         /// <summary>

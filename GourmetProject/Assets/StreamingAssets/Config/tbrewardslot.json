@@ -835,5 +835,32 @@
     ],
     "name": "装饰品",
     "ruleTemplate": "从 {choiceCount} 个装饰品中选择 {requiredPickCount} 个"
+  },
+  {
+    "id": "flavored_dish_2",
+    "groupId": "flavored_dish_2",
+    "kind": 2,
+    "choiceCount": 2,
+    "requiredPickCount": 2,
+    "weight": 1,
+    "poolId": "pool_flavored_dish",
+    "dishHiddenOffset": [
+      0,
+      0
+    ],
+    "passiveItemHiddenOffset": [
+      0,
+      0
+    ],
+    "fragmentHiddenOffset": [
+      0,
+      0
+    ],
+    "goldHiddenOffset": [
+      0,
+      0
+    ],
+    "name": "风味食物",
+    "ruleTemplate": "获得全部 {choiceCount} 个风味食物"
   }
 ]
