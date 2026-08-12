@@ -1859,7 +1859,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1618115042237285287, guid: 3cdf72e967a414a3ea48ebeefce7af2a, type: 3}
       propertyPath: m_Name
-      value: DirectServeRow
+      value: RequireServeConfirmationRow
       objectReference: {fileID: 0}
     - target: {fileID: 2012084213214658891, guid: 3cdf72e967a414a3ea48ebeefce7af2a, type: 3}
       propertyPath: m_Pivot.x

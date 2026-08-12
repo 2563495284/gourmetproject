@@ -130,6 +130,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private BoxCollider2D _collider;
         [Tooltip("放置合法性发光层（子物体 PlacementGlow 上的 SpriteRenderer）。")]
         [SerializeField] private SpriteRenderer _placementGlow;
+        [Tooltip("技能实际目标发光层（子物体 ScopeTargetGlow 上的 SpriteRenderer）。")]
+        [SerializeField] private SpriteRenderer _scopeTargetGlow;
         [Tooltip("常驻美味值标签的独立表现器。")]
         [SerializeField] private DishPieceValueBadgePresenter _dishValueBadgePresenter;
         [Tooltip("甜蜜传递 Buff 层数文字（prefab 预拼）。")]
@@ -164,6 +166,9 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private Material _outlineGlowMaterial;
         [SerializeField, Range(0f, 0.2f)] private float _placementGlowOutlineWidth = 0.11f;
         [SerializeField] private float _placementGlowInflate = 1.08f;
+        [SerializeField, Range(0f, 0.2f)] private float _scopeTargetGlowOutlineWidth = 0.045f;
+        [SerializeField] private float _scopeTargetGlowInflate = 1.055f;
+        [SerializeField, Range(0.25f, 3f)] private float _scopeTargetGlowIntensity = 1.8f;
         [SerializeField, Range(0.25f, 3f)] private float _outlineGlowIntensity = 2.2f;
         [SerializeField, Range(0f, 8f)] private float _persistentPulseSpeed = 0.65f;
         [SerializeField, Range(0f, 0.5f)] private float _persistentPulseAmplitude = 0.045f;
@@ -199,6 +204,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _dragPresentationActive;
         private MaterialPropertyBlock _flavorVisualBlock;
         private MaterialPropertyBlock _placementGlowBlock;
+        private MaterialPropertyBlock _scopeTargetGlowBlock;
+        private readonly Dictionary<BattleScopeHighlightChannel, ScopeTargetGlowState> _scopeTargetGlowStates =
+            new Dictionary<BattleScopeHighlightChannel, ScopeTargetGlowState>();
         private Tween _scopeAffectedTween;
         private Transform _scopeAffectedTarget;
         private Vector3 _scopeAffectedBasePosition;
@@ -222,6 +230,20 @@ namespace GourmetProject.Game.Presentation.Battle
         private MaterialPropertyBlock _activeItemTransformBlock;
         private bool _debuffVisualSuppressed;
         private Sequence _activeItemFlavorSequence;
+
+        private readonly struct ScopeTargetGlowState
+        {
+            public ScopeTargetGlowState(Color color, int visualIndex)
+            {
+                Color = color;
+                VisualIndex = visualIndex;
+            }
+
+            public Color Color { get; }
+
+            public int VisualIndex { get; }
+        }
+
         public DishInstance Instance { get; private set; }
 
         public int RotationIndex { get; private set; }
@@ -321,6 +343,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void BuildPlaced(DishInstance instance, Sprite sprite, float cellSize, float pitch, Action<DishInstance> clicked)
         {
+            _scopeTargetGlowStates.Clear();
             Instance = instance ?? throw new ArgumentNullException(nameof(instance));
             _sprite = sprite;
             _cellSize = cellSize;
@@ -330,6 +353,7 @@ namespace GourmetProject.Game.Presentation.Battle
             RotationIndex = instance.Placement.RotationIndex;
             CurrentShape = instance.Placement.Orientation;
             RebuildCells(CurrentShape);
+            HideScopeTargetGlow();
         }
 
         internal void RefreshDishValueBadge()
@@ -552,6 +576,118 @@ namespace GourmetProject.Game.Presentation.Battle
                 pulseAmplitude: _persistentPulseAmplitude);
         }
 
+        /// <summary>
+        /// 设置某个 scope 展示通道的实际目标发光。同一通道只保留最高 VisualIndex，
+        /// 不同通道按 Settlement &gt; Flash &gt; Persistent 仲裁。
+        /// </summary>
+        public void SetScopeTargetGlow(
+            BattleScopeHighlightChannel channel,
+            Color color,
+            int visualIndex)
+        {
+            EnsureRefs();
+            if (_scopeTargetGlow == null)
+            {
+                return;
+            }
+
+            if (_scopeTargetGlowStates.TryGetValue(channel, out ScopeTargetGlowState current)
+                && current.VisualIndex > visualIndex)
+            {
+                return;
+            }
+
+            _scopeTargetGlowStates[channel] = new ScopeTargetGlowState(color, visualIndex);
+            RefreshScopeTargetGlow();
+        }
+
+        public void ClearScopeTargetGlow(BattleScopeHighlightChannel channel)
+        {
+            if (_scopeTargetGlowStates.Remove(channel))
+            {
+                RefreshScopeTargetGlow();
+            }
+        }
+
+        public void ClearAllScopeTargetGlows()
+        {
+            _scopeTargetGlowStates.Clear();
+            HideScopeTargetGlow();
+        }
+
+        internal BattleScopeHighlightChannel? ActiveScopeTargetGlowChannel { get; private set; }
+
+        private void RefreshScopeTargetGlow()
+        {
+            if (_scopeTargetGlow == null || _scopeTargetGlowStates.Count == 0)
+            {
+                HideScopeTargetGlow();
+                return;
+            }
+
+            bool found = false;
+            BattleScopeHighlightChannel activeChannel = BattleScopeHighlightChannel.Persistent;
+            ScopeTargetGlowState activeState = default;
+            foreach (KeyValuePair<BattleScopeHighlightChannel, ScopeTargetGlowState> entry in _scopeTargetGlowStates)
+            {
+                if (!found || (int)entry.Key > (int)activeChannel)
+                {
+                    found = true;
+                    activeChannel = entry.Key;
+                    activeState = entry.Value;
+                }
+            }
+
+            if (!found)
+            {
+                HideScopeTargetGlow();
+                return;
+            }
+
+            float pulseSpeed = activeChannel switch
+            {
+                BattleScopeHighlightChannel.Flash => Mathf.Max(1.8f, _persistentPulseSpeed),
+                BattleScopeHighlightChannel.Settlement => Mathf.Max(1.2f, _persistentPulseSpeed),
+                _ => _persistentPulseSpeed,
+            };
+            float pulseAmplitude = activeChannel switch
+            {
+                BattleScopeHighlightChannel.Flash => Mathf.Max(0.1f, _persistentPulseAmplitude),
+                BattleScopeHighlightChannel.Settlement => Mathf.Max(0.08f, _persistentPulseAmplitude),
+                _ => _persistentPulseAmplitude,
+            };
+
+            ActiveScopeTargetGlowChannel = activeChannel;
+            _scopeTargetGlow.gameObject.SetActive(true);
+            ConfigureOutlineGlowRenderer(
+                _scopeTargetGlow,
+                ref _scopeTargetGlowBlock,
+                activeState.Color,
+                _scopeTargetGlowOutlineWidth,
+                fillAlpha: 0f,
+                inflate: _scopeTargetGlowInflate,
+                sortingOrderOffset: 3,
+                materialOverride: null,
+                pulseSpeed,
+                pulseAmplitude,
+                innerAlpha: 0f,
+                glowIntensity: _scopeTargetGlowIntensity);
+        }
+
+        private void HideScopeTargetGlow()
+        {
+            ActiveScopeTargetGlowChannel = null;
+            if (_scopeTargetGlow == null)
+            {
+                return;
+            }
+
+            _scopeTargetGlowBlock ??= new MaterialPropertyBlock();
+            _scopeTargetGlowBlock.Clear();
+            _scopeTargetGlow.SetPropertyBlock(_scopeTargetGlowBlock);
+            _scopeTargetGlow.gameObject.SetActive(false);
+        }
+
         public void SetGhost(bool ghost)
         {
             EnsureRefs();
@@ -560,8 +696,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            // 只调本体（含子）透明度；阴影核心/光晕的 alpha 由高度逻辑统一管理，别在这里覆盖。
-            foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
+            // 只调食物本体透明度；独立 Glow 层由各自通道管理，不能随本体一起改色。
+            foreach (SpriteRenderer renderer in EnumerateBodyRenderers())
             {
                 Color color = renderer.color;
                 color.a = ghost ? Mathf.Min(color.a, 0.65f) : Mathf.Max(color.a, 0.95f);
@@ -601,7 +737,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
+            foreach (SpriteRenderer renderer in EnumerateBodyRenderers())
             {
                 Color original = renderer.color;
                 _activeItemDimColors[renderer] = original;
@@ -624,7 +760,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (_settlementFocusColors.Count == 0)
             {
-                foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
+                foreach (SpriteRenderer renderer in EnumerateBodyRenderers())
                 {
                     _settlementFocusColors[renderer] = renderer.color;
                 }
@@ -657,6 +793,24 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _settlementFocusColors.Clear();
+        }
+
+        private IEnumerable<SpriteRenderer> EnumerateBodyRenderers()
+        {
+            if (_spriteRenderer == null)
+            {
+                yield break;
+            }
+
+            foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
+            {
+                if (renderer == null || renderer == _placementGlow || renderer == _scopeTargetGlow)
+                {
+                    continue;
+                }
+
+                yield return renderer;
+            }
         }
 
         /// <summary>
@@ -822,6 +976,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 _placementGlow.sortingOrder = _spriteRenderer != null
                     ? _spriteRenderer.sortingOrder + 1
                     : BattleSorting.OrderBody + 1 + _sortingOrderOffset;
+            }
+
+            if (_scopeTargetGlow != null)
+            {
+                _scopeTargetGlow.sortingLayerName = layer;
+                _scopeTargetGlow.sortingOrder = _spriteRenderer != null
+                    ? _spriteRenderer.sortingOrder + 3
+                    : BattleSorting.OrderBody + 3 + _sortingOrderOffset;
             }
 
             _dishValueBadgePresenter?.SetSorting(_flying, _sortingOrderOffset);
@@ -1640,18 +1802,20 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _placementGlow.gameObject.SetActive(true);
+            // 结算发光层绘制在食物本体上方。细长 sprite 若启用内部边缘或填充，
+            // 大部分不透明像素都会被判成边缘，最终看起来像整块被染色。
             ConfigureOutlineGlowRenderer(
                 _placementGlow,
                 ref _placementGlowBlock,
                 profile.GlowColor,
                 profile.GlowWidth,
-                profile.GlowFillAlpha,
-                profile.GlowInflate,
+                fillAlpha: 0f,
+                inflate: profile.GlowInflate,
                 sortingOrderOffset: 2,
                 materialOverride: null,
                 pulseSpeed: profile.GlowPulseSpeed / Mathf.Max(0.05f, durationScale),
                 pulseAmplitude: profile.GlowPulseAmplitude,
-                innerAlpha: profile.GlowInnerAlpha,
+                innerAlpha: 0f,
                 outerAlpha: profile.GlowOuterAlpha,
                 glowIntensity: profile.GlowIntensity);
         }
@@ -1676,12 +1840,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 ref _placementGlowBlock,
                 SettlementColorPalette.WithAlpha(SettlementColorPalette.NativeSource, 0.98f),
                 outlineWidth: 0.14f,
-                fillAlpha: 0.07f,
+                fillAlpha: 0f,
                 inflate: 1.12f,
                 sortingOrderOffset: 4,
                 materialOverride: null,
                 pulseSpeed: 3.4f,
-                pulseAmplitude: 0.24f);
+                pulseAmplitude: 0.24f,
+                innerAlpha: 0f);
         }
 
         private void ShowSweetTransferExecutorGlow()
@@ -1960,6 +2125,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             ApplyFlavorVisual();
             ApplyDebuffVisual();
+            RefreshScopeTargetGlow();
         }
 
         /// <summary>
@@ -2142,6 +2308,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     _placementGlow.sortingOrder = _spriteRenderer.sortingOrder + 1;
                 }
+                if (_scopeTargetGlow != null)
+                {
+                    _scopeTargetGlow.sortingOrder = _spriteRenderer.sortingOrder + 3;
+                }
             }
         }
 
@@ -2158,11 +2328,17 @@ namespace GourmetProject.Game.Presentation.Battle
             _shadowHaloRenderer = ResolveChildRenderer(_shadowHaloRenderer, "ShadowHalo");
             _spriteRenderer = ResolveChildRenderer(_spriteRenderer, "Sprite");
             _placementGlow = ResolveChildRenderer(_placementGlow, "PlacementGlow");
+            _scopeTargetGlow = ResolveChildRenderer(_scopeTargetGlow, "ScopeTargetGlow");
             EnsureSpriteUnderVisualPivot();
 
-            if (_collider == null || _visualPivot == null || _shadowRenderer == null || _spriteRenderer == null || _placementGlow == null)
+            if (_collider == null
+                || _visualPivot == null
+                || _shadowRenderer == null
+                || _spriteRenderer == null
+                || _placementGlow == null
+                || _scopeTargetGlow == null)
             {
-                Debug.LogError($"{nameof(DishPieceView)} prefab 缺少固定结构：BoxCollider2D/VisualPivot/Sprite/Shadow/PlacementGlow。", this);
+                Debug.LogError($"{nameof(DishPieceView)} prefab 缺少固定结构：BoxCollider2D/VisualPivot/Sprite/Shadow/PlacementGlow/ScopeTargetGlow。", this);
             }
         }
 
@@ -2194,7 +2370,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Material materialOverride,
             float pulseSpeed,
             float pulseAmplitude,
-            float innerAlpha = 0.68f,
+            float innerAlpha = 0f,
             float outerAlpha = 1f,
             float glowIntensity = -1f)
         {
@@ -2461,6 +2637,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDisable()
         {
+            ClearAllScopeTargetGlows();
             ClearSweetTransferBuffMarkers();
             ClearSettlementFocus();
             SetActiveItemTargetDimmed(false);

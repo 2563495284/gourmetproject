@@ -366,18 +366,24 @@ namespace GourmetProject.Game.Presentation.Battle
             float duration,
             int stackIndex,
             int stackCount,
+            SettlementImpactTier impactTier,
+            float audioPitch,
+            bool playTargetFeedback,
             CancellationToken cancellationToken)
         {
             Color theme = ResultThemeFor(line);
             if (target != null)
             {
-                PlayResultHitSoundIfNeeded(group);
+                PlayResultHitSoundIfNeeded(group, audioPitch);
                 target.SetSettlementFocus(1f);
-                _ = PlayFeedbackSafelyAsync(
-                    target,
-                    FeedbackFor(line),
-                    cancellationToken,
-                    durationScale: Mathf.Max(0.05f, duration / 0.80f));
+                if (playTargetFeedback)
+                {
+                    _ = PlayFeedbackSafelyAsync(
+                        target,
+                        FeedbackFor(line),
+                        cancellationToken,
+                        durationScale: Mathf.Max(0.05f, duration / 0.80f));
+                }
             }
 
             Vector3 anchor = target != null
@@ -390,6 +396,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 anchor += Vector3.up
                     * (centeredIndex * 0.54f * _visualScale);
             }
+            Awaitable impactTask = playTargetFeedback
+                ? PlayImpactRingAsync(target, theme, impactTier, cancellationToken)
+                : default;
             await SpawnLabelAsync(
                 anchor,
                 ResultHeader(line),
@@ -397,9 +406,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 theme,
                 duration,
                 cancellationToken);
+            if (playTargetFeedback)
+            {
+                await impactTask;
+            }
         }
 
-        private void PlayResultHitSoundIfNeeded(SettlementEffectGroup group)
+        private void PlayResultHitSoundIfNeeded(SettlementEffectGroup group, float pitch)
         {
             if (group == null || ReferenceEquals(_resultHitSoundGroup, group))
             {
@@ -418,7 +431,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             // 技能结果真正开始作用到食物时：单体用 multhit1，多个目标用 multhit2。
-            GameApp.Audio.PlaySettlementHit(targetIds.Count);
+            GameApp.Audio.PlaySettlementHit(targetIds.Count, pitch);
         }
 
         public async Awaitable EndGroupAsync(float duration, CancellationToken cancellationToken)
@@ -435,6 +448,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancellationToken cancellationToken)
         {
             EndGroupImmediate();
+            GameApp.Audio.PlaySettlementHit(2, 1.18f);
             if (_dishViews != null)
             {
                 foreach (DishPieceView view in _dishViews.Values)
@@ -610,6 +624,80 @@ namespace GourmetProject.Game.Presentation.Battle
             BattleSorting.Apply(renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText + orderOffset);
             _transients.Add(root);
             return root;
+        }
+
+        private async Awaitable PlayImpactRingAsync(
+            DishPieceView target,
+            Color theme,
+            SettlementImpactTier tier,
+            CancellationToken cancellationToken)
+        {
+            if (target == null || tier < SettlementImpactTier.Normal)
+            {
+                return;
+            }
+
+            Vector3 center = target.WorldBounds.center;
+            float strength = Mathf.InverseLerp(
+                (float)SettlementImpactTier.Normal,
+                (float)SettlementImpactTier.Finale,
+                (float)tier);
+            Color initialColor = WithAlpha(theme, Mathf.Lerp(0.30f, 0.62f, strength));
+            GameObject primary = CreateSprite("SettlementImpactRing", center, initialColor, -2);
+            GameObject secondary = tier >= SettlementImpactTier.Chain
+                ? CreateSprite("SettlementImpactRingEcho", center, WithAlpha(initialColor, initialColor.a * 0.68f), -3)
+                : null;
+            if (primary == null)
+            {
+                return;
+            }
+
+            SpriteRenderer primaryRenderer = primary.GetComponent<SpriteRenderer>();
+            SpriteRenderer secondaryRenderer = secondary != null
+                ? secondary.GetComponent<SpriteRenderer>()
+                : null;
+            float duration = Mathf.Lerp(0.18f, 0.32f, strength);
+            float endScale = Mathf.Lerp(1.45f, 2.65f, strength) * _visualScale;
+            primary.transform.localScale = Vector3.one * (0.28f * _visualScale);
+            if (secondary != null)
+            {
+                secondary.transform.localScale = Vector3.one * (0.20f * _visualScale);
+            }
+
+            Tween tween = DOVirtual.Float(0f, 1f, duration, progress =>
+                {
+                    if (primary != null && primaryRenderer != null)
+                    {
+                        float eased = Mathf.SmoothStep(0f, 1f, progress);
+                        primary.transform.localScale = Vector3.one
+                            * Mathf.Lerp(0.28f * _visualScale, endScale, eased);
+                        primaryRenderer.color = WithAlpha(initialColor, initialColor.a * (1f - eased));
+                    }
+
+                    if (secondary != null && secondaryRenderer != null)
+                    {
+                        float echo = Mathf.Clamp01((progress - 0.18f) / 0.82f);
+                        float easedEcho = Mathf.SmoothStep(0f, 1f, echo);
+                        secondary.transform.localScale = Vector3.one
+                            * Mathf.Lerp(0.20f * _visualScale, endScale * 1.18f, easedEcho);
+                        secondaryRenderer.color = WithAlpha(
+                            initialColor,
+                            initialColor.a * 0.68f * (1f - easedEcho));
+                    }
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(primary);
+
+            await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
+            if (primary != null)
+            {
+                Destroy(primary);
+            }
+
+            if (secondary != null)
+            {
+                Destroy(secondary);
+            }
         }
 
         private async Awaitable SpawnLabelAsync(
@@ -860,11 +948,11 @@ namespace GourmetProject.Game.Presentation.Battle
             switch (line.Kind)
             {
                 case ScoreLineKind.DishFlat:
-                    return $"分数 {signed}";
+                    return signed;
                 case ScoreLineKind.DishPermanentFlat:
-                    return $"永久分数 {signed}";
+                    return $"永久 {signed}";
                 case ScoreLineKind.DishMultiplier:
-                    return $"倍率 ×{FormatLineValue(line.Value)}";
+                    return $"×{FormatLineValue(line.Value)}";
                 case ScoreLineKind.DishMultiplierAdd:
                     return $"倍率 {signed}";
                 case ScoreLineKind.FinalFlat:

@@ -142,7 +142,8 @@ namespace GourmetProject.Game.UI.Hud
         public void Build(
             GameRun run,
             Action<cfg.TimelineNode, GameObject> onNodeCreated = null,
-            string executingNodeId = null)
+            string executingNodeId = null,
+            float? currentDayOverride = null)
         {
             _presentationNodes = null;
             _presentationLengthDays = 0f;
@@ -157,7 +158,12 @@ namespace GourmetProject.Game.UI.Hud
             }
 
             BindState(
-                CreateState(run, null, run?.TimelineLengthDays ?? 1f, run?.CurrentDay ?? 0f, executingNodeId),
+                CreateState(
+                    run,
+                    null,
+                    run?.TimelineLengthDays ?? 1f,
+                    currentDayOverride ?? run?.CurrentDay ?? 0f,
+                    executingNodeId),
                 run,
                 onNodeCreated,
                 animate: _hasBuiltNodes && !timelineChanged);
@@ -379,6 +385,7 @@ namespace GourmetProject.Game.UI.Hud
                             for (int day = lastWholeDay + 1; day <= wholeDay; day++)
                             {
                                 PulseDayDot(day, speed);
+                                PulseNodesAtDay(day, speed);
                             }
 
                             lastWholeDay = wholeDay;
@@ -1382,6 +1389,21 @@ namespace GourmetProject.Game.UI.Hud
                     0.45f)
                 .SetUpdate(true)
                 .SetTarget(dot.rectTransform);
+        }
+
+        private void PulseNodesAtDay(int day, float speed)
+        {
+            foreach (KeyValuePair<string, int> pair in _nodeDays)
+            {
+                if (pair.Value != day
+                    || !_nodeBubbles.TryGetValue(pair.Key, out TimelineNodeBubbleView bubble)
+                    || bubble == null)
+                {
+                    continue;
+                }
+
+                bubble.PlayAdvancePulse(speed);
+            }
         }
 
         private void RefreshCurrentDay()

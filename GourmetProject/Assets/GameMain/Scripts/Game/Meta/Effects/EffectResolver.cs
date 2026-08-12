@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using GourmetProject.Core.Rng;
 using GourmetProject.Runtime;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Model;
 
@@ -18,6 +19,18 @@ namespace GourmetProject.Game.Meta
     {
         public static string Apply(GameRun run, cfg.EffectType effectType, float effectValue, string effectParam, IRandomStream rng)
         {
+            return Apply(run, effectType, effectValue, effectParam, rng, out _);
+        }
+
+        public static string Apply(
+            GameRun run,
+            cfg.EffectType effectType,
+            float effectValue,
+            string effectParam,
+            IRandomStream rng,
+            out RecipeMutationResult recipeMutation)
+        {
+            recipeMutation = null;
             if (run == null)
             {
                 return string.Empty;
@@ -67,7 +80,11 @@ namespace GourmetProject.Game.Meta
                     return EnqueueConfigReward(run, rng, effectParam, "装饰品和消耗品奖励", 40);
 
                 case cfg.EffectType.AddRandomRecipeFlavor:
-                    return AddRandomRecipeFlavor(run, rng, System.Math.Max(1, value));
+                    return AddRandomRecipeFlavor(
+                        run,
+                        rng,
+                        System.Math.Max(1, value),
+                        out recipeMutation);
 
                 case cfg.EffectType.GainSpecificItem:
                     return EnqueueConfigReward(run, rng, effectParam, "获得装饰品和消耗品", 40);
@@ -310,8 +327,13 @@ namespace GourmetProject.Game.Meta
             }
         }
 
-        private static string AddRandomRecipeFlavor(GameRun run, IRandomStream rng, int count)
+        private static string AddRandomRecipeFlavor(
+            GameRun run,
+            IRandomStream rng,
+            int count,
+            out RecipeMutationResult mutation)
         {
+            mutation = new RecipeMutationResult { Title = "添加风味" };
             var emptyFlavorTargets = new List<int>();
             var allTargets = new List<int>();
             IReadOnlyList<RecipeBookSlot> recipe = run.RecipeEntries;
@@ -343,10 +365,18 @@ namespace GourmetProject.Game.Meta
                 int targetIndex = rng != null ? rng.Range(0, pool.Count) : 0;
                 int dishIndex = pool[targetIndex];
                 List<FlavorDef> availableFlavors = AvailableFlavors(run, dishIndex, flavors);
+                RecipeDishSnapshot before = PassiveRecipeMutationService.Snapshot(run, dishIndex);
                 if (availableFlavors.Count > 0
                     && run.AddRecipeFlavor(dishIndex, PickFlavor(availableFlavors, rng).Id))
                 {
                     applied++;
+                    mutation.Entries.Add(new RecipeMutationEntry
+                    {
+                        BookIndex = 0,
+                        DishIndex = dishIndex,
+                        Before = before,
+                        After = PassiveRecipeMutationService.Snapshot(run, dishIndex),
+                    });
                 }
 
                 emptyFlavorTargets.Remove(dishIndex);
@@ -465,6 +495,43 @@ namespace GourmetProject.Game.Meta
             var offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
             run.EnqueueGenericRewardOffer(BuildGenericRewardKey(run, kind.ToString(), title), title, offer);
             return $"获得 {items.Count} 个{(kind == cfg.ItemKind.Passive ? "装饰品" : "消耗品")}。";
+        }
+
+        /// <summary>
+        /// 直接获得一个随机负面装饰品，不生成通用奖励，也不进入 RewardForm。
+        /// 仍复用正常装饰品池的解锁、唯一性、隐藏分和权重规则；空池时直接折算金币。
+        /// </summary>
+        public static RandomizedItemResult GrantRandomNegativePassiveDirect(
+            GameRun run,
+            IRandomStream rng,
+            int fallbackGold = 40)
+        {
+            if (run == null || rng == null)
+            {
+                return null;
+            }
+
+            List<ItemDefinition> items = ItemPoolService.RollFiltered(
+                run.Tables,
+                run,
+                cfg.ItemKind.Passive,
+                rng,
+                1,
+                allowedIds: null,
+                activeCategory: null,
+                requireNegative: true,
+                withReplacement: false);
+            if (items.Count == 0)
+            {
+                run.Gold += System.Math.Max(0, fallbackGold);
+                return null;
+            }
+
+            ItemDefinition item = items[0];
+            ItemAcquireResult acquireResult = run.AcquireItem(
+                item.Id,
+                System.Math.Max(0, fallbackGold));
+            return new RandomizedItemResult(item, acquireResult);
         }
 
         private static IReadOnlyCollection<string> ParseItemIds(string param)

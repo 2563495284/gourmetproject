@@ -162,6 +162,20 @@ namespace GourmetProject.Game.Presentation.Battle
                 && _worldMode != WorldMode.TableCellTargeting
                 && (_worldMode != WorldMode.Food || !IsFoodInteractionBusy);
 
+        /// <summary>
+        /// 只读餐桌查看可以在结算演出期间进入；协调器会在切换查看层前暂停结算。
+        /// 其它食物交互忙碌态仍保持阻塞，避免把拖拽或业务演出切进餐桌查看。
+        /// </summary>
+        public bool CanEnterTableInspectionView
+            => CanEnterTableView
+                || (_worldMode == WorldMode.Food
+                    && _settling
+                    && !_activeItemTransitioning
+                    && !_bossPresentationBusy
+                    && _outletDragPiece == null
+                    && _movingPiece == null
+                    && _temporaryAreaDragPiece == null);
+
         public bool IsFoodInteractionBusy
             => _settling
                 || _activeItemTransitioning
@@ -1438,6 +1452,9 @@ namespace GourmetProject.Game.Presentation.Battle
             foreach (PendingDishPlacement pending in _session.PendingDishPlacements)
             {
                 if (!pending.IsOnDiningTable
+                    || !ShouldShowPendingDishActionButton(
+                        pending.ActionKind,
+                        GameApp.Settings?.RequireServeConfirmation ?? true)
                     || !_dishViewsById.TryGetValue(pending.Dish.Id, out DishPieceView piece)
                     || piece == null)
                 {
@@ -1454,14 +1471,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     button.onClick.RemoveAllListeners();
                     button.onClick.AddListener(() =>
                     {
-                        if (_pendingDishConfirmRequested != null)
-                        {
-                            _pendingDishConfirmRequested(dishId);
-                        }
-                        else
-                        {
-                            ConfirmPendingDishFromButton(dishId);
-                        }
+                        RequestPendingDishConfirmation(dishId);
                     });
                     _pendingDishActionButtons[dishId] = button;
                 }
@@ -1560,6 +1570,25 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureNextDishPrepared();
             RefreshAll();
             _stateChanged?.Invoke();
+        }
+
+        private void RequestPendingDishConfirmation(int dishId)
+        {
+            DispatchPendingDishConfirmation(
+                dishId,
+                _pendingDishConfirmRequested,
+                ConfirmPendingDishFromButton);
+        }
+
+        internal static void DispatchPendingDishConfirmation(
+            int dishId,
+            Action<int> presentationRequest,
+            Action<int> fallback)
+        {
+            if (presentationRequest != null)
+                presentationRequest(dishId);
+            else
+                fallback?.Invoke(dishId);
         }
 
         public PendingDishConfirmResult ConfirmPendingDishForPresentation(int dishId)
@@ -1898,19 +1927,21 @@ namespace GourmetProject.Game.Presentation.Battle
             GameApp.Audio.PlayPlacement();
             PlayDropDust(placement, footprintSize, releaseVelocity);
             PlayScopeAffectedDishFeedback(affectedDishIds);
-            RefreshPendingDishActionButtons();
-            _stateChanged?.Invoke();
 
-            if (ShouldAutoConfirmPendingDish(
+            bool autoConfirm = ShouldAutoConfirmPendingDish(
                     PendingDishActionKind.Serve,
-                    GameApp.Settings?.DirectServe == true)
-                && _pendingDishConfirmRequested != null)
+                    GameApp.Settings?.RequireServeConfirmation ?? true);
+            if (autoConfirm)
             {
+                // 自动上菜会同步提交数据，再等待落格/触发演出。这里不要先发布
+                // PendingDish 中间态，否则出餐口会闪成“等待上菜/确认”。
                 SetMessage($"已摆放：{result.Dish.Def.Name}，正在上菜。");
-                _pendingDishConfirmRequested(result.Dish.Id);
+                RequestPendingDishConfirmation(result.Dish.Id);
             }
             else
             {
+                RefreshPendingDishActionButtons();
+                _stateChanged?.Invoke();
                 SetMessage($"已摆放：{result.Dish.Def.Name}，点击下方“上菜”按钮确认。");
             }
 
@@ -1919,9 +1950,16 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal static bool ShouldAutoConfirmPendingDish(
             PendingDishActionKind actionKind,
-            bool directServeEnabled)
+            bool requireServeConfirmation)
         {
-            return directServeEnabled && actionKind == PendingDishActionKind.Serve;
+            return !requireServeConfirmation && actionKind == PendingDishActionKind.Serve;
+        }
+
+        internal static bool ShouldShowPendingDishActionButton(
+            PendingDishActionKind actionKind,
+            bool requireServeConfirmation)
+        {
+            return actionKind != PendingDishActionKind.Serve || requireServeConfirmation;
         }
 
         private DishPieceView InstantiateLoosePiece(DishInstance dish, string objectName)
@@ -3070,7 +3108,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EnsureScopeHighlights();
             IReadOnlyList<SkillExecutionTrace> traces = BuildHoverScopeTraces(dish);
-            _scopeHighlights.ShowPersistent(_boardView, traces);
+            _scopeHighlights.ShowPersistent(_boardView, traces, _dishViewsById);
         }
 
         private void ShowDishScopeHighlightsAtPlacement(DishInstance dish, Placement? placement)
@@ -3086,7 +3124,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 dish,
                 placement.Value,
                 SkillScopeVisualMode.CandidateScope);
-            _scopeHighlights.ShowPersistent(_boardView, traces);
+            _scopeHighlights.ShowPersistent(_boardView, traces, _dishViewsById);
         }
 
         public void ClearDishScopeHighlights()
@@ -3102,8 +3140,10 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             EnsureScopeHighlights();
-            IReadOnlyList<SkillExecutionTrace> traces = BuildHoverScopeTraces(dish);
-            _scopeHighlights.Flash(_boardView, traces, cancellationToken);
+            IReadOnlyList<SkillExecutionTrace> traces = BuildHoverScopeTraces(
+                dish,
+                SkillScopeVisualMode.ResolvedTargets);
+            _scopeHighlights.Flash(_boardView, traces, _dishViewsById, cancellationToken);
         }
 
         private IReadOnlyList<SkillExecutionTrace> BuildHoverScopeTracesAtPlacement(
@@ -3447,6 +3487,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     _dishViewsById,
                     _boardView.Mapper,
                     _fxRoot,
+                    WorldCamera,
                     scoreFire,
                     RenderSettlementScore,
                     onReveal,
@@ -3487,7 +3528,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            _scopeHighlights?.ShowSettlement(_boardView, signal.Trace);
+            _scopeHighlights?.ShowSettlement(_boardView, signal.Trace, _dishViewsById);
         }
 
     }

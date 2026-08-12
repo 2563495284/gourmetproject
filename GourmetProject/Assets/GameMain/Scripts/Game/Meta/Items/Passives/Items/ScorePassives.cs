@@ -38,13 +38,13 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
-    /// <summary>食物数阈值 → 终局倍率（lte/gte 由 effectParam 区分）。</summary>
+    /// <summary>结算开始时检查食物数阈值，命中后所有食物倍率 ×N（lte/gte 由 effectParam 区分）。</summary>
     [Preserve]
     [PassiveItemModel("item_count_le_mult")]
     [PassiveItemModel("item_count_ge_mult")]
-    public sealed class CountThresholdFinalMultModel : ScoreSpecModel
+    public sealed class CountThresholdAllDishMultModel : ScoreSpecModel
     {
-        public CountThresholdFinalMultModel() : base(ItemScoreEffectType.CountThresholdFinalMult)
+        public CountThresholdAllDishMultModel() : base(ItemScoreEffectType.CountThresholdAllDishMult)
         {
         }
     }

@@ -103,7 +103,7 @@ namespace GourmetProject.Runtime.Audio
         }
 
         /// <summary>播放一次结算命中音效；同一批命中多个食物时使用更强的版本。</summary>
-        public void PlaySettlementHit(int simultaneousTargetCount)
+        public void PlaySettlementHit(int simultaneousTargetCount, float pitch = 1f)
         {
             if (simultaneousTargetCount <= 0)
             {
@@ -127,6 +127,7 @@ namespace GourmetProject.Runtime.Audio
             ISoundGroup soundGroup = _sound.GetSoundGroup(GroupSound);
             _settlementHitSource.mute = soundGroup?.Mute ?? false;
             _settlementHitSource.volume = soundGroup?.Volume ?? 1f;
+            _settlementHitSource.pitch = Mathf.Clamp(pitch, 0.75f, 1.35f);
             _settlementHitSource.PlayOneShot(clip);
         }
 

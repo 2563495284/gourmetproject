@@ -44,6 +44,7 @@ namespace GourmetProject.Gameplay.Scoring
             IReadOnlyList<int> visualTargetDishInstanceIds = null,
             IReadOnlyList<GridPos> visualTargetCells = null,
             IReadOnlyList<GridPos> conditionCells = null,
+            IReadOnlyList<GridPos> actionScopeCells = null,
             int visualIndex = -1)
         {
             Kind = kind;
@@ -66,6 +67,7 @@ namespace GourmetProject.Gameplay.Scoring
             VisualTargetDishInstanceIds = visualTargetDishInstanceIds ?? EmptyIds;
             VisualTargetCells = visualTargetCells ?? EmptyCells;
             ConditionCells = conditionCells ?? EmptyCells;
+            ActionScopeCells = actionScopeCells ?? EmptyCells;
             VisualIndex = visualIndex;
         }
 
@@ -109,6 +111,8 @@ namespace GourmetProject.Gameplay.Scoring
 
         public IReadOnlyList<GridPos> ConditionCells { get; }
 
+        public IReadOnlyList<GridPos> ActionScopeCells { get; }
+
         public int VisualIndex { get; }
 
         public SkillExecutionTrace WithVisualIndex(int visualIndex)
@@ -134,6 +138,7 @@ namespace GourmetProject.Gameplay.Scoring
                 VisualTargetDishInstanceIds,
                 VisualTargetCells,
                 ConditionCells,
+                ActionScopeCells,
                 visualIndex);
         }
 
@@ -162,6 +167,7 @@ namespace GourmetProject.Gameplay.Scoring
                 visualTargetDishInstanceIds,
                 visualTargetCells,
                 ConditionCells,
+                ActionScopeCells,
                 VisualIndex);
         }
 
@@ -192,6 +198,7 @@ namespace GourmetProject.Gameplay.Scoring
                 visualTargetDishInstanceIds,
                 visualTargetCells,
                 ConditionCells,
+                ActionScopeCells,
                 VisualIndex);
         }
 
@@ -232,7 +239,8 @@ namespace GourmetProject.Gameplay.Scoring
                 sourceLabel,
                 visual.VisualTargetDishInstanceIds,
                 visual.VisualTargetCells,
-                visual.ConditionCells);
+                visual.ConditionCells,
+                visual.ActionScopeCells);
         }
 
         public static SkillExecutionTrace CreateWithOwnerFallback(
@@ -274,6 +282,7 @@ namespace GourmetProject.Gameplay.Scoring
                 trace.VisualTargetDishInstanceIds,
                 trace.VisualTargetCells,
                 trace.ConditionCells,
+                trace.ActionScopeCells,
                 trace.VisualIndex);
         }
     }

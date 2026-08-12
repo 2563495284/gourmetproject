@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Settings;
@@ -25,6 +26,7 @@ namespace GourmetProject.Game.UI.Menu
         [SerializeField] private Button _returnMenuButton;
 
         private bool _inGameplay;
+        private SettingsFormData _formData;
 
         private readonly List<SettingDescriptor> _descriptors = new List<SettingDescriptor>();
         protected override void OnInit(object userData)
@@ -40,7 +42,9 @@ namespace GourmetProject.Game.UI.Menu
         {
             base.OnOpen(userData);
 
-            _inGameplay = userData is SettingsFormData data && data.InGameplay;
+            _formData = userData as SettingsFormData;
+            _inGameplay = _formData?.InGameplay == true;
+            _formData?.AcquireSettlementPause();
             _returnMenuButton.gameObject.SetActive(_inGameplay);
 
             BuildRows();
@@ -49,6 +53,8 @@ namespace GourmetProject.Game.UI.Menu
         protected override void OnClose(bool isShutdown, object userData)
         {
             UnbindRows();
+            _formData?.ReleaseSettlementPause();
+            _formData = null;
             base.OnClose(isShutdown, userData);
         }
 
@@ -227,11 +233,41 @@ namespace GourmetProject.Game.UI.Menu
 
     public sealed class SettingsFormData
     {
-        public SettingsFormData(bool inGameplay)
+        private readonly Func<bool> _pauseSettlementPlayback;
+        private readonly Action _resumeSettlementPlayback;
+        private bool _settlementPauseOwned;
+
+        public SettingsFormData(
+            bool inGameplay,
+            Func<bool> pauseSettlementPlayback = null,
+            Action resumeSettlementPlayback = null)
         {
             InGameplay = inGameplay;
+            _pauseSettlementPlayback = pauseSettlementPlayback;
+            _resumeSettlementPlayback = resumeSettlementPlayback;
         }
 
         public bool InGameplay { get; }
+
+        internal bool SettlementPauseOwned => _settlementPauseOwned;
+
+        internal void AcquireSettlementPause()
+        {
+            if (!_settlementPauseOwned)
+            {
+                _settlementPauseOwned = _pauseSettlementPlayback?.Invoke() == true;
+            }
+        }
+
+        internal void ReleaseSettlementPause()
+        {
+            if (!_settlementPauseOwned)
+            {
+                return;
+            }
+
+            _settlementPauseOwned = false;
+            _resumeSettlementPlayback?.Invoke();
+        }
     }
 }

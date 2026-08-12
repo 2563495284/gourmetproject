@@ -17,7 +17,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
             IReadOnlyList<string> optionRequirements,
             IReadOnlyList<bool> optionEnabled,
             Action<int> onPick,
-            Action onEnd)
+            Action onEnd,
+            float autoContinueDelaySeconds = 0f)
         {
             Title = title;
             Description = description;
@@ -28,6 +29,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
             OptionEnabled = optionEnabled;
             OnPick = onPick;
             OnEnd = onEnd;
+            AutoContinueDelaySeconds = autoContinueDelaySeconds;
         }
 
         public string Title { get; }
@@ -47,6 +49,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
         public Action<int> OnPick { get; }
 
         public Action OnEnd { get; }
+
+        public float AutoContinueDelaySeconds { get; }
     }
 
     internal interface IEventPageHost
@@ -101,7 +105,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
                     request.OptionRequirements,
                     request.OptionEnabled,
                     request.OnPick,
-                    request.OnEnd);
+                    request.OnEnd,
+                    request.AutoContinueDelaySeconds);
             }
             else if (!string.IsNullOrWhiteSpace(request.ResultButtonText)
                 || request.Options == null

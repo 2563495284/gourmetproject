@@ -80,9 +80,14 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public bool IsTransitioning => _transitioning || _host.InspectionLayer?.IsTransitioning == true;
 
-        public bool OpenRecipe(int bookIndex, bool useBattleRecipe = false)
+        public bool OpenRecipe(int bookIndex, bool useBattleRecipe = false, Action onShown = null)
         {
-            return OpenRecipeCore(bookIndex, useBattleRecipe, manageSourcePresentation: true, null);
+            return OpenRecipeCore(
+                bookIndex,
+                useBattleRecipe,
+                manageSourcePresentation: true,
+                onClosed: null,
+                onShown: onShown);
         }
 
         /// <summary>
@@ -91,14 +96,20 @@ namespace GourmetProject.Game.UI.Battle.View
         /// </summary>
         public bool OpenRecipeFromOverlay(int bookIndex, Action onClosed)
         {
-            return OpenRecipeCore(bookIndex, useBattleRecipe: false, manageSourcePresentation: false, onClosed);
+            return OpenRecipeCore(
+                bookIndex,
+                useBattleRecipe: false,
+                manageSourcePresentation: false,
+                onClosed: onClosed,
+                onShown: null);
         }
 
         private bool OpenRecipeCore(
             int bookIndex,
             bool useBattleRecipe,
             bool manageSourcePresentation,
-            Action onClosed)
+            Action onClosed,
+            Action onShown)
         {
             if (_tableTargeting
                 || IsTransitioning
@@ -140,7 +151,11 @@ namespace GourmetProject.Game.UI.Battle.View
                             entries),
                         _host.FoodTips);
                 },
-                CompleteTransition);
+                () =>
+                {
+                    CompleteTransition();
+                    onShown?.Invoke();
+                });
             return true;
         }
 
@@ -187,22 +202,24 @@ namespace GourmetProject.Game.UI.Battle.View
             return true;
         }
 
-        public void OpenTable()
+        public bool OpenTable()
         {
             if (_tableTargeting || IsTransitioning || _host.Run == null)
             {
-                return;
+                return false;
             }
 
             if (_view == BattleInspectionView.Table)
             {
-                return;
+                return false;
             }
 
             BattleWorldController world = _host.World;
-            if (world == null || !world.CanEnterTableView || !BeginSession(manageSourcePresentation: true))
+            if (world == null
+                || !world.CanEnterTableInspectionView
+                || !BeginSession(manageSourcePresentation: true))
             {
-                return;
+                return false;
             }
 
             _transitioning = true;
@@ -222,6 +239,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     _host.BindWorldHoverCallbacks();
                 },
                 CompleteTransition);
+            return true;
         }
 
         public bool ShowPassiveTable(GpTable table, Action onShown)

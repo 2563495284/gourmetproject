@@ -104,16 +104,23 @@ namespace GourmetProject.Game.Procedure
                 GameApp.UI.AddUIGroup(UIForms.GroupDialog, 1);
             }
 
+            if (!GameApp.UI.HasUIGroup(UIForms.GroupTutorial))
+            {
+                GameApp.UI.AddUIGroup(UIForms.GroupTutorial, 2);
+            }
+
             if (!GameApp.UI.HasUIGroup(UIForms.GroupTransition))
             {
-                GameApp.UI.AddUIGroup(UIForms.GroupTransition, 2);
+                GameApp.UI.AddUIGroup(UIForms.GroupTransition, 3);
             }
 
             // GameFramework 的界面组容器由框架运行时创建，只有普通 Transform，
             // 子界面用 stretch 锚点会塌缩到 Canvas 原点。这里把组容器升级为撑满 Canvas 的 RectTransform。
             StretchGroupHelper(UIForms.GroupDefault);
             StretchGroupHelper(UIForms.GroupDialog);
+            StretchGroupHelper(UIForms.GroupTutorial);
             StretchGroupHelper(UIForms.GroupTransition);
+            MoveTransitionGroupToFront();
         }
 
         private static void StretchGroupHelper(string groupName)

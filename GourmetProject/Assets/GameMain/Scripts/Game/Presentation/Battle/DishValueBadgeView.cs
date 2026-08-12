@@ -39,6 +39,9 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_valueText != null)
             {
                 _valueText.text = text;
+                // 食物候选图标会在同一帧内改值并立即 Camera.Render 到 RenderTexture。
+                // TMP 默认延迟到后续渲染阶段重建网格，会让共享预览 Rig 拍到上一张卡的数字。
+                _valueText.ForceMeshUpdate(true, true);
             }
 
             ApplySortingOrder();

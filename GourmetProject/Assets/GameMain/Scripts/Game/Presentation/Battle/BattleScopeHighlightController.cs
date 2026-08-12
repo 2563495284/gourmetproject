@@ -26,14 +26,19 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private Material _sweetTransferMaterial;
         [SerializeField] private Material _copySkillMaterial;
 
+        private readonly Dictionary<BattleScopeHighlightChannel, HashSet<DishPieceView>> _targetPiecesByChannel =
+            new Dictionary<BattleScopeHighlightChannel, HashSet<DishPieceView>>();
         private DiningTableView _activeTableView;
+        private IReadOnlyDictionary<int, DishPieceView> _activeDishViews;
         private int _flashVersion;
 
         public void ShowPersistent(
             DiningTableView tableView,
-            IReadOnlyList<SkillExecutionTrace> traces)
+            IReadOnlyList<SkillExecutionTrace> traces,
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
         {
             _activeTableView = tableView;
+            _activeDishViews = dishViews;
             ClearChannel(BattleScopeHighlightChannel.Persistent);
             if (traces == null)
             {
@@ -54,9 +59,11 @@ namespace GourmetProject.Game.Presentation.Battle
         public void Flash(
             DiningTableView tableView,
             IReadOnlyList<SkillExecutionTrace> traces,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
             CancellationToken cancellationToken)
         {
             _activeTableView = tableView;
+            _activeDishViews = dishViews;
             ClearChannel(BattleScopeHighlightChannel.Flash);
             if (traces == null || traces.Count == 0)
             {
@@ -80,9 +87,13 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>结算舞台专用的持续范围，直到当前效果组收束时显式清除。</summary>
-        public void ShowSettlement(DiningTableView tableView, SkillExecutionTrace trace)
+        public void ShowSettlement(
+            DiningTableView tableView,
+            SkillExecutionTrace trace,
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
         {
             _activeTableView = tableView;
+            _activeDishViews = dishViews;
             ClearChannel(BattleScopeHighlightChannel.Settlement);
             if (trace != null)
             {
@@ -93,6 +104,11 @@ namespace GourmetProject.Game.Presentation.Battle
         public void ClearSettlement()
         {
             ClearChannel(BattleScopeHighlightChannel.Settlement);
+        }
+
+        private void OnDisable()
+        {
+            ClearAll();
         }
 
         private async Awaitable ClearFlashAfterAsync(int version, CancellationToken cancellationToken)
@@ -138,9 +154,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             int conditionLayer = 2 + baseLayer * 2;
             int targetLayer = conditionLayer + 1;
-            if (trace.ConditionType != SkillConditionType.None
-                && trace.ConditionCells.Count > 0
-                && !SameCells(trace.ConditionCells, trace.VisualTargetCells))
+            if (ShouldRenderConditionRegion(trace))
             {
                 RenderConditionScope(
                     channel,
@@ -153,16 +167,50 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (!ShouldRenderTargetRegion(trace.ActionType, trace.ActionScope))
             {
+                RenderTargetDishes(channel, trace, targetColor, visualIndex);
                 return;
             }
 
             _activeTableView?.SetScopeRegionHighlight(
-                trace.VisualTargetCells,
+                trace.ActionScopeCells,
                 channel,
                 targetLayer,
                 targetColor,
                 cellWidth,
+                BattleScopeRegionRole.Action,
                 material);
+            RenderTargetDishes(channel, trace, targetColor, visualIndex);
+        }
+
+        private void RenderTargetDishes(
+            BattleScopeHighlightChannel channel,
+            SkillExecutionTrace trace,
+            Color color,
+            int visualIndex)
+        {
+            if (_activeDishViews == null || trace?.VisualTargetDishInstanceIds == null)
+            {
+                return;
+            }
+
+            if (!_targetPiecesByChannel.TryGetValue(channel, out HashSet<DishPieceView> pieces))
+            {
+                pieces = new HashSet<DishPieceView>();
+                _targetPiecesByChannel[channel] = pieces;
+            }
+
+            foreach (int dishId in trace.VisualTargetDishInstanceIds)
+            {
+                if (dishId <= 0
+                    || !_activeDishViews.TryGetValue(dishId, out DishPieceView piece)
+                    || piece == null)
+                {
+                    continue;
+                }
+
+                piece.SetScopeTargetGlow(channel, color, visualIndex);
+                pieces.Add(piece);
+            }
         }
 
         /// <summary>
@@ -183,6 +231,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 && actionScope != SkillScope.CakeBuff;
         }
 
+        internal static bool ShouldRenderConditionRegion(SkillExecutionTrace trace)
+        {
+            return trace != null
+                && trace.ConditionType != SkillConditionType.None
+                && trace.ConditionCells.Count > 0
+                && !SameCells(trace.ConditionCells, trace.ActionScopeCells);
+        }
+
         private void RenderConditionScope(
             BattleScopeHighlightChannel channel,
             IReadOnlyList<GridPos> cells,
@@ -197,6 +253,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 layer,
                 color,
                 cellWidth,
+                BattleScopeRegionRole.Condition,
                 material);
         }
 
@@ -222,6 +279,17 @@ namespace GourmetProject.Game.Presentation.Battle
         private void ClearChannel(BattleScopeHighlightChannel channel)
         {
             _activeTableView?.ClearScopeHighlights(channel);
+            if (!_targetPiecesByChannel.TryGetValue(channel, out HashSet<DishPieceView> pieces))
+            {
+                return;
+            }
+
+            foreach (DishPieceView piece in pieces)
+            {
+                piece?.ClearScopeTargetGlow(channel);
+            }
+
+            pieces.Clear();
         }
 
         private Color PaletteColor(int index)

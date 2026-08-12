@@ -9,6 +9,7 @@ namespace GourmetProject.Game.Tutorial
 {
     public static class TutorialId
     {
+        public const string DirectionSelection = "tutorial.prelude.direction_selection";
         public const string FirstAction = "tutorial.core.first_action";
         public const string FirstBattle = "tutorial.core.first_battle";
         public const string Settlement = "tutorial.core.settlement";
@@ -20,6 +21,8 @@ namespace GourmetProject.Game.Tutorial
         public const string Material = "tutorial.hook.material";
         public const string Adjustment = "tutorial.hook.adjustment";
         public const string Boss = "tutorial.hook.boss";
+        public const string ResultHeart = "tutorial.hook.result_heart";
+        // 旧存档兼容：不再主动播放，新胜败说明统一使用 ResultHeart。
         public const string Failure = "tutorial.hook.failure";
         public const string PassiveItem = "tutorial.hook.passive_item";
 
@@ -29,6 +32,12 @@ namespace GourmetProject.Game.Tutorial
 
     public static class TutorialAnchorId
     {
+        public const string Direction = "character.direction";
+        public const string DirectionStart = "character.start";
+        public const string DirectionTitle = "character.direction.title";
+        public const string DirectionName = "character.direction.name";
+        public const string DirectionDescription = "character.direction.description";
+        public const string DirectionButtons = "character.direction.buttons";
         public const string ActionDeck = "action.deck";
         public const string ActionCard0 = "action.card.0";
         public const string ActionCard1 = "action.card.1";
@@ -38,9 +47,15 @@ namespace GourmetProject.Game.Tutorial
         public const string ActionReward2 = "action.reward.2";
         public const string ActionAxis = "action.axis";
         public const string Score = "battle.score";
+        public const string ScoreSection = "battle.score.section";
+        public const string ScoreTitle = "battle.score.title";
+        public const string ScoreMeter = "battle.score.meter";
+        public const string Hearts = "battle.hearts";
         public const string Recipe = "battle.recipe";
+        public const string RecipePanel = "battle.recipe_panel";
         public const string Table = "battle.table";
         public const string FoodInfo = "battle.food_info";
+        public const string FoodTips = "battle.food_tips";
         public const string ServingOutlet = "battle.serving_outlet";
         public const string Discard = "battle.discard";
         public const string Settle = "battle.settle";
@@ -52,16 +67,35 @@ namespace GourmetProject.Game.Tutorial
 
     public static class TutorialSignal
     {
+        public const string DirectionConfirmed = "character.direction_confirmed";
         public const string ActionPicked = "action.picked";
         public const string DishPlaced = "battle.dish_placed";
         public const string SettleClicked = "battle.settle_clicked";
         public const string TimelineNodePicked = "timeline.node_picked";
     }
 
+    public static class TutorialCommand
+    {
+        public const string OpenInitialRecipe = "battle.tutorial.open_initial_recipe";
+        public const string CloseInitialRecipe = "battle.tutorial.close_initial_recipe";
+        public const string ShowPreparedFoodTips = "battle.tutorial.show_prepared_food_tips";
+        public const string HidePreparedFoodTips = "battle.tutorial.hide_prepared_food_tips";
+    }
+
     public enum TutorialAdvanceMode
     {
         Continue,
         Signal,
+    }
+
+    public enum TutorialMascotPose
+    {
+        Explain,
+        PointRight,
+        Remind,
+        Think,
+        Wave,
+        Celebrate,
     }
 
     public sealed class TutorialStepDefinition
@@ -71,16 +105,45 @@ namespace GourmetProject.Game.Tutorial
             TutorialAdvanceMode mode = TutorialAdvanceMode.Continue,
             string signal = null,
             params string[] anchors)
+            : this(
+                message,
+                TutorialMascotPose.Explain,
+                mode,
+                signal,
+                enterCommand: null,
+                exitCommand: null,
+                allowTargetInteraction: mode == TutorialAdvanceMode.Signal,
+                anchors)
+        {
+        }
+
+        public TutorialStepDefinition(
+            string message,
+            TutorialMascotPose pose,
+            TutorialAdvanceMode mode,
+            string signal,
+            string enterCommand,
+            string exitCommand,
+            bool allowTargetInteraction,
+            params string[] anchors)
         {
             Message = message ?? string.Empty;
+            Pose = pose;
             Mode = mode;
             Signal = signal ?? string.Empty;
+            EnterCommand = enterCommand ?? string.Empty;
+            ExitCommand = exitCommand ?? string.Empty;
+            AllowTargetInteraction = allowTargetInteraction;
             Anchors = anchors ?? Array.Empty<string>();
         }
 
         public string Message { get; }
+        public TutorialMascotPose Pose { get; }
         public TutorialAdvanceMode Mode { get; }
         public string Signal { get; }
+        public string EnterCommand { get; }
+        public string ExitCommand { get; }
+        public bool AllowTargetInteraction { get; }
         public IReadOnlyList<string> Anchors { get; }
     }
 
@@ -103,15 +166,70 @@ namespace GourmetProject.Game.Tutorial
         public static TutorialSequenceDefinition Get(string id) =>
             id != null && Definitions.TryGetValue(id, out TutorialSequenceDefinition value) ? value : null;
 
+        public static TutorialSequenceDefinition BuildResultHeart(bool isWin)
+        {
+            string message = isWin
+                ? "太棒了，老板！这次经营成功，❤️红心不会减少。红心代表餐厅还能承受失败的次数：日常营业和火热营业失败会损失 1 颗，星级评鉴失败会损失 2 颗；红心归零，本局就会结束。"
+                : "别灰心，老板！这次没有达到目标，失败会让我们损失❤️红心。日常营业和火热营业失败会损失 1 颗，星级评鉴失败会损失 2 颗；红心归零，本局就会结束。";
+            return new TutorialSequenceDefinition(
+                TutorialId.ResultHeart,
+                new TutorialStepDefinition(
+                    message,
+                    isWin ? TutorialMascotPose.Celebrate : TutorialMascotPose.Remind,
+                    TutorialAdvanceMode.Continue,
+                    signal: null,
+                    enterCommand: null,
+                    exitCommand: null,
+                    allowTargetInteraction: false,
+                    TutorialAnchorId.Hearts));
+        }
+
         private static Dictionary<string, TutorialSequenceDefinition> Build()
         {
             TutorialStepDefinition C(string text, params string[] anchors) =>
                 new TutorialStepDefinition(text, TutorialAdvanceMode.Continue, null, anchors);
             TutorialStepDefinition S(string text, string signal, params string[] anchors) =>
                 new TutorialStepDefinition(text, TutorialAdvanceMode.Signal, signal, anchors);
+            TutorialStepDefinition V(
+                string text,
+                TutorialMascotPose pose,
+                string enterCommand,
+                string exitCommand,
+                params string[] anchors) =>
+                new TutorialStepDefinition(
+                    text,
+                    pose,
+                    TutorialAdvanceMode.Continue,
+                    signal: null,
+                    enterCommand,
+                    exitCommand,
+                    allowTargetInteraction: false,
+                    anchors);
 
             return new Dictionary<string, TutorialSequenceDefinition>(StringComparer.Ordinal)
             {
+                [TutorialId.DirectionSelection] = new TutorialSequenceDefinition(
+                    TutorialId.DirectionSelection,
+                    new TutorialStepDefinition(
+                        "老板，这里选择的不是店长角色，而是餐厅的经营方向哦！这次我们经营的是「甜品」，糖霜、奶油和烘焙香气，就是复兴餐厅的第一步。",
+                        TutorialMascotPose.Wave,
+                        TutorialAdvanceMode.Continue,
+                        signal: null,
+                        enterCommand: null,
+                        exitCommand: null,
+                        allowTargetInteraction: false,
+                        TutorialAnchorId.DirectionName,
+                        TutorialAnchorId.DirectionDescription),
+                    new TutorialStepDefinition(
+                        "方向选好了，就点击「新游戏」吧。铛铛会陪你一起把店开起来！",
+                        TutorialMascotPose.PointRight,
+                        TutorialAdvanceMode.Signal,
+                        TutorialSignal.DirectionConfirmed,
+                        enterCommand: null,
+                        exitCommand: null,
+                        allowTargetInteraction: true,
+                        TutorialAnchorId.DirectionStart)),
+
                 [TutorialId.FirstAction] = new TutorialSequenceDefinition(
                     TutorialId.FirstAction,
                     C("每次行动都会花费一定的时间，并为餐厅带来不同的收益。", TutorialAnchorId.ActionCard0),
@@ -120,14 +238,57 @@ namespace GourmetProject.Game.Tutorial
 
                 [TutorialId.FirstBattle] = new TutorialSequenceDefinition(
                     TutorialId.FirstBattle,
-                    C("左侧显示了本次营业的美味值目标。", TutorialAnchorId.Score),
-                    C("食谱决定本场可能端出的食物。每次出菜都会从食谱中抽取一个尚未处理的食物。", TutorialAnchorId.Recipe),
-                    C("餐桌由餐桌格组成。食物的形状必须完整落在可用且未被占用的格子上。", TutorialAnchorId.Table),
-                    C("每个食物都有基础美味值，也可能带有技能。技能会在上菜或结算的指定时机改变自己、其他食物或总分。", TutorialAnchorId.FoodInfo),
-                    C("单个食物经过技能、风味和材质修正后得到美味值；全桌食物汇总后就是总美味值。", TutorialAnchorId.Score),
-                    S("把出菜口的食物拖到餐桌上。绿色位置可以摆放，缺格或被占用的位置不能摆放。", TutorialSignal.DishPlaced, TutorialAnchorId.ServingOutlet, TutorialAnchorId.Table),
-                    C("暂时放不下或不适合当前布局时，可以把食物拖进垃圾桶。丢弃会消耗一次机会并重新出菜；这一局不要求你现在丢弃。", TutorialAnchorId.Discard),
-                    S("准备好后点击结算。食物会依次触发技能、风味和材质效果，并汇总最终美味值。", TutorialSignal.SettleClicked, TutorialAnchorId.Settle)),
+                    new TutorialStepDefinition(
+                        "老板，看这里！每次出菜时，都会从食谱中抽取一个尚未处理的食物。你可以把它拖到餐桌上，也可以拖进垃圾桶扔掉。",
+                        TutorialMascotPose.PointRight,
+                        TutorialAdvanceMode.Continue,
+                        signal: null,
+                        enterCommand: null,
+                        exitCommand: null,
+                        allowTargetInteraction: false,
+                        TutorialAnchorId.ServingOutlet),
+                    V(
+                        "这里是你的初始食谱，里面装着本次经营会抽到的食物。先记住它们吧！",
+                        TutorialMascotPose.Explain,
+                        TutorialCommand.OpenInitialRecipe,
+                        TutorialCommand.CloseInitialRecipe,
+                        TutorialAnchorId.RecipePanel),
+                    V(
+                        "每个食物都有自己的分数，并带有特殊效果。好好搭配，它们就能发挥更大的作用！",
+                        TutorialMascotPose.Explain,
+                        TutorialCommand.ShowPreparedFoodTips,
+                        TutorialCommand.HidePreparedFoodTips,
+                        TutorialAnchorId.FoodTips),
+                    new TutorialStepDefinition(
+                        "这里是本次经营需要达到的目标美味值。努力让食物结算后的总美味值达到它吧！",
+                        TutorialMascotPose.Remind,
+                        TutorialAdvanceMode.Continue,
+                        signal: null,
+                        enterCommand: null,
+                        exitCommand: null,
+                        allowTargetInteraction: false,
+                        TutorialAnchorId.ScoreSection,
+                        TutorialAnchorId.ScoreTitle,
+                        TutorialAnchorId.ScoreMeter),
+                    new TutorialStepDefinition(
+                        "现在，把出餐口的食物拖到餐桌上吧！绿色位置可以摆放，缺格或被占用的位置不能摆放。",
+                        TutorialMascotPose.PointRight,
+                        TutorialAdvanceMode.Signal,
+                        TutorialSignal.DishPlaced,
+                        enterCommand: null,
+                        exitCommand: null,
+                        allowTargetInteraction: true,
+                        TutorialAnchorId.ServingOutlet,
+                        TutorialAnchorId.Table),
+                    new TutorialStepDefinition(
+                        "等你准备好了，点击「结算」就可以结束本次经营。现在先听铛铛说完，决定什么时候结算由老板自己来！",
+                        TutorialMascotPose.Remind,
+                        TutorialAdvanceMode.Continue,
+                        signal: null,
+                        enterCommand: null,
+                        exitCommand: null,
+                        allowTargetInteraction: false,
+                        TutorialAnchorId.Settle)),
 
                 [TutorialId.Settlement] = new TutorialSequenceDefinition(
                     TutorialId.Settlement,
@@ -154,18 +315,15 @@ namespace GourmetProject.Game.Tutorial
 
                 [TutorialId.Flavor] = new TutorialSequenceDefinition(
                     TutorialId.Flavor,
-                    C("风味附着在食物上，会增加或改变它的属性与结算效果。"),
-                    C("基础情况下，每个食物只有 1 个风味槽；添加新风味会替换旧风味，特殊效果可以改变这个限制。")),
+                    C("老板，食物现在有风味了！每个食物只有 1 个风味位，风味会改变食物的属性和结算效果；风味箱和风味强化箱都能帮我们调整它。")),
 
                 [TutorialId.Material] = new TutorialSequenceDefinition(
                     TutorialId.Material,
-                    C("材质附着在餐桌格上，每个格子最多拥有 1 种材质。"),
-                    C("食物覆盖到有材质的格子时，会在结算中获得该格子的效果；多格食物可能同时受到多个格子的影响。")),
+                    C("餐桌也能变强哦！每个餐桌格只有 1 个材质，放置在格子上的食物会获得对应效果；材质箱和材质强化箱可以改变这些效果。")),
 
                 [TutorialId.Adjustment] = new TutorialSequenceDefinition(
                     TutorialId.Adjustment,
-                    C("调整单是一次性消耗品，可以刷新行动、改变下一次行动用时，或添加、删除、提前执行时间轴节点。"),
-                    C("先比较当前行动奖励和节点位置，再决定使用时机，才能最大化收益。")),
+                    C("这是调整单！它可以修改节点和行动。先看看当前奖励与时间轴，再思考怎样使用，才能把收益最大化。")),
 
                 [TutorialId.Boss] = new TutorialSequenceDefinition(
                     TutorialId.Boss,
@@ -174,13 +332,11 @@ namespace GourmetProject.Game.Tutorial
 
                 [TutorialId.Failure] = new TutorialSequenceDefinition(
                     TutorialId.Failure,
-                    C("本次总美味值没有达到目标。", TutorialAnchorId.HeartBreak),
-                    C("日常营业和火热营业失败损失 1 颗红心；星级评鉴失败损失 2 颗。红心归零时，本局结束。", TutorialAnchorId.HeartBreak)),
+                    C("别灰心，老板！之后铛铛会在经营结果里说明红心规则。", TutorialAnchorId.HeartBreak)),
 
                 [TutorialId.PassiveItem] = new TutorialSequenceDefinition(
                     TutorialId.PassiveItem,
-                    C("装饰品获得后会长期生效，不需要主动使用。"),
-                    C("每件装饰品都有不同效果，可能影响得分、金币、奖励、时间轴或操作次数。合理组合会让餐厅越来越强。")),
+                    C("装饰品获得后会持续生效。每件装饰品都有不同的效果，但都会从不同方向让餐厅变得更强！")),
             };
         }
     }

@@ -18,12 +18,18 @@ namespace GourmetProject.Game.Meta
 
     public sealed class EventResolveResult
     {
-        private EventResolveResult(string feedback, EventFollowUpKind followUpKind, int requiredScore, string modifier)
+        private EventResolveResult(
+            string feedback,
+            EventFollowUpKind followUpKind,
+            int requiredScore,
+            string modifier,
+            RecipeMutationResult recipeMutation)
         {
             Feedback = feedback ?? string.Empty;
             FollowUpKind = followUpKind;
             RequiredScore = requiredScore;
             Modifier = modifier ?? string.Empty;
+            RecipeMutation = recipeMutation;
         }
 
         public string Feedback { get; }
@@ -34,31 +40,50 @@ namespace GourmetProject.Game.Meta
 
         public string Modifier { get; }
 
+        public RecipeMutationResult RecipeMutation { get; }
+
         public bool IsBattle => FollowUpKind == EventFollowUpKind.Battle;
 
-        public static EventResolveResult Immediate(string feedback)
+        public static EventResolveResult Immediate(
+            string feedback,
+            RecipeMutationResult recipeMutation = null)
         {
-            return new EventResolveResult(feedback, EventFollowUpKind.None, 0, string.Empty);
+            return new EventResolveResult(
+                feedback,
+                EventFollowUpKind.None,
+                0,
+                string.Empty,
+                recipeMutation);
         }
 
         public static EventResolveResult Battle(string feedback, int requiredScore, string modifier)
         {
-            return new EventResolveResult(feedback, EventFollowUpKind.Battle, requiredScore, modifier);
+            return new EventResolveResult(feedback, EventFollowUpKind.Battle, requiredScore, modifier, null);
         }
 
         public static EventResolveResult Shop(string feedback)
         {
-            return new EventResolveResult(feedback, EventFollowUpKind.Shop, 0, string.Empty);
+            return new EventResolveResult(feedback, EventFollowUpKind.Shop, 0, string.Empty, null);
         }
 
         public static EventResolveResult GameOver(string feedback)
         {
-            return new EventResolveResult(feedback, EventFollowUpKind.GameOver, 0, string.Empty);
+            return new EventResolveResult(feedback, EventFollowUpKind.GameOver, 0, string.Empty, null);
         }
 
         public static EventResolveResult Victory(string feedback)
         {
-            return new EventResolveResult(feedback, EventFollowUpKind.Victory, 0, string.Empty);
+            return new EventResolveResult(feedback, EventFollowUpKind.Victory, 0, string.Empty, null);
+        }
+
+        public EventResolveResult WithRecipeMutation(RecipeMutationResult recipeMutation)
+        {
+            return new EventResolveResult(
+                Feedback,
+                FollowUpKind,
+                RequiredScore,
+                Modifier,
+                recipeMutation);
         }
     }
 
@@ -355,6 +380,7 @@ namespace GourmetProject.Game.Meta
 
             EventResolveResult followUp = null;
             var feedbacks = new List<string>();
+            var recipeMutation = new RecipeMutationResult { Title = option.Text };
             int count = option.EffectTypes.Count;
             for (int i = 0; i < count; i++)
             {
@@ -367,6 +393,11 @@ namespace GourmetProject.Game.Meta
                 float value = i < option.EffectValues.Count ? option.EffectValues[i] : 0f;
                 string param = i < option.EffectParams.Count ? option.EffectParams[i] : string.Empty;
                 EventResolveResult r = ResolveEffect(run, type, value, param, option.Text, rng);
+                if (r.RecipeMutation?.HasChanges == true)
+                {
+                    recipeMutation.Entries.AddRange(r.RecipeMutation.Entries);
+                }
+
                 if (r.FollowUpKind != EventFollowUpKind.None)
                 {
                     followUp = r;
@@ -379,10 +410,14 @@ namespace GourmetProject.Game.Meta
 
             if (followUp != null)
             {
-                return followUp;
+                return recipeMutation.HasChanges
+                    ? followUp.WithRecipeMutation(recipeMutation)
+                    : followUp;
             }
 
-            return EventResolveResult.Immediate(feedbacks.Count > 0 ? string.Join("\n", feedbacks) : string.Empty);
+            return EventResolveResult.Immediate(
+                feedbacks.Count > 0 ? string.Join("\n", feedbacks) : string.Empty,
+                recipeMutation.HasChanges ? recipeMutation : null);
         }
 
         /// <summary>事件到达终止（选项无子页、终止展示页、或跟进类效果）时调用：记录使用。</summary>
@@ -458,8 +493,16 @@ namespace GourmetProject.Game.Meta
 
                 default:
                 {
-                    string feedback = EffectResolver.Apply(run, effectType, effectValue, effectParam, rng);
-                    return EventResolveResult.Immediate(string.IsNullOrEmpty(feedback) ? fallback : feedback);
+                    string feedback = EffectResolver.Apply(
+                        run,
+                        effectType,
+                        effectValue,
+                        effectParam,
+                        rng,
+                        out RecipeMutationResult recipeMutation);
+                    return EventResolveResult.Immediate(
+                        string.IsNullOrEmpty(feedback) ? fallback : feedback,
+                        recipeMutation);
                 }
             }
         }

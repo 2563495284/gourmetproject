@@ -8,7 +8,7 @@ Shader "GourmetProject/SpriteOutline"
         _OutlineWidth ("Outline Width", Range(0, 0.2)) = 0.055
         _FillAlpha ("Fill Alpha", Range(0, 1)) = 0
         _OuterAlpha ("Outer Alpha", Range(0, 1)) = 1
-        _InnerAlpha ("Inner Edge Alpha", Range(0, 1)) = 0.58
+        _InnerAlpha ("Inner Edge Alpha", Range(0, 1)) = 0
         _GlowIntensity ("Glow Intensity", Range(0.25, 3)) = 1.15
         _PulseSpeed ("Pulse Speed", Range(0, 8)) = 0
         _PulseAmplitude ("Pulse Amplitude", Range(0, 0.5)) = 0
@@ -17,6 +17,16 @@ Shader "GourmetProject/SpriteOutline"
         [PerRendererData] _UseRectMask ("Use Rectangle Mask", Float) = 0
         [PerRendererData] _UseGridMask ("Use Grid Mask", Float) = 0
         [PerRendererData] _GridOutlinePixels ("Grid Outline Pixels", Float) = 6
+        [PerRendererData] _GridGlowPixels ("Grid Glow Pixels", Float) = 12
+        [PerRendererData] _GridGlowAlpha ("Grid Glow Alpha", Float) = 0
+        [PerRendererData] _GridFlowSpeed ("Grid Flow Speed", Float) = 0
+        [PerRendererData] _GridFlowWidth ("Grid Flow Width", Float) = 0.2
+        [PerRendererData] _GridFlowIntensity ("Grid Flow Intensity", Float) = 0
+        [PerRendererData] _GridStripeDensity ("Grid Stripe Density", Float) = 18
+        [PerRendererData] _GridStripeSpeed ("Grid Stripe Speed", Float) = 0
+        [PerRendererData] _GridRevealStart ("Grid Reveal Start", Float) = 0
+        [PerRendererData] _GridRevealDuration ("Grid Reveal Duration", Float) = 0
+        [PerRendererData] _GridVisibility ("Grid Visibility", Range(0, 1)) = 1
         [PerRendererData] _RectSize ("Rectangle Size", Vector) = (1, 1, 0, 0)
         [PerRendererData] _UvInflate ("UV Inflate Compensation", Float) = 1
         [PerRendererData] _SpriteUvRect ("Sprite UV Rect", Vector) = (0, 0, 1, 1)
@@ -80,6 +90,16 @@ Shader "GourmetProject/SpriteOutline"
                 float _UseRectMask;
                 float _UseGridMask;
                 float _GridOutlinePixels;
+                float _GridGlowPixels;
+                float _GridGlowAlpha;
+                float _GridFlowSpeed;
+                float _GridFlowWidth;
+                float _GridFlowIntensity;
+                float _GridStripeDensity;
+                float _GridStripeSpeed;
+                float _GridRevealStart;
+                float _GridRevealDuration;
+                float _GridVisibility;
                 float4 _RectSize;
                 float _UvInflate;
                 float4 _SpriteUvRect;
@@ -166,20 +186,87 @@ Shader "GourmetProject/SpriteOutline"
                 }
 
                 float2 sourceUv = CompensatedUv(input.uv);
-                half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, sourceUv) * input.color;
-                tex.a *= InsideSpriteRect(sourceUv);
-                half sourceMask = AlphaMask(tex.a);
+                half4 sourceTex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, sourceUv);
+                sourceTex.a *= InsideSpriteRect(sourceUv);
+                // 内外遮罩必须都来自原贴图 alpha。Renderer tint 会被结算聚焦等表现层调整，
+                // 若拿 tint 后的 alpha 判断内部，会把整块不透明 sprite 误判成“外圈”。
+                half sourceMask = AlphaMask(sourceTex.a);
+                half4 tex = sourceTex * input.color;
 
                 if (_UseGridMask > 0.5)
                 {
                     float gridPixels = floor(clamp(_GridOutlinePixels, 1.0, 8.0) + 0.5);
-                    half outside = RingAlpha(
-                        sourceUv,
-                        _MainTex_TexelSize.xy * gridPixels);
-                    half outlineAlpha = (half)(outside * (1.0 - sourceMask) * _OutlineColor.a);
-                    half3 outlineRgb = (half3)(_OutlineColor.rgb * _GlowIntensity * wave);
-                    clip(outlineAlpha - 0.001);
-                    return half4(outlineRgb, outlineAlpha);
+                    float glowPixels = max(gridPixels + 1.0, _GridGlowPixels);
+                    half outside = RingAlpha(sourceUv, _MainTex_TexelSize.xy * gridPixels);
+                    half middle = RingAlpha(sourceUv, _MainTex_TexelSize.xy * glowPixels * 0.62);
+                    half wide = RingAlpha(sourceUv, _MainTex_TexelSize.xy * glowPixels);
+                    half outsideMask = (half)(1.0 - sourceMask);
+                    half core = (half)(outside * outsideMask);
+                    half softGlow = (half)(saturate(max(middle * 0.62, wide * 0.32) - core) * outsideMask);
+
+                    float reveal = 1.0;
+                    float revealPulse = 0.0;
+                    if (_GridRevealDuration > 0.001)
+                    {
+                        float elapsed = max(0.0, _Time.y - _GridRevealStart);
+                        float progress = saturate(elapsed / _GridRevealDuration);
+                        float revealCoordinate = saturate(dot(sourceUv, float2(0.58, 0.42)));
+                        float revealCursor = progress * 1.36 - 0.18;
+                        reveal = smoothstep(
+                            revealCoordinate - 0.18,
+                            revealCoordinate + 0.18,
+                            revealCursor);
+                        revealPulse = sin(progress * 3.14159265) * (1.0 - step(_GridRevealDuration, elapsed));
+                    }
+
+                    float flowPhase = frac(
+                        dot(sourceUv, float2(0.76, 0.42))
+                        - _Time.y * _GridFlowSpeed);
+                    float flowDistance = abs(flowPhase - 0.5);
+                    float flowWidth = max(0.02, _GridFlowWidth);
+                    float flowBand = 1.0 - smoothstep(flowWidth * 0.24, flowWidth, flowDistance);
+                    float flowEnabled = step(0.001, _GridFlowIntensity);
+                    float flowMask = flowBand * flowEnabled;
+                    float flowWhiten = flowBand * saturate(_GridFlowIntensity * 1.15);
+
+                    float stripeWave = 0.5 + 0.5 * sin(
+                        ((sourceUv.x - sourceUv.y) * _GridStripeDensity
+                        + _Time.y * _GridStripeSpeed) * 6.2831853);
+                    float stripe = smoothstep(0.30, 0.82, stripeWave);
+                    half fillAlpha = (half)saturate(
+                        sourceMask
+                        * _FillAlpha
+                        * lerp(0.82, 1.08, stripe)
+                        * reveal);
+                    half coreAlpha = (half)saturate(
+                        core
+                        * _OutlineColor.a
+                        * lerp(0.86, 1.0, flowMask)
+                        * reveal);
+                    half glowAlpha = (half)saturate(
+                        softGlow
+                        * _OutlineColor.a
+                        * _GridGlowAlpha
+                        * (0.78 + flowBand * 0.42 + revealPulse * 0.75)
+                        * reveal);
+                    half edgeAlpha = max(coreAlpha, glowAlpha);
+                    half alpha = (half)(max(fillAlpha, edgeAlpha) * saturate(_GridVisibility));
+                    half3 fillRgb = (half3)(_OutlineColor.rgb * lerp(0.56, 0.78, stripe));
+                    half3 outlineRgb = (half3)(
+                        _OutlineColor.rgb
+                        * _GlowIntensity
+                        * wave);
+                    // 单纯乘亮度会让洋红、青色等高饱和语义色迅速裁平，流光看起来像静态实线。
+                    // 高亮头部向白色过渡，确保所有颜色、Action/Condition 两种范围都能看清循环方向。
+                    half3 flowHighlightRgb = (half3)(
+                        half3(1.0, 1.0, 1.0)
+                        * max(1.0, _GlowIntensity)
+                        * wave);
+                    outlineRgb = lerp(outlineRgb, flowHighlightRgb, flowWhiten);
+                    half edgeBlend = alpha > 0.0001 ? saturate(edgeAlpha / alpha) : 0;
+                    half3 rgb = lerp(fillRgb, outlineRgb, edgeBlend);
+                    clip(alpha - 0.001);
+                    return half4(rgb, alpha);
                 }
 
                 // Treat the old 0..0.2 width as a normalized authoring control, then sample in texture pixels.

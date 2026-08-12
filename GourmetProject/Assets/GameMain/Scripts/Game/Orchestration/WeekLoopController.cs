@@ -35,6 +35,9 @@ namespace GourmetProject.Game.Orchestration
 
         void OpenShop();
 
+        /// <summary>打开通用奖励弹窗；事件奖励需要在弹窗完成后再结束事件页。</summary>
+        void OpenRewardForm(RewardFormOpenArgs args);
+
         /// <summary>时间轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
         void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick);
 
@@ -48,6 +51,12 @@ namespace GourmetProject.Game.Orchestration
             float toDay,
             string arrivingNodeId,
             Action onDone);
+
+        /// <summary>锁定本次推进演出的视觉游标，避免节点页面重建时读取错误日期。</summary>
+        void BeginTimelineAdvanceSequence(float fromDay);
+
+        /// <summary>推进与所经过节点均处理完成后解除视觉游标锁。</summary>
+        void EndTimelineAdvanceSequence();
 
         void PlayTimelineNodeCue(
             string nodeId,
@@ -84,6 +93,27 @@ namespace GourmetProject.Game.Orchestration
             Action<int> onPick,
             Action onEnd);
 
+        /// <summary>自动展示事件效果反馈；表现结束后回调，不要求玩家再次确认。</summary>
+        void ShowEventEffectFeedback(
+            string title,
+            string message,
+            string bgSprite,
+            Action onComplete);
+
+        /// <summary>事件完整结束时先退出事件页；退场完成后才允许提交行动并推进时间轴。</summary>
+        void ExitEventPage(Action onExited);
+
+        /// <summary>展示事件造成的食谱食物变化；全部动画结束后回调。</summary>
+        void ShowEventRecipeMutation(
+            RecipeMutationResult result,
+            Action onComplete);
+
+        /// <summary>在常驻壳中直接展示一件已到账的负面装饰品，表现结束后继续事件流程。</summary>
+        void ShowDirectPassiveItemAcquire(
+            ItemDefinition item,
+            ItemAcquireResult acquireResult,
+            Action onComplete);
+
         void ShowRunResult(bool win, BigDouble total);
     }
 
@@ -92,11 +122,15 @@ namespace GourmetProject.Game.Orchestration
     /// </summary>
     public sealed class WeekLoopController
     {
+        private const string KitchenGodStatueEventId = "ev_kitchen_god_statue";
+        private const string KitchenGodDirectNegativeOptionId = "opt_kitchen_god_statue_choice_2";
+
         private readonly GameRun _run;
         private readonly IWeekLoopView _view;
 
         private Action _afterNodes;
         private Action _afterBattleWin;
+        private Action _afterEventReward;
         private Action _beforeBattleReward;
         private Action _afterShop;
         private bool _currentBattleIsBoss;
@@ -174,6 +208,13 @@ namespace GourmetProject.Game.Orchestration
                     UIForms.Reward,
                     UIForms.GroupDialog,
                     RewardFormOpenArgs.GenericQueue(continuation));
+                return;
+            }
+
+            // RewardForm 已清空队列、但事件完成回调尚未落盘时，从事件专用续接点恢复。
+            if (_run.PendingGenericRewardContinuation == PendingGenericRewardContinuationKind.Event)
+            {
+                ContinueAfterRecoveredEventReward();
                 return;
             }
 
@@ -744,6 +785,43 @@ namespace GourmetProject.Game.Orchestration
                 restoringPending: true);
         }
 
+        /// <summary>事件奖励领取完毕：先完成并退出事件，再提交行动和推进时间轴。</summary>
+        public void OnEventRewardConfirmed()
+        {
+            Action cb = _afterEventReward;
+            _afterEventReward = null;
+            if (cb != null)
+            {
+                cb.Invoke();
+                return;
+            }
+
+            ContinueAfterRecoveredEventReward();
+        }
+
+        private void ContinueAfterRecoveredEventReward()
+        {
+            PendingActionExecutionSaveData pending = _run?.GetPendingActionExecution();
+            cfg.GameEvent ev = pending?.OutcomeKind == ActionOutcomeKind.Event
+                && !string.IsNullOrEmpty(pending.EventId)
+                    ? _run.Tables?.TbEvent.GetOrDefault(pending.EventId)
+                    : null;
+            EventService.OnEventFinished(_run, ev, EventResolveResult.Immediate(string.Empty));
+            if (_run != null)
+            {
+                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
+                RunPersistence.Save(_run);
+            }
+
+            if (pending == null)
+            {
+                DrainPendingExtraNodes(PromptNextAction);
+                return;
+            }
+
+            DrainPendingExtraNodes(ContinueAfterRecoveredBattleReward);
+        }
+
         private void ContinueBattleWin()
         {
             Action cb = _afterBattleWin;
@@ -840,9 +918,9 @@ namespace GourmetProject.Game.Orchestration
             }
 
             _run.ClearPendingActionExecution();
-            ActionExecutor.Commit(_run, context);
+            float previousDay = ActionExecutor.Commit(_run, context);
             RunPersistence.Save(_run);
-            ResolveNodes(PromptNextAction);
+            ResolveNodes(PromptNextAction, previousDay);
         }
 
         private void EnsurePendingBattleReward(ActionExecutionContext actionContext)
@@ -912,6 +990,19 @@ namespace GourmetProject.Game.Orchestration
                 : _timelinePresentationTarget;
             _timelinePresentationActive = presentationFromDay.HasValue
                 && _timelinePresentationTarget > _timelinePresentationCursor + TimelineMath.Epsilon;
+            if (_timelinePresentationActive)
+            {
+                _view.BeginTimelineAdvanceSequence(_timelinePresentationCursor);
+                float fromDay = _timelinePresentationCursor;
+                _timelinePresentationCursor = _timelinePresentationTarget;
+                _view.PlayTimelineAdvance(
+                    fromDay,
+                    _timelinePresentationTarget,
+                    null,
+                    Once(ProcessNextNode));
+                return;
+            }
+
             ProcessNextNode();
         }
 
@@ -923,19 +1014,6 @@ namespace GourmetProject.Game.Orchestration
             if (node == null)
             {
                 FinishTimelineNodeSequence();
-                return;
-            }
-
-            if (_timelinePresentationActive
-                && node.Day > _timelinePresentationCursor + TimelineMath.Epsilon)
-            {
-                float fromDay = _timelinePresentationCursor;
-                _timelinePresentationCursor = node.Day;
-                _view.PlayTimelineAdvance(
-                    fromDay,
-                    node.Day,
-                    node.Id,
-                    Once(() => ProcessArrivedNode(node)));
                 return;
             }
 
@@ -1004,20 +1082,8 @@ namespace GourmetProject.Game.Orchestration
 
         private void FinishTimelineNodeSequence()
         {
-            if (_timelinePresentationActive
-                && _timelinePresentationTarget > _timelinePresentationCursor + TimelineMath.Epsilon)
-            {
-                float fromDay = _timelinePresentationCursor;
-                _timelinePresentationCursor = _timelinePresentationTarget;
-                _view.PlayTimelineAdvance(
-                    fromDay,
-                    _timelinePresentationTarget,
-                    null,
-                    Once(FinishTimelineNodeSequence));
-                return;
-            }
-
             _timelinePresentationActive = false;
+            _view.EndTimelineAdvanceSequence();
             RunPersistence.Save(_run);
             Action cb = _afterNodes;
             _afterNodes = null;
@@ -1802,6 +1868,15 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
+            // 厨神像直领奖励在表现前已经完成结算并存档。若期间中断，直接完成行动，
+            // 避免恢复事件页后再次领取金币和负面装饰品。
+            if (string.Equals(eventId, KitchenGodStatueEventId, StringComparison.Ordinal)
+                && _run.HasUsedEvent(eventId))
+            {
+                onDone?.Invoke();
+                return;
+            }
+
             if (!restoringPending)
             {
                 SavePendingActionExecution(context, outcome, ev.Id);
@@ -1932,8 +2007,42 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
+            if (string.Equals(
+                    option?.Id,
+                    KitchenGodDirectNegativeOptionId,
+                    StringComparison.Ordinal))
+            {
+                ResolveKitchenGodDirectNegativeOption(ev, option, rng, onDone);
+                return;
+            }
+
             EventResolveResult result = EventService.ResolveOption(_run, option, rng);
             ContinueResolvedEventOption(ev, pageDescription, option, result, rng, onDone);
+        }
+
+        private void ResolveKitchenGodDirectNegativeOption(
+            cfg.GameEvent ev,
+            cfg.EventOption option,
+            IRandomStream rng,
+            Action onDone)
+        {
+            EventResolveResult result = EventService.ResolveOption(
+                _run,
+                option,
+                rng,
+                cfg.EffectType.GrantRandomPassiveItems);
+            RandomizedItemResult directReward = EffectResolver.GrantRandomNegativePassiveDirect(
+                _run,
+                rng,
+                fallbackGold: 40);
+
+            // 金币和装饰品都已到账；事件也先标记完成再落盘，避免中断恢复时重复领取。
+            EventService.OnEventFinished(_run, ev, result);
+            RunPersistence.Save(_run);
+            _view.ShowDirectPassiveItemAcquire(
+                directReward?.Item,
+                directReward?.AcquireResult ?? default,
+                () => ExitEventAndContinueAfterRewards(onDone));
         }
 
         private void ContinueResolvedEventOption(
@@ -1942,9 +2051,28 @@ namespace GourmetProject.Game.Orchestration
             cfg.EventOption option,
             EventResolveResult result,
             IRandomStream rng,
-            Action onDone)
+            Action onDone,
+            bool effectPresentationComplete = false)
         {
             result ??= EventResolveResult.Immediate(string.Empty);
+
+            if (!effectPresentationComplete
+                && HasEventEffectPresentation(option, result))
+            {
+                PresentEventEffects(
+                    ev,
+                    option,
+                    result,
+                    () => ContinueResolvedEventOption(
+                        ev,
+                        pageDescription,
+                        option,
+                        result,
+                        rng,
+                        onDone,
+                        effectPresentationComplete: true));
+                return;
+            }
 
             // 经营挑战、商店和结局节点是立即终点，不再显示普通结果按钮。
             if (result.FollowUpKind != EventFollowUpKind.None)
@@ -2001,6 +2129,55 @@ namespace GourmetProject.Game.Orchestration
                 new List<bool>(),
                 onPick: null,
                 onEnd: () => FinishEventAndContinue(ev, result, onDone));
+        }
+
+        private static bool HasEventEffectPresentation(
+            cfg.EventOption option,
+            EventResolveResult result)
+        {
+            return result?.RecipeMutation?.HasChanges == true
+                || (option?.AutoEnd == true
+                    && (!string.IsNullOrWhiteSpace(option.ResultText)
+                        || !string.IsNullOrWhiteSpace(result?.Feedback)));
+        }
+
+        private void PresentEventEffects(
+            cfg.GameEvent ev,
+            cfg.EventOption option,
+            EventResolveResult result,
+            Action onComplete)
+        {
+            void PresentAutoEndFeedback()
+            {
+                if (option?.AutoEnd != true)
+                {
+                    onComplete?.Invoke();
+                    return;
+                }
+
+                string message = ResolveEventPageText(option, result, string.Empty);
+                if (string.IsNullOrWhiteSpace(message))
+                {
+                    onComplete?.Invoke();
+                    return;
+                }
+
+                _view.ShowEventEffectFeedback(
+                    ev?.Name ?? string.Empty,
+                    EventService.FormatRuntimeText(_run, message),
+                    ev?.BgSprite ?? string.Empty,
+                    onComplete);
+            }
+
+            if (result?.RecipeMutation?.HasChanges == true)
+            {
+                _view.ShowEventRecipeMutation(
+                    result.RecipeMutation,
+                    PresentAutoEndFeedback);
+                return;
+            }
+
+            PresentAutoEndFeedback();
         }
 
         private void BeginEventRecipeDishDelete(
@@ -2064,20 +2241,42 @@ namespace GourmetProject.Game.Orchestration
 
         private void FinishEventAndContinue(cfg.GameEvent ev, EventResolveResult result, Action onDone)
         {
-            EventService.OnEventFinished(_run, ev, result);
-            ContinueAfterEventRewards(onDone);
-        }
-
-        private void ContinueAfterEventRewards(Action onDone)
-        {
             if (_run != null && _run.HasPendingGenericRewards)
             {
-                _afterBattleWin = () => DrainPendingExtraNodes(onDone);
-                GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.GenericQueue(confirmBattleRewardAfterDone: true));
+                _afterEventReward = () => CompleteEventAndExit(
+                    ev,
+                    result,
+                    onDone,
+                    persistEventRewardCompletion: true);
+                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.Event;
+                RunPersistence.Save(_run);
+                _view.OpenRewardForm(
+                    RewardFormOpenArgs.GenericQueue(PendingGenericRewardContinuationKind.Event));
                 return;
             }
 
-            DrainPendingExtraNodes(onDone);
+            CompleteEventAndExit(ev, result, onDone);
+        }
+
+        private void ExitEventAndContinueAfterRewards(Action onDone)
+        {
+            _view.ExitEventPage(() => DrainPendingExtraNodes(onDone));
+        }
+
+        private void CompleteEventAndExit(
+            cfg.GameEvent ev,
+            EventResolveResult result,
+            Action onDone,
+            bool persistEventRewardCompletion = false)
+        {
+            EventService.OnEventFinished(_run, ev, result);
+            if (persistEventRewardCompletion && _run != null)
+            {
+                _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
+                RunPersistence.Save(_run);
+            }
+
+            ExitEventAndContinueAfterRewards(onDone);
         }
 
         private void ShowEventPage(

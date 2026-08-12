@@ -96,6 +96,7 @@ namespace GourmetProject.Game.UI.Widgets
         [SerializeField] private SpriteRenderer _cellPrefab;
         [SerializeField] private DishValueBadgeView _badgePrefab;
         [SerializeField, Range(32, 256)] private int _pixelsPerCell = 96;
+        [SerializeField] private bool _keepBottomAligned = true;
         [SerializeField, HideInInspector] private Vector2 _prefabThreeByThreeSize;
 
         private RenderTexture _renderTexture;
@@ -543,7 +544,7 @@ namespace GourmetProject.Game.UI.Widgets
             Vector2 displaySize = DisplaySizeForGrid(
                 _prefabThreeByThreeSize,
                 gridSize);
-            SetDisplaySizeKeepingBottom(displaySize);
+            SetDisplaySize(displaySize);
         }
 
         private void RestorePrefabSize()
@@ -555,7 +556,18 @@ namespace GourmetProject.Game.UI.Widgets
                 return;
             }
 
-            SetDisplaySizeKeepingBottom(_prefabThreeByThreeSize);
+            SetDisplaySize(_prefabThreeByThreeSize);
+        }
+
+        private void SetDisplaySize(Vector2 displaySize)
+        {
+            if (_keepBottomAligned)
+            {
+                SetDisplaySizeKeepingBottom(displaySize);
+                return;
+            }
+
+            SetDisplaySizeKeepingCenter(displaySize);
         }
 
         private void SetDisplaySizeKeepingBottom(Vector2 displaySize)
@@ -577,6 +589,22 @@ namespace GourmetProject.Game.UI.Widgets
                     _displaySizeTarget.rect.yMin,
                     0f));
             _displaySizeTarget.position += bottomCenterBefore - bottomCenterAfter;
+            LayoutRebuilder.MarkLayoutForRebuild(_displaySizeTarget);
+        }
+
+        private void SetDisplaySizeKeepingCenter(Vector2 displaySize)
+        {
+            Vector3 centerBefore = _displaySizeTarget.TransformPoint(
+                _displaySizeTarget.rect.center);
+            _displaySizeTarget.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Horizontal,
+                displaySize.x);
+            _displaySizeTarget.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Vertical,
+                displaySize.y);
+            Vector3 centerAfter = _displaySizeTarget.TransformPoint(
+                _displaySizeTarget.rect.center);
+            _displaySizeTarget.position += centerBefore - centerAfter;
             LayoutRebuilder.MarkLayoutForRebuild(_displaySizeTarget);
         }
 

@@ -62,6 +62,7 @@ namespace GourmetProject.Gameplay.Scoring
                     ItemScoreEffectType.NthServeMultFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.AllDishFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.AllDishMultFlat => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.CountThresholdAllDishMult => ScorePhase.BeforeAll,
                     ItemScoreEffectType.TagBonus => ScorePhase.BeforeAll,
                     ItemScoreEffectType.TagMultFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.TagCountAsBonus => ScorePhase.BeforeAll,
@@ -79,6 +80,7 @@ namespace GourmetProject.Gameplay.Scoring
                 {
                     ItemScoreEffectType.TagCountAsBonus => -100,
                     ItemScoreEffectType.AllDishTemporaryCategory => -100,
+                    ItemScoreEffectType.CountThresholdAllDishMult => -50,
                     ItemScoreEffectType.CountThresholdFinalMult => -50,
                     _ => 0,
                 };
@@ -259,10 +261,26 @@ namespace GourmetProject.Gameplay.Scoring
 
                     break;
 
+                case ItemScoreEffectType.CountThresholdAllDishMult:
+                {
+                    // 结算开场检查当前食物数；命中后逐个食物产生倍率明细，
+                    // 让演出层对全场食物播放 ×value，而不是生成一条总分倍率演出。
+                    int count = dishes.Sum(ctx.GetEffectiveCountAs);
+                    if (MatchesThreshold(count, _spec.Param))
+                    {
+                        foreach (DishInstance d in dishes)
+                        {
+                            ctx.MultiplyTo(d, value);
+                        }
+                    }
+
+                    break;
+                }
+
                 case ItemScoreEffectType.CountThresholdFinalMult:
                 {
-                    // 「食物数门槛」统一读取每个食物本次结算的实际 CountAs：
-                    // 静态 CountAs、食物运行时加成、技能 AddCountAs 与 item_count_as_all 都已汇总在这里。
+                    // CountAs 类效果先执行；随后按本次结算的实际份数检查门槛，
+                    // 命中后为每道参与结算的食物增加倍率加区。
                     int count = dishes.Sum(ctx.GetEffectiveCountAs);
                     if (MatchesThreshold(count, _spec.Param))
                     {

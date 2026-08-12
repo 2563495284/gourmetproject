@@ -21,6 +21,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private const int DragFeedbackSortingOrder = -80;
         private const int TransientRegionOutlineLayer = 999;
         private const float FragmentPlacementFeedbackFillAlpha = 1.0f;
+        private const float FragmentOverlapFeedbackFillAlpha = 0f;
+        private const float FragmentOverlapOutlineInflate = 1.08f;
 
         private bool _voidAsPlaceholder;
 
@@ -328,7 +330,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 overlay.SetOutline(
                     color,
                     center ? 0.12f : 0.08f,
-                    dishPlacement ? 0f : FragmentPlacementFeedbackFillAlpha);
+                    FragmentFeedbackFillAlpha(dishPlacement, entry.Key, entry.Value),
+                    FragmentFeedbackOutlineInflate(dishPlacement, entry.Key, entry.Value));
                 overlay.SetSorting(BattleSorting.Fx, DragFeedbackSortingOrder);
             }
 
@@ -347,6 +350,34 @@ namespace GourmetProject.Game.Presentation.Battle
                     overlay.gameObject.SetActive(false);
                 }
             }
+        }
+
+        private float FragmentFeedbackFillAlpha(
+            bool dishPlacement,
+            GridPos position,
+            GridPlacementFeedbackState state)
+        {
+            if (dishPlacement)
+            {
+                return 0f;
+            }
+
+            // 碎片与已有餐桌重叠时只保留红色外发光，避免普通反馈格遮住餐桌材质。
+            return state == GridPlacementFeedbackState.Blocked && _board?.Exists(position) == true
+                ? FragmentOverlapFeedbackFillAlpha
+                : FragmentPlacementFeedbackFillAlpha;
+        }
+
+        private float FragmentFeedbackOutlineInflate(
+            bool dishPlacement,
+            GridPos position,
+            GridPlacementFeedbackState state)
+        {
+            return !dishPlacement
+                && state == GridPlacementFeedbackState.Blocked
+                && _board?.Exists(position) == true
+                    ? FragmentOverlapOutlineInflate
+                    : 1f;
         }
 
         public void SetTargetHighlight(GridPos pos, bool selected, bool hovered)
@@ -396,6 +427,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 TransientRegionOutlineLayer,
                 color,
                 width,
+                BattleScopeRegionRole.Action,
                 null);
         }
 
@@ -416,6 +448,25 @@ namespace GourmetProject.Game.Presentation.Battle
             int layer,
             Color color,
             float width,
+            Material materialOverride = null)
+        {
+            SetScopeRegionHighlight(
+                cells,
+                channel,
+                layer,
+                color,
+                width,
+                BattleScopeRegionRole.Action,
+                materialOverride);
+        }
+
+        internal void SetScopeRegionHighlight(
+            IReadOnlyList<GridPos> cells,
+            BattleScopeHighlightChannel channel,
+            int layer,
+            Color color,
+            float width,
+            BattleScopeRegionRole role,
             Material materialOverride = null)
         {
             if (cells == null || cells.Count == 0 || Mapper == null)
@@ -441,7 +492,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            ShowRegionOutline(validCells, channel, layer, color, width, materialOverride);
+            ShowRegionOutline(validCells, channel, layer, color, width, role, materialOverride);
         }
 
         private void ShowRegionOutline(
@@ -450,6 +501,7 @@ namespace GourmetProject.Game.Presentation.Battle
             int layer,
             Color color,
             float width,
+            BattleScopeRegionRole role,
             Material materialOverride)
         {
             if (cells == null || cells.Count == 0 || Mapper == null)
@@ -483,6 +535,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 Mathf.Abs(lastCenter.y - firstCenter.y) + _cellSize);
             outline.Show(
                 channel,
+                role,
                 layer,
                 cells,
                 minX,

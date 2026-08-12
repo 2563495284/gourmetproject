@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DG.Tweening;
 using GourmetProject.Gameplay.Model;
 using UnityEngine;
@@ -15,6 +16,7 @@ namespace GourmetProject.Game.Presentation.Battle
     [RequireComponent(typeof(SpriteRenderer), typeof(BoxCollider2D))]
     public sealed class DiningTableCellView : MonoBehaviour
     {
+        private static readonly Dictionary<Sprite, Vector4> SpriteUvRectCache = new();
         private static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
         private static readonly int OutlineWidthId = Shader.PropertyToID("_OutlineWidth");
         private static readonly int FillAlphaId = Shader.PropertyToID("_FillAlpha");
@@ -22,6 +24,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly int PulseSpeedId = Shader.PropertyToID("_PulseSpeed");
         private static readonly int PulseAmplitudeId = Shader.PropertyToID("_PulseAmplitude");
         private static readonly int PulseFrequencyId = Shader.PropertyToID("_PulseFrequency");
+        private static readonly int UvInflateId = Shader.PropertyToID("_UvInflate");
+        private static readonly int SpriteUvRectId = Shader.PropertyToID("_SpriteUvRect");
         private static readonly int BrightnessId = Shader.PropertyToID("_Brightness");
         private static readonly int BoingId = Shader.PropertyToID("_Boing");
         private static readonly int EdgeClampPointId = Shader.PropertyToID("_EdgeClampPoint");
@@ -38,6 +42,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<DiningTableCellView> _hoverExited;
         private MaterialPropertyBlock _propertyBlock;
         private float _configuredSize;
+        private Vector3 _configuredLocalScale = Vector3.one;
+        private bool _outlineInflated;
         private bool _hovered;
         private Sequence _transformSequence;
 
@@ -93,7 +99,9 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector2 bounds = sprite != null ? (Vector2)sprite.bounds.size : Vector2.one;
             float scaleX = bounds.x > 0f ? size / bounds.x : size;
             float scaleY = bounds.y > 0f ? size / bounds.y : size;
-            transform.localScale = new Vector3(scaleX, scaleY, 1f);
+            _configuredLocalScale = new Vector3(scaleX, scaleY, 1f);
+            transform.localScale = _configuredLocalScale;
+            _outlineInflated = false;
 
             bool preserveTransformMaterial = IsTransformMaterialActive();
             _renderer.sprite = sprite;
@@ -163,8 +171,11 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        /// <summary>编辑页反馈用：用 shader 画红/绿轮廓，fillAlpha 控制是否保留格子底色。</summary>
-        public void SetOutline(Color color, float width, float fillAlpha = 1f)
+        /// <summary>
+        /// 编辑页反馈用：用 shader 画红/绿轮廓。fillAlpha 控制是否保留格子底色；
+        /// outlineInflate 给透明外发光留出渲染网格边距，并由 shader 保持原贴图尺寸不变。
+        /// </summary>
+        public void SetOutline(Color color, float width, float fillAlpha = 1f, float outlineInflate = 1f)
         {
             EnsureRefs();
             if (SpriteRenderStyle.SpriteOutlineMaterial == null)
@@ -175,6 +186,16 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _renderer.color = Color.white;
             SpriteRenderStyle.ApplyOutlineMaterial(_renderer);
+            float safeInflate = Mathf.Max(1f, outlineInflate);
+            if (safeInflate > 1f || _outlineInflated)
+            {
+                transform.localScale = new Vector3(
+                    _configuredLocalScale.x * safeInflate,
+                    _configuredLocalScale.y * safeInflate,
+                    _configuredLocalScale.z);
+                _outlineInflated = safeInflate > 1f;
+            }
+
             _propertyBlock ??= new MaterialPropertyBlock();
             _renderer.GetPropertyBlock(_propertyBlock);
             _propertyBlock.SetColor(OutlineColorId, color);
@@ -184,6 +205,8 @@ namespace GourmetProject.Game.Presentation.Battle
             _propertyBlock.SetFloat(PulseSpeedId, 0f);
             _propertyBlock.SetFloat(PulseAmplitudeId, 0f);
             _propertyBlock.SetFloat(PulseFrequencyId, 18f);
+            _propertyBlock.SetFloat(UvInflateId, safeInflate);
+            _propertyBlock.SetVector(SpriteUvRectId, SpriteUvRect(_renderer.sprite));
             _renderer.SetPropertyBlock(_propertyBlock);
         }
 
@@ -192,6 +215,37 @@ namespace GourmetProject.Game.Presentation.Battle
             EnsureRefs();
             _renderer.SetPropertyBlock(null);
             SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
+            if (_outlineInflated)
+            {
+                transform.localScale = _configuredLocalScale;
+                _outlineInflated = false;
+            }
+        }
+
+        private static Vector4 SpriteUvRect(Sprite sprite)
+        {
+            if (sprite != null && SpriteUvRectCache.TryGetValue(sprite, out Vector4 cached))
+            {
+                return cached;
+            }
+
+            Vector2[] uvs = sprite != null ? sprite.uv : null;
+            if (uvs == null || uvs.Length == 0)
+            {
+                return new Vector4(0f, 0f, 1f, 1f);
+            }
+
+            Vector2 min = uvs[0];
+            Vector2 max = uvs[0];
+            for (int i = 1; i < uvs.Length; i++)
+            {
+                min = Vector2.Min(min, uvs[i]);
+                max = Vector2.Max(max, uvs[i]);
+            }
+
+            var rect = new Vector4(min.x, min.y, max.x, max.y);
+            SpriteUvRectCache[sprite] = rect;
+            return rect;
         }
 
         public void SetDebuffed(bool debuffed)

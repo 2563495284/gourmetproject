@@ -226,6 +226,24 @@ namespace GourmetProject.Game.Presentation.Battle
         FinaleConfirmed = 4,
     }
 
+    /// <summary>结算反馈的视觉强度。只描述表现层级，不参与任何计分。</summary>
+    public enum SettlementImpactTier
+    {
+        Base = 0,
+        Normal = 1,
+        Strong = 2,
+        Chain = 3,
+        Finale = 4,
+    }
+
+    /// <summary>当前结算累计分数驱动的常驻演出档位。档位在单次结算中只升不降。</summary>
+    internal enum SettlementPacePhase
+    {
+        BelowTarget = 0,
+        TargetReached = 1,
+        DoubleTarget = 2,
+    }
+
     /// <summary>稳定的结算节拍信号；当前只预留给音效，后续可用 Speed 映射 pitch。</summary>
     public readonly struct SettlementBeatSignal
     {
@@ -241,6 +259,36 @@ namespace GourmetProject.Game.Presentation.Battle
             DishInstanceId = dishInstanceId;
             Speed = speed;
             NormalizedProgress = normalizedProgress;
+            LineKind = ScoreLineKind.DishBase;
+            BeforeScore = BigDouble.Zero;
+            AfterScore = BigDouble.Zero;
+            ImpactTier = SettlementImpactTier.Base;
+            TargetCount = 0;
+            ReachedTarget = false;
+            HasScoreChange = false;
+        }
+
+        public SettlementBeatSignal(
+            SettlementBeatKind kind,
+            string sourceName,
+            int dishInstanceId,
+            float speed,
+            float normalizedProgress,
+            ScoreLineKind lineKind,
+            BigDouble beforeScore,
+            BigDouble afterScore,
+            SettlementImpactTier impactTier,
+            int targetCount,
+            bool reachedTarget)
+            : this(kind, sourceName, dishInstanceId, speed, normalizedProgress)
+        {
+            LineKind = lineKind;
+            BeforeScore = beforeScore;
+            AfterScore = afterScore;
+            ImpactTier = impactTier;
+            TargetCount = Mathf.Max(1, targetCount);
+            ReachedTarget = reachedTarget;
+            HasScoreChange = true;
         }
 
         public SettlementBeatKind Kind { get; }
@@ -248,6 +296,14 @@ namespace GourmetProject.Game.Presentation.Battle
         public int DishInstanceId { get; }
         public float Speed { get; }
         public float NormalizedProgress { get; }
+        public ScoreLineKind LineKind { get; }
+        public BigDouble BeforeScore { get; }
+        public BigDouble AfterScore { get; }
+        public BigDouble ScoreDelta => AfterScore - BeforeScore;
+        public SettlementImpactTier ImpactTier { get; }
+        public int TargetCount { get; }
+        public bool ReachedTarget { get; }
+        public bool HasScoreChange { get; }
     }
 
     internal sealed class SettlementPresentationPlan

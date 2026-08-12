@@ -4,6 +4,8 @@ using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Analytics;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.Save;
+using GourmetProject.Game.Tutorial;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Meta;
@@ -58,6 +60,10 @@ namespace GourmetProject.Game.UI.Menu
         private GameplayDatabase _database;
         private Material _recipeViewGlowMaterial;
         private FoodTipsView _foodTipsView;
+        private RectTransform _tutorialTitleBanner;
+        private RectTransform _tutorialCharacterName;
+        private RectTransform _tutorialCharacterDescription;
+        private RectTransform _tutorialButtonList;
         private bool _recipeViewOpen;
         private Vector2 _confirmButtonDefaultPosition;
         private int _index;
@@ -65,6 +71,7 @@ namespace GourmetProject.Game.UI.Menu
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
+            ResolveTutorialAnchors();
             EnsureReferences();
             _confirmButtonDefaultPosition =
                 _confirmButton.GetComponent<RectTransform>().anchoredPosition;
@@ -87,10 +94,17 @@ namespace GourmetProject.Game.UI.Menu
             SetRecipeViewOpen(false);
             RefreshSaveEntryState();
             Refresh();
+            RegisterTutorialAnchors();
+            PlayDirectionTutorialIfNeeded();
         }
 
         protected override void OnClose(bool isShutdown, object userData)
         {
+            if (string.Equals(TutorialRuntime.CurrentId, TutorialId.DirectionSelection, StringComparison.Ordinal))
+            {
+                TutorialRuntime.CloseForPageChange();
+            }
+            UnregisterTutorialAnchors();
             _foodTipsView?.Hide();
             SetRecipeViewOpen(false);
             base.OnClose(isShutdown, userData);
@@ -154,6 +168,7 @@ namespace GourmetProject.Game.UI.Menu
                 return;
             }
 
+            TutorialRuntime.Publish(TutorialSignal.DirectionConfirmed);
             StartNewRun(character);
         }
 
@@ -227,6 +242,44 @@ namespace GourmetProject.Game.UI.Menu
                 _continueButton.GetComponent<RectTransform>();
             continueRect.anchoredPosition = _confirmButtonDefaultPosition
                 + Vector2.left * ActionButtonHorizontalOffset;
+        }
+
+        private void RegisterTutorialAnchors()
+        {
+            TutorialAnchorRegistry.Register(TutorialAnchorId.Direction, _portraitImage?.rectTransform);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.DirectionTitle, _tutorialTitleBanner);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.DirectionName, _tutorialCharacterName);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.DirectionDescription, _tutorialCharacterDescription);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.DirectionButtons, _tutorialButtonList);
+            TutorialAnchorRegistry.Register(
+                TutorialAnchorId.DirectionStart,
+                _confirmButton != null ? _confirmButton.transform as RectTransform : null);
+        }
+
+        private void UnregisterTutorialAnchors()
+        {
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.Direction, _portraitImage?.rectTransform);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.DirectionTitle, _tutorialTitleBanner);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.DirectionName, _tutorialCharacterName);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.DirectionDescription, _tutorialCharacterDescription);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.DirectionButtons, _tutorialButtonList);
+            TutorialAnchorRegistry.Unregister(
+                TutorialAnchorId.DirectionStart,
+                _confirmButton != null ? _confirmButton.transform as RectTransform : null);
+        }
+
+        private static void PlayDirectionTutorialIfNeeded()
+        {
+            if (RunPersistence.HasSave || TutorialProgressService.IsCompleted(TutorialId.DirectionSelection))
+            {
+                return;
+            }
+
+            GameSaveData save = GameSavePersistence.Load();
+            if (!save.GuideProgress.CoreTutorialRunConsumed)
+            {
+                TutorialRuntime.Play(TutorialId.DirectionSelection);
+            }
         }
 
         private static bool IsBattleReady()
@@ -534,6 +587,10 @@ namespace GourmetProject.Game.UI.Menu
             RequireReference(_recipeViewButton, nameof(_recipeViewButton));
             RequireReference(_recipeViewGlow, nameof(_recipeViewGlow));
             RequireReference(_foodTipsPrefab, nameof(_foodTipsPrefab));
+            RequireReference(_tutorialTitleBanner, nameof(_tutorialTitleBanner));
+            RequireReference(_tutorialCharacterName, nameof(_tutorialCharacterName));
+            RequireReference(_tutorialCharacterDescription, nameof(_tutorialCharacterDescription));
+            RequireReference(_tutorialButtonList, nameof(_tutorialButtonList));
 
             if (_dots == null || _dots.Count == 0)
             {
@@ -545,6 +602,15 @@ namespace GourmetProject.Game.UI.Menu
             {
                 RequireReference(_dots[i], $"{nameof(_dots)}[{i}]");
             }
+        }
+
+        private void ResolveTutorialAnchors()
+        {
+            const string designRoot = "BackgroundRoot/DesignRoot/";
+            _tutorialTitleBanner = CachedTransform.Find(designRoot + "TitleBanner") as RectTransform;
+            _tutorialCharacterName = CachedTransform.Find(designRoot + "CharacterName") as RectTransform;
+            _tutorialCharacterDescription = CachedTransform.Find(designRoot + "CharacterDesc") as RectTransform;
+            _tutorialButtonList = CachedTransform.Find(designRoot + "ButtonList") as RectTransform;
         }
 
         private static void RequireReference(

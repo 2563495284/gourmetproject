@@ -219,7 +219,6 @@ namespace GourmetProject.Game.UI.Meta
                     _continueButton.interactable = true;
                 }
 
-                TutorialRuntime.EnqueueHook(TutorialId.Failure);
             });
         }
 

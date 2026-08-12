@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -25,6 +26,7 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Button _optionButtonTemplate;
         private readonly List<Button> _spawnedButtons = new();
         private bool _resolved;
+        private Tween _autoContinueTween;
 
         public void Open(
             string title,
@@ -35,8 +37,10 @@ namespace GourmetProject.Game.UI.Meta
             IReadOnlyList<string> optionRequirements,
             IReadOnlyList<bool> optionEnabled,
             Action<int> onPick,
-            Action onEnd)
+            Action onEnd,
+            float autoContinueDelaySeconds = 0f)
         {
+            StopAutoContinue();
             ClearButtons();
             _resolved = false;
             gameObject.SetActive(true);
@@ -47,10 +51,31 @@ namespace GourmetProject.Game.UI.Meta
             SetIllustration(bgSpritePath);
 
             int count = options?.Count ?? 0;
-            bool showResultButton = !string.IsNullOrWhiteSpace(resultButtonText) || count == 0;
+            bool autoContinue = autoContinueDelaySeconds > 0f;
+            bool showResultButton = !autoContinue
+                && (!string.IsNullOrWhiteSpace(resultButtonText) || count == 0);
             if (_optionsRoot != null)
             {
                 _optionsRoot.gameObject.SetActive(showResultButton || count > 0);
+            }
+
+            if (autoContinue)
+            {
+                _resolved = true;
+                if (_optionsRoot != null)
+                {
+                    _optionsRoot.gameObject.SetActive(false);
+                }
+
+                _autoContinueTween = DOVirtual.DelayedCall(
+                        autoContinueDelaySeconds,
+                        () =>
+                        {
+                            _autoContinueTween = null;
+                            onEnd?.Invoke();
+                        })
+                    .SetUpdate(true);
+                return;
             }
 
             for (int i = 0; i < count; i++)
@@ -70,8 +95,20 @@ namespace GourmetProject.Game.UI.Meta
 
         public void Close()
         {
+            StopAutoContinue();
             ClearButtons();
             gameObject.SetActive(false);
+        }
+
+        private void OnDestroy()
+        {
+            StopAutoContinue();
+        }
+
+        private void StopAutoContinue()
+        {
+            _autoContinueTween?.Kill();
+            _autoContinueTween = null;
         }
 
         private void CreateOption(

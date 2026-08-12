@@ -30,6 +30,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float EditTableLayoutTweenDuration = 0.8f;
         private const float EditGhostOutlineWidth = 0.075f;
         private const float EditDragFillAlpha = 0.5f;
+        private const float EditOverlapDragFillAlpha = 0f;
+        private const float EditOverlapOutlineInflate = 1.08f;
         private const float EditBoundsWarningWidth = 0.055f;
         private const float EditTrayGroupRotation = 5f;
         private const float EditTrayLockedShakeDuration = 0.25f;
@@ -612,7 +614,12 @@ namespace GourmetProject.Game.Presentation.Battle
 
             GridPlacementFeedbackState feedbackState = _currentPlacementEvaluation.Feedback.OverallState;
             Color color = GridPlacementFeedbackPalette.ColorFor(feedbackState);
-            SetDragOutline(color);
+            bool overlapsTable = _currentPlacementEvaluation.PlacementStatus
+                == TableFragmentBuilder.FragmentPlacementStatus.Overlap;
+            SetDragOutline(
+                color,
+                overlapsTable ? EditOverlapDragFillAlpha : EditDragFillAlpha,
+                overlapsTable ? EditOverlapOutlineInflate : 1f);
             _boardView.ShowGridPlacementFeedback(_currentPlacementEvaluation.Feedback);
             UpdateProjectedTableLayout(_currentPlacementEvaluation);
             if (TryGetBoundsWarning(_currentPlacementEvaluation.Origin, def, out BoundsWarningInfo warning))
@@ -1330,13 +1337,13 @@ namespace GourmetProject.Game.Presentation.Battle
             return sprites != null && sprites.Length > 0 ? sprites[0] : null;
         }
 
-        private void SetDragOutline(Color color)
+        private void SetDragOutline(Color color, float fillAlpha, float outlineInflate)
         {
             foreach (DiningTableCellView cell in _editDragCells)
             {
                 if (cell != null)
                 {
-                    cell.SetOutline(color, EditGhostOutlineWidth, fillAlpha: EditDragFillAlpha);
+                    cell.SetOutline(color, EditGhostOutlineWidth, fillAlpha, outlineInflate);
                     cell.SetSorting(BattleSorting.Fx, EditDragSortingOrder);
                 }
             }

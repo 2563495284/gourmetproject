@@ -15,7 +15,7 @@ namespace GourmetProject.Game.Meta
         public const string TagBonus = "TagBonus";
         public const string PermanentAddFlatAll = "PermanentAddFlatAll";
         public const string PermanentAddMultAll = "PermanentAddMultAll";
-        public const string CountThresholdFinalMult = "CountThresholdFinalMult";
+        public const string CountThresholdAllDishMult = "CountThresholdAllDishMult";
         public const string PerDishSettledMultFlat = "PerDishSettledMultFlat";
         public const string PerSkillMultFlat = "PerSkillMultFlat";
         public const string NthServeMult = "NthServeMult";
