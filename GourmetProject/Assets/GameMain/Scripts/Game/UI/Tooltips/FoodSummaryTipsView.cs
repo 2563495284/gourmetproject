@@ -24,7 +24,6 @@ namespace GourmetProject.Game.UI.Tooltips
         private const float FlavorCellHeight = 44f;
         private const float FlavorCellWidth = 96f;
         private const float FlavorRowSpacing = 8f;
-        private const float MaxWidth = 330f;
         private const float SummaryHorizontalPadding = 24f;
         private const float SkillCardHorizontalPadding = 20f;
         private const float SkillDescPanelHorizontalPadding = 20f;
@@ -161,8 +160,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 preferredWidth = Mathf.Max(preferredWidth, FlavorCellWidth + SummaryHorizontalPadding);
             }
 
-            float width = Mathf.Min(preferredWidth, MaxWidth);
-            rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, preferredWidth);
             LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         }
 
