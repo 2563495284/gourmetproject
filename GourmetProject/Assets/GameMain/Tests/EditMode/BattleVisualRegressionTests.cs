@@ -360,10 +360,19 @@ namespace GourmetProject.Tests.EditMode
                 fire.Burst(1f);
                 Assert.That(fire.ActiveMoteCount, Is.GreaterThan(0));
                 Assert.That(fire.transform.parent, Is.SameAs(score.parent));
+                var fireRect = (RectTransform)fire.transform;
+                Assert.That(fireRect.anchorMin, Is.EqualTo(Vector2.zero));
+                Assert.That(fireRect.anchorMax, Is.EqualTo(Vector2.one));
+                Assert.That(fireRect.GetSiblingIndex(), Is.Zero,
+                    "火焰必须是 ScoreMeter 中三行分数文本的背景层。");
 
                 Image[] images = fire.GetComponentsInChildren<Image>(true);
-                Assert.That(images.Length, Is.GreaterThanOrEqualTo(17));
+                Assert.That(images.Length, Is.EqualTo(1));
                 Assert.That(Array.TrueForAll(images, image => !image.raycastTarget), Is.True);
+                Assert.That(
+                    images[0].material.shader.name,
+                    Is.EqualTo("GourmetProject/SettlementScoreFlame"),
+                    "结算火焰必须使用 flame.fs 风格的程序化 UI Shader，不能回退到火焰贴图。");
                 ParticleSystem legacy = fire.GetComponentInChildren<ParticleSystem>(true);
                 Assert.That(legacy, Is.Not.Null);
                 Assert.That(legacy.gameObject.activeSelf, Is.False);

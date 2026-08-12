@@ -8992,19 +8992,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Presentation.Battle.SettlementScoreFireView
   _particles: {fileID: 1827380911844144563}
-  _minEmission: 14
-  _maxEmission: 120
-  _minStartSize: 12
-  _maxStartSize: 46
-  _minLifetime: 0.22
-  _maxLifetime: 0.52
-  _minStartSpeed: 18
-  _maxStartSpeed: 70
-  _maxWobbleDegrees: 8
-  _maxWobbleDistance: 8
-  _baseWobbleCyclesPerSecond: 1.2
-  _bottomColor: {r: 1, g: 0.35, b: 0.04, a: 0.95}
-  _topColor: {r: 1, g: 0.92, b: 0.18, a: 0.75}
+  _targetOuter: {r: 0.68, g: 0.14, b: 0.025, a: 1}
+  _targetCore: {r: 1, g: 0.48, b: 0.08, a: 1}
+  _doubleOuter: {r: 0.78, g: 0.16, b: 0.02, a: 1}
+  _doubleCore: {r: 1, g: 0.64, b: 0.16, a: 1}
+  _targetAmount: 1.65
+  _doubleTargetAmount: 3.25
 --- !u!1 &4434153997898958000
 GameObject:
   m_ObjectHideFlags: 0

@@ -19,8 +19,7 @@ namespace GourmetProject.Game.UI.Battle.View
     public sealed class ActionCardDeck : MonoBehaviour
     {
         [SerializeField] private RectTransform _cardsContainer;
-        [SerializeField] private WeekEventCardView _cardPrefab;
-        [SerializeField] private Button _rerollButton;
+        [SerializeField] private WeekEventCardView _cardPrefab; 
 
         private readonly List<WeekEventCardView> _cards = new List<WeekEventCardView>();
         private Tween _pendingCardShowTween;
@@ -63,18 +62,6 @@ namespace GourmetProject.Game.UI.Battle.View
             bool hasActions = choices != null && choices.Count > 0;
             _cardsContainer.gameObject.SetActive(hasActions);
 
-            if (_rerollButton != null)
-            {
-                bool canReroll = hasActions && onReroll != null && rerollCount > 0;
-                _rerollButton.gameObject.SetActive(canReroll);
-                _rerollButton.onClick.RemoveAllListeners();
-                if (canReroll)
-                {
-                    SetButtonText(_rerollButton, $"刷新({rerollCount})");
-                    _rerollButton.onClick.AddListener(() => onReroll());
-                }
-            }
-
             if (!hasActions)
             {
                 return;
@@ -104,10 +91,6 @@ namespace GourmetProject.Game.UI.Battle.View
 
             int n = options?.Count ?? 0;
             _cardsContainer.gameObject.SetActive(n > 0);
-            if (_rerollButton != null)
-            {
-                _rerollButton.gameObject.SetActive(false);
-            }
 
             if (n == 0)
             {
@@ -143,10 +126,6 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _cardsContainer.gameObject.SetActive(true);
-            if (_rerollButton != null)
-            {
-                _rerollButton.gameObject.SetActive(false);
-            }
 
             SpawnCard(0.03f, 0.97f, card => card.Bind(node, interestThreshold, interestGoldPer, interestMaxGain, () => onPick?.Invoke()));
         }
