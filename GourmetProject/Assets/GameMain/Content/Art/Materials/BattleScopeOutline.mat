@@ -33,7 +33,7 @@ Material:
     - _FillAlpha: 0
     - _GlowIntensity: 2.2
     - _GridOutlinePixels: 2
-    - _InnerAlpha: 0.68
+    - _InnerAlpha: 0
     - _OuterAlpha: 1
     - _OutlineWidth: 0.052
     - _PulseAmplitude: 0.04

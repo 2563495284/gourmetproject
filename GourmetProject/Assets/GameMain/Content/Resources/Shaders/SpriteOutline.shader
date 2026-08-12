@@ -8,7 +8,7 @@ Shader "GourmetProject/SpriteOutline"
         _OutlineWidth ("Outline Width", Range(0, 0.2)) = 0.055
         _FillAlpha ("Fill Alpha", Range(0, 1)) = 0
         _OuterAlpha ("Outer Alpha", Range(0, 1)) = 1
-        _InnerAlpha ("Inner Edge Alpha", Range(0, 1)) = 0.58
+        _InnerAlpha ("Inner Edge Alpha", Range(0, 1)) = 0
         _GlowIntensity ("Glow Intensity", Range(0.25, 3)) = 1.15
         _PulseSpeed ("Pulse Speed", Range(0, 8)) = 0
         _PulseAmplitude ("Pulse Amplitude", Range(0, 0.5)) = 0
@@ -166,9 +166,12 @@ Shader "GourmetProject/SpriteOutline"
                 }
 
                 float2 sourceUv = CompensatedUv(input.uv);
-                half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, sourceUv) * input.color;
-                tex.a *= InsideSpriteRect(sourceUv);
-                half sourceMask = AlphaMask(tex.a);
+                half4 sourceTex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, sourceUv);
+                sourceTex.a *= InsideSpriteRect(sourceUv);
+                // 内外遮罩必须都来自原贴图 alpha。Renderer tint 会被结算聚焦等表现层调整，
+                // 若拿 tint 后的 alpha 判断内部，会把整块不透明 sprite 误判成“外圈”。
+                half sourceMask = AlphaMask(sourceTex.a);
+                half4 tex = sourceTex * input.color;
 
                 if (_UseGridMask > 0.5)
                 {

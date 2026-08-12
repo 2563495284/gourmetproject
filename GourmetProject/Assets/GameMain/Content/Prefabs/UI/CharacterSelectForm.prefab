@@ -92,7 +92,7 @@ RectTransform:
   m_GameObject: {fileID: 1010}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2, y: 2, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1021}
@@ -704,7 +704,7 @@ GameObject:
   - component: {fileID: 6952966649439421143}
   - component: {fileID: 2857044607615988416}
   m_Layer: 5
-  m_Name: CharacterName
+  m_Name: Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -857,7 +857,7 @@ GameObject:
   - component: {fileID: 2327928924972787340}
   - component: {fileID: 232104418968602855}
   m_Layer: 5
-  m_Name: CharacterDesc
+  m_Name: Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1498,7 +1498,7 @@ GameObject:
   - component: {fileID: 5779073798235591708}
   - component: {fileID: 593372152120954776}
   m_Layer: 5
-  m_Name: Panel
+  m_Name: CharacterName
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1614,7 +1614,7 @@ GameObject:
   - component: {fileID: 979500408764104561}
   - component: {fileID: 6217363691199797293}
   m_Layer: 5
-  m_Name: Text (Legacy)
+  m_Name: Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1676,7 +1676,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4281479730
+    rgba: 4278853957
   m_fontColor: {r: 0.27, g: 0.13, b: 0.04, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -1751,7 +1751,7 @@ GameObject:
   - component: {fileID: 2543528292694246062}
   - component: {fileID: 1508591549077139946}
   m_Layer: 5
-  m_Name: Panel
+  m_Name: ButtonList
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1826,7 +1826,7 @@ GameObject:
   - component: {fileID: 9109391249766762124}
   - component: {fileID: 5082361348319282293}
   m_Layer: 5
-  m_Name: Panel
+  m_Name: CharacterDesc
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

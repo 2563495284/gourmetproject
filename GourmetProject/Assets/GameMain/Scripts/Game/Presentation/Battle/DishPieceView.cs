@@ -696,8 +696,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            // 只调本体（含子）透明度；阴影核心/光晕的 alpha 由高度逻辑统一管理，别在这里覆盖。
-            foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
+            // 只调食物本体透明度；独立 Glow 层由各自通道管理，不能随本体一起改色。
+            foreach (SpriteRenderer renderer in EnumerateBodyRenderers())
             {
                 Color color = renderer.color;
                 color.a = ghost ? Mathf.Min(color.a, 0.65f) : Mathf.Max(color.a, 0.95f);
@@ -737,7 +737,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
+            foreach (SpriteRenderer renderer in EnumerateBodyRenderers())
             {
                 Color original = renderer.color;
                 _activeItemDimColors[renderer] = original;
@@ -760,7 +760,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (_settlementFocusColors.Count == 0)
             {
-                foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
+                foreach (SpriteRenderer renderer in EnumerateBodyRenderers())
                 {
                     _settlementFocusColors[renderer] = renderer.color;
                 }
@@ -793,6 +793,24 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _settlementFocusColors.Clear();
+        }
+
+        private IEnumerable<SpriteRenderer> EnumerateBodyRenderers()
+        {
+            if (_spriteRenderer == null)
+            {
+                yield break;
+            }
+
+            foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
+            {
+                if (renderer == null || renderer == _placementGlow || renderer == _scopeTargetGlow)
+                {
+                    continue;
+                }
+
+                yield return renderer;
+            }
         }
 
         /// <summary>
@@ -1784,18 +1802,20 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _placementGlow.gameObject.SetActive(true);
+            // 结算发光层绘制在食物本体上方。细长 sprite 若启用内部边缘或填充，
+            // 大部分不透明像素都会被判成边缘，最终看起来像整块被染色。
             ConfigureOutlineGlowRenderer(
                 _placementGlow,
                 ref _placementGlowBlock,
                 profile.GlowColor,
                 profile.GlowWidth,
-                profile.GlowFillAlpha,
-                profile.GlowInflate,
+                fillAlpha: 0f,
+                inflate: profile.GlowInflate,
                 sortingOrderOffset: 2,
                 materialOverride: null,
                 pulseSpeed: profile.GlowPulseSpeed / Mathf.Max(0.05f, durationScale),
                 pulseAmplitude: profile.GlowPulseAmplitude,
-                innerAlpha: profile.GlowInnerAlpha,
+                innerAlpha: 0f,
                 outerAlpha: profile.GlowOuterAlpha,
                 glowIntensity: profile.GlowIntensity);
         }
@@ -1820,12 +1840,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 ref _placementGlowBlock,
                 SettlementColorPalette.WithAlpha(SettlementColorPalette.NativeSource, 0.98f),
                 outlineWidth: 0.14f,
-                fillAlpha: 0.07f,
+                fillAlpha: 0f,
                 inflate: 1.12f,
                 sortingOrderOffset: 4,
                 materialOverride: null,
                 pulseSpeed: 3.4f,
-                pulseAmplitude: 0.24f);
+                pulseAmplitude: 0.24f,
+                innerAlpha: 0f);
         }
 
         private void ShowSweetTransferExecutorGlow()
@@ -2349,7 +2370,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Material materialOverride,
             float pulseSpeed,
             float pulseAmplitude,
-            float innerAlpha = 0.68f,
+            float innerAlpha = 0f,
             float outerAlpha = 1f,
             float glowIntensity = -1f)
         {
