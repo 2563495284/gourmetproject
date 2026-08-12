@@ -62,7 +62,7 @@ namespace GourmetProject.Gameplay.Scoring
                     ItemScoreEffectType.NthServeMultFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.AllDishFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.AllDishMultFlat => ScorePhase.BeforeAll,
-                    ItemScoreEffectType.CountThresholdFinalMult => ScorePhase.Final,
+                    ItemScoreEffectType.CountThresholdAllDishMult => ScorePhase.BeforeAll,
                     _ => ScorePhase.AfterAllDishes,
                 };
 
@@ -88,7 +88,7 @@ namespace GourmetProject.Gameplay.Scoring
         public void Apply(ScoreContext ctx)
         {
             List<DishInstance> dishes = ctx.DiningTable.Dishes.ToList();
-            if (dishes.Count == 0 && _spec.Type != ItemScoreEffectType.CountThresholdFinalMult)
+            if (dishes.Count == 0)
             {
                 return;
             }
@@ -146,14 +146,17 @@ namespace GourmetProject.Gameplay.Scoring
 
                     break;
 
-                case ItemScoreEffectType.CountThresholdFinalMult:
+                case ItemScoreEffectType.CountThresholdAllDishMult:
                 {
-                    // 「食物数门槛」统一读取每个食物本次结算的实际 CountAs：
-                    // 静态 CountAs、食物运行时加成、技能 AddCountAs 与 item_count_as_all 都已汇总在这里。
+                    // 结算开场检查当前食物数；命中后逐个食物产生倍率明细，
+                    // 让演出层对全场食物播放 ×value，而不是生成一条总分倍率演出。
                     int count = dishes.Sum(ctx.GetEffectiveCountAs);
                     if (MatchesThreshold(count, _spec.Param))
                     {
-                        ctx.MultiplyFinalBy(value);
+                        foreach (DishInstance d in ctx.Snapshot.DishesInDefaultOrder)
+                        {
+                            ctx.MultiplyTo(d, value);
+                        }
                     }
 
                     break;

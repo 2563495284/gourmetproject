@@ -20,10 +20,10 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private ParticleSystem _particles;
 
         [Header("Balatro 风格红焰")]
-        [SerializeField] private Color _targetOuter = new(0.68f, 0.14f, 0.025f, 1f);
-        [SerializeField] private Color _targetCore = new(1f, 0.48f, 0.08f, 1f);
-        [SerializeField] private Color _doubleOuter = new(0.78f, 0.16f, 0.02f, 1f);
-        [SerializeField] private Color _doubleCore = new(1f, 0.64f, 0.16f, 1f);
+        [SerializeField] private Color _targetOuter = new(0.996f, 0.373f, 0.333f, 1f);
+        [SerializeField] private Color _targetCore = new(1f, 0.619f, 0.071f, 1f);
+        [SerializeField] private Color _doubleOuter = new(0.996f, 0.373f, 0.333f, 1f);
+        [SerializeField] private Color _doubleCore = new(1f, 0.619f, 0.071f, 1f);
         [SerializeField] private float _targetAmount = 1.65f;
         [SerializeField] private float _doubleTargetAmount = 3.25f;
 
@@ -68,6 +68,15 @@ namespace GourmetProject.Game.Presentation.Battle
             _rootRect.localScale = Vector3.one;
             _rootRect.localRotation = Quaternion.identity;
             _rootRect.SetAsFirstSibling();
+
+            RectTransform flameRect = _flameImage.rectTransform;
+            float side = Mathf.Max(1f, Mathf.Min(
+                scoreMeter.rect.width - 10f,
+                scoreMeter.rect.height - 8f));
+            flameRect.anchorMin = flameRect.anchorMax = new Vector2(0.5f, 0.5f);
+            flameRect.pivot = new Vector2(0.5f, 0.5f);
+            flameRect.anchoredPosition = Vector2.zero;
+            flameRect.sizeDelta = new Vector2(side, side);
         }
 
         public void Show()
@@ -147,7 +156,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             float animationDelta = frameDelta * _effectiveSpeed;
-            _flameTime += animationDelta;
+            _flameTime += animationDelta * (1f + _currentAmount * 0.2f);
             _burstPulse = Mathf.MoveTowards(_burstPulse, 0f, animationDelta * 2.8f);
             float phaseAmount = _phase == SettlementPacePhase.DoubleTarget
                 ? _doubleTargetAmount
@@ -201,7 +210,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     name = "SettlementScoreFlame (Runtime)",
                     hideFlags = HideFlags.HideAndDontSave
                 };
-                _runtimeMaterial.SetFloat(SeedId, Mathf.Abs(GetInstanceID()) * 0.01781f + 3.7f);
+                _runtimeMaterial.SetFloat(SeedId, 17f + Mathf.Abs(GetInstanceID()) % 53);
                 _flameImage.material = _runtimeMaterial;
             }
         }

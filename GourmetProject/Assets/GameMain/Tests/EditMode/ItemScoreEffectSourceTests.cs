@@ -67,6 +67,61 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(result.PermanentFlatDeltas[1].ToDouble(), Is.EqualTo(3d));
         }
 
+        [Test]
+        public void CountThresholdAllDishMultiplier_TriggersBeforeAllAndTargetsEveryDish()
+        {
+            var table = new DiningTable(2, 1);
+            table.Place(CreateDish(1, "first", 10, 0));
+            table.Place(CreateDish(2, "second", 20, 1));
+            var spec = new ItemScoreSpec(
+                ItemScoreEffectType.CountThresholdAllDishMult,
+                1.5f,
+                "lte:2",
+                "item_count_le_mult",
+                "素色桌旗");
+
+            ScoreResult result = new ScoreCalculator(
+                    effectSources: new[] { new ItemScoreEffectSource(new[] { spec }) })
+                .Calculate(table, CreateEmptyDatabase());
+
+            Assert.That(result.FinalMultiplier.ToDouble(), Is.EqualTo(1d));
+            Assert.That(result.Total.ToDouble(), Is.EqualTo(45d).Within(0.0001d));
+            Assert.That(result.DishScores.All(score =>
+                Math.Abs(score.Multiplier.ToDouble() - 1.5d) < 0.0001d), Is.True);
+
+            ScoreLine[] multiplierLines = result.ScoreLines
+                .Where(line => line.Kind == ScoreLineKind.DishMultiplier)
+                .ToArray();
+            Assert.That(multiplierLines, Has.Length.EqualTo(2));
+            Assert.That(multiplierLines.All(line => line.Phase == ScorePhase.BeforeAll), Is.True);
+            Assert.That(multiplierLines.All(line => line.Source.Id == "item_count_le_mult"), Is.True);
+            Assert.That(multiplierLines[0].ExecutionGroupId, Is.GreaterThan(0));
+            Assert.That(multiplierLines.Select(line => line.ExecutionGroupId).Distinct().Count(), Is.EqualTo(1));
+            Assert.That(result.ScoreLines.Any(line => line.Kind == ScoreLineKind.FinalMultiplier), Is.False);
+        }
+
+        [Test]
+        public void CountThresholdAllDishMultiplier_DoesNothingWhenThresholdFails()
+        {
+            var table = new DiningTable(2, 1);
+            table.Place(CreateDish(1, "first", 10, 0));
+            table.Place(CreateDish(2, "second", 20, 1));
+            var spec = new ItemScoreSpec(
+                ItemScoreEffectType.CountThresholdAllDishMult,
+                1.5f,
+                "lte:1",
+                "item_count_le_mult",
+                "素色桌旗");
+
+            ScoreResult result = new ScoreCalculator(
+                    effectSources: new[] { new ItemScoreEffectSource(new[] { spec }) })
+                .Calculate(table, CreateEmptyDatabase());
+
+            Assert.That(result.Total.ToDouble(), Is.EqualTo(30d).Within(0.0001d));
+            Assert.That(result.ScoreLines.Any(line =>
+                line.Source.Id == "item_count_le_mult"), Is.False);
+        }
+
         private static DishInstance CreateDish(
             int instanceId,
             string id,

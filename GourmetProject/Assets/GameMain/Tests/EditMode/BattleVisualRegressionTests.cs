@@ -370,6 +370,10 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(images.Length, Is.EqualTo(1));
                 Assert.That(Array.TrueForAll(images, image => !image.raycastTarget), Is.True);
                 Assert.That(
+                    images[0].rectTransform.rect.width,
+                    Is.EqualTo(images[0].rectTransform.rect.height).Within(0.01f),
+                    "flame.fs 必须在正方形面片上渲染，避免火场被拉伸变形。");
+                Assert.That(
                     images[0].material.shader.name,
                     Is.EqualTo("GourmetProject/SettlementScoreFlame"),
                     "结算火焰必须使用 flame.fs 风格的程序化 UI Shader，不能回退到火焰贴图。");
