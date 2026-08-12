@@ -6,7 +6,7 @@ namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
     /// 经营挑战界面 hover Tip 注册表：持有装饰品和消耗品、时间轴和食物 Tip 预制体，
-    /// 惰性实例化到界面根下并缓存，界面关闭时统一隐藏。
+    /// 惰性实例化到最外层 Canvas 下并缓存，界面关闭时统一隐藏。
     /// </summary>
     public sealed class BattleTipRegistry : MonoBehaviour
     {
@@ -74,6 +74,13 @@ namespace GourmetProject.Game.UI.Battle.View
             _foodTip?.Hide();
         }
 
+        private void OnDestroy()
+        {
+            DestroyRuntimeTip(_itemTip);
+            DestroyRuntimeTip(_timelineNodeTip);
+            DestroyRuntimeTip(_foodTip);
+        }
+
         private T Create<T>(T prefab, string viewName) where T : ActionTipView
         {
             if (prefab == null)
@@ -82,7 +89,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 return null;
             }
 
-            T view = Instantiate(prefab, transform, false);
+            T view = Instantiate(prefab, TipLayerParent(), false);
             view.gameObject.name = viewName;
             view.Hide();
             return view;
@@ -96,10 +103,24 @@ namespace GourmetProject.Game.UI.Battle.View
                 return null;
             }
 
-            FoodTipsView view = Instantiate(prefab, transform, false);
+            FoodTipsView view = Instantiate(prefab, TipLayerParent(), false);
             view.gameObject.name = viewName;
             view.Hide();
             return view;
+        }
+
+        private Transform TipLayerParent()
+        {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            return canvas != null ? canvas.transform : transform;
+        }
+
+        private static void DestroyRuntimeTip(MonoBehaviour tip)
+        {
+            if (tip != null)
+            {
+                Destroy(tip.gameObject);
+            }
         }
     }
 }
