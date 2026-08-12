@@ -334,7 +334,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void SettlementScoreFire_UsesCanvasImagesAndStaysHiddenBeforeTarget()
+        public void SettlementScoreFire_UsesCanvasParticleGraphicsAndStaysHiddenBeforeTarget()
         {
             const string path = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
@@ -355,10 +355,20 @@ namespace GourmetProject.Tests.EditMode
                 fire.SetPhase(SettlementPacePhase.BelowTarget, 1f);
                 fire.Burst(1f);
                 Assert.That(fire.ActiveMoteCount, Is.Zero);
+                Assert.That(fire.CoreEmissionRate, Is.Zero);
+                Assert.That(fire.TongueEmissionRate, Is.Zero);
+                Assert.That(fire.EmberEmissionRate, Is.Zero);
 
                 fire.SetPhase(SettlementPacePhase.TargetReached, 1.4f);
                 fire.Burst(1f);
                 Assert.That(fire.ActiveMoteCount, Is.GreaterThan(0));
+                Assert.That(fire.EffectiveSimulationSpeed, Is.EqualTo(1.4f).Within(0.0001f));
+                Assert.That(fire.CoreEmissionRate, Is.EqualTo(30f));
+                Assert.That(fire.TongueEmissionRate, Is.EqualTo(16f));
+                Assert.That(fire.EmberEmissionRate, Is.EqualTo(2f));
+                Assert.That(fire.CoreEmitterRunning, Is.True);
+                Assert.That(fire.TongueEmitterRunning, Is.True);
+                Assert.That(fire.EmberEmitterRunning, Is.True);
                 Assert.That(fire.transform.parent, Is.SameAs(score.parent));
                 var fireRect = (RectTransform)fire.transform;
                 Assert.That(fireRect.anchorMin, Is.EqualTo(Vector2.zero));
@@ -366,20 +376,35 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(fireRect.GetSiblingIndex(), Is.Zero,
                     "火焰必须是 ScoreMeter 中三行分数文本的背景层。");
 
-                Image[] images = fire.GetComponentsInChildren<Image>(true);
-                Assert.That(images.Length, Is.EqualTo(1));
-                Assert.That(Array.TrueForAll(images, image => !image.raycastTarget), Is.True);
-                Assert.That(
-                    images[0].rectTransform.rect.width,
-                    Is.EqualTo(images[0].rectTransform.rect.height).Within(0.01f),
-                    "flame.fs 必须在正方形面片上渲染，避免火场被拉伸变形。");
-                Assert.That(
-                    images[0].material.shader.name,
-                    Is.EqualTo("GourmetProject/SettlementScoreFlame"),
-                    "结算火焰必须使用 flame.fs 风格的程序化 UI Shader，不能回退到火焰贴图。");
-                ParticleSystem legacy = fire.GetComponentInChildren<ParticleSystem>(true);
-                Assert.That(legacy, Is.Not.Null);
-                Assert.That(legacy.gameObject.activeSelf, Is.False);
+                SettlementUiParticleGraphic[] graphics =
+                    fire.GetComponentsInChildren<SettlementUiParticleGraphic>(true);
+                Assert.That(graphics.Length, Is.EqualTo(2),
+                    "辉光和火焰主体应分别批绘，最多增加两个 Canvas draw call。");
+                Assert.That(Array.TrueForAll(graphics, graphic => !graphic.raycastTarget), Is.True);
+                Assert.That(Array.TrueForAll(
+                    graphics,
+                    graphic => graphic.material != null
+                        && graphic.material.shader.name == "GourmetProject/SettlementUiParticle"), Is.True);
+
+                ParticleSystem[] systems = fire.GetComponentsInChildren<ParticleSystem>(true);
+                Assert.That(systems.Length, Is.EqualTo(3));
+                Assert.That(Array.TrueForAll(
+                    systems,
+                    system => system.GetComponent<ParticleSystemRenderer>() == null
+                        || !system.GetComponent<ParticleSystemRenderer>().enabled), Is.True,
+                    "标准 ParticleSystemRenderer 在 Overlay Canvas 中必须关闭，由 UGUI Graphic 绘制。");
+
+                fire.SetPhase(SettlementPacePhase.DoubleTarget, 3.6f);
+                Assert.That(fire.EffectiveSimulationSpeed, Is.EqualTo(3.6f).Within(0.0001f));
+                Assert.That(fire.CoreEmissionRate, Is.EqualTo(46f));
+                Assert.That(fire.TongueEmissionRate, Is.EqualTo(27f));
+                Assert.That(fire.EmberEmissionRate, Is.EqualTo(6f));
+
+                fire.Hide();
+                Assert.That(fire.ActiveMoteCount, Is.Zero);
+                Assert.That(fire.CoreEmitterRunning, Is.False);
+                Assert.That(fire.TongueEmitterRunning, Is.False);
+                Assert.That(fire.EmberEmitterRunning, Is.False);
             }
             finally
             {

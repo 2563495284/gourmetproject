@@ -177,6 +177,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 targetLayer,
                 targetColor,
                 cellWidth,
+                BattleScopeRegionRole.Action,
                 material);
             RenderTargetDishes(channel, trace, targetColor, visualIndex);
         }
@@ -252,6 +253,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 layer,
                 color,
                 cellWidth,
+                BattleScopeRegionRole.Condition,
                 material);
         }
 

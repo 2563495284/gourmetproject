@@ -64,6 +64,245 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void ScopeRegion_ChannelsUseDistinctFillFlowAndRevealProfiles()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/Content/Prefabs/Battle/ScopeRegionOutline.prefab");
+            Assert.That(prefab, Is.Not.Null);
+
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                BattleScopeRegionOutlineView view = instance.GetComponent<BattleScopeRegionOutlineView>();
+                Assert.That(view, Is.Not.Null);
+
+                BattleScopeRegionOutlineView.ScopeVisualProfile persistent = view.ResolveProfile(
+                    BattleScopeHighlightChannel.Persistent,
+                    BattleScopeRegionRole.Action);
+                BattleScopeRegionOutlineView.ScopeVisualProfile flash = view.ResolveProfile(
+                    BattleScopeHighlightChannel.Flash,
+                    BattleScopeRegionRole.Action);
+                BattleScopeRegionOutlineView.ScopeVisualProfile settlement = view.ResolveProfile(
+                    BattleScopeHighlightChannel.Settlement,
+                    BattleScopeRegionRole.Action);
+                BattleScopeRegionOutlineView.ScopeVisualProfile condition = view.ResolveProfile(
+                    BattleScopeHighlightChannel.Settlement,
+                    BattleScopeRegionRole.Condition);
+
+                Assert.That(persistent.FillAlpha, Is.EqualTo(0.06f).Within(0.001f));
+                Assert.That(flash.FillAlpha, Is.EqualTo(0.10f).Within(0.001f));
+                Assert.That(settlement.FillAlpha, Is.EqualTo(0.12f).Within(0.001f));
+                Assert.That(flash.FlowSpeed, Is.GreaterThan(settlement.FlowSpeed));
+                Assert.That(settlement.FlowSpeed, Is.GreaterThan(persistent.FlowSpeed));
+                Assert.That(settlement.GlowAlpha, Is.GreaterThan(flash.GlowAlpha));
+                Assert.That(flash.GlowAlpha, Is.GreaterThan(persistent.GlowAlpha));
+                Assert.That(persistent.RevealDuration, Is.InRange(0.12f, 0.16f));
+                Assert.That(flash.RevealDuration, Is.InRange(0.10f, 0.16f));
+                Assert.That(settlement.RevealDuration, Is.InRange(0.12f, 0.16f));
+                Assert.That(persistent.FadeOutDuration, Is.InRange(0.10f, 0.16f));
+                Assert.That(flash.FadeOutDuration, Is.InRange(0.10f, 0.16f));
+                Assert.That(settlement.FadeOutDuration, Is.InRange(0.10f, 0.16f));
+                Assert.That(condition.FillAlpha, Is.Zero);
+                Assert.That(condition.OutlineAlpha, Is.LessThan(settlement.OutlineAlpha));
+                Assert.That(condition.GlowAlpha, Is.LessThan(settlement.GlowAlpha));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void ScopeRegion_ShowDefaultsToActionAndWritesAnimatedGridProperties()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/Content/Prefabs/Battle/ScopeRegionOutline.prefab");
+            Assert.That(prefab, Is.Not.Null);
+
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                BattleScopeRegionOutlineView view = instance.GetComponent<BattleScopeRegionOutlineView>();
+                SpriteRenderer renderer = instance.GetComponent<SpriteRenderer>();
+                Assert.That(view, Is.Not.Null);
+                Assert.That(renderer, Is.Not.Null);
+                IReadOnlyList<GridPos> cells = new[] { new GridPos(0, 0) };
+                view.Show(
+                    BattleScopeHighlightChannel.Persistent,
+                    0,
+                    cells,
+                    0,
+                    0,
+                    0,
+                    0,
+                    Vector3.zero,
+                    Vector2.one,
+                    Color.cyan,
+                    0.05f,
+                    null);
+
+                Assert.That(view.ActiveChannel, Is.EqualTo(BattleScopeHighlightChannel.Persistent));
+                Assert.That(view.ActiveRole, Is.EqualTo(BattleScopeRegionRole.Action));
+                var block = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(block);
+                Assert.That(block.GetFloat(Shader.PropertyToID("_UseGridMask")), Is.EqualTo(1f));
+                Assert.That(block.GetFloat(Shader.PropertyToID("_FillAlpha")), Is.EqualTo(0.06f).Within(0.001f));
+                Assert.That(block.GetFloat(Shader.PropertyToID("_GridGlowAlpha")), Is.GreaterThan(0f));
+                Assert.That(block.GetFloat(Shader.PropertyToID("_GridFlowSpeed")), Is.GreaterThan(0f));
+                Assert.That(block.GetFloat(Shader.PropertyToID("_GridRevealDuration")), Is.InRange(0.12f, 0.16f));
+                Assert.That(block.GetFloat(Shader.PropertyToID("_GridVisibility")), Is.EqualTo(1f));
+
+                view.Show(
+                    BattleScopeHighlightChannel.Settlement,
+                    BattleScopeRegionRole.Condition,
+                    0,
+                    cells,
+                    0,
+                    0,
+                    0,
+                    0,
+                    Vector3.zero,
+                    Vector2.one,
+                    Color.yellow,
+                    0.05f,
+                    null);
+                renderer.GetPropertyBlock(block);
+                Assert.That(view.ActiveRole, Is.EqualTo(BattleScopeRegionRole.Condition));
+                Assert.That(block.GetFloat(Shader.PropertyToID("_FillAlpha")), Is.Zero);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void ScopeRegion_FadeInAndOutKeepObjectAliveUntilVisibilityReachesZero()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/GameMain/Content/Prefabs/Battle/ScopeRegionOutline.prefab");
+            Assert.That(prefab, Is.Not.Null);
+
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                BattleScopeRegionOutlineView view = instance.GetComponent<BattleScopeRegionOutlineView>();
+                SpriteRenderer renderer = instance.GetComponent<SpriteRenderer>();
+                Assert.That(view, Is.Not.Null);
+                Assert.That(renderer, Is.Not.Null);
+                IReadOnlyList<GridPos> cells = new[] { new GridPos(0, 0) };
+                view.Show(
+                    BattleScopeHighlightChannel.Persistent,
+                    0,
+                    cells,
+                    0,
+                    0,
+                    0,
+                    0,
+                    Vector3.zero,
+                    Vector2.one,
+                    Color.cyan,
+                    0.05f,
+                    null);
+
+                BattleScopeRegionOutlineView.ScopeVisualProfile profile = view.ResolveProfile(
+                    BattleScopeHighlightChannel.Persistent,
+                    BattleScopeRegionRole.Action);
+                view.StartFadeIn(profile.RevealDuration);
+                Assert.That(view.ActiveVisibility, Is.Zero.Within(0.001f));
+                Assert.That(view.IsVisibilityAnimating, Is.True);
+                Assert.That(instance.activeSelf, Is.True);
+
+                view.AdvanceVisibility(profile.RevealDuration * 0.5f);
+                Assert.That(view.ActiveVisibility, Is.EqualTo(0.5f).Within(0.02f));
+                Assert.That(instance.activeSelf, Is.True);
+                view.AdvanceVisibility(profile.RevealDuration * 0.5f);
+                Assert.That(view.ActiveVisibility, Is.EqualTo(1f).Within(0.001f));
+                Assert.That(view.IsVisibilityAnimating, Is.False);
+
+                view.StartFadeOut();
+                Assert.That(view.IsVisibilityAnimating, Is.True);
+                Assert.That(instance.activeSelf, Is.True);
+
+                view.AdvanceVisibility(profile.FadeOutDuration * 0.5f);
+                Assert.That(view.ActiveVisibility, Is.EqualTo(0.5f).Within(0.02f));
+                Assert.That(instance.activeSelf, Is.True);
+                var block = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(block);
+                Assert.That(
+                    block.GetFloat(Shader.PropertyToID("_GridVisibility")),
+                    Is.EqualTo(view.ActiveVisibility).Within(0.001f));
+
+                view.AdvanceVisibility(profile.FadeOutDuration * 0.5f);
+                Assert.That(view.ActiveVisibility, Is.Zero.Within(0.001f));
+                Assert.That(view.IsVisibilityAnimating, Is.False);
+                Assert.That(instance.activeSelf, Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void ScopeGridMask_SingleRectangleLShapeDisconnectedAndEdgeCellsStayExact()
+        {
+            IReadOnlyList<IReadOnlyList<GridPos>> cases = new IReadOnlyList<GridPos>[]
+            {
+                new[] { new GridPos(0, 0) },
+                new[]
+                {
+                    new GridPos(0, 0), new GridPos(1, 0),
+                    new GridPos(0, 1), new GridPos(1, 1),
+                },
+                new[]
+                {
+                    new GridPos(0, 0), new GridPos(0, 1), new GridPos(1, 1),
+                },
+                new[]
+                {
+                    new GridPos(0, 0), new GridPos(2, 0), new GridPos(2, 2),
+                },
+                new[]
+                {
+                    new GridPos(-1, 0), new GridPos(0, 0), new GridPos(0, 1),
+                },
+            };
+
+            foreach (IReadOnlyList<GridPos> cells in cases)
+            {
+                int minX = cells.Min(cell => cell.X);
+                int minY = cells.Min(cell => cell.Y);
+                int maxX = cells.Max(cell => cell.X);
+                int maxY = cells.Max(cell => cell.Y);
+                Color32[] pixels = BattleScopeRegionOutlineView.BuildMaskPixels(
+                    cells,
+                    minX,
+                    minY,
+                    maxX,
+                    maxY,
+                    out int width,
+                    out int height);
+                var expected = new HashSet<GridPos>(cells);
+
+                for (int y = minY; y <= maxY; y++)
+                {
+                    for (int x = minX; x <= maxX; x++)
+                    {
+                        GridPos cell = new GridPos(x, y);
+                        Assert.That(
+                            MaskCellAlpha(pixels, width, maxY, minX, cell),
+                            Is.EqualTo(expected.Contains(cell) ? 255 : 0),
+                            $"Mask mismatch at {cell} for case [{string.Join(", ", cells)}].");
+                    }
+                }
+
+                Assert.That(pixels[0].a, Is.Zero, "Mask padding must stay transparent.");
+                Assert.That(pixels[width * height - 1].a, Is.Zero, "Mask padding must stay transparent.");
+            }
+        }
+
+        [Test]
         public void ScopeTargetGlow_HigherChannelOverridesAndClearingRestoresLowerChannel()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
@@ -148,6 +387,24 @@ namespace GourmetProject.Tests.EditMode
                 new Placement(shape, 0, origin),
                 Array.Empty<string>(),
                 Array.Empty<string>());
+        }
+
+        private static byte MaskCellAlpha(
+            IReadOnlyList<Color32> pixels,
+            int width,
+            int maxY,
+            int minX,
+            GridPos cell)
+        {
+            int column = cell.X - minX;
+            int rowFromBottom = maxY - cell.Y;
+            int x = BattleScopeRegionOutlineView.MaskPadding
+                + column * BattleScopeRegionOutlineView.PixelsPerCell
+                + BattleScopeRegionOutlineView.PixelsPerCell / 2;
+            int y = BattleScopeRegionOutlineView.MaskPadding
+                + rowFromBottom * BattleScopeRegionOutlineView.PixelsPerCell
+                + BattleScopeRegionOutlineView.PixelsPerCell / 2;
+            return pixels[y * width + x].a;
         }
 
         private static SkillRuleDef Rule(SkillScope conditionScope, SkillScope actionScope)

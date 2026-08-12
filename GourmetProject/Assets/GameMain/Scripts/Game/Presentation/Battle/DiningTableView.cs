@@ -396,6 +396,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 TransientRegionOutlineLayer,
                 color,
                 width,
+                BattleScopeRegionRole.Action,
                 null);
         }
 
@@ -416,6 +417,25 @@ namespace GourmetProject.Game.Presentation.Battle
             int layer,
             Color color,
             float width,
+            Material materialOverride = null)
+        {
+            SetScopeRegionHighlight(
+                cells,
+                channel,
+                layer,
+                color,
+                width,
+                BattleScopeRegionRole.Action,
+                materialOverride);
+        }
+
+        internal void SetScopeRegionHighlight(
+            IReadOnlyList<GridPos> cells,
+            BattleScopeHighlightChannel channel,
+            int layer,
+            Color color,
+            float width,
+            BattleScopeRegionRole role,
             Material materialOverride = null)
         {
             if (cells == null || cells.Count == 0 || Mapper == null)
@@ -441,7 +461,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            ShowRegionOutline(validCells, channel, layer, color, width, materialOverride);
+            ShowRegionOutline(validCells, channel, layer, color, width, role, materialOverride);
         }
 
         private void ShowRegionOutline(
@@ -450,6 +470,7 @@ namespace GourmetProject.Game.Presentation.Battle
             int layer,
             Color color,
             float width,
+            BattleScopeRegionRole role,
             Material materialOverride)
         {
             if (cells == null || cells.Count == 0 || Mapper == null)
@@ -483,6 +504,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 Mathf.Abs(lastCenter.y - firstCenter.y) + _cellSize);
             outline.Show(
                 channel,
+                role,
                 layer,
                 cells,
                 minX,
