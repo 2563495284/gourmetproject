@@ -68,6 +68,7 @@ namespace GourmetProject.Game.UI.Battle.View
         private SettlementImpactTier _pendingImpactTier;
         private ScoreLineKind _pendingLineKind;
         private bool _pendingReachedTarget;
+        private float _pendingSettlementSpeed = 1f;
         private Vector2 _settlementDeltaBasePosition;
 
         public SettlementScoreFireView ScoreFire => _scoreFire;
@@ -115,6 +116,7 @@ namespace GourmetProject.Game.UI.Battle.View
             EnsureTutorialScoreRects();
             EnsureBossStatRect();
             EnsureSettlementDeltaText();
+            _scoreFire?.BindToScore(_scoreCurrentText != null ? _scoreCurrentText.rectTransform : null);
             ResetBossStatPresentation();
         }
 
@@ -264,12 +266,14 @@ namespace GourmetProject.Game.UI.Battle.View
                 _pendingImpactTier = signal.ImpactTier;
                 _pendingLineKind = signal.LineKind;
                 _pendingReachedTarget = signal.ReachedTarget;
+                _pendingSettlementSpeed = Mathf.Max(0.0001f, signal.Speed);
                 return;
             }
 
             _pendingScoreAfter = signal.AfterScore;
             _pendingScoreDelta += signal.ScoreDelta;
             _pendingReachedTarget |= signal.ReachedTarget;
+            _pendingSettlementSpeed = Mathf.Max(0.0001f, signal.Speed);
             if (signal.ImpactTier > _pendingImpactTier)
             {
                 _pendingImpactTier = signal.ImpactTier;
@@ -285,6 +289,7 @@ namespace GourmetProject.Game.UI.Battle.View
             _pendingScoreDelta = BigDouble.Zero;
             _pendingImpactTier = SettlementImpactTier.Base;
             _pendingReachedTarget = false;
+            _pendingSettlementSpeed = 1f;
             _settlementScoreBeatSequence?.Kill();
             _settlementScoreBeatSequence = null;
 
@@ -351,8 +356,10 @@ namespace GourmetProject.Game.UI.Battle.View
             SettlementImpactTier impact = _pendingImpactTier;
             ScoreLineKind lineKind = _pendingLineKind;
             bool reachedTarget = _pendingReachedTarget;
+            float presentationSpeed = Mathf.Max(0.0001f, _pendingSettlementSpeed);
             _pendingScoreDelta = BigDouble.Zero;
             _pendingReachedTarget = false;
+            _pendingSettlementSpeed = 1f;
 
             _settlementScoreBeatSequence?.Kill();
             RectTransform scoreRect = _scoreCurrentText.rectTransform;
@@ -371,13 +378,13 @@ namespace GourmetProject.Game.UI.Battle.View
             _settlementDeltaText.gameObject.SetActive(true);
             _scoreCurrentText.text = ScoreNumberFormatter.Format(before);
 
-            float rollDuration = impact switch
+            float rollDuration = (impact switch
             {
                 SettlementImpactTier.Base => 0.12f,
                 SettlementImpactTier.Normal => 0.14f,
                 SettlementImpactTier.Strong => 0.17f,
                 _ => 0.20f,
-            };
+            }) / presentationSpeed;
             float punch = impact switch
             {
                 SettlementImpactTier.Base => 0.06f,
@@ -397,14 +404,16 @@ namespace GourmetProject.Game.UI.Battle.View
                     .SetEase(Ease.OutCubic))
                 .Join(scoreRect.DOPunchScale(
                     Vector3.one * punch,
-                    rollDuration + 0.08f,
+                    rollDuration + 0.08f / presentationSpeed,
                     vibrato: 7,
                     elasticity: 0.68f))
-                .Join(deltaRect.DOScale(1.08f + punch * 0.5f, 0.09f).SetEase(Ease.OutBack))
+                .Join(deltaRect.DOScale(
+                    1.08f + punch * 0.5f,
+                    0.09f / presentationSpeed).SetEase(Ease.OutBack))
                 .Join(deltaRect.DOAnchorPosY(
                     _settlementDeltaBasePosition.y + 18f,
-                    rollDuration + 0.10f).SetEase(Ease.OutCubic))
-                .Append(_settlementDeltaText.DOFade(0f, 0.15f));
+                    rollDuration + 0.10f / presentationSpeed).SetEase(Ease.OutCubic))
+                .Append(_settlementDeltaText.DOFade(0f, 0.15f / presentationSpeed));
 
             if (reachedTarget)
             {
@@ -417,19 +426,21 @@ namespace GourmetProject.Game.UI.Battle.View
                         deltaRect.anchoredPosition = _settlementDeltaBasePosition;
                         deltaRect.localScale = Vector3.one * 0.78f;
                     })
-                    .AppendInterval(0.07f)
-                    .Append(deltaRect.DOScale(1.22f, 0.12f).SetEase(Ease.OutBack))
+                    .AppendInterval(0.07f / presentationSpeed)
+                    .Append(deltaRect.DOScale(
+                        1.22f,
+                        0.12f / presentationSpeed).SetEase(Ease.OutBack))
                     .Join(deltaRect.DOAnchorPosY(
                         _settlementDeltaBasePosition.y + 24f,
-                        0.20f).SetEase(Ease.OutCubic))
+                        0.20f / presentationSpeed).SetEase(Ease.OutCubic))
                     .Join(_scoreTitlePanel != null
                         ? _scoreTitlePanel.DOPunchScale(
                             Vector3.one * 0.18f,
-                            0.28f,
+                            0.28f / presentationSpeed,
                             vibrato: 8,
                             elasticity: 0.72f)
                         : DOVirtual.DelayedCall(0.01f, () => { }))
-                    .Append(_settlementDeltaText.DOFade(0f, 0.16f));
+                    .Append(_settlementDeltaText.DOFade(0f, 0.16f / presentationSpeed));
             }
 
             _settlementScoreBeatSequence = sequence.OnComplete(() =>
@@ -468,17 +479,19 @@ namespace GourmetProject.Game.UI.Battle.View
             GameplayView current,
             BattleInspectionView inspection,
             bool tableFragmentEditActive,
-            BattleWorldController world)
+            BattleWorldController world,
+            bool rewardNavigationAvailable)
         {
             if (run == null)
             {
                 return;
             }
 
-            bool canOpenInspection = current != GameplayView.None
-                && current != GameplayView.RecipeSelection;
+            bool canOpenInspection = rewardNavigationAvailable
+                || (current != GameplayView.None
+                    && current != GameplayView.RecipeSelection);
 
-            _recipeInspectionAvailable = CanOpenRecipeInspection(current)
+            _recipeInspectionAvailable = CanOpenRecipeInspection(current, rewardNavigationAvailable)
                 && inspection != BattleInspectionView.Recipe;
             _tableInspectionAvailable = canOpenInspection
                 && inspection != BattleInspectionView.Table
@@ -573,10 +586,13 @@ namespace GourmetProject.Game.UI.Battle.View
             }
         }
 
-        internal static bool CanOpenRecipeInspection(GameplayView current)
+        internal static bool CanOpenRecipeInspection(
+            GameplayView current,
+            bool rewardNavigationAvailable = false)
         {
-            return current != GameplayView.None
-                && current != GameplayView.RecipeSelection;
+            return rewardNavigationAvailable
+                || (current != GameplayView.None
+                    && current != GameplayView.RecipeSelection);
         }
 
         /// <summary>

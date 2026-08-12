@@ -235,6 +235,14 @@ namespace GourmetProject.Game.Presentation.Battle
         Finale = 4,
     }
 
+    /// <summary>当前结算累计分数驱动的常驻演出档位。档位在单次结算中只升不降。</summary>
+    internal enum SettlementPacePhase
+    {
+        BelowTarget = 0,
+        TargetReached = 1,
+        DoubleTarget = 2,
+    }
+
     /// <summary>稳定的结算节拍信号；当前只预留给音效，后续可用 Speed 映射 pitch。</summary>
     public readonly struct SettlementBeatSignal
     {

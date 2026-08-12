@@ -201,10 +201,10 @@ namespace GourmetProject.Game.Settings
             list.Add(new SettingDescriptor
             {
                 Id = SettingsService.KeySettlementAcceleration,
-                Label = "结算加速",
+                Label = "结算双倍速",
                 ControlType = SettingControlType.Toggle,
-                GetToggleValue = () => settings.SettlementAcceleration,
-                SetToggleValue = v => settings.SettlementAcceleration = v,
+                GetToggleValue = () => settings.SettlementDoubleSpeed,
+                SetToggleValue = v => settings.SettlementDoubleSpeed = v,
             });
 
             // —— 游戏：拖放后需确认上菜 ——

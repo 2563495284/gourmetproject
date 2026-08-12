@@ -202,16 +202,16 @@ namespace GourmetProject.Game.UI.Battle.View
             return true;
         }
 
-        public void OpenTable()
+        public bool OpenTable()
         {
             if (_tableTargeting || IsTransitioning || _host.Run == null)
             {
-                return;
+                return false;
             }
 
             if (_view == BattleInspectionView.Table)
             {
-                return;
+                return false;
             }
 
             BattleWorldController world = _host.World;
@@ -219,7 +219,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 || !world.CanEnterTableInspectionView
                 || !BeginSession(manageSourcePresentation: true))
             {
-                return;
+                return false;
             }
 
             _transitioning = true;
@@ -239,6 +239,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     _host.BindWorldHoverCallbacks();
                 },
                 CompleteTransition);
+            return true;
         }
 
         public bool ShowPassiveTable(GpTable table, Action onShown)

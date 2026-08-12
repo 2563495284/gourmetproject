@@ -82,6 +82,13 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed class RewardForm : UGuiForm
     {
+        private enum PersistentInspectionOrigin
+        {
+            None,
+            VisibleReward,
+            ResultPeek,
+        }
+
         internal static RewardForm Active { get; private set; }
 
         [SerializeField] private TMP_Text _titleText;
@@ -138,11 +145,21 @@ namespace GourmetProject.Game.UI.Meta
         private bool _isSuspendedForRewardSubflow;
         private bool _completingFromRewardSubflow;
         private float _suspendedScrollPosition = 1f;
+        private PersistentInspectionOrigin _persistentInspectionOrigin;
+        private float _persistentInspectionScrollPosition = 1f;
         private ArchetypeVector _offerArchetype;
         private float _offerOpenedRealtime;
 
         private RewardFormTransitionSettings TransitionSettings =>
             _transitionSettings ?? (_transitionSettings = new RewardFormTransitionSettings());
+
+        internal bool IsSuspendedForRewardSubflow => _isSuspendedForRewardSubflow;
+
+        internal bool IsPersistentInspectionActive =>
+            _persistentInspectionOrigin != PersistentInspectionOrigin.None;
+
+        internal bool AllowsPersistentInteractions =>
+            !_isClosing && !_isSuspendedForRewardSubflow;
 
         protected override void OnInit(object userData)
         {
@@ -203,6 +220,8 @@ namespace GourmetProject.Game.UI.Meta
             _peekInspectionActive = false;
             _isSuspendedForRewardSubflow = false;
             _completingFromRewardSubflow = false;
+            _persistentInspectionOrigin = PersistentInspectionOrigin.None;
+            _persistentInspectionScrollPosition = 1f;
             _peekChildStates.Clear();
             ConfigurePeekButtons();
             _genericRewardKey = string.Empty;
@@ -222,6 +241,7 @@ namespace GourmetProject.Game.UI.Meta
                 _lastTarget = 0;
                 ReportOfferShown();
                 RefreshOffer();
+                RefreshBattlePersistentHud(refreshItems: false);
                 if (!_isClosing)
                 {
                     PlayOpenTransition();
@@ -256,6 +276,7 @@ namespace GourmetProject.Game.UI.Meta
 
             ReportOfferShown();
             RefreshOffer();
+            RefreshBattlePersistentHud(refreshItems: false);
             if (!_isClosing)
             {
                 PlayOpenTransition();
@@ -307,6 +328,8 @@ namespace GourmetProject.Game.UI.Meta
             _isSuspendedForRewardSubflow = false;
             _completingFromRewardSubflow = false;
             _peekInspectionActive = false;
+            _persistentInspectionOrigin = PersistentInspectionOrigin.None;
+            _persistentInspectionScrollPosition = 1f;
             if (_transitionGroup != null)
             {
                 // UIForm 会复用同一个实例。最后一项奖励从子流程直接关闭时，挂起阶段留下的
@@ -317,6 +340,10 @@ namespace GourmetProject.Game.UI.Meta
             if (ReferenceEquals(Active, this))
             {
                 Active = null;
+            }
+            if (!isShutdown)
+            {
+                RefreshBattlePersistentHud(refreshItems: false);
             }
             base.OnClose(isShutdown, userData);
         }
@@ -584,9 +611,87 @@ namespace GourmetProject.Game.UI.Meta
             ConfigurePeekButtons();
         }
 
+        /// <summary>
+        /// 从左右常驻栏进入只读餐桌/菜谱前挂起奖励表现。正常奖励页会在查看结束后自动恢复；
+        /// 手动“查看结算”只临时隐藏其返回按钮，查看结束后仍停留在结算画面。
+        /// </summary>
+        internal bool TryBeginPersistentInspection()
+        {
+            if (_isClosing
+                || _isSuspendedForRewardSubflow
+                || _persistentInspectionOrigin != PersistentInspectionOrigin.None)
+            {
+                return false;
+            }
+
+            if (_peekHidden)
+            {
+                _persistentInspectionOrigin = PersistentInspectionOrigin.ResultPeek;
+                _peekInspectionActive = true;
+                ConfigurePeekButtons();
+                return true;
+            }
+
+            _persistentInspectionOrigin = PersistentInspectionOrigin.VisibleReward;
+            _persistentInspectionScrollPosition = _rewardScrollRect != null
+                ? _rewardScrollRect.verticalNormalizedPosition
+                : 1f;
+            _transitionSequence?.Kill();
+            _transitionSequence = null;
+            _rewardRowsSequence?.Kill();
+            _rewardRowsSequence = null;
+            HideTips();
+            HideRewardScrollbar(immediate: true);
+            if (_transitionGroup != null)
+            {
+                _transitionGroup.alpha = 0f;
+                _transitionGroup.interactable = false;
+                _transitionGroup.blocksRaycasts = false;
+            }
+
+            BattleForm.Active?.SetRewardPeekOnly(true);
+            return true;
+        }
+
+        /// <summary>完成或回滚一次常驻栏查看请求；重复调用安全无副作用。</summary>
+        internal void CompletePersistentInspection()
+        {
+            PersistentInspectionOrigin origin = _persistentInspectionOrigin;
+            if (origin == PersistentInspectionOrigin.None)
+            {
+                return;
+            }
+
+            _persistentInspectionOrigin = PersistentInspectionOrigin.None;
+            if (origin == PersistentInspectionOrigin.ResultPeek)
+            {
+                _peekInspectionActive = false;
+                ConfigurePeekButtons();
+                return;
+            }
+
+            if (_isClosing || _isSuspendedForRewardSubflow)
+            {
+                return;
+            }
+
+            if (_transitionGroup != null)
+            {
+                _transitionGroup.alpha = 1f;
+                _transitionGroup.interactable = true;
+                _transitionGroup.blocksRaycasts = true;
+            }
+
+            RestoreRewardScrollPosition(_persistentInspectionScrollPosition);
+            BattleForm.Active?.SetRewardPeekOnly(false);
+        }
+
         private void HideForResultPeek()
         {
-            if (!_allowResultPeek || _peekHidden || _peekReturnButton == null)
+            if (!_allowResultPeek
+                || _peekHidden
+                || _peekReturnButton == null
+                || _persistentInspectionOrigin != PersistentInspectionOrigin.None)
             {
                 return;
             }
@@ -643,6 +748,7 @@ namespace GourmetProject.Game.UI.Meta
             _peekChildStates.Clear();
             _peekHidden = false;
             _peekInspectionActive = false;
+            _persistentInspectionOrigin = PersistentInspectionOrigin.None;
             ConfigurePeekButtons();
             BattleForm.Active?.SetRewardPeekOnly(false);
         }
@@ -943,8 +1049,46 @@ namespace GourmetProject.Game.UI.Meta
 
             Canvas.ForceUpdateCanvases();
             LayoutRebuilder.ForceRebuildLayoutImmediate(_rewardListContent);
+            RestoreRewardScrollPosition(scrollPosition);
+        }
+
+        private void RestoreRewardScrollPosition(float scrollPosition)
+        {
+            if (_rewardScrollRect == null)
+            {
+                return;
+            }
+
             _rewardScrollRect.StopMovement();
             _rewardScrollRect.verticalNormalizedPosition = Mathf.Clamp01(scrollPosition);
+        }
+
+        /// <summary>
+        /// 右栏在奖励态使用或丢弃消耗品后刷新奖励可领状态；重建行时保留当前或挂起前滚动位置。
+        /// </summary>
+        internal void RefreshAfterExternalInventoryMutation()
+        {
+            if (_isClosing || _offer == null)
+            {
+                return;
+            }
+
+            float scrollPosition = _persistentInspectionOrigin == PersistentInspectionOrigin.VisibleReward
+                ? _persistentInspectionScrollPosition
+                : _rewardScrollRect != null
+                    ? _rewardScrollRect.verticalNormalizedPosition
+                    : 1f;
+            RefreshOfferPreservingScroll(scrollPosition);
+            if (_persistentInspectionOrigin == PersistentInspectionOrigin.VisibleReward)
+            {
+                _persistentInspectionScrollPosition = scrollPosition;
+                if (_transitionGroup != null)
+                {
+                    _transitionGroup.alpha = 0f;
+                    _transitionGroup.interactable = false;
+                    _transitionGroup.blocksRaycasts = false;
+                }
+            }
         }
 
         private void RestoreAfterRewardSubflow()

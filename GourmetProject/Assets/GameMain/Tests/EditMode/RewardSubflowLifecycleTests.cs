@@ -96,6 +96,92 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void RewardFormPrefab_DimOnlyBlocksBattleCenter()
+        {
+            const string path = "Assets/GameMain/Content/Prefabs/UI/RewardForm.prefab";
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            Assert.That(prefab, Is.Not.Null);
+
+            RectTransform root = prefab.transform as RectTransform;
+            RectTransform dim = prefab.transform.Find("Dim") as RectTransform;
+            Image dimImage = dim != null ? dim.GetComponent<Image>() : null;
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.anchorMin, Is.EqualTo(Vector2.zero));
+            Assert.That(root.anchorMax, Is.EqualTo(Vector2.one));
+            Assert.That(dim, Is.Not.Null);
+            Assert.That(dim.anchorMin.x, Is.EqualTo(0.165f).Within(0.0001f));
+            Assert.That(dim.anchorMin.y, Is.EqualTo(0f).Within(0.0001f));
+            Assert.That(dim.anchorMax.x, Is.EqualTo(0.835f).Within(0.0001f));
+            Assert.That(dim.anchorMax.y, Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(dimImage, Is.Not.Null);
+            Assert.That(dimImage.raycastTarget, Is.True);
+        }
+
+        [Test]
+        public void RewardPersistentInspection_HidesAndRestoresVisibleRewardExactlyOnce()
+        {
+            var root = new GameObject(
+                "RewardForm",
+                typeof(RectTransform),
+                typeof(CanvasGroup),
+                typeof(RewardForm));
+            RewardForm reward = root.GetComponent<RewardForm>();
+            CanvasGroup group = root.GetComponent<CanvasGroup>();
+
+            try
+            {
+                var serialized = new SerializedObject(reward);
+                serialized.FindProperty("_transitionGroup").objectReferenceValue = group;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+
+                Assert.That(reward.TryBeginPersistentInspection(), Is.True);
+                Assert.That(group.alpha, Is.Zero);
+                Assert.That(group.interactable, Is.False);
+                Assert.That(group.blocksRaycasts, Is.False);
+                Assert.That(reward.IsPersistentInspectionActive, Is.True);
+                Assert.That(reward.TryBeginPersistentInspection(), Is.False,
+                    "同一查看生命周期不能重复挂起 RewardForm。");
+
+                reward.CompletePersistentInspection();
+                Assert.That(reward.IsPersistentInspectionActive, Is.False);
+                Assert.That(group.alpha, Is.EqualTo(1f));
+                Assert.That(group.interactable, Is.True);
+                Assert.That(group.blocksRaycasts, Is.True);
+
+                reward.CompletePersistentInspection();
+                Assert.That(group.alpha, Is.EqualTo(1f),
+                    "重复完成不能再次改变已经恢复的奖励表现。");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void ActiveItemContext_RewardFormOverridesUnderlyingGameplayPage()
+        {
+            Assert.That(
+                ActiveItemUseCoordinator.ResolveContextKind(
+                    GameplayView.Food,
+                    inBattle: true,
+                    rewardContextActive: true),
+                Is.EqualTo(ActiveUseContextKind.Reward));
+            Assert.That(
+                ActiveItemUseCoordinator.ResolveContextKind(
+                    GameplayView.Shop,
+                    inBattle: false,
+                    rewardContextActive: true),
+                Is.EqualTo(ActiveUseContextKind.Reward));
+            Assert.That(
+                ActiveItemUseCoordinator.ResolveContextKind(
+                    GameplayView.Food,
+                    inBattle: true,
+                    rewardContextActive: false),
+                Is.EqualTo(ActiveUseContextKind.Battle));
+        }
+
+        [Test]
         public void BattleFormPrefab_OwnsIndependentTableFragmentEditLayer()
         {
             const string path = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
@@ -428,6 +514,12 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(BattleInfoColumn.CanOpenRecipeInspection(GameplayView.Food), Is.True);
             Assert.That(BattleInfoColumn.CanOpenRecipeInspection(GameplayView.ActionSelect), Is.True);
             Assert.That(BattleInfoColumn.CanOpenRecipeInspection(GameplayView.RecipeSelection), Is.False);
+            Assert.That(
+                BattleInfoColumn.CanOpenRecipeInspection(
+                    GameplayView.RecipeSelection,
+                    rewardNavigationAvailable: true),
+                Is.True,
+                "RewardForm 打开时常驻菜谱入口不应继承底层页面禁用态。");
 
             const string path = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);

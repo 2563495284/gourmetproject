@@ -309,9 +309,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e64883374cc04a3f8c2f50f5c999882, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Gameplay.Presentation.SettlementSequencer
-  _startSpeed: 1
-  _maxSpeed: 3
-  _speedCurveExponent: 1.35
+  _belowTargetSpeed: 1
+  _targetReachedSpeed: 1.4
+  _doubleTargetSpeed: 1.8
   _settlementEffectLabelPrefab: {fileID: 53574951656091332, guid: a4fd950c8e27e41338ddf6a6eee5f53e, type: 3}
   _sweetTransferParticlePrefab: {fileID: 2557560503732837231, guid: 6e93469c519004ab588908d00ea6b741, type: 3}
   _settlementStageLabelPrefab: {fileID: 6510917799371523778, guid: 2b5b141a1e49848f093625e6c82d202b, type: 3}

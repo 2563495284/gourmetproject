@@ -12,6 +12,7 @@ using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -266,6 +267,111 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(signal.ScoreDelta.ToDouble(), Is.EqualTo(45d));
             Assert.That(signal.TargetCount, Is.EqualTo(2));
             Assert.That(signal.ReachedTarget, Is.True);
+        }
+
+        [TestCase(99d, 100, 0)]
+        [TestCase(100d, 100, 1)]
+        [TestCase(150d, 100, 1)]
+        [TestCase(200d, 100, 2)]
+        [TestCase(250d, 100, 2)]
+        [TestCase(250d, 0, 0)]
+        public void SettlementPace_ResolvesFromVisibleScoreThresholds(
+            double score,
+            int requiredScore,
+            int expected)
+        {
+            Assert.That(
+                (int)SettlementSequencer.ResolvePacePhase(score, requiredScore),
+                Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void SettlementPace_NeverDropsAndCanSkipDirectlyToDoubleTarget()
+        {
+            Assert.That(
+                SettlementSequencer.ResolvePacePhase(
+                    20d,
+                    100,
+                    SettlementPacePhase.TargetReached),
+                Is.EqualTo(SettlementPacePhase.TargetReached));
+            Assert.That(
+                SettlementSequencer.ResolvePacePhase(
+                    240d,
+                    100,
+                    SettlementPacePhase.BelowTarget),
+                Is.EqualTo(SettlementPacePhase.DoubleTarget));
+        }
+
+        [TestCase(0, false, 1f)]
+        [TestCase(1, false, 1.4f)]
+        [TestCase(2, false, 1.8f)]
+        [TestCase(0, true, 2f)]
+        [TestCase(1, true, 2.8f)]
+        [TestCase(2, true, 3.6f)]
+        public void SettlementPace_MapsToExactConfiguredSpeed(
+            int phase,
+            bool doubleSpeed,
+            float expected)
+        {
+            Assert.That(
+                SettlementSequencer.DefaultSpeedForPhase(
+                    (SettlementPacePhase)phase,
+                    doubleSpeed),
+                Is.EqualTo(expected).Within(0.0001f));
+        }
+
+        [Test]
+        public void SettlementPace_ThresholdCueUsesOldSpeedAndNextCueUsesPromotedSpeed()
+        {
+            SettlementPacePhase phase = SettlementPacePhase.BelowTarget;
+            float thresholdCueSpeed = SettlementSequencer.DefaultSpeedForPhase(phase, false);
+            SettlementPacePhase promoted = SettlementSequencer.ResolvePacePhase(100d, 100, phase);
+            float nextCueSpeed = SettlementSequencer.DefaultSpeedForPhase(promoted, false);
+
+            Assert.That(thresholdCueSpeed, Is.EqualTo(1f));
+            Assert.That(promoted, Is.EqualTo(SettlementPacePhase.TargetReached));
+            Assert.That(nextCueSpeed, Is.EqualTo(1.4f));
+        }
+
+        [Test]
+        public void SettlementScoreFire_UsesCanvasImagesAndStaysHiddenBeforeTarget()
+        {
+            const string path = "Assets/GameMain/Content/Prefabs/UI/BattleForm.prefab";
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            Assert.That(prefab, Is.Not.Null);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+
+            try
+            {
+                SettlementScoreFireView fire = instance.GetComponentInChildren<SettlementScoreFireView>(true);
+                RectTransform score = Array.Find(
+                    instance.GetComponentsInChildren<RectTransform>(true),
+                    rect => rect.name == "CurrentScoreText");
+                Assert.That(fire, Is.Not.Null);
+                Assert.That(score, Is.Not.Null);
+
+                fire.BindToScore(score);
+                fire.Show();
+                fire.SetPhase(SettlementPacePhase.BelowTarget, 1f);
+                fire.Burst(1f);
+                Assert.That(fire.ActiveMoteCount, Is.Zero);
+
+                fire.SetPhase(SettlementPacePhase.TargetReached, 1.4f);
+                fire.Burst(1f);
+                Assert.That(fire.ActiveMoteCount, Is.GreaterThan(0));
+                Assert.That(fire.transform.parent, Is.SameAs(score.parent));
+
+                Image[] images = fire.GetComponentsInChildren<Image>(true);
+                Assert.That(images.Length, Is.GreaterThanOrEqualTo(17));
+                Assert.That(Array.TrueForAll(images, image => !image.raycastTarget), Is.True);
+                ParticleSystem legacy = fire.GetComponentInChildren<ParticleSystem>(true);
+                Assert.That(legacy, Is.Not.Null);
+                Assert.That(legacy.gameObject.activeSelf, Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
         }
 
         [TestCase(ScoreLineKind.DishBase, 246, 196, 83)]

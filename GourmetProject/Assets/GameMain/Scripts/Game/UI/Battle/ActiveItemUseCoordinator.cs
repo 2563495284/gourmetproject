@@ -229,6 +229,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            bool rewardContext = _host.IsRewardItemContextActive;
             if (!run.RemoveItem(item.Id))
             {
                 _host.ShowActiveItemMessage($"{item.Name}：没有可丢弃的装饰品和消耗品。");
@@ -237,6 +238,10 @@ namespace GourmetProject.Game.UI.Battle
 
             _host.ShowActiveItemMessage($"{item.Name}：已丢弃。");
             _host.RefreshPersistentHud();
+            if (rewardContext)
+            {
+                _host.CommitRewardInventoryMutation();
+            }
         }
 
         private void BeginTargeting(IActiveUseContext ctx, ItemDefinition item, RunItemSlotView slot, IReadOnlyList<ActiveTarget> targets)
@@ -813,6 +818,10 @@ namespace GourmetProject.Game.UI.Battle
                 result.BoardChanged,
                 result.ActionChoicesChanged,
                 refreshActionContent);
+            if (ctx.ContextKind == ActiveUseContextKind.Reward)
+            {
+                _host.CommitRewardInventoryMutation();
+            }
         }
 
         private bool CanUse(ItemDefinition item, ActiveUseContextKind contextKind, out string reason)
@@ -920,12 +929,28 @@ namespace GourmetProject.Game.UI.Battle
 
         private ActiveUseContextKind ResolveContextKind()
         {
-            if (_host.CurrentView == GameplayView.Food && _host.InBattle)
+            return ResolveContextKind(
+                _host.CurrentView,
+                _host.InBattle,
+                _host.IsRewardItemContextActive);
+        }
+
+        internal static ActiveUseContextKind ResolveContextKind(
+            GameplayView currentView,
+            bool inBattle,
+            bool rewardContextActive)
+        {
+            if (rewardContextActive)
+            {
+                return ActiveUseContextKind.Reward;
+            }
+
+            if (currentView == GameplayView.Food && inBattle)
             {
                 return ActiveUseContextKind.Battle;
             }
 
-            return _host.CurrentView switch
+            return currentView switch
             {
                 GameplayView.Shop => ActiveUseContextKind.Shop,
                 GameplayView.RecipeSelection => ActiveUseContextKind.Shop,

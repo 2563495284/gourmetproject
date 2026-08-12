@@ -116,8 +116,8 @@ namespace GourmetProject.Runtime.Settings
             set => _setting.SetInt(KeyTargetFrameRate, value);
         }
 
-        /// <summary>结算演出是否按 cue 进度逐步加速。</summary>
-        public bool SettlementAcceleration
+        /// <summary>是否将整段结算演出的当前阶段速度额外乘以 2。</summary>
+        public bool SettlementDoubleSpeed
         {
             get => _setting.GetBool(KeySettlementAcceleration, false);
             set => _setting.SetBool(KeySettlementAcceleration, value);

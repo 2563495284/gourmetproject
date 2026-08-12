@@ -376,12 +376,6 @@ namespace GourmetProject.Game.UI.Battle
         private void Update()
         {
             SynchronizeFoodDiscardCapacity();
-
-            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
-            {
-                return;
-            }
-
             _activeItemUse?.Update();
         }
 
@@ -392,11 +386,14 @@ namespace GourmetProject.Game.UI.Battle
         private bool HasPendingBattleRewardLifecycle
             => _session?.IsSettled == true && _run?.HasPendingRewardBattleView == true;
 
+        internal bool IsRewardItemContextActive => RewardForm.Active != null;
+
         internal bool IsActiveItemUseBlocked
-            => _rewardPeekOnly
-                || HasPendingBattleRewardLifecycle
-                || _activePassivePresentation != null
-                || _fragmentEditCoordinator?.IsActive == true;
+            => _activePassivePresentation != null
+                || _fragmentEditCoordinator?.IsActive == true
+                || _rewardPage?.IsActive == true
+                || (RewardForm.Active != null && !RewardForm.Active.AllowsPersistentInteractions)
+                || (HasPendingBattleRewardLifecycle && RewardForm.Active == null);
 
         /// <summary>进入（或继续）一周：随机/沿用时间轴后开始行动循环。</summary>
         public void BeginWeek()
@@ -1312,6 +1309,8 @@ namespace GourmetProject.Game.UI.Battle
             {
                 RewardForm.Active?.SetResultPeekInspectionActive(false);
             }
+
+            RewardForm.Active?.CompletePersistentInspection();
         }
 
         private void OnPageCovered(GameplayView current, GameplayView next)
@@ -1779,15 +1778,15 @@ namespace GourmetProject.Game.UI.Battle
             _recipeBookPage?.OpenActiveItemTarget(item, onCancel, onTargetConfirmed, onOpened);
         }
 
-        private void OpenRecipeInspect(int bookIndex, bool useBattleRecipe = false)
+        private bool OpenRecipeInspect(int bookIndex, bool useBattleRecipe = false)
         {
             if (_fragmentEditCoordinator?.IsActive == true)
             {
                 _fragmentEditCoordinator.OpenRecipe();
-                return;
+                return true;
             }
 
-            _inspectionCoordinator?.OpenRecipe(bookIndex, useBattleRecipe);
+            return _inspectionCoordinator?.OpenRecipe(bookIndex, useBattleRecipe) == true;
         }
 
         internal void CancelActiveItemRecipeTarget()
@@ -2185,7 +2184,8 @@ namespace GourmetProject.Game.UI.Battle
                 _current,
                 ActiveInspectionView,
                 _fragmentEditCoordinator?.IsActive == true,
-                world);
+                world,
+                RewardForm.Active?.AllowsPersistentInteractions == true);
             RefreshCakeLayerBuff();
 
             if (refreshItems)
@@ -2199,6 +2199,17 @@ namespace GourmetProject.Game.UI.Battle
         internal void RefreshPersistentHud(bool refreshItems = true)
         {
             RefreshPersistent(refreshItems);
+        }
+
+        internal void CommitRewardInventoryMutation()
+        {
+            if (_run == null || RewardForm.Active == null)
+            {
+                return;
+            }
+
+            RunPersistence.Save(_run);
+            RewardForm.Active.RefreshAfterExternalInventoryMutation();
         }
 
         private void RefreshCakeLayerBuff()
@@ -3146,7 +3157,8 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnSettingsClicked()
         {
-            if (_rewardPeekOnly || HasPendingBattleRewardLifecycle)
+            if (GameApp.UI.HasUIForm(UIForms.Settings)
+                || GameApp.UI.IsLoadingUIForm(UIForms.Settings))
             {
                 return;
             }
@@ -3173,7 +3185,24 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            OpenRecipeInspect(0);
+            if (_fragmentEditCoordinator?.IsActive == true)
+            {
+                OpenRecipeInspect(0);
+                return;
+            }
+
+            RewardForm reward = RewardForm.Active;
+            bool managesReward = reward != null && !reward.IsSuspendedForRewardSubflow;
+            bool beginsRewardInspection = managesReward && !reward.IsPersistentInspectionActive;
+            if (beginsRewardInspection && !reward.TryBeginPersistentInspection())
+            {
+                return;
+            }
+
+            if (!OpenRecipeInspect(0) && beginsRewardInspection)
+            {
+                reward.CompletePersistentInspection();
+            }
         }
 
         private void OnBattleRecipeClicked()
@@ -3902,7 +3931,18 @@ namespace GourmetProject.Game.UI.Battle
             _world = _world ?? BattleWorldController.Instance;
             _world?.SetTableArea(_boardArea);
 
-            _inspectionCoordinator.OpenTable();
+            RewardForm reward = RewardForm.Active;
+            bool managesReward = reward != null && !reward.IsSuspendedForRewardSubflow;
+            bool beginsRewardInspection = managesReward && !reward.IsPersistentInspectionActive;
+            if (beginsRewardInspection && !reward.TryBeginPersistentInspection())
+            {
+                return;
+            }
+
+            if (!_inspectionCoordinator.OpenTable() && beginsRewardInspection)
+            {
+                reward.CompletePersistentInspection();
+            }
         }
 
         private void OnExitTableViewClicked()
