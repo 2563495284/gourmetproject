@@ -10,8 +10,10 @@ namespace GourmetProject.Game.UI.Battle.View
     /// </summary>
     internal sealed class TimelineAxisFocusPresenter
     {
-        private const float EnterDuration = 0.32f;
-        private const float ExitDuration = 0.26f;
+        private const float EnterDuration = 0.64f;
+        // private const float PostEnterDelay = 0.6f;
+        private const float PreExitDelay = 0.5f;
+        private const float ExitDuration = 0.78f;
         private static readonly Color BackdropColor = new Color(0f, 0f, 0f, 0.76f);
 
         private readonly RectTransform _axis;
@@ -72,6 +74,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 .SetTarget(_axis)
                 .Join(_backdropGroup.DOFade(1f, EnterDuration).SetEase(Ease.OutCubic))
                 .Join(_axis.DOAnchorPosY(CenteredAnchoredY(_axis), EnterDuration).SetEase(Ease.OutCubic))
+                // .AppendInterval(PostEnterDelay)
                 .OnComplete(() =>
                 {
                     _transition = null;
@@ -91,7 +94,8 @@ namespace GourmetProject.Game.UI.Battle.View
             _transition = DOTween.Sequence()
                 .SetUpdate(true)
                 .SetTarget(_axis)
-                .Join(_backdropGroup.DOFade(0f, ExitDuration).SetEase(Ease.InCubic))
+                .AppendInterval(PreExitDelay)
+                .Append(_backdropGroup.DOFade(0f, ExitDuration).SetEase(Ease.InCubic))
                 .Join(_axis.DOAnchorPos(_restPosition, ExitDuration).SetEase(Ease.InOutCubic))
                 .OnComplete(() =>
                 {
