@@ -1,4 +1,5 @@
 using UnityEngine;
+using DG.Tweening;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 
@@ -33,12 +34,14 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private Color _topColor = new Color(1f, 0.92f, 0.18f, 0.75f);
 
         private Vector3 _baseLocalPosition;
+        private Vector3 _baseLocalScale;
         private Quaternion _baseLocalRotation;
         private float _intensity;
         private float _speed = 1f;
         private float _wobbleTime;
         private bool _visible;
         private ParticleSystem _configuredParticles;
+        private Tween _burstTween;
 
         private void Awake()
         {
@@ -65,6 +68,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void Hide()
         {
+            _burstTween?.Kill();
+            _burstTween = null;
             _visible = false;
             if (_particles != null)
             {
@@ -72,8 +77,41 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             transform.localPosition = _baseLocalPosition;
+            transform.localScale = _baseLocalScale;
             transform.localRotation = _baseLocalRotation;
             gameObject.SetActive(false);
+        }
+
+        /// <summary>强结果、达标和最终盖章时的瞬时爆发；不改变持续强度。</summary>
+        public void Burst(float strength = 1f)
+        {
+            EnsureRefs();
+            if (_particles == null)
+            {
+                return;
+            }
+
+            if (!_visible)
+            {
+                Show();
+            }
+
+            float normalized = Mathf.Clamp01(strength);
+            _particles.Emit(Mathf.RoundToInt(Mathf.Lerp(5f, 18f, normalized)));
+            _burstTween?.Kill();
+            transform.localScale = _baseLocalScale;
+            _burstTween = transform
+                .DOPunchScale(
+                    Vector3.one * Mathf.Lerp(0.10f, 0.28f, normalized),
+                    Mathf.Lerp(0.18f, 0.32f, normalized),
+                    vibrato: 7,
+                    elasticity: 0.72f)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    transform.localScale = _baseLocalScale;
+                    _burstTween = null;
+                });
         }
 
         public void SetIntensity(float normalized, float speed)
@@ -116,6 +154,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private void CaptureBaseTransform()
         {
             _baseLocalPosition = transform.localPosition;
+            _baseLocalScale = transform.localScale;
             _baseLocalRotation = transform.localRotation;
         }
 

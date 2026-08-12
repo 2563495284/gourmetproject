@@ -3466,6 +3466,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     _dishViewsById,
                     _boardView.Mapper,
                     _fxRoot,
+                    WorldCamera,
                     scoreFire,
                     RenderSettlementScore,
                     onReveal,

@@ -317,12 +317,12 @@ MonoBehaviour:
   _settlementStageLabelPrefab: {fileID: 6510917799371523778, guid: 2b5b141a1e49848f093625e6c82d202b, type: 3}
   _settlementFinaleLabelPrefab: {fileID: 5091843290735984290, guid: 46de8087a6f654039ad3eb5cf4835712, type: 3}
   _settlementStageSpritePrefab: {fileID: 8214805410636492364, guid: 9c0eff87a4d6a4f3ab55c22dbc223c50, type: 3}
-  _baseDishDuration: 0.45
-  _sourceFocusDuration: 0.55
-  _scopeRevealDuration: 0.4
-  _resultBeatDuration: 0.8
-  _groupSettleDuration: 0.2
-  _finaleDuration: 1.2
+  _baseDishDuration: 0.38
+  _sourceFocusDuration: 0.38
+  _scopeRevealDuration: 0.24
+  _resultBeatDuration: 0.52
+  _groupSettleDuration: 0.1
+  _finaleDuration: 0.95
   _sweetTransferSourceDuration: 0.22
   _sweetTransferTravelDuration: 0.38
   _sweetTransferExecutorDuration: 0.3

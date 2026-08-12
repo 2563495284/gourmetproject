@@ -5021,6 +5021,7 @@ namespace GourmetProject.Game.UI.Battle
                 _session.HappyCakeLayers - _displayedCakeLayers - result.HappyCakeLayerDelta);
             ApplyRecipeScoreDeltasToRun();
             SetSettlementScore(0);
+            _infoColumn?.BeginSettlementScorePresentation();
             RefreshFoodActions();
 
             if (_world != null)
@@ -5031,7 +5032,7 @@ namespace GourmetProject.Game.UI.Battle
                     _infoColumn != null ? _infoColumn.ScoreFire : null,
                     OnSettlementReveal,
                     OnSettlementPassiveTriggered,
-                    null,
+                    OnSettlementBeat,
                     () => OnSettlementComplete(result));
             }
             else
@@ -5048,6 +5049,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             StopBattleMusic(0.8f);
+            _infoColumn?.EndSettlementScorePresentation();
 
             // 演出走完：清空渐进揭示态，hover 恢复展示完整结算结果。
             _settlementReveal = null;
@@ -5099,6 +5101,16 @@ namespace GourmetProject.Game.UI.Battle
             bool isWin = settledSession != null && settledSession.IsWin;
             void ContinueSettlement() => _loop?.OnBattleSettled(result, isWin, finalHappyCakeLayers);
             TutorialRuntime.PlayResultHeart(isWin, ContinueSettlement);
+        }
+
+        private void OnSettlementBeat(SettlementBeatSignal signal)
+        {
+            if (_discardSettlementCallbacks || Active != this)
+            {
+                return;
+            }
+
+            _infoColumn?.QueueSettlementScoreBeat(signal);
         }
 
         private void RegisterTutorialAnchors()

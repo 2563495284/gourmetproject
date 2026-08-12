@@ -50,12 +50,12 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SpriteRenderer _settlementStageSpritePrefab;
 
         [Header("餐桌舞台节拍（统一速度下的秒数）")]
-        [SerializeField] private float _baseDishDuration = 0.45f;
-        [SerializeField] private float _sourceFocusDuration = 0.55f;
-        [SerializeField] private float _scopeRevealDuration = 0.40f;
-        [SerializeField] private float _resultBeatDuration = 0.80f;
-        [SerializeField] private float _groupSettleDuration = 0.20f;
-        [SerializeField] private float _finaleDuration = 1.20f;
+        [SerializeField] private float _baseDishDuration = 0.38f;
+        [SerializeField] private float _sourceFocusDuration = 0.38f;
+        [SerializeField] private float _scopeRevealDuration = 0.24f;
+        [SerializeField] private float _resultBeatDuration = 0.52f;
+        [SerializeField] private float _groupSettleDuration = 0.10f;
+        [SerializeField] private float _finaleDuration = 0.95f;
         [SerializeField] private float _sweetTransferSourceDuration = 0.22f;
         [SerializeField] private float _sweetTransferTravelDuration = 0.38f;
         [SerializeField] private float _sweetTransferExecutorDuration = 0.30f;
@@ -68,6 +68,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private float _visualScale = 1f;
         private bool _settlementAccelerationEnabled;
         private SettlementStageView _stage;
+        private SettlementCameraFeedback _cameraFeedback;
         private bool _externalPlaybackPaused;
         private bool _playbackHasSavedTimeScale;
         private float _playbackSavedTimeScale = 1f;
@@ -175,6 +176,7 @@ namespace GourmetProject.Game.Presentation.Battle
             IReadOnlyDictionary<int, DishPieceView> dishViews,
             DiningTableCoordinateMapper mapper,
             Transform fxRoot,
+            Camera worldCamera,
             SettlementScoreFireView scoreFire,
             Action<BigDouble> renderScore,
             Action<SettlementRevealSignal> onReveal,
@@ -193,12 +195,13 @@ namespace GourmetProject.Game.Presentation.Battle
             renderScore?.Invoke(0);
             _visualScale = Mathf.Max(0.0001f, visualScale);
             SettlementPresentationPlan plan = SettlementPresentationPlan.Build(result);
-            var playback = new SettlementPlaybackState(plan.ResultBeatCount, null);
+            var playback = new SettlementPlaybackState(plan.ResultBeatCount, scoreFire);
             var ledger = new SettlementRunningLedger(result.DishScores, baselineSnapshot);
             ClearRetainedDishValueBadges();
             ClearSweetTransferBuffMarkers(dishViews);
             var sweetTransferPlayback = new SweetTransferPlaybackState();
             bool completed = false;
+            bool targetReached = false;
             ResetPlaybackPauseState();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             using CancellationTokenSource debugScorePauseCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -208,7 +211,9 @@ namespace GourmetProject.Game.Presentation.Battle
             _ = MonitorDebugScorePauseAsync(debugScorePauseCts.Token);
 #endif
             BeginSettlementSpeed();
-            scoreFire?.Hide();
+            scoreFire?.Show();
+            _cameraFeedback ??= new SettlementCameraFeedback();
+            _cameraFeedback.Begin(worldCamera, mapper.Center);
             EnsureStage();
             _stage.Configure(
                 dishViews,
@@ -227,6 +232,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     await WaitWhilePlaybackPausedAsync(cancellationToken);
                     SettlementBaseBeat beat = plan.BaseBeats[i];
                     AdvanceSettlementSpeed(playback, SettlementCueKind.DishContribution);
+                    BigDouble beforeTotal = ledger.CurrentTotal;
                     BigDouble contribution = ledger.ApplyBase(beat.DishInstanceId, beat.BaseValue);
                     dishViews.TryGetValue(beat.DishInstanceId, out DishPieceView view);
                     if (view != null)
@@ -236,12 +242,28 @@ namespace GourmetProject.Game.Presentation.Battle
                     }
 
                     renderScore?.Invoke(ledger.CurrentTotal);
-                    EmitBeat(
+                    bool reachedTarget = !targetReached && CrossedTarget(
+                        beforeTotal,
+                        ledger.CurrentTotal,
+                        session?.RequiredScore ?? 0);
+                    if (reachedTarget)
+                    {
+                        targetReached = true;
+                        scoreFire?.Burst(0.85f);
+                        _cameraFeedback.PlayTargetReached();
+                    }
+
+                    EmitScoreBeat(
                         onBeat,
-                        SettlementBeatKind.ResultApplied,
                         view?.Instance?.Def?.Name ?? beat.DishId,
                         beat.DishInstanceId,
-                        playback);
+                        playback,
+                        ScoreLineKind.DishBase,
+                        beforeTotal,
+                        ledger.CurrentTotal,
+                        SettlementImpactTier.Base,
+                        1,
+                        reachedTarget);
                     baseTasks.Add(_stage.PlayBaseAsync(
                         view,
                         view?.Instance?.Def?.Name ?? beat.DishId,
@@ -331,6 +353,10 @@ namespace GourmetProject.Game.Presentation.Battle
                         group.SourceName,
                         group.ActorDishInstanceId,
                         playback);
+                    DishPieceView cameraActor = TryGetDishView(group.ActorDishInstanceId, dishViews);
+                    _cameraFeedback.FocusSource(
+                        cameraActor != null ? cameraActor.WorldBounds.center : mapper.Center,
+                        ScaleSettlementDuration(_sourceFocusDuration));
                     await _stage.FocusSourceAsync(
                         group,
                         ScaleSettlementDuration(_sourceFocusDuration),
@@ -358,6 +384,17 @@ namespace GourmetProject.Game.Presentation.Battle
                         int targetId = group.Lines[lineIndex].DishInstanceId;
                         resultStackCounts.TryGetValue(targetId, out int count);
                         resultStackCounts[targetId] = count + 1;
+                    }
+
+                    int groupTargetCount = CountDistinctTargets(group, dishViews);
+                    SettlementImpactTier groupImpact = StrongestImpact(group, groupTargetCount);
+                    Dictionary<int, int> primaryFeedbackLines = BuildPrimaryFeedbackLines(
+                        group,
+                        groupTargetCount);
+                    _cameraFeedback.PlayImpact(groupImpact, groupTargetCount);
+                    if (groupImpact >= SettlementImpactTier.Strong)
+                    {
+                        scoreFire?.Burst(groupImpact >= SettlementImpactTier.Chain ? 0.72f : 0.46f);
                     }
 
                     // 同一技能组的计分明细仍按原顺序写入账本与发出事件，但所有结果动画
@@ -402,23 +439,47 @@ namespace GourmetProject.Game.Presentation.Battle
                             await PlaySweetTransferFailureAsync(line, dishViews, cancellationToken);
                         }
 
+                        BigDouble beforeTotal = ledger.CurrentTotal;
                         BigDouble contribution = ledger.Apply(line);
+                        SettlementImpactTier impactTier = ImpactFor(line, groupTargetCount);
+                        bool reachedTarget = !targetReached && CrossedTarget(
+                            beforeTotal,
+                            ledger.CurrentTotal,
+                            session?.RequiredScore ?? 0);
+                        if (reachedTarget)
+                        {
+                            targetReached = true;
+                            scoreFire?.Burst(0.92f);
+                            _cameraFeedback.PlayTargetReached();
+                        }
+                        bool playPrimaryFeedback = primaryFeedbackLines.TryGetValue(
+                                line.DishInstanceId,
+                                out int primaryLine)
+                            && primaryLine == lineIndex;
                         dishViews.TryGetValue(line.DishInstanceId, out DishPieceView target);
                         if (target != null && ChangesDishValue(line.Kind))
                         {
                             target.SetDishValueBadge(contribution);
-                            target.PunchDishValueBadge(
-                                DishValuePunchScale,
-                                ScaleSettlementDuration(DishValuePunchDuration));
+                            if (playPrimaryFeedback)
+                            {
+                                target.PunchDishValueBadge(
+                                    DishValuePunchScale,
+                                    ScaleSettlementDuration(DishValuePunchDuration));
+                            }
                         }
 
                         renderScore?.Invoke(ledger.CurrentTotal);
-                        EmitBeat(
+                        EmitScoreBeat(
                             onBeat,
-                            SettlementBeatKind.ResultApplied,
                             group.SourceName,
                             line.DishInstanceId,
-                            playback);
+                            playback,
+                            line.Kind,
+                            beforeTotal,
+                            ledger.CurrentTotal,
+                            impactTier,
+                            groupTargetCount,
+                            reachedTarget);
                         resultStackIndices.TryGetValue(line.DishInstanceId, out int stackIndex);
                         resultStackIndices[line.DishInstanceId] = stackIndex + 1;
                         resultTasks.Add(_stage.ShowResultAsync(
@@ -430,6 +491,9 @@ namespace GourmetProject.Game.Presentation.Battle
                             ScaleSettlementDuration(_resultBeatDuration),
                             stackIndex,
                             resultStackCounts[line.DishInstanceId],
+                            impactTier,
+                            Mathf.Lerp(0.96f, 1.18f, NormalizedProgress(playback)),
+                            playPrimaryFeedback,
                             cancellationToken));
                     }
 
@@ -449,6 +513,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     }
 
                     onScope?.Invoke(default);
+                    _cameraFeedback.ReturnHome(ScaleSettlementDuration(_groupSettleDuration + 0.08f));
                     await _stage.EndGroupAsync(
                         ScaleSettlementDuration(_groupSettleDuration),
                         cancellationToken);
@@ -465,6 +530,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 onScope?.Invoke(default);
                 AdvanceSettlementSpeed(playback, SettlementCueKind.FinalScore);
                 renderScore?.Invoke(result.Total);
+                scoreFire?.Burst(1f);
+                _cameraFeedback.PlayFinale(ScaleSettlementDuration(_finaleDuration));
                 await _stage.PlayFinaleAsync(
                     result.Total,
                     ScaleSettlementDuration(_finaleDuration),
@@ -490,6 +557,7 @@ namespace GourmetProject.Game.Presentation.Battle
 #endif
                 ResetPlaybackPauseState();
                 RestoreSettlementSpeed();
+                _cameraFeedback?.RestoreImmediate();
                 scoreFire?.Hide();
                 if (!completed)
                 {
@@ -704,6 +772,154 @@ namespace GourmetProject.Game.Presentation.Battle
                 dishInstanceId,
                 _currentSettlementSpeed,
                 normalized));
+        }
+
+        private void EmitScoreBeat(
+            Action<SettlementBeatSignal> onBeat,
+            string sourceName,
+            int dishInstanceId,
+            SettlementPlaybackState playback,
+            ScoreLineKind lineKind,
+            BigDouble beforeScore,
+            BigDouble afterScore,
+            SettlementImpactTier impactTier,
+            int targetCount,
+            bool reachedTarget)
+        {
+            if (onBeat == null || playback == null)
+            {
+                return;
+            }
+
+            onBeat(new SettlementBeatSignal(
+                SettlementBeatKind.ResultApplied,
+                sourceName,
+                dishInstanceId,
+                _currentSettlementSpeed,
+                NormalizedProgress(playback),
+                lineKind,
+                beforeScore,
+                afterScore,
+                impactTier,
+                targetCount,
+                reachedTarget));
+        }
+
+        private static float NormalizedProgress(SettlementPlaybackState playback)
+        {
+            if (playback == null || playback.CueCount <= 1)
+            {
+                return 1f;
+            }
+
+            return Mathf.Clamp01(
+                (float)Mathf.Max(0, playback.CueIndex - 1)
+                / (playback.CueCount - 1));
+        }
+
+        private static bool CrossedTarget(BigDouble before, BigDouble after, int requiredScore)
+        {
+            return requiredScore > 0 && before < requiredScore && after >= requiredScore;
+        }
+
+        internal static SettlementImpactTier ImpactFor(ScoreLine line, int targetCount = 1)
+        {
+            SettlementImpactTier tier = line?.Kind switch
+            {
+                ScoreLineKind.DishBase => SettlementImpactTier.Base,
+                ScoreLineKind.DishPermanentFlat
+                    or ScoreLineKind.DishMultiplier
+                    or ScoreLineKind.DishMultiplierAdd
+                    or ScoreLineKind.FinalFlat
+                    or ScoreLineKind.FinalMultiplier => SettlementImpactTier.Strong,
+                ScoreLineKind.CopySkill
+                    or ScoreLineKind.TriggerSweetTransfer
+                    or ScoreLineKind.TriggeredSweetTransferSource
+                    or ScoreLineKind.SweetTransferBuffApplied
+                    or ScoreLineKind.SweetTransferBuffTriggered => SettlementImpactTier.Chain,
+                ScoreLineKind.SweetTransferFailed => SettlementImpactTier.Normal,
+                _ => SettlementImpactTier.Normal,
+            };
+
+            if (targetCount > 1 && tier < SettlementImpactTier.Chain)
+            {
+                tier++;
+            }
+
+            return tier;
+        }
+
+        private static int CountDistinctTargets(
+            SettlementEffectGroup group,
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
+        {
+            if (group == null)
+            {
+                return 1;
+            }
+
+            var targets = new HashSet<int>();
+            for (int i = 0; i < group.Lines.Count; i++)
+            {
+                int id = group.Lines[i].DishInstanceId;
+                if (id > 0 && dishViews != null && dishViews.ContainsKey(id))
+                {
+                    targets.Add(id);
+                }
+            }
+
+            return Mathf.Max(1, targets.Count);
+        }
+
+        private static SettlementImpactTier StrongestImpact(
+            SettlementEffectGroup group,
+            int targetCount)
+        {
+            SettlementImpactTier strongest = SettlementImpactTier.Base;
+            if (group == null)
+            {
+                return strongest;
+            }
+
+            for (int i = 0; i < group.Lines.Count; i++)
+            {
+                SettlementImpactTier tier = ImpactFor(group.Lines[i], targetCount);
+                if (tier > strongest)
+                {
+                    strongest = tier;
+                }
+            }
+
+            return strongest;
+        }
+
+        private static Dictionary<int, int> BuildPrimaryFeedbackLines(
+            SettlementEffectGroup group,
+            int targetCount)
+        {
+            var result = new Dictionary<int, int>();
+            if (group == null)
+            {
+                return result;
+            }
+
+            for (int i = 0; i < group.Lines.Count; i++)
+            {
+                ScoreLine line = group.Lines[i];
+                int targetId = line.DishInstanceId;
+                if (targetId <= 0)
+                {
+                    continue;
+                }
+
+                if (!result.TryGetValue(targetId, out int current)
+                    || ImpactFor(line, targetCount) > ImpactFor(group.Lines[current], targetCount))
+                {
+                    result[targetId] = i;
+                }
+            }
+
+            return result;
         }
 
         private async Awaitable PlayCueAsync(
@@ -2762,6 +2978,235 @@ namespace GourmetProject.Game.Presentation.Battle
                         Multiplier = change.Value;
                         break;
                 }
+            }
+        }
+
+        /// <summary>
+        /// 只叠加在餐桌世界相机上的结算镜头语言。左右 UGUI 不经过该相机，
+        /// 因此推拉和微震不会牺牲 HUD 可读性。
+        /// </summary>
+        private sealed class SettlementCameraFeedback
+        {
+            private Camera _camera;
+            private Vector3 _basePosition;
+            private Vector3 _focusPosition;
+            private Vector3 _tableCenter;
+            private float _baseOrthographicSize;
+            private float _focusOrthographicSize;
+            private Tween _motion;
+            private bool _active;
+
+            public void Begin(Camera camera, Vector3 tableCenter)
+            {
+                RestoreImmediate();
+                _camera = camera;
+                if (_camera == null)
+                {
+                    return;
+                }
+
+                _active = true;
+                _basePosition = _camera.transform.position;
+                _focusPosition = _basePosition;
+                _tableCenter = tableCenter;
+                _baseOrthographicSize = _camera.orthographicSize;
+                _focusOrthographicSize = _baseOrthographicSize;
+            }
+
+            public void FocusSource(Vector3 worldPosition, float duration)
+            {
+                if (!_active || _camera == null)
+                {
+                    return;
+                }
+
+                Vector3 towardSource = Vector3.ClampMagnitude(worldPosition - _tableCenter, 1.6f);
+                towardSource.z = 0f;
+                _focusPosition = _basePosition + towardSource * 0.12f;
+                _focusOrthographicSize = _baseOrthographicSize * 0.975f;
+                TweenTo(
+                    _focusPosition,
+                    _focusOrthographicSize,
+                    Mathf.Clamp(duration * 0.72f, 0.10f, 0.24f),
+                    Ease.OutCubic);
+            }
+
+            public void PlayImpact(SettlementImpactTier tier, int targetCount)
+            {
+                if (!_active || _camera == null || tier <= SettlementImpactTier.Base)
+                {
+                    return;
+                }
+
+                _motion?.Kill();
+                float strength = tier switch
+                {
+                    SettlementImpactTier.Normal => 0.025f,
+                    SettlementImpactTier.Strong => 0.050f,
+                    SettlementImpactTier.Chain => 0.075f,
+                    _ => 0.09f,
+                };
+                if (targetCount > 1)
+                {
+                    strength *= 1.18f;
+                }
+
+                float pulseSize = _focusOrthographicSize * (tier >= SettlementImpactTier.Chain ? 0.982f : 0.990f);
+                Sequence sequence = DOTween.Sequence()
+                    .Append(DOVirtual.Float(
+                            _camera.orthographicSize,
+                            pulseSize,
+                            0.07f,
+                            value => SetOrthographicSize(value))
+                        .SetEase(Ease.OutQuad))
+                    .Join(_camera.transform.DOShakePosition(
+                        0.14f,
+                        strength,
+                        vibrato: tier >= SettlementImpactTier.Chain ? 12 : 8,
+                        randomness: 38f,
+                        snapping: false,
+                        fadeOut: true))
+                    .Append(DOVirtual.Float(
+                            pulseSize,
+                            _focusOrthographicSize,
+                            0.08f,
+                            value => SetOrthographicSize(value))
+                        .SetEase(Ease.OutCubic))
+                    .Append(_camera.transform.DOMove(_focusPosition, 0.05f).SetEase(Ease.OutQuad))
+                    .SetLink(_camera.gameObject);
+                _motion = sequence.OnComplete(() => _motion = null);
+            }
+
+            public void PlayTargetReached()
+            {
+                if (!_active || _camera == null)
+                {
+                    return;
+                }
+
+                _motion?.Kill();
+                Sequence sequence = DOTween.Sequence()
+                    .AppendInterval(0.07f)
+                    .Append(_camera.transform.DOShakePosition(
+                        0.18f,
+                        0.095f,
+                        vibrato: 14,
+                        randomness: 32f,
+                        snapping: false,
+                        fadeOut: true))
+                    .Join(DOVirtual.Float(
+                            _camera.orthographicSize,
+                            _focusOrthographicSize * 0.968f,
+                            0.09f,
+                            value => SetOrthographicSize(value))
+                        .SetEase(Ease.OutQuad))
+                    .Append(DOVirtual.Float(
+                            _camera.orthographicSize,
+                            _focusOrthographicSize,
+                            0.13f,
+                            value => SetOrthographicSize(value))
+                        .SetEase(Ease.OutBack))
+                    .Append(_camera.transform.DOMove(_focusPosition, 0.05f).SetEase(Ease.OutQuad))
+                    .SetLink(_camera.gameObject);
+                _motion = sequence.OnComplete(() => _motion = null);
+            }
+
+            public void ReturnHome(float duration)
+            {
+                if (!_active || _camera == null)
+                {
+                    return;
+                }
+
+                _focusPosition = _basePosition;
+                _focusOrthographicSize = _baseOrthographicSize;
+                TweenTo(
+                    _basePosition,
+                    _baseOrthographicSize,
+                    Mathf.Clamp(duration, 0.08f, 0.20f),
+                    Ease.OutCubic);
+            }
+
+            public void PlayFinale(float duration)
+            {
+                if (!_active || _camera == null)
+                {
+                    return;
+                }
+
+                _motion?.Kill();
+                float pushDuration = Mathf.Clamp(duration * 0.18f, 0.12f, 0.22f);
+                float restoreDuration = Mathf.Clamp(duration * 0.28f, 0.20f, 0.36f);
+                Sequence sequence = DOTween.Sequence()
+                    .Append(_camera.transform.DOMove(_basePosition, pushDuration).SetEase(Ease.OutCubic))
+                    .Join(DOVirtual.Float(
+                            _camera.orthographicSize,
+                            _baseOrthographicSize * 0.96f,
+                            pushDuration,
+                            value => SetOrthographicSize(value))
+                        .SetEase(Ease.OutCubic))
+                    .Append(_camera.transform.DOShakePosition(
+                        0.16f,
+                        0.11f,
+                        vibrato: 14,
+                        randomness: 28f,
+                        snapping: false,
+                        fadeOut: true))
+                    .Append(_camera.transform.DOMove(_basePosition, restoreDuration).SetEase(Ease.OutBack))
+                    .Join(DOVirtual.Float(
+                            _camera.orthographicSize,
+                            _baseOrthographicSize,
+                            restoreDuration,
+                            value => SetOrthographicSize(value))
+                        .SetEase(Ease.OutBack))
+                    .SetLink(_camera.gameObject);
+                _motion = sequence.OnComplete(() =>
+                {
+                    RestoreValues();
+                    _motion = null;
+                });
+            }
+
+            public void RestoreImmediate()
+            {
+                _motion?.Kill();
+                _motion = null;
+                if (_active && _camera != null)
+                {
+                    RestoreValues();
+                }
+
+                _active = false;
+                _camera = null;
+            }
+
+            private void TweenTo(Vector3 position, float orthographicSize, float duration, Ease ease)
+            {
+                _motion?.Kill();
+                Sequence sequence = DOTween.Sequence()
+                    .Append(_camera.transform.DOMove(position, duration).SetEase(ease))
+                    .Join(DOVirtual.Float(
+                            _camera.orthographicSize,
+                            orthographicSize,
+                            duration,
+                            value => SetOrthographicSize(value))
+                        .SetEase(ease))
+                    .SetLink(_camera.gameObject);
+                _motion = sequence.OnComplete(() => _motion = null);
+            }
+
+            private void SetOrthographicSize(float value)
+            {
+                if (_camera != null && _camera.orthographic)
+                {
+                    _camera.orthographicSize = value;
+                }
+            }
+
+            private void RestoreValues()
+            {
+                _camera.transform.position = _basePosition;
+                SetOrthographicSize(_baseOrthographicSize);
             }
         }
 

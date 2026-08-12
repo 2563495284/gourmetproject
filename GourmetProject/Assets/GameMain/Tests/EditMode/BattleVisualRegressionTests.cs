@@ -223,11 +223,49 @@ namespace GourmetProject.Tests.EditMode
             Color temporaryColor = SettlementColorPalette.For(ScoreLineKind.DishFlat);
             Color permanentColor = SettlementColorPalette.For(ScoreLineKind.DishPermanentFlat);
 
-            Assert.That(label, Is.EqualTo("永久分数 +3"));
+            Assert.That(label, Is.EqualTo("永久 +3"));
             Assert.That(permanentColor, Is.Not.EqualTo(temporaryColor));
             Assert.That(permanentColor, Is.Not.EqualTo(SettlementColorPalette.AddMultiplier));
             Assert.That(permanentColor, Is.Not.EqualTo(SettlementColorPalette.MultiplyMultiplier));
             AssertColor(permanentColor, 184, 90, 43);
+        }
+
+        [TestCase(ScoreLineKind.DishBase, 1, SettlementImpactTier.Base)]
+        [TestCase(ScoreLineKind.DishFlat, 1, SettlementImpactTier.Normal)]
+        [TestCase(ScoreLineKind.DishFlat, 3, SettlementImpactTier.Strong)]
+        [TestCase(ScoreLineKind.DishMultiplier, 1, SettlementImpactTier.Strong)]
+        [TestCase(ScoreLineKind.DishMultiplier, 3, SettlementImpactTier.Chain)]
+        [TestCase(ScoreLineKind.CopySkill, 1, SettlementImpactTier.Chain)]
+        public void SettlementImpact_ClimbsForMultipliersChainsAndMultipleTargets(
+            ScoreLineKind kind,
+            int targetCount,
+            SettlementImpactTier expected)
+        {
+            ScoreLine line = ScoreLineForImpact(kind);
+
+            Assert.That(SettlementSequencer.ImpactFor(line, targetCount), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void SettlementBeat_CarriesExactScoreDeltaAndTargetCrossing()
+        {
+            var signal = new SettlementBeatSignal(
+                SettlementBeatKind.ResultApplied,
+                "测试来源",
+                12,
+                1.2f,
+                0.5f,
+                ScoreLineKind.DishMultiplier,
+                90f,
+                135f,
+                SettlementImpactTier.Strong,
+                2,
+                reachedTarget: true);
+
+            Assert.That(signal.HasScoreChange, Is.True);
+            Assert.That(signal.ScoreDelta.ToDouble(), Is.EqualTo(45d));
+            Assert.That(signal.TargetCount, Is.EqualTo(2));
+            Assert.That(signal.ReachedTarget, Is.True);
         }
 
         [TestCase(ScoreLineKind.DishBase, 246, 196, 83)]
@@ -352,6 +390,21 @@ namespace GourmetProject.Tests.EditMode
                 value,
                 $"×{value:0.0}",
                 presentationKind);
+        }
+
+        private static ScoreLine ScoreLineForImpact(ScoreLineKind kind)
+        {
+            return new ScoreLine(
+                ScorePhase.DishSkills,
+                kind,
+                ScoreSource.FinalModifier("impact_test", "冲击测试"),
+                1,
+                "dish",
+                null,
+                2f,
+                0f,
+                2f,
+                string.Empty);
         }
 
         private static void AssertRedTheme(Color color)

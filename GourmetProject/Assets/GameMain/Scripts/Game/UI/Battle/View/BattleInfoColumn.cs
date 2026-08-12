@@ -57,6 +57,16 @@ namespace GourmetProject.Game.UI.Battle.View
         private bool _tableInspectionAvailable;
         private Sequence _weekChangeSequence;
         private int? _recipeCountPresentationOverride;
+        private TMP_Text _settlementDeltaText;
+        private Sequence _settlementScoreBeatSequence;
+        private bool _settlementScoreBeatPending;
+        private BigDouble _pendingScoreBefore;
+        private BigDouble _pendingScoreAfter;
+        private BigDouble _pendingScoreDelta;
+        private SettlementImpactTier _pendingImpactTier;
+        private ScoreLineKind _pendingLineKind;
+        private bool _pendingReachedTarget;
+        private Vector2 _settlementDeltaBasePosition;
 
         public SettlementScoreFireView ScoreFire => _scoreFire;
         public RectTransform ViewRecipeButtonRect =>
@@ -84,13 +94,23 @@ namespace GourmetProject.Game.UI.Battle.View
         private void Awake()
         {
             EnsureBossStatRect();
+            EnsureSettlementDeltaText();
             ResetBossStatPresentation();
+        }
+
+        private void LateUpdate()
+        {
+            if (_settlementScoreBeatPending)
+            {
+                FlushSettlementScoreBeat();
+            }
         }
 
         private void OnDisable()
         {
             _weekChangeSequence?.Kill();
             _weekChangeSequence = null;
+            EndSettlementScorePresentation();
             ResetBossStatPresentation();
         }
 
@@ -181,6 +201,234 @@ namespace GourmetProject.Game.UI.Battle.View
         public void SetBattleScoreOverride(BigDouble? score)
         {
             _battleScoreOverride = score;
+        }
+
+        public void BeginSettlementScorePresentation()
+        {
+            EnsureSettlementDeltaText();
+            EndSettlementScorePresentation();
+            if (_scoreCurrentText != null)
+            {
+                _scoreCurrentText.rectTransform.localScale = Vector3.one;
+            }
+
+            if (_scoreTitlePanel != null)
+            {
+                _scoreTitlePanel.localScale = Vector3.one;
+            }
+        }
+
+        public void QueueSettlementScoreBeat(SettlementBeatSignal signal)
+        {
+            if (signal.Kind != SettlementBeatKind.ResultApplied || !signal.HasScoreChange)
+            {
+                return;
+            }
+
+            if (!_settlementScoreBeatPending)
+            {
+                _settlementScoreBeatPending = true;
+                _pendingScoreBefore = signal.BeforeScore;
+                _pendingScoreAfter = signal.AfterScore;
+                _pendingScoreDelta = signal.ScoreDelta;
+                _pendingImpactTier = signal.ImpactTier;
+                _pendingLineKind = signal.LineKind;
+                _pendingReachedTarget = signal.ReachedTarget;
+                return;
+            }
+
+            _pendingScoreAfter = signal.AfterScore;
+            _pendingScoreDelta += signal.ScoreDelta;
+            _pendingReachedTarget |= signal.ReachedTarget;
+            if (signal.ImpactTier > _pendingImpactTier)
+            {
+                _pendingImpactTier = signal.ImpactTier;
+                _pendingLineKind = signal.LineKind;
+            }
+        }
+
+        public void EndSettlementScorePresentation()
+        {
+            _settlementScoreBeatPending = false;
+            _pendingScoreBefore = BigDouble.Zero;
+            _pendingScoreAfter = BigDouble.Zero;
+            _pendingScoreDelta = BigDouble.Zero;
+            _pendingImpactTier = SettlementImpactTier.Base;
+            _pendingReachedTarget = false;
+            _settlementScoreBeatSequence?.Kill();
+            _settlementScoreBeatSequence = null;
+
+            if (_scoreCurrentText != null)
+            {
+                _scoreCurrentText.rectTransform.DOKill();
+                _scoreCurrentText.rectTransform.localScale = Vector3.one;
+            }
+
+            if (_scoreTitlePanel != null)
+            {
+                _scoreTitlePanel.DOKill();
+                _scoreTitlePanel.localScale = Vector3.one;
+            }
+
+            if (_settlementDeltaText != null)
+            {
+                _settlementDeltaText.DOKill();
+                _settlementDeltaText.rectTransform.DOKill();
+                _settlementDeltaText.gameObject.SetActive(false);
+                _settlementDeltaText.rectTransform.anchoredPosition = _settlementDeltaBasePosition;
+                _settlementDeltaText.rectTransform.localScale = Vector3.one;
+            }
+        }
+
+        private void EnsureSettlementDeltaText()
+        {
+            if (_settlementDeltaText != null || _scoreCurrentText == null)
+            {
+                return;
+            }
+
+            _settlementDeltaText = Instantiate(
+                _scoreCurrentText,
+                _scoreCurrentText.transform.parent);
+            _settlementDeltaText.name = "SettlementScoreDeltaText";
+            _settlementDeltaText.text = string.Empty;
+            _settlementDeltaText.raycastTarget = false;
+            _settlementDeltaText.enableAutoSizing = true;
+            _settlementDeltaText.fontSizeMin = 24f;
+            _settlementDeltaText.fontSizeMax = 42f;
+            _settlementDeltaText.alignment = TextAlignmentOptions.Center;
+            RectTransform deltaRect = _settlementDeltaText.rectTransform;
+            deltaRect.anchoredPosition = _scoreCurrentText.rectTransform.anchoredPosition
+                + new Vector2(0f, 64f);
+            deltaRect.sizeDelta = new Vector2(190f, 54f);
+            _settlementDeltaBasePosition = deltaRect.anchoredPosition;
+            _settlementDeltaText.gameObject.SetActive(false);
+            deltaRect.SetAsLastSibling();
+        }
+
+        private void FlushSettlementScoreBeat()
+        {
+            _settlementScoreBeatPending = false;
+            EnsureSettlementDeltaText();
+            if (_scoreCurrentText == null || _settlementDeltaText == null)
+            {
+                return;
+            }
+
+            BigDouble before = _pendingScoreBefore;
+            BigDouble after = _pendingScoreAfter;
+            BigDouble delta = _pendingScoreDelta;
+            SettlementImpactTier impact = _pendingImpactTier;
+            ScoreLineKind lineKind = _pendingLineKind;
+            bool reachedTarget = _pendingReachedTarget;
+            _pendingScoreDelta = BigDouble.Zero;
+            _pendingReachedTarget = false;
+
+            _settlementScoreBeatSequence?.Kill();
+            RectTransform scoreRect = _scoreCurrentText.rectTransform;
+            RectTransform deltaRect = _settlementDeltaText.rectTransform;
+            scoreRect.DOKill();
+            deltaRect.DOKill();
+            _settlementDeltaText.DOKill();
+            scoreRect.localScale = Vector3.one;
+            deltaRect.localScale = Vector3.one * 0.82f;
+            deltaRect.anchoredPosition = _settlementDeltaBasePosition;
+
+            Color semantic = SettlementColorPalette.For(lineKind);
+            Color deltaColor = SettlementColorPalette.TextFor(semantic);
+            _settlementDeltaText.color = deltaColor;
+            _settlementDeltaText.text = FormatSignedScore(delta);
+            _settlementDeltaText.gameObject.SetActive(true);
+            _scoreCurrentText.text = ScoreNumberFormatter.Format(before);
+
+            float rollDuration = impact switch
+            {
+                SettlementImpactTier.Base => 0.12f,
+                SettlementImpactTier.Normal => 0.14f,
+                SettlementImpactTier.Strong => 0.17f,
+                _ => 0.20f,
+            };
+            float punch = impact switch
+            {
+                SettlementImpactTier.Base => 0.06f,
+                SettlementImpactTier.Normal => 0.10f,
+                SettlementImpactTier.Strong => 0.15f,
+                _ => 0.20f,
+            };
+
+            Sequence sequence = DOTween.Sequence()
+                .Append(DOVirtual.Float(0f, 1f, rollDuration, progress =>
+                    {
+                        BigDouble displayed = BigDouble.Round(
+                            before + (after - before) * progress,
+                            MidpointRounding.AwayFromZero);
+                        _scoreCurrentText.text = ScoreNumberFormatter.Format(displayed);
+                    })
+                    .SetEase(Ease.OutCubic))
+                .Join(scoreRect.DOPunchScale(
+                    Vector3.one * punch,
+                    rollDuration + 0.08f,
+                    vibrato: 7,
+                    elasticity: 0.68f))
+                .Join(deltaRect.DOScale(1.08f + punch * 0.5f, 0.09f).SetEase(Ease.OutBack))
+                .Join(deltaRect.DOAnchorPosY(
+                    _settlementDeltaBasePosition.y + 18f,
+                    rollDuration + 0.10f).SetEase(Ease.OutCubic))
+                .Append(_settlementDeltaText.DOFade(0f, 0.15f));
+
+            if (reachedTarget)
+            {
+                sequence
+                    .AppendCallback(() =>
+                    {
+                        _settlementDeltaText.gameObject.SetActive(true);
+                        _settlementDeltaText.text = "达标!";
+                        _settlementDeltaText.color = SettlementColorPalette.FinalScore;
+                        deltaRect.anchoredPosition = _settlementDeltaBasePosition;
+                        deltaRect.localScale = Vector3.one * 0.78f;
+                    })
+                    .AppendInterval(0.07f)
+                    .Append(deltaRect.DOScale(1.22f, 0.12f).SetEase(Ease.OutBack))
+                    .Join(deltaRect.DOAnchorPosY(
+                        _settlementDeltaBasePosition.y + 24f,
+                        0.20f).SetEase(Ease.OutCubic))
+                    .Join(_scoreTitlePanel != null
+                        ? _scoreTitlePanel.DOPunchScale(
+                            Vector3.one * 0.18f,
+                            0.28f,
+                            vibrato: 8,
+                            elasticity: 0.72f)
+                        : DOVirtual.DelayedCall(0.01f, () => { }))
+                    .Append(_settlementDeltaText.DOFade(0f, 0.16f));
+            }
+
+            _settlementScoreBeatSequence = sequence.OnComplete(() =>
+            {
+                if (_scoreCurrentText != null)
+                {
+                    _scoreCurrentText.text = ScoreNumberFormatter.Format(after);
+                    scoreRect.localScale = Vector3.one;
+                }
+
+                if (_scoreTitlePanel != null)
+                {
+                    _scoreTitlePanel.localScale = Vector3.one;
+                }
+
+                if (_settlementDeltaText != null)
+                {
+                    _settlementDeltaText.gameObject.SetActive(false);
+                    deltaRect.anchoredPosition = _settlementDeltaBasePosition;
+                    deltaRect.localScale = Vector3.one;
+                }
+
+                _settlementScoreBeatSequence = null;
+            });
+        }
+
+        private static string FormatSignedScore(BigDouble value)
+        {
+            return $"{(value >= 0 ? "+" : string.Empty)}{ScoreNumberFormatter.Format(value)}";
         }
 
         /// <summary>刷新左栏常驻信息：周/金币（局外）与分数要求（局内为真值，非经营挑战态占位）。</summary>
