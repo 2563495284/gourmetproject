@@ -101,7 +101,17 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(evaluation.Feedback.OverallState, Is.EqualTo(GridPlacementFeedbackState.Valid));
             Assert.That(evaluation.Feedback.Cells, Has.All.Matches<GridPlacementFeedbackCell>(
                 cell => cell.State == GridPlacementFeedbackState.Valid));
-            Assert.That(DiningTableView.TableFragmentGhostAlpha, Is.EqualTo(0.9f));
+            Assert.That(BoardEditGhostPalette.Alpha, Is.EqualTo(0.9f));
+            Assert.That(BoardEditGhostPalette.BaseColor.a, Is.EqualTo(0.9f));
+            Assert.That(
+                BoardEditGhostPalette.PlateColor(
+                    evaluation.Feedback.OverallState,
+                    evaluation.Feedback.Cells[0].State),
+                Is.EqualTo(new Color(
+                    GridPlacementFeedbackPalette.Valid.r,
+                    GridPlacementFeedbackPalette.Valid.g,
+                    GridPlacementFeedbackPalette.Valid.b,
+                    1f)));
         }
 
         [Test]

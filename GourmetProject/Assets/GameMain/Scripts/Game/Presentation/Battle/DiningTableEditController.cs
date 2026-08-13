@@ -83,6 +83,22 @@ namespace GourmetProject.Game.Presentation.Battle
         }
     }
 
+    internal static class BoardEditGhostPalette
+    {
+        public const float Alpha = 0.5f;
+        public static readonly Color BaseColor = new Color(1f, 1f, 1f, Alpha);
+
+        public static Color PlateColor(
+            GridPlacementFeedbackState overallState,
+            GridPlacementFeedbackState cellState)
+        {
+            Color color = GridPlacementFeedbackPalette.DishColorFor(overallState, cellState);
+            // Ghost 的整体透明度由 BaseColor 控制，餐盘反馈只负责 RGB，避免 Alpha 被重复相乘。
+            color.a = 1f;
+            return color;
+        }
+    }
+
     /// <summary>
     /// 餐桌编辑页（世界空间）：复用餐桌渲染，把从碎片包开出的候选形状手动拖拽拼贴到胃上。
     /// 按住底部候选开始拖拽，固定朝向，松开时合法则暂放；确认按钮才正式写入餐桌。
@@ -96,6 +112,7 @@ namespace GourmetProject.Game.Presentation.Battle
     public sealed class DiningTableEditController : MonoBehaviour
     {
         private const int EditTraySortingOrder = 150;
+        private const int EditProjectionSortingOrder = -200;
         private const int EditDragSortingOrder = -70;
         private const float EditDragGrabDuration = 0.12f;
         private const float EditDragReturnDuration = 0.16f;
@@ -110,7 +127,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private static readonly Color BoundsWarningColor = new Color(1f, 0.05f, 0.02f, 0.42f);
         private static readonly Color EditFragmentFillColor = Color.white;
-        private static readonly Color EditStagedFragmentFillColor = new Color(1f, 1f, 1f, 0.9f);
+        private static readonly Color EditStagedFragmentFillColor = BoardEditGhostPalette.BaseColor;
 
         private enum TableInteractionState
         {
@@ -178,6 +195,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly List<DiningTableCellView> _editTrayCells = new List<DiningTableCellView>();
         private readonly List<BoardEditTrayHitRegion> _editTrayHitRegions = new List<BoardEditTrayHitRegion>();
         private readonly List<DiningTableCellView> _editDragCells = new List<DiningTableCellView>();
+        private readonly List<DiningTableCellView> _editProjectionCells = new List<DiningTableCellView>();
         private readonly List<TrayCluster> _editTrayClusters = new List<TrayCluster>();
         private readonly Dictionary<int, Tween> _editTrayFailureTweens = new Dictionary<int, Tween>();
         private readonly List<Vector2Int> _editTrayFragmentSizes = new List<Vector2Int>();
@@ -678,7 +696,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
             _editDragPointerWorld = mouseWorld;
 
-            _boardView.ShowTableFragmentPlacementFeedback(_currentPlacementEvaluation.Feedback);
+            ShowGhost(_currentPlacementEvaluation);
+            ShowProjection(def, _currentPlacementEvaluation);
             UpdateProjectedTableLayout(_currentPlacementEvaluation);
             if (TryGetBoundsWarning(_currentPlacementEvaluation.Origin, def, out BoundsWarningInfo warning))
             {
@@ -1388,7 +1407,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void RestoreDragCellColors()
         {
-            SetDragCellColor(EditFragmentFillColor);
+            SetDragCellColor(BoardEditGhostPalette.BaseColor);
         }
 
         private void SetDragCellColor(Color color)
@@ -1400,6 +1419,121 @@ namespace GourmetProject.Game.Presentation.Battle
                     cell.ClearPlateFeedbackColor();
                     cell.SetColor(color);
                     cell.SetSorting(BattleSorting.Fx, EditDragSortingOrder);
+                }
+            }
+        }
+
+        private void ShowGhost(TableFragmentPlacementEvaluation evaluation)
+        {
+            if (evaluation?.Feedback == null)
+            {
+                ClearGhost();
+                return;
+            }
+
+            var feedbackByPosition = new Dictionary<GridPos, GridPlacementFeedbackState>();
+            foreach (GridPlacementFeedbackCell cell in evaluation.Feedback.Cells)
+            {
+                feedbackByPosition[cell.Position] = cell.State;
+            }
+
+            foreach (DiningTableCellView ghostCell in _editDragCells)
+            {
+                if (ghostCell == null)
+                {
+                    continue;
+                }
+
+                GridPos absolute = ghostCell.Position.Offset(evaluation.Origin.X, evaluation.Origin.Y);
+                GridPlacementFeedbackState cellState = feedbackByPosition.TryGetValue(absolute, out GridPlacementFeedbackState state)
+                    ? state
+                    : GridPlacementFeedbackState.Blocked;
+                ghostCell.SetColor(BoardEditGhostPalette.BaseColor);
+                ghostCell.SetPlateFeedbackColor(BoardEditGhostPalette.PlateColor(
+                    evaluation.Feedback.OverallState,
+                    cellState));
+                ghostCell.SetSorting(BattleSorting.Fx, EditDragSortingOrder);
+            }
+        }
+
+        private void ShowProjection(
+            TableFragmentDef fragment,
+            TableFragmentPlacementEvaluation evaluation)
+        {
+            if (fragment == null || evaluation == null || _boardView?.Mapper == null)
+            {
+                HideProjection();
+                return;
+            }
+
+            List<GridPos> localCells = TableFragmentBuilder.FilledCells(fragment);
+            int index = 0;
+            foreach (GridPos local in localCells)
+            {
+                DiningTableCellView projection = EnsureProjectionCell(index++);
+                if (projection == null)
+                {
+                    continue;
+                }
+
+                GridPos absolute = local.Offset(evaluation.Origin.X, evaluation.Origin.Y);
+                projection.gameObject.SetActive(true);
+                projection.transform.SetParent(_boardView.transform, worldPositionStays: false);
+                projection.transform.localRotation = Quaternion.identity;
+                projection.Configure(
+                    absolute,
+                    _boardView.Mapper.CellCenterLocal(absolute),
+                    _cellSize,
+                    FragmentCellSprites(fragment, local),
+                    null);
+                projection.name = "BoardEditProjection";
+                projection.SetInteractionEnabled(false);
+                projection.SetTableBodyVisible(true);
+                projection.ClearPlateFeedbackColor();
+                projection.SetColor(BoardEditGhostPalette.BaseColor);
+                projection.SetSorting(BattleSorting.Fx, EditProjectionSortingOrder);
+            }
+
+            for (; index < _editProjectionCells.Count; index++)
+            {
+                _editProjectionCells[index]?.gameObject.SetActive(false);
+            }
+        }
+
+        private DiningTableCellView EnsureProjectionCell(int index)
+        {
+            while (_editProjectionCells.Count <= index)
+            {
+                _editProjectionCells.Add(null);
+            }
+
+            DiningTableCellView projection = _editProjectionCells[index];
+            if (projection != null)
+            {
+                return projection;
+            }
+
+            if (_boardCellPrefab == null || _boardView == null)
+            {
+                Debug.LogError($"{nameof(DiningTableEditController)} 缺少餐桌碎片映射所需的 DiningTableCell prefab。", this);
+                return null;
+            }
+
+            projection = Instantiate(_boardCellPrefab, _boardView.transform);
+            projection.name = "BoardEditProjection";
+            projection.SetInteractionEnabled(false);
+            projection.gameObject.SetActive(false);
+            _editProjectionCells[index] = projection;
+            return projection;
+        }
+
+        private void HideProjection()
+        {
+            foreach (DiningTableCellView projection in _editProjectionCells)
+            {
+                if (projection != null)
+                {
+                    projection.gameObject.SetActive(false);
                 }
             }
         }
@@ -1698,6 +1832,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ClearGhost()
         {
+            RestoreDragCellColors();
+            HideProjection();
             _boardView?.ClearDragPlacementFeedback();
         }
 

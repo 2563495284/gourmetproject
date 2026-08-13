@@ -152,6 +152,36 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
+        [Test]
+        public void BoardEditGhost_KeepsTableNeutralAndTintsPlateAtNinetyPercentAlpha()
+        {
+            var instances = new List<GameObject>();
+            try
+            {
+                DiningTableCellView view = InstantiateView(instances);
+                view.Configure(new GridPos(0, 0), Vector3.zero, 1f, DefaultSprites(), null);
+                GetRenderers(view, out SpriteRenderer table, out SpriteRenderer plate);
+
+                view.SetColor(BoardEditGhostPalette.BaseColor);
+                view.SetPlateFeedbackColor(BoardEditGhostPalette.PlateColor(
+                    GridPlacementFeedbackState.Valid,
+                    GridPlacementFeedbackState.Valid));
+
+                AssertColor(table.color, new Color(1f, 1f, 1f, 0.9f));
+                AssertColor(
+                    plate.color,
+                    new Color(
+                        GridPlacementFeedbackPalette.Valid.r,
+                        GridPlacementFeedbackPalette.Valid.g,
+                        GridPlacementFeedbackPalette.Valid.b,
+                        0.9f));
+            }
+            finally
+            {
+                DestroyAll(instances);
+            }
+        }
+
         private static DiningTableCellView InstantiateView(ICollection<GameObject> instances)
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);

@@ -46,9 +46,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
     public static class GridPlacementFeedbackPalette
     {
-        public static readonly Color Valid = new Color(0.30f, 1f, 0.42f, 0.95f);
-        public static readonly Color Missing = new Color(1f, 0.76f, 0.12f, 0.95f);
-        public static readonly Color Blocked = new Color(1f, 0.25f, 0.22f, 0.95f);
+        // 餐盘反馈统一使用偏浅、低饱和色，避免大面积染色时过于刺眼。
+        public static readonly Color Valid = new Color(0.52f, 0.86f, 0.58f, 0.95f);
+        public static readonly Color Missing = new Color(0.96f, 0.78f, 0.38f, 0.95f);
+        public static readonly Color Blocked = new Color(0.94f, 0.48f, 0.46f, 0.95f);
 
         public static Color ColorFor(GridPlacementFeedbackState state)
         {

@@ -12,7 +12,6 @@ namespace GourmetProject.Game.Presentation.Battle
 {
     public sealed class DiningTableView : MonoBehaviour
     {
-        internal const float TableFragmentGhostAlpha = 0.9f;
         // 空格直接露出格子贴图本色（白色不染色）；虚格压暗。
         private static readonly Color EmptyColor = Color.white;
         private static readonly Color VoidColor = new Color(0.07f, 0.04f, 0.03f, 0.0f);
@@ -270,17 +269,6 @@ namespace GourmetProject.Game.Presentation.Battle
             ShowGridPlacementFeedback(result?.ToGridPlacementFeedback(), dishPlacement: true);
         }
 
-        /// <summary>
-        /// 餐桌碎片只在目标棋盘格显示餐盘 ghost；颜色规则与食物落盘一致。
-        /// </summary>
-        public void ShowTableFragmentPlacementFeedback(GridPlacementFeedback result)
-        {
-            ShowGridPlacementFeedback(
-                result,
-                dishPlacement: true,
-                feedbackAlpha: TableFragmentGhostAlpha);
-        }
-
         public void ShowGridPlacementFeedback(GridPlacementFeedback result)
         {
             ShowGridPlacementFeedback(result, dishPlacement: false);
@@ -288,8 +276,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ShowGridPlacementFeedback(
             GridPlacementFeedback result,
-            bool dishPlacement,
-            float feedbackAlpha = -1f)
+            bool dishPlacement)
         {
             if (result == null || Mapper == null)
             {
@@ -324,10 +311,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 Color color = dishPlacement
                     ? GridPlacementFeedbackPalette.DishColorFor(result.OverallState, entry.Value)
                     : GridPlacementFeedbackPalette.ColorFor(entry.Value);
-                if (feedbackAlpha >= 0f)
-                {
-                    color.a = feedbackAlpha;
-                }
                 overlay.gameObject.SetActive(true);
                 overlay.transform.localRotation = Quaternion.identity;
                 overlay.Configure(entry.Key, Mapper.CellCenterLocal(entry.Key), _cellSize, _cellSprites, null);
