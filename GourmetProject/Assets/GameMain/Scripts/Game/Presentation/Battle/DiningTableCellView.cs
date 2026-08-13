@@ -56,7 +56,19 @@ namespace GourmetProject.Game.Presentation.Battle
                 EnsureRefs();
                 if (_collider != null)
                 {
-                    return _collider.bounds;
+                    // Collider2D.bounds 要等物理 Transform 同步后才可靠；候选托盘会在同一帧内
+                    // 配置位置、缩放和旋转并立即建立命中区，因此直接从局部碰撞框四角计算世界 AABB。
+                    Vector2 halfSize = _collider.size * 0.5f;
+                    Vector2 offset = _collider.offset;
+                    Vector3 bottomLeft = transform.TransformPoint(offset + new Vector2(-halfSize.x, -halfSize.y));
+                    Vector3 topLeft = transform.TransformPoint(offset + new Vector2(-halfSize.x, halfSize.y));
+                    Vector3 topRight = transform.TransformPoint(offset + new Vector2(halfSize.x, halfSize.y));
+                    Vector3 bottomRight = transform.TransformPoint(offset + new Vector2(halfSize.x, -halfSize.y));
+                    var bounds = new Bounds(bottomLeft, Vector3.zero);
+                    bounds.Encapsulate(topLeft);
+                    bounds.Encapsulate(topRight);
+                    bounds.Encapsulate(bottomRight);
+                    return bounds;
                 }
 
                 if (_tableRenderer != null && _tableRenderer.sprite != null)

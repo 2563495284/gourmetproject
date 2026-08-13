@@ -133,13 +133,15 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             bool showQualityBacking = item != null && item.IsPassive;
-            _background.enabled = showQualityBacking;
+            // Keep the button's target graphic enabled even when active items have no
+            // quality backing; a disabled Graphic is removed from UI raycasting.
+            _background.enabled = true;
             _background.type = Image.Type.Sliced;
             _background.preserveAspect = false;
             if (!showQualityBacking)
             {
                 _background.sprite = null;
-                _background.color = Color.white;
+                _background.color = Color.clear;
                 return;
             }
 

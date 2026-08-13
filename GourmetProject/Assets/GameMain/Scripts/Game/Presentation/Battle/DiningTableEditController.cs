@@ -11,6 +11,78 @@ using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
+    internal readonly struct BoardEditTrayHitRegion
+    {
+        public BoardEditTrayHitRegion(int candidateIndex, Bounds worldBounds)
+        {
+            CandidateIndex = candidateIndex;
+            WorldBounds = worldBounds;
+        }
+
+        public int CandidateIndex { get; }
+
+        public Bounds WorldBounds { get; }
+    }
+
+    internal static class BoardEditTrayHitTester
+    {
+        private const float DistanceEpsilon = 0.000001f;
+
+        public static bool TryPick(
+            Vector2 worldPoint,
+            IReadOnlyList<BoardEditTrayHitRegion> regions,
+            float padding,
+            out int candidateIndex)
+        {
+            if (TryPickAtPadding(worldPoint, regions, 0f, out candidateIndex))
+            {
+                return true;
+            }
+
+            return padding > 0f && TryPickAtPadding(worldPoint, regions, padding, out candidateIndex);
+        }
+
+        private static bool TryPickAtPadding(
+            Vector2 worldPoint,
+            IReadOnlyList<BoardEditTrayHitRegion> regions,
+            float padding,
+            out int candidateIndex)
+        {
+            candidateIndex = -1;
+            float closestDistance = float.PositiveInfinity;
+            if (regions == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < regions.Count; i++)
+            {
+                BoardEditTrayHitRegion region = regions[i];
+                Bounds bounds = region.WorldBounds;
+                bounds.Expand(new Vector3(padding * 2f, padding * 2f, 0f));
+                if (worldPoint.x < bounds.min.x
+                    || worldPoint.x > bounds.max.x
+                    || worldPoint.y < bounds.min.y
+                    || worldPoint.y > bounds.max.y)
+                {
+                    continue;
+                }
+
+                Vector2 center = bounds.center;
+                float distance = (worldPoint - center).sqrMagnitude;
+                if (distance + DistanceEpsilon < closestDistance
+                    || (Mathf.Abs(distance - closestDistance) <= DistanceEpsilon
+                        && (candidateIndex < 0 || region.CandidateIndex < candidateIndex)))
+                {
+                    candidateIndex = region.CandidateIndex;
+                    closestDistance = distance;
+                }
+            }
+
+            return candidateIndex >= 0;
+        }
+    }
+
     /// <summary>
     /// 餐桌编辑页（世界空间）：复用餐桌渲染，把从碎片包开出的候选形状手动拖拽拼贴到胃上。
     /// 按住底部候选开始拖拽，固定朝向，松开时合法则暂放；确认按钮才正式写入餐桌。
@@ -32,14 +104,13 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float EditTrayGroupRotation = 5f;
         private const float EditTrayLockedShakeDuration = 0.25f;
         private const float EditTrayLockedShakeAmplitudeRatio = 0.12f;
-        private const float EditStagedOutlineWidth = 0.1f;
 
         // 编辑页餐桌定位的底部边距：比 Food 态更大，给候选碎片托盘条让位。
         private const float EditTableBottomMargin = 3.6f;
 
         private static readonly Color BoundsWarningColor = new Color(1f, 0.05f, 0.02f, 0.42f);
         private static readonly Color EditFragmentFillColor = Color.white;
-        private static readonly Color EditStagedOutlineColor = new Color(0.25f, 1f, 0.35f);
+        private static readonly Color EditStagedFragmentFillColor = new Color(1f, 1f, 1f, 0.9f);
 
         private enum TableInteractionState
         {
@@ -105,10 +176,10 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private LineRenderer _editBoundsWarningLinePrefab;
 
         private readonly List<DiningTableCellView> _editTrayCells = new List<DiningTableCellView>();
+        private readonly List<BoardEditTrayHitRegion> _editTrayHitRegions = new List<BoardEditTrayHitRegion>();
         private readonly List<DiningTableCellView> _editDragCells = new List<DiningTableCellView>();
         private readonly List<TrayCluster> _editTrayClusters = new List<TrayCluster>();
         private readonly Dictionary<int, Tween> _editTrayFailureTweens = new Dictionary<int, Tween>();
-        private readonly List<GridPos> _stagedAbsoluteCells = new List<GridPos>();
         private readonly List<Vector2Int> _editTrayFragmentSizes = new List<Vector2Int>();
         private readonly List<Vector2> _editTrayColumnCenters = new List<Vector2>();
         private readonly Dictionary<string, DiningTableCellSprites> _editMaterialCellSprites =
@@ -198,7 +269,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _editSelected = -1;
             _fragmentChoiceState = FragmentChoiceInteractionState.Idle;
             _currentPlacementEvaluation = null;
-            _stagedAbsoluteCells.Clear();
             _hasPublishedActionState = false;
             ConfigureEditMaxBounds(run);
 
@@ -321,7 +391,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _editSelected = -1;
             _fragmentChoiceState = FragmentChoiceInteractionState.Idle;
             _currentPlacementEvaluation = null;
-            _stagedAbsoluteCells.Clear();
             _editCandidates.Clear();
             _editCandidateRotations.Clear();
             ClearGhost();
@@ -536,6 +605,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SetHoveredCandidate(-1);
             _boardView?.ClearTransientGridRegionOutline();
             _editDragRoot.SetParent(EditRoot, worldPositionStays: true);
+            RestoreDragCellColors();
             _editDragPointerWorld = mouseWorld;
             StartDragAnimation(mouseWorld, Vector3.one, EditDragGrabDuration, keepFollowing: true);
             ClearGhost();
@@ -553,7 +623,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _fragmentChoiceState = FragmentChoiceInteractionState.Returning;
             _currentPlacementEvaluation = null;
-            _stagedAbsoluteCells.Clear();
             _boardView?.ClearTransientGridRegionOutline();
             if (_editDragRoot != null && EditRoot != null && _editDragRoot.parent != EditRoot)
             {
@@ -609,10 +678,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
             _editDragPointerWorld = mouseWorld;
 
-            GridPlacementFeedbackState feedbackState = _currentPlacementEvaluation.Feedback.OverallState;
-            Color color = GridPlacementFeedbackPalette.ColorFor(feedbackState);
-            SetDragPlateColor(color);
-            _boardView.ShowGridPlacementFeedback(_currentPlacementEvaluation.Feedback);
+            _boardView.ShowTableFragmentPlacementFeedback(_currentPlacementEvaluation.Feedback);
             UpdateProjectedTableLayout(_currentPlacementEvaluation);
             if (TryGetBoundsWarning(_currentPlacementEvaluation.Origin, def, out BoundsWarningInfo warning))
             {
@@ -647,32 +713,26 @@ namespace GourmetProject.Game.Presentation.Battle
             UpdateProjectedTableLayout(evaluation);
 
             TableFragmentDef fragment = _editCandidates[_editSelected];
-            _stagedAbsoluteCells.Clear();
             Vector3 localCenter = Vector3.zero;
             List<GridPos> localCells = TableFragmentBuilder.FilledCells(fragment);
             foreach (GridPos local in localCells)
             {
                 GridPos absolute = local.Offset(_stagedOrigin.X, _stagedOrigin.Y);
-                _stagedAbsoluteCells.Add(absolute);
                 localCenter += _boardView.Mapper.CellCenterLocal(absolute);
             }
 
-            if (_stagedAbsoluteCells.Count == 0)
+            if (localCells.Count == 0)
             {
                 ReturnCandidateDrag();
                 return;
             }
 
-            localCenter /= _stagedAbsoluteCells.Count;
+            localCenter /= localCells.Count;
             _editDragRoot.SetParent(_boardView.transform, worldPositionStays: false);
             _editDragRoot.localPosition = localCenter;
             _editDragRoot.localRotation = Quaternion.identity;
             _editDragRoot.localScale = Vector3.one;
-            ClearDragCellPlateFeedback();
-            _boardView.ShowTransientGridRegionOutline(
-                _stagedAbsoluteCells,
-                EditStagedOutlineColor,
-                EditStagedOutlineWidth);
+            SetDragCellColor(EditStagedFragmentFillColor);
             GameApp.Audio.PlayPlacement();
             PublishEditActionState(canConfirm: true, interactable: true);
         }
@@ -1160,6 +1220,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     _editTrayCells.Add(cell);
                     clusterCells.Add(cell);
                     baseLocalPositions.Add(cell.transform.localPosition);
+                    _editTrayHitRegions.Add(new BoardEditTrayHitRegion(i, cell.WorldBounds));
 
                     if (hasWorldBounds)
                     {
@@ -1174,8 +1235,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 if (hasWorldBounds)
                 {
-                    float padding = _editLayoutArea.HitPadding;
-                    worldBounds.Expand(new Vector3(padding * 2f, padding * 2f, 0f));
                     _editTrayClusters.Add(new TrayCluster
                     {
                         CandidateIndex = i,
@@ -1327,26 +1386,19 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private void SetDragPlateColor(Color color)
+        private void RestoreDragCellColors()
         {
-            foreach (DiningTableCellView cell in _editDragCells)
-            {
-                if (cell != null)
-                {
-                    cell.SetPlateFeedbackColor(color);
-                    cell.SetSorting(BattleSorting.Fx, EditDragSortingOrder);
-                }
-            }
+            SetDragCellColor(EditFragmentFillColor);
         }
 
-        private void ClearDragCellPlateFeedback()
+        private void SetDragCellColor(Color color)
         {
             foreach (DiningTableCellView cell in _editDragCells)
             {
                 if (cell != null)
                 {
                     cell.ClearPlateFeedbackColor();
-                    cell.SetColor(EditFragmentFillColor);
+                    cell.SetColor(color);
                     cell.SetSorting(BattleSorting.Fx, EditDragSortingOrder);
                 }
             }
@@ -1439,28 +1491,14 @@ namespace GourmetProject.Game.Presentation.Battle
             _editSelected = -1;
             _fragmentChoiceState = FragmentChoiceInteractionState.Idle;
             _currentPlacementEvaluation = null;
-            _stagedAbsoluteCells.Clear();
             BuildCandidateTray();
             PublishEditActionState(canConfirm: false, interactable: true);
         }
 
         private bool TryPickTray(Vector3 worldPos, out int candidateIndex)
         {
-            candidateIndex = -1;
-            foreach (TrayCluster cluster in _editTrayClusters)
-            {
-                Bounds bounds = cluster.WorldBounds;
-                if (worldPos.x >= bounds.min.x
-                    && worldPos.x <= bounds.max.x
-                    && worldPos.y >= bounds.min.y
-                    && worldPos.y <= bounds.max.y)
-                {
-                    candidateIndex = cluster.CandidateIndex;
-                    return true;
-                }
-            }
-
-            return false;
+            float padding = _editLayoutArea != null ? _editLayoutArea.HitPadding : 0f;
+            return BoardEditTrayHitTester.TryPick(worldPos, _editTrayHitRegions, padding, out candidateIndex);
         }
 
         private bool TryPickStagedFragment(Vector3 worldPos)
@@ -1681,6 +1719,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _editTrayCells.Clear();
+            _editTrayHitRegions.Clear();
             _editTrayClusters.Clear();
         }
 

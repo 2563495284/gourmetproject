@@ -90,6 +90,33 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void WorldBounds_ReflectsImmediateTransformChangesWithoutPhysicsSync()
+        {
+            var instances = new List<GameObject>();
+            try
+            {
+                DiningTableCellView view = InstantiateView(instances);
+                var parent = new GameObject("CellParent");
+                instances.Add(parent);
+                parent.transform.position = new Vector3(4f, -3f, 0f);
+                view.transform.SetParent(parent.transform, worldPositionStays: false);
+                view.Configure(new GridPos(0, 0), Vector3.zero, 0.6f, DefaultSprites(), null);
+                view.transform.localRotation = Quaternion.Euler(0f, 0f, 30f);
+
+                Bounds bounds = view.WorldBounds;
+
+                Assert.That(bounds.center.x, Is.EqualTo(4f).Within(0.0001f));
+                Assert.That(bounds.center.y, Is.EqualTo(-3f).Within(0.0001f));
+                Assert.That(bounds.size.x, Is.GreaterThan(0.6f));
+                Assert.That(bounds.size.y, Is.GreaterThan(0.6f));
+            }
+            finally
+            {
+                DestroyAll(instances);
+            }
+        }
+
+        [Test]
         public void PlateFeedback_TintsOnlyPlateAndClearRestoresBaseColor()
         {
             var instances = new List<GameObject>();

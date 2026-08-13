@@ -49,6 +49,7 @@ namespace GameStartStudio.UI
         private TMP_MeshInfo[] cachedMeshInfo;
         private bool hasCachedMeshInfo;
         private Vector2 cachedRectSize;
+        private string cachedText;
 
         public TmpTextAnimationPreset Preset => preset;
         public float Intensity => intensity;
@@ -96,7 +97,7 @@ namespace GameStartStudio.UI
                 return;
             }
 
-            if (RectSizeChanged())
+            if (RectSizeChanged() || TextChanged())
             {
                 hasCachedMeshInfo = false;
             }
@@ -165,13 +166,17 @@ namespace GameStartStudio.UI
                 return;
             }
 
-            text.ForceMeshUpdate();
+            // A tooltip can be rebound while hidden or before TMP has reparsed the
+            // new string. Force a real regeneration so a shorter title never keeps
+            // the previous title's character buffers.
+            text.ForceMeshUpdate(true, true);
             if (!TryCreateMeshSnapshot(text.textInfo, out TMP_MeshInfo[] meshSnapshot))
             {
                 return;
             }
 
             cachedMeshInfo = meshSnapshot;
+            cachedText = text.text;
             cachedRectSize = rectTransformCache != null
                 ? rectTransformCache.rect.size
                 : Vector2.zero;
@@ -186,6 +191,11 @@ namespace GameStartStudio.UI
             }
 
             return (rectTransformCache.rect.size - cachedRectSize).sqrMagnitude > 0.01f;
+        }
+
+        private bool TextChanged()
+        {
+            return hasCachedMeshInfo && text != null && cachedText != text.text;
         }
 
         private static bool TryCreateMeshSnapshot(
@@ -306,6 +316,7 @@ namespace GameStartStudio.UI
                 return;
             }
 
+            bool animateVertices = UsesVertexMotion(preset);
             int visibleCharacterIndex = 0;
             for (int i = 0; i < textInfo.characterCount; i++)
             {
@@ -330,38 +341,65 @@ namespace GameStartStudio.UI
                     continue;
                 }
 
-                Vector3 center = CharacterCenter(sourceVertices, vertexIndex);
-                CharacterMotion(visibleCharacterIndex, out Vector3 offset, out float angleDegrees);
-                float radians = angleDegrees * Mathf.Deg2Rad;
-                float cos = Mathf.Cos(radians);
-                float sin = Mathf.Sin(radians);
+                Vector3 center = Vector3.zero;
+                Vector3 offset = Vector3.zero;
+                float cos = 1f;
+                float sin = 0f;
+                if (animateVertices)
+                {
+                    center = CharacterCenter(sourceVertices, vertexIndex);
+                    CharacterMotion(visibleCharacterIndex, out offset, out float angleDegrees);
+                    float radians = angleDegrees * Mathf.Deg2Rad;
+                    cos = Mathf.Cos(radians);
+                    sin = Mathf.Sin(radians);
+                }
 
                 for (int j = 0; j < 4; j++)
                 {
                     int index = vertexIndex + j;
-                    Vector3 relative = sourceVertices[index] - center;
-                    Vector3 rotated = new Vector3(
-                        relative.x * cos - relative.y * sin,
-                        relative.x * sin + relative.y * cos,
-                        relative.z);
-                    targetVertices[index] = center + rotated + offset;
+                    if (animateVertices)
+                    {
+                        Vector3 relative = sourceVertices[index] - center;
+                        Vector3 rotated = new Vector3(
+                            relative.x * cos - relative.y * sin,
+                            relative.x * sin + relative.y * cos,
+                            relative.z);
+                        targetVertices[index] = center + rotated + offset;
+                    }
+
                     targetColors[index] = ShimmerColor(sourceColors[index], sourceVertices[index].x, minX, width);
                 }
 
                 visibleCharacterIndex++;
             }
 
-            for (int i = 0; i < textInfo.meshInfo.Length; i++)
+            TMP_VertexDataUpdateFlags updateFlags = TMP_VertexDataUpdateFlags.Colors32;
+            if (animateVertices)
             {
-                TMP_MeshInfo meshInfo = textInfo.meshInfo[i];
-                if (meshInfo.mesh == null || meshInfo.vertices == null || meshInfo.colors32 == null)
+                updateFlags |= TMP_VertexDataUpdateFlags.Vertices;
+                for (int i = 0; i < textInfo.materialCount; i++)
                 {
-                    continue;
+                    textInfo.meshInfo[i].ClearUnusedVertices();
                 }
+            }
 
-                meshInfo.mesh.vertices = meshInfo.vertices;
-                meshInfo.mesh.colors32 = meshInfo.colors32;
-                text.UpdateGeometry(meshInfo.mesh, i);
+            text.UpdateVertexData(updateFlags);
+        }
+
+        private static bool UsesVertexMotion(TmpTextAnimationPreset animationPreset)
+        {
+            switch (animationPreset)
+            {
+                case TmpTextAnimationPreset.LegacyCustom:
+                case TmpTextAnimationPreset.Food:
+                case TmpTextAnimationPreset.Negative:
+                case TmpTextAnimationPreset.Event:
+                case TmpTextAnimationPreset.Interest:
+                case TmpTextAnimationPreset.Slot:
+                case TmpTextAnimationPreset.Boss:
+                    return true;
+                default:
+                    return false;
             }
         }
 
@@ -630,6 +668,7 @@ namespace GameStartStudio.UI
             }
 
             TMP_TextInfo textInfo = text.textInfo;
+            bool restoreVertices = UsesVertexMotion(preset);
             for (int i = 0; i < textInfo.meshInfo.Length && i < cachedMeshInfo.Length; i++)
             {
                 TMP_MeshInfo source = cachedMeshInfo[i];
@@ -642,20 +681,27 @@ namespace GameStartStudio.UI
 
                 int vertexCount = Mathf.Min(source.vertices.Length, target.vertices.Length);
                 int colorCount = Mathf.Min(source.colors32.Length, target.colors32.Length);
-                for (int j = 0; j < vertexCount; j++)
+                if (restoreVertices)
                 {
-                    target.vertices[j] = source.vertices[j];
+                    for (int j = 0; j < vertexCount; j++)
+                    {
+                        target.vertices[j] = source.vertices[j];
+                    }
                 }
 
                 for (int j = 0; j < colorCount; j++)
                 {
                     target.colors32[j] = source.colors32[j];
                 }
-
-                target.mesh.vertices = target.vertices;
-                target.mesh.colors32 = target.colors32;
-                text.UpdateGeometry(target.mesh, i);
             }
+
+            TMP_VertexDataUpdateFlags updateFlags = TMP_VertexDataUpdateFlags.Colors32;
+            if (restoreVertices)
+            {
+                updateFlags |= TMP_VertexDataUpdateFlags.Vertices;
+            }
+
+            text.UpdateVertexData(updateFlags);
         }
 
         private void ResetScale()
