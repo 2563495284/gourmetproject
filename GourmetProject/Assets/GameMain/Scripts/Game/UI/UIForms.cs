@@ -1,4 +1,6 @@
 using GourmetProject.Game.Save;
+using GourmetProject.Runtime;
+using UnityEngine;
 
 namespace GourmetProject.Game.UI
 {
@@ -11,8 +13,19 @@ namespace GourmetProject.Game.UI
         // 界面组名（在 ProcedureMenu 启动时通过 AddUIGroup 注册）。
         public const string GroupDefault = "Default";
         public const string GroupDialog = "Dialog";
+        public const string GroupTooltip = "Tooltip";
         public const string GroupTutorial = "Tutorial";
         public const string GroupTransition = "Transition";
+
+        /// <summary>
+        /// 返回跨界面组的 Tips 专用层。该层位于 Dialog 之上、Tutorial/Transition 之下；
+        /// 尚未完成 UI Group 初始化时回退到调用方提供的父节点。
+        /// </summary>
+        public static Transform ResolveTooltipLayer(Transform fallback)
+        {
+            var group = GameApp.UI?.GetUIGroup(GroupTooltip);
+            return group?.Helper is Component helper ? helper.transform : fallback;
+        }
 
         // 界面预制体资源路径（编辑器资源模式下直接用工程内路径）。
         public const string MainMenu = "Assets/GameMain/Content/Prefabs/UI/Menu/MainMenuForm.prefab";

@@ -177,6 +177,45 @@ namespace GourmetProject.Tests.EditMode
                 Is.EqualTo(GridPlacementFeedbackPalette.Missing));
         }
 
+        [Test]
+        public void PlacementAnimationOrder_RotatedLShapeStartsAtAttachmentAndTravelsOutward()
+        {
+            TableFragmentDef rotated = Fragment("XX", "X.").Rotated(1);
+            List<GridPos> cells = TableFragmentBuilder.FilledCells(rotated);
+            var existing = new HashSet<GridPos> { new GridPos(4, 5) };
+
+            List<GridPos> ordered = TableFragmentPlacementAnimationOrder.Build(
+                existing,
+                cells,
+                new GridPos(5, 5));
+
+            Assert.That(ordered, Is.EqualTo(new[]
+            {
+                new GridPos(0, 0),
+                new GridPos(1, 0),
+                new GridPos(1, 1),
+            }));
+        }
+
+        [Test]
+        public void PlacementAnimationOrder_SparseDisconnectedCellRunsAfterConnectedCells()
+        {
+            List<GridPos> cells = TableFragmentBuilder.FilledCells(Fragment("XX.X"));
+            var existing = new HashSet<GridPos> { new GridPos(4, 5) };
+
+            List<GridPos> ordered = TableFragmentPlacementAnimationOrder.Build(
+                existing,
+                cells,
+                new GridPos(5, 5));
+
+            Assert.That(ordered, Is.EqualTo(new[]
+            {
+                new GridPos(0, 0),
+                new GridPos(1, 0),
+                new GridPos(3, 0),
+            }));
+        }
+
         private static DiningTable Table(params GridPos[] existing)
         {
             return new DiningTable(8, 8, existing, null);

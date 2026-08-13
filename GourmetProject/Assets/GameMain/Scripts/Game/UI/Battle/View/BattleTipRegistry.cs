@@ -113,7 +113,8 @@ namespace GourmetProject.Game.UI.Battle.View
         private Transform TipLayerParent()
         {
             UGuiForm form = GetComponentInParent<UGuiForm>();
-            return form != null ? form.UIGroupTransform : transform;
+            Transform fallback = form != null ? form.UIGroupTransform : transform;
+            return UIForms.ResolveTooltipLayer(fallback);
         }
 
         private static void DestroyRuntimeTip(MonoBehaviour tip)

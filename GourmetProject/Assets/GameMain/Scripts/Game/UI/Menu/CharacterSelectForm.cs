@@ -489,7 +489,7 @@ namespace GourmetProject.Game.UI.Menu
             {
                 _foodTipsView = Instantiate(
                     _foodTipsPrefab,
-                    CachedTransform,
+                    UIForms.ResolveTooltipLayer(UIGroupTransform),
                     false);
                 _foodTipsView.gameObject.name =
                     "FoodTipsView_Runtime";

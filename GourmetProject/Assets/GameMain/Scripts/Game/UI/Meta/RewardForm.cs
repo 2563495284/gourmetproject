@@ -2311,7 +2311,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private Transform TipLayerParent()
         {
-            return UIGroupTransform;
+            return UIForms.ResolveTooltipLayer(UIGroupTransform);
         }
 
         private void MoveTipToTop(MonoBehaviour tip)

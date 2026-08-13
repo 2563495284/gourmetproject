@@ -709,7 +709,8 @@ namespace GourmetProject.Game.UI.Meta
         private Transform TipLayerParent()
         {
             UGuiForm form = GetComponentInParent<UGuiForm>();
-            return form != null ? form.UIGroupTransform : transform;
+            Transform fallback = form != null ? form.UIGroupTransform : transform;
+            return UIForms.ResolveTooltipLayer(fallback);
         }
 
         private void MoveTipToTopLayer(MonoBehaviour view)
