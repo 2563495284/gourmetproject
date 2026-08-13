@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -29,6 +30,9 @@ namespace GourmetProject.Game.UI.Meta
         [Header("Warehouse Style")]
         [SerializeField] private Color _surfaceColor = DefaultSurfaceColor;
         [SerializeField] private Color _gridColor = DefaultGridColor;
+        [SerializeField] private Sprite _cellSprite;
+        [SerializeField] private Color _cellColor = Color.white;
+        [SerializeField, Min(0f)] private float _cellInset = 2f;
 
         private readonly List<RecipeEditDishView> _layoutDishes = new();
         private readonly List<Vector2Int> _layoutSizes = new();
@@ -38,6 +42,10 @@ namespace GourmetProject.Game.UI.Meta
         private Vector2 _lastViewportSize = new(-1f, -1f);
 
         public RectTransform DishContainer => _dishContainer;
+        public RectTransform ViewportRect =>
+            _scrollRect != null ? _scrollRect.viewport : null;
+
+        public event Action<RectTransform> ViewportDimensionsChanged;
 
         public float VerticalNormalizedPosition =>
             _scrollRect != null ? _scrollRect.verticalNormalizedPosition : 1f;
@@ -50,6 +58,7 @@ namespace GourmetProject.Game.UI.Meta
         private void OnEnable()
         {
             RefreshLayout();
+            ViewportDimensionsChanged?.Invoke(ViewportRect);
         }
 
         private void OnRectTransformDimensionsChange()
@@ -63,6 +72,7 @@ namespace GourmetProject.Game.UI.Meta
             if ((size - _lastViewportSize).sqrMagnitude > 0.01f)
             {
                 RefreshLayout();
+                ViewportDimensionsChanged?.Invoke(ViewportRect);
             }
         }
 
@@ -110,6 +120,7 @@ namespace GourmetProject.Game.UI.Meta
                 float renderedPadding = _warehousePadding * widthScale;
                 float renderedLineWidth = _gridLineWidth * widthScale;
                 float renderedInset = _itemInset * widthScale;
+                float renderedCellInset = _cellInset * widthScale;
                 int contentRows = RecipeWarehouseLayout.ContentRows(
                     layout.Rows,
                     _warehouseTrailingRows,
@@ -165,7 +176,10 @@ namespace GourmetProject.Game.UI.Meta
                     renderedPadding,
                     renderedLineWidth,
                     _surfaceColor,
-                    _gridColor);
+                    _gridColor,
+                    _cellSprite,
+                    _cellColor,
+                    renderedCellInset);
                 _gridGraphic.transform.SetAsFirstSibling();
                 Canvas.ForceUpdateCanvases();
                 _hasLayout = true;

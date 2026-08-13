@@ -41,19 +41,38 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed class WeekEventCardView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
+        private enum CardSkin
+        {
+            Event,
+            Node,
+        }
+
         private const string NodeEventFooter = "节点行动";
+        private const string EventBodyPath = "Sprites/UI/WeekEventCards/card_choice_event_body";
+        private const string NodeBodyPath = "Sprites/UI/WeekEventCards/card_choice_node_body";
+        private const string EventTitlePath = "Sprites/UI/WeekEventCards/card_choice_event_title";
+        private const string NodeTitlePath = "Sprites/UI/WeekEventCards/card_choice_node_title";
+        private const string RewardBackingPath = "Sprites/UI/WeekEventCards/card_choice_reward_backing";
+        private const string EventFooterPath = "Sprites/UI/WeekEventCards/card_choice_event_footer";
+        private const string NodeFooterPath = "Sprites/UI/WeekEventCards/card_choice_node_footer";
         private const float GlowPadding = 48f;
         private const float DefaultHideDuration = 0.2f;
         private const float DefaultPickEffectHold = 0.5f;
 
         private static readonly Color PanelColor = new Color(1f, 0.94f, 0.78f, 0.9f);
+        private static readonly Color NodePanelColor = new Color(0.24f, 0.55f, 0.82f, 0.88f);
         private static readonly Color FooterActionColor = new Color(1f, 0.94f, 0.78f, 0.92f);
         private static readonly Color FooterNodeColor = new Color(0.78f, 1f, 0.88f, 0.92f);
+        private static readonly Color EventTextColor = new Color32(78, 37, 21, 255);
+        private static readonly Color NodeFooterTextColor = Color.white;
 
         [SerializeField] private TMP_Text _nameText;
         [SerializeField] private TmpTextVertexAnimator _nameAnimator;
         [SerializeField] private TMP_Text _descText;
         [SerializeField] private TMP_Text _timeText;
+        [SerializeField] private Image _cardBackingImage;
+        [SerializeField] private RectTransform _artViewport;
+        [SerializeField] private AspectRatioFitter _artAspectFitter;
         [SerializeField] private Image _artImage;
         [SerializeField] private Image _titleBackingImage;
         [SerializeField] private Image _descBackingImage;
@@ -95,6 +114,8 @@ namespace GourmetProject.Game.UI.Meta
         private Tween _pickDelayTween;
         private Material _glowMat;
         private ItemTipView _rewardTip;
+        private CardSkin _cardSkin;
+        private bool _rewardVisible;
         private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
 
         // 选中特效停留已在 OnPickClicked 内于回调前播放完毕，退场不再额外等待。
@@ -208,6 +229,7 @@ namespace GourmetProject.Game.UI.Meta
             Action onPick)
         {
             ApplyCommon(title, desc, onPick);
+            ApplyCardSkin(CardSkin.Node);
             ConfigureTitleAnimation(displayKind, foodKind);
             SetFooter(NodeEventFooter, true, FooterNodeColor);
             SetArt(Resources.Load<Sprite>("Sprites/UI/card_action_event"));
@@ -282,8 +304,8 @@ namespace GourmetProject.Game.UI.Meta
 
         private void ApplyCommon(string title, string desc, Action onPick)
         {
+            ApplyCardSkin(CardSkin.Event);
             SetText(_nameText, title);
-            SetBacking(_titleBackingImage, true, PanelColor);
             SetDescription(desc);
 
             _onPick = onPick;
@@ -364,7 +386,7 @@ namespace GourmetProject.Game.UI.Meta
                 _descText.gameObject.SetActive(visible);
             }
 
-            SetBacking(_descBackingImage, visible, PanelColor);
+            SetBacking(_descBackingImage, visible, _cardSkin == CardSkin.Node ? NodePanelColor : PanelColor);
         }
 
         private void SetFooter(string text, bool visible, Color backingColor)
@@ -373,9 +395,82 @@ namespace GourmetProject.Game.UI.Meta
             if (_timeText != null)
             {
                 _timeText.gameObject.SetActive(visible);
+                _timeText.color = _cardSkin == CardSkin.Node ? NodeFooterTextColor : EventTextColor;
             }
 
-            SetBacking(_footerBackingImage, visible, backingColor);
+            if (_footerBackingImage != null)
+            {
+                _footerBackingImage.sprite = LoadSkinSprite(
+                    _cardSkin == CardSkin.Node ? NodeFooterPath : EventFooterPath);
+                _footerBackingImage.type = Image.Type.Sliced;
+                SetBacking(
+                    _footerBackingImage,
+                    visible,
+                    _footerBackingImage.sprite != null ? Color.white : backingColor);
+            }
+        }
+
+        private void ApplyCardSkin(CardSkin skin)
+        {
+            _cardSkin = skin;
+
+            if (_cardBackingImage != null)
+            {
+                _cardBackingImage.sprite = LoadSkinSprite(
+                    skin == CardSkin.Node ? NodeBodyPath : EventBodyPath);
+                _cardBackingImage.type = Image.Type.Sliced;
+                _cardBackingImage.color = Color.white;
+                _cardBackingImage.enabled = _cardBackingImage.sprite != null;
+            }
+
+            if (_titleBackingImage != null)
+            {
+                _titleBackingImage.sprite = LoadSkinSprite(
+                    skin == CardSkin.Node ? NodeTitlePath : EventTitlePath);
+                _titleBackingImage.type = Image.Type.Sliced;
+                _titleBackingImage.color = Color.white;
+                _titleBackingImage.enabled = _titleBackingImage.sprite != null;
+                _titleBackingImage.gameObject.SetActive(true);
+            }
+
+            if (_nameText != null)
+            {
+                _nameText.color = EventTextColor;
+            }
+
+            if (_descBackingImage != null && _descBackingImage.gameObject.activeSelf)
+            {
+                _descBackingImage.color = skin == CardSkin.Node ? NodePanelColor : PanelColor;
+            }
+
+            if (_rewardBadgeImage != null)
+            {
+                _rewardBadgeImage.sprite = LoadSkinSprite(RewardBackingPath);
+                _rewardBadgeImage.type = Image.Type.Sliced;
+                _rewardBadgeImage.color = Color.white;
+            }
+
+            UpdateArtViewport();
+        }
+
+        private static Sprite LoadSkinSprite(string path)
+        {
+            return Resources.Load<Sprite>(path);
+        }
+
+        private void UpdateArtViewport()
+        {
+            if (_artViewport == null)
+            {
+                return;
+            }
+
+            // PSD 的顶部 80px 是标题色带；事件卡有奖励时为奖励槽留出中段空间。
+            float bottom = _cardSkin == CardSkin.Event && _rewardVisible ? 0.44f : 0.19f;
+            _artViewport.anchorMin = new Vector2(0f, bottom);
+            _artViewport.anchorMax = new Vector2(1f, 0.855f);
+            _artViewport.offsetMin = Vector2.zero;
+            _artViewport.offsetMax = Vector2.zero;
         }
 
         private static void SetText(TMP_Text text, string value)
@@ -415,6 +510,10 @@ namespace GourmetProject.Game.UI.Meta
             _artImage.enabled = sprite != null;
             _artImage.sprite = sprite;
             _artImage.color = Color.white;
+            if (_artAspectFitter != null && sprite != null && sprite.rect.height > 0f)
+            {
+                _artAspectFitter.aspectRatio = sprite.rect.width / sprite.rect.height;
+            }
         }
 
         private void SetRewardBadge(
@@ -423,6 +522,7 @@ namespace GourmetProject.Game.UI.Meta
             cfg.FoodActionKind actionKind = cfg.FoodActionKind.Normal,
             cfg.GameAction action = null)
         {
+            _rewardVisible = visible;
             if (_rewardBadgeImage != null)
             {
                 _rewardBadgeImage.gameObject.SetActive(visible);
@@ -442,6 +542,8 @@ namespace GourmetProject.Game.UI.Meta
                 _rewardIconImage.color = Color.white;
                 BindRewardTip(visible, action);
             }
+
+            UpdateArtViewport();
         }
 
         private void BindRewardTip(bool visible, cfg.GameAction action)

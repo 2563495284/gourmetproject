@@ -438,6 +438,8 @@ namespace GourmetProject.Game.UI.Meta
                     _warehouseContainer);
                 _warehouse.gameObject.name = "RecipeWarehouse";
                 StretchWarehouseToContainer(_warehouse);
+                _warehouse.ViewportDimensionsChanged +=
+                    HandleWarehouseViewportDimensionsChanged;
 
                 RectTransform dishContainer = _warehouse.DishContainer;
                 if (dishContainer != null)
@@ -461,6 +463,7 @@ namespace GourmetProject.Game.UI.Meta
                 }
 
                 _warehouse.RefreshLayout();
+                ApplyViewportDrivenChromeLayout();
                 _warehouse.SetVerticalNormalizedPosition(
                     preserveScroll ? previousScroll : 1f);
             }
@@ -678,6 +681,8 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (_warehouse != null)
             {
+                _warehouse.ViewportDimensionsChanged -=
+                    HandleWarehouseViewportDimensionsChanged;
                 if (Application.isPlaying)
                 {
                     Destroy(_warehouse.gameObject);

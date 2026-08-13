@@ -183,7 +183,7 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _recipeInfoText.text = _recipeCountPresentationOverride.HasValue
                     ? $"{_recipeCountPresentationOverride.Value} 份"
-                    : $"{placeable}<color=#35B84A>✓</color> {blocked}<color=#E33A3A>×</color>";
+                    : $"可上菜：<color=#35B84A>{placeable}</color>\n不可上菜：<color=#E33A3A>{blocked}</color>";
             }
 
             SetInteractable(

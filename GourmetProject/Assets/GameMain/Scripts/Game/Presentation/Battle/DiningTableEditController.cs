@@ -28,10 +28,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float EditDragGrabDuration = 0.12f;
         private const float EditDragReturnDuration = 0.16f;
         private const float EditTableLayoutTweenDuration = 0.8f;
-        private const float EditGhostOutlineWidth = 0.075f;
-        private const float EditDragFillAlpha = 0.5f;
-        private const float EditOverlapDragFillAlpha = 0f;
-        private const float EditOverlapOutlineInflate = 1.08f;
         private const float EditBoundsWarningWidth = 0.055f;
         private const float EditTrayGroupRotation = 5f;
         private const float EditTrayLockedShakeDuration = 0.25f;
@@ -115,8 +111,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly List<GridPos> _stagedAbsoluteCells = new List<GridPos>();
         private readonly List<Vector2Int> _editTrayFragmentSizes = new List<Vector2Int>();
         private readonly List<Vector2> _editTrayColumnCenters = new List<Vector2>();
-        private readonly Dictionary<string, Sprite> _editMaterialCellSprites = new Dictionary<string, Sprite>();
-        private Sprite _editCellSprite;
+        private readonly Dictionary<string, DiningTableCellSprites> _editMaterialCellSprites =
+            new Dictionary<string, DiningTableCellSprites>();
+        private DiningTableCellSprites _editCellSprites;
         private float _editTraySize;
         private Transform _editDragRoot;
         private readonly List<LineRenderer> _editBoundsWarningLines = new List<LineRenderer>();
@@ -225,7 +222,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelDragAnimation();
             ComputeViewport();
 
-            _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
+            LoadEditCellSprites();
             _editTable = BattleSessionFactory.BuildTablePreview(run);
             LayoutEditorTable(_editTable);
             EnsureEditRoot();
@@ -259,7 +256,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelDragAnimation();
             ComputeViewport();
 
-            _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
+            LoadEditCellSprites();
             _editTable = tableOverride ?? run.BuildTablePreviewFromFragments();
             LayoutEditorTable(_editTable, useBoardArea: true);
             _state = TableInteractionState.ReadOnlyView;
@@ -277,7 +274,7 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelDragAnimation();
             ComputeViewport();
 
-            _editCellSprite = Resources.Load<Sprite>("Sprites/UI/board_cell");
+            LoadEditCellSprites();
             _editTable = tableOverride ?? run.BuildTablePreviewFromFragments();
             LayoutEditorTable(_editTable, useBoardArea: true);
             _state = TableInteractionState.CellTargeting;
@@ -614,12 +611,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             GridPlacementFeedbackState feedbackState = _currentPlacementEvaluation.Feedback.OverallState;
             Color color = GridPlacementFeedbackPalette.ColorFor(feedbackState);
-            bool overlapsTable = _currentPlacementEvaluation.PlacementStatus
-                == TableFragmentBuilder.FragmentPlacementStatus.Overlap;
-            SetDragOutline(
-                color,
-                overlapsTable ? EditOverlapDragFillAlpha : EditDragFillAlpha,
-                overlapsTable ? EditOverlapOutlineInflate : 1f);
+            SetDragPlateColor(color);
             _boardView.ShowGridPlacementFeedback(_currentPlacementEvaluation.Feedback);
             UpdateProjectedTableLayout(_currentPlacementEvaluation);
             if (TryGetBoundsWarning(_currentPlacementEvaluation.Origin, def, out BoundsWarningInfo warning))
@@ -676,7 +668,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _editDragRoot.localPosition = localCenter;
             _editDragRoot.localRotation = Quaternion.identity;
             _editDragRoot.localScale = Vector3.one;
-            ClearDragCellOutlines();
+            ClearDragCellPlateFeedback();
             _boardView.ShowTransientGridRegionOutline(
                 _stagedAbsoluteCells,
                 EditStagedOutlineColor,
@@ -1161,7 +1153,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         -(c.Y - centerGridY) * _editTraySize,
                         0f);
                     Vector3 local = new Vector3(columnCenter.x, columnCenter.y, 0f) + groupRotation * offset;
-                    cell.Configure(c, local, _editTraySize, FragmentCellSprite(shown, c), null);
+                    cell.Configure(c, local, _editTraySize, FragmentCellSprites(shown, c), null);
                     cell.transform.localRotation = groupRotation;
                     cell.SetColor(EditFragmentFillColor);
                     cell.SetSortingOrder(EditTraySortingOrder);
@@ -1280,29 +1272,30 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 var local = new Vector3((cellPos.X - avgX) * pitch, -(cellPos.Y - avgY) * pitch, 0f);
-                cell.Configure(cellPos, local, _cellSize, FragmentCellSprite(def, cellPos), null);
+                cell.Configure(cellPos, local, _cellSize, FragmentCellSprites(def, cellPos), null);
                 cell.SetColor(EditFragmentFillColor);
                 cell.SetSorting(BattleSorting.Fx, EditDragSortingOrder);
                 _editDragCells.Add(cell);
             }
         }
 
-        private Sprite FragmentCellSprite(TableFragmentDef def, GridPos localPos)
+        private DiningTableCellSprites FragmentCellSprites(TableFragmentDef def, GridPos localPos)
         {
             string materialId = FragmentCellMaterialId(def, localPos);
             if (string.IsNullOrEmpty(materialId))
             {
-                return _editCellSprite;
+                return _editCellSprites;
             }
 
-            if (_editMaterialCellSprites.TryGetValue(materialId, out Sprite cached))
+            if (_editMaterialCellSprites.TryGetValue(materialId, out DiningTableCellSprites cached))
             {
-                return cached != null ? cached : _editCellSprite;
+                return cached;
             }
 
-            Sprite sprite = LoadCellSprite($"board_cell_{materialId}");
-            _editMaterialCellSprites[materialId] = sprite;
-            return sprite != null ? sprite : _editCellSprite;
+            DiningTableCellSprites sprites =
+                DiningTableCellSpriteResources.LoadMaterial(materialId, _editCellSprites);
+            _editMaterialCellSprites[materialId] = sprites;
+            return sprites;
         }
 
         private static string FragmentCellMaterialId(TableFragmentDef def, GridPos localPos)
@@ -1324,38 +1317,35 @@ namespace GourmetProject.Game.Presentation.Battle
             return null;
         }
 
-        private static Sprite LoadCellSprite(string name)
+        private void LoadEditCellSprites()
         {
-            string path = $"Sprites/UI/{name}";
-            Sprite sprite = Resources.Load<Sprite>(path);
-            if (sprite != null)
+            _editCellSprites = DiningTableCellSpriteResources.LoadDefault();
+            _editMaterialCellSprites.Clear();
+            if (!_editCellSprites.IsValid)
             {
-                return sprite;
+                throw new InvalidOperationException("编辑态默认餐桌的桌体/盘子 Sprite 对缺失。");
             }
-
-            Sprite[] sprites = Resources.LoadAll<Sprite>(path);
-            return sprites != null && sprites.Length > 0 ? sprites[0] : null;
         }
 
-        private void SetDragOutline(Color color, float fillAlpha, float outlineInflate)
+        private void SetDragPlateColor(Color color)
         {
             foreach (DiningTableCellView cell in _editDragCells)
             {
                 if (cell != null)
                 {
-                    cell.SetOutline(color, EditGhostOutlineWidth, fillAlpha, outlineInflate);
+                    cell.SetPlateFeedbackColor(color);
                     cell.SetSorting(BattleSorting.Fx, EditDragSortingOrder);
                 }
             }
         }
 
-        private void ClearDragCellOutlines()
+        private void ClearDragCellPlateFeedback()
         {
             foreach (DiningTableCellView cell in _editDragCells)
             {
                 if (cell != null)
                 {
-                    cell.ClearOutline();
+                    cell.ClearPlateFeedbackColor();
                     cell.SetColor(EditFragmentFillColor);
                     cell.SetSorting(BattleSorting.Fx, EditDragSortingOrder);
                 }

@@ -77,7 +77,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -87,7 +87,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text:
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
   m_sharedMaterial: {fileID: -8718148927222724939, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
@@ -109,7 +109,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -159,6 +159,31 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &919100000000000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2297954175748405417}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb6ab94b050794383b3faea712bad4de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: GourmetProject.Game::GameStartStudio.UI.TmpTextVertexAnimator
+  preset: 9
+  intensity: 1
+  speed: 1
+  breathDuration: 1.9
+  breathScale: 0.045
+  waveInterval: 2.35
+  waveTravelDuration: 0.75
+  perCharacterDelay: 0.055
+  waveHeight: 8
+  shimmerInterval: 3.2
+  shimmerWidth: 0.16
+  shimmerColor: {r: 1, g: 0.96, b: 0.58, a: 1}
+  shimmerStrength: 0.42
 --- !u!1 &2788638476423277769
 GameObject:
   m_ObjectHideFlags: 0
@@ -193,7 +218,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 62, y: -120}
+  m_AnchoredPosition: {x: 62, y: -70}
   m_SizeDelta: {x: 100, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &8543524648660737048
@@ -313,7 +338,7 @@ MonoBehaviour:
   _countAsText: {fileID: 0}
   _skillsContent: {fileID: 5147946764988556503}
   _flavorContent: {fileID: 5206004456868174484}
-  _skillCardPrefab: {fileID: 9109147810092552575, guid: 6708aca669b254bc18ec294dba0c59eb, type: 3}
+  _skillCardPrefab: {fileID: 137334420052725026, guid: f7bbca03879f94c8e88921dd9edbc087, type: 3}
   _flavorTagPrefab: {fileID: 6704665882520571800, guid: b9fd67018a97f49ddbd7d19071543cb7, type: 3}
 --- !u!222 &8156610361218653390
 CanvasRenderer:
@@ -489,28 +514,3 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
---- !u!114 &919100000000000004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2297954175748405417}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb6ab94b050794383b3faea712bad4de, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: GourmetProject.Game::GameStartStudio.UI.TmpTextVertexAnimator
-  preset: 9
-  intensity: 1
-  speed: 1
-  breathDuration: 1.9
-  breathScale: 0.045
-  waveInterval: 2.35
-  waveTravelDuration: 0.75
-  perCharacterDelay: 0.055
-  waveHeight: 8
-  shimmerInterval: 3.2
-  shimmerWidth: 0.16
-  shimmerColor: {r: 1, g: 0.96, b: 0.58, a: 1}
-  shimmerStrength: 0.42

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DG.Tweening;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Tutorial;
@@ -13,9 +14,12 @@ namespace GourmetProject.Game.UI.Meta
 {
     public sealed class RewardItemChoiceCardView : MonoBehaviour
     {
+        private const string QualityBackingResourcesRoot =
+            "Sprites/UI/FengKuangCanTing/QualityBackings/quality_backing_";
+        private static readonly Dictionary<cfg.ItemQuality, Sprite> QualityBackingCache = new();
+
         [SerializeField] private Image _background;
         [SerializeField] private Image _icon;
-        [SerializeField] private TMP_Text _nameText;
         [SerializeField] private Button _button;
         private CanvasGroup _canvasGroup;
         private Tween _failureTween;
@@ -37,12 +41,7 @@ namespace GourmetProject.Game.UI.Meta
             ItemDefinition item = ItemDefinition.Get(GameApp.Config.Tables, choice?.Id, kind);
             TutorialRuntime.ObserveItemShown(item);
 
-            if (_background != null)
-            {
-                _background.color = item != null
-                    ? RunItemSlotView.QualityColor(item.Quality)
-                    : new Color(0.88f, 0.82f, 0.70f, 1f);
-            }
+            RefreshBackground(item);
 
             if (_icon != null)
             {
@@ -50,11 +49,6 @@ namespace GourmetProject.Game.UI.Meta
                 _icon.sprite = sprite;
                 _icon.preserveAspect = true;
                 _icon.color = sprite != null ? Color.white : new Color(0.75f, 0.68f, 0.56f, 1f);
-            }
-
-            if (_nameText != null)
-            {
-                _nameText.text = choice?.Name ?? string.Empty;
             }
 
             if (_button != null)
@@ -129,6 +123,66 @@ namespace GourmetProject.Game.UI.Meta
         private void OnDestroy()
         {
             _failureTween?.Kill();
+        }
+
+        private void RefreshBackground(ItemDefinition item)
+        {
+            if (_background == null)
+            {
+                return;
+            }
+
+            bool showQualityBacking = item != null && item.IsPassive;
+            _background.enabled = showQualityBacking;
+            _background.type = Image.Type.Sliced;
+            _background.preserveAspect = false;
+            if (!showQualityBacking)
+            {
+                _background.sprite = null;
+                _background.color = Color.white;
+                return;
+            }
+
+            Sprite backing = LoadQualityBacking(item.Quality);
+            _background.sprite = backing;
+            _background.color = backing != null
+                ? Color.white
+                : RunItemSlotView.QualityColor(item.Quality);
+        }
+
+        private static Sprite LoadQualityBacking(cfg.ItemQuality quality)
+        {
+            if (QualityBackingCache.TryGetValue(quality, out Sprite backing))
+            {
+                return backing;
+            }
+
+            string assetName;
+            switch (quality)
+            {
+                case cfg.ItemQuality.Uncommon:
+                    assetName = "uncommon";
+                    break;
+                case cfg.ItemQuality.Rare:
+                    assetName = "rare";
+                    break;
+                case cfg.ItemQuality.Epic:
+                    assetName = "epic";
+                    break;
+                case cfg.ItemQuality.Legendary:
+                    assetName = "legendary";
+                    break;
+                case cfg.ItemQuality.Negative:
+                    assetName = "negative";
+                    break;
+                default:
+                    assetName = "common";
+                    break;
+            }
+
+            backing = Resources.Load<Sprite>(QualityBackingResourcesRoot + assetName);
+            QualityBackingCache[quality] = backing;
+            return backing;
         }
 
         private void BindTip(ItemTipView itemTip, ItemDefinition item)

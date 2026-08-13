@@ -2311,8 +2311,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private Transform TipLayerParent()
         {
-            Canvas canvas = GetComponentInParent<Canvas>();
-            return canvas != null ? canvas.transform : transform;
+            return UIGroupTransform;
         }
 
         private void MoveTipToTop(MonoBehaviour tip)

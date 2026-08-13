@@ -1300,6 +1300,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6116059654487527876, guid: 2529e15f097f74b98826e32d5451acf3, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 4281e2b0ae0504d92a5b07bae4072964, type: 2}
+    - target: {fileID: 6116059654487527876, guid: 2529e15f097f74b98826e32d5451acf3, type: 3}
       propertyPath: m_TextStyleHashCode
       value: -1183493901
       objectReference: {fileID: 0}
@@ -1403,6 +1407,10 @@ PrefabInstance:
       propertyPath: m_isOrthographic
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 9004232857644253272, guid: 2529e15f097f74b98826e32d5451acf3, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 4281e2b0ae0504d92a5b07bae4072964, type: 2}
     - target: {fileID: 9004232857644253272, guid: 2529e15f097f74b98826e32d5451acf3, type: 3}
       propertyPath: m_TextStyleHashCode
       value: -1183493901

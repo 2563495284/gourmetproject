@@ -229,6 +229,12 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly Dictionary<SpriteRenderer, Color> _settlementFocusColors = new Dictionary<SpriteRenderer, Color>();
         private MaterialPropertyBlock _activeItemTransformBlock;
         private bool _debuffVisualSuppressed;
+
+        internal float PreviewShadowBaseAlpha => _shadowBaseAlpha;
+        internal float PreviewShadowGroundScale => _shadowGroundScale;
+        internal float PreviewShadowGroundDrop => _shadowGroundDrop;
+        internal float PreviewShadowGroundSide => _shadowGroundSide;
+        internal float PreviewFlavorVisualIntensity => _flavorVisualIntensity;
         private Sequence _activeItemFlavorSequence;
 
         private readonly struct ScopeTargetGlowState
@@ -2109,17 +2115,12 @@ namespace GourmetProject.Game.Presentation.Battle
             // sprite 按"基础朝向"绘制；摆放时若发生 90° 旋转，需把 sprite 一并旋转，
             // 并以基础朝向的占格尺寸做缩放，再旋转，才能贴格无缝且不被挤压。
             int rot = ((RotationIndex % 4) + 4) % 4;
-            bool swapped = (rot % 2) == 1;
-            int baseW = swapped ? shape.Height : shape.Width;
-            int baseH = swapped ? shape.Width : shape.Height;
-
-            // 基础朝向下 sprite 应占据的世界跨度：(格数-1)*pitch + cellSize，gap=0 即 格数*cellSize。
-            float spanX = (baseW - 1) * _pitch + _cellSize;
-            float spanY = (baseH - 1) * _pitch + _cellSize;
-            Vector2 bounds = _sprite != null ? (Vector2)_sprite.bounds.size : Vector2.one;
-            float scaleX = bounds.x > 0f ? spanX / bounds.x : 1f;
-            float scaleY = bounds.y > 0f ? spanY / bounds.y : 1f;
-            t.localScale = new Vector3(scaleX, scaleY, 1f);
+            t.localScale = DishVisualLayout.SpriteScale(
+                _sprite,
+                shape,
+                rot,
+                _cellSize,
+                _pitch);
             // DishShape.Rotate90 为顺时针；Unity +Z 为逆时针，故顺时针旋转取负角。
             t.localRotation = Quaternion.Euler(0f, 0f, -90f * rot);
 

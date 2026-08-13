@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BreakInfinity;
 using DG.Tweening;
+using GourmetProject.Core.Utility;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
@@ -24,7 +25,8 @@ namespace GourmetProject.Game.UI.Widgets
             BigDouble value,
             IReadOnlyList<string> flavorIds,
             DishIconPreviewMode mode,
-            int? rotationIndex)
+            int? rotationIndex,
+            float visualSeed)
         {
             Dish = dish;
             Sprite = sprite;
@@ -32,6 +34,7 @@ namespace GourmetProject.Game.UI.Widgets
             FlavorIds = flavorIds;
             Mode = mode;
             RotationIndex = rotationIndex;
+            VisualSeed = visualSeed;
         }
 
         public DishDef Dish { get; }
@@ -46,6 +49,8 @@ namespace GourmetProject.Game.UI.Widgets
 
         public int? RotationIndex { get; }
 
+        public float VisualSeed { get; }
+
         public static DishPreviewRequest FromDefinition(
             DishDef dish,
             Sprite sprite = null,
@@ -58,7 +63,8 @@ namespace GourmetProject.Game.UI.Widgets
                 dish?.Deliciousness ?? 0,
                 flavorIds,
                 mode,
-                null);
+                null,
+                StableVisualSeed(dish));
         }
 
         public static DishPreviewRequest FromInstance(
@@ -72,7 +78,15 @@ namespace GourmetProject.Game.UI.Widgets
                 DishValueDisplay.CurrentContribution(dish),
                 dish?.FlavorIds,
                 mode,
-                dish?.Placement.RotationIndex);
+                dish?.Placement.RotationIndex,
+                dish != null ? dish.Id : StableVisualSeed(dish?.Def));
+        }
+
+        private static float StableVisualSeed(DishDef dish)
+        {
+            return dish != null
+                ? (float)(StableHash.Fnv1a64(dish.Id) & 0xFFFFFF)
+                : 0f;
         }
     }
 
@@ -94,6 +108,7 @@ namespace GourmetProject.Game.UI.Widgets
         [SerializeField] private RawImage _targetImage;
         [SerializeField] private AspectRatioFitter _aspectRatioFitter;
         [SerializeField] private SpriteRenderer _cellPrefab;
+        [SerializeField] private DishPieceView _dishPrefab;
         [SerializeField] private DishValueBadgeView _badgePrefab;
         [SerializeField, Range(32, 256)] private int _pixelsPerCell = 96;
         [SerializeField] private bool _keepBottomAligned = true;
@@ -110,6 +125,7 @@ namespace GourmetProject.Game.UI.Widgets
         private BigDouble _boundValue;
         private DishIconPreviewMode _boundMode;
         private int? _boundRotationIndex;
+        private float _boundVisualSeed;
         private readonly List<string> _boundFlavorIds = new();
         private bool _boundFlavorIdsWereNull;
         private bool _hasBinding;
@@ -236,7 +252,10 @@ namespace GourmetProject.Game.UI.Widgets
                 deliciousnessOverride ?? dish?.Deliciousness ?? 0,
                 flavorIds,
                 mode,
-                rotationIndexOverride));
+                rotationIndexOverride,
+                dish != null
+                    ? (float)(StableHash.Fnv1a64(dish.Id) & 0xFFFFFF)
+                    : 0f));
         }
 
         public void Bind(DishPreviewRequest request)
@@ -256,7 +275,7 @@ namespace GourmetProject.Game.UI.Widgets
                 return;
             }
 
-            if (sprite == null || _cellPrefab == null || _badgePrefab == null)
+            if (sprite == null || _cellPrefab == null || _dishPrefab == null || _badgePrefab == null)
             {
                 Hide();
                 return;
@@ -277,9 +296,11 @@ namespace GourmetProject.Game.UI.Widgets
                 request.Value,
                 request.FlavorIds,
                 _cellPrefab,
+                _dishPrefab,
                 _badgePrefab,
                 _pixelsPerCell,
                 request.Mode,
+                request.VisualSeed,
                 request.RotationIndex);
             CaptureBinding(request, sprite);
             ApplyTextureToTarget(request.Mode);
@@ -313,9 +334,11 @@ namespace GourmetProject.Game.UI.Widgets
                 _boundValue,
                 flavorIds,
                 _cellPrefab,
+                _dishPrefab,
                 _badgePrefab,
                 _pixelsPerCell,
                 _boundMode,
+                _boundVisualSeed,
                 _boundRotationIndex);
         }
 
@@ -641,6 +664,7 @@ namespace GourmetProject.Game.UI.Widgets
                 || _boundValue != request.Value
                 || _boundMode != request.Mode
                 || _boundRotationIndex != request.RotationIndex
+                || !Mathf.Approximately(_boundVisualSeed, request.VisualSeed)
                 || _boundFlavorIdsWereNull != (request.FlavorIds == null))
             {
                 return false;
@@ -670,6 +694,7 @@ namespace GourmetProject.Game.UI.Widgets
             _boundValue = request.Value;
             _boundMode = request.Mode;
             _boundRotationIndex = request.RotationIndex;
+            _boundVisualSeed = request.VisualSeed;
             _boundFlavorIdsWereNull = request.FlavorIds == null;
             _boundFlavorIds.Clear();
             if (request.FlavorIds != null)
@@ -693,6 +718,7 @@ namespace GourmetProject.Game.UI.Widgets
             _boundValue = 0;
             _boundMode = default;
             _boundRotationIndex = null;
+            _boundVisualSeed = 0f;
             _boundFlavorIdsWereNull = false;
             _boundFlavorIds.Clear();
             _hasBinding = false;

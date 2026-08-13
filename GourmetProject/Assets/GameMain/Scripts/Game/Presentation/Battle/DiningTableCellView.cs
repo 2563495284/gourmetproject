@@ -1,39 +1,35 @@
 using System;
-using System.Collections.Generic;
 using DG.Tweening;
-using GourmetProject.Gameplay.Model;
-using UnityEngine;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.Visual;
+using GourmetProject.Gameplay.Model;
+using UnityEngine;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 餐桌格表现：固定结构（渲染体 + 碰撞盒）摆在 prefab 根节点上，由 <see cref="Configure"/> 喂数据。
-    /// sprite/位置/尺寸是数据驱动的（随餐桌大小变化），运行时按 sprite 包围盒归一化缩放。
+    /// 餐桌格表现：Prefab 根节点表示真实网格，桌体与盘子由两个序列化 Renderer 独立承载。
+    /// 固定视觉层级、相对位置、缩放和碰撞范围均由 Prefab 作者配置；运行时只喂数据与状态。
     /// </summary>
-    [RequireComponent(typeof(SpriteRenderer), typeof(BoxCollider2D))]
+    [RequireComponent(typeof(BoxCollider2D))]
     public sealed class DiningTableCellView : MonoBehaviour
     {
-        private static readonly Dictionary<Sprite, Vector4> SpriteUvRectCache = new();
-        private static readonly int OutlineColorId = Shader.PropertyToID("_OutlineColor");
-        private static readonly int OutlineWidthId = Shader.PropertyToID("_OutlineWidth");
-        private static readonly int FillAlphaId = Shader.PropertyToID("_FillAlpha");
-        private static readonly int GlowIntensityId = Shader.PropertyToID("_GlowIntensity");
-        private static readonly int PulseSpeedId = Shader.PropertyToID("_PulseSpeed");
-        private static readonly int PulseAmplitudeId = Shader.PropertyToID("_PulseAmplitude");
-        private static readonly int PulseFrequencyId = Shader.PropertyToID("_PulseFrequency");
-        private static readonly int UvInflateId = Shader.PropertyToID("_UvInflate");
-        private static readonly int SpriteUvRectId = Shader.PropertyToID("_SpriteUvRect");
+        private const int RowSortingStride = 2;
         private static readonly int BrightnessId = Shader.PropertyToID("_Brightness");
         private static readonly int BoingId = Shader.PropertyToID("_Boing");
         private static readonly int EdgeClampPointId = Shader.PropertyToID("_EdgeClampPoint");
 
-        [Tooltip("格子渲染体（prefab 根节点上的 SpriteRenderer）。")]
-        [SerializeField] private SpriteRenderer _renderer;
+        [Tooltip("完整餐桌视觉根节点。其局部位置/缩放由设计师在 Prefab 中调整，运行时不会重建或重排。")]
+        [SerializeField] private Transform _visualRoot;
 
-        [Tooltip("点击命中用碰撞盒（prefab 根节点上的 BoxCollider2D）。")]
+        [Tooltip("桌体渲染体：阴影、桌板结构和桌腿，不包含上方盘子。")]
+        [SerializeField] private SpriteRenderer _tableRenderer;
+
+        [Tooltip("上方盘子渲染体。红/绿/黄格子反馈只改变此 Renderer 的颜色。")]
+        [SerializeField] private SpriteRenderer _plateRenderer;
+
+        [Tooltip("真实桌面网格的点击命中范围；不包含下方桌腿等装饰。")]
         [SerializeField] private BoxCollider2D _collider;
 
         private GridPos _position;
@@ -41,9 +37,13 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<DiningTableCellView> _hoverEntered;
         private Action<DiningTableCellView> _hoverExited;
         private MaterialPropertyBlock _propertyBlock;
+        private DiningTableCellSprites _configuredSprites;
         private float _configuredSize;
-        private Vector3 _configuredLocalScale = Vector3.one;
-        private bool _outlineInflated;
+        private Vector3 _visualBaseLocalScale = Vector3.one;
+        private Color _baseColor = Color.white;
+        private Color _plateFeedbackColor = Color.white;
+        private bool _visualScaleCaptured;
+        private bool _plateFeedbackActive;
         private bool _hovered;
         private Sequence _transformSequence;
 
@@ -54,85 +54,87 @@ namespace GourmetProject.Game.Presentation.Battle
             get
             {
                 EnsureRefs();
-                if (_renderer != null && _renderer.sprite != null)
-                {
-                    return _renderer.bounds;
-                }
-
                 if (_collider != null)
                 {
                     return _collider.bounds;
+                }
+
+                if (_tableRenderer != null && _tableRenderer.sprite != null)
+                {
+                    return _tableRenderer.bounds;
                 }
 
                 return new Bounds(transform.position, Vector3.one);
             }
         }
 
-        /// <summary>配置一个由 prefab 实例化出来的格子：结构在 prefab 里摆好，这里只喂数据（局部位置/尺寸/sprite/回调）。</summary>
+        /// <summary>配置一个由 prefab 实例化出来的格子；固定结构与相对摆位全部来自 prefab。</summary>
         public void Configure(
             GridPos position,
             Vector3 localPosition,
             float size,
-            Sprite sprite,
+            DiningTableCellSprites sprites,
             Action<GridPos> clicked)
         {
             EnsureRefs();
 
             gameObject.name = $"Cell_{position.X}_{position.Y}";
             transform.localPosition = localPosition;
-
             _position = position;
             _clicked = clicked;
 
-            SetSprite(sprite, size);
+            SetSprites(sprites, size);
         }
 
-        public void SetSprite(Sprite sprite, float size)
+        public void SetSprites(DiningTableCellSprites sprites, float size)
         {
             EnsureRefs();
-            if (_renderer.sprite == sprite && Mathf.Approximately(_configuredSize, size))
+            if (!sprites.IsValid)
             {
-                return;
+                throw new InvalidOperationException(
+                    $"{nameof(DiningTableCellView)} 收到不完整的桌体/盘子 Sprite 对。");
             }
 
-            // 按 sprite 实际包围盒归一化缩放，使任意导入 PPU 的格图都恰好等于 1 格世界尺寸。
-            Vector2 bounds = sprite != null ? (Vector2)sprite.bounds.size : Vector2.one;
-            float scaleX = bounds.x > 0f ? size / bounds.x : size;
-            float scaleY = bounds.y > 0f ? size / bounds.y : size;
-            _configuredLocalScale = new Vector3(scaleX, scaleY, 1f);
-            transform.localScale = _configuredLocalScale;
-            _outlineInflated = false;
+            bool spritesChanged = _configuredSprites.Table != sprites.Table
+                                  || _configuredSprites.Plate != sprites.Plate;
+            bool sizeChanged = !Mathf.Approximately(_configuredSize, size);
+            if (sizeChanged)
+            {
+                float safeSize = Mathf.Max(0.0001f, size);
+                transform.localScale = new Vector3(safeSize, safeSize, 1f);
+                _visualRoot.localScale = _visualBaseLocalScale;
+            }
 
             bool preserveTransformMaterial = IsTransformMaterialActive();
-            _renderer.sprite = sprite;
-            if (!preserveTransformMaterial)
+            if (spritesChanged)
             {
-                _renderer.SetPropertyBlock(null);
-                SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
+                _tableRenderer.sprite = sprites.Table;
+                _plateRenderer.sprite = sprites.Plate;
+                if (!preserveTransformMaterial)
+                {
+                    RestoreUnlitMaterials();
+                }
             }
 
-            BattleSorting.Apply(_renderer, BattleSorting.DiningTable);
-
-            // 碰撞体取 sprite 局部包围盒，配合上面的缩放后世界尺寸正好等于 size。
-            _collider.size = bounds.x > 0f && bounds.y > 0f ? bounds : Vector2.one;
+            _configuredSprites = sprites;
             _configuredSize = size;
+            ApplyColors();
+            ApplySorting(BattleSorting.DiningTable, 0);
         }
 
         public void PlayMaterialTransform(Action onSpriteSwitch, Action onComplete)
         {
             EnsureRefs();
             KillTransformSequence(resetMaterial: false);
-            if (_renderer == null)
-            {
-                onSpriteSwitch?.Invoke();
-                onComplete?.Invoke();
-                return;
-            }
 
             if (SpriteRenderStyle.SpriteTransformMaterial == null)
             {
+                Vector3 visualPunch = new Vector3(
+                    _visualBaseLocalScale.x * 0.08f,
+                    _visualBaseLocalScale.y * 0.08f,
+                    0f);
                 _transformSequence = DOTween.Sequence()
-                    .Append(transform.DOPunchScale(Vector3.one * 0.08f, 0.24f, vibrato: 6, elasticity: 0.6f))
+                    .Append(_visualRoot.DOPunchScale(visualPunch, 0.24f, vibrato: 6, elasticity: 0.6f))
                     .InsertCallback(0.12f, () => onSpriteSwitch?.Invoke())
                     .OnComplete(() =>
                     {
@@ -142,7 +144,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            SpriteRenderStyle.ApplyTransformMaterial(_renderer);
+            _tableRenderer.SetPropertyBlock(null);
+            _plateRenderer.SetPropertyBlock(null);
+            SpriteRenderStyle.ApplyTransformMaterial(_tableRenderer);
+            SpriteRenderStyle.ApplyTransformMaterial(_plateRenderer);
             ApplyTransformEffect(0f);
             _transformSequence = DOTween.Sequence()
                 .Append(DOTween.To(() => 0f, ApplyTransformEffect, 1f, 0.14f).SetEase(Ease.OutQuad))
@@ -151,8 +156,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 .OnComplete(() =>
                 {
                     _transformSequence = null;
-                    _renderer.SetPropertyBlock(null);
-                    SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
+                    RestoreUnlitMaterials();
+                    ApplyColors();
                     onComplete?.Invoke();
                 });
         }
@@ -163,123 +168,55 @@ namespace GourmetProject.Game.Presentation.Battle
             _hoverExited = exited;
         }
 
+        /// <summary>设置格子的基础颜色/透明度；桌体与盘子保持一致，盘子反馈色会保留基础 Alpha。</summary>
         public void SetColor(Color color)
         {
-            if (_renderer != null)
-            {
-                _renderer.color = color;
-            }
+            EnsureRefs();
+            _baseColor = color;
+            ApplyColors();
         }
 
-        /// <summary>
-        /// 编辑页反馈用：用 shader 画红/绿轮廓。fillAlpha 控制是否保留格子底色；
-        /// outlineInflate 给透明外发光留出渲染网格边距，并由 shader 保持原贴图尺寸不变。
-        /// </summary>
-        public void SetOutline(Color color, float width, float fillAlpha = 1f, float outlineInflate = 1f)
+        /// <summary>仅让盘子使用红/绿/黄反馈乘色，不切换外发光材质。</summary>
+        public void SetPlateFeedbackColor(Color color)
         {
             EnsureRefs();
-            if (SpriteRenderStyle.SpriteOutlineMaterial == null)
-            {
-                _renderer.color = color;
-                return;
-            }
-
-            _renderer.color = Color.white;
-            SpriteRenderStyle.ApplyOutlineMaterial(_renderer);
-            float safeInflate = Mathf.Max(1f, outlineInflate);
-            if (safeInflate > 1f || _outlineInflated)
-            {
-                transform.localScale = new Vector3(
-                    _configuredLocalScale.x * safeInflate,
-                    _configuredLocalScale.y * safeInflate,
-                    _configuredLocalScale.z);
-                _outlineInflated = safeInflate > 1f;
-            }
-
-            _propertyBlock ??= new MaterialPropertyBlock();
-            _renderer.GetPropertyBlock(_propertyBlock);
-            _propertyBlock.SetColor(OutlineColorId, color);
-            _propertyBlock.SetFloat(OutlineWidthId, Mathf.Clamp(width, 0f, 0.2f));
-            _propertyBlock.SetFloat(FillAlphaId, Mathf.Clamp01(fillAlpha));
-            _propertyBlock.SetFloat(GlowIntensityId, 1.05f);
-            _propertyBlock.SetFloat(PulseSpeedId, 0f);
-            _propertyBlock.SetFloat(PulseAmplitudeId, 0f);
-            _propertyBlock.SetFloat(PulseFrequencyId, 18f);
-            _propertyBlock.SetFloat(UvInflateId, safeInflate);
-            _propertyBlock.SetVector(SpriteUvRectId, SpriteUvRect(_renderer.sprite));
-            _renderer.SetPropertyBlock(_propertyBlock);
+            _plateFeedbackColor = color;
+            _plateFeedbackActive = true;
+            ApplyColors();
         }
 
-        public void ClearOutline()
+        public void ClearPlateFeedbackColor()
         {
             EnsureRefs();
-            _renderer.SetPropertyBlock(null);
-            SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
-            if (_outlineInflated)
-            {
-                transform.localScale = _configuredLocalScale;
-                _outlineInflated = false;
-            }
+            _plateFeedbackActive = false;
+            ApplyColors();
         }
 
-        private static Vector4 SpriteUvRect(Sprite sprite)
+        /// <summary>反馈 Overlay 只显示盘子，避免 Fx 层的复制桌体遮住食物。</summary>
+        internal void SetTableBodyVisible(bool visible)
         {
-            if (sprite != null && SpriteUvRectCache.TryGetValue(sprite, out Vector4 cached))
-            {
-                return cached;
-            }
-
-            Vector2[] uvs = sprite != null ? sprite.uv : null;
-            if (uvs == null || uvs.Length == 0)
-            {
-                return new Vector4(0f, 0f, 1f, 1f);
-            }
-
-            Vector2 min = uvs[0];
-            Vector2 max = uvs[0];
-            for (int i = 1; i < uvs.Length; i++)
-            {
-                min = Vector2.Min(min, uvs[i]);
-                max = Vector2.Max(max, uvs[i]);
-            }
-
-            var rect = new Vector4(min.x, min.y, max.x, max.y);
-            SpriteUvRectCache[sprite] = rect;
-            return rect;
+            EnsureRefs();
+            _tableRenderer.enabled = visible;
         }
 
         public void SetDebuffed(bool debuffed)
         {
             EnsureRefs();
-            if (_renderer == null)
-            {
-                return;
-            }
-
-            if (debuffed)
-            {
-                _renderer.SetPropertyBlock(null);
-                DebuffVisualStyle.ApplyToSprite(_renderer);
-            }
-            else if (DebuffVisualStyle.IsAppliedToSprite(_renderer))
-            {
-                DebuffVisualStyle.ClearSprite(_renderer);
-            }
+            SetRendererDebuffed(_tableRenderer, debuffed);
+            SetRendererDebuffed(_plateRenderer, debuffed);
         }
 
-        /// <summary>调整渲染排序序号（编辑页放置预览幽灵需盖在餐桌格之上）。</summary>
+        /// <summary>调整层内基准序号；实际桌体/盘子仍会叠加逻辑行深度。</summary>
         public void SetSortingOrder(int order)
         {
-            if (_renderer != null)
-            {
-                _renderer.sortingOrder = order;
-            }
+            EnsureRefs();
+            ApplySorting(_tableRenderer.sortingLayerName, order);
         }
 
         public void SetSorting(string layer, int order)
         {
             EnsureRefs();
-            BattleSorting.Apply(_renderer, layer, order);
+            ApplySorting(layer, order);
         }
 
         public void SetInteractionEnabled(bool enabled)
@@ -295,28 +232,55 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        private void ApplyColors()
+        {
+            _tableRenderer.color = _baseColor;
+            _plateRenderer.color = _plateFeedbackActive
+                ? new Color(
+                    _plateFeedbackColor.r,
+                    _plateFeedbackColor.g,
+                    _plateFeedbackColor.b,
+                    _baseColor.a * _plateFeedbackColor.a)
+                : _baseColor;
+        }
+
+        private void ApplySorting(string layer, int baseOrder)
+        {
+            int tableOrder = baseOrder + _position.Y * RowSortingStride;
+            BattleSorting.Apply(_tableRenderer, layer, tableOrder);
+            BattleSorting.Apply(_plateRenderer, layer, tableOrder + 1);
+        }
+
+        private static void SetRendererDebuffed(SpriteRenderer renderer, bool debuffed)
+        {
+            if (debuffed)
+            {
+                renderer.SetPropertyBlock(null);
+                DebuffVisualStyle.ApplyToSprite(renderer);
+            }
+            else if (DebuffVisualStyle.IsAppliedToSprite(renderer))
+            {
+                DebuffVisualStyle.ClearSprite(renderer);
+            }
+        }
+
         private void ApplyTransformEffect(float amount)
         {
-            if (_renderer == null)
-            {
-                return;
-            }
-
             float t = Mathf.Clamp01(amount);
             _propertyBlock ??= new MaterialPropertyBlock();
-            _renderer.GetPropertyBlock(_propertyBlock);
+            _propertyBlock.Clear();
             _propertyBlock.SetFloat(BrightnessId, t);
             _propertyBlock.SetVector(BoingId, new Vector4(0.2f * t, -0.14f * t, 0f, 0f));
             _propertyBlock.SetVector(EdgeClampPointId, new Vector4(0.24f, 0.24f, 0f, 0f));
-            _renderer.SetPropertyBlock(_propertyBlock);
+            _tableRenderer.SetPropertyBlock(_propertyBlock);
+            _plateRenderer.SetPropertyBlock(_propertyBlock);
         }
 
         private bool IsTransformMaterialActive()
         {
             return _transformSequence != null
                 && SpriteRenderStyle.SpriteTransformMaterial != null
-                && _renderer != null
-                && _renderer.sharedMaterial == SpriteRenderStyle.SpriteTransformMaterial;
+                && _tableRenderer.sharedMaterial == SpriteRenderStyle.SpriteTransformMaterial;
         }
 
         private void KillTransformSequence(bool resetMaterial)
@@ -327,34 +291,47 @@ namespace GourmetProject.Game.Presentation.Battle
                 _transformSequence = null;
             }
 
-            if (resetMaterial && _renderer != null)
+            if (_visualScaleCaptured)
             {
-                _renderer.SetPropertyBlock(null);
-                SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
+                _visualRoot.localScale = _visualBaseLocalScale;
+            }
+
+            if (resetMaterial)
+            {
+                RestoreUnlitMaterials();
+                ApplyColors();
             }
         }
 
-        /// <summary>兜底解析根节点上的渲染体/碰撞盒引用，容忍未在 prefab 里手动赋值的情况。</summary>
+        private void RestoreUnlitMaterials()
+        {
+            _tableRenderer.SetPropertyBlock(null);
+            _plateRenderer.SetPropertyBlock(null);
+            SpriteRenderStyle.ApplyUnlitMaterial(_tableRenderer);
+            SpriteRenderStyle.ApplyUnlitMaterial(_plateRenderer);
+        }
+
+        private void Awake()
+        {
+            EnsureRefs();
+        }
+
+        /// <summary>固定视觉结构必须由 Prefab 完整绑定；缺失时明确失败，禁止运行时补节点或补组件。</summary>
         private void EnsureRefs()
         {
-            if (_renderer == null)
+            if (_visualRoot == null || _tableRenderer == null || _plateRenderer == null || _collider == null)
             {
-                _renderer = GetComponent<SpriteRenderer>();
-                if (_renderer == null)
-                {
-                    _renderer = gameObject.AddComponent<SpriteRenderer>();
-                }
+                throw new InvalidOperationException(
+                    $"{nameof(DiningTableCellView)} 的 Prefab 绑定不完整：必须配置 " +
+                    $"{nameof(_visualRoot)}、{nameof(_tableRenderer)}、" +
+                    $"{nameof(_plateRenderer)}、{nameof(_collider)}。");
             }
 
-            if (_collider == null)
+            if (!_visualScaleCaptured)
             {
-                _collider = GetComponent<BoxCollider2D>();
-                if (_collider == null)
-                {
-                    _collider = gameObject.AddComponent<BoxCollider2D>();
-                }
+                _visualBaseLocalScale = _visualRoot.localScale;
+                _visualScaleCaptured = true;
             }
-
         }
 
         private void OnMouseDown()
@@ -375,7 +352,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private void UpdateHover()
         {
             EnsureRefs();
-            if (_collider == null || WorldInput.PointerOverUi)
+            if (WorldInput.PointerOverUi)
             {
                 SetHovered(false);
                 return;
@@ -411,6 +388,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDisable()
         {
+            _plateFeedbackActive = false;
             KillTransformSequence(resetMaterial: true);
             SetHovered(false);
         }

@@ -4,13 +4,17 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// Evenly distributes child centers across the available width. This component
-    /// only changes anchoredPosition.x; it never changes child width or height.
+    /// Evenly distributes child centers across the available width. It can optionally
+    /// size every child to the same square, constrained by the available space and a
+    /// configurable minimum/maximum size.
     /// </summary>
     [AddComponentMenu("Layout/Evenly Spaced Horizontal Layout Group")]
     public sealed class EvenlySpacedHorizontalLayoutGroup : LayoutGroup
     {
         [SerializeField] private float _spacing = 120f;
+        [SerializeField] private bool _controlChildSquareSize;
+        [SerializeField, Min(0f)] private float _minChildSize = 180f;
+        [SerializeField, Min(0f)] private float _maxChildSize = 300f;
 
         public float spacing
         {
@@ -21,6 +25,19 @@ namespace GourmetProject.Game.UI.Meta
         public override void CalculateLayoutInputHorizontal()
         {
             base.CalculateLayoutInputHorizontal();
+
+            if (_controlChildSquareSize)
+            {
+                float totalSpacing = _spacing * Mathf.Max(0, rectChildren.Count - 1);
+                float minWidth = padding.horizontal
+                    + _minChildSize * rectChildren.Count
+                    + totalSpacing;
+                float preferredWidth = padding.horizontal
+                    + MaxChildSize * rectChildren.Count
+                    + totalSpacing;
+                SetLayoutInputForAxis(minWidth, preferredWidth, -1f, 0);
+                return;
+            }
 
             float requiredWidth = padding.horizontal + _spacing * Mathf.Max(0, rectChildren.Count - 1);
             for (int i = 0; i < rectChildren.Count; i++)
@@ -33,6 +50,16 @@ namespace GourmetProject.Game.UI.Meta
 
         public override void CalculateLayoutInputVertical()
         {
+            if (_controlChildSquareSize)
+            {
+                SetLayoutInputForAxis(
+                    padding.vertical + _minChildSize,
+                    padding.vertical + MaxChildSize,
+                    -1f,
+                    1);
+                return;
+            }
+
             float requiredHeight = padding.vertical;
             for (int i = 0; i < rectChildren.Count; i++)
             {
@@ -55,6 +82,20 @@ namespace GourmetProject.Game.UI.Meta
             float availableWidth = rectTransform.rect.width - padding.horizontal;
             float totalSpacing = spacing * Mathf.Max(0, count - 1);
             float cellWidth = Mathf.Max(0f, availableWidth - totalSpacing) / count;
+
+            if (_controlChildSquareSize)
+            {
+                float childSize = CalculateSquareChildSize(count);
+                float alignment = GetAlignmentOnAxis(0);
+                for (int i = 0; i < count; i++)
+                {
+                    float cellStart = padding.left + (cellWidth + spacing) * i;
+                    float childPosition = cellStart + (cellWidth - childSize) * alignment;
+                    SetChildAlongAxis(rectChildren[i], 0, childPosition, childSize);
+                }
+
+                return;
+            }
 
             for (int i = 0; i < count; i++)
             {
@@ -80,6 +121,20 @@ namespace GourmetProject.Game.UI.Meta
         {
             Rect parentRect = rectTransform.rect;
             float availableHeight = parentRect.height - padding.vertical;
+
+            if (_controlChildSquareSize)
+            {
+                float childSize = CalculateSquareChildSize(rectChildren.Count);
+                float childPosition = padding.top
+                    + (availableHeight - childSize) * GetAlignmentOnAxis(1);
+                for (int i = 0; i < rectChildren.Count; i++)
+                {
+                    SetChildAlongAxis(rectChildren[i], 1, childPosition, childSize);
+                }
+
+                return;
+            }
+
             float centerFromBottom = padding.bottom + availableHeight * 0.5f;
 
             for (int i = 0; i < rectChildren.Count; i++)
@@ -96,6 +151,23 @@ namespace GourmetProject.Game.UI.Meta
                 anchoredPosition.y = desiredPivotY - anchorReferenceY;
                 child.anchoredPosition = anchoredPosition;
             }
+        }
+
+        private float MaxChildSize => Mathf.Max(_minChildSize, _maxChildSize);
+
+        private float CalculateSquareChildSize(int count)
+        {
+            if (count <= 0)
+            {
+                return 0f;
+            }
+
+            float availableWidth = Mathf.Max(0f, rectTransform.rect.width - padding.horizontal);
+            float availableHeight = Mathf.Max(0f, rectTransform.rect.height - padding.vertical);
+            float totalSpacing = spacing * Mathf.Max(0, count - 1);
+            float widthPerChild = Mathf.Max(0f, availableWidth - totalSpacing) / count;
+            float fittedSize = Mathf.Min(widthPerChild, availableHeight);
+            return Mathf.Clamp(fittedSize, _minChildSize, MaxChildSize);
         }
     }
 }

@@ -20,9 +20,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly Color VoidPlaceholderColor = new Color(0.85f, 0.85f, 0.85f, 0.22f);
         private const int DragFeedbackSortingOrder = -80;
         private const int TransientRegionOutlineLayer = 999;
-        private const float FragmentPlacementFeedbackFillAlpha = 1.0f;
-        private const float FragmentOverlapFeedbackFillAlpha = 0f;
-        private const float FragmentOverlapOutlineInflate = 1.08f;
 
         private bool _voidAsPlaceholder;
 
@@ -31,13 +28,14 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private readonly Dictionary<GridPos, DiningTableCellView> _cells = new Dictionary<GridPos, DiningTableCellView>();
         private readonly Dictionary<int, BattleScopeRegionOutlineView> _scopeRegionOutlines = new Dictionary<int, BattleScopeRegionOutlineView>();
-        private readonly Dictionary<string, Sprite> _materialCellSprites = new Dictionary<string, Sprite>();
+        private readonly Dictionary<string, DiningTableCellSprites> _materialCellSprites =
+            new Dictionary<string, DiningTableCellSprites>();
         private readonly List<DiningTableCellView> _dragFeedbackCells = new List<DiningTableCellView>();
         private readonly HashSet<GridPos> _presentationHiddenCells = new HashSet<GridPos>();
         private readonly HashSet<GridPos> _presentationSuppressedDisabledCells = new HashSet<GridPos>();
         private readonly HashSet<GridPos> _presentationRemovedTombstones = new HashSet<GridPos>();
         private readonly HashSet<GridPos> _presentationNormalRemovedCells = new HashSet<GridPos>();
-        private Sprite _cellSprite;
+        private DiningTableCellSprites _cellSprites;
         private float _cellSize;
         private GpTable _board;
         private Action<GridPos> _clicked;
@@ -63,7 +61,11 @@ namespace GourmetProject.Game.Presentation.Battle
             Mapper = new DiningTableCoordinateMapper(board.Width, board.Height, cellSize, gap, transform);
             _cellSize = cellSize;
             _materialCellSprites.Clear();
-            _cellSprite = LoadCellSprite("board_cell") ?? CreatePixelSprite();
+            _cellSprites = DiningTableCellSpriteResources.LoadDefault();
+            if (!_cellSprites.IsValid)
+            {
+                throw new InvalidOperationException("默认餐桌的桌体/盘子 Sprite 对缺失。");
+            }
 
             for (int y = 0; y < board.Height; y++)
             {
@@ -76,7 +78,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         continue;
                     }
 
-                    cell.Configure(pos, Mapper.CellCenterLocal(pos), cellSize, _cellSprite, _clicked);
+                    cell.Configure(pos, Mapper.CellCenterLocal(pos), cellSize, _cellSprites, _clicked);
                     cell.SetHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
                     _cells[pos] = cell;
                 }
@@ -115,7 +117,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 GridPos pos = kv.Key;
                 DiningTableCellView view = kv.Value;
-                view.SetSprite(CellSpriteFor(pos), _cellSize);
+                view.SetSprites(CellSpritesFor(pos), _cellSize);
                 if (_presentationHiddenCells.Contains(pos))
                 {
                     view.SetColor(VoidColor);
@@ -196,54 +198,42 @@ namespace GourmetProject.Game.Presentation.Battle
             return false;
         }
 
-        private Sprite CellSpriteFor(GridPos pos)
+        private DiningTableCellSprites CellSpritesFor(GridPos pos)
         {
             if (_board == null || !_board.Exists(pos))
             {
-                return _cellSprite;
+                return _cellSprites;
             }
 
             IReadOnlyList<string> materials = _board.MaterialsAt(pos);
             for (int i = materials.Count - 1; i >= 0; i--)
             {
-                Sprite sprite = LoadMaterialCellSprite(materials[i]);
-                if (sprite != null)
+                DiningTableCellSprites sprites = LoadMaterialCellSprites(materials[i]);
+                if (sprites.IsValid)
                 {
-                    return sprite;
+                    return sprites;
                 }
             }
 
-            return _cellSprite;
+            return _cellSprites;
         }
 
-        private Sprite LoadMaterialCellSprite(string materialId)
+        private DiningTableCellSprites LoadMaterialCellSprites(string materialId)
         {
             if (string.IsNullOrEmpty(materialId))
             {
-                return null;
+                return default;
             }
 
-            if (_materialCellSprites.TryGetValue(materialId, out Sprite cached))
+            if (_materialCellSprites.TryGetValue(materialId, out DiningTableCellSprites cached))
             {
                 return cached;
             }
 
-            Sprite sprite = LoadCellSprite($"board_cell_{materialId}");
-            _materialCellSprites[materialId] = sprite;
-            return sprite;
-        }
-
-        private static Sprite LoadCellSprite(string name)
-        {
-            string path = $"Sprites/UI/{name}";
-            Sprite sprite = Resources.Load<Sprite>(path);
-            if (sprite != null)
-            {
-                return sprite;
-            }
-
-            Sprite[] sprites = Resources.LoadAll<Sprite>(path);
-            return sprites != null && sprites.Length > 0 ? sprites[0] : null;
+            DiningTableCellSprites sprites =
+                DiningTableCellSpriteResources.LoadMaterial(materialId, _cellSprites);
+            _materialCellSprites[materialId] = sprites;
+            return sprites;
         }
 
         public bool TryGetCellView(GridPos pos, out DiningTableCellView view)
@@ -268,7 +258,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             foreach (DiningTableCellView view in _cells.Values)
             {
-                view?.ClearOutline();
+                view?.ClearPlateFeedbackColor();
             }
 
             Sync();
@@ -318,20 +308,16 @@ namespace GourmetProject.Game.Presentation.Battle
             foreach (KeyValuePair<GridPos, GridPlacementFeedbackState> entry in display)
             {
                 DiningTableCellView overlay = _dragFeedbackCells[index++];
-                bool center = !dishPlacement && entry.Key.Equals(result.CenterCell);
                 Color color = dishPlacement
                     ? GridPlacementFeedbackPalette.DishColorFor(result.OverallState, entry.Value)
                     : GridPlacementFeedbackPalette.ColorFor(entry.Value);
                 overlay.gameObject.SetActive(true);
                 overlay.transform.localRotation = Quaternion.identity;
-                overlay.Configure(entry.Key, Mapper.CellCenterLocal(entry.Key), _cellSize, _cellSprite, null);
+                overlay.Configure(entry.Key, Mapper.CellCenterLocal(entry.Key), _cellSize, _cellSprites, null);
                 overlay.name = "DragPlacementFeedback";
                 overlay.SetInteractionEnabled(false);
-                overlay.SetOutline(
-                    color,
-                    center ? 0.12f : 0.08f,
-                    FragmentFeedbackFillAlpha(dishPlacement, entry.Key, entry.Value),
-                    FragmentFeedbackOutlineInflate(dishPlacement, entry.Key, entry.Value));
+                overlay.SetTableBodyVisible(false);
+                overlay.SetPlateFeedbackColor(color);
                 overlay.SetSorting(BattleSorting.Fx, DragFeedbackSortingOrder);
             }
 
@@ -352,34 +338,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private float FragmentFeedbackFillAlpha(
-            bool dishPlacement,
-            GridPos position,
-            GridPlacementFeedbackState state)
-        {
-            if (dishPlacement)
-            {
-                return 0f;
-            }
-
-            // 碎片与已有餐桌重叠时只保留红色外发光，避免普通反馈格遮住餐桌材质。
-            return state == GridPlacementFeedbackState.Blocked && _board?.Exists(position) == true
-                ? FragmentOverlapFeedbackFillAlpha
-                : FragmentPlacementFeedbackFillAlpha;
-        }
-
-        private float FragmentFeedbackOutlineInflate(
-            bool dishPlacement,
-            GridPos position,
-            GridPlacementFeedbackState state)
-        {
-            return !dishPlacement
-                && state == GridPlacementFeedbackState.Blocked
-                && _board?.Exists(position) == true
-                    ? FragmentOverlapOutlineInflate
-                    : 1f;
-        }
-
         public void SetTargetHighlight(GridPos pos, bool selected, bool hovered)
         {
             if (!TryGetCellView(pos, out DiningTableCellView view))
@@ -389,11 +347,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (!selected && !hovered)
             {
-                view.ClearOutline();
+                view.ClearPlateFeedbackColor();
                 return;
             }
 
-            view.SetOutline(new Color(0.25f, 1f, 0.35f), selected ? 0.1f : 0.08f);
+            view.SetPlateFeedbackColor(GridPlacementFeedbackPalette.Valid);
         }
 
         public void ClearScopeHighlights(BattleScopeHighlightChannel channel)
@@ -617,6 +575,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 overlay.name = "DragPlacementFeedback";
                 overlay.SetInteractionEnabled(false);
+                overlay.SetTableBodyVisible(false);
                 overlay.gameObject.SetActive(false);
                 _dragFeedbackCells.Add(overlay);
             }
@@ -666,12 +625,5 @@ namespace GourmetProject.Game.Presentation.Battle
             _cellHoverExited?.Invoke(cell);
         }
 
-        private static Sprite CreatePixelSprite()
-        {
-            var texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-            texture.SetPixel(0, 0, Color.white);
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
-        }
     }
 }
