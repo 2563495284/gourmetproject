@@ -104,14 +104,14 @@ namespace GourmetProject.Game.Procedure
                 GameApp.UI.AddUIGroup(UIForms.GroupDialog, 1);
             }
 
-            if (!GameApp.UI.HasUIGroup(UIForms.GroupTutorial))
-            {
-                GameApp.UI.AddUIGroup(UIForms.GroupTutorial, 3);
-            }
-
             if (!GameApp.UI.HasUIGroup(UIForms.GroupTooltip))
             {
                 GameApp.UI.AddUIGroup(UIForms.GroupTooltip, 2);
+            }
+
+            if (!GameApp.UI.HasUIGroup(UIForms.GroupTutorial))
+            {
+                GameApp.UI.AddUIGroup(UIForms.GroupTutorial, 3);
             }
 
             if (!GameApp.UI.HasUIGroup(UIForms.GroupTransition))

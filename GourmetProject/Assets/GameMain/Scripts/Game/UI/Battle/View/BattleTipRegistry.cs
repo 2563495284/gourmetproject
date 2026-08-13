@@ -7,7 +7,7 @@ namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
     /// 经营挑战界面 hover Tip 注册表：持有装饰品和消耗品、时间轴和食物 Tip 预制体，
-    /// 惰性实例化到 BattleForm 所属 UI Group 下并缓存，界面关闭时统一隐藏。
+    /// 惰性实例化到跨 Dialog 的 Tooltip UI Group 下并缓存，界面关闭时统一隐藏。
     /// </summary>
     public sealed class BattleTipRegistry : MonoBehaviour
     {

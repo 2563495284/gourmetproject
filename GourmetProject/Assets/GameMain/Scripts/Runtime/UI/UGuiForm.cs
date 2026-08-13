@@ -13,8 +13,8 @@ namespace GourmetProject.Runtime.UI
         public new Transform CachedTransform { get; private set; }
 
         /// <summary>
-        /// 当前界面所属的 UI Group 容器。需要覆盖本组全部界面的临时 UI（例如 hover Tip）
-        /// 应挂在这里，避免直接挂到最外层 Canvas 后越过更高层的 UI Group。
+        /// 当前界面所属的 UI Group 容器。仅需覆盖本组内容的临时 UI 可以挂在这里；
+        /// 需要跨 Dialog 显示的 hover Tips 应由玩法层解析到专用 Tooltip Group。
         /// </summary>
         public Transform UIGroupTransform => transform.parent != null ? transform.parent : transform;
 
