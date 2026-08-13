@@ -1,19 +1,5 @@
 [
   {
-    "id": "target_score_0",
-    "purpose": 0,
-    "weekList": [
-      0
-    ],
-    "linearBase": 0,
-    "weekCoeff": 0,
-    "dayCoeff": 0,
-    "expConstant": 4,
-    "expWeekCoeff": 0,
-    "expDayCoeff": 0.5,
-    "roundTo": 10
-  },
-  {
     "id": "target_score_1",
     "purpose": 0,
     "weekList": [
@@ -22,9 +8,9 @@
     "linearBase": 0,
     "weekCoeff": 0,
     "dayCoeff": 0,
-    "expConstant": 5,
+    "expConstant": 5.3,
     "expWeekCoeff": 0,
-    "expDayCoeff": 0.3,
+    "expDayCoeff": 0.5,
     "roundTo": 100
   },
   {
@@ -36,10 +22,10 @@
     "linearBase": 0,
     "weekCoeff": 0,
     "dayCoeff": 0,
-    "expConstant": 6.9,
+    "expConstant": 8.9,
     "expWeekCoeff": 0,
-    "expDayCoeff": 0.3,
-    "roundTo": 100
+    "expDayCoeff": 0.4945,
+    "roundTo": 1000
   },
   {
     "id": "target_score_3",
@@ -50,23 +36,9 @@
     "linearBase": 0,
     "weekCoeff": 0,
     "dayCoeff": 0,
-    "expConstant": 8.6,
+    "expConstant": 12.4,
     "expWeekCoeff": 0,
-    "expDayCoeff": 0.3,
-    "roundTo": 1000
-  },
-  {
-    "id": "target_score_4",
-    "purpose": 0,
-    "weekList": [
-      4
-    ],
-    "linearBase": 0,
-    "weekCoeff": 0,
-    "dayCoeff": 0,
-    "expConstant": 10.5,
-    "expWeekCoeff": 0,
-    "expDayCoeff": 0.35,
+    "expDayCoeff": 0.4957,
     "roundTo": 10000
   },
   {

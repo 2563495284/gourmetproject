@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: 6359970116326859146
-    second: chocolate_strip_0
+    second: chocolate_wafer_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: chocolate_strip_0
+      name: chocolate_wafer_0
       rect:
         serializedVersion: 2
         x: 0
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      chocolate_strip_0: 6359970116326859146
+      chocolate_wafer_0: 6359970116326859146
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

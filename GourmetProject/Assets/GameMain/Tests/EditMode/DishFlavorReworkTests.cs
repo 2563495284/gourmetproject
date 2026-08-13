@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using BreakInfinity;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta.BossDebuffs;
+using GourmetProject.Game.Run;
+using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
@@ -295,11 +298,105 @@ namespace GourmetProject.Tests.EditMode
                 Does.Contain($"1 {expected}食物"));
         }
 
+        [Test]
+        public void RecipeReadonlyBookDisplayOrder_KeepsRecipeOrderWithinSameBase()
+        {
+            var dishes = new[]
+            {
+                DisplayDish("base_b_t_fresh", "base_b", 20, "t_fresh"),
+                DisplayDish("base_a_t_bitter", "base_a", 10, "t_bitter"),
+                DisplayDish("base_a", "base_a", 10),
+                DisplayDish("base_a_t_sweet", "base_a", 10, "t_sweet"),
+                DisplayDish("base_b", "base_b", 20),
+            };
+            GameplayDatabase database = Database(dishes);
+            var entries = new List<RecipeBookSlot>
+            {
+                new RecipeBookSlot(dishes[0].Id),
+                new RecipeBookSlot(dishes[1].Id),
+                new RecipeBookSlot(dishes[2].Id),
+                new RecipeBookSlot(dishes[3].Id),
+                new RecipeBookSlot(dishes[4].Id),
+            };
+            var gameObject = new UnityEngine.GameObject(
+                "RecipeReadonlyBookDisplayOrderTest");
+
+            try
+            {
+                var view = gameObject.AddComponent<RecipeReadonlyBookView>();
+                FieldInfo databaseField = typeof(RecipeReadonlyBookView)
+                    .GetField(
+                        "_database",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+                MethodInfo buildOrder = typeof(RecipeReadonlyBookView)
+                    .GetMethod(
+                        "BuildDishDisplayOrder",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+
+                Assert.That(databaseField, Is.Not.Null);
+                Assert.That(buildOrder, Is.Not.Null);
+                databaseField.SetValue(view, database);
+                var order = (List<int>)buildOrder.Invoke(
+                    view,
+                    new object[] { entries });
+
+                Assert.That(order, Is.EqualTo(new[] { 1, 2, 3, 0, 4 }));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void RecipeFlavorDisplayOrder_FollowsAcquisitionTime()
+        {
+            DishDef dish = DisplayDish(
+                "base_a_t_sour",
+                "base_a",
+                10,
+                "t_sour");
+            var slot = new RecipeBookSlot(dish.Id);
+            slot.AddFlavor("t_salty");
+            slot.AddFlavor("t_sweet");
+            MethodInfo composeFlavorIds = typeof(RecipeReadonlyBookView)
+                .GetMethod(
+                    "ComposeFlavorIds",
+                    BindingFlags.Static | BindingFlags.NonPublic);
+
+            Assert.That(composeFlavorIds, Is.Not.Null);
+            var flavorIds = (List<string>)composeFlavorIds.Invoke(
+                null,
+                new object[] { dish, slot.ExtraFlavorIds });
+
+            Assert.That(
+                flavorIds,
+                Is.EqualTo(new[] { "t_sour", "t_salty", "t_sweet" }));
+        }
+
         private static FlavorDef Flavor(string id, FlavorEffectType type, float value)
             => new FlavorDef(id, id, string.Empty, type, new[] { value }, Array.Empty<string>(), string.Empty);
 
         private static DishDef DishDef(string id, DishShape shape, string flavorId = "")
             => new DishDef(id, id, 10, shape, 0, 0, 1f, Array.Empty<string>(), flavorId);
+
+        private static DishDef DisplayDish(
+            string id,
+            string baseId,
+            int sortOrder,
+            string flavorId = "")
+            => new DishDef(
+                id,
+                id,
+                10,
+                DishShape.FromRows(new[] { "X" }),
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                flavorId,
+                baseId,
+                sortOrder: sortOrder);
 
         private static DishInstance Dish(
             int instanceId,

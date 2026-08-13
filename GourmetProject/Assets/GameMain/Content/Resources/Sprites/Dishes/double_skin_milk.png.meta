@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: -5466163260006118882
-    second: apple_pie_0
+    second: double_skin_milk_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: apple_pie_0
+      name: double_skin_milk_0
       rect:
         serializedVersion: 2
         x: 0
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      apple_pie_0: -5466163260006118882
+      double_skin_milk_0: -5466163260006118882
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

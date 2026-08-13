@@ -425,8 +425,8 @@
     }
   },
   {
-    "id": "souffle",
-    "baseId": "souffle",
+    "id": "apple_strudel",
+    "baseId": "apple_strudel",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_fresh",
     "baseWeight": 1200,
     "price": 45,
@@ -510,8 +510,8 @@
     }
   },
   {
-    "id": "mille_crepe_cake",
-    "baseId": "mille_crepe_cake",
+    "id": "castle_cake",
+    "baseId": "castle_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_fresh",
     "baseWeight": 1200,
     "price": 45,
@@ -544,8 +544,8 @@
     }
   },
   {
-    "id": "sachima",
-    "baseId": "sachima",
+    "id": "bamboo_tube_cake",
+    "baseId": "bamboo_tube_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_fresh",
     "baseWeight": 1200,
     "price": 45,
@@ -748,8 +748,8 @@
     }
   },
   {
-    "id": "toffee_candy",
-    "baseId": "toffee_candy",
+    "id": "honeycomb_toffee",
+    "baseId": "honeycomb_toffee",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_fresh",
     "baseWeight": 1200,
     "price": 60,
@@ -935,8 +935,8 @@
     }
   },
   {
-    "id": "purple_rice_pudding",
-    "baseId": "purple_rice_pudding",
+    "id": "mala_gao",
+    "baseId": "mala_gao",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_fresh",
     "baseWeight": 1200,
     "price": 90,

@@ -294,8 +294,7 @@ namespace GourmetProject.Game.Adapter
                 effectType,
                 f.EffectValue,
                 f.EffectParam,
-                f.TermId,
-                f.SortOrder);
+                f.TermId);
         }
 
         private static MaterialDef ToMaterialDef(cfg.Material c)

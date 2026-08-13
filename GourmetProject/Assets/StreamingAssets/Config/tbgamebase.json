@@ -41,11 +41,12 @@
     ],
     "shopFragmentPackPurchaseLimit": 1,
     "initialHeartCount": 3,
-    "totalWeeks": 4,
+    "totalWeeks": 3,
     "slotFreeSpins": 1,
     "slotPaidCost": 20,
     "slotMaxSpins": 5,
     "archetypePrimaryMinShare": 0.45,
-    "archetypePrimaryMinLead": 0.1
+    "archetypePrimaryMinLead": 0.1,
+    "dishChoiceArchetypePityCount": 2
   }
 ]

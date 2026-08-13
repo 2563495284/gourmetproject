@@ -98,6 +98,8 @@ namespace GourmetProject.Game.Run
         private int _activeUseIndex;
         private int _nextDailyActionHalfCostStacks;
         private int _nextBusinessRewardDoubleStacks;
+        private string _lastDishChoiceArchetypeId = string.Empty;
+        private int _dishChoiceArchetypeMissStreak;
         private readonly List<string> _pendingExtraTimelineNodeIds = new List<string>();
         private int _interestThreshold;
         private int _interestGoldPer;
@@ -921,6 +923,10 @@ namespace GourmetProject.Game.Run
 
         public int NextBusinessRewardDoubleStacks => _nextBusinessRewardDoubleStacks;
 
+        internal string LastDishChoiceArchetypeId => _lastDishChoiceArchetypeId;
+
+        internal int DishChoiceArchetypeMissStreak => _dishChoiceArchetypeMissStreak;
+
         public IReadOnlyList<string> PendingExtraTimelineNodeIds => _pendingExtraTimelineNodeIds;
 
         public void AddNextDailyActionHalfCostStack()
@@ -953,6 +959,72 @@ namespace GourmetProject.Game.Run
 
             _nextBusinessRewardDoubleStacks--;
             return true;
+        }
+
+        internal bool BeginDishChoiceArchetypePity(string archetypeId, int missThreshold)
+        {
+            if (missThreshold <= 0 || !IsDishChoiceArchetypeId(archetypeId))
+            {
+                ClearDishChoiceArchetypePity();
+                return false;
+            }
+
+            if (!string.Equals(
+                    _lastDishChoiceArchetypeId,
+                    archetypeId,
+                    System.StringComparison.Ordinal))
+            {
+                _lastDishChoiceArchetypeId = archetypeId;
+                _dishChoiceArchetypeMissStreak = 0;
+                return false;
+            }
+
+            return _dishChoiceArchetypeMissStreak >= missThreshold;
+        }
+
+        internal void CompleteDishChoiceArchetypePity(
+            string archetypeId,
+            bool targetOffered,
+            int missThreshold)
+        {
+            if (missThreshold <= 0 || !IsDishChoiceArchetypeId(archetypeId))
+            {
+                ClearDishChoiceArchetypePity();
+                return;
+            }
+
+            if (!string.Equals(
+                    _lastDishChoiceArchetypeId,
+                    archetypeId,
+                    System.StringComparison.Ordinal))
+            {
+                _lastDishChoiceArchetypeId = archetypeId;
+                _dishChoiceArchetypeMissStreak = 0;
+            }
+
+            if (targetOffered)
+            {
+                _dishChoiceArchetypeMissStreak = 0;
+                return;
+            }
+
+            int current = System.Math.Max(0, _dishChoiceArchetypeMissStreak);
+            _dishChoiceArchetypeMissStreak = current >= missThreshold
+                ? missThreshold
+                : current + 1;
+        }
+
+        private static bool IsDishChoiceArchetypeId(string archetypeId)
+        {
+            return string.Equals(archetypeId, "0", System.StringComparison.Ordinal)
+                || string.Equals(archetypeId, "1", System.StringComparison.Ordinal)
+                || string.Equals(archetypeId, "2", System.StringComparison.Ordinal);
+        }
+
+        private void ClearDishChoiceArchetypePity()
+        {
+            _lastDishChoiceArchetypeId = string.Empty;
+            _dishChoiceArchetypeMissStreak = 0;
         }
 
         public float PreviewDailyActionCost(float baseCostDays)
@@ -2215,6 +2287,8 @@ namespace GourmetProject.Game.Run
                 ActiveUseIndex = _activeUseIndex,
                 NextDailyActionHalfCostStacks = _nextDailyActionHalfCostStacks,
                 NextBusinessRewardDoubleStacks = _nextBusinessRewardDoubleStacks,
+                LastDishChoiceArchetypeId = _lastDishChoiceArchetypeId,
+                DishChoiceArchetypeMissStreak = _dishChoiceArchetypeMissStreak,
                 ActionRerollCount = _actionRerollCount,
                 LoanDebt = _loanDebt,
                 MealBonusRemaining = _mealBonusRemaining,
@@ -2341,6 +2415,17 @@ namespace GourmetProject.Game.Run
             run._nextBusinessRewardDoubleStacks = System.Math.Max(
                 System.Math.Max(0, data.NextBusinessRewardDoubleStacks),
                 System.Math.Max(0, data.NextBusinessSpecificRewardDoubleStacks));
+            if (IsDishChoiceArchetypeId(data.LastDishChoiceArchetypeId))
+            {
+                run._lastDishChoiceArchetypeId = data.LastDishChoiceArchetypeId;
+                run._dishChoiceArchetypeMissStreak = System.Math.Max(
+                    0,
+                    data.DishChoiceArchetypeMissStreak);
+            }
+            else
+            {
+                run.ClearDishChoiceArchetypePity();
+            }
             run._actionRerollCount = data.ActionRerollCount >= 0
                 ? data.ActionRerollCount
                 : System.Math.Max(0, tables.TbGameBase.InitialActionRerollCount);

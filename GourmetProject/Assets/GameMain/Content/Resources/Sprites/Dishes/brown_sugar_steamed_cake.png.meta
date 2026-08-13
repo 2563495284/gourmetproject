@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: -6425830651967066815
-    second: waffle_0
+    second: brown_sugar_steamed_cake_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: waffle_0
+      name: brown_sugar_steamed_cake_0
       rect:
         serializedVersion: 2
         x: 0
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      waffle_0: -6425830651967066815
+      brown_sugar_steamed_cake_0: -6425830651967066815
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

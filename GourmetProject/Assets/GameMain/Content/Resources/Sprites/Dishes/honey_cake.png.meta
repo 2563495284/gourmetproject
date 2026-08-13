@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: 5615691178450817814
-    second: long_cake_0
+    second: honey_cake_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: long_cake_0
+      name: honey_cake_0
       rect:
         serializedVersion: 2
         x: 0
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      long_cake_0: 5615691178450817814
+      honey_cake_0: 5615691178450817814
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

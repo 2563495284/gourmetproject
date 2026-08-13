@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: -3356302069181093370
-    second: cream_0
+    second: cream_puff_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: cream_0
+      name: cream_puff_0
       rect:
         serializedVersion: 2
         x: 0
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      cream_0: -3356302069181093370
+      cream_puff_0: -3356302069181093370
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

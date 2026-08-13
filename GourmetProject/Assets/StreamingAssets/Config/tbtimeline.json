@@ -3,13 +3,15 @@
     "id": "tl_1",
     "baseLengthDays": 7,
     "nodeDays": [
-      2,
-      5,
+      3,
+      4,
+      6,
       7
     ],
     "nodeActionIds": [
-      "act_interest",
       "act_shop",
+      "act_boss",
+      "act_interest",
       "act_boss"
     ]
   },
@@ -17,12 +19,30 @@
     "id": "tl_2",
     "baseLengthDays": 7,
     "nodeDays": [
-      3,
-      6,
+      2,
+      4,
+      5,
       7
     ],
     "nodeActionIds": [
       "act_slot",
+      "act_boss",
+      "act_shop",
+      "act_boss"
+    ]
+  },
+  {
+    "id": "tl_3",
+    "baseLengthDays": 7,
+    "nodeDays": [
+      1,
+      4,
+      6,
+      7
+    ],
+    "nodeActionIds": [
+      "act_reward",
+      "act_boss",
       "act_shop",
       "act_boss"
     ]

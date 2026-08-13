@@ -100,8 +100,8 @@
     "subSkills": "sk_hawthorn_cake_1"
   },
   {
-    "id": "sk_souffle",
-    "subSkills": "sk_souffle_1"
+    "id": "sk_apple_strudel",
+    "subSkills": "sk_apple_strudel_1"
   },
   {
     "id": "sk_fruit_tart",
@@ -120,16 +120,16 @@
     "subSkills": "sk_popping_candy_1"
   },
   {
-    "id": "sk_mille_crepe_cake",
-    "subSkills": "sk_mille_crepe_cake_1"
+    "id": "sk_castle_cake",
+    "subSkills": "sk_castle_cake_1"
   },
   {
     "id": "sk_soybean_glutinous_roll",
     "subSkills": "sk_soybean_glutinous_roll_1"
   },
   {
-    "id": "sk_sachima",
-    "subSkills": "sk_sachima_1"
+    "id": "sk_bamboo_tube_cake",
+    "subSkills": "sk_bamboo_tube_cake_1"
   },
   {
     "id": "sk_gummy",
@@ -176,8 +176,8 @@
     "subSkills": "sk_chiffion_1"
   },
   {
-    "id": "sk_toffee_candy",
-    "subSkills": "sk_toffee_candy_1"
+    "id": "sk_honeycomb_toffee",
+    "subSkills": "sk_honeycomb_toffee_1"
   },
   {
     "id": "sk_taosu",
@@ -220,8 +220,8 @@
     "subSkills": "sk_fruit_cake_1|sk_fruit_cake_2"
   },
   {
-    "id": "sk_purple_rice_pudding",
-    "subSkills": "sk_purple_rice_pudding_1"
+    "id": "sk_mala_gao",
+    "subSkills": "sk_mala_gao_1"
   },
   {
     "id": "sk_marshmallow",

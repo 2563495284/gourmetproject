@@ -4,16 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: 7768418096281428498
-    second: chocolate_sauce_0
-  - first:
-      213: 4221366587335764036
-    second: chocolate_sauce_1
-  - first:
-      213: -1370244775751342972
-    second: chocolate_sauce_2
-  - first:
-      213: -7164497948923308288
-    second: chocolate_sauce_3
+    second: nama_chocolate_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -109,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: chocolate_sauce_0
+      name: nama_chocolate_0
       rect:
         serializedVersion: 2
         x: 0
@@ -130,72 +121,6 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
-    - serializedVersion: 2
-      name: chocolate_sauce_1
-      rect:
-        serializedVersion: 2
-        x: 97
-        y: 71
-        width: 1336
-        height: 896
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 448e9d0ab8e459a30800000000000000
-      internalID: 4221366587335764036
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: chocolate_sauce_2
-      rect:
-        serializedVersion: 2
-        x: 506
-        y: 0
-        width: 11
-        height: 6
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 484a106e2a9ebfce0800000000000000
-      internalID: -1370244775751342972
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: chocolate_sauce_3
-      rect:
-        serializedVersion: 2
-        x: 1019
-        y: 0
-        width: 13
-        height: 6
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 00759681317929c90800000000000000
-      internalID: -7164497948923308288
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
     outline: []
     customData: 
     physicsShape: []
@@ -210,10 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      chocolate_sauce_0: 7768418096281428498
-      chocolate_sauce_1: 4221366587335764036
-      chocolate_sauce_2: -1370244775751342972
-      chocolate_sauce_3: -7164497948923308288
+      nama_chocolate_0: 7768418096281428498
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
