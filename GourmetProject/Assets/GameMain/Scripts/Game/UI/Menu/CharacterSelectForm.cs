@@ -16,6 +16,7 @@ using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
 using UnityEngine;
+using UnityEngine.Sprites;
 using UnityEngine.UI;
 using Log = GourmetProject.Core.Diagnostics.Log;
 using TMPro;
@@ -30,15 +31,18 @@ namespace GourmetProject.Game.UI.Menu
     public sealed class CharacterSelectForm : UGuiForm
     {
         private const string Tag = "CharacterSelect";
-        private const float RecipeButtonGlowPadding = 28f;
+        private const float RecipeButtonGlowPadding = 24f;
+        private const float RecipeButtonGlowRadius = 12f;
         private const float ActionButtonHorizontalOffset = 130f;
 
         private static readonly Color DotSelected = new(1f, 0.6f, 0.16f, 1f);
         private static readonly Color DotNormal = new(1f, 1f, 1f, 0.45f);
         private static readonly Color RecipeButtonGlowColor =
-            new(0.25f, 1f, 0.35f, 0.9f);
+            new(0.25f, 1f, 0.35f, 0.75f);
         private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
-        private static readonly int PaddingId = Shader.PropertyToID("_Padding");
+        private static readonly int ContentSizeId = Shader.PropertyToID("_ContentSize");
+        private static readonly int SpriteUvRectId = Shader.PropertyToID("_SpriteUVRect");
+        private static readonly int GlowRadiusId = Shader.PropertyToID("_GlowRadius");
         [SerializeField] private TMP_Text _nameText;
         [SerializeField] private TMP_Text _descText;
         [SerializeField] private Button _leftArrow;
@@ -507,10 +511,17 @@ namespace GourmetProject.Game.UI.Menu
                 return;
             }
 
-            _recipeViewGlow.gameObject.SetActive(visible);
+            Image sourceImage = _recipeViewButton?.targetGraphic as Image;
+            Sprite sourceSprite = sourceImage != null ? sourceImage.sprite : null;
+            _recipeViewGlow.sprite = sourceSprite;
+            _recipeViewGlow.rectTransform.sizeDelta =
+                Vector2.one * (RecipeButtonGlowPadding * 2f);
+            _recipeViewGlow.gameObject.SetActive(visible && sourceSprite != null);
             _recipeViewGlow.color =
-                visible ? RecipeButtonGlowColor : Color.clear;
-            if (!visible)
+                visible && sourceSprite != null
+                    ? RecipeButtonGlowColor
+                    : Color.clear;
+            if (!visible || sourceSprite == null)
             {
                 return;
             }
@@ -525,9 +536,48 @@ namespace GourmetProject.Game.UI.Menu
             _recipeViewGlowMaterial.SetVector(
                 QuadSizeId,
                 new Vector4(rect.width, rect.height, 0f, 0f));
+            Vector2 contentSize = GetDisplayedSpriteSize(sourceImage);
+            _recipeViewGlowMaterial.SetVector(
+                ContentSizeId,
+                new Vector4(contentSize.x, contentSize.y, 0f, 0f));
+
+            Vector4 outerUv = DataUtility.GetOuterUV(sourceSprite);
+            _recipeViewGlowMaterial.SetVector(
+                SpriteUvRectId,
+                new Vector4(
+                    outerUv.x,
+                    outerUv.y,
+                    outerUv.z - outerUv.x,
+                    outerUv.w - outerUv.y));
             _recipeViewGlowMaterial.SetFloat(
-                PaddingId,
-                RecipeButtonGlowPadding);
+                GlowRadiusId,
+                RecipeButtonGlowRadius);
+        }
+
+        private static Vector2 GetDisplayedSpriteSize(Image image)
+        {
+            Vector2 size = image.rectTransform.rect.size;
+            Sprite sprite = image.sprite;
+            if (!image.preserveAspect
+                || sprite == null
+                || size.x <= 0f
+                || size.y <= 0f
+                || sprite.rect.height <= 0f)
+            {
+                return size;
+            }
+
+            float spriteAspect = sprite.rect.width / sprite.rect.height;
+            if (spriteAspect > size.x / size.y)
+            {
+                size.y = size.x / spriteAspect;
+            }
+            else
+            {
+                size.x = size.y * spriteAspect;
+            }
+
+            return size;
         }
 
         private void EnsureRecipeViewGlowMaterial()
@@ -540,16 +590,18 @@ namespace GourmetProject.Game.UI.Menu
             Material baseMaterial = _recipeViewGlow.material;
             if (baseMaterial == null
                 || baseMaterial.shader == null
-                || baseMaterial.shader.name != "GourmetProject/UIOuterGlow")
+                || baseMaterial.shader.name
+                    != "GourmetProject/UIAlphaConvolutionGlow")
             {
                 baseMaterial =
-                    Resources.Load<Material>("Materials/UIOuterGlow");
+                    Resources.Load<Material>(
+                        "Materials/UIAlphaConvolutionGlow");
             }
 
             if (baseMaterial == null)
             {
                 Log.Warning(
-                    "RecipeViewButton cannot load UIOuterGlow material.",
+                    "RecipeViewButton cannot load UIAlphaConvolutionGlow material.",
                     Tag);
                 return;
             }

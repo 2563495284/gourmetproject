@@ -11,6 +11,10 @@ namespace GourmetProject.Tests.EditMode
     {
         private const string CellPrefabPath =
             "Assets/GameMain/Content/Prefabs/Battle/Board/DiningTableCell.prefab";
+        private const string ArrowCookieSpritePath =
+            "Assets/GameMain/Content/Resources/Sprites/Dishes/arrow_cookie_1.png";
+        private const string CakeRollSpritePath =
+            "Assets/GameMain/Content/Resources/Sprites/Dishes/cake_roll.png";
 
         private static readonly string[] PreviewPrefabPaths =
         {
@@ -99,6 +103,77 @@ namespace GourmetProject.Tests.EditMode
                 Object.DestroyImmediate(sprite);
                 Object.DestroyImmediate(texture);
             }
+        }
+
+        [TestCase(ArrowCookieSpritePath, 2, 1)]
+        [TestCase(CakeRollSpritePath, 1, 3)]
+        public void WarehouseDishScale_FillsFootprintWithTightSpriteMesh(
+            string spritePath,
+            int width,
+            int height)
+        {
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+            Assert.That(sprite, Is.Not.Null, spritePath);
+
+            DishShape shape = DishShape.FromRows(
+                BuildFilledRows(width, height));
+            const float cellSize = 1f;
+            float pitch = cellSize
+                          + DiningTableLayout.Gap / DiningTableLayout.MaxCellSize;
+            Bounds meshBounds = DishVisualLayout.SpriteMeshBounds(sprite);
+            Vector3 scale = DishVisualLayout.SpriteScale(
+                sprite,
+                shape,
+                0,
+                cellSize,
+                pitch,
+                useTightMeshBounds: true);
+            Vector2 span = DishVisualLayout.FootprintSpan(
+                shape,
+                cellSize,
+                pitch);
+
+            Assert.That(
+                meshBounds.size.x * scale.x,
+                Is.EqualTo(span.x).Within(0.0001f));
+            Assert.That(
+                meshBounds.size.y * scale.y,
+                Is.EqualTo(span.y).Within(0.0001f));
+        }
+
+        [TestCase(2, 1)]
+        [TestCase(1, 3)]
+        public void WarehouseCameraFrame_DependsOnlyOnFootprint(
+            int width,
+            int height)
+        {
+            DishShape shape = DishShape.FromRows(
+                BuildFilledRows(width, height));
+            float aspect = (float)width / height;
+            float actual = DishIconPreviewRenderer.PreviewOrthographicSize(
+                shape,
+                aspect);
+            Vector2 span = DishVisualLayout.FootprintSpan(
+                shape,
+                1f,
+                1f + DiningTableLayout.Gap / DiningTableLayout.MaxCellSize);
+            float expectedWithoutPadding = Mathf.Max(
+                span.y * 0.5f,
+                span.x / (aspect * 2f));
+
+            Assert.That(actual, Is.GreaterThan(expectedWithoutPadding));
+            Assert.That(actual, Is.LessThan(expectedWithoutPadding * 1.1f));
+        }
+
+        private static string[] BuildFilledRows(int width, int height)
+        {
+            var rows = new string[height];
+            for (int y = 0; y < height; y++)
+            {
+                rows[y] = new string('X', width);
+            }
+
+            return rows;
         }
     }
 }

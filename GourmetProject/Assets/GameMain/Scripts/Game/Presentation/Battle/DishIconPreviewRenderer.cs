@@ -48,6 +48,9 @@ namespace GourmetProject.Game.Presentation.Battle
             public DishValueBadgeView SourcePrefab;
             public BigDouble Value;
             public bool HasValue;
+            public DishIconPreviewMode Mode;
+            public Vector2Int ShapeSize;
+            public float Scale = BadgeScale;
         }
 
         public static RenderTexture Render(
@@ -296,7 +299,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 BuildBoard(cellPrefab, displayShape);
             }
 
-            BuildDish(displayShape, rotationIndex, sprite, dishPrefab, visualSeed);
+            BuildDish(
+                displayShape,
+                rotationIndex,
+                sprite,
+                dishPrefab,
+                mode,
+                visualSeed);
 
             int textureWidth = boardWidth * pixelsPerCell;
             int textureHeight = boardHeight * pixelsPerCell;
@@ -330,12 +339,24 @@ namespace GourmetProject.Game.Presentation.Battle
                 texture.Create();
             }
 
-            BuildBadge(texture, badgePrefab, displayShape, deliciousness);
+            BuildBadge(
+                texture,
+                badgePrefab,
+                displayShape,
+                deliciousness,
+                mode);
 
             _camera.clearFlags = CameraClearFlags.SolidColor;
             _camera.backgroundColor = backgroundColor;
             _camera.aspect = (float)boardWidth / boardHeight;
-            FrameCameraToVisibleContent(boardWidth, boardHeight);
+            if (mode == DishIconPreviewMode.Warehouse)
+            {
+                FrameCameraToFootprint(displayShape);
+            }
+            else
+            {
+                FrameCameraToVisibleContent(boardWidth, boardHeight);
+            }
             _camera.targetTexture = texture;
             _camera.Render();
             _camera.targetTexture = null;
@@ -486,6 +507,7 @@ namespace GourmetProject.Game.Presentation.Battle
             int rotationIndex,
             Sprite sprite,
             DishPieceView dishPrefab,
+            DishIconPreviewMode mode,
             float visualSeed)
         {
             _dishRenderer.gameObject.SetActive(true);
@@ -494,14 +516,23 @@ namespace GourmetProject.Game.Presentation.Battle
             SpriteRenderStyle.ApplyUnlitMaterial(_dishRenderer);
             BattleSorting.Apply(_dishRenderer, BattleSorting.Pieces, BattleSorting.OrderBody);
 
-            _dishRoot.localPosition = Vector3.zero;
-            _dishRoot.localRotation = Quaternion.Euler(0f, 0f, -90f * rotationIndex);
-            _dishRoot.localScale = DishVisualLayout.SpriteScale(
+            bool useTightMeshBounds = mode == DishIconPreviewMode.Warehouse;
+            Quaternion rotation = Quaternion.Euler(0f, 0f, -90f * rotationIndex);
+            Vector3 scale = DishVisualLayout.SpriteScale(
                 sprite,
                 displayShape,
                 rotationIndex,
                 CellSize,
-                Pitch);
+                Pitch,
+                useTightMeshBounds);
+            _dishRoot.localRotation = rotation;
+            _dishRoot.localScale = scale;
+            _dishRoot.localPosition = useTightMeshBounds
+                ? DishVisualLayout.PositionToCenterSpriteBounds(
+                    DishVisualLayout.SpriteMeshBounds(sprite),
+                    scale,
+                    rotation)
+                : Vector3.zero;
 
             BuildContactShadow(displayShape, dishPrefab);
 
@@ -579,6 +610,29 @@ namespace GourmetProject.Game.Presentation.Battle
             _camera.orthographicSize = Mathf.Max(height * 0.5f, width / (aspect * 2f));
         }
 
+        private void FrameCameraToFootprint(DishShape displayShape)
+        {
+            _camera.transform.localPosition = new Vector3(0f, 0f, -10f);
+            _camera.orthographicSize = PreviewOrthographicSize(
+                displayShape,
+                _camera.aspect);
+        }
+
+        internal static float PreviewOrthographicSize(
+            DishShape displayShape,
+            float aspect)
+        {
+            Vector2 span = DishVisualLayout.FootprintSpan(
+                displayShape,
+                CellSize,
+                Pitch);
+            float safeAspect = Mathf.Max(0.0001f, aspect);
+            float size = Mathf.Max(
+                span.y * 0.5f,
+                span.x / (safeAspect * 2f));
+            return size * (1f + CameraPadding * 2f);
+        }
+
         private void ComposeFlavorIds(DishDef dish, IReadOnlyList<string> flavorIds)
         {
             _flavorScratch.Clear();
@@ -596,7 +650,8 @@ namespace GourmetProject.Game.Presentation.Battle
             RenderTexture target,
             DishValueBadgeView badgePrefab,
             DishShape displayShape,
-            BigDouble deliciousness)
+            BigDouble deliciousness,
+            DishIconPreviewMode mode)
         {
             if (target == null || badgePrefab == null)
             {
@@ -630,7 +685,27 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             state.View.gameObject.SetActive(true);
+            Vector2Int shapeSize = new(displayShape.Width, displayShape.Height);
+            bool layoutChanged = state.Mode != mode || state.ShapeSize != shapeSize;
             state.View.transform.localScale = Vector3.one * BadgeScale;
+            if (!state.HasValue || state.Value != deliciousness)
+            {
+                state.Value = deliciousness;
+                state.HasValue = true;
+                state.View.SetValue(DishValueDisplay.Format(deliciousness));
+                layoutChanged = true;
+            }
+
+            if (layoutChanged)
+            {
+                state.Mode = mode;
+                state.ShapeSize = shapeSize;
+                state.Scale = mode == DishIconPreviewMode.Warehouse
+                    ? WarehouseBadgeScale(state.View, displayShape)
+                    : BadgeScale;
+            }
+
+            state.View.transform.localScale = Vector3.one * state.Scale;
             float badgeTopExtent = state.View.TopExtent
                 * Mathf.Abs(state.View.transform.localScale.y);
             state.View.transform.localPosition = DishBadgeLayout.PositionFromShapeCenter(
@@ -638,12 +713,51 @@ namespace GourmetProject.Game.Presentation.Battle
                 CellSize,
                 Pitch,
                 badgeTopExtent);
-            if (!state.HasValue || state.Value != deliciousness)
+        }
+
+        private static float WarehouseBadgeScale(
+            DishValueBadgeView view,
+            DishShape displayShape)
+        {
+            if (view == null || displayShape == null)
             {
-                state.Value = deliciousness;
-                state.HasValue = true;
-                state.View.SetValue(DishValueDisplay.Format(deliciousness));
+                return BadgeScale;
             }
+
+            Renderer[] renderers = view.GetComponentsInChildren<Renderer>(false);
+            bool hasBounds = false;
+            Bounds badgeBounds = default;
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null || !renderer.enabled)
+                {
+                    continue;
+                }
+
+                if (!hasBounds)
+                {
+                    badgeBounds = renderer.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    badgeBounds.Encapsulate(renderer.bounds);
+                }
+            }
+
+            if (!hasBounds || badgeBounds.size.x <= 0.0001f)
+            {
+                return BadgeScale;
+            }
+
+            DishBadgeLayout.GridRun run =
+                DishBadgeLayout.FindTopContinuousRun(displayShape.Cells);
+            float availableWidth =
+                (run.EndX - run.StartX) * Pitch + CellSize;
+            return Mathf.Min(
+                BadgeScale,
+                availableWidth / badgeBounds.size.x);
         }
 
         private void PruneBadgeStates()
