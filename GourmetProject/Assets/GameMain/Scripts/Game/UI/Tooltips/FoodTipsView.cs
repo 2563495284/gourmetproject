@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DG.Tweening;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Scoring;
@@ -14,6 +15,8 @@ namespace GourmetProject.Game.UI.Tooltips
     public sealed class FoodTipsView : MonoBehaviour
     {
         private const string CountAsTermId = "term_food_count_as";
+        private const float ShowDuration = 0.12f;
+        private const float HideDuration = 0.08f;
 
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private FoodMaterialTipsView _materialsView;
@@ -23,6 +26,8 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private RectTransform _specialTagsRoot;
         [SerializeField] private RectTransform _transferredSubSkillsRoot;
         [SerializeField] private FoodTipCardView _infoCardPrefab;
+
+        private Tween _visibilityTween;
 
         [Header("Layout")]
         [SerializeField] private float _targetGap = 18f;
@@ -102,23 +107,51 @@ namespace GourmetProject.Game.UI.Tooltips
         public void Show()
         {
             ValidateReferences();
+            bool wasActive = gameObject.activeSelf;
             gameObject.SetActive(true);
             if (_canvasGroup != null)
             {
-                _canvasGroup.alpha = 1f;
+                KillVisibilityTween();
+                if (!wasActive)
+                {
+                    _canvasGroup.alpha = 0f;
+                }
+
                 _canvasGroup.blocksRaycasts = false;
                 _canvasGroup.interactable = false;
+                _visibilityTween = _canvasGroup
+                    .DOFade(1f, ShowDuration)
+                    .SetEase(Ease.OutQuad)
+                    .SetUpdate(true)
+                    .SetLink(gameObject)
+                    .OnComplete(() => _visibilityTween = null);
             }
         }
 
         public void Hide()
         {
-            if (_canvasGroup != null)
+            if (!gameObject.activeSelf)
             {
-                _canvasGroup.alpha = 0f;
+                return;
             }
 
-            gameObject.SetActive(false);
+            if (_canvasGroup == null || !Application.isPlaying)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
+            KillVisibilityTween();
+            _visibilityTween = _canvasGroup
+                .DOFade(0f, HideDuration)
+                .SetEase(Ease.InQuad)
+                .SetUpdate(true)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    _visibilityTween = null;
+                    gameObject.SetActive(false);
+                });
         }
 
         public void PlaceAroundWorldBounds(Bounds worldBounds, Camera worldCamera, Canvas canvas)
@@ -205,6 +238,22 @@ namespace GourmetProject.Game.UI.Tooltips
         {
             ValidateReferences();
             Hide();
+        }
+
+        private void OnDisable()
+        {
+            KillVisibilityTween();
+        }
+
+        private void KillVisibilityTween()
+        {
+            if (_visibilityTween == null)
+            {
+                return;
+            }
+
+            _visibilityTween.Kill();
+            _visibilityTween = null;
         }
 
         private void Reset()

@@ -669,6 +669,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Tooltips.FoodSummaryTipsView
   _canvasGroup: {fileID: 0}
   _nameText: {fileID: 2766497934996409711}
+  _nameAnimator: {fileID: 919100000000000003}
   _duplicateView: {fileID: 9117981488776942271}
   _countAsView: {fileID: 4945564588195720620}
   _countAsText: {fileID: 3682704216367321491}
@@ -2363,6 +2364,7 @@ GameObject:
   - component: {fileID: 9103898273366099230}
   - component: {fileID: 4185931153456084957}
   - component: {fileID: 2766497934996409711}
+  - component: {fileID: 919100000000000003}
   m_Layer: 0
   m_Name: Name
   m_TagString: Untagged
@@ -3187,3 +3189,28 @@ MonoBehaviour:
   m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5}
   m_EffectDistance: {x: 1, y: -1}
   m_UseGraphicAlpha: 1
+--- !u!114 &919100000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6631804148441858298}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb6ab94b050794383b3faea712bad4de, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: GourmetProject.Game::GameStartStudio.UI.TmpTextVertexAnimator
+  preset: 9
+  intensity: 1
+  speed: 1
+  breathDuration: 1.9
+  breathScale: 0.045
+  waveInterval: 2.35
+  waveTravelDuration: 0.75
+  perCharacterDelay: 0.055
+  waveHeight: 8
+  shimmerInterval: 3.2
+  shimmerWidth: 0.16
+  shimmerColor: {r: 1, g: 0.96, b: 0.58, a: 1}
+  shimmerStrength: 0.42

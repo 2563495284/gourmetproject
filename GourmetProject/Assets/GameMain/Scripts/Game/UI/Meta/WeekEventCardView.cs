@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using DG.Tweening;
+using GameStartStudio.UI;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Flow;
 using GourmetProject.Game.Meta;
@@ -20,6 +21,20 @@ using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
 {
+    internal readonly struct WeekEventTitleAnimation
+    {
+        public WeekEventTitleAnimation(TmpTextAnimationPreset preset, float intensity, float speed)
+        {
+            Preset = preset;
+            Intensity = intensity;
+            Speed = speed;
+        }
+
+        public TmpTextAnimationPreset Preset { get; }
+        public float Intensity { get; }
+        public float Speed { get; }
+    }
+
     /// <summary>
     /// 周地图「n 选一」事件卡视图。固定结构在 WeekEventCardView.prefab，
     /// 文案与点击回调通过 <see cref="Bind"/> 数据驱动填充。
@@ -36,6 +51,7 @@ namespace GourmetProject.Game.UI.Meta
         private static readonly Color FooterNodeColor = new Color(0.78f, 1f, 0.88f, 0.92f);
 
         [SerializeField] private TMP_Text _nameText;
+        [SerializeField] private TmpTextVertexAnimator _nameAnimator;
         [SerializeField] private TMP_Text _descText;
         [SerializeField] private TMP_Text _timeText;
         [SerializeField] private Image _artImage;
@@ -97,6 +113,7 @@ namespace GourmetProject.Game.UI.Meta
         public void BindEventOption(string optionText, Action onPick)
         {
             ApplyCommon(string.IsNullOrWhiteSpace(optionText) ? "选项" : optionText, string.Empty, onPick);
+            ConfigureTitleAnimation(ActionDisplayKind.Event);
             SetFooter(NodeEventFooter, true, FooterNodeColor);
             SetArt(Resources.Load<Sprite>("Sprites/UI/card_action_event"));
             SetRewardBadge(false);
@@ -117,33 +134,36 @@ namespace GourmetProject.Game.UI.Meta
             cfg.GameAction action = node == null ? null : GameApp.Config.Tables.TbAction.GetOrDefault(node.ActionId);
             if (action == null)
             {
-                BindNodeCard("事件", string.Empty, "card_action_event", onPick);
+                BindNodeCard("事件", string.Empty, "card_action_event", ActionDisplayKind.Event, null, onPick);
                 return;
             }
 
-            switch (ActionDisplay.KindOf(action))
+            ActionDisplayKind displayKind = ActionDisplay.KindOf(action);
+            cfg.Food food = ResolveFood(action);
+            cfg.FoodActionKind? foodKind = food != null ? food.ActionKind : null;
+            switch (displayKind)
             {
                 case ActionDisplayKind.Shop:
-                    BindNodeCard("商店", string.Empty, "card_node_shop", onPick);
+                    BindNodeCard("商店", string.Empty, "card_node_shop", displayKind, foodKind, onPick);
                     break;
                 case ActionDisplayKind.Interest:
                     int threshold = Mathf.Max(0, interestThreshold ?? GameApp.Config.Tables.TbGameBase.InterestThreshold);
                     int configuredGoldPer = interestGoldPer ?? GameApp.Config.Tables.TbGameBase.InterestGoldPer;
                     int goldPer = configuredGoldPer > 0 ? configuredGoldPer : 1;
-                    BindNodeCard("收取利息", string.Empty, "card_node_interest", onPick);
+                    BindNodeCard("收取利息", string.Empty, "card_node_interest", displayKind, foodKind, onPick);
                     break;
                 case ActionDisplayKind.Boss:
                     cfg.BossDebuff bossDebuff = BossService.PreviewBossDebuff(GameRunContext.Current, node);
-                    BindNodeCard(BossTitle(bossDebuff?.Name), string.Empty, "card_node_boss", onPick);
+                    BindNodeCard(BossTitle(bossDebuff?.Name), string.Empty, "card_node_boss", displayKind, foodKind, onPick);
                     break;
                 case ActionDisplayKind.Event:
-                    BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", onPick);
+                    BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", displayKind, foodKind, onPick);
                     break;
                 case ActionDisplayKind.Slot:
-                    BindNodeCard(string.IsNullOrEmpty(action.Name) ? "抽奖机" : action.Name, string.Empty, "card_action_slot", onPick);
+                    BindNodeCard(string.IsNullOrEmpty(action.Name) ? "抽奖机" : action.Name, string.Empty, "card_action_slot", displayKind, foodKind, onPick);
                     break;
                 default:
-                    BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", onPick);
+                    BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", displayKind, foodKind, onPick);
                     break;
             }
         }
@@ -158,7 +178,13 @@ namespace GourmetProject.Game.UI.Meta
                 desc = string.IsNullOrWhiteSpace(desc) ? scoreLine : $"{desc}\n{scoreLine}";
             }
 
-            BindNodeCard($"周末星级评鉴\n{bossName}", desc, "card_node_boss", onPick);
+            BindNodeCard(
+                $"周末星级评鉴\n{bossName}",
+                desc,
+                "card_node_boss",
+                ActionDisplayKind.Boss,
+                boss != null ? boss.ActionKind : cfg.FoodActionKind.Feast,
+                onPick);
         }
 
         public static string BossTitle(string bossDebuffName)
@@ -170,7 +196,19 @@ namespace GourmetProject.Game.UI.Meta
 
         public void BindNodeCard(string title, string desc, string artSpriteName, Action onPick)
         {
+            BindNodeCard(title, desc, artSpriteName, ActionDisplayKind.Event, null, onPick);
+        }
+
+        private void BindNodeCard(
+            string title,
+            string desc,
+            string artSpriteName,
+            ActionDisplayKind displayKind,
+            cfg.FoodActionKind? foodKind,
+            Action onPick)
+        {
             ApplyCommon(title, desc, onPick);
+            ConfigureTitleAnimation(displayKind, foodKind);
             SetFooter(NodeEventFooter, true, FooterNodeColor);
             SetArt(Resources.Load<Sprite>("Sprites/UI/card_action_event"));
             SetArtByName(artSpriteName);
@@ -188,6 +226,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             Bind(CardName(action), string.Empty, action.MinCostDays, onPick);
+            ConfigureTitleAnimationFor(action);
             SetArt(CardSpriteFor(action));
             SetFoodRewardBadge(action);
         }
@@ -202,6 +241,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             Bind(CardName(choice.Action), string.Empty, choice.CostDays, onPick);
+            ConfigureTitleAnimationFor(choice.Action);
             SetArt(CardSpriteFor(choice.Action));
             SetFoodRewardBadge(choice.Action);
         }
@@ -229,6 +269,7 @@ namespace GourmetProject.Game.UI.Meta
         public void Bind(string name, string desc, float costDays, Action onPick)
         {
             ApplyCommon(name, desc, onPick);
+            ConfigureTitleAnimation(ActionDisplayKind.Event);
             if (costDays > 0f)
             {
                 SetFooter($"用时：{costDays.ToString("0.#", CultureInfo.InvariantCulture)}天", true, FooterActionColor);
@@ -251,6 +292,67 @@ namespace GourmetProject.Game.UI.Meta
                 _pickButton.onClick.RemoveAllListeners();
                 _pickButton.onClick.AddListener(OnPickClicked);
             }
+        }
+
+        private void ConfigureTitleAnimationFor(cfg.GameAction action)
+        {
+            ActionDisplayKind displayKind = ActionDisplay.KindOf(action);
+            cfg.Food food = action != null ? ResolveFood(action) : null;
+            ConfigureTitleAnimation(displayKind, food != null ? food.ActionKind : null);
+        }
+
+        private void ConfigureTitleAnimation(
+            ActionDisplayKind displayKind,
+            cfg.FoodActionKind? foodKind = null)
+        {
+            if (_nameAnimator == null && _nameText != null)
+            {
+                _nameAnimator = _nameText.GetComponent<TmpTextVertexAnimator>();
+            }
+
+            if (_nameAnimator == null)
+            {
+                return;
+            }
+
+            WeekEventTitleAnimation animation = ResolveTitleAnimation(displayKind, foodKind);
+            _nameAnimator.SetPreset(animation.Preset, animation.Intensity, animation.Speed);
+            _nameAnimator.Rebuild();
+        }
+
+        internal static WeekEventTitleAnimation ResolveTitleAnimation(
+            ActionDisplayKind displayKind,
+            cfg.FoodActionKind? foodKind = null)
+        {
+            if (displayKind == ActionDisplayKind.Food)
+            {
+                switch (foodKind)
+                {
+                    case cfg.FoodActionKind.Super:
+                        return new WeekEventTitleAnimation(TmpTextAnimationPreset.Food, 1.15f, 1.33f);
+                    case cfg.FoodActionKind.Feast:
+                        return new WeekEventTitleAnimation(TmpTextAnimationPreset.Boss, 1.2f, 1f);
+                    default:
+                        return new WeekEventTitleAnimation(TmpTextAnimationPreset.Food, 0.75f, 0.83f);
+                }
+            }
+
+            if (displayKind == ActionDisplayKind.Boss)
+            {
+                float bossIntensity = foodKind == cfg.FoodActionKind.Feast ? 1.2f : 1f;
+                return new WeekEventTitleAnimation(TmpTextAnimationPreset.Boss, bossIntensity, 1f);
+            }
+
+            TmpTextAnimationPreset preset = displayKind switch
+            {
+                ActionDisplayKind.Reward => TmpTextAnimationPreset.Reward,
+                ActionDisplayKind.Negative => TmpTextAnimationPreset.Negative,
+                ActionDisplayKind.Shop => TmpTextAnimationPreset.Shop,
+                ActionDisplayKind.Interest => TmpTextAnimationPreset.Interest,
+                ActionDisplayKind.Slot => TmpTextAnimationPreset.Slot,
+                _ => TmpTextAnimationPreset.Event,
+            };
+            return new WeekEventTitleAnimation(preset, 1f, 1f);
         }
 
         private void SetDescription(string desc)

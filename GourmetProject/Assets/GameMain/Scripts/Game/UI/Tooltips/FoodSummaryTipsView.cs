@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using GameStartStudio.UI;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -12,6 +13,7 @@ namespace GourmetProject.Game.UI.Tooltips
     {
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private TMP_Text _nameText;
+        [SerializeField] private TmpTextVertexAnimator _nameAnimator;
         [SerializeField] private RectTransform _duplicateView;
         [SerializeField] private RectTransform _countAsView;
         [SerializeField] private TMP_Text _countAsText;
@@ -39,6 +41,8 @@ namespace GourmetProject.Game.UI.Tooltips
             data ??= FoodSummaryTipsData.Empty;
 
             _nameText.text = data.FoodName;
+            EnsureNameAnimator();
+            _nameAnimator?.Rebuild();
             _duplicateView.gameObject.SetActive(data.IsTemporaryCopy);
             bool showCountAs = data.CountAs > 1;
             _countAsView.gameObject.SetActive(showCountAs);
@@ -73,6 +77,17 @@ namespace GourmetProject.Game.UI.Tooltips
         private void Awake()
         {
             ValidateReferences();
+            EnsureNameAnimator();
+        }
+
+        private void EnsureNameAnimator()
+        {
+            if (_nameAnimator == null && _nameText != null)
+            {
+                _nameAnimator = _nameText.GetComponent<TmpTextVertexAnimator>();
+            }
+
+            _nameAnimator?.SetPreset(TmpTextAnimationPreset.TipTitle);
         }
 
         private void Reset()

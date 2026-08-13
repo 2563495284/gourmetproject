@@ -99,6 +99,7 @@
       <Asset Guid="1fabfe7fb213647fcbdfe961d3faa798" ResourceName="sprites/items" />
       <Asset Guid="208d8aaeec2d3415fae3ea7a31de50bd" ResourceName="sprites/items" />
       <Asset Guid="20c33e847da214240a7ec286e7fca677" ResourceName="sprites/ui" />
+      <Asset Guid="21208ee30db944af698612d45e9bd826" ResourceName="prefabs/battle" />
       <Asset Guid="216ed70fe896a43e3905d7620b85a07e" ResourceName="sprites/dishes" />
       <Asset Guid="232c3ef87dd174dc5ad2cbe9f78f8101" ResourceName="prefabs/ui" />
       <Asset Guid="2349fa486bad14634b5f1a335d14ea0d" ResourceName="sprites/ui" />
