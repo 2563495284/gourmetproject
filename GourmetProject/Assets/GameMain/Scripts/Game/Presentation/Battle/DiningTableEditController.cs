@@ -127,7 +127,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private static readonly Color BoundsWarningColor = new Color(1f, 0.05f, 0.02f, 0.42f);
         private static readonly Color EditFragmentFillColor = Color.white;
-        private static readonly Color EditStagedFragmentFillColor = BoardEditGhostPalette.BaseColor;
+        private static readonly Color EditStagedFragmentFillColor = Color.white;
 
         private enum TableInteractionState
         {
@@ -1407,7 +1407,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void RestoreDragCellColors()
         {
-            SetDragCellColor(BoardEditGhostPalette.BaseColor);
+            SetDragCellColor(
+                _fragmentChoiceState == FragmentChoiceInteractionState.Staged
+                    ? EditStagedFragmentFillColor
+                    : BoardEditGhostPalette.BaseColor);
         }
 
         private void SetDragCellColor(Color color)
@@ -1490,7 +1493,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 projection.SetInteractionEnabled(false);
                 projection.SetTableBodyVisible(true);
                 projection.ClearPlateFeedbackColor();
-                projection.SetColor(BoardEditGhostPalette.BaseColor);
+                projection.SetColor(Color.white);
                 projection.SetSorting(BattleSorting.Fx, EditProjectionSortingOrder);
             }
 

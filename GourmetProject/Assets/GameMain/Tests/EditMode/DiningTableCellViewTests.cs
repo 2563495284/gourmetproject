@@ -153,7 +153,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void BoardEditGhost_KeepsTableNeutralAndTintsPlateAtNinetyPercentAlpha()
+        public void BoardEditGhost_KeepsTableNeutralAndTintsPlateAtFiftyPercentAlpha()
         {
             var instances = new List<GameObject>();
             try
@@ -167,14 +167,14 @@ namespace GourmetProject.Tests.EditMode
                     GridPlacementFeedbackState.Valid,
                     GridPlacementFeedbackState.Valid));
 
-                AssertColor(table.color, new Color(1f, 1f, 1f, 0.9f));
+                AssertColor(table.color, new Color(1f, 1f, 1f, 0.5f));
                 AssertColor(
                     plate.color,
                     new Color(
                         GridPlacementFeedbackPalette.Valid.r,
                         GridPlacementFeedbackPalette.Valid.g,
                         GridPlacementFeedbackPalette.Valid.b,
-                        0.9f));
+                        0.5f));
             }
             finally
             {
