@@ -20,23 +20,10 @@
   {
     "id": 3,
     "timelineIds": [
-      "tl_1",
-      "tl_2"
+      "tl_3"
     ],
     "timelineWeights": [
-      100,
-      60
-    ]
-  },
-  {
-    "id": 4,
-    "timelineIds": [
-      "tl_1",
-      "tl_2"
-    ],
-    "timelineWeights": [
-      100,
-      60
+      100
     ]
   }
 ]

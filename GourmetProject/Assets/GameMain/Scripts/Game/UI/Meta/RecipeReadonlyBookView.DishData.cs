@@ -226,8 +226,9 @@ namespace GourmetProject.Game.UI.Meta
         }
 
         /// <summary>
-        /// 返回用于生成 UI 的原始食谱索引顺序。视觉上按食物本体和风味排序，
-        /// 但绑定到视图的索引仍是原始索引，避免删除/装饰品和消耗品目标因排序而错位。
+        /// 返回用于生成 UI 的原始食谱索引顺序。视觉上先按食物本体排序，
+        /// 同一本体内按食物进入食谱的先后顺序展示；绑定到视图的索引仍是原始索引，
+        /// 避免删除/装饰品和消耗品目标因排序而错位。
         /// </summary>
         private List<int> BuildDishDisplayOrder(
             IReadOnlyList<RecipeBookSlot> entries)
@@ -245,26 +246,11 @@ namespace GourmetProject.Game.UI.Meta
                 DishDef dish = slot == null
                     ? null
                     : Database.GetDish(slot.DishId);
-                var flavorKeys = new List<FlavorDisplaySortKey>();
-                foreach (string flavorId in ComposeFlavorIds(
-                             dish,
-                             slot?.ExtraFlavorIds))
-                {
-                    FlavorDef flavor = Database.GetFlavor(flavorId);
-                    flavorKeys.Add(
-                        new FlavorDisplaySortKey(
-                            flavor?.SortOrder ?? int.MaxValue,
-                            flavorId));
-                }
-
-                flavorKeys.Sort(CompareFlavorDisplaySortKeys);
                 items.Add(
                     new RecipeDisplaySortItem(
                         index,
                         dish?.SortOrder ?? int.MaxValue,
-                        dish?.BaseId ?? slot?.DishId ?? string.Empty,
-                        slot?.DishId ?? string.Empty,
-                        flavorKeys));
+                        dish?.BaseId ?? slot?.DishId ?? string.Empty));
             }
 
             items.Sort(CompareRecipeDisplaySortItems);
@@ -296,43 +282,7 @@ namespace GourmetProject.Game.UI.Meta
                 return compare;
             }
 
-            int sharedFlavorCount = Math.Min(
-                left.FlavorKeys.Count,
-                right.FlavorKeys.Count);
-            for (int index = 0; index < sharedFlavorCount; index++)
-            {
-                compare = CompareFlavorDisplaySortKeys(
-                    left.FlavorKeys[index],
-                    right.FlavorKeys[index]);
-                if (compare != 0)
-                {
-                    return compare;
-                }
-            }
-
-            compare = left.FlavorKeys.Count.CompareTo(
-                right.FlavorKeys.Count);
-            if (compare != 0)
-            {
-                return compare;
-            }
-
-            compare = StringComparer.Ordinal.Compare(
-                left.DishId,
-                right.DishId);
-            return compare != 0
-                ? compare
-                : left.OriginalIndex.CompareTo(right.OriginalIndex);
-        }
-
-        private static int CompareFlavorDisplaySortKeys(
-            FlavorDisplaySortKey left,
-            FlavorDisplaySortKey right)
-        {
-            int compare = left.SortOrder.CompareTo(right.SortOrder);
-            return compare != 0
-                ? compare
-                : StringComparer.Ordinal.Compare(left.Id, right.Id);
+            return left.OriginalIndex.CompareTo(right.OriginalIndex);
         }
 
         private sealed class RecipeDisplaySortItem
@@ -340,15 +290,11 @@ namespace GourmetProject.Game.UI.Meta
             public RecipeDisplaySortItem(
                 int originalIndex,
                 int dishSortOrder,
-                string baseId,
-                string dishId,
-                List<FlavorDisplaySortKey> flavorKeys)
+                string baseId)
             {
                 OriginalIndex = originalIndex;
                 DishSortOrder = dishSortOrder;
                 BaseId = baseId;
-                DishId = dishId;
-                FlavorKeys = flavorKeys;
             }
 
             public int OriginalIndex { get; }
@@ -356,23 +302,6 @@ namespace GourmetProject.Game.UI.Meta
             public int DishSortOrder { get; }
 
             public string BaseId { get; }
-
-            public string DishId { get; }
-
-            public List<FlavorDisplaySortKey> FlavorKeys { get; }
-        }
-
-        private sealed class FlavorDisplaySortKey
-        {
-            public FlavorDisplaySortKey(int sortOrder, string id)
-            {
-                SortOrder = sortOrder;
-                Id = id ?? string.Empty;
-            }
-
-            public int SortOrder { get; }
-
-            public string Id { get; }
         }
 
         private string DishShapeText(string dishId)

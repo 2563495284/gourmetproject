@@ -650,7 +650,7 @@
     "termId": ""
   },
   {
-    "id": "sk_souffle_1",
+    "id": "sk_apple_strudel_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,
@@ -768,7 +768,7 @@
     "termId": ""
   },
   {
-    "id": "sk_mille_crepe_cake_1",
+    "id": "sk_castle_cake_1",
     "trigger": 0,
     "condType": 15,
     "condScope": 14,
@@ -808,7 +808,7 @@
     "termId": ""
   },
   {
-    "id": "sk_sachima_1",
+    "id": "sk_bamboo_tube_cake_1",
     "trigger": 0,
     "condType": 4,
     "condScope": 14,
@@ -1128,7 +1128,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_toffee_candy_1",
+    "id": "sk_honeycomb_toffee_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 4,
@@ -1448,7 +1448,7 @@
     "termId": "clb"
   },
   {
-    "id": "sk_purple_rice_pudding_1",
+    "id": "sk_mala_gao_1",
     "trigger": 0,
     "condType": 0,
     "condScope": 0,

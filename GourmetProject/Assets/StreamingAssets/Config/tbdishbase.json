@@ -281,7 +281,7 @@
   {
     "id": "ice_cream",
     "name": "冰淇淋",
-    "deliciousness": 100,
+    "deliciousness": 20,
     "skills": "sk_ice_cream",
     "category": "",
     "countAs": 1,
@@ -433,10 +433,10 @@
     ]
   },
   {
-    "id": "souffle",
-    "name": "舒芙蕾",
-    "deliciousness": 270,
-    "skills": "sk_souffle",
+    "id": "apple_strudel",
+    "name": "苹果酥",
+    "deliciousness": 240,
+    "skills": "sk_apple_strudel",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -524,10 +524,10 @@
     ]
   },
   {
-    "id": "mille_crepe_cake",
-    "name": "千层蛋糕",
+    "id": "castle_cake",
+    "name": "城堡蛋糕",
     "deliciousness": 30,
-    "skills": "sk_mille_crepe_cake",
+    "skills": "sk_castle_cake",
     "category": "cake",
     "countAs": 1,
     "shapeRows": [
@@ -562,10 +562,10 @@
     ]
   },
   {
-    "id": "sachima",
-    "name": "沙琪玛",
+    "id": "bamboo_tube_cake",
+    "name": "竹筒糕",
     "deliciousness": 30,
-    "skills": "sk_sachima",
+    "skills": "sk_bamboo_tube_cake",
     "category": "",
     "countAs": 3,
     "shapeRows": [
@@ -782,10 +782,10 @@
     ]
   },
   {
-    "id": "toffee_candy",
-    "name": "太妃糖",
+    "id": "honeycomb_toffee",
+    "name": "蜂窝糖",
     "deliciousness": 40,
-    "skills": "sk_toffee_candy",
+    "skills": "sk_honeycomb_toffee",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -982,10 +982,10 @@
     ]
   },
   {
-    "id": "purple_rice_pudding",
-    "name": "紫米露",
+    "id": "mala_gao",
+    "name": "马拉糕",
     "deliciousness": 60,
-    "skills": "sk_purple_rice_pudding",
+    "skills": "sk_mala_gao",
     "category": "",
     "countAs": 1,
     "shapeRows": [

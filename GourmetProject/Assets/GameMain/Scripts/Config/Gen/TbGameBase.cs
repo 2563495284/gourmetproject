@@ -155,6 +155,10 @@ public partial class TbGameBase
     /// 主流派相对第二名最低领先比例
     /// </summary>
      public float ArchetypePrimaryMinLead => _data.ArchetypePrimaryMinLead;
+    /// <summary>
+    /// 连续同流派且未出现目标食物的多选一组数；达到后下一组保底（0=关闭）
+    /// </summary>
+     public int DishChoiceArchetypePityCount => _data.DishChoiceArchetypePityCount;
     
     public void ResolveRef(Tables tables)
     {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GourmetProject.Game.Analytics;
 using GourmetProject.Gameplay.Model;
 using Log = GourmetProject.Core.Diagnostics.Log;
 using GourmetProject.Game.Run;
@@ -22,6 +23,16 @@ namespace GourmetProject.Game.Meta
             {
                 return result;
             }
+
+            bool pityEligible = IsDishChoiceArchetypePityEligible(slot);
+            ArchetypeVector pityArchetype = pityEligible
+                ? ArchetypeService.Capture(context.Run)
+                : ArchetypeVector.Mixed;
+            int pityMissThreshold = pityEligible
+                ? context.Tables.TbGameBase.DishChoiceArchetypePityCount
+                : 0;
+            bool pityArmed = pityEligible
+                && context.Run.BeginDishChoiceArchetypePity(pityArchetype.Id, pityMissThreshold);
 
             int count = Math.Max(1, slot.ChoiceCount);
             // 多选一「可选数量」增减（琳琅满目 / 选择困难 / 少选择）：仅作用于食物多选一。
@@ -53,6 +64,12 @@ namespace GourmetProject.Game.Meta
             {
                 Log.Warning($"Reward slot '{slot.Id}' references missing pool '{slot.PoolId}'.", Tag);
                 result.Add(RewardChoice.Gold(RollGoldRewardAmount(context, slot), "折算金币", isFallback: true));
+                CompleteDishChoiceArchetypePity(
+                    context,
+                    pityEligible,
+                    pityArchetype,
+                    pityMissThreshold,
+                    result);
                 return result;
             }
 
@@ -74,13 +91,187 @@ namespace GourmetProject.Game.Meta
                     break;
             }
 
+            if (pityArmed
+                && TryResolveArchetypeIndex(pityArchetype.Id, out int pityTargetIndex)
+                && !ContainsArchetypeDish(context, result, pityTargetIndex))
+            {
+                ApplyDishChoiceArchetypePity(
+                    context,
+                    pool,
+                    hidden,
+                    pityTargetIndex,
+                    result);
+            }
+
             if (result.Count == 0)
             {
                 Log.Warning($"Reward slot '{slot.Id}' produced no candidates. Converted to gold.", Tag);
                 result.Add(RewardChoice.Gold(RollGoldRewardAmount(context, slot), "折算金币", isFallback: true));
             }
 
+            CompleteDishChoiceArchetypePity(
+                context,
+                pityEligible,
+                pityArchetype,
+                pityMissThreshold,
+                result);
+
             return result;
+        }
+
+        private static bool IsDishChoiceArchetypePityEligible(cfg.RewardSlot slot)
+        {
+            return slot.Kind == cfg.RewardKind.DishChoice
+                && slot.ChoiceCount > 1
+                && slot.RequiredPickCount == 1;
+        }
+
+        private static void CompleteDishChoiceArchetypePity(
+            RewardContext context,
+            bool eligible,
+            ArchetypeVector archetype,
+            int missThreshold,
+            IReadOnlyList<RewardChoice> result)
+        {
+            if (!eligible)
+            {
+                return;
+            }
+
+            bool targetOffered = TryResolveArchetypeIndex(archetype.Id, out int targetIndex)
+                && ContainsArchetypeDish(context, result, targetIndex);
+            context.Run.CompleteDishChoiceArchetypePity(
+                archetype.Id,
+                targetOffered,
+                missThreshold);
+        }
+
+        private static void ApplyDishChoiceArchetypePity(
+            RewardContext context,
+            cfg.RewardPool pool,
+            int hidden,
+            int targetIndex,
+            List<RewardChoice> result)
+        {
+            bool requireFlavor = RequiresFlavor(pool);
+            List<DishDef> candidates = BuildArchetypePityCandidates(
+                context,
+                result,
+                targetIndex,
+                requireFlavor,
+                hidden,
+                requireHiddenCoverage: true);
+            if (candidates.Count == 0)
+            {
+                candidates = BuildArchetypePityCandidates(
+                    context,
+                    result,
+                    targetIndex,
+                    requireFlavor,
+                    hidden,
+                    requireHiddenCoverage: false);
+            }
+
+            if (candidates.Count == 0)
+            {
+                Log.Warning(
+                    $"Dish choice archetype pity could not find a candidate for archetype '{targetIndex}' in pool '{pool.Id}'.",
+                    Tag);
+                return;
+            }
+
+            int candidateIndex = PickHiddenWeighted(
+                context,
+                candidates,
+                hidden,
+                HiddenScoreDistanceFloor(context));
+            DishDef dish = candidates[candidateIndex];
+            var guaranteedChoice = new RewardChoice(
+                cfg.RewardKind.DishChoice,
+                dish.Id,
+                dish.Name,
+                string.Empty);
+            if (result.Count == 0)
+            {
+                result.Add(guaranteedChoice);
+                return;
+            }
+
+            result[context.Rng.Range(0, result.Count)] = guaranteedChoice;
+        }
+
+        private static List<DishDef> BuildArchetypePityCandidates(
+            RewardContext context,
+            IReadOnlyList<RewardChoice> result,
+            int targetIndex,
+            bool requireFlavor,
+            int hidden,
+            bool requireHiddenCoverage)
+        {
+            var selectedIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < result.Count; i++)
+            {
+                RewardChoice choice = result[i];
+                if (choice != null && choice.Kind == cfg.RewardKind.DishChoice)
+                {
+                    selectedIds.Add(choice.Id);
+                }
+            }
+
+            var candidates = new List<DishDef>();
+            foreach (DishDef dish in context.Run.Library.Dishes)
+            {
+                if (selectedIds.Contains(dish.Id)
+                    || (requireFlavor && !dish.HasFlavor)
+                    || (requireHiddenCoverage && !dish.CoversHiddenScore(hidden))
+                    || !BelongsToArchetype(dish, targetIndex))
+                {
+                    continue;
+                }
+
+                candidates.Add(dish);
+            }
+
+            return candidates;
+        }
+
+        private static bool ContainsArchetypeDish(
+            RewardContext context,
+            IReadOnlyList<RewardChoice> choices,
+            int targetIndex)
+        {
+            for (int i = 0; i < choices.Count; i++)
+            {
+                RewardChoice choice = choices[i];
+                if (choice?.Kind == cfg.RewardKind.DishChoice
+                    && BelongsToArchetype(context.Run.Database.GetDish(choice.Id), targetIndex))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool BelongsToArchetype(DishDef dish, int targetIndex)
+        {
+            return dish?.ArchetypeWeights != null
+                && targetIndex >= 0
+                && targetIndex < dish.ArchetypeWeights.Count
+                && dish.ArchetypeWeights[targetIndex] > 0f;
+        }
+
+        private static bool TryResolveArchetypeIndex(string archetypeId, out int targetIndex)
+        {
+            if (int.TryParse(archetypeId, out targetIndex)
+                && targetIndex >= 0
+                && targetIndex < 3)
+            {
+                return true;
+            }
+
+            targetIndex = -1;
+            return false;
         }
 
         public static float HiddenScoreWeight(float baseWeight, float hiddenMean, int requiredHidden, int distanceFloor)
@@ -103,7 +294,7 @@ namespace GourmetProject.Game.Meta
             int count,
             List<RewardChoice> result)
         {
-            bool requireFlavor = string.Equals(pool.Id, FlavoredDishPoolId, StringComparison.Ordinal);
+            bool requireFlavor = RequiresFlavor(pool);
             var candidates = new List<DishDef>();
             foreach (DishDef dish in context.Run.Library.Dishes)
             {
@@ -136,6 +327,11 @@ namespace GourmetProject.Game.Meta
                     dish.Name,
                     string.Empty));
             }
+        }
+
+        private static bool RequiresFlavor(cfg.RewardPool pool)
+        {
+            return string.Equals(pool.Id, FlavoredDishPoolId, StringComparison.Ordinal);
         }
 
         private static void RollItemChoices(

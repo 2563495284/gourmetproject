@@ -8,8 +8,7 @@
     "effectValue": [
       1
     ],
-    "termId": "",
-    "sortOrder": 10
+    "termId": ""
   },
   {
     "id": "t_bitter",
@@ -20,8 +19,7 @@
     "effectValue": [
       -1
     ],
-    "termId": "",
-    "sortOrder": 40
+    "termId": ""
   },
   {
     "id": "t_fresh",
@@ -30,8 +28,7 @@
     "effectType": 7,
     "effectParam": [],
     "effectValue": [],
-    "termId": "",
-    "sortOrder": 60
+    "termId": ""
   },
   {
     "id": "t_numb",
@@ -42,8 +39,7 @@
     "effectValue": [
       1
     ],
-    "termId": "",
-    "sortOrder": 50
+    "termId": ""
   },
   {
     "id": "t_sour",
@@ -54,8 +50,7 @@
     "effectValue": [
       0.5
     ],
-    "termId": "",
-    "sortOrder": 20
+    "termId": ""
   },
   {
     "id": "t_salty",
@@ -66,7 +61,6 @@
     "effectValue": [
       0.2
     ],
-    "termId": "",
-    "sortOrder": 30
+    "termId": ""
   }
 ]

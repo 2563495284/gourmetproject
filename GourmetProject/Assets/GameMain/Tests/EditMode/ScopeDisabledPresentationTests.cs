@@ -58,8 +58,7 @@ namespace GourmetProject.Tests.EditMode
                 0,
                 1f,
                 Array.Empty<string>(),
-                string.Empty,
-                false);
+                string.Empty);
             return new DishInstance(
                 1,
                 definition,

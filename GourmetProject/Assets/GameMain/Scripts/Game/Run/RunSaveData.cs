@@ -63,6 +63,12 @@ namespace GourmetProject.Game.Run
         /// <summary>待生效的营业奖励翻倍层数；每场符合条件的日常或火热营业消费一层。</summary>
         public int NextBusinessRewardDoubleStacks;
 
+        /// <summary>最近一次食物多选一记录的有效流派 ID（0/1/2）；旧档或无有效流派为空。</summary>
+        public string LastDishChoiceArchetypeId;
+
+        /// <summary>当前流派连续未出现目标倾向食物的食物多选一次数。</summary>
+        public int DishChoiceArchetypeMissStreak;
+
         /// <summary>行动选择页剩余刷新次数。</summary>
         public int ActionRerollCount = -1;
 

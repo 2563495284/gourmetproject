@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: -6789640289551466646
-    second: baguette_0
+    second: osmanthus_cake_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: baguette_0
+      name: osmanthus_cake_0
       rect:
         serializedVersion: 2
         x: 0
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      baguette_0: -6789640289551466646
+      osmanthus_cake_0: -6789640289551466646
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
