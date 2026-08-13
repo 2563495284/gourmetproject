@@ -5,17 +5,15 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Tooltips
 {
     /// <summary>
-    /// 模块 1：显示触发该食物的所有材质信息。超过 3 条时启用滚动。
+    /// 模块 1：纵向显示触发该食物的所有材质信息。
     /// </summary>
     public sealed class FoodMaterialTipsView : MonoBehaviour
     {
-        public const int VisibleMaterialCount = 3;
-
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private ScrollRect _scrollRect;
         [SerializeField] private RectTransform _content;
         [SerializeField] private Scrollbar _scrollbar;
-        [SerializeField] private FoodMaterialTipItemView _itemPrefab;
+        [SerializeField] private FoodTipCardView _itemPrefab;
 
         public void Bind(IReadOnlyList<FoodMaterialTipsEntry> materials)
         {
@@ -37,19 +35,19 @@ namespace GourmetProject.Game.UI.Tooltips
 
             for (int i = 0; i < count; i++)
             {
-                FoodMaterialTipItemView item = CreateItem(i);
+                FoodTipCardView item = CreateItem(i);
                 if (item != null)
                 {
-                    item.Bind(uniqueMaterials[i]);
+                    FoodMaterialTipsEntry material = uniqueMaterials[i];
+                    item.Bind(material.Name, material.Desc);
                 }
             }
 
-            bool needsScroll = count > VisibleMaterialCount;
-            _scrollRect.vertical = needsScroll;
-            _scrollbar.gameObject.SetActive(needsScroll);
-            ApplyScrollbarSpacing(needsScroll);
+            _scrollRect.vertical = false;
+            _scrollbar.gameObject.SetActive(false);
+            _scrollRect.viewport.offsetMax = Vector2.zero;
             _scrollRect.verticalNormalizedPosition = 1f;
-            ResizeViewport(Mathf.Min(count, VisibleMaterialCount));
+            ResizeViewport();
         }
 
         public void Show()
@@ -127,7 +125,7 @@ namespace GourmetProject.Game.UI.Tooltips
             return result;
         }
 
-        private FoodMaterialTipItemView CreateItem(int index)
+        private FoodTipCardView CreateItem(int index)
         {
             if (_itemPrefab == null)
             {
@@ -135,23 +133,14 @@ namespace GourmetProject.Game.UI.Tooltips
                 return null;
             }
 
-            FoodMaterialTipItemView item = Instantiate(_itemPrefab, _content, false);
+            FoodTipCardView item = Instantiate(_itemPrefab, _content, false);
             item.name = $"Material_{index}";
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(item.transform as RectTransform);
             return item;
         }
 
-        private void ApplyScrollbarSpacing(bool needsScroll)
-        {
-            RectTransform viewport = _scrollRect != null ? _scrollRect.viewport : null;
-            if (viewport != null)
-            {
-                viewport.offsetMax = needsScroll ? new Vector2(-24f, 0f) : Vector2.zero;
-            }
-        }
-
-        private void ResizeViewport(int visibleCount)
+        private void ResizeViewport()
         {
             Canvas.ForceUpdateCanvases();
             LayoutRebuilder.ForceRebuildLayoutImmediate(_content);
@@ -161,35 +150,18 @@ namespace GourmetProject.Game.UI.Tooltips
                 return;
             }
 
-            float contentHeight = Mathf.Max(_content.rect.height, LayoutUtility.GetPreferredHeight(_content));
-            float height = contentHeight;
-            if (visibleCount > 0 && _content.childCount > visibleCount)
-            {
-                var layout = _content.GetComponent<VerticalLayoutGroup>();
-                float spacing = layout != null ? layout.spacing : 0f;
-                height = 0f;
-                for (int i = 0; i < visibleCount; i++)
-                {
-                    RectTransform child = _content.GetChild(i) as RectTransform;
-                    if (child != null)
-                    {
-                        LayoutRebuilder.ForceRebuildLayoutImmediate(child);
-                        height += Mathf.Max(child.rect.height, LayoutUtility.GetPreferredHeight(child));
-                    }
-                }
+            float height = Mathf.Max(_content.rect.height, LayoutUtility.GetPreferredHeight(_content));
+            float expandedHeight = Mathf.Max(80f, height);
 
-                height += Mathf.Max(0, visibleCount - 1) * spacing;
-            }
-
-            scrollRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, Mathf.Max(80f, height));
+            scrollRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, expandedHeight);
             LayoutElement scrollLayout = scrollRect.gameObject.GetComponent<LayoutElement>();
             if (scrollLayout == null)
             {
                 scrollLayout = scrollRect.gameObject.AddComponent<LayoutElement>();
             }
 
-            scrollLayout.minHeight = Mathf.Max(80f, height);
-            scrollLayout.preferredHeight = Mathf.Max(80f, height);
+            scrollLayout.minHeight = expandedHeight;
+            scrollLayout.preferredHeight = expandedHeight;
         }
 
         private bool ReportMissing(Object reference, string fieldName)

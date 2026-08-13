@@ -18,6 +18,10 @@ namespace GourmetProject.Game.UI.Tooltips
                 Transform child = container.GetChild(i);
                 if (Application.isPlaying)
                 {
+                    // Destroy is deferred until the end of the frame in play mode. Detach first so
+                    // an immediate rebind cannot lay out or count stale cards alongside new ones.
+                    child.gameObject.SetActive(false);
+                    child.SetParent(null, false);
                     Object.Destroy(child.gameObject);
                 }
                 else
