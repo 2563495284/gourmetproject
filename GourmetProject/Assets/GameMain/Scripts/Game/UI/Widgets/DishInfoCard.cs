@@ -1,3 +1,4 @@
+using GourmetProject.Game.UI.Common;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -29,7 +30,7 @@ namespace GourmetProject.Game.UI.Widgets
 
             if (_descText != null)
             {
-                _descText.text = desc;
+                SemanticDescriptionFormatter.Set(_descText, desc);
             }
         }
     }

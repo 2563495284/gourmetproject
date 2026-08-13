@@ -308,9 +308,10 @@ namespace GourmetProject.Game.UI.Meta
             {
                 int claimed = _claimedBeforeOpen + _claimedOnPage.Count;
                 int required = _claimedBeforeOpen + _requiredPicks;
-                _promptText.text = required > 1
+                string prompt = required > 1
                     ? $"{_basePrompt}\n已领 {claimed}/{required}"
                     : _basePrompt;
+                SemanticDescriptionFormatter.Set(_promptText, prompt);
             }
 
             if (_skipButton != null)

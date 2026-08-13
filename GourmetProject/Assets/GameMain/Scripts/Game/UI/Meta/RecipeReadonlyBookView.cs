@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Battle;
@@ -421,7 +422,17 @@ namespace GourmetProject.Game.UI.Meta
                 title = state.PanelTitle;
             }
 
-            SetText(_titleText, title);
+            if (state is ActiveRecipeDishSelectState)
+            {
+                if (_titleText != null)
+                {
+                    SemanticDescriptionFormatter.Set(_titleText, title);
+                }
+            }
+            else
+            {
+                SetText(_titleText, title);
+            }
             if (_backButton != null)
             {
                 _backButton.gameObject.SetActive(state.ShowExitButton);

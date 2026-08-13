@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DG.Tweening;
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Model;
@@ -174,12 +175,12 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_titleText != null)
             {
-                _titleText.text = title ?? string.Empty;
+                SemanticDescriptionFormatter.Set(_titleText, title);
             }
 
             if (_descriptionText != null)
             {
-                _descriptionText.text = description ?? string.Empty;
+                SemanticDescriptionFormatter.Set(_descriptionText, description);
             }
 
             if (_stateText != null)

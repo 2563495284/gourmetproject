@@ -6,7 +6,7 @@
     "category": "cake",
     "effectType": 1,
     "valuePerLayer": 3,
-    "desc": "层数≥1：蛋糕基础分数 +3×层数"
+    "desc": "层数≥1：[term]蛋糕[/term]基础[strong]分数[/strong] [score]+3×层数[/score]"
   },
   {
     "id": "clb_multflat",
@@ -15,7 +15,7 @@
     "category": "cake",
     "effectType": 9,
     "valuePerLayer": 0.05,
-    "desc": "层数≥50：蛋糕倍率 +0.05×层数"
+    "desc": "层数≥50：[term]蛋糕[/term][strong]倍率[/strong] [multadd]+0.05×层数[/multadd]"
   },
   {
     "id": "clb_mult",
@@ -24,6 +24,6 @@
     "category": "cake",
     "effectType": 2,
     "valuePerLayer": 0.02,
-    "desc": "层数≥100：蛋糕倍率 ×(0.02×层数)"
+    "desc": "层数≥100：[term]蛋糕[/term][strong]倍率[/strong] [multmul]×(0.02×层数)[/multmul]"
   }
 ]

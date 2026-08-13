@@ -12,8 +12,8 @@ namespace GourmetProject.Gameplay.Model
     /// 支持的占位符（同时兼容 {token} 与 ${token}）：
     ///   {0}{1}..  actionValue[i]（signed=true 补正负号，倍率类 signed=false 原样，配合模板里的 ×）
     ///   {value}   首个 actionValue 的无符号格式（用于“额外视为 N 份”这类已含增量语义的文案）
-    ///   {cscope}  前提作用域词（自身/相邻/周围/同行/同列/本行/本列/全场/其他/欢乐蛋糕）
-    ///   {ascope}  行为目标短语（不含「食物」）：自身/相邻所有/相邻 2 个/所有/2 个
+    ///   {cscope}  带 [context] 语义标记的前提作用域词（自身/相邻/周围/同行/同列/本行/本列/全场/其他/欢乐蛋糕）
+    ///   {ascope}  带 [context] 语义标记的行为范围核心（不含「食物」及随机目标数量）
     ///   {unit}    计数单位：份 / 个 / 种；{thr} 阈值；{count} 目标数
     ///   {countas} 兼容旧配置：把 AddCountAs 增量 actionValue 显示为基础 1 份加增量后的总数
     ///   {atargets}/{targets} 旧模板兼容别名：等价于 {ascope}食物
@@ -82,10 +82,10 @@ namespace GourmetProject.Gameplay.Model
 
                 switch (key)
                 {
-                    case "cscope": return ScopeWord(rule.CondScope);
-                    case "ascope": return ActionScopePhrase(rule.ActionScope, rule.ActionCount);
+                    case "cscope": return SemanticScope(ScopeWord(rule.CondScope));
+                    case "ascope": return SemanticActionScope(rule.ActionScope, rule.ActionCount);
                     case "atargets":
-                    case "targets": return ActionScopePhrase(rule.ActionScope, rule.ActionCount) + "食物";
+                    case "targets": return SemanticActionScope(rule.ActionScope, rule.ActionCount) + "食物";
                     case "unit": return CountUnitWord(rule);
                     case "value": return rule.ActionValue.ToString(PlainFormat, CultureInfo.InvariantCulture);
                     // 本体「视为N份食物」：actionValue 存的是相对 base(=1) 的增量 N-1，显示总数 N。
@@ -97,7 +97,7 @@ namespace GourmetProject.Gameplay.Model
                         ExtractAfter(FindEntry(rule.ActionParams, "tiervals:"), "tiervals:"),
                         numberFormat);
                     case "floor": return ExtractNumber(rule.ActionParams, "multfloor:", "floor:");
-                    case "cat": return CatWord(rule);
+                    case "cat": return SemanticTerm(CatWord(rule));
                     default: return match.Value;
                 }
             });
@@ -132,6 +132,53 @@ namespace GourmetProject.Gameplay.Model
         private static string ActionScopePhrase(SkillScope scope, int count)
         {
             return ActionScopeText(scope, count);
+        }
+
+        private static string SemanticScope(string scope)
+        {
+            return string.IsNullOrEmpty(scope) ? string.Empty : $"[context]{scope}[/context]";
+        }
+
+        private static string SemanticTerm(string term)
+        {
+            switch (term)
+            {
+                case "甜蜜传递":
+                case "欢乐蛋糕":
+                case "蛋糕":
+                case "消耗品":
+                case "装饰品":
+                case "丢弃":
+                    return $"[term]{term}[/term]";
+                case "份数":
+                    return $"[strong]{term}[/strong]";
+                default:
+                    return term ?? string.Empty;
+            }
+        }
+
+        private static string SemanticActionScope(SkillScope scope, int count)
+        {
+            string phrase = ActionScopePhrase(scope, count);
+            if (string.IsNullOrEmpty(phrase))
+            {
+                return string.Empty;
+            }
+
+            // 范围只包含方向/区域核心；随机目标的数量与“个”保持正文样式。
+            if (count > 0)
+            {
+                string scopeCore = ScopeWord(scope);
+                if (string.IsNullOrEmpty(scopeCore) ||
+                    !phrase.StartsWith(scopeCore, System.StringComparison.Ordinal))
+                {
+                    return phrase;
+                }
+
+                return $"[context]{scopeCore}[/context]{phrase.Substring(scopeCore.Length)}";
+            }
+
+            return SemanticScope(phrase);
         }
 
         private static string ActionScopeText(SkillScope scope, int count)

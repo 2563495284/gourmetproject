@@ -46,7 +46,7 @@
   {
     "id": "debuff_gluttony",
     "name": "贪食餐",
-    "desc": "复制所有食物加入食谱",
+    "desc": "复制[context]所有[/context]食物加入食谱",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35,
@@ -57,7 +57,7 @@
   {
     "id": "debuff_omakase",
     "name": "Omakase",
-    "desc": "初始食物丢弃次数为0",
+    "desc": "初始食物[term]丢弃[/term]次数为0",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35,
@@ -90,7 +90,7 @@
   {
     "id": "debuff_dine_and_dash",
     "name": "霸王餐",
-    "desc": "每次上菜 -5 金币",
+    "desc": "每次[context]上菜[/context] [gold]-5 金币[/gold]",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35,
@@ -130,7 +130,7 @@
   {
     "id": "debuff_dark_cuisine",
     "name": "黑暗料理",
-    "desc": "食物的初始倍率随机化",
+    "desc": "食物的初始[strong]倍率[/strong]随机化",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35,
@@ -150,7 +150,7 @@
   {
     "id": "debuff_appetizer",
     "name": "开胃菜",
-    "desc": "前 2 个上菜的食物会消失",
+    "desc": "前 2 个[context]上菜[/context]的食物会消失",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35,
@@ -161,7 +161,7 @@
   {
     "id": "debuff_tasting",
     "name": "试吃",
-    "desc": "上菜时\n食物倍率按0.5和1.5交替",
+    "desc": "[context]上菜[/context]时\n食物[strong]倍率[/strong]按0.5和1.5交替",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35,
@@ -170,7 +170,7 @@
   {
     "id": "debuff_buffet",
     "name": "自助餐",
-    "desc": "必须上菜至少 10 个食物",
+    "desc": "必须[context]上菜[/context]至少 10 个食物",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.35,

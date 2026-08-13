@@ -1599,7 +1599,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             row.Bind(
-                $"金币 +{_offer.BaseGold}",
+                $"[gold]金币+{_offer.BaseGold}[/gold]",
                 "点击领取",
                 LoadBaseGoldIcon(),
                 false,
@@ -1623,7 +1623,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             row.Bind(
-                $"翻倍金币 +{_offer.BonusGold}",
+                $"翻倍[gold]金币+{_offer.BonusGold}[/gold]",
                 "点击领取",
                 LoadBaseGoldIcon(),
                 false,
@@ -1932,8 +1932,8 @@ namespace GourmetProject.Game.UI.Meta
             if (IsActiveItemReward(choice.Kind) && _run != null && !_run.HasFreeActiveSlot)
             {
                 description = string.IsNullOrWhiteSpace(description)
-                    ? "消耗品槽已满，暂时无法领取。"
-                    : $"{description}\n消耗品槽已满，暂时无法领取。";
+                    ? "[term]消耗品[/term]槽已满，暂时无法领取。"
+                    : $"{description}\n[term]消耗品[/term]槽已满，暂时无法领取。";
             }
 
             return description;
@@ -1948,7 +1948,7 @@ namespace GourmetProject.Game.UI.Meta
 
             if (choice.Kind == cfg.RewardKind.Gold || choice.IsFallbackGold)
             {
-                return $"领取后获得金币 +{choice.GoldAmount}。";
+                return $"领取后获得[gold]金币+{choice.GoldAmount}[/gold]。";
             }
 
             if (!string.IsNullOrEmpty(choice.Description))
@@ -1967,7 +1967,7 @@ namespace GourmetProject.Game.UI.Meta
                 case cfg.RewardKind.ActiveItemGrant:
                 case cfg.RewardKind.ActiveItemStrengthen:
                 case cfg.RewardKind.ActiveItemAdjust:
-                    return "获得一个消耗品，可在经营挑战中使用。";
+                    return "获得一个[term]消耗品[/term]，可在经营挑战中使用。";
                 default:
                     return "领取后加入本轮运行。";
             }
@@ -2056,6 +2056,10 @@ namespace GourmetProject.Game.UI.Meta
             int count = group?.Choices?.Count ?? 0;
             int required = group?.RequiredChoiceCount ?? 0;
             string kind = ChoicePackName(group?.Choices);
+            if (kind == "装饰品" || kind == "消耗品")
+            {
+                kind = $"[term]{kind}[/term]";
+            }
             if (count == 1 && required == 1)
             {
                 return $"随机获得 1 个{kind}。";

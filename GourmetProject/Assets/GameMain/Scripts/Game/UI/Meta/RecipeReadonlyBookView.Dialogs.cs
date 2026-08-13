@@ -82,7 +82,7 @@ namespace GourmetProject.Game.UI.Meta
             var data = new ConfirmDialogData
             {
                 Title = "确认删除食物",
-                Message = $"花费 {cost} 金币\n从食谱中删除「{def.Name}」？",
+                Message = $"花费 [gold]{cost}金币[/gold]\n从食谱中删除「{def.Name}」？",
                 ConfirmText = "确定",
                 CancelText = "返回",
                 OnConfirm = () =>

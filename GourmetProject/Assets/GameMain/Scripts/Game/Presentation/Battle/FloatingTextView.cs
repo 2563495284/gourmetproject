@@ -1,4 +1,5 @@
 using DG.Tweening;
+using GourmetProject.Game.UI.Common;
 using UnityEngine;
 using TMPro;
 
@@ -83,7 +84,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             KillAnimation();
 
-            _effectText.text = effectText;
+            SemanticDescriptionFormatter.Set(_effectText, effectText);
             if (effectColor.HasValue)
             {
                 _effectText.color = effectColor.Value;

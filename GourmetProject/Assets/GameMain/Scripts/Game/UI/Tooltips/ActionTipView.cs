@@ -1,5 +1,6 @@
 using DG.Tweening;
 using GameStartStudio.UI;
+using GourmetProject.Game.UI.Common;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -102,7 +103,7 @@ namespace GourmetProject.Game.UI.Tooltips
 
             if (_descText != null)
             {
-                _descText.text = desc ?? string.Empty;
+                SemanticDescriptionFormatter.Set(_descText, desc);
             }
         }
 

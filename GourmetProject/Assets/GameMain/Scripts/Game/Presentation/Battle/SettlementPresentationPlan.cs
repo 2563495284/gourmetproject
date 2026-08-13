@@ -468,7 +468,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     result.FinalMultiplier,
                     1f,
                     result.FinalMultiplier,
-                    $"局级倍率 ×{FormatDecimal(result.FinalMultiplier)}"));
+                    $"局级[strong]倍率[/strong] [multmul]×{FormatDecimal(result.FinalMultiplier)}[/multmul]"));
             }
 
             if (!hasGold && Mathf.Abs(result.GoldDelta) > 0.001f)

@@ -42,7 +42,9 @@ namespace GourmetProject.Game.Meta
             {
                 case cfg.EffectType.GainGold:
                     run.Gold = System.Math.Max(0, run.Gold + value);
-                    return value >= 0 ? $"获得金币 {value}。" : $"失去金币 {-value}。";
+                    return value >= 0
+                        ? $"获得[gold]{value} 金币[/gold]。"
+                        : $"失去[gold]{-value} 金币[/gold]。";
 
                 case cfg.EffectType.LowerReq:
                     int baseReq = run.RequiredScore;
@@ -124,7 +126,7 @@ namespace GourmetProject.Game.Meta
                 case cfg.EffectType.LoseAllGold:
                     int lost = run.Gold;
                     run.Gold = 0;
-                    return $"失去所有金币（-{lost}）。";
+                    return $"失去所有[gold]金币（-{lost}）[/gold]。";
 
                 case cfg.EffectType.GainLegendaryItem:
                     return EnqueueConfigReward(run, rng, effectParam, "传奇装饰品和消耗品", 80);
@@ -424,8 +426,8 @@ namespace GourmetProject.Game.Meta
             }
 
             return affected > 0
-                ? $"触发时已有的 {affected} 个食物永久分数 {FormatSigned(amount)}。"
-                : "食谱为空，没有食物获得分数。";
+                ? $"触发时已有的 {affected} 个食物永久[strong]分数[/strong] [score]{FormatSigned(amount)}[/score]。"
+                : "食谱为空，没有食物获得[strong]分数[/strong]。";
         }
 
         private static string GrantRandomItems(

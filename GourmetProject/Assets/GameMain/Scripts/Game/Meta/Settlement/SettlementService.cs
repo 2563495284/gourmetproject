@@ -39,8 +39,8 @@ namespace GourmetProject.Game.Meta
             body.AppendLine($"天数：第 {statistics.CurrentDay} 天");
             body.AppendLine($"总美味值：{ScoreNumberFormatter.Format(statistics.LastTotal)} / 目标美味值：{statistics.LastTarget}");
             body.AppendLine($"完成星级评鉴：{statistics.CompletedBossIds.Count} 次{BossNames(run, statistics.CompletedBossIds)}");
-            body.AppendLine($"金币：{statistics.Gold}");
-            body.AppendLine($"持有装饰品和消耗品：{statistics.OwnedItemCount} 个");
+            body.AppendLine($"[gold]金币：{statistics.Gold}[/gold]");
+            body.AppendLine($"持有[term]装饰品[/term]和[term]消耗品[/term]：{statistics.OwnedItemCount} 个");
             body.AppendLine($"食谱附加食物：{statistics.BonusDishCount} 个");
             body.AppendLine($"餐桌格：{statistics.StomachFragmentCount} 个");
             body.AppendLine($"触发事件：{statistics.TriggeredEventCount} 种");
@@ -95,7 +95,16 @@ namespace GourmetProject.Game.Meta
                     continue;
                 }
 
-                sb.AppendLine($"- {unlock.Kind}：{unlock.Name}");
+                if (!string.IsNullOrWhiteSpace(unlock.Description))
+                {
+                    sb.AppendLine($"- {unlock.Description}");
+                    continue;
+                }
+
+                string kind = unlock.Kind == "装饰品" || unlock.Kind == "消耗品"
+                    ? $"[term]{unlock.Kind}[/term]"
+                    : unlock.Kind;
+                sb.AppendLine($"- {kind}：{unlock.Name}");
             }
 
             return sb.ToString().TrimEnd();

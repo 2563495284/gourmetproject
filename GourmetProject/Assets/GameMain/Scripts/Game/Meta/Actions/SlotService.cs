@@ -418,9 +418,9 @@ namespace GourmetProject.Game.Meta
             int cost = CostForNextSpin(run, config, safeSpins);
             string costText = cost <= 0
                 ? "免费抽一次"
-                : $"投入 {cost} 金币";
+                : $"投入 [gold]{cost} 金币[/gold]";
             string statusText = cost > 0 && !canAfford
-                ? "金币不足"
+                ? "[gold]金币[/gold]不足"
                 : $"{safeSpins}/{config.MaxSpins}";
             return text
                 .Replace("{slotCostText}", costText)

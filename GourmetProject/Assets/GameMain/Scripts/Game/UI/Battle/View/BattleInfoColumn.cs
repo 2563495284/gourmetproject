@@ -5,6 +5,7 @@ using DG.Tweening;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Scoring;
 using UnityEngine;
@@ -617,7 +618,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (_bossSkillText != null)
             {
-                _bossSkillText.text = bossDebuff.Desc ?? string.Empty;
+                SemanticDescriptionFormatter.Set(_bossSkillText, bossDebuff.Desc);
             }
 
             _presentedBossDebuffId = bossDebuff.Id ?? string.Empty;

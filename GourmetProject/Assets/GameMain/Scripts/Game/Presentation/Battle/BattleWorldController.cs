@@ -2069,7 +2069,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _fxRoot != null ? _fxRoot : transform,
                 position,
                 cue.SourceName,
-                cue.Text,
+                SettlementStageView.SemanticServeTriggerText(cue),
                 ServeTriggerCueColor(cue),
                 0.55f,
                 0.78f,

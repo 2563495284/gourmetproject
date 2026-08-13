@@ -575,13 +575,16 @@ namespace GourmetProject.Game.Orchestration
                 _view.ResetBossBattlePresentation();
                 RunPersistence.Save(_run);
                 string itemName = ItemDefinition.Get(_run.Tables, "item_famous_knife")?.Name ?? "名刀";
-                _view.ShowNotice(itemName, $"分数未达标，但{itemName}替你挡下了失败（装饰品和消耗品已消耗）。", () =>
-                {
-                    GameApp.UI.OpenUIForm(
-                        UIForms.Reward,
-                        UIForms.GroupDialog,
-                        RewardFormOpenArgs.BattleReward());
-                });
+                _view.ShowNotice(
+                    itemName,
+                    $"[strong]分数[/strong]未达标，但{itemName}替你挡下了失败（[term]装饰品[/term]和[term]消耗品[/term]已消耗）。",
+                    () =>
+                    {
+                        GameApp.UI.OpenUIForm(
+                            UIForms.Reward,
+                            UIForms.GroupDialog,
+                            RewardFormOpenArgs.BattleReward());
+                    });
                 return;
             }
 

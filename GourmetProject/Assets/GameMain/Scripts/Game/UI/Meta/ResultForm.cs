@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using GourmetProject.Game.UI;
 using GourmetProject.Game.UI.Battle;
+using GourmetProject.Game.UI.Common;
 using TMPro;
 
 namespace GourmetProject.Game.UI.Meta
@@ -57,7 +58,9 @@ namespace GourmetProject.Game.UI.Meta
                 GameAnalyticsService.TrackRunMilestone(_run, data.Total, target);
             }
             SettlementSummary summary = SettlementService.Build(_run, data.Win, data.Total, target, _pendingProgressUpdate);
-            _resultText.text = $"{summary.Title}\n\n{summary.Body}";
+            SemanticDescriptionFormatter.Set(
+                _resultText,
+                $"{summary.Title}\n\n{summary.Body}");
 
             TMP_Text label = _resultButton.GetComponentInChildren<TMP_Text>();
             if (label != null)

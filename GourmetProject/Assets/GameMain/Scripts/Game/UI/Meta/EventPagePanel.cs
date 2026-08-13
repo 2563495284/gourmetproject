@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GourmetProject.Game.UI.Common;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -46,7 +47,10 @@ namespace GourmetProject.Game.UI.Meta
             gameObject.SetActive(true);
 
             SetText(_titleText, title);
-            SetText(_descriptionText, description);
+            if (_descriptionText != null)
+            {
+                SemanticDescriptionFormatter.Set(_descriptionText, description);
+            }
             SetVisible(_descriptionText, !string.IsNullOrWhiteSpace(description));
             SetIllustration(bgSpritePath);
 
@@ -129,7 +133,9 @@ namespace GourmetProject.Game.UI.Meta
             TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
             if (text != null)
             {
-                text.text = string.IsNullOrWhiteSpace(label) ? "继续" : label;
+                SemanticDescriptionFormatter.Set(
+                    text,
+                    string.IsNullOrWhiteSpace(label) ? "继续" : label);
                 ApplyOptionVisual(button, text, requirement, interactable);
             }
 
@@ -196,7 +202,7 @@ namespace GourmetProject.Game.UI.Meta
 
             TMP_Text requirementText = Instantiate(title, requirementContainer);
             requirementText.gameObject.name = "RequirementText";
-            requirementText.text = requirement;
+            SemanticDescriptionFormatter.Set(requirementText, requirement);
             requirementText.color = interactable ? palette.RequirementText : palette.DisabledRequirementText;
             requirementText.fontWeight = FontWeight.Regular;
             requirementText.fontSize = 19f;
@@ -303,7 +309,9 @@ namespace GourmetProject.Game.UI.Meta
             TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
             if (text != null)
             {
-                text.text = string.IsNullOrWhiteSpace(resultText) ? "结束" : resultText;
+                SemanticDescriptionFormatter.Set(
+                    text,
+                    string.IsNullOrWhiteSpace(resultText) ? "结束" : resultText);
                 if (styleAsOption)
                 {
                     ApplyOptionVisual(button, text, string.Empty, interactable: true);
