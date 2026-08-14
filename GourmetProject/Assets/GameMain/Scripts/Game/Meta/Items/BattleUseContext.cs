@@ -35,7 +35,9 @@ namespace GourmetProject.Game.Meta
                 case cfg.ItemTargetKind.RecipeDish:
                     return EnumerateRecipeDishes(Run);
                 case cfg.ItemTargetKind.DiningTableCell:
-                    return EnumerateTableCells(_session?.DiningTable);
+                    return item.EffectType == ItemEffectTypes.AddMaterial
+                        ? EnumerateSettableMaterialCells(_session?.DiningTable, item.EffectParam)
+                        : EnumerateTableCells(_session?.DiningTable);
                 case cfg.ItemTargetKind.DiningTableDish:
                     return item.EffectType == ItemEffectTypes.AddFlavor
                         ? EnumerateSourceBackedTableDishes(_session?.DiningTable, Run)
@@ -210,12 +212,51 @@ namespace GourmetProject.Game.Meta
 
             var position = new GridPos(target.X, target.Y);
             DiningTable table = _session.DiningTable;
-            if (table == null || !table.Exists(position) || !Run.AddCellMaterial(position, materialId))
+            if (!CanSetCellMaterial(table, target, materialId, out position)
+                || !Run.SetCellMaterial(position, materialId))
             {
                 return false;
             }
 
-            return table.AddMaterialAt(position, materialId);
+            // 上面已完整预检，SetMaterialAt 在这里必定成功，避免 Run 成功而餐桌失败的部分写入。
+            return table.SetMaterialAt(position, materialId);
+        }
+
+        internal static bool CanSetCellMaterial(
+            DiningTable table,
+            ActiveTarget target,
+            string materialId,
+            out GridPos position)
+        {
+            position = new GridPos(target.X, target.Y);
+            if (table == null
+                || target.TargetKind != cfg.ItemTargetKind.DiningTableCell
+                || string.IsNullOrEmpty(materialId)
+                || !table.Exists(position))
+            {
+                return false;
+            }
+
+            IReadOnlyList<string> current = table.MaterialsAt(position);
+            return current.Count == 0
+                || !string.Equals(current[current.Count - 1], materialId, StringComparison.Ordinal);
+        }
+
+        internal static IReadOnlyList<ActiveTarget> EnumerateSettableMaterialCells(
+            DiningTable table,
+            string materialId)
+        {
+            IReadOnlyList<ActiveTarget> cells = EnumerateTableCells(table);
+            var targets = new List<ActiveTarget>(cells.Count);
+            foreach (ActiveTarget cell in cells)
+            {
+                if (CanSetCellMaterial(table, cell, materialId, out _))
+                {
+                    targets.Add(cell);
+                }
+            }
+
+            return targets;
         }
 
         public bool GenerateDish(ActiveTarget target, string dishId, string randomKey)

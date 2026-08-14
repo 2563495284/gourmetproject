@@ -5,7 +5,7 @@ namespace GourmetProject.Game.UI.Common
     /// <summary>开场漫画的一次性播放判定。版本号允许未来替换漫画后重新播放一次。</summary>
     internal static class OpeningComicProgress
     {
-        internal const int CurrentVersion = 1;
+        internal const int CurrentVersion = 2;
 
         internal static bool ShouldPlay(GuideProgressSaveData progress)
         {

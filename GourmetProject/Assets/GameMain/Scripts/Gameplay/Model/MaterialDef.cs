@@ -9,6 +9,7 @@ namespace GourmetProject.Gameplay.Model
     /// </summary>
     public sealed class MaterialDef : IEffectDef
     {
+        private const float LegacyItemRollProbability = 0.5f;
         private static readonly IReadOnlyList<float> EmptyValues = new float[0];
         private static readonly IReadOnlyList<string> EmptyParams = new string[0];
 
@@ -47,6 +48,29 @@ namespace GourmetProject.Gameplay.Model
         public IReadOnlyList<string> EffectParams { get; }
 
         public float EffectValue => EffectValues.Count > 0 ? EffectValues[0] : 0f;
+
+        /// <summary>
+        /// 旧版获得消耗品判定的配置概率，取 EffectValue[0] 并裁剪到 [0, 1]。
+        /// 仅供兼容旧定义；当前银材质玩法固定为每个银格独立 20%。
+        /// </summary>
+        public float ItemRollProbability
+        {
+            get
+            {
+                if (EffectValues.Count == 0 || float.IsNaN(EffectValues[0]))
+                {
+                    return LegacyItemRollProbability;
+                }
+
+                float probability = EffectValues[0];
+                if (probability <= 0f)
+                {
+                    return 0f;
+                }
+
+                return probability >= 1f ? 1f : probability;
+            }
+        }
 
         public string EffectParam => EffectParams.Count > 0 ? EffectParams[0] : string.Empty;
 

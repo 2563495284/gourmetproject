@@ -937,7 +937,8 @@ namespace GourmetProject.EditorTools
             AutoRunReport report = _lastAutoReport;
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("自动玩家报告", EditorStyles.boldLabel);
-            MessageType reportType = report.HasRuntimeErrors || report.HasUnsupportedMechanics || report.ConfigStale
+            MessageType reportType = report.HasRuntimeErrors || report.HasUnsupportedMechanics
+                                     || !report.PolicyCalibrationValid || report.ConfigStale
                 ? MessageType.Error
                 : report.Partial ? MessageType.Warning : MessageType.Info;
             EditorGUILayout.HelpBox(
@@ -961,14 +962,51 @@ namespace GourmetProject.EditorTools
                 string levelName = level.PlayerLevel == AutoPlayerLevel.Normal ? "普通玩家" : "高手玩家";
                 EditorGUILayout.LabelField(levelName, EditorStyles.boldLabel);
                 EditorGUILayout.LabelField(
-                    $"局数 {level.ActualRuns}/{level.RequestedRuns}　整局完成 {level.CompletedRuns}（{level.CompletionRate:P1}）　" +
+                    $"局数 {level.ActualRuns}/{level.RequestedRuns}　全{Math.Max(1, report.TotalWeeks)}周通关 {level.CompletedRuns}（{level.CompletionRate:P1}）　" +
                     $"正常战败 {level.NormalDefeats}　运行异常 {level.RuntimeErrors}　规则不支持 {level.UnsupportedMechanics}　" +
                     $"用户取消 {level.UserCancelled}　平均转向 {level.AverageArchetypeChanges:0.00}");
+                if (!level.PolicyCalibrationValid)
+                    EditorGUILayout.HelpBox($"自动玩家没有完成全部 {Math.Max(1, report.TotalWeeks)} 周，尚不能代表真人基线；该玩家档的建议要求已关闭。", MessageType.Error);
 
                 foreach (AutoRunWeekSummary week in report.WeekSummaries.Where(summary => summary.PlayerLevel == level.PlayerLevel))
                 {
                     EditorGUILayout.Space(3);
-                    if (week.BossScores == null)
+                    List<AutoRunBossEncounterSummary> bossEncounters = week.BossEncounters
+                        ?? new List<AutoRunBossEncounterSummary>();
+                    if (bossEncounters.Count > 0)
+                    {
+                        foreach (AutoRunBossEncounterSummary boss in bossEncounters
+                                     .OrderBy(value => value.Day)
+                                     .ThenBy(value => value.EncounterKey, StringComparer.Ordinal))
+                        {
+                            string label = $"W{week.Week} D{boss.Day:0.##} Boss";
+                            if (!string.IsNullOrEmpty(boss.EncounterKey))
+                                label += $" [{boss.EncounterKey}]";
+                            if (boss.Scores == null)
+                            {
+                                EditorGUILayout.LabelField(
+                                    $"{label}：到达 {boss.Reached}/{boss.ActualRuns}（{boss.ReachRate:P1}）　" +
+                                    "通过 —　P10/P30/P50/P90 —　建议要求 —",
+                                    EditorStyles.wordWrappedLabel);
+                            }
+                            else
+                            {
+                                string suggestion = boss.SuggestionValid
+                                    ? ScoreNumberFormatter.Format(boss.Scores.P30)
+                                    : "—（样本有效性不足）";
+                                EditorGUILayout.LabelField(
+                                    $"{label}：到达 {boss.Reached}/{boss.ActualRuns}（{boss.ReachRate:P1}）　" +
+                                    $"通过 {boss.Passed}/{boss.Reached}（{boss.PassRate:P1}）　" +
+                                    $"P10 {ScoreNumberFormatter.Format(boss.Scores.P10)} / P30 {ScoreNumberFormatter.Format(boss.Scores.P30)} / " +
+                                    $"P50 {ScoreNumberFormatter.Format(boss.Scores.P50)} / P90 {ScoreNumberFormatter.Format(boss.Scores.P90)}　建议要求 {suggestion}",
+                                    EditorStyles.wordWrappedLabel);
+                            }
+
+                            foreach (string warningCode in boss.WarningCodes ?? new List<string>())
+                                EditorGUILayout.HelpBox(BossWarningText(boss, warningCode), WarningType(warningCode));
+                        }
+                    }
+                    else if (week.BossScores == null)
                     {
                         EditorGUILayout.LabelField(
                             $"W{week.Week} Boss：到达 {week.BossReached}/{week.ActualRuns}（{week.BossReachRate:P1}）　" +
@@ -977,14 +1015,11 @@ namespace GourmetProject.EditorTools
                     }
                     else
                     {
-                        string suggestion = week.SuggestionValid
-                            ? ScoreNumberFormatter.Format(week.BossScores.P30)
-                            : "—（样本有效性不足）";
                         EditorGUILayout.LabelField(
-                            $"W{week.Week} Boss：到达 {week.BossReached}/{week.ActualRuns}（{week.BossReachRate:P1}）　" +
+                            $"W{week.Week} Boss（旧 trace，日4/日7不可区分）：到达 {week.BossReached}/{week.ActualRuns}（{week.BossReachRate:P1}）　" +
                             $"通过 {week.BossPassed}/{week.BossReached}（{week.BossPassRate:P1}）　" +
                             $"P10 {ScoreNumberFormatter.Format(week.BossScores.P10)} / P30 {ScoreNumberFormatter.Format(week.BossScores.P30)} / " +
-                            $"P50 {ScoreNumberFormatter.Format(week.BossScores.P50)} / P90 {ScoreNumberFormatter.Format(week.BossScores.P90)}　建议要求 {suggestion}",
+                            $"P50 {ScoreNumberFormatter.Format(week.BossScores.P50)} / P90 {ScoreNumberFormatter.Format(week.BossScores.P90)}　建议要求 —",
                             EditorStyles.wordWrappedLabel);
                     }
                     EditorGUILayout.LabelField(
@@ -1121,6 +1156,29 @@ namespace GourmetProject.EditorTools
                 case "no-legal-placement": return $"W{week.Week} 有 {week.NoLegalPlacementRate:P1} 的阶段没有合法摆盘。";
                 case "runtime-errors": return "存在运行异常；本报告不可作为正式平衡结论。";
                 case "unsupported-mechanics": return "存在规则不支持样本；推荐要求已禁用。";
+                case "policy-no-completed-runs": return "自动玩家没有完成整局，尚不能代表真人基线；该玩家档的建议要求已关闭。";
+                case "config-stale": return "报告配置已过期；推荐要求已禁用。";
+                case "sampling-incomplete": return "采样未完整完成；推荐要求已禁用。";
+                case "user-cancelled": return "本次任务已被用户取消；部分报告仍可导出。";
+                case "legacy-boss-trace-ambiguous": return $"W{week.Week} 使用旧版周级 Boss trace，无法区分日4/日7；分位数仅供排查，建议要求已禁用。";
+                default: return code;
+            }
+        }
+
+        private static string BossWarningText(AutoRunBossEncounterSummary boss, string code)
+        {
+            string prefix = $"W{boss.Week} D{boss.Day:0.##}";
+            switch (code)
+            {
+                case "boss-survivor-bias": return $"{prefix} Boss 到达率仅 {boss.ReachRate:P1}；P30 只代表到达者，请结合到达率解读。";
+                case "boss-samples-below-30": return $"{prefix} 只有 {boss.Reached} 条样本到达 Boss；至少需要 30 条才生成建议要求。";
+                case "boss-encounter-key-missing": return $"{prefix} Boss 缺少稳定 EncounterKey；无法确认样本属于同一场，建议要求已禁用。";
+                case "boss-encounter-duplicate": return $"{prefix} 同一局出现重复 EncounterKey；样本身份冲突，建议要求已禁用。";
+                case "boss-encounter-identity-collision": return $"{prefix} 同一 EncounterKey 对应多个 Action/Boss；建议要求已禁用。";
+                case "runtime-errors": return "存在运行异常；本报告不可作为正式平衡结论。";
+                case "unsupported-mechanics": return "存在规则不支持样本；推荐要求已禁用。";
+                case "policy-no-completed-runs": return "自动玩家没有完成整局，尚不能代表真人基线；该玩家档的建议要求已关闭。";
+                case "solver-truncated-over-limit": return $"{prefix} 所在周摆盘预算截断率超过 1%，建议要求不可用。";
                 case "config-stale": return "报告配置已过期；推荐要求已禁用。";
                 case "sampling-incomplete": return "采样未完整完成；推荐要求已禁用。";
                 case "user-cancelled": return "本次任务已被用户取消；部分报告仍可导出。";
@@ -1131,7 +1189,12 @@ namespace GourmetProject.EditorTools
         private static MessageType WarningType(string code)
             => code == "no-boss-reached" || code == "no-stage-samples" || code == "runtime-errors"
                || code == "unsupported-mechanics" || code == "config-stale"
+               || code == "policy-no-completed-runs"
                || code == "solver-truncated-over-limit"
+               || code == "legacy-boss-trace-ambiguous"
+               || code == "boss-encounter-key-missing"
+               || code == "boss-encounter-duplicate"
+               || code == "boss-encounter-identity-collision"
                 ? MessageType.Error
                 : MessageType.Warning;
 

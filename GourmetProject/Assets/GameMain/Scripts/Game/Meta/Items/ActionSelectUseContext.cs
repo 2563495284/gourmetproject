@@ -79,7 +79,9 @@ namespace GourmetProject.Game.Meta
                 case cfg.ItemTargetKind.DiningTableCell:
                     // 局外没有经营挑战餐桌，用预览餐桌（与实战同构）枚举格子。
                     DiningTable preview = Run != null ? BattleSessionFactory.BuildTablePreview(Run) : null;
-                    return BattleUseContext.EnumerateTableCells(preview);
+                    return item.EffectType == ItemEffectTypes.AddMaterial
+                        ? BattleUseContext.EnumerateSettableMaterialCells(preview, item.EffectParam)
+                        : BattleUseContext.EnumerateTableCells(preview);
                 case cfg.ItemTargetKind.Material:
                     return BattleUseContext.EnumerateMaterials(Run);
                 case cfg.ItemTargetKind.FlavorSlot:
@@ -129,7 +131,9 @@ namespace GourmetProject.Game.Meta
 
         public bool AddMaterialToCell(ActiveTarget target, string materialId)
         {
-            return Run != null && Run.AddCellMaterial(new GridPos(target.X, target.Y), materialId);
+            DiningTable preview = Run != null ? BattleSessionFactory.BuildTablePreview(Run) : null;
+            return BattleUseContext.CanSetCellMaterial(preview, target, materialId, out GridPos position)
+                && Run.SetCellMaterial(position, materialId);
         }
 
         public bool GenerateDish(ActiveTarget target, string dishId, string randomKey) => false;

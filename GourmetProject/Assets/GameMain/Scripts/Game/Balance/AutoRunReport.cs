@@ -59,7 +59,7 @@ namespace GourmetProject.Game.Balance
         public const string AllUnlockedProfileId = "all-unlocked-v1";
         public const string DefaultMetaAffinityProfileId = MetaAffinityCatalog.DefaultProfileId;
 
-        public int SchemaVersion = 2;
+        public int SchemaVersion = 3;
         public string GeneratedUtc = string.Empty;
         public string StartedUtc = string.Empty;
         public string FinishedUtc = string.Empty;
@@ -81,6 +81,7 @@ namespace GourmetProject.Game.Balance
         public bool SamplingComplete;
         public bool HasRuntimeErrors;
         public bool HasUnsupportedMechanics;
+        public bool PolicyCalibrationValid;
         public bool IsValid;
         public string UnlockProfileId = AllUnlockedProfileId;
         public string UnlockProfileHash = string.Empty;
@@ -107,6 +108,7 @@ namespace GourmetProject.Game.Balance
         public int RuntimeErrors;
         public int UnsupportedMechanics;
         public int UserCancelled;
+        public bool PolicyCalibrationValid;
         public float CompletionRate;
         public float AverageArchetypeChanges;
         public List<int> BalanceFailureSeeds = new List<int>();
@@ -142,6 +144,12 @@ namespace GourmetProject.Game.Balance
         public bool BossMetricsValid;
         public bool SuggestionValid;
         public AutoRunScoreQuantiles BossScores;
+        /// <summary>
+        /// Schema v3 的正式 Boss 统计。每项只包含同一 Day + EncounterKey，禁止跨 Boss 混样。
+        /// 上面的单值字段保留给旧 UI/旧 JSON，并映射为最晚一次结构化 Boss。
+        /// </summary>
+        public List<AutoRunBossEncounterSummary> BossEncounters = new List<AutoRunBossEncounterSummary>();
+        public bool UsesLegacyBossTrace;
         public int MealBattles;
         public int MealPasses;
         public float MealPassRate;
@@ -161,6 +169,27 @@ namespace GourmetProject.Game.Balance
     }
 
     [Serializable]
+    public sealed class AutoRunBossEncounterSummary
+    {
+        public AutoPlayerLevel PlayerLevel;
+        public int Week;
+        public float Day;
+        public string EncounterKey = string.Empty;
+        public string ActionId = string.Empty;
+        public string BossId = string.Empty;
+        public int ActualRuns;
+        public int Reached;
+        public int Passed;
+        public float ReachRate;
+        public float PassRate;
+        public bool MetricsValid;
+        public bool IdentityValid;
+        public bool SuggestionValid;
+        public AutoRunScoreQuantiles Scores;
+        public List<string> WarningCodes = new List<string>();
+    }
+
+    [Serializable]
     public sealed class AutoRunFailureRecord
     {
         public AutoPlayerLevel PlayerLevel;
@@ -174,6 +203,56 @@ namespace GourmetProject.Game.Balance
     public static class AutoRunReportBuilder
     {
         private const string HeartsExhaustedReason = "红心耗尽";
+
+        private sealed class LegacyBossSample
+        {
+            public LegacyBossSample(AutoRunTrace run, AutoRunStageTrace stage)
+            {
+                Run = run;
+                Stage = stage;
+            }
+
+            public AutoRunTrace Run { get; }
+            public AutoRunStageTrace Stage { get; }
+        }
+
+        private sealed class BossBattleSample
+        {
+            public BossBattleSample(AutoRunTrace run, AutoRunBattleTrace battle)
+            {
+                Run = run;
+                Battle = battle;
+            }
+
+            public AutoRunTrace Run { get; }
+            public AutoRunBattleTrace Battle { get; }
+        }
+
+        private readonly struct EncounterIdentity : IEquatable<EncounterIdentity>
+        {
+            public EncounterIdentity(float day, string key)
+            {
+                Day = day;
+                Key = key ?? string.Empty;
+            }
+
+            public float Day { get; }
+            public string Key { get; }
+
+            public bool Equals(EncounterIdentity other)
+                => Day.Equals(other.Day) && string.Equals(Key, other.Key, StringComparison.Ordinal);
+
+            public override bool Equals(object obj)
+                => obj is EncounterIdentity other && Equals(other);
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (Day.GetHashCode() * 397) ^ StringComparer.Ordinal.GetHashCode(Key);
+                }
+            }
+        }
 
         public static AutoRunReport Build(AutoRunReportRequest request, IEnumerable<AutoRunTrace> traces)
         {
@@ -287,13 +366,49 @@ namespace GourmetProject.Game.Balance
         {
             if (report == null) throw new ArgumentNullException(nameof(report));
             var text = new StringBuilder();
-            text.AppendLine("schemaVersion,generatedUtc,applicationVersion,unityVersion,configHash,configLoadedUtc,configStale,unlockProfile,unlockProfileHash,metaAffinityProfile,metaAffinityProfileHash,policyVersion,characterId,characterName,baseSeed,requestedRunsPerLevel,normalCandidateLimit,expertCandidateLimit,placementNodeBudget,interestReserve,softmaxTemperature,dualArchetypeThreshold,maxActionsPerWeek,samplingComplete,cancelled,reportValid,playerLevel,week,actualRuns,completedRuns,normalDefeats,runtimeErrors,unsupportedMechanics,userCancelled,stageReached,stageReachRate,bossReached,bossPassed,bossReachRate,bossPassRate,bossMetricsValid,suggestionValid,p10,p30,p50,p90,suggestedRequirement,mealBattles,mealPasses,mealPassRate,meanGoldBalance,solverTruncatedRate,placementCandidateLimitedRate,noLegalPlacementRate,activeItemsUsedPerRun,sweetTransferShare,countShare,cakeShare,normalRouteShare,eventRouteShare,interestRouteShare,shopRouteShare,balanceFailureSeeds,runtimeErrorSeeds,unsupportedMechanicSeeds,userCancelledSeeds,warningCodes");
+            text.AppendLine("schemaVersion,generatedUtc,applicationVersion,unityVersion,configHash,configLoadedUtc,configStale,unlockProfile,unlockProfileHash,metaAffinityProfile,metaAffinityProfileHash,policyVersion,characterId,characterName,baseSeed,requestedRunsPerLevel,normalCandidateLimit,expertCandidateLimit,placementNodeBudget,interestReserve,softmaxTemperature,dualArchetypeThreshold,maxActionsPerWeek,samplingComplete,cancelled,reportValid,playerLevel,week,bossDay,bossEncounterKey,bossActionId,bossId,bossIdentityValid,bossLegacyAmbiguous,actualRuns,completedRuns,normalDefeats,runtimeErrors,unsupportedMechanics,userCancelled,stageReached,stageReachRate,bossReached,bossPassed,bossReachRate,bossPassRate,bossMetricsValid,suggestionValid,p10,p30,p50,p90,suggestedRequirement,mealBattles,mealPasses,mealPassRate,meanGoldBalance,solverTruncatedRate,placementCandidateLimitedRate,noLegalPlacementRate,activeItemsUsedPerRun,sweetTransferShare,countShare,cakeShare,normalRouteShare,eventRouteShare,interestRouteShare,shopRouteShare,balanceFailureSeeds,runtimeErrorSeeds,unsupportedMechanicSeeds,userCancelledSeeds,warningCodes");
             foreach (AutoRunWeekSummary week in report.WeekSummaries)
             {
                 AutoRunLevelSummary level = report.LevelSummaries.First(summary => summary.PlayerLevel == week.PlayerLevel);
-                AutoRunScoreQuantiles scores = week.BossScores;
-                string suggested = week.SuggestionValid && scores != null ? Big(scores.P30) : string.Empty;
-                text.Append(report.SchemaVersion).Append(',')
+                List<AutoRunBossEncounterSummary> encounters = week.BossEncounters
+                    ?? new List<AutoRunBossEncounterSummary>();
+                if (encounters.Count == 0)
+                {
+                    AppendCsvRow(text, report, level, week, null);
+                    continue;
+                }
+
+                foreach (AutoRunBossEncounterSummary encounter in encounters
+                             .OrderBy(value => value.Day)
+                             .ThenBy(value => value.EncounterKey, StringComparer.Ordinal))
+                    AppendCsvRow(text, report, level, week, encounter);
+            }
+            return text.ToString();
+        }
+
+        private static void AppendCsvRow(
+            StringBuilder text,
+            AutoRunReport report,
+            AutoRunLevelSummary level,
+            AutoRunWeekSummary week,
+            AutoRunBossEncounterSummary encounter)
+        {
+            AutoRunScoreQuantiles scores = encounter?.Scores ?? week.BossScores;
+            bool legacyAmbiguous = week.UsesLegacyBossTrace
+                                   || (encounter == null
+                                       && (report.SchemaVersion < 3 || week.BossScores != null));
+            bool suggestionValid = encounter?.SuggestionValid
+                                   ?? (!legacyAmbiguous && week.SuggestionValid);
+            int bossReached = encounter?.Reached ?? week.BossReached;
+            int bossPassed = encounter?.Passed ?? week.BossPassed;
+            float bossReachRate = encounter?.ReachRate ?? week.BossReachRate;
+            float bossPassRate = encounter?.PassRate ?? week.BossPassRate;
+            bool bossMetricsValid = encounter?.MetricsValid ?? week.BossMetricsValid;
+            string suggested = suggestionValid && scores != null ? Big(scores.P30) : string.Empty;
+            IEnumerable<string> warningCodes = (week.WarningCodes ?? new List<string>())
+                .Concat(encounter?.WarningCodes ?? new List<string>())
+                .Distinct(StringComparer.Ordinal);
+            text.Append(report.SchemaVersion).Append(',')
                     .Append(Csv(report.GeneratedUtc)).Append(',')
                     .Append(Csv(report.ApplicationVersion)).Append(',')
                     .Append(Csv(report.UnityVersion)).Append(',')
@@ -321,6 +436,12 @@ namespace GourmetProject.Game.Balance
                     .Append(Bool(report.IsValid)).Append(',')
                     .Append(Csv(week.PlayerLevel.ToString())).Append(',')
                     .Append(week.Week).Append(',')
+                    .Append(encounter != null ? Number(encounter.Day) : string.Empty).Append(',')
+                    .Append(Csv(encounter?.EncounterKey)).Append(',')
+                    .Append(Csv(encounter?.ActionId)).Append(',')
+                    .Append(Csv(encounter?.BossId)).Append(',')
+                    .Append(Bool(encounter?.IdentityValid ?? false)).Append(',')
+                    .Append(Bool(legacyAmbiguous)).Append(',')
                     .Append(week.ActualRuns).Append(',')
                     .Append(week.CompletedRuns).Append(',')
                     .Append(level.NormalDefeats).Append(',')
@@ -329,12 +450,12 @@ namespace GourmetProject.Game.Balance
                     .Append(level.UserCancelled).Append(',')
                     .Append(week.StageReached).Append(',')
                     .Append(Number(week.StageReachRate)).Append(',')
-                    .Append(week.BossReached).Append(',')
-                    .Append(week.BossPassed).Append(',')
-                    .Append(Number(week.BossReachRate)).Append(',')
-                    .Append(Number(week.BossPassRate)).Append(',')
-                    .Append(Bool(week.BossMetricsValid)).Append(',')
-                    .Append(Bool(week.SuggestionValid)).Append(',')
+                    .Append(bossReached).Append(',')
+                    .Append(bossPassed).Append(',')
+                    .Append(Number(bossReachRate)).Append(',')
+                    .Append(Number(bossPassRate)).Append(',')
+                    .Append(Bool(bossMetricsValid)).Append(',')
+                    .Append(Bool(suggestionValid)).Append(',')
                     .Append(scores != null ? Big(scores.P10) : string.Empty).Append(',')
                     .Append(scores != null ? Big(scores.P30) : string.Empty).Append(',')
                     .Append(scores != null ? Big(scores.P50) : string.Empty).Append(',')
@@ -359,10 +480,8 @@ namespace GourmetProject.Game.Balance
                     .Append(Csv(string.Join("|", level.RuntimeErrorSeeds))).Append(',')
                     .Append(Csv(string.Join("|", level.UnsupportedMechanicSeeds))).Append(',')
                     .Append(Csv(string.Join("|", level.UserCancelledSeeds))).Append(',')
-                    .Append(Csv(string.Join("|", week.WarningCodes)))
+                    .Append(Csv(string.Join("|", warningCodes)))
                     .Append('\n');
-            }
-            return text.ToString();
         }
 
         private static AutoRunLevelSummary BuildLevelSummary(
@@ -437,7 +556,22 @@ namespace GourmetProject.Game.Balance
                 .SelectMany(run => run.Stages ?? new List<AutoRunStageTrace>())
                 .Where(stage => stage.Week == week)
                 .ToList();
-            List<AutoRunStageTrace> bosses = stages.Where(stage => stage.BossReached).ToList();
+            List<LegacyBossSample> legacyBosses = runs
+                .SelectMany(run => (run.Stages ?? new List<AutoRunStageTrace>())
+                    .Where(stage => stage != null && stage.Week == week && stage.BossReached)
+                    .Where(stage => !(stage.Battles ?? new List<AutoRunBattleTrace>())
+                        .Any(battle => battle != null && battle.IsBoss))
+                    .Select(stage => new LegacyBossSample(run, stage)))
+                .ToList();
+            List<BossBattleSample> structuredBosses = runs
+                .SelectMany(run => (run.Stages ?? new List<AutoRunStageTrace>())
+                    .Where(stage => stage != null && stage.Week == week)
+                    .SelectMany(stage => (stage.Battles ?? new List<AutoRunBattleTrace>())
+                        .Where(battle => battle != null
+                                         && battle.IsBoss
+                                         && (battle.Week <= 0 || battle.Week == week))
+                        .Select(battle => new BossBattleSample(run, battle))))
+                .ToList();
             var result = new AutoRunWeekSummary
             {
                 PlayerLevel = level.PlayerLevel,
@@ -448,11 +582,7 @@ namespace GourmetProject.Game.Balance
                 RuntimeErrors = level.RuntimeErrors,
                 StageReached = stages.Count,
                 StageReachRate = Rate(stages.Count, level.ActualRuns),
-                BossReached = bosses.Count,
-                BossPassed = bosses.Count(stage => stage.BossPassed),
-                BossReachRate = Rate(bosses.Count, level.ActualRuns),
-                BossPassRate = Rate(bosses.Count(stage => stage.BossPassed), bosses.Count),
-                BossMetricsValid = bosses.Count > 0,
+                UsesLegacyBossTrace = legacyBosses.Count > 0,
                 MealBattles = stages.Sum(stage => stage.MealBattles),
                 MealPasses = stages.Sum(stage => stage.MealPasses),
                 MeanGoldBalance = stages.Count > 0 ? (float)stages.Average(stage => stage.GoldBalance) : 0f,
@@ -471,27 +601,135 @@ namespace GourmetProject.Game.Balance
                 ShopRouteShare = Rate(stages.Count(stage => stage.MetaRoute == MetaRoute.Shop), stages.Count),
             };
             result.MealPassRate = Rate(result.MealPasses, result.MealBattles);
-            if (bosses.Count > 0)
+
+            foreach (IGrouping<EncounterIdentity, BossBattleSample> group in structuredBosses
+                         .GroupBy(sample => new EncounterIdentity(
+                             sample.Battle.Day,
+                             sample.Battle.EncounterKey ?? string.Empty))
+                         .OrderBy(group => group.Key.Day)
+                         .ThenBy(group => group.Key.Key, StringComparer.Ordinal))
             {
-                BigDouble[] scores = bosses.Select(stage => stage.BossScore).OrderBy(score => score).ToArray();
-                result.BossScores = new AutoRunScoreQuantiles
-                {
-                    P10 = LowerQuantile(scores, 0.10f),
-                    P30 = LowerQuantile(scores, 0.30f),
-                    P50 = LowerQuantile(scores, 0.50f),
-                    P90 = UpperQuantile(scores, 0.90f),
-                };
+                result.BossEncounters.Add(BuildBossEncounterSummary(level, week, group.Key, group.ToList()));
             }
 
+            if (result.BossEncounters.Count > 0)
+            {
+                AutoRunBossEncounterSummary primary = result.BossEncounters
+                    .OrderBy(summary => summary.Day)
+                    .ThenBy(summary => summary.EncounterKey, StringComparer.Ordinal)
+                    .Last();
+                CopyLegacyBossFields(result, primary);
+            }
+            else if (legacyBosses.Count > 0)
+            {
+                result.BossReached = legacyBosses.Count;
+                result.BossPassed = legacyBosses.Count(sample => sample.Stage.BossPassed);
+                result.BossReachRate = Rate(result.BossReached, level.ActualRuns);
+                result.BossPassRate = Rate(result.BossPassed, result.BossReached);
+                result.BossMetricsValid = true;
+                result.BossScores = Quantiles(legacyBosses.Select(sample => sample.Stage.BossScore));
+            }
+
+            if (legacyBosses.Count > 0)
+                result.WarningCodes.Add("legacy-boss-trace-ambiguous");
+
             if (stages.Count == 0) result.WarningCodes.Add("no-stage-samples");
-            if (bosses.Count == 0) result.WarningCodes.Add("no-boss-reached");
-            else if (result.BossReachRate < 0.5f) result.WarningCodes.Add("boss-survivor-bias");
-            if (bosses.Count > 0 && bosses.Count < 30) result.WarningCodes.Add("boss-samples-below-30");
+            if (result.BossEncounters.Count == 0 && legacyBosses.Count == 0)
+                result.WarningCodes.Add("no-boss-reached");
+            else if (result.BossEncounters.Count == 0 && result.BossReachRate < 0.5f)
+                result.WarningCodes.Add("boss-survivor-bias");
+            if (result.BossEncounters.Count == 0 && legacyBosses.Count > 0 && legacyBosses.Count < 30)
+                result.WarningCodes.Add("boss-samples-below-30");
             if (result.MealBattles > 0 && result.MealPassRate < 0.3f) result.WarningCodes.Add("low-meal-pass-rate");
             if (result.SolverTruncatedRate > 0f) result.WarningCodes.Add("solver-truncated");
             if (result.PlacementCandidateLimitedRate > 0f) result.WarningCodes.Add("placement-candidate-limited");
             if (result.NoLegalPlacementRate > 0f) result.WarningCodes.Add("no-legal-placement");
             return result;
+        }
+
+        private static AutoRunBossEncounterSummary BuildBossEncounterSummary(
+            AutoRunLevelSummary level,
+            int week,
+            EncounterIdentity identity,
+            List<BossBattleSample> samples)
+        {
+            List<IGrouping<AutoRunTrace, BossBattleSample>> byRun = samples
+                .GroupBy(sample => sample.Run)
+                .ToList();
+            List<AutoRunBattleTrace> uniqueBattles = byRun
+                .Select(group => group
+                    .OrderBy(sample => sample.Battle.BattleKey, StringComparer.Ordinal)
+                    .Select(sample => sample.Battle)
+                    .First())
+                .ToList();
+            List<string> actionIds = uniqueBattles
+                .Select(battle => battle.ActionId ?? string.Empty)
+                .Where(value => !string.IsNullOrEmpty(value))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            List<string> bossIds = uniqueBattles
+                .Select(battle => battle.BossId ?? string.Empty)
+                .Where(value => !string.IsNullOrEmpty(value))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            bool duplicateInRun = byRun.Any(group => group.Count() > 1);
+            bool identityValid = !string.IsNullOrWhiteSpace(identity.Key)
+                                 && !duplicateInRun
+                                 && actionIds.Count <= 1
+                                 && bossIds.Count <= 1;
+            var result = new AutoRunBossEncounterSummary
+            {
+                PlayerLevel = level.PlayerLevel,
+                Week = week,
+                Day = identity.Day,
+                EncounterKey = identity.Key,
+                ActionId = actionIds.FirstOrDefault() ?? string.Empty,
+                BossId = bossIds.FirstOrDefault() ?? string.Empty,
+                ActualRuns = level.ActualRuns,
+                Reached = uniqueBattles.Count,
+                Passed = uniqueBattles.Count(battle => battle.TargetHit),
+                MetricsValid = uniqueBattles.Count > 0,
+                IdentityValid = identityValid,
+                Scores = uniqueBattles.Count > 0
+                    ? Quantiles(uniqueBattles.Select(battle => battle.Score))
+                    : null,
+            };
+            result.ReachRate = Rate(result.Reached, result.ActualRuns);
+            result.PassRate = Rate(result.Passed, result.Reached);
+            if (result.ReachRate < 0.5f) result.WarningCodes.Add("boss-survivor-bias");
+            if (result.Reached < 30) result.WarningCodes.Add("boss-samples-below-30");
+            if (string.IsNullOrWhiteSpace(identity.Key))
+                result.WarningCodes.Add("boss-encounter-key-missing");
+            if (duplicateInRun) result.WarningCodes.Add("boss-encounter-duplicate");
+            if (actionIds.Count > 1 || bossIds.Count > 1)
+                result.WarningCodes.Add("boss-encounter-identity-collision");
+            return result;
+        }
+
+        private static AutoRunScoreQuantiles Quantiles(IEnumerable<BigDouble> values)
+        {
+            BigDouble[] sorted = values.OrderBy(value => value).ToArray();
+            if (sorted.Length == 0) return null;
+            return new AutoRunScoreQuantiles
+            {
+                P10 = LowerQuantile(sorted, 0.10f),
+                P30 = LowerQuantile(sorted, 0.30f),
+                P50 = LowerQuantile(sorted, 0.50f),
+                P90 = UpperQuantile(sorted, 0.90f),
+            };
+        }
+
+        private static void CopyLegacyBossFields(
+            AutoRunWeekSummary week,
+            AutoRunBossEncounterSummary encounter)
+        {
+            week.BossReached = encounter.Reached;
+            week.BossPassed = encounter.Passed;
+            week.BossReachRate = encounter.ReachRate;
+            week.BossPassRate = encounter.PassRate;
+            week.BossMetricsValid = encounter.MetricsValid;
+            week.BossScores = encounter.Scores;
+            week.SuggestionValid = encounter.SuggestionValid;
         }
 
         private static bool IsBudgetTruncated(AutoRunStageTrace stage)
@@ -516,6 +754,9 @@ namespace GourmetProject.Game.Balance
             report.ConfigStale = configStale;
             report.HasRuntimeErrors = report.LevelSummaries.Any(summary => summary.RuntimeErrors > 0);
             report.HasUnsupportedMechanics = report.LevelSummaries.Any(summary => summary.UnsupportedMechanics > 0);
+            foreach (AutoRunLevelSummary level in report.LevelSummaries)
+                level.PolicyCalibrationValid = level.CompletedRuns > 0;
+            report.PolicyCalibrationValid = report.LevelSummaries.Any(level => level.PolicyCalibrationValid);
             foreach (AutoRunWeekSummary week in report.WeekSummaries)
             {
                 AutoRunLevelSummary level = report.LevelSummaries.FirstOrDefault(
@@ -523,26 +764,64 @@ namespace GourmetProject.Game.Balance
                 RemoveDynamicWarnings(week.WarningCodes);
                 bool runtimeClean = level != null && level.RuntimeErrors == 0;
                 bool supported = level != null && level.UnsupportedMechanics == 0;
+                bool policyCalibrated = level?.PolicyCalibrationValid == true;
                 bool truncationAcceptable = week.SolverTruncatedRate <= 0.01f;
-                week.SuggestionValid = week.BossReached >= 30
-                                       && runtimeClean
-                                       && supported
-                                       && truncationAcceptable
-                                       && !report.ConfigStale
-                                       && report.SamplingComplete
-                                       && !report.Cancelled;
+                week.BossEncounters ??= new List<AutoRunBossEncounterSummary>();
+                if (report.SchemaVersion < 3
+                    || (week.BossEncounters.Count == 0
+                        && week.BossMetricsValid
+                        && week.BossScores != null))
+                {
+                    week.UsesLegacyBossTrace = true;
+                    if (!week.WarningCodes.Contains("legacy-boss-trace-ambiguous"))
+                        week.WarningCodes.Add("legacy-boss-trace-ambiguous");
+                }
+                foreach (AutoRunBossEncounterSummary encounter in week.BossEncounters)
+                {
+                    encounter.WarningCodes ??= new List<string>();
+                    RemoveDynamicWarnings(encounter.WarningCodes);
+                    encounter.SuggestionValid = encounter.Reached >= 30
+                                                  && encounter.IdentityValid
+                                                  && !week.UsesLegacyBossTrace
+                                                  && runtimeClean
+                                                  && supported
+                                                  && policyCalibrated
+                                                  && truncationAcceptable
+                                                  && !report.ConfigStale
+                                                  && report.SamplingComplete
+                                                  && !report.Cancelled;
+                    AddDynamicWarnings(
+                        encounter.WarningCodes,
+                        runtimeClean,
+                        supported,
+                        policyCalibrated,
+                        truncationAcceptable,
+                        report);
+                }
 
-                if (!runtimeClean) week.WarningCodes.Add("runtime-errors");
-                if (!supported) week.WarningCodes.Add("unsupported-mechanics");
-                if (!truncationAcceptable) week.WarningCodes.Add("solver-truncated-over-limit");
-                if (report.ConfigStale) week.WarningCodes.Add("config-stale");
-                if (!report.SamplingComplete) week.WarningCodes.Add("sampling-incomplete");
-                if (report.Cancelled) week.WarningCodes.Add("user-cancelled");
+                week.SuggestionValid = false;
+                if (week.BossEncounters.Count > 0)
+                {
+                    AutoRunBossEncounterSummary primary = week.BossEncounters
+                        .OrderBy(summary => summary.Day)
+                        .ThenBy(summary => summary.EncounterKey, StringComparer.Ordinal)
+                        .Last();
+                    CopyLegacyBossFields(week, primary);
+                }
+
+                AddDynamicWarnings(
+                    week.WarningCodes,
+                    runtimeClean,
+                    supported,
+                    policyCalibrated,
+                    truncationAcceptable,
+                    report);
             }
 
             report.IsValid = report.SamplingComplete
                              && !report.HasRuntimeErrors
                              && !report.HasUnsupportedMechanics
+                             && report.PolicyCalibrationValid
                              && !report.ConfigStale
                              && report.ActualTraceCount > 0
                              && report.WeekSummaries.All(week => week.SolverTruncatedRate <= 0.01f);
@@ -554,11 +833,30 @@ namespace GourmetProject.Game.Balance
             return JsonUtility.ToJson(report, prettyPrint);
         }
 
+        private static void AddDynamicWarnings(
+            List<string> warnings,
+            bool runtimeClean,
+            bool supported,
+            bool policyCalibrated,
+            bool truncationAcceptable,
+            AutoRunReport report)
+        {
+            if (warnings == null || report == null) return;
+            if (!runtimeClean) warnings.Add("runtime-errors");
+            if (!supported) warnings.Add("unsupported-mechanics");
+            if (!policyCalibrated) warnings.Add("policy-no-completed-runs");
+            if (!truncationAcceptable) warnings.Add("solver-truncated-over-limit");
+            if (report.ConfigStale) warnings.Add("config-stale");
+            if (!report.SamplingComplete) warnings.Add("sampling-incomplete");
+            if (report.Cancelled) warnings.Add("user-cancelled");
+        }
+
         private static void RemoveDynamicWarnings(List<string> warnings)
         {
             if (warnings == null) return;
             warnings.RemoveAll(code => code == "runtime-errors"
                                        || code == "unsupported-mechanics"
+                                       || code == "policy-no-completed-runs"
                                        || code == "solver-truncated-over-limit"
                                        || code == "config-stale"
                                        || code == "sampling-incomplete"

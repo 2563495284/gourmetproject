@@ -54,7 +54,7 @@ namespace GourmetProject.Gameplay.Scoring
                     // 正式结算再对每次请求各掷 1/5，预览阶段仍不消耗随机流。
                     for (int i = 0; i < _cellCount; i++)
                     {
-                        ctx.RequestSilverItemRoll();
+                        ctx.RequestSilverItemRoll(0.2f);
                     }
 
                     break;

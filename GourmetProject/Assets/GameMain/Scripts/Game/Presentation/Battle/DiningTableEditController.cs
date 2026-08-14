@@ -513,7 +513,15 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public bool ApplyCellMaterialVisual(GridPos pos, string materialId, Action onComplete)
         {
-            if (_editTable == null || string.IsNullOrEmpty(materialId) || !_editTable.AddMaterialAt(pos, materialId))
+            if (_editTable == null || string.IsNullOrEmpty(materialId) || !_editTable.Exists(pos))
+            {
+                return false;
+            }
+
+            IReadOnlyList<string> current = _editTable.MaterialsAt(pos);
+            bool alreadyApplied = current.Count > 0
+                && string.Equals(current[current.Count - 1], materialId, StringComparison.Ordinal);
+            if (!alreadyApplied && !_editTable.SetMaterialAt(pos, materialId))
             {
                 return false;
             }

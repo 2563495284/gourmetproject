@@ -60,10 +60,10 @@
     "desc": "[gold]金币+6[/gold]",
     "effectType": 6,
     "effectParam": [
-      "2"
+      "1"
     ],
     "effectValue": [
-      15
+      6
     ],
     "termId": ""
   },

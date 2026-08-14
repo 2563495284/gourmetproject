@@ -3,8 +3,8 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Game.Run
 {
     /// <summary>
-    /// 玩家用「铺台小票」为某个餐桌格永久附加的材质覆盖。
-    /// 拼桌时按坐标 append 进 DiningTable 材质表，与碎片自带材质叠加；入档持久化。
+    /// 玩家用「铺台小票」为某个餐桌格设置的永久材质覆盖。
+    /// 每个坐标最多一条，拼桌时替换碎片自带材质；入档持久化。
     /// </summary>
     public readonly struct CellMaterialOverride
     {

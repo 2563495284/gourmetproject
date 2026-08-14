@@ -817,18 +817,35 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> TableFragmentIds => _stomachFragmentIds;
 
-        /// <summary>玩家用「铺台小票」永久附加的格子材质覆盖（拼桌时叠加）。</summary>
+        /// <summary>玩家用「铺台小票」设置的格子材质覆盖；每个坐标至多一个材质。</summary>
         public IReadOnlyList<CellMaterialOverride> CellMaterialOverrides => _cellMaterialOverrides;
 
-        /// <summary>「铺台小票」落地：给某个餐桌格永久附加一个材质。空 id 返回 false。</summary>
-        public bool AddCellMaterial(GridPos pos, string materialId)
+        /// <summary>给某个餐桌格设置永久材质。新材质替换旧材质；空 id 或材质未变化时返回 false。</summary>
+        public bool SetCellMaterial(GridPos pos, string materialId)
         {
             if (string.IsNullOrEmpty(materialId))
             {
                 return false;
             }
 
-            _cellMaterialOverrides.Add(new CellMaterialOverride(pos, materialId));
+            int existingIndex = FindCellMaterialOverrideIndex(_cellMaterialOverrides, pos);
+            if (existingIndex >= 0)
+            {
+                if (string.Equals(
+                        _cellMaterialOverrides[existingIndex].MaterialId,
+                        materialId,
+                        System.StringComparison.Ordinal))
+                {
+                    return false;
+                }
+
+                _cellMaterialOverrides[existingIndex] = new CellMaterialOverride(pos, materialId);
+            }
+            else
+            {
+                _cellMaterialOverrides.Add(new CellMaterialOverride(pos, materialId));
+            }
+
             NotifyContentAcquired(new RunContentAcquisition
             {
                 Kind = RunContentAcquisitionKind.TableMaterial,
@@ -836,6 +853,9 @@ namespace GourmetProject.Game.Run
             });
             return true;
         }
+
+        /// <summary>兼容旧调用；材质语义已改为设置/替换，而不是叠加。</summary>
+        public bool AddCellMaterial(GridPos pos, string materialId) => SetCellMaterial(pos, materialId);
 
         /// <summary>玩家手动拼贴的碎片放置列表（餐桌编辑页产出，随存档保存）。</summary>
         public IReadOnlyList<TableFragmentPlacement> FragmentPlacements => _fragmentPlacements;
@@ -2610,7 +2630,10 @@ namespace GourmetProject.Game.Run
                         continue;
                     }
 
-                    run._cellMaterialOverrides.Add(new CellMaterialOverride(new GridPos(m.X, m.Y), m.MaterialId));
+                    SetCellMaterialOverride(
+                        run._cellMaterialOverrides,
+                        new GridPos(m.X, m.Y),
+                        m.MaterialId);
                 }
             }
 
@@ -4125,8 +4148,20 @@ namespace GourmetProject.Game.Run
 
         private List<CellMaterialSaveData> ToCellMaterialSaveData()
         {
-            var list = new List<CellMaterialSaveData>(_cellMaterialOverrides.Count);
+            // 防御性压缩，确保即便未来迁移或反序列化绕过入口，存档仍保持每坐标一条、最后值获胜。
+            var normalized = new List<CellMaterialOverride>(_cellMaterialOverrides.Count);
             foreach (CellMaterialOverride m in _cellMaterialOverrides)
+            {
+                if (string.IsNullOrEmpty(m.MaterialId))
+                {
+                    continue;
+                }
+
+                SetCellMaterialOverride(normalized, m.Pos, m.MaterialId);
+            }
+
+            var list = new List<CellMaterialSaveData>(normalized.Count);
+            foreach (CellMaterialOverride m in normalized)
             {
                 list.Add(new CellMaterialSaveData
                 {
@@ -4137,6 +4172,38 @@ namespace GourmetProject.Game.Run
             }
 
             return list;
+        }
+
+        private static int FindCellMaterialOverrideIndex(
+            IReadOnlyList<CellMaterialOverride> overrides,
+            GridPos pos)
+        {
+            for (int i = 0; i < overrides.Count; i++)
+            {
+                if (overrides[i].Pos.Equals(pos))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private static void SetCellMaterialOverride(
+            List<CellMaterialOverride> overrides,
+            GridPos pos,
+            string materialId)
+        {
+            int index = FindCellMaterialOverrideIndex(overrides, pos);
+            var replacement = new CellMaterialOverride(pos, materialId);
+            if (index >= 0)
+            {
+                overrides[index] = replacement;
+            }
+            else
+            {
+                overrides.Add(replacement);
+            }
         }
 
         private List<RuntimeTimelineNodeSaveData> ToRuntimeTimelineNodeSaveData()

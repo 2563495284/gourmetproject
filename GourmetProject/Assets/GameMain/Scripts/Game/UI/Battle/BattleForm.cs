@@ -4638,7 +4638,6 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnBattleServed(DishInstance dish, int servesUsed)
         {
-            TutorialRuntime.Publish(TutorialSignal.DishPlaced);
             RefreshPersistent();
         }
 
@@ -5424,8 +5423,58 @@ namespace GourmetProject.Game.UI.Battle
 
         private void PlayBattleTutorialIfNeeded()
         {
-            if (IsFirstTutorialBattle()) TutorialRuntime.Play(TutorialId.FirstBattle);
+            if (IsFirstTutorialBattle())
+                TutorialRuntime.Play(TutorialId.FirstBattle, TryPlayFirstBattleSettleHint);
             if (_activeBattleIsBoss) TutorialRuntime.EnqueueHook(TutorialId.Boss);
+        }
+
+        private void TryPlayFirstBattleSettleHint()
+        {
+            bool isFirstTutorialBattle = IsFirstTutorialBattle();
+            BattleSession session = _session;
+            if (!isFirstTutorialBattle || session == null)
+            {
+                return;
+            }
+
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (!ShouldPlayFirstBattleSettleHint(
+                    isFirstTutorialBattle: isFirstTutorialBattle,
+                    hasSession: true,
+                    isSettled: session.IsSettled,
+                    firstBattleCompleted: TutorialProgressService.IsCompleted(TutorialId.FirstBattle),
+                    settleHintCompleted: TutorialProgressService.IsCompleted(TutorialId.FirstBattleSettleHint),
+                    tutorialPlaying: TutorialRuntime.IsPlaying,
+                    foodInteractionBusy: world != null && world.IsFoodInteractionBusy,
+                    hasTemporaryAreaDishes: session.TemporaryAreaDishes.Count > 0,
+                    canServeAny: session.CanServeAny()))
+            {
+                return;
+            }
+
+            TutorialRuntime.Play(TutorialId.FirstBattleSettleHint);
+        }
+
+        internal static bool ShouldPlayFirstBattleSettleHint(
+            bool isFirstTutorialBattle,
+            bool hasSession,
+            bool isSettled,
+            bool firstBattleCompleted,
+            bool settleHintCompleted,
+            bool tutorialPlaying,
+            bool foodInteractionBusy,
+            bool hasTemporaryAreaDishes,
+            bool canServeAny)
+        {
+            return isFirstTutorialBattle
+                && hasSession
+                && !isSettled
+                && firstBattleCompleted
+                && !settleHintCompleted
+                && !tutorialPlaying
+                && !foodInteractionBusy
+                && !hasTemporaryAreaDishes
+                && !canServeAny;
         }
 
         private void OnGoldChanged(int before, int after)
@@ -5477,6 +5526,8 @@ namespace GourmetProject.Game.UI.Battle
                 RefreshPersistent();
                 BuildBattleControls();
             }
+
+            TryPlayFirstBattleSettleHint();
         }
 
         // —— 局内交互（透传到经营挑战世界）——

@@ -66,9 +66,10 @@ namespace GourmetProject.Gameplay.Scoring
             foreach (GridPos cell in dish.OccupiedCells)
             {
                 int boardOrder = BoardOrder(snapshot, cell);
+                var seenOnCell = new HashSet<string>(System.StringComparer.Ordinal);
                 foreach (string materialId in snapshot.DiningTable.MaterialsAt(cell))
                 {
-                    if (string.IsNullOrEmpty(materialId))
+                    if (string.IsNullOrEmpty(materialId) || !seenOnCell.Add(materialId))
                     {
                         continue;
                     }

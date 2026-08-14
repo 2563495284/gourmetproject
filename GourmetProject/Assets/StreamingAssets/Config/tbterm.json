@@ -67,7 +67,7 @@
   {
     "id": "m_gold",
     "name": "金",
-    "desc": "占据 2 格金餐桌时\n[gold]+15 金币[/gold]"
+    "desc": "占据 1 格金餐桌时\n[gold]+6 金币[/gold]"
   },
   {
     "id": "m_silver",
