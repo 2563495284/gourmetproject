@@ -1,8 +1,10 @@
 using System;
 using GourmetProject.Game.UI.Common;
+using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Model;
 using NUnit.Framework;
 using TMPro;
+using UnityEditor;
 using UnityEngine;
 
 namespace GourmetProject.Tests.EditMode
@@ -11,6 +13,8 @@ namespace GourmetProject.Tests.EditMode
     {
         private const string MultiplyMaterialPath =
             "Fonts & Materials/DescriptionMultiplyOutline";
+        private const string FoodSkillDescriptionPrefabPath =
+            "Assets/GameMain/Content/Prefabs/UI/Tooltips/FoodSkillDescriptionView.prefab";
 
         [TestCase(null, "")]
         [TestCase("", "")]
@@ -294,6 +298,39 @@ namespace GourmetProject.Tests.EditMode
         {
             Assert.Throws<ArgumentNullException>(() =>
                 SemanticDescriptionFormatter.Set(null, "描述"));
+        }
+
+        [Test]
+        public void FoodSkillDescriptionBind_FormatsSemanticMarkup()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                FoodSkillDescriptionPrefabPath);
+            Assert.That(prefab, Is.Not.Null);
+
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                FoodSkillDescriptionView view = instance.GetComponent<FoodSkillDescriptionView>();
+                TMP_Text target = instance.GetComponentInChildren<TMP_Text>(true);
+                Assert.That(view, Is.Not.Null);
+                Assert.That(target, Is.Not.Null);
+                target.richText = false;
+
+                view.Bind(
+                    "[context]上侧及自身[/context]\n" +
+                    "[strong]倍率[/strong] [multadd]+0.5[/multadd]");
+
+                Assert.That(target.richText, Is.True);
+                Assert.That(
+                    target.text,
+                    Is.EqualTo(
+                        "<b><color=#137A4A>上侧及自身</color></b>\n" +
+                        "<b>倍率</b> <b><color=#B23A48>+0.5</color></b>"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
         }
 
         [Test]
