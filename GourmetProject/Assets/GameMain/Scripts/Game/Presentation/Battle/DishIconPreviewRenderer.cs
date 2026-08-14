@@ -30,7 +30,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private static DishIconPreviewRenderer _instance;
 
         private readonly List<SpriteRenderer> _cellPool = new();
-        private readonly List<SpriteRenderer> _cellPlatePool = new();
         private readonly List<string> _flavorScratch = new();
         private readonly Dictionary<RenderTexture, BadgePreviewState> _badgesByTarget = new();
         private readonly List<RenderTexture> _staleBadgeTargets = new();
@@ -393,46 +392,30 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            Sprite tableSprite = cellPrefab.sprite;
-            SpriteRenderer platePrefab = cellPrefab.transform
-                .Find("PlateVisual")
-                ?.GetComponent<SpriteRenderer>();
-            if (platePrefab == null)
-            {
-                Debug.LogError(
-                    "Dish icon preview cell prefab is missing its serialized PlateVisual renderer.",
-                    cellPrefab);
-                return;
-            }
-
-            Sprite plateSprite = platePrefab != null ? platePrefab.sprite : null;
-            if (tableSprite == null || plateSprite == null)
+            Sprite cellSprite = cellPrefab.sprite;
+            if (cellSprite == null)
             {
                 DiningTableCellSprites fallback = DiningTableCellSpriteResources.LoadDefault();
-                tableSprite ??= fallback.Table;
-                plateSprite ??= fallback.Plate;
+                cellSprite = fallback.Plate;
             }
 
-            if (tableSprite == null || plateSprite == null)
+            if (cellSprite == null)
             {
                 Debug.LogError(
-                    "Dish icon preview cell prefab has no complete table/plate Sprite pair.",
+                    "Dish icon preview cell prefab has no PlateVisual Sprite.",
                     cellPrefab);
                 return;
             }
 
-            Transform tableVisualPrefab = cellPrefab.transform;
-            Transform plateVisualPrefab = platePrefab.transform;
+            Transform plateVisualPrefab = cellPrefab.transform;
             IReadOnlyList<GridPos> cells = OccupiedBoardCells(shape);
             for (int i = 0; i < cells.Count; i++)
             {
                 GridPos cell = cells[i];
-                SpriteRenderer tableRenderer;
                 SpriteRenderer plateRenderer;
                 if (i < _cellPool.Count)
                 {
-                    tableRenderer = _cellPool[i];
-                    plateRenderer = _cellPlatePool[i];
+                    plateRenderer = _cellPool[i];
                 }
                 else
                 {
@@ -442,40 +425,21 @@ namespace GourmetProject.Game.Presentation.Battle
                         layer = _previewLayer,
                     };
                     cellObject.transform.SetParent(_boardRoot, false);
-                    tableRenderer = cellObject.AddComponent<SpriteRenderer>();
-
-                    var plateObject = new GameObject("PlateVisual")
-                    {
-                        hideFlags = HideFlags.HideAndDontSave,
-                        layer = _previewLayer,
-                    };
-                    plateObject.transform.SetParent(cellObject.transform, false);
-                    plateRenderer = plateObject.AddComponent<SpriteRenderer>();
-                    _cellPool.Add(tableRenderer);
-                    _cellPlatePool.Add(plateRenderer);
+                    plateRenderer = cellObject.AddComponent<SpriteRenderer>();
+                    _cellPool.Add(plateRenderer);
                 }
 
-                tableRenderer.gameObject.SetActive(true);
-                tableRenderer.transform.localPosition = PreviewTableVisualPosition(
-                    tableVisualPrefab,
+                plateRenderer.gameObject.SetActive(true);
+                plateRenderer.transform.localPosition = PreviewTableVisualPosition(
+                    plateVisualPrefab,
                     shape,
                     cell);
-                tableRenderer.transform.localRotation = tableVisualPrefab.localRotation;
-                tableRenderer.transform.localScale = PreviewTableVisualScale(tableVisualPrefab);
-                plateRenderer.transform.localPosition = plateVisualPrefab.localPosition;
                 plateRenderer.transform.localRotation = plateVisualPrefab.localRotation;
-                plateRenderer.transform.localScale = plateVisualPrefab.localScale;
+                plateRenderer.transform.localScale = PreviewTableVisualScale(plateVisualPrefab);
 
-                tableRenderer.sprite = tableSprite;
-                tableRenderer.color = Color.white;
-                plateRenderer.sprite = plateSprite;
+                plateRenderer.sprite = cellSprite;
                 plateRenderer.color = Color.white;
-                SpriteRenderStyle.ApplyUnlitMaterial(tableRenderer);
                 SpriteRenderStyle.ApplyUnlitMaterial(plateRenderer);
-                BattleSorting.Apply(
-                    tableRenderer,
-                    BattleSorting.DiningTable,
-                    cell.Y * 2);
                 BattleSorting.Apply(
                     plateRenderer,
                     BattleSorting.DiningTable,
@@ -525,6 +489,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 CellSize,
                 Pitch,
                 useTightMeshBounds);
+            if (useTightMeshBounds)
+            {
+                // 无棋盘底图的仓库/出餐口预览不能分别拉满宽高，否则原画会变形。
+                // 取较小轴的缩放值，让可见 Sprite 等比放入占格包围盒。
+                float uniformScale = Mathf.Min(scale.x, scale.y);
+                scale = new Vector3(uniformScale, uniformScale, 1f);
+            }
+
             _dishRoot.localRotation = rotation;
             _dishRoot.localScale = scale;
             _dishRoot.localPosition = useTightMeshBounds
@@ -534,7 +506,10 @@ namespace GourmetProject.Game.Presentation.Battle
                     rotation)
                 : Vector3.zero;
 
-            BuildContactShadow(displayShape, dishPrefab);
+            if (mode == DishIconPreviewMode.Card)
+            {
+                BuildContactShadow(displayShape, dishPrefab);
+            }
 
             FlavorOrganicVisual.ApplyToSpriteRenderer(
                 _dishRenderer,
@@ -708,11 +683,16 @@ namespace GourmetProject.Game.Presentation.Battle
             state.View.transform.localScale = Vector3.one * state.Scale;
             float badgeTopExtent = state.View.TopExtent
                 * Mathf.Abs(state.View.transform.localScale.y);
-            state.View.transform.localPosition = DishBadgeLayout.PositionFromShapeCenter(
+            Vector3 badgePosition = DishBadgeLayout.PositionFromShapeCenter(
                 displayShape,
                 CellSize,
                 Pitch,
                 badgeTopExtent);
+            state.View.transform.localPosition = badgePosition;
+            if (mode == DishIconPreviewMode.Warehouse)
+            {
+                CenterWarehouseBadgeHorizontally(state.View, badgePosition);
+            }
         }
 
         private static float WarehouseBadgeScale(
@@ -724,29 +704,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 return BadgeScale;
             }
 
-            Renderer[] renderers = view.GetComponentsInChildren<Renderer>(false);
-            bool hasBounds = false;
-            Bounds badgeBounds = default;
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                Renderer renderer = renderers[i];
-                if (renderer == null || !renderer.enabled)
-                {
-                    continue;
-                }
-
-                if (!hasBounds)
-                {
-                    badgeBounds = renderer.bounds;
-                    hasBounds = true;
-                }
-                else
-                {
-                    badgeBounds.Encapsulate(renderer.bounds);
-                }
-            }
-
-            if (!hasBounds || badgeBounds.size.x <= 0.0001f)
+            if (!TryGetRendererBounds(view, out Bounds badgeBounds)
+                || badgeBounds.size.x <= 0.0001f)
             {
                 return BadgeScale;
             }
@@ -758,6 +717,56 @@ namespace GourmetProject.Game.Presentation.Battle
             return Mathf.Min(
                 BadgeScale,
                 availableWidth / badgeBounds.size.x);
+        }
+
+        private void CenterWarehouseBadgeHorizontally(
+            DishValueBadgeView view,
+            Vector3 desiredPosition)
+        {
+            if (!TryGetRendererBounds(view, out Bounds badgeBounds))
+            {
+                return;
+            }
+
+            float visibleCenterX = transform
+                .InverseTransformPoint(badgeBounds.center)
+                .x;
+            desiredPosition.x += desiredPosition.x - visibleCenterX;
+            view.transform.localPosition = desiredPosition;
+        }
+
+        private static bool TryGetRendererBounds(
+            DishValueBadgeView view,
+            out Bounds bounds)
+        {
+            bounds = default;
+            if (view == null)
+            {
+                return false;
+            }
+
+            Renderer[] renderers = view.GetComponentsInChildren<Renderer>(false);
+            bool hasBounds = false;
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null || !renderer.enabled)
+                {
+                    continue;
+                }
+
+                if (!hasBounds)
+                {
+                    bounds = renderer.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+
+            return hasBounds;
         }
 
         private void PruneBadgeStates()

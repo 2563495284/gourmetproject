@@ -3,34 +3,31 @@ using UnityEngine;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>一套餐桌格视觉资源：桌体与其上方盘子必须成对出现。</summary>
+    /// <summary>餐桌格的单层平面 Sprite。</summary>
     public readonly struct DiningTableCellSprites
     {
-        public DiningTableCellSprites(Sprite table, Sprite plate)
+        public DiningTableCellSprites(Sprite plate)
         {
-            Table = table;
             Plate = plate;
         }
 
-        public Sprite Table { get; }
-
         public Sprite Plate { get; }
 
-        public bool IsValid => Table != null && Plate != null;
+        public bool IsValid => Plate != null;
     }
 
-    /// <summary>集中维护餐桌/盘子的 Resources 命名与整对回退规则。</summary>
+    /// <summary>集中维护餐桌格 Resources 命名与回退规则。</summary>
     internal static class DiningTableCellSpriteResources
     {
         private const string SpriteRoot = "Sprites/UI/";
-        private static readonly HashSet<string> ReportedMissingPairs = new();
+        private static readonly HashSet<string> ReportedMissing = new();
 
         public static DiningTableCellSprites LoadDefault()
         {
-            DiningTableCellSprites sprites = LoadPair(null);
+            DiningTableCellSprites sprites = Load(null);
             if (!sprites.IsValid)
             {
-                ReportMissingPair("default", sprites, fallback: false);
+                ReportMissing("default", fallback: false);
             }
 
             return sprites;
@@ -45,22 +42,20 @@ namespace GourmetProject.Game.Presentation.Battle
                 return fallback;
             }
 
-            DiningTableCellSprites sprites = LoadPair(materialId);
+            DiningTableCellSprites sprites = Load(materialId);
             if (sprites.IsValid)
             {
                 return sprites;
             }
 
-            ReportMissingPair(materialId, sprites, fallback: true);
+            ReportMissing(materialId, fallback: true);
             return fallback;
         }
 
-        private static DiningTableCellSprites LoadPair(string materialId)
+        private static DiningTableCellSprites Load(string materialId)
         {
             string suffix = string.IsNullOrEmpty(materialId) ? string.Empty : $"_{materialId}";
-            return new DiningTableCellSprites(
-                LoadSprite($"board_cell{suffix}"),
-                LoadSprite($"board_cell_plate{suffix}"));
+            return new DiningTableCellSprites(LoadSprite($"board_cell_plate{suffix}"));
         }
 
         private static Sprite LoadSprite(string name)
@@ -76,21 +71,18 @@ namespace GourmetProject.Game.Presentation.Battle
             return sprites != null && sprites.Length > 0 ? sprites[0] : null;
         }
 
-        private static void ReportMissingPair(
+        private static void ReportMissing(
             string key,
-            DiningTableCellSprites sprites,
             bool fallback)
         {
-            if (!ReportedMissingPairs.Add(key))
+            if (!ReportedMissing.Add(key))
             {
                 return;
             }
 
-            string action = fallback ? "，已整对回退普通材质" : string.Empty;
+            string action = fallback ? "，已回退普通材质" : string.Empty;
             Debug.LogError(
-                $"餐桌 Sprite 对不完整（{key}）：" +
-                $"table={(sprites.Table != null ? "ok" : "missing")}, " +
-                $"plate={(sprites.Plate != null ? "ok" : "missing")}{action}。");
+                $"餐桌格 Sprite 缺失（{key}）{action}。");
         }
     }
 }

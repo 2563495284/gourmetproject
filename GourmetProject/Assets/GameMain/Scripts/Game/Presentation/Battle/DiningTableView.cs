@@ -64,7 +64,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _cellSprites = DiningTableCellSpriteResources.LoadDefault();
             if (!_cellSprites.IsValid)
             {
-                throw new InvalidOperationException("默认餐桌的桌体/盘子 Sprite 对缺失。");
+                throw new InvalidOperationException("默认餐桌格 Sprite 缺失。");
             }
 
             for (int y = 0; y < board.Height; y++)
@@ -316,7 +316,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 overlay.Configure(entry.Key, Mapper.CellCenterLocal(entry.Key), _cellSize, _cellSprites, null);
                 overlay.name = "DragPlacementFeedback";
                 overlay.SetInteractionEnabled(false);
-                overlay.SetTableBodyVisible(false);
                 overlay.SetPlateFeedbackColor(color);
                 overlay.SetSorting(BattleSorting.Fx, DragFeedbackSortingOrder);
             }
@@ -385,7 +384,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 TransientRegionOutlineLayer,
                 color,
                 width,
-                BattleScopeRegionRole.Action,
                 null);
         }
 
@@ -406,25 +404,6 @@ namespace GourmetProject.Game.Presentation.Battle
             int layer,
             Color color,
             float width,
-            Material materialOverride = null)
-        {
-            SetScopeRegionHighlight(
-                cells,
-                channel,
-                layer,
-                color,
-                width,
-                BattleScopeRegionRole.Action,
-                materialOverride);
-        }
-
-        internal void SetScopeRegionHighlight(
-            IReadOnlyList<GridPos> cells,
-            BattleScopeHighlightChannel channel,
-            int layer,
-            Color color,
-            float width,
-            BattleScopeRegionRole role,
             Material materialOverride = null)
         {
             if (cells == null || cells.Count == 0 || Mapper == null)
@@ -450,7 +429,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            ShowRegionOutline(validCells, channel, layer, color, width, role, materialOverride);
+            ShowRegionOutline(validCells, channel, layer, color, width, materialOverride);
         }
 
         private void ShowRegionOutline(
@@ -459,7 +438,6 @@ namespace GourmetProject.Game.Presentation.Battle
             int layer,
             Color color,
             float width,
-            BattleScopeRegionRole role,
             Material materialOverride)
         {
             if (cells == null || cells.Count == 0 || Mapper == null)
@@ -493,7 +471,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 Mathf.Abs(lastCenter.y - firstCenter.y) + _cellSize);
             outline.Show(
                 channel,
-                role,
                 layer,
                 cells,
                 minX,
@@ -575,7 +552,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 overlay.name = "DragPlacementFeedback";
                 overlay.SetInteractionEnabled(false);
-                overlay.SetTableBodyVisible(false);
                 overlay.gameObject.SetActive(false);
                 _dragFeedbackCells.Add(overlay);
             }

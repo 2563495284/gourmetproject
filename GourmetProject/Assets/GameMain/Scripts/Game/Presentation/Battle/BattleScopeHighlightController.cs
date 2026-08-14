@@ -19,6 +19,8 @@ namespace GourmetProject.Game.Presentation.Battle
             new Color(0.98f, 0.88f, 0.24f, 0.86f),
         };
 
+        private static readonly Color ScopeColor = new Color(0.04f, 0.72f, 1f, 1f);
+
         [SerializeField] private Color[] _subSkillPalette;
         [SerializeField] private float _persistentCellWidth = 0.048f;
         [SerializeField] private float _flashCellWidth = 0.085f;
@@ -141,45 +143,22 @@ namespace GourmetProject.Game.Presentation.Battle
                 : persistent ? _persistentCellWidth : _flashCellWidth;
             int baseLayer = Mathf.Max(0, index);
             int visualIndex = trace.VisualIndex >= 0 ? trace.VisualIndex : baseLayer;
-            Color targetColor = PaletteColor(visualIndex * 2);
-            Color conditionColor = PaletteColor(visualIndex * 2 + 1);
-            if (channel == BattleScopeHighlightChannel.Settlement)
-            {
-                targetColor = SettlementThemeColor(trace);
-                conditionColor = Color.Lerp(
-                    targetColor,
-                    SettlementColorPalette.WithAlpha(SettlementColorPalette.ScopeCondition, 0.88f),
-                    0.42f);
-            }
+            Color targetColor = channel == BattleScopeHighlightChannel.Settlement
+                ? SettlementThemeColor(trace)
+                : PaletteColor(visualIndex * 2);
             Material material = MaterialFor(trace);
 
-            int conditionLayer = 2 + baseLayer * 2;
-            int targetLayer = conditionLayer + 1;
-            if (ShouldRenderConditionRegion(trace))
+            if (trace.ScopeRegionCells.Count > 0)
             {
-                RenderConditionScope(
+                _activeTableView?.SetScopeRegionHighlight(
+                    trace.ScopeRegionCells,
                     channel,
-                    trace.ConditionCells,
-                    conditionLayer,
-                    conditionColor,
-                    cellWidth * 0.78f,
+                    2 + baseLayer * 2,
+                    ScopeColor,
+                    cellWidth,
                     material);
             }
 
-            if (!ShouldRenderTargetRegion(trace.ActionType, trace.ActionScope))
-            {
-                RenderTargetDishes(channel, trace, targetColor, visualIndex);
-                return;
-            }
-
-            _activeTableView?.SetScopeRegionHighlight(
-                trace.ActionScopeCells,
-                channel,
-                targetLayer,
-                targetColor,
-                cellWidth,
-                BattleScopeRegionRole.Action,
-                material);
             RenderTargetDishes(channel, trace, targetColor, visualIndex);
         }
 
@@ -234,69 +213,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        /// <summary>
-        /// 全局目标没有可帮助玩家判断摆位的边界，不绘制包住整张餐桌的目标范围框。
-        /// 甜蜜传递的接收者固定从全场其它食物中选择，因此无论配置作用域为何都按全局处理。
-        /// </summary>
-        internal static bool ShouldRenderTargetRegion(
-            SkillActionType actionType,
-            SkillScope actionScope)
-        {
-            if (actionType == SkillActionType.TransferSkills)
-            {
-                return false;
-            }
-
-            return actionScope != SkillScope.All
-                && actionScope != SkillScope.Other
-                && actionScope != SkillScope.CakeBuff;
-        }
-
-        internal static bool ShouldRenderConditionRegion(SkillExecutionTrace trace)
-        {
-            return trace != null
-                && trace.ConditionType != SkillConditionType.None
-                && trace.ConditionCells.Count > 0
-                && !SameCells(trace.ConditionCells, trace.ActionScopeCells);
-        }
-
-        private void RenderConditionScope(
-            BattleScopeHighlightChannel channel,
-            IReadOnlyList<GridPos> cells,
-            int layer,
-            Color color,
-            float cellWidth,
-            Material material)
-        {
-            _activeTableView?.SetScopeRegionHighlight(
-                cells,
-                channel,
-                layer,
-                color,
-                cellWidth,
-                BattleScopeRegionRole.Condition,
-                material);
-        }
-
-        private static bool SameCells(IReadOnlyList<GridPos> a, IReadOnlyList<GridPos> b)
-        {
-            if (a == null || b == null || a.Count != b.Count)
-            {
-                return false;
-            }
-
-            var cells = new HashSet<GridPos>(a);
-            foreach (GridPos cell in b)
-            {
-                if (!cells.Contains(cell))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         private void ClearChannel(BattleScopeHighlightChannel channel)
         {
             _activeTableView?.ClearScopeHighlights(channel);
@@ -313,14 +229,6 @@ namespace GourmetProject.Game.Presentation.Battle
             pieces.Clear();
         }
 
-        private Color PaletteColor(int index)
-        {
-            Color[] palette = _subSkillPalette != null && _subSkillPalette.Length > 0
-                ? _subSkillPalette
-                : DefaultPalette;
-            return palette[Mathf.Abs(index) % palette.Length];
-        }
-
         private Material MaterialFor(SkillExecutionTrace trace)
         {
             return trace.Kind switch
@@ -329,6 +237,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 SkillExecutionKind.CopiedSkill => _copySkillMaterial,
                 _ => null,
             };
+        }
+
+        private Color PaletteColor(int index)
+        {
+            Color[] palette = _subSkillPalette != null && _subSkillPalette.Length > 0
+                ? _subSkillPalette
+                : DefaultPalette;
+            return palette[Mathf.Abs(index) % palette.Length];
         }
 
         private static Color SettlementThemeColor(SkillExecutionTrace trace)
@@ -342,5 +258,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 _ => SettlementColorPalette.WithAlpha(SettlementColorPalette.NativeSource, 0.96f),
             };
         }
+
     }
 }

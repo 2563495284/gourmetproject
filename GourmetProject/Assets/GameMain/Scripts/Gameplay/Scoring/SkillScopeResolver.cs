@@ -13,20 +13,39 @@ namespace GourmetProject.Gameplay.Scoring
         ResolvedTargets = 1,
     }
 
+    /// <summary>一条子技能最终允许绘制的唯一棋盘范围类型。None 仅表示没有范围。</summary>
+    public enum SkillScopeRegionKind
+    {
+        None = 0,
+        Condition = 1,
+        Unified = 2,
+        Action = 3,
+    }
+
     public sealed class SkillScopeVisual
     {
-        public static readonly SkillScopeVisual Empty = new SkillScopeVisual(null, null, null, null);
+        public static readonly SkillScopeVisual Empty = new SkillScopeVisual(
+            null,
+            null,
+            null,
+            null,
+            null,
+            SkillScopeRegionKind.None);
 
         public SkillScopeVisual(
             IReadOnlyList<int> visualTargetDishInstanceIds,
             IReadOnlyList<GridPos> visualTargetCells,
             IReadOnlyList<GridPos> actionScopeCells,
-            IReadOnlyList<GridPos> conditionCells)
+            IReadOnlyList<GridPos> conditionCells,
+            IReadOnlyList<GridPos> scopeRegionCells,
+            SkillScopeRegionKind scopeRegionKind)
         {
             VisualTargetDishInstanceIds = visualTargetDishInstanceIds ?? System.Array.Empty<int>();
             VisualTargetCells = visualTargetCells ?? System.Array.Empty<GridPos>();
             ActionScopeCells = actionScopeCells ?? System.Array.Empty<GridPos>();
             ConditionCells = conditionCells ?? System.Array.Empty<GridPos>();
+            ScopeRegionCells = scopeRegionCells ?? System.Array.Empty<GridPos>();
+            ScopeRegionKind = scopeRegionKind;
         }
 
         public IReadOnlyList<int> VisualTargetDishInstanceIds { get; }
@@ -40,6 +59,11 @@ namespace GourmetProject.Gameplay.Scoring
         public IReadOnlyList<GridPos> ActionScopeCells { get; }
 
         public IReadOnlyList<GridPos> ConditionCells { get; }
+
+        /// <summary>表现层最终绘制的唯一范围格。</summary>
+        public IReadOnlyList<GridPos> ScopeRegionCells { get; }
+
+        public SkillScopeRegionKind ScopeRegionKind { get; }
     }
 
     /// <summary>技能 scope 的单一解析入口，供结算目标选择和表现层高亮共用。</summary>
@@ -77,7 +101,94 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             List<GridPos> conditionCells = VisualCellsForScope(db, board, self, rule, rule.CondScope, isActionScope: false);
-            return new SkillScopeVisual(targetIds, targetCells, actionScopeCells, conditionCells);
+            ResolveSingleRegion(
+                rule,
+                actionScopeCells,
+                conditionCells,
+                out IReadOnlyList<GridPos> scopeRegionCells,
+                out SkillScopeRegionKind scopeRegionKind);
+            return new SkillScopeVisual(
+                targetIds,
+                targetCells,
+                actionScopeCells,
+                conditionCells,
+                scopeRegionCells,
+                scopeRegionKind);
+        }
+
+        /// <summary>
+        /// 每条子技能只选一个范围：相同且可绘制的条件/作用域合并；可绘制作用域优先；
+        /// 全局作用域被隐藏时仍允许空间条件范围回退显示。
+        /// </summary>
+        internal static void ResolveSingleRegion(
+            SkillRuleDef rule,
+            IReadOnlyList<GridPos> actionScopeCells,
+            IReadOnlyList<GridPos> conditionCells,
+            out IReadOnlyList<GridPos> scopeRegionCells,
+            out SkillScopeRegionKind scopeRegionKind)
+        {
+            bool hasSpatialCondition = SkillConditionEvaluator.UsesSpatialScope(rule)
+                                       && conditionCells != null
+                                       && conditionCells.Count > 0;
+            bool hasActionCells = actionScopeCells != null && actionScopeCells.Count > 0;
+
+            if (hasSpatialCondition
+                && CanRenderActionRegion(rule)
+                && hasActionCells
+                && SameCells(conditionCells, actionScopeCells))
+            {
+                scopeRegionCells = actionScopeCells;
+                scopeRegionKind = SkillScopeRegionKind.Unified;
+                return;
+            }
+
+            if (CanRenderActionRegion(rule) && hasActionCells)
+            {
+                // 若未来误配出两个不同空间范围，运行时仍只显示更重要的作用范围。
+                scopeRegionCells = actionScopeCells;
+                scopeRegionKind = SkillScopeRegionKind.Action;
+                return;
+            }
+
+            if (hasSpatialCondition)
+            {
+                scopeRegionCells = conditionCells;
+                scopeRegionKind = SkillScopeRegionKind.Condition;
+                return;
+            }
+
+            scopeRegionCells = System.Array.Empty<GridPos>();
+            scopeRegionKind = SkillScopeRegionKind.None;
+        }
+
+        /// <summary>该行为是否有值得绘制的棋盘边界；全局目标仅保留目标食物反馈。</summary>
+        public static bool CanRenderActionRegion(SkillRuleDef rule)
+        {
+            if (rule == null
+                || rule.ActionType == SkillActionType.None
+                || rule.ActionType == SkillActionType.TransferSkills)
+            {
+                return false;
+            }
+
+            return rule.ActionScope != SkillScope.All
+                && rule.ActionScope != SkillScope.Other
+                && rule.ActionScope != SkillScope.CakeBuff;
+        }
+
+        /// <summary>检测一条规则是否误配了两个不同且都可绘制的空间范围。</summary>
+        public static bool HasConflictingSpatialRegions(
+            SkillRuleDef rule,
+            IReadOnlyList<GridPos> actionScopeCells,
+            IReadOnlyList<GridPos> conditionCells)
+        {
+            return SkillConditionEvaluator.UsesSpatialScope(rule)
+                && CanRenderActionRegion(rule)
+                && actionScopeCells != null
+                && conditionCells != null
+                && actionScopeCells.Count > 0
+                && conditionCells.Count > 0
+                && !SameCells(actionScopeCells, conditionCells);
         }
 
         public static IReadOnlyList<DishInstance> ResolveActionTargetDishes(
@@ -304,34 +415,38 @@ namespace GourmetProject.Gameplay.Scoring
             DishInstance self,
             SkillRuleDef rule,
             SkillScope scope,
-            bool isActionScope)
+            bool isActionScope,
+            bool allowActionSelfInclusion = true)
         {
             if (board == null || self == null)
             {
                 return new List<GridPos>();
             }
 
-            if (isActionScope && rule != null)
+            // actionParam 中的分类、技能类型、尺寸等只筛选实际目标，不改变作用范围几何。
+            // include:self 是唯一会扩展几何范围的目标参数，单独并入自身占格。
+            if (isActionScope
+                && allowActionSelfInclusion
+                && rule != null
+                && HasActionParam(rule, "include:self"))
             {
-                string category = TargetFilterCategory(rule);
-                string skillType = ParseSkillTypeParam(rule.ActionParams);
-                if (!string.IsNullOrEmpty(category)
-                    || !string.IsNullOrEmpty(skillType)
-                    || HasActionParam(rule, "include:self"))
+                List<GridPos> cells = VisualCellsForScope(
+                    db,
+                    board,
+                    self,
+                    rule,
+                    scope,
+                    isActionScope: true,
+                    allowActionSelfInclusion: false);
+                foreach (GridPos selfCell in self.OccupiedCells)
                 {
-                    List<DishInstance> filtered = ResolveScopeDishes(
-                        db,
-                        board,
-                        self,
-                        rule,
-                        includeSelfForSelfScope: true);
-                    if (rule.ActionType == SkillActionType.TransferSkills)
+                    if (!cells.Contains(selfCell))
                     {
-                        filtered.RemoveAll(d => d.Id == self.Id);
+                        cells.Add(selfCell);
                     }
-
-                    return CellsForDishes(filtered);
                 }
+
+                return cells;
             }
 
             switch (scope)
@@ -383,6 +498,25 @@ namespace GourmetProject.Gameplay.Scoring
                     return CellsForDishes(SkillConditionEvaluator.ScopeDishes(board, self, scope));
                 }
             }
+        }
+
+        private static bool SameCells(IReadOnlyList<GridPos> a, IReadOnlyList<GridPos> b)
+        {
+            if (a == null || b == null || a.Count != b.Count)
+            {
+                return false;
+            }
+
+            var cells = new HashSet<GridPos>(a);
+            foreach (GridPos cell in b)
+            {
+                if (!cells.Contains(cell))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static List<GridPos> EdgeCells(GpTable board)

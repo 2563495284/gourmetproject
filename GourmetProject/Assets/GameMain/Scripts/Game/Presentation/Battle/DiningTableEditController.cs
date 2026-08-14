@@ -1567,7 +1567,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _editMaterialCellSprites.Clear();
             if (!_editCellSprites.IsValid)
             {
-                throw new InvalidOperationException("编辑态默认餐桌的桌体/盘子 Sprite 对缺失。");
+                throw new InvalidOperationException("编辑态默认餐桌格 Sprite 缺失。");
             }
         }
 
@@ -1898,7 +1898,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     null);
                 projection.name = "BoardEditProjection";
                 projection.SetInteractionEnabled(false);
-                projection.SetTableBodyVisible(true);
                 projection.ClearPlateFeedbackColor();
                 projection.SetColor(Color.white);
                 projection.SetSorting(BattleSorting.Fx, EditProjectionSortingOrder);

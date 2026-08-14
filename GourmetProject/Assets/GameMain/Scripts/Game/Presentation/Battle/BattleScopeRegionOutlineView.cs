@@ -39,12 +39,12 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField, Range(0f, 64f)] private float _stripeDensity = 18f;
         [SerializeField] private ScopeChannelStyle _persistentStyle = new ScopeChannelStyle
         {
-            OutlinePixels = 5f,
-            OutlineAlpha = 0.72f,
-            FillAlpha = 0.06f,
-            GlowPixels = 12f,
-            GlowAlpha = 0.20f,
-            GlowIntensity = 1.08f,
+            OutlinePixels = 6f,
+            OutlineAlpha = 0.88f,
+            FillAlpha = 0.10f,
+            GlowPixels = 15f,
+            GlowAlpha = 0.32f,
+            GlowIntensity = 1.22f,
             PulseSpeed = 0.25f,
             PulseAmplitude = 0.025f,
             FlowSpeed = 0.32f,
@@ -85,9 +85,6 @@ namespace GourmetProject.Game.Presentation.Battle
             RevealDuration = 0.16f,
             FadeOutDuration = 0.14f,
         };
-        [SerializeField, Range(0f, 1f)] private float _conditionAlphaMultiplier = 0.62f;
-        [SerializeField, Range(0f, 1f)] private float _conditionWidthMultiplier = 0.72f;
-        [SerializeField, Range(0f, 1f)] private float _conditionGlowMultiplier = 0.68f;
         private MaterialPropertyBlock _propertyBlock;
         private Texture2D _runtimeMaskTexture;
         private Sprite _runtimeMaskSprite;
@@ -101,45 +98,12 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal BattleScopeHighlightChannel ActiveChannel { get; private set; }
 
-        internal BattleScopeRegionRole ActiveRole { get; private set; }
-
         internal float ActiveVisibility => _visibility;
 
         internal bool IsVisibilityAnimating => _visibilityAnimating;
 
         public void Show(
             BattleScopeHighlightChannel channel,
-            int layer,
-            IReadOnlyList<GridPos> cells,
-            int minX,
-            int minY,
-            int maxX,
-            int maxY,
-            Vector3 localCenter,
-            Vector2 localSize,
-            Color color,
-            float width,
-            Material materialOverride)
-        {
-            Show(
-                channel,
-                BattleScopeRegionRole.Action,
-                layer,
-                cells,
-                minX,
-                minY,
-                maxX,
-                maxY,
-                localCenter,
-                localSize,
-                color,
-                width,
-                materialOverride);
-        }
-
-        internal void Show(
-            BattleScopeHighlightChannel channel,
-            BattleScopeRegionRole role,
             int layer,
             IReadOnlyList<GridPos> cells,
             int minX,
@@ -167,7 +131,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            ScopeVisualProfile profile = ResolveProfile(channel, role);
+            ScopeVisualProfile profile = ResolveProfile(channel);
             float safeWidth = Mathf.Max(0.001f, width);
             int columns = maxX - minX + 1;
             int rows = maxY - minY + 1;
@@ -212,7 +176,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _propertyBlock.SetVector(SpriteUvRectId, new Vector4(0f, 0f, 1f, 1f));
             _renderer.SetPropertyBlock(_propertyBlock);
             ActiveChannel = channel;
-            ActiveRole = role;
             _activeFadeOutDuration = profile.FadeOutDuration;
             gameObject.SetActive(true);
             if (Application.isPlaying && !UsesImmediateVisibility(channel))
@@ -225,9 +188,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        internal ScopeVisualProfile ResolveProfile(
-            BattleScopeHighlightChannel channel,
-            BattleScopeRegionRole role)
+        internal ScopeVisualProfile ResolveProfile(BattleScopeHighlightChannel channel)
         {
             ScopeChannelStyle style = channel switch
             {
@@ -242,25 +203,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 profile = profile.WithVisibilityTiming(0f, 0f);
             }
 
-            if (role != BattleScopeRegionRole.Condition)
-            {
-                return profile;
-            }
-
-            return new ScopeVisualProfile(
-                profile.OutlinePixels * _conditionWidthMultiplier,
-                profile.OutlineAlpha * _conditionAlphaMultiplier,
-                0f,
-                profile.GlowPixels * _conditionWidthMultiplier,
-                profile.GlowAlpha * _conditionGlowMultiplier,
-                profile.GlowIntensity * 0.88f,
-                profile.PulseSpeed,
-                profile.PulseAmplitude * 0.70f,
-                profile.FlowSpeed,
-                profile.FlowWidth * 0.82f,
-                profile.FlowIntensity * _conditionGlowMultiplier,
-                profile.RevealDuration,
-                profile.FadeOutDuration);
+            return profile;
         }
 
         public void Hide()
