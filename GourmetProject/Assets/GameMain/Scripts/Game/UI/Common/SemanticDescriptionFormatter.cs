@@ -15,7 +15,7 @@ namespace GourmetProject.Game.UI.Common
         public const string MultiplierAddColor = "#B23A48";
         public const string GoldColor = "#9A6500";
         public const string TermColor = "#7656A8";
-        public const string MultiplyFaceColor = "#FFFFFF";
+        public const string MultiplyFaceColor = "#E15A64";
         public const string MultiplyMaterialName = "DescriptionMultiplyOutline";
 
         private static readonly TagDefinition[] Definitions =

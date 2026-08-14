@@ -16,6 +16,12 @@
       --muted: #bcae9b;
       --accent: #ff9e1a;
       --danger: #e06a84;
+      --semantic-score: #28669c;
+      --semantic-multiplier: #b23a48;
+      --semantic-multiplier-strong: #e15a64;
+      --semantic-multiplier-edge: #761d2a;
+      --semantic-gold: #9a6500;
+      --semantic-term: #7656a8;
       --stage-edge: #704731;
       --shadow: 0 24px 70px rgba(0, 0, 0, .42);
     }
@@ -346,7 +352,12 @@
       font-size: clamp(13px, 1.35vw, 21px);
       font-weight: 800;
       letter-spacing: .04em;
-      text-shadow: 0 0 10px color-mix(in srgb, var(--theme) 38%, transparent), 0 2px 1px #000;
+      text-shadow: 0 0 10px color-mix(in srgb, var(--header-base-color) 38%, transparent), 0 2px 1px #000;
+    }
+
+    .result-label .header:empty,
+    .mapping-header:empty {
+      display: none;
     }
 
     .result-label .body {
@@ -361,6 +372,57 @@
         0 3px 1px #000,
         1px 0 1px #000,
         -1px 0 1px #000;
+    }
+
+    /* 对齐 SemanticDescriptionFormatter：Header 与 ResultText 正文的语义材质彼此独立。 */
+    .result-label .body.semantic-score,
+    .mapping-body.semantic-score {
+      color: var(--semantic-score);
+    }
+
+    .result-label .body.semantic-score {
+      text-shadow: 0 0 7px color-mix(in srgb, var(--semantic-score) 34%, transparent), 0 3px 1px #000;
+    }
+
+    .result-label .body.semantic-multadd,
+    .mapping-body.semantic-multadd {
+      color: var(--semantic-multiplier);
+    }
+
+    .result-label .body.semantic-multadd {
+      text-shadow: 0 0 6px color-mix(in srgb, var(--semantic-multiplier) 30%, transparent), 0 3px 1px #000;
+    }
+
+    .result-label .body.semantic-multmul,
+    .mapping-body.semantic-multmul {
+      color: var(--semantic-multiplier-strong);
+      paint-order: stroke fill;
+      -webkit-text-stroke: 1.25px var(--semantic-multiplier-edge);
+      text-shadow:
+        -1px 0 var(--semantic-multiplier-edge),
+        1px 0 var(--semantic-multiplier-edge),
+        0 -1px var(--semantic-multiplier-edge),
+        0 1px var(--semantic-multiplier-edge),
+        0 0 9px color-mix(in srgb, var(--semantic-multiplier-strong) 58%, transparent),
+        0 3px 1px #000;
+    }
+
+    .result-label .body.semantic-gold,
+    .mapping-body.semantic-gold {
+      color: var(--semantic-gold);
+    }
+
+    .result-label .body.semantic-gold {
+      text-shadow: 0 0 7px color-mix(in srgb, var(--semantic-gold) 34%, transparent), 0 3px 1px #000;
+    }
+
+    .result-label .body.semantic-term,
+    .mapping-body.semantic-term {
+      color: var(--semantic-term);
+    }
+
+    .result-label .body.semantic-term {
+      text-shadow: 0 0 7px color-mix(in srgb, var(--semantic-term) 34%, transparent), 0 3px 1px #000;
     }
 
     .result-label.finale .header { font-size: clamp(16px, 1.7vw, 27px); }
@@ -613,7 +675,7 @@
       box-shadow: 0 0 16px color-mix(in srgb, var(--theme) 55%, transparent);
     }
 
-    .mapping-header { color: var(--header-color); font-size: 12px; font-weight: 800; }
+    .mapping-header { color: var(--header-color); opacity: .82; font-size: 12px; font-weight: 800; }
     .mapping-body { color: var(--body-color); font-size: 21px; font-weight: 900; }
     .mapping-note { margin-top: 7px; color: var(--muted); font-size: 12px; }
 
@@ -993,14 +1055,40 @@
     function applyTheme(effect) {
       const theme = PALETTE[effect.palette];
       const body = mix(theme, PALETTE.TextLight, .30);
+      const headerBase = semanticIdentityColor(effect);
+      const header = mix(headerBase, PALETTE.TextLight, .18);
       cssRoot.setProperty("--theme", theme);
       cssRoot.setProperty("--body-color", body);
-      cssRoot.setProperty("--header-color", mix(body, "#000000", .0));
+      cssRoot.setProperty("--header-base-color", headerBase);
+      cssRoot.setProperty("--header-color", header);
       $("activeName").textContent = effect.name;
       $("activeKind").textContent = effect.kind === "null" ? "ScoreLine = null" : `ScoreLineKind.${effect.kind}`;
       $("mappingHeader").textContent = effect.header;
       $("mappingBody").textContent = effect.body;
+      $("mappingBody").className = `mapping-body ${semanticBodyClass(effect)}`.trim();
       $("mappingNote").textContent = effect.note;
+    }
+
+    function semanticIdentityColor(effect) {
+      switch (effect.kind) {
+        case "DishFlat": return "#28669c";
+        case "DishMultiplier":
+        case "DishMultiplierAdd": return "#b23a48";
+        case "Gold": return "#9a6500";
+        case "ExtraSettlement": return "#7656a8";
+        default: return PALETTE[effect.palette] || PALETTE.Special;
+      }
+    }
+
+    function semanticBodyClass(effect) {
+      switch (effect.kind) {
+        case "DishFlat": return "semantic-score";
+        case "DishMultiplier": return "semantic-multmul";
+        case "DishMultiplierAdd": return "semantic-multadd";
+        case "Gold": return "semantic-gold";
+        case "ExtraSettlement": return "semantic-term";
+        default: return "";
+      }
     }
 
     function selectEffect(id, play = false) {
@@ -1057,7 +1145,10 @@
       label.style.setProperty("--label-y", `${anchor.y}%`);
       label.innerHTML = `<div class="header"></div><div class="body"></div>`;
       label.querySelector(".header").textContent = effect.header;
-      label.querySelector(".body").textContent = effect.body;
+      const body = label.querySelector(".body");
+      const bodyClass = semanticBodyClass(effect);
+      if (bodyClass) body.classList.add(bodyClass);
+      body.textContent = effect.body;
       fxLayer.appendChild(label);
       return label;
     }
