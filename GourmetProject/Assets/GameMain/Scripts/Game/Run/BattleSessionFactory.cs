@@ -73,7 +73,8 @@ namespace GourmetProject.Game.Run
 
             var battleStream = run.Random.DomainStream(SeedDomains.Combat, key);
 
-            // 结算类装饰品（逐菜/条件/顺序）作为效果来源注入结算器；局级加/乘仍走 FinalFlat/Multiplier 快路径。
+            // 结算类装饰品（逐菜/条件/顺序）作为效果来源注入结算器。
+            // FinalFlat/Multiplier 目前只保留存档和结算器兼容入口，没有现行配置产出。
             var calculator = new ScoreCalculator(effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
             var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore, calculator, runSettledCounts: run.RunSettledCounts);
             session.AttachBossDebuffPresentation(presentation);

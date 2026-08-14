@@ -728,7 +728,7 @@
       <div>
         <p class="eyebrow">Presentation Lab · Settlement</p>
         <h1>结算 ResultText 演出 GM</h1>
-        <p class="subtitle">覆盖 <code>SettlementStageView.ResultText</code> 的全部输出分支，并复刻 Unity 中的语义色、弹入、脉冲、上浮和末段淡出节奏。</p>
+        <p class="subtitle">覆盖当前玩家可见的结算文本与银材质实际奖励，并复刻 Unity 中的语义色、弹入、脉冲、上浮和末段淡出节奏。</p>
       </div>
       <div class="source-note">基准：SettlementStageView.cs · SettlementPresentationPlan.cs</div>
     </header>
@@ -739,7 +739,7 @@
           <div class="stage-status">
             <span class="status-dot" aria-hidden="true"></span>
             <div class="status-copy">
-              <strong id="activeName">基础分 · 正向</strong>
+              <strong id="activeName">分数 · 正向</strong>
               <small id="activeKind">ScoreLineKind.DishFlat</small>
             </div>
           </div>
@@ -807,7 +807,7 @@
           <div class="mapping-preview">
             <span class="swatch" aria-hidden="true"></span>
             <div>
-              <div id="mappingHeader" class="mapping-header">基础分</div>
+              <div id="mappingHeader" class="mapping-header">分数</div>
               <div id="mappingBody" class="mapping-body">+120</div>
               <div id="mappingNote" class="mapping-note">普通固定加分，主题色为 BaseScore。</div>
             </div>
@@ -862,41 +862,35 @@
       score: "分数",
       resource: "资源 / 份数",
       sweet: "甜蜜传递",
-      fallback: "兜底 / 特例"
+      fallback: "结算收束"
     };
 
     const EFFECTS = [
-      { id: "dish-base", category: "score", name: "食物基础贡献 · 前置", kind: "DishBase", header: "草莓蛋糕", body: "基础贡献  1,260", palette: "BaseScore", note: "来自 PlayBaseAsync，不经过 ResultText；作为结算文本链路的前置拍一并收录。", duration: 380 },
-      { id: "flat-positive", category: "score", name: "基础分 · 正向", kind: "DishFlat", header: "基础分", body: "+120", palette: "BaseScore", note: "普通固定加分；ResultText 返回带正号的 G3 数值。" },
-      { id: "flat-negative", category: "score", name: "基础分 · 负向", kind: "DishFlat", header: "基础分", body: "-35", palette: "BaseScore", note: "负数不补正号，仍使用 BaseScore 语义色。" },
-      { id: "permanent-flat", category: "score", name: "永久分数", kind: "DishPermanentFlat", header: "永久分数", body: "永久 +48", palette: "PermanentScore", note: "当次进入加法区，结算后写回食物实例。" },
-      { id: "multiply", category: "score", name: "乘倍率", kind: "DishMultiplier", header: "乘倍率", body: "×1.5", palette: "MultiplyMultiplier", note: "乘法倍率使用红色 MultiplyMultiplier。" },
-      { id: "add-multiplier", category: "score", name: "加倍率", kind: "DishMultiplierAdd", header: "加倍率", body: "倍率 +0.35", palette: "AddMultiplier", note: "加法倍率使用青绿色 AddMultiplier。" },
-      { id: "extra-settlement", category: "score", name: "咸味额外结算", kind: "ExtraSettlement", header: "结算结果", body: "咸味额外结算第 1 次 +236", palette: "BaseScore", note: "ExtraSettlement 落入默认分支，正文直接使用 ScoreLine.Message。", duration: 900 },
-      { id: "final-flat", category: "score", name: "总分加成", kind: "FinalFlat", header: "总分加成", body: "总分 +800  →  9,220", palette: "BaseScore", note: "最终加法展示运算和运行中总分。", duration: 1100, target: 0 },
-      { id: "final-multiply", category: "score", name: "总分倍率", kind: "FinalMultiplier", header: "总分倍率", body: "总分 ×1.25  →  11,525", palette: "MultiplyMultiplier", note: "FinalMultiplier 即使值接近 0 也不会被“无变化”分支截断。", duration: 1100, target: 0 },
-      { id: "zero", category: "score", name: "数值无变化", kind: "DishFlat", header: "基础分", body: "无变化", palette: "BaseScore", note: "除 FinalMultiplier 和 SweetTransferFailed 外，|Value| ≤ 0.001 时统一显示“无变化”。" },
+      { id: "flat-positive", category: "score", name: "分数 · 正向", kind: "DishFlat", header: "分数", body: "+120", palette: "BaseScore", note: "普通固定加分；食物基础贡献只更新常驻数值徽章，不再弹 ResultText。" },
+      { id: "flat-negative", category: "score", name: "分数 · 负向", kind: "DishFlat", header: "分数", body: "-35", palette: "BaseScore", note: "负数不补正号，仍使用 BaseScore 语义色。" },
+      { id: "permanent-flat", category: "score", name: "分数 · 永久", kind: "DishPermanentFlat", header: "分数", body: "永久+48", palette: "PermanentScore", note: "当次进入加法区，结算后写回食物实例。" },
+      { id: "multiply", category: "score", name: "倍率 · 乘法", kind: "DishMultiplier", header: "倍率", body: "×1.5", palette: "MultiplyMultiplier", note: "乘法倍率使用红色 MultiplyMultiplier。" },
+      { id: "add-multiplier", category: "score", name: "倍率 · 加法", kind: "DishMultiplierAdd", header: "倍率", body: "+0.35", palette: "AddMultiplier", note: "加法倍率使用青绿色 AddMultiplier。" },
+      { id: "extra-settlement", category: "score", name: "咸味 · 额外结算", kind: "ExtraSettlement", header: "咸味", body: "额外结算", palette: "BaseScore", note: "实际会完整重跑该食物的技能、风味、材质及对其他食物的影响；账本仍记录本次贡献，但不再把贡献值误作效果正文。", duration: 900 },
+      { id: "zero", category: "score", name: "分数 · 无变化", kind: "DishFlat", header: "分数", body: "无变化", palette: "BaseScore", note: "分数类零变化使用“分数 · 无变化”。" },
+      { id: "zero-multiplier", category: "score", name: "倍率 · 无变化", kind: "DishMultiplierAdd", header: "倍率", body: "无变化", palette: "AddMultiplier", note: "倍率类零变化使用“倍率 · 无变化”。" },
 
-      { id: "gold", category: "resource", name: "金币", kind: "Gold", header: "金币", body: "金币 +16", palette: "Gold", note: "金币是对外副作用，不直接计入食物贡献。" },
-      { id: "layer", category: "resource", name: "快乐蛋糕层数", kind: "Layer", header: "快乐蛋糕", body: "层数 +2", palette: "CakeLayer", note: "欢乐蛋糕全局层数变化。" },
-      { id: "silver", category: "resource", name: "银材质奖励", kind: "SilverItemRoll", header: "银材质奖励", body: "获得装饰品和消耗品 ×2", palette: "SilverReward", note: "数量使用 AwayFromZero 规则取整。" },
+      { id: "gold", category: "resource", name: "金币", kind: "Gold", header: "金币", body: "+16", palette: "Gold", note: "金币是对外副作用，不直接计入食物贡献。" },
+      { id: "layer", category: "resource", name: "蛋糕层数", kind: "Layer", header: "蛋糕层数", body: "+2", palette: "CakeLayer", note: "欢乐蛋糕全局层数变化。" },
+      { id: "silver", category: "resource", name: "银材质 · 单次命中", kind: "SilverItemGrant", header: "银材质", body: "获得甜味箱", palette: "SilverReward", note: "每个被占据的银格独立进行一次 1/5 判定；只在命中并发放后显示具体消耗品，同一食物多次命中也逐条独立显示。" },
       { id: "copy", category: "resource", name: "技能复制", kind: "CopySkill", header: "技能复制", body: "获得技能 ×1", palette: "CopySkill", note: "复制技能使用高亮青色 CopySkill。" },
-      { id: "count-as", category: "resource", name: "有效份数", kind: "DishCountAs", header: "有效份数", body: "份数 +2  →  4 份", palette: "CountAs", note: "同时展示本次增量与 After 的最终有效份数。" },
-      { id: "empty-count-as", category: "resource", name: "空格份数", kind: "EmptyCountAs", header: "空格份数", body: "每个空格 +1 份", palette: "CountAs", note: "正文表达每个空格提供的份数。" },
-      { id: "temporary-category", category: "resource", name: "分类赋予 · 默认", kind: "TemporaryCategory", header: "分类赋予", body: "视为蛋糕", palette: "TemporaryCategory", note: "Message 为空时回退到“视为蛋糕”。" },
-      { id: "temporary-category-message", category: "resource", name: "分类赋予 · 自定义", kind: "TemporaryCategory", header: "分类赋予", body: "本场视为甜品", palette: "TemporaryCategory", note: "Message 非空时原样展示。" },
+      { id: "count-as", category: "resource", name: "份数 · 食物", kind: "CountAs", header: "份数", body: "+2", palette: "CountAs", note: "只展示本次份数增量，不再拼接 After。" },
+      { id: "empty-count-as", category: "resource", name: "份数 · 空格", kind: "EmptyCountAs", header: "份数", body: "+1", palette: "CountAs", note: "空格份数与食物份数统一成相同格式。" },
+      { id: "temporary-category", category: "resource", name: "赋予 · 默认", kind: "TemporaryCategory", header: "赋予", body: "视为蛋糕", palette: "TemporaryCategory", note: "Message 为空时回退到“视为蛋糕”。" },
+      { id: "temporary-category-message", category: "resource", name: "赋予 · 自定义", kind: "TemporaryCategory", header: "赋予", body: "视为甜品", palette: "TemporaryCategory", note: "自定义 Message 会去掉开头的“本场”。" },
 
-      { id: "trigger-transfer", category: "sweet", name: "触发甜蜜传递", kind: "TriggerSweetTransfer", header: "甜蜜传递", body: "触发甜蜜传递", palette: "SweetTransfer", note: "Value ≤ 1 时使用完整触发文案。" },
-      { id: "trigger-transfer-multi", category: "sweet", name: "触发甜蜜传递 · 多次", kind: "TriggerSweetTransfer", header: "甜蜜传递", body: "触发 ×3", palette: "SweetTransfer", note: "Value > 1 时改为次数表达。" },
-      { id: "transfer-source", category: "sweet", name: "传递来源接力", kind: "TriggeredSweetTransferSource", header: "传递来源", body: "来源已接力", palette: "SweetTransfer", note: "代触发链路切换到实际甜蜜传递来源。" },
-      { id: "buff-applied", category: "sweet", name: "甜蜜 Buff 挂载", kind: "SweetTransferBuffApplied", header: "甜蜜 Buff", body: "挂载目标 ×3", palette: "SweetTransfer", note: "记录单次结算 Buff 的挂载目标数。" },
-      { id: "buff-extra-target", category: "sweet", name: "Buff 响应 · 额外目标", kind: "SweetTransferBuffTriggered", header: "Buff 响应", body: "额外目标 +2", palette: "SweetTransfer", note: "Trace.ActionType 为 TriggerSweetTransfer 时显示额外目标。" },
-      { id: "buff-row-mult", category: "sweet", name: "Buff 响应 · 本行倍率", kind: "SweetTransferBuffTriggered", header: "Buff 响应", body: "本行倍率 ×1.5", palette: "SweetTransfer", note: "其他 ActionType 显示本行倍率。" },
+      { id: "trigger-transfer", category: "sweet", name: "发动甜蜜传递", kind: "TriggerSweetTransfer", header: "甜蜜传递", body: "发动甜蜜传递", palette: "SweetTransfer", note: "Value ≤ 1 时使用完整发动文案。" },
+      { id: "trigger-transfer-multi", category: "sweet", name: "发动甜蜜传递 · 多次", kind: "TriggerSweetTransfer", header: "甜蜜传递", body: "发动甜蜜传递 ×3", palette: "SweetTransfer", note: "同一条发动记录可携带多个来源目标；实际技能会按选中来源逐个完整执行。" },
+      { id: "buff-applied", category: "sweet", name: "甜蜜 Buff 挂载", kind: "SweetTransferBuffApplied", header: "", body: "软糖Buff", palette: "SweetTransfer", note: "用 Buff 所属食物名命名；不显示额外标题。" },
+      { id: "buff-extra-target", category: "sweet", name: "软糖 Buff · 额外目标", kind: "SweetTransferBuffTriggered", header: "软糖Buff", body: "额外目标 +2", palette: "SweetTransfer", note: "Trace.ActionType 为 TriggerSweetTransfer 时展示实际增加的目标数。" },
+      { id: "buff-row-mult", category: "sweet", name: "棉花糖 Buff · 本行倍率", kind: "SweetTransferBuffTriggered", header: "棉花糖Buff", body: "本行倍率 ×1.5", palette: "SweetTransfer", note: "其他 Buff 响应展示本次具体倍率效果。" },
       { id: "transfer-failed", category: "sweet", name: "甜蜜传递失败", kind: "SweetTransferFailed", header: "甜蜜传递", body: "没有可传递目标", palette: "Failure", note: "失败分支使用独立 Failure 色，并绕过零值“无变化”。" },
 
-      { id: "null-line", category: "fallback", name: "空 ScoreLine", kind: "null", header: "结算结果", body: "总分  8,420", palette: "Special", note: "line == null 时直接展示当前运行总分。", target: 0 },
-      { id: "default-message", category: "fallback", name: "默认分支 · Message", kind: "Unknown", header: "结算结果", body: "草莓酱溢出了甜香", palette: "Special", note: "未知类型且 Message 非空时原样展示 Message。" },
-      { id: "default-value", category: "fallback", name: "默认分支 · 数值", kind: "Unknown", header: "结算结果", body: "+12", palette: "Special", note: "未知类型且 Message 为空时展示 signed Value。" },
       { id: "finale", category: "fallback", name: "本桌结算收束", kind: "Finale", header: "本桌结算", body: "总分  11,525", palette: "FinalScore", note: "不是 ResultText 分支，但作为同一演出链路的最终收束标签一并提供。", duration: 950, target: 0, finale: true }
     ];
 
@@ -1118,8 +1112,7 @@
 
     function updateScore(effect) {
       let score = 8420;
-      if (effect.id === "final-flat") score = 9220;
-      if (["final-multiply", "finale"].includes(effect.id)) score = 11525;
+      if (effect.id === "finale") score = 11525;
       $("scoreNumber").textContent = score.toLocaleString("zh-CN");
       $("scoreFill").style.width = `${Math.min(100, score / 15000 * 100)}%`;
     }

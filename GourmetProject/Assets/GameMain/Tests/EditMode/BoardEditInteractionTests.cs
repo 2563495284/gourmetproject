@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using GourmetProject.Game.Presentation.Battle;
+using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Runtime.Settings;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -9,6 +11,37 @@ namespace GourmetProject.Tests.EditMode
 {
     public sealed class BoardEditInteractionTests
     {
+        [Test]
+        public void ServeDrop_DefaultsToImmediateConfirmation()
+        {
+            Assert.That(SettingsService.DefaultRequireServeConfirmation, Is.False);
+            Assert.That(
+                BattleWorldController.ShouldAutoConfirmPendingDish(
+                    PendingDishActionKind.Serve,
+                    SettingsService.DefaultRequireServeConfirmation),
+                Is.True);
+            Assert.That(
+                BattleWorldController.ShouldShowPendingDishActionButton(
+                    PendingDishActionKind.Serve,
+                    SettingsService.DefaultRequireServeConfirmation),
+                Is.False);
+        }
+
+        [Test]
+        public void TemporaryDishPlacement_StillShowsConfirmationButton()
+        {
+            Assert.That(
+                BattleWorldController.ShouldAutoConfirmPendingDish(
+                    PendingDishActionKind.Confirm,
+                    SettingsService.DefaultRequireServeConfirmation),
+                Is.False);
+            Assert.That(
+                BattleWorldController.ShouldShowPendingDishActionButton(
+                    PendingDishActionKind.Confirm,
+                    SettingsService.DefaultRequireServeConfirmation),
+                Is.True);
+        }
+
         [Test]
         public void TrayHitTester_ExactCellBeatsEarlierCandidatePadding()
         {

@@ -10,10 +10,10 @@ namespace GourmetProject.Gameplay.Model
     {
         None = 0,
 
-        /// <summary>最终总分加法 +value（大餐盘）。</summary>
+        /// <summary>保留兼容：最终总分加法 +value；当前无配置或模型产出。</summary>
         FinalAddFlat = 1,
 
-        /// <summary>最终总分倍率 ×value（主厨刀）。</summary>
+        /// <summary>保留兼容：最终总分倍率 ×value；当前无配置或模型产出。</summary>
         FinalAddMult = 2,
 
         /// <summary>每道匹配 <c>param</c> 的菜额外 +value 美味值（胡椒罐：带某标签/风味/分类）。</summary>

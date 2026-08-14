@@ -2259,7 +2259,6 @@ namespace GourmetProject.Game.Presentation.Battle
             var plan = new SettlementPlaybackPlan();
             bool hasGoldCue = false;
             bool hasLayerCue = false;
-            bool hasSilverItemRollCue = false;
             bool hasFinalModifierCue = false;
             var shownDishBases = new HashSet<int>();
             AddInitialDishBaseBatch(plan, result.DishScores, dishViews, shownDishBases, baselineSnapshot);
@@ -2279,7 +2278,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     line,
                     ref hasGoldCue,
                     ref hasLayerCue,
-                    ref hasSilverItemRollCue,
                     ref hasFinalModifierCue);
 
                 if (!string.IsNullOrEmpty(cue.BatchKey))
@@ -2293,7 +2291,6 @@ namespace GourmetProject.Game.Presentation.Battle
                                 cueBatch[b].Line,
                                 ref hasGoldCue,
                                 ref hasLayerCue,
-                                ref hasSilverItemRollCue,
                                 ref hasFinalModifierCue);
                         }
 
@@ -2318,25 +2315,17 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 plan.FinalCues.Add(new SettlementCue(
                     SettlementCueKind.SideEffect,
-                    $"金币 {FormatSigned(result.GoldDelta)}",
-                    sourceName: "结算"));
+                    FormatSigned(result.GoldDelta),
+                    sourceName: "金币"));
             }
 
             if (!hasLayerCue && result.HappyCakeLayerDelta != 0)
             {
                 plan.FinalCues.Add(new SettlementCue(
                     SettlementCueKind.SideEffect,
-                    $"层数 {FormatSigned(result.HappyCakeLayerDelta)}",
-                    sourceName: "快乐蛋糕",
+                    FormatSigned(result.HappyCakeLayerDelta),
+                    sourceName: "蛋糕层数",
                     reveal: SettlementRevealSignal.CakeLayerReveal(result.HappyCakeLayerDelta)));
-            }
-
-            if (!hasSilverItemRollCue && result.SilverItemRollRequests > 0)
-            {
-                plan.FinalCues.Add(new SettlementCue(
-                    SettlementCueKind.SideEffect,
-                    $"获得装饰品和消耗品 ×{result.SilverItemRollRequests}",
-                    sourceName: "银材质"));
             }
 
             // if (result.PermanentFlatDeltas.Count > 0)
@@ -2388,12 +2377,10 @@ namespace GourmetProject.Game.Presentation.Battle
             ScoreLine line,
             ref bool hasGoldCue,
             ref bool hasLayerCue,
-            ref bool hasSilverItemRollCue,
             ref bool hasFinalModifierCue)
         {
             hasGoldCue |= line.Kind == ScoreLineKind.Gold;
             hasLayerCue |= line.Kind == ScoreLineKind.Layer;
-            hasSilverItemRollCue |= line.Kind == ScoreLineKind.SilverItemRoll;
             hasFinalModifierCue |= line.Kind == ScoreLineKind.FinalFlat
                 || line.Kind == ScoreLineKind.FinalMultiplier;
         }
@@ -2619,7 +2606,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
-                        $"永久{Strong("分数")} {Semantic("score", FormatSigned(line.Value))}",
+                        $"{Strong("分数")} · 永久{Semantic("score", FormatSigned(line.Value))}",
                         rise: 0.28f,
                         duration: 0.82f,
                         feedbackKind: SettlementDishFeedbackKind.PermanentFlatBonus,
@@ -2655,7 +2642,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.ExtraSettlement:
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
-                        $"{Semantic("benefit", "额外结算")} {Semantic("score", FormatSigned(line.Value))}",
+                        Semantic("benefit", "额外结算"),
                         rise: 0.4f,
                         duration: 0.9f,
                         feedbackKind: SettlementDishFeedbackKind.GenericValueChanged,
@@ -2685,14 +2672,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.Gold:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        Semantic("gold", $"金币 {FormatSigned(line.Value)}"),
+                        Semantic("gold", FormatSigned(line.Value)),
                         sourceName: sourceName);
                     return true;
 
                 case ScoreLineKind.Layer:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"层数 {FormatSigned(line.Value)}",
+                        FormatSigned(line.Value),
                         sourceName: sourceName,
                         reveal: SettlementRevealSignal.CakeLayerReveal(RoundCount(line.Value)));
                     return true;
@@ -2700,8 +2687,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.SilverItemRoll:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"获得{Semantic("term", "装饰品")}和{Semantic("term", "消耗品")} ×{RoundCount(line.Value)}",
-                        sourceName: sourceName);
+                        "判定消耗品",
+                        sourceName: sourceName,
+                        showEffectLabel: false);
                     return true;
 
                 case ScoreLineKind.CopySkill:
@@ -2717,8 +2705,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
                         line.Value > 1f
-                            ? $"触发{Semantic("term", "甜蜜传递")} ×{RoundCount(line.Value)}"
-                            : $"触发{Semantic("term", "甜蜜传递")}",
+                            ? $"发动{Semantic("term", "甜蜜传递")} ×{RoundCount(line.Value)}"
+                            : $"发动{Semantic("term", "甜蜜传递")}",
                         feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
                         triggerSweetTransferPhase: TriggerSweetTransferCuePhase.ActivatorStarted,
                         sourceName: sourceName);
@@ -2727,20 +2715,19 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.TriggeredSweetTransferSource:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"触发{Semantic("term", "甜蜜传递")}",
+                        string.Empty,
                         feedbackKind: SettlementDishFeedbackKind.SweetTransferSkillTriggered,
                         triggerSweetTransferPhase: line.Value >= line.After
                             ? TriggerSweetTransferCuePhase.FinalSourceStarted
                             : TriggerSweetTransferCuePhase.SourceStarted,
-                        sourceName: sourceName);
+                        sourceName: sourceName,
+                        showEffectLabel: false);
                     return true;
 
                 case ScoreLineKind.SweetTransferBuffApplied:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
-                            ? $"挂载{Semantic("term", "甜蜜传递")} +2"
-                            : $"挂载{Semantic("term", "甜蜜传递")} ×1.5",
+                        SettlementStageView.SweetTransferBuffName(line),
                         feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
                         sourceName: sourceName);
                     return true;
@@ -2766,7 +2753,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.CountAs:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"{Strong("份数")} {FormatSigned(line.Value)}  →  {FormatPlain(line.After)}",
+                        FormatSigned(line.Value),
                         rise: 0.34f,
                         duration: 0.84f,
                         // 效果组开场已由蛋黄酥播放主动发动；目标这里只播放数值变化反馈。
@@ -2782,7 +2769,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.EmptyCountAs:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"每个空格 +{RoundCount(line.Value)} 份",
+                        FormatSigned(line.Value),
                         rise: 0.34f,
                         duration: 0.84f,
                         feedbackKind: SettlementDishFeedbackKind.CountAsChanged,
@@ -2793,7 +2780,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.TemporaryCategory:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        string.IsNullOrEmpty(line.Message) ? "临时分类生效" : line.Message,
+                        NormalizeTemporaryCategoryText(line.Message),
                         rise: 0.38f,
                         duration: 0.92f,
                         feedbackKind: BuildDishFeedbackKind(line),
@@ -2806,6 +2793,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 default:
                     return false;
             }
+        }
+
+        private static string NormalizeTemporaryCategoryText(string message)
+        {
+            string text = string.IsNullOrWhiteSpace(message) ? "视为蛋糕" : message.Trim();
+            return text.StartsWith("本场", StringComparison.Ordinal)
+                ? text.Substring(2).TrimStart()
+                : text;
         }
 
         private static void AttachPassiveSource(ScoreLine line, SettlementCue cue)

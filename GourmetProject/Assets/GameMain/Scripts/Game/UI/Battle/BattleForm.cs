@@ -5236,10 +5236,44 @@ namespace GourmetProject.Game.UI.Battle
 
             }
 
-            // 结算侧效果写回局外状态：金币入账（经济运营 + 上菜 OnServe）、大局结算历史累计。
+            // 所有需要“先演出、再写回”的判定结束后应用局外结算；银格命中的实际消耗品
+            // 此时已经从实时物品池发放，可按命中顺序逐条展示具体内容。
+            // 判定请求本身不显示，未命中也不显示；同一食物多格命中不会合并。
+            BattleRunSettlement appliedSettlement = null;
             if (_run != null && _session != null)
             {
-                BattleSettlementApplier.ApplyFinal(_run, _session);
+                appliedSettlement = BattleSettlementApplier.ApplyFinal(_run, _session);
+            }
+
+            if (appliedSettlement != null && appliedSettlement.SilverItemGrants.Count > 0)
+            {
+                foreach (SilverItemGrantPresentation grant in appliedSettlement.SilverItemGrants)
+                {
+                    try
+                    {
+                        if (_world != null)
+                        {
+                            await _world.PlaySilverItemGrantAsync(grant, destroyCancellationToken);
+                        }
+                        else
+                        {
+                            ItemAcquireResult acquired = grant.Acquisition;
+                            ShowActiveItemMessage(acquired.HasItem
+                                ? $"银材质：获得{acquired.ItemName}"
+                                : $"银材质：获得金币 +{acquired.Gold}");
+                            await Awaitable.WaitForSecondsAsync(0.82f, destroyCancellationToken);
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+
+                    if (_discardSettlementCallbacks || Active != this)
+                    {
+                        return;
+                    }
+                }
             }
 
             // 领奖期间允许隐藏奖励页查看本场结果，因此保留最终美味值；

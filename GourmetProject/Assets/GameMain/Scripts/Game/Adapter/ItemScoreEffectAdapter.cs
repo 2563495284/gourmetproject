@@ -9,8 +9,8 @@ namespace GourmetProject.Game.Adapter
 {
     /// <summary>
     /// 把当前 Run 持有的「结算类」装饰品适配为玩法层的 <see cref="IScoreEffectSource"/>。
-    /// 局级加/乘（FinalAddFlat/Mult）走 BattleSession 快路径（模型 ApplyToBattle），不在此产出；
-    /// 本适配器遍历持有装饰品和消耗品模型的 <see cref="PassiveItemModel.BuildScoreSpecs"/> 收集逐菜/条件/顺序类规格。
+    /// FinalAddFlat/Mult 仅保留兼容枚举，当前没有配置或模型产出；本适配器遍历持有装饰品和消耗品模型的
+    /// <see cref="PassiveItemModel.BuildScoreSpecs"/> 收集现有逐菜/条件/顺序类规格。
     /// </summary>
     public static class ItemScoreEffectAdapter
     {

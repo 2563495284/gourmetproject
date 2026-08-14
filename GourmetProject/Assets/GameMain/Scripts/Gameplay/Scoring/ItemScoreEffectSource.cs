@@ -33,8 +33,8 @@ namespace GourmetProject.Gameplay.Scoring
 
     /// <summary>
     /// 装饰品结算效果来源：把持有装饰品和消耗品的结算类效果统一转成 <see cref="IScoreEffect"/> 条目，
-    /// 复用小丑牌式阶段结算管线。局级加/乘（FinalAddFlat/Mult）仍走 BattleSession.FinalFlat/Multiplier 快路径，
-    /// 本来源只负责「逐菜/条件/顺序」类被动效果。
+    /// 复用小丑牌式阶段结算管线。本来源负责当前实际使用的「逐菜/条件/顺序」类被动效果；
+    /// FinalAddFlat/Mult 仅保留兼容枚举，当前没有配置或模型产出。
     /// </summary>
     public sealed class ItemScoreEffectSource : IScoreEffectSource
     {

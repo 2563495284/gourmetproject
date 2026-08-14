@@ -428,7 +428,6 @@ namespace GourmetProject.Game.Presentation.Battle
             bool hasFinalMultiplier = false;
             bool hasGold = false;
             bool hasLayer = false;
-            bool hasSilverRoll = false;
             for (int i = 0; i < result.ScoreLines.Count; i++)
             {
                 ScoreLine line = result.ScoreLines[i];
@@ -441,7 +440,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 hasFinalMultiplier |= line.Kind == ScoreLineKind.FinalMultiplier;
                 hasGold |= line.Kind == ScoreLineKind.Gold;
                 hasLayer |= line.Kind == ScoreLineKind.Layer;
-                hasSilverRoll |= line.Kind == ScoreLineKind.SilverItemRoll;
             }
 
             var source = ScoreSource.FinalModifier("settlement_fallback", "结算");
@@ -491,13 +489,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     $"层数 {FormatSigned(result.HappyCakeLayerDelta)}"));
             }
 
-            if (!hasSilverRoll && result.SilverItemRollRequests > 0)
-            {
-                AppendSynthetic(plan, SyntheticSideEffect(
-                    ScoreLineKind.SilverItemRoll,
-                    result.SilverItemRollRequests,
-                    $"获得装饰品和消耗品 ×{result.SilverItemRollRequests}"));
-            }
         }
 
         private static ScoreLine SyntheticSideEffect(ScoreLineKind kind, float value, string message)

@@ -218,6 +218,60 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void Silver_EachOccupiedCellRollsIndependentlyAtOneFifth()
+        {
+            MaterialDef silver = new MaterialDef(
+                "silver",
+                "银材质",
+                string.Empty,
+                MaterialEffectType.GrantItemRollIfCellCount,
+                Array.Empty<float>(),
+                Array.Empty<string>(),
+                string.Empty);
+            DishShape shape = DishShape.FromRows(new[] { "XX" });
+            DishDef def = new DishDef(
+                "silver_dish",
+                "银格食物",
+                10,
+                shape,
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty);
+            var dish = new DishInstance(
+                77,
+                def,
+                new Placement(shape, 0, new GridPos(0, 0)),
+                Array.Empty<string>(),
+                Array.Empty<string>());
+            var materials = new Dictionary<GridPos, IReadOnlyList<string>>
+            {
+                [new GridPos(0, 0)] = new[] { silver.Id },
+                [new GridPos(1, 0)] = new[] { silver.Id },
+            };
+            var table = new DiningTable(2, 1, null, materials);
+            table.Place(dish);
+            var random = new RecordingBoolRandomStream(true, false);
+            var session = new BattleSession(
+                table,
+                Database(new[] { def }, materials: new[] { silver }),
+                random,
+                Array.Empty<RecipeSlot>(),
+                requiredScore: 0);
+
+            ScoreResult result = session.Settle();
+
+            Assert.That(result.SilverItemRollRequests, Is.EqualTo(2));
+            Assert.That(
+                result.ScoreLines.Count(line => line.Kind == ScoreLineKind.SilverItemRoll),
+                Is.EqualTo(2));
+            Assert.That(random.Probabilities, Is.EqualTo(new[] { 0.2d, 0.2d }));
+            Assert.That(session.PendingActiveItemGrants, Is.EqualTo(1));
+            Assert.That(session.PendingActiveItemGrantSources, Is.EqualTo(new[] { 77 }));
+        }
+
+        [Test]
         public void HawthornCake_CountsEffectiveServingsOfTwoCellDishes()
         {
             SkillRuleDef rule = new SkillRuleDef(
@@ -484,5 +538,41 @@ namespace GourmetProject.Tests.EditMode
                 flavors ?? Array.Empty<FlavorDef>(),
                 materials ?? Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
+
+        private sealed class RecordingBoolRandomStream : IRandomStream
+        {
+            private readonly Xoshiro256SS _inner = new Xoshiro256SS(91UL);
+            private readonly Queue<bool> _results;
+
+            public RecordingBoolRandomStream(params bool[] results)
+            {
+                _results = new Queue<bool>(results ?? Array.Empty<bool>());
+            }
+
+            public List<double> Probabilities { get; } = new List<double>();
+
+            public RngState State
+            {
+                get => _inner.State;
+                set => _inner.State = value;
+            }
+
+            public uint NextUInt() => _inner.NextUInt();
+            public ulong NextULong() => _inner.NextULong();
+            public int Range(int minInclusive, int maxExclusive) => _inner.Range(minInclusive, maxExclusive);
+            public float Range(float minInclusive, float maxExclusive) => _inner.Range(minInclusive, maxExclusive);
+            public float NextFloat() => _inner.NextFloat();
+            public double NextDouble() => _inner.NextDouble();
+
+            public bool NextBool(double probability = 0.5)
+            {
+                Probabilities.Add(probability);
+                return _results.Count > 0 && _results.Dequeue();
+            }
+
+            public void Shuffle<T>(IList<T> list) => _inner.Shuffle(list);
+            public T Pick<T>(IReadOnlyList<T> list) => _inner.Pick(list);
+            public int WeightedPickIndex(IReadOnlyList<float> weights) => _inner.WeightedPickIndex(weights);
+        }
     }
 }

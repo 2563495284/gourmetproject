@@ -50,7 +50,7 @@ namespace GourmetProject.Gameplay.Model
 
         public string EffectParam => EffectParams.Count > 0 ? EffectParams[0] : string.Empty;
 
-        /// <summary>阈值参数（金/银「占 N 格」判定），取 EffectParam[0]，缺省 2，下限 1。</summary>
+        /// <summary>阈值参数（当前用于金材质「占 N 格」判定），取 EffectParam[0]，缺省 2，下限 1。</summary>
         public int ThresholdParam
         {
             get

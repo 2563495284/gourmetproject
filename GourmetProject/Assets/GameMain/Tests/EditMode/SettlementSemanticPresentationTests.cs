@@ -3,6 +3,7 @@ using BreakInfinity;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Gameplay.Battle;
+using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 using TMPro;
@@ -13,17 +14,18 @@ namespace GourmetProject.Tests.EditMode
     public sealed class SettlementSemanticPresentationTests
     {
         [TestCase(ScoreLineKind.DishFlat, 20d, "[score]+20[/score]")]
-        [TestCase(ScoreLineKind.DishPermanentFlat, 20d, "永久 [score]+20[/score]")]
+        [TestCase(ScoreLineKind.DishPermanentFlat, 20d, "永久[score]+20[/score]")]
         [TestCase(ScoreLineKind.DishMultiplier, 1.8d, "[multmul]×1.8[/multmul]")]
-        [TestCase(ScoreLineKind.DishMultiplierAdd, 0.5d, "[strong]倍率[/strong] [multadd]+0.5[/multadd]")]
+        [TestCase(ScoreLineKind.DishMultiplierAdd, 0.5d, "[multadd]+0.5[/multadd]")]
         [TestCase(ScoreLineKind.FinalFlat, 20d, "总分 [score]+20[/score]  →  120")]
         [TestCase(ScoreLineKind.FinalMultiplier, 1.8d, "总分 [multmul]×1.8[/multmul]  →  120")]
-        [TestCase(ScoreLineKind.Gold, 15d, "[gold]金币 +15[/gold]")]
-        [TestCase(ScoreLineKind.SilverItemRoll, 1d, "获得[term]装饰品[/term]和[term]消耗品[/term] ×1")]
-        [TestCase(ScoreLineKind.ExtraSettlement, 20d, "[benefit]额外结算[/benefit] [score]+20[/score]")]
-        [TestCase(ScoreLineKind.TriggerSweetTransfer, 1d, "触发[term]甜蜜传递[/term]")]
-        [TestCase(ScoreLineKind.Layer, 3d, "层数 +3")]
-        [TestCase(ScoreLineKind.CountAs, 2d, "[strong]份数[/strong] +2  →  2")]
+        [TestCase(ScoreLineKind.Gold, 15d, "[gold]+15[/gold]")]
+        [TestCase(ScoreLineKind.SilverItemRoll, 1d, "判定消耗品")]
+        [TestCase(ScoreLineKind.ExtraSettlement, 20d, "[benefit]额外结算[/benefit]")]
+        [TestCase(ScoreLineKind.TriggerSweetTransfer, 1d, "发动[term]甜蜜传递[/term]")]
+        [TestCase(ScoreLineKind.Layer, 3d, "+3")]
+        [TestCase(ScoreLineKind.CountAs, 2d, "+2")]
+        [TestCase(ScoreLineKind.EmptyCountAs, 2d, "+2")]
         [TestCase(
             ScoreLineKind.SweetTransferBuffTriggered,
             1.8d,
@@ -38,6 +40,56 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 SettlementStageView.ResultText(line, BigDouble.Zero, new BigDouble(120)),
                 Is.EqualTo(expected));
+        }
+
+        [TestCase(ScoreLineKind.DishFlat, "分数")]
+        [TestCase(ScoreLineKind.DishPermanentFlat, "分数")]
+        [TestCase(ScoreLineKind.DishMultiplier, "倍率")]
+        [TestCase(ScoreLineKind.DishMultiplierAdd, "倍率")]
+        [TestCase(ScoreLineKind.Gold, "金币")]
+        [TestCase(ScoreLineKind.Layer, "蛋糕层数")]
+        [TestCase(ScoreLineKind.CountAs, "份数")]
+        [TestCase(ScoreLineKind.EmptyCountAs, "份数")]
+        [TestCase(ScoreLineKind.TemporaryCategory, "赋予")]
+        [TestCase(ScoreLineKind.ExtraSettlement, "咸味")]
+        public void ResultHeader_UsesPlayerFacingNames(ScoreLineKind kind, string expected)
+        {
+            Assert.That(SettlementStageView.ResultHeader(BuildLine(kind, 1d)), Is.EqualTo(expected));
+        }
+
+        [TestCase(ScoreLineKind.SilverItemRoll, false)]
+        [TestCase(ScoreLineKind.TriggeredSweetTransferSource, false)]
+        [TestCase(ScoreLineKind.DishFlat, true)]
+        public void ResultVisibility_HidesInternalChoreographyLines(ScoreLineKind kind, bool expected)
+        {
+            Assert.That(SettlementStageView.ShouldShowResultLabel(BuildLine(kind, 1d)), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void SweetTransferBuffLabels_UseTheOwnerDishName()
+        {
+            SkillExecutionTrace trace = BuildTrace("软糖", SkillActionType.AddMult);
+            ScoreLine applied = BuildLine(ScoreLineKind.SweetTransferBuffApplied, 3d, trace);
+            ScoreLine triggered = BuildLine(ScoreLineKind.SweetTransferBuffTriggered, 1.5d, trace);
+
+            Assert.That(SettlementStageView.ResultHeader(applied), Is.Empty);
+            Assert.That(SettlementStageView.ResultText(applied, 0f, 0f), Is.EqualTo("软糖Buff"));
+            Assert.That(SettlementStageView.ResultHeader(triggered), Is.EqualTo("软糖Buff"));
+            Assert.That(
+                SettlementStageView.ResultText(triggered, 0f, 0f),
+                Is.EqualTo("本行[strong]倍率[/strong] [multmul]×1.5[/multmul]"));
+        }
+
+        [Test]
+        public void ZeroValue_UsesTheMappedScoreOrMultiplierHeader()
+        {
+            ScoreLine score = BuildLine(ScoreLineKind.DishFlat, 0d);
+            ScoreLine multiplier = BuildLine(ScoreLineKind.DishMultiplierAdd, 0d);
+
+            Assert.That(SettlementStageView.ResultHeader(score), Is.EqualTo("分数"));
+            Assert.That(SettlementStageView.ResultText(score, 0f, 0f), Is.EqualTo("无变化"));
+            Assert.That(SettlementStageView.ResultHeader(multiplier), Is.EqualTo("倍率"));
+            Assert.That(SettlementStageView.ResultText(multiplier, 0f, 0f), Is.EqualTo("无变化"));
         }
 
         [TestCase(
@@ -154,7 +206,10 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
-        private static ScoreLine BuildLine(ScoreLineKind kind, double value)
+        private static ScoreLine BuildLine(
+            ScoreLineKind kind,
+            double value,
+            SkillExecutionTrace trace = null)
         {
             return new ScoreLine(
                 ScorePhase.AfterDish,
@@ -166,7 +221,30 @@ namespace GourmetProject.Tests.EditMode
                 new BigDouble(value),
                 BigDouble.Zero,
                 new BigDouble(value),
-                string.Empty);
+                string.Empty,
+                trace);
+        }
+
+        private static SkillExecutionTrace BuildTrace(string ownerDishName, SkillActionType actionType)
+        {
+            return new SkillExecutionTrace(
+                SkillExecutionKind.SweetTransfer,
+                1,
+                "owner",
+                ownerDishName,
+                2,
+                "target",
+                "目标",
+                "skill",
+                "技能",
+                "rule",
+                0,
+                SkillTrigger.OnSettle,
+                actionType,
+                SkillConditionType.None,
+                SkillScope.Self,
+                SkillScope.Self,
+                ownerDishName);
         }
 
         private static void SetField(

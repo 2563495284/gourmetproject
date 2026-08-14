@@ -135,7 +135,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>永久倍率增量（实例 Id → 累乘倍数）。正式结算后写回实例。</summary>
         public IReadOnlyDictionary<int, BigDouble> PermanentMultDeltas { get; }
 
-        /// <summary>银材质登记的「1/2 获得消耗品」掷骰请求次数。正式结算后由 Game 层掷骰发放（预览不掷）。</summary>
+        /// <summary>银材质按占据银格登记的独立 1/5 消耗品判定次数。正式结算后由 Game 层掷骰发放（预览不掷）。</summary>
         public int SilverItemRollRequests { get; }
 
         /// <summary>结算阶段登记的技能复制请求。正式结算后由 BattleSession 用随机流落地。</summary>

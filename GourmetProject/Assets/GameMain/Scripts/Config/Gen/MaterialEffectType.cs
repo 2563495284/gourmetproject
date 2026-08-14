@@ -45,10 +45,9 @@ namespace cfg
         /// </summary>
         GrantGoldIfCellCount = 6,
         /// <summary>
-        /// 占≥阈值格1/2获得消耗品(银)
+        /// 每占1格独立1/5获得消耗品(银)
         /// </summary>
         GrantItemRollIfCellCount = 7,
     }
 
 } 
-

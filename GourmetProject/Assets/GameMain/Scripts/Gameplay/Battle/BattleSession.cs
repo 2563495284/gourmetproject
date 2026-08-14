@@ -108,6 +108,7 @@ namespace GourmetProject.Gameplay.Battle
         private readonly List<RecipeScoreFlatDelta> _lastRecipeScoreFlatDeltas = new List<RecipeScoreFlatDelta>();
         private readonly List<RecipeScoreMultiplierDelta> _lastRecipeScoreMultiplierDeltas = new List<RecipeScoreMultiplierDelta>();
         private readonly List<RecipeRemovalOutcome> _lastRecipeRemovalOutcomes = new List<RecipeRemovalOutcome>();
+        private readonly List<int> _pendingActiveItemGrantSources = new List<int>();
         private readonly List<DishInstance> _temporaryAreaDishes = new List<DishInstance>();
         private readonly Dictionary<int, PendingDishPlacement> _pendingDishPlacements =
             new Dictionary<int, PendingDishPlacement>();
@@ -364,8 +365,11 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本局待入账的金币增量（上菜 OnServe + 结算经济运营累积；由 Game 层写回 GameRun.Gold）。</summary>
         public float PendingGold { get; private set; }
 
-        /// <summary>本局待发放的消耗品数量（银材质结算掷骰命中累积；由 Game 层在结算后发放）。</summary>
-        public int PendingActiveItemGrants { get; private set; }
+        /// <summary>本局待发放的消耗品数量（银格独立 1/5 判定命中数；由 Game 层在结算后发放）。</summary>
+        public int PendingActiveItemGrants => _pendingActiveItemGrantSources.Count;
+
+        /// <summary>每次银格命中对应的来源食物实例 Id，顺序与待发放消耗品一致。</summary>
+        public IReadOnlyList<int> PendingActiveItemGrantSources => _pendingActiveItemGrantSources;
 
         /// <summary>本次结算各 BaseId 的结算增量（供 Game 层累加进 GameRun 大局历史）。</summary>
         public IReadOnlyDictionary<string, int> LastSettledIncrements { get; private set; } = new Dictionary<string, int>();
@@ -1611,12 +1615,19 @@ namespace GourmetProject.Gameplay.Battle
             // 金币入账（结算侧效果）。
             PendingGold += result.GoldDelta;
 
-            // 银材质：对每个「1/2 获得消耗品」请求掷骰（仅正式结算掷，预览不掷，保证可复现纯净）。
+            // 银材质：每个银格请求独立按 1/5 掷骰；只记录命中及其来源食物，
+            // 具体消耗品仍由 Game 层在结算动画完成后从实时物品池发放。
+            _pendingActiveItemGrantSources.Clear();
+            var silverRollSources = result.ScoreLines
+                .Where(line => line != null && line.Kind == ScoreLineKind.SilverItemRoll)
+                .Select(line => line.DishInstanceId)
+                .ToList();
             for (int i = 0; i < result.SilverItemRollRequests; i++)
             {
-                if (_rng.NextBool(1.0 / 2.0))
+                if (_rng.NextBool(1.0 / 5.0))
                 {
-                    PendingActiveItemGrants++;
+                    _pendingActiveItemGrantSources.Add(
+                        i < silverRollSources.Count ? silverRollSources[i] : 0);
                 }
             }
 
