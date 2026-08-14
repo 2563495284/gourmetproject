@@ -1,3 +1,4 @@
+using GourmetProject.Game.UI.Common;
 using TMPro;
 using UnityEngine;
 
@@ -16,7 +17,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public void Bind(string header, string body, Color theme)
         {
             _headerText.text = header ?? string.Empty;
-            _bodyText.text = body ?? string.Empty;
+            SemanticDescriptionFormatter.Set(_bodyText, body);
             _headerText.ForceMeshUpdate(true, true);
             _bodyText.ForceMeshUpdate(true, true);
 

@@ -1,3 +1,5 @@
+using GourmetProject.Game.Run;
+
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
@@ -86,6 +88,43 @@ namespace GourmetProject.Game.Meta
             }
 
             return IsUsableIn(item.TargetKind, ctx);
+        }
+
+        /// <summary>
+        /// 实机与无界面模拟共用的局内使用资格。界面锁定、编辑态等表现限制由调用方另行检查。
+        /// </summary>
+        public static bool CanUse(
+            GameRun run,
+            ItemDefinition item,
+            ActiveUseContextKind ctx,
+            out string reason)
+        {
+            reason = string.Empty;
+            if (run == null || item == null || !run.HasItem(item.Id))
+            {
+                reason = "没有可用装饰品和消耗品。";
+                return false;
+            }
+
+            if (new ItemRuntime(run).BlocksActiveItems())
+            {
+                reason = "当前被动效果禁止使用消耗品。";
+                return false;
+            }
+
+            if (IsTodoTimelineEffect(item.EffectType))
+            {
+                reason = "功能开发中：需要玩家在时间轴上指定位置/节点。";
+                return false;
+            }
+
+            if (!CanUse(item, ctx))
+            {
+                reason = "现在不是使用时机。";
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>调味与铺台小票只能在尚未结算的 Food 经营挑战主界面使用。</summary>

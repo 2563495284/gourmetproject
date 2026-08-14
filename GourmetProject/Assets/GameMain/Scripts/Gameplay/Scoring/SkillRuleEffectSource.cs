@@ -640,12 +640,22 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
-                IReadOnlyList<DishInstance> resultTargets = HasActionParam(rule, "resultscope:TransferSource")
-                    ? new[] { _self }
-                    : SkillConditionEvaluator.ScopeDishes(
+                IReadOnlyList<DishInstance> resultTargets;
+                if (HasActionParam(rule, "resultscope:BuffTargets"))
+                {
+                    resultTargets = RegisteredBuffTargets(ctx, buff);
+                }
+                else if (HasActionParam(rule, "resultscope:TransferSource"))
+                {
+                    resultTargets = new[] { _self };
+                }
+                else
+                {
+                    resultTargets = SkillConditionEvaluator.ScopeDishes(
                         ctx.DiningTable,
                         buff.Owner,
                         ParseResultScope(rule, SkillScope.RowAndSelf));
+                }
                 float value = rule.ActionType == SkillActionType.AddMultFlat
                     ? rule.ActionValue * buff.ConditionCount
                     : HasActionParam(rule, "linear")
@@ -662,16 +672,48 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
-                IReadOnlyList<DishInstance> resultTargets = transferTargets
-                    .Where(target => buff.TargetDishInstanceIds.Contains(target.Id))
-                    .ToArray();
+                int receivedCount = transferTargets.Count(target =>
+                    target != null && buff.TargetDishInstanceIds.Contains(target.Id));
+                if (receivedCount <= 0)
+                {
+                    continue;
+                }
+
+                bool applyToBuffTargets = HasActionParam(rule, "resultscope:BuffTargets");
+                IReadOnlyList<DishInstance> resultTargets = applyToBuffTargets
+                    ? RegisteredBuffTargets(ctx, buff)
+                    : transferTargets
+                        .Where(target => buff.TargetDishInstanceIds.Contains(target.Id))
+                        .ToArray();
                 ResolveSweetTransferBuffTrigger(
                     ctx,
                     buff,
                     resultTargets,
-                    rule.ActionValue * buff.ConditionCount,
+                    rule.ActionValue * buff.ConditionCount * (applyToBuffTargets ? receivedCount : 1),
                     SkillActionType.AddFlat);
             }
+        }
+
+        /// <summary>
+        /// 返回 Buff 登记时锁定的食物实例。范围不会随之后的移动或新上菜扩张，
+        /// 但已不在餐桌上的实例不会继续获得收益。
+        /// </summary>
+        private static IReadOnlyList<DishInstance> RegisteredBuffTargets(
+            ScoreContext ctx,
+            SweetTransferBuffRegistration buff)
+        {
+            if (ctx?.DiningTable == null || buff == null || buff.TargetDishInstanceIds.Count == 0)
+            {
+                return Array.Empty<DishInstance>();
+            }
+
+            var targetIds = new HashSet<int>(buff.TargetDishInstanceIds);
+            return ctx.DiningTable.Dishes
+                .Where(target => target != null && targetIds.Contains(target.Id))
+                .OrderBy(BoardTop)
+                .ThenBy(BoardLeft)
+                .ThenBy(target => target.Id)
+                .ToArray();
         }
 
         private void ResolveSweetTransferBuffTrigger(

@@ -2,7 +2,7 @@
   {
     "id": "m_cherry",
     "name": "樱桃木",
-    "desc": "分数+80",
+    "desc": "[strong]分数[/strong][score]+80[/score]",
     "effectType": 1,
     "effectParam": [],
     "effectValue": [
@@ -13,7 +13,7 @@
   {
     "id": "m_walnut",
     "name": "胡桃木",
-    "desc": "分数永久+20",
+    "desc": "[strong]分数[/strong]永久[score]+20[/score]",
     "effectType": 2,
     "effectParam": [],
     "effectValue": [
@@ -24,7 +24,7 @@
   {
     "id": "m_marble",
     "name": "大理石",
-    "desc": "倍率+2",
+    "desc": "[strong]倍率[/strong][multadd]+2[/multadd]",
     "effectType": 3,
     "effectParam": [],
     "effectValue": [
@@ -35,7 +35,7 @@
   {
     "id": "m_obsidian",
     "name": "黑曜石",
-    "desc": "倍率×1.5",
+    "desc": "[strong]倍率[/strong][multmul]×1.5[/multmul]",
     "effectType": 4,
     "effectParam": [],
     "effectValue": [
@@ -46,7 +46,7 @@
   {
     "id": "m_emerald",
     "name": "翡翠",
-    "desc": "每占1格翡翠\n倍率+1",
+    "desc": "每占1格翡翠\n[strong]倍率[/strong][multadd]+1[/multadd]",
     "effectType": 5,
     "effectParam": [],
     "effectValue": [
@@ -57,7 +57,7 @@
   {
     "id": "m_gold",
     "name": "金",
-    "desc": "金币+6",
+    "desc": "[gold]金币+6[/gold]",
     "effectType": 6,
     "effectParam": [
       "2"
@@ -70,7 +70,7 @@
   {
     "id": "m_silver",
     "name": "银",
-    "desc": "1/5概率获得消耗品",
+    "desc": "1/5概率获得[term]消耗品[/term]",
     "effectType": 7,
     "effectParam": [
       "2"

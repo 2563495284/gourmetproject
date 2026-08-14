@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using BreakInfinity;
 using DG.Tweening;
+using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
@@ -953,27 +954,29 @@ namespace GourmetProject.Game.Presentation.Battle
             switch (line.Kind)
             {
                 case ScoreLineKind.DishFlat:
-                    return signed;
+                    return Score(signed);
                 case ScoreLineKind.DishPermanentFlat:
-                    return $"永久 {signed}";
+                    return $"永久 {Score(signed)}";
                 case ScoreLineKind.DishMultiplier:
-                    return $"×{FormatLineValue(line.Value)}";
+                    return MultiplierMultiply($"×{FormatLineValue(line.Value)}");
                 case ScoreLineKind.DishMultiplierAdd:
-                    return $"倍率 {signed}";
+                    return $"{Strong("倍率")} {MultiplierAdd(signed)}";
                 case ScoreLineKind.FinalFlat:
-                    return $"总分 {signed}  →  {total}";
+                    return $"总分 {Score(signed)}  →  {total}";
                 case ScoreLineKind.FinalMultiplier:
-                    return $"总分 ×{FormatLineValue(line.Value)}  →  {total}";
+                    return $"总分 {MultiplierMultiply($"×{FormatLineValue(line.Value)}")}  →  {total}";
                 case ScoreLineKind.Gold:
-                    return $"金币 {signed}";
+                    return Gold($"金币 {signed}");
                 case ScoreLineKind.Layer:
                     return $"层数 {signed}";
                 case ScoreLineKind.SilverItemRoll:
-                    return $"获得装饰品和消耗品 ×{Count(line.Value)}";
+                    return $"获得{Term("装饰品")}和{Term("消耗品")} ×{Count(line.Value)}";
                 case ScoreLineKind.CopySkill:
                     return $"获得技能 ×{Count(line.Value)}";
                 case ScoreLineKind.TriggerSweetTransfer:
-                    return line.Value > 1f ? $"触发 ×{Count(line.Value)}" : "触发甜蜜传递";
+                    return line.Value > 1f
+                        ? $"触发{Term("甜蜜传递")} ×{Count(line.Value)}"
+                        : $"触发{Term("甜蜜传递")}";
                 case ScoreLineKind.TriggeredSweetTransferSource:
                     return "来源已接力";
                 case ScoreLineKind.SweetTransferBuffApplied:
@@ -981,7 +984,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.SweetTransferBuffTriggered:
                     return line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
                         ? $"额外目标 +{Count(line.Value)}"
-                        : $"本行倍率 ×{FormatLineValue(line.Value)}";
+                        : $"本行{Strong("倍率")} {MultiplierMultiply($"×{FormatLineValue(line.Value)}")}";
                 case ScoreLineKind.SweetTransferFailed:
                     return "没有可传递目标";
                 case ScoreLineKind.DishCountAs:
@@ -990,10 +993,92 @@ namespace GourmetProject.Game.Presentation.Battle
                     return $"每个空格 +{Count(line.Value)} 份";
                 case ScoreLineKind.TemporaryCategory:
                     return string.IsNullOrEmpty(line.Message) ? "视为蛋糕" : line.Message;
+                case ScoreLineKind.ExtraSettlement:
+                    return $"{Benefit("额外结算")} {Score(signed)}";
                 default:
                     return string.IsNullOrEmpty(line.Message) ? signed : line.Message;
             }
         }
+
+        /// <summary>
+        /// 上菜即时提示保留 Gameplay 层的纯文本，由表现层依据结构化效果类型添加语义标记。
+        /// </summary>
+        internal static string SemanticServeTriggerText(ServeTriggerCue cue)
+        {
+            if (cue == null)
+            {
+                return string.Empty;
+            }
+
+            string text = cue.Text ?? string.Empty;
+            switch (cue.EffectKind)
+            {
+                case ServeCueEffectKind.MultiplierFlat:
+                    return StrongKeyword(
+                        WrapFirst(text, FormatSignedCueValue(cue.Value), "multadd"),
+                        "倍率");
+                case ServeCueEffectKind.MultiplierFactor:
+                    return StrongKeyword(
+                        WrapFirst(text, $"×{FormatCueValue(cue.Value)}", "multmul"),
+                        "倍率");
+                case ServeCueEffectKind.BaseScoreFactor:
+                    return WrapFirst(text, $"×{FormatCueValue(cue.Value)}", "multmul");
+                case ServeCueEffectKind.GoldDelta:
+                    return WrapFirst(text, $"金币 {FormatSignedCueValue(cue.Value)}", "gold");
+                default:
+                    return text;
+            }
+        }
+
+        private static string WrapFirst(string source, string token, string tag)
+        {
+            if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(token))
+            {
+                return source ?? string.Empty;
+            }
+
+            int index = source.IndexOf(token, StringComparison.Ordinal);
+            if (index < 0)
+            {
+                return source;
+            }
+
+            return source.Substring(0, index)
+                + $"[{tag}]"
+                + token
+                + $"[/{tag}]"
+                + source.Substring(index + token.Length);
+        }
+
+        private static string StrongKeyword(string source, string keyword)
+        {
+            if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(keyword))
+            {
+                return source ?? string.Empty;
+            }
+
+            return source.Replace(keyword, Strong(keyword));
+        }
+
+        private static string Strong(string value) => $"[strong]{value}[/strong]";
+
+        private static string Score(string value) => $"[score]{value}[/score]";
+
+        private static string MultiplierAdd(string value) => $"[multadd]{value}[/multadd]";
+
+        private static string MultiplierMultiply(string value) => $"[multmul]{value}[/multmul]";
+
+        private static string Gold(string value) => $"[gold]{value}[/gold]";
+
+        private static string Term(string value) => $"[term]{value}[/term]";
+
+        private static string Benefit(string value) => $"[benefit]{value}[/benefit]";
+
+        private static string FormatSignedCueValue(float value)
+            => value >= 0f ? $"+{FormatCueValue(value)}" : FormatCueValue(value);
+
+        private static string FormatCueValue(float value)
+            => value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 
         private static string FormatLineValue(BigDouble value)
         {

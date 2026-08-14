@@ -19,54 +19,6 @@ namespace GourmetProject.Game.Run
     /// </summary>
     public static class BattleSessionFactory
     {
-        /// <summary>无界面完整局入口：与 Build 相同装配，但随机流完全由调用方提供。</summary>
-        public static BattleSession BuildHeadless(
-            GameRun run, int requiredScore, string modifier, string key, string bossDebuffId, IRandomStream random)
-        {
-            if (run == null) throw new System.ArgumentNullException(nameof(run));
-            if (random == null) throw new System.ArgumentNullException(nameof(random));
-            cfg.BossDebuff bossDebuff = ResolveBossDebuff(run, bossDebuffId);
-            BossDebuffModel model = bossDebuff != null ? BossDebuffModelRegistry.Create(run, bossDebuff) : null;
-            cfg.Character character = run.Tables.TbCharacter.GetOrDefault(run.CharacterId);
-            var entries = new List<RecipeSlotEntry>();
-            for (int i = 0; i < run.RecipeEntries.Count; i++)
-            {
-                RecipeBookSlot slot = run.RecipeEntries[i];
-                if (run.Database.GetDish(slot.DishId) == null) continue;
-                entries.Add(new RecipeSlotEntry(slot.DishId, slot.ExtraFlavorIds, slot.ExtraSkillIds,
-                    slot.ScoreMultiplier, slot.ScoreFlatBonus, 0, i));
-            }
-            var slots = new List<RecipeSlot> { new RecipeSlot("食谱", entries) };
-            BossDebuffPresentationPlan presentation = CreatePresentationPlan(bossDebuff, slots);
-            model?.ModifyRecipeSlots(slots, random);
-            CaptureRecipePresentation(presentation, slots);
-            int count = TotalRecipeEntries(slots);
-            GpTable board = BuildTable(run, character, model, count, random, presentation);
-            HashSet<GridPos> disabledBefore = CaptureDisabledCells(board);
-            model?.ModifyPreparedTable(board, count, random);
-            CaptureDisabledPresentation(presentation, board, disabledBefore);
-            var calculator = new ScoreCalculator(effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
-            var session = new BattleSession(board, run.Database, random, slots, requiredScore, calculator, run.RunSettledCounts);
-            session.AttachBossDebuffPresentation(presentation);
-            var items = new ItemRuntime(run);
-            cfg.GameBase gameBase = run.Tables.TbGameBase.Data;
-            session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
-            session.PassiveItemCount = run.PassiveItemStates.Count();
-            session.ConfigureFoodDiscardLimit(items.FoodDiscardCapacity());
-            session.ConfigureRandomServeMultiplier(gameBase.RandomServeMultiplierMin, gameBase.RandomServeMultiplierMax, gameBase.RandomServeMultiplierStep);
-            session.ConfigureCookieServePity(gameBase.ServeCookiePityCount, gameBase.ServeCookieDishIds);
-            session.CakeLayerThresholdReduction = items.CakeThresholdReduction();
-            session.CakeLayerAccelBonus = items.CakeAccelBonus();
-            int layers = items.CakeInitialLayers() + run.ConsumeRetainedHappyCakeLayers();
-            if (layers > 0) session.SeedHappyCakeLayers(layers);
-            session.SweetTransferTargetMultiplier = items.SweetTransferTargetMultiplier();
-            session.SweetTransferSourceMultiplier = items.SweetTransferSourceMultiplier();
-            session.SweetTransferExtraTargetCount = items.SweetTransferExtraTargetCount();
-            model?.ApplyToBattle(session);
-            ApplyPassiveItems(run, session);
-            return session;
-        }
-
         public static BattleSession Build(
             GameRun run,
             int requiredScore,
@@ -81,7 +33,7 @@ namespace GourmetProject.Game.Run
                 : null;
 
             cfg.Character character = run.Tables.TbCharacter.GetOrDefault(run.CharacterId);
-            var debuffStream = GameApp.Random.DomainStream(SeedDomains.Combat, $"{key}_debuff_setup");
+            var debuffStream = run.Random.DomainStream(SeedDomains.Combat, $"{key}_debuff_setup");
 
             var entries = new List<RecipeSlotEntry>();
             IReadOnlyList<RecipeBookSlot> recipeSlots = run.RecipeEntries;
@@ -119,7 +71,7 @@ namespace GourmetProject.Game.Run
             bossDebuffModel?.ModifyPreparedTable(board, recipeEntryCount, debuffStream);
             CaptureDisabledPresentation(presentation, board, disabledBefore);
 
-            var battleStream = GameApp.Random.DomainStream(SeedDomains.Combat, key);
+            var battleStream = run.Random.DomainStream(SeedDomains.Combat, key);
 
             // 结算类装饰品（逐菜/条件/顺序）作为效果来源注入结算器；局级加/乘仍走 FinalFlat/Multiplier 快路径。
             var calculator = new ScoreCalculator(effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
@@ -165,8 +117,8 @@ namespace GourmetProject.Game.Run
             BossDebuffModel model = bossDebuff != null
                 ? BossDebuffModelRegistry.Create(run, bossDebuff)
                 : null;
-            IRandomStream previewStream = GameApp.Random != null
-                ? GameApp.Random.DomainStream(SeedDomains.Combat, $"table_preview_{bossDebuffId}_debuff_setup")
+            IRandomStream previewStream = run?.Random != null && run.Random.IsInitialized
+                ? run.Random.DomainStream(SeedDomains.Combat, $"table_preview_{bossDebuffId}_debuff_setup")
                 : new Xoshiro256SS(StablePreviewSeed(run, bossDebuffId));
             int recipeEntryCount = run?.RecipeEntries?.Count ?? 0;
             GpTable table = BuildTable(run, character, model, recipeEntryCount, previewStream);

@@ -14,37 +14,7 @@
       },
       {
         "groupCounts": "12,3,0",
-        "weight": 10
-      }
-    ]
-  },
-  {
-    "id": "recipe_wok",
-    "fixedDishes": "mochi",
-    "groupIds": "recipe_wok_group_1|recipe_wok_group_2|recipe_wok_group_3",
-    "rollPlans": [
-      {
-        "groupCounts": "1,2,1",
-        "weight": 50
-      },
-      {
-        "groupCounts": "2,1,1",
-        "weight": 50
-      }
-    ]
-  },
-  {
-    "id": "recipe_chili",
-    "fixedDishes": "pudding",
-    "groupIds": "recipe_chili_group_1|recipe_chili_group_2|recipe_chili_group_3",
-    "rollPlans": [
-      {
-        "groupCounts": "1,2,1",
-        "weight": 50
-      },
-      {
-        "groupCounts": "2,1,1",
-        "weight": 50
+        "weight": 30
       }
     ]
   }

@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a36a0f2d9e7493eb14fbe04cefc28d7, type: 3}
+  m_Name: ExampleBalanceScenario
+  m_EditorClassIdentifier: 
+  BuildName: GM 数值平衡示例
+  Checkpoints:
+  - Name: W1 合法摆盘示例
+    CharacterId: glutton_dog
+    Week: 1
+    Day: 0
+    Gold: 100
+    UseConfiguredRequiredScore: 0
+    RequiredScore: 100
+    BossDebuffId: 
+    HappyCakeLayers: 0
+    Items: []
+    TableFragmentIds: []
+    FragmentPlacements: []
+    CellMaterials: []
+    Dishes:
+    - DishId: arrow_cookie_1
+      X: 16
+      Y: 16
+      Rotation: 0
+      ExtraSkillIds: []
+      ExtraFlavorIds: []
+      PermanentFlat: 0
+      PermanentMultiplier: 1
+      AnalyzeContribution: 0
+      RetainProbability: 1
+      Replacements: []
+    - DishId: arrow_cookie_2
+      X: 18
+      Y: 16
+      Rotation: 0
+      ExtraSkillIds: []
+      ExtraFlavorIds: []
+      PermanentFlat: 0
+      PermanentMultiplier: 1
+      AnalyzeContribution: 0
+      RetainProbability: 1
+      Replacements: []
+    - DishId: arrow_cookie_3
+      X: 16
+      Y: 17
+      Rotation: 0
+      ExtraSkillIds: []
+      ExtraFlavorIds: []
+      PermanentFlat: 0
+      PermanentMultiplier: 1
+      AnalyzeContribution: 0
+      RetainProbability: 1
+      Replacements: []
+    Perturbation:
+      Enabled: 0
+      PermanentFlatMinFactor: 1
+      PermanentFlatMaxFactor: 1
+      PermanentMultiplierMinFactor: 1
+      PermanentMultiplierMaxFactor: 1

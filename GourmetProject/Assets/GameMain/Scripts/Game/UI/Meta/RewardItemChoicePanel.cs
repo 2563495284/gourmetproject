@@ -188,9 +188,10 @@ namespace GourmetProject.Game.UI.Meta
             {
                 int claimed = _claimedBeforeOpen + _claimedOnPage.Count;
                 int required = _claimedBeforeOpen + _requiredPicks;
-                _titleText.text = required > 1
+                string title = required > 1
                     ? $"{_baseTitle}\n已领 {claimed}/{required}"
                     : _baseTitle;
+                SemanticDescriptionFormatter.Set(_titleText, title);
             }
 
             if (_skipButton != null)
@@ -262,7 +263,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (group == null)
             {
-                return "选择 1 件装饰品或消耗品";
+                return "选择 1 件[term]装饰品[/term]或[term]消耗品[/term]";
             }
 
             var lines = new List<string>();
@@ -278,7 +279,9 @@ namespace GourmetProject.Game.UI.Meta
             {
                 lines.Add(group.RuleText);
             }
-            return lines.Count > 0 ? string.Join("\n", lines) : "选择 1 件装饰品或消耗品";
+            return lines.Count > 0
+                ? string.Join("\n", lines)
+                : "选择 1 件[term]装饰品[/term]或[term]消耗品[/term]";
         }
 
         private RewardItemChoiceCardView CreateCard(RewardChoice choice, cfg.ItemKind kind, ItemTipView itemTip, Action onClick)

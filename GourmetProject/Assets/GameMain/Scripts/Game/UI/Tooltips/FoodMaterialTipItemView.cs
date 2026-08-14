@@ -1,3 +1,4 @@
+using GourmetProject.Game.UI.Common;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -18,7 +19,7 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             _nameText.text = material?.Name ?? string.Empty;
-            _descText.text = material?.Desc ?? string.Empty;
+            SemanticDescriptionFormatter.Set(_descText, material?.Desc);
         }
 
         private void Awake()

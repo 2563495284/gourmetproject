@@ -84,7 +84,7 @@
   {
     "id": "ev_interest",
     "name": "收取利息",
-    "desc": "每满 {threshold} 金币获得 {goldPer}金币，最高 {maxGain}金币",
+    "desc": "每满 [gold]{threshold} 金币[/gold]获得 [gold]{goldPer}金币[/gold]，最高 [gold]{maxGain}金币[/gold]",
     "eventTypes": [
       5
     ],
@@ -92,7 +92,7 @@
     "weight": 0,
     "repeatable": true,
     "bgSprite": "Sprites/UI/Events/event_interest",
-    "resultText": "金币 +{gain}",
+    "resultText": "[gold]金币 +{gain}[/gold]",
     "slotEmptyProbability": 0,
     "slotRewardSlotIds": [],
     "slotRewardProbabilities": []
@@ -100,7 +100,7 @@
   {
     "id": "ev_slot_machine",
     "name": "抽奖机",
-    "desc": "一个华丽的机器，投入金币有概率获得任何奖励",
+    "desc": "一个华丽的机器，投入[gold]金币[/gold]有概率获得任何奖励",
     "eventTypes": [
       7
     ],

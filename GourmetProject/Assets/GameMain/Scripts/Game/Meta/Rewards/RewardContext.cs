@@ -27,7 +27,7 @@ namespace GourmetProject.Game.Meta
             Rng = rng;
             BaseGold = baseGold;
             ActionContext = actionContext;
-            Progress = progress;
+            Progress = progress ?? run?.MetaProgress ?? new MetaProgressSaveData();
             ConsumeEventChoiceCountDelta = consumeEventChoiceCountDelta;
             ApplyChoiceCountModifiers = applyChoiceCountModifiers;
         }

@@ -1,3 +1,4 @@
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.Visual;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,7 +26,8 @@ namespace GourmetProject.Game.UI.Tooltips
                 return 0f;
             }
 
-            return _descText.GetPreferredValues(value ?? string.Empty).x;
+            return _descText.GetPreferredValues(
+                SemanticDescriptionFormatter.Format(value)).x;
         }
 
         public void Bind(string title, string desc, bool debuffed = false)
@@ -39,7 +41,7 @@ namespace GourmetProject.Game.UI.Tooltips
             _titleText.gameObject.SetActive(hasTitle);
             _outline.enabled = hasTitle;
             _titleText.text = title ?? string.Empty;
-            _descText.text = desc ?? string.Empty;
+            SemanticDescriptionFormatter.Set(_descText, desc);
             SetDebuffed(debuffed);
         }
 

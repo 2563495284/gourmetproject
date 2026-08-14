@@ -204,10 +204,7 @@ namespace GourmetProject.Game.Orchestration
                     _view.RestorePendingRewardBattleView();
                 }
 
-                GameApp.UI.OpenUIForm(
-                    UIForms.Reward,
-                    UIForms.GroupDialog,
-                    RewardFormOpenArgs.GenericQueue(continuation));
+                _view.OpenRewardForm(RewardFormOpenArgs.GenericQueue(continuation));
                 return;
             }
 
@@ -221,7 +218,7 @@ namespace GourmetProject.Game.Orchestration
             if (_run.HasPendingRewardBattleView)
             {
                 _run.ClearPendingRewardBattleView();
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
             }
 
             if (_run.HasPendingActionExecution)
@@ -237,11 +234,11 @@ namespace GourmetProject.Game.Orchestration
             if (string.IsNullOrEmpty(_run.CurrentTimelineId) || _run.CurrentTimelineWeekIndex != _run.WeekIndex)
             {
                 _run.RequiredScoreOverride = -1;
-                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Map, $"w{_run.WeekIndex}");
+                IRandomStream rng = _run.Random.DomainStream(SeedDomains.Map, $"w{_run.WeekIndex}");
                 TimelineService.RollWeekTimeline(_run, rng);
             }
 
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
             PromptNextAction();
         }
 
@@ -257,7 +254,7 @@ namespace GourmetProject.Game.Orchestration
                 }
 
                 _run.ClearPendingActionExecution();
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 PromptNextAction();
                 return;
             }
@@ -357,7 +354,7 @@ namespace GourmetProject.Game.Orchestration
             {
                 _run.ClearPendingActionExecution();
                 float previousDay = ActionExecutor.Commit(_run, context);
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 ResolveNodes(PromptNextAction, previousDay);
             };
         }
@@ -459,7 +456,7 @@ namespace GourmetProject.Game.Orchestration
                 float previousDay = _run.CurrentDay;
                 TimelineService.AdvanceDays(_run, 1f);
                 _run.AdvanceActionStep();
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 ResolveNodes(PromptNextAction, previousDay);
                 return;
             }
@@ -468,12 +465,12 @@ namespace GourmetProject.Game.Orchestration
             if (!context.IsValid)
             {
                 _run.AdvanceActionStep();
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 ResolveNodes(PromptNextAction);
                 return;
             }
 
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Effect, $"exec_r{context.RunStepIndex}_w{_run.WeekIndex}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}");
+            IRandomStream rng = _run.Random.DomainStream(SeedDomains.Effect, $"exec_r{context.RunStepIndex}_w{_run.WeekIndex}_s{context.StepIndex}_{context.ActionGroupId}_{context.Action.Id}");
             ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
 
             // 进入行动时只记录可恢复的 pending 页面，不推进天数/步数；只有玩家明确结算
@@ -489,7 +486,7 @@ namespace GourmetProject.Game.Orchestration
 
                 committed = true;
                 ActionExecutor.Commit(_run, context);
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
             }
 
             void CommitAndResolveNodes()
@@ -536,7 +533,7 @@ namespace GourmetProject.Game.Orchestration
 
             if (isWin)
             {
-                GameAnalyticsService.TrackBattleSettled(
+                TrackBattleSettled(
                     _run, settledBattleKey, analyticsIsBoss, analyticsBossId,
                     result?.Total ?? BigDouble.Zero, true, true, false, _run.HeartsRemaining);
                 SettleFoodPassives(battleFood, battleContext, settledBattleKey, survived: true);
@@ -547,7 +544,7 @@ namespace GourmetProject.Game.Orchestration
                 EnsurePendingBattleReward(battleContext);
 
                 // 达标：发奖（不推进周），奖励确认后继续编排。
-                GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.BattleReward());
+                _view.OpenRewardForm(RewardFormOpenArgs.BattleReward());
                 return;
             }
 
@@ -561,7 +558,7 @@ namespace GourmetProject.Game.Orchestration
                     _run.RestoreHearts(1);
                 }
 
-                GameAnalyticsService.TrackBattleSettled(
+                TrackBattleSettled(
                     _run, settledBattleKey, analyticsIsBoss, analyticsBossId,
                     result?.Total ?? BigDouble.Zero, false, true, false, _run.HeartsRemaining);
 
@@ -573,24 +570,24 @@ namespace GourmetProject.Game.Orchestration
                 EnsurePendingBattleReward(battleContext);
                 _currentBattleIsBoss = false;
                 _view.ResetBossBattlePresentation();
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 string itemName = ItemDefinition.Get(_run.Tables, "item_famous_knife")?.Name ?? "名刀";
-                _view.ShowNotice(itemName, $"分数未达标，但{itemName}替你挡下了失败（装饰品和消耗品已消耗）。", () =>
-                {
-                    GameApp.UI.OpenUIForm(
-                        UIForms.Reward,
-                        UIForms.GroupDialog,
-                        RewardFormOpenArgs.BattleReward());
-                });
+                _view.ShowNotice(
+                    itemName,
+                    $"[strong]分数[/strong]未达标，但{itemName}替你挡下了失败（[term]装饰品[/term]和[term]消耗品[/term]已消耗）。",
+                    () =>
+                    {
+                        _view.OpenRewardForm(RewardFormOpenArgs.BattleReward());
+                    });
                 return;
             }
 
             if (!_run.TryLoseHearts(heartLoss, out int before, out int after))
             {
-                GameAnalyticsService.TrackBattleSettled(
+                TrackBattleSettled(
                     _run, settledBattleKey, analyticsIsBoss, analyticsBossId,
                     result?.Total ?? BigDouble.Zero, false, false, true, 0);
-                GameAnalyticsService.TrackRunEnded(_run, "hearts_zero", isDeath: true);
+                TrackRunEnded("hearts_zero", isDeath: true);
                 // 防御性兜底：开发期旧存档或中断状态可能已经为 0；仍必须先展示最后碎心页，不能直跳失败页。
                 SettleFoodPassives(battleFood, battleContext, settledBattleKey, survived: false);
                 _beforeBattleReward = null;
@@ -604,18 +601,18 @@ namespace GourmetProject.Game.Orchestration
                     BattleTotalBig = BigNumberSaveData.From(result?.Total ?? BigDouble.Zero),
                     IsTerminal = true,
                 });
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 ShowPendingHeartBreak();
                 return;
             }
 
             bool terminal = after <= 0;
-            GameAnalyticsService.TrackBattleSettled(
+            TrackBattleSettled(
                 _run, settledBattleKey, analyticsIsBoss, analyticsBossId,
                 result?.Total ?? BigDouble.Zero, false, !terminal, terminal, after);
             if (terminal)
             {
-                GameAnalyticsService.TrackRunEnded(_run, "hearts_zero", isDeath: true);
+                TrackRunEnded("hearts_zero", isDeath: true);
             }
             SettleFoodPassives(battleFood, battleContext, settledBattleKey, survived: !terminal);
             _run.SetPendingHeartBreak(new PendingHeartBreakSaveData
@@ -642,7 +639,7 @@ namespace GourmetProject.Game.Orchestration
             }
 
             _currentBattleIsBoss = false;
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
             ShowPendingHeartBreak();
         }
 
@@ -689,7 +686,7 @@ namespace GourmetProject.Game.Orchestration
             }
 
             string rewardSeedKey = $"{settledBattleKey}_food_settlement";
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Reward, rewardSeedKey);
+            IRandomStream rng = _run.Random.DomainStream(SeedDomains.Reward, rewardSeedKey);
             IReadOnlyList<FoodSettlementReward> rewards =
                 new ItemRuntime(_run).OnFoodBattleSettled(actionContext, survived, rng);
             for (int i = 0; i < rewards.Count; i++)
@@ -765,7 +762,7 @@ namespace GourmetProject.Game.Orchestration
             {
                 _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
                 _run.ClearPendingActionExecution();
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 PromptNextAction();
                 return;
             }
@@ -775,7 +772,7 @@ namespace GourmetProject.Game.Orchestration
                 data.SlotEventId,
                 data.SlotSpinsUsed,
                 SlotExecutionStage.Ready);
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
 
             ActionOutcome outcome = ActionOutcome.Slot(data.SlotEventId);
             ResolveSlotAction(
@@ -810,7 +807,7 @@ namespace GourmetProject.Game.Orchestration
             if (_run != null)
             {
                 _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
             }
 
             if (pending == null)
@@ -844,7 +841,7 @@ namespace GourmetProject.Game.Orchestration
             _afterBattleWin = ContinueAfterRecoveredBattleReward;
             _beforeBattleReward = null;
             _view.RestorePendingRewardBattleView();
-            GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.BattleReward());
+            _view.OpenRewardForm(RewardFormOpenArgs.BattleReward());
         }
 
         private void OpenPendingHeartBreak()
@@ -890,8 +887,8 @@ namespace GourmetProject.Game.Orchestration
             }
 
             _run.ClearPendingHeartBreak();
-            RunPersistence.Save(_run);
-            GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.BattleReward());
+            _run?.RequestSave();
+            _view.OpenRewardForm(RewardFormOpenArgs.BattleReward());
         }
 
         private void ContinueAfterRecoveredBattleReward()
@@ -900,7 +897,7 @@ namespace GourmetProject.Game.Orchestration
             if (context == null || context.Action == null)
             {
                 _run.ClearPendingActionExecution();
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 PromptNextAction();
                 return;
             }
@@ -919,7 +916,7 @@ namespace GourmetProject.Game.Orchestration
 
             _run.ClearPendingActionExecution();
             float previousDay = ActionExecutor.Commit(_run, context);
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
             ResolveNodes(PromptNextAction, previousDay);
         }
 
@@ -929,13 +926,13 @@ namespace GourmetProject.Game.Orchestration
             RewardOffer offer = _run.GetPendingRewardOffer(rewardKey);
             if (offer == null)
             {
-                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Reward, rewardKey);
+                IRandomStream rng = _run.Random.DomainStream(SeedDomains.Reward, rewardKey);
                 offer = RewardGranter.GenerateOffer(_run, _run.CurrentWeek, rng, actionContext);
                 _run.SetPendingRewardOffer(rewardKey, offer);
             }
 
             _view.SavePendingRewardBattleView();
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
         }
 
         /// <summary>时间轴走完：完成周末兼容结算并推进到下一周。</summary>
@@ -943,9 +940,10 @@ namespace GourmetProject.Game.Orchestration
         {
             ApplyEndOfWeekItemSettlement();
             _run.IncrementWeek();
-            GameAnalyticsService.TrackRunCheckpoint(_run, _run.WeekIndex, 0);
+            _run.Execution.Telemetry.Track(
+                () => GameAnalyticsService.TrackRunCheckpoint(_run, _run.WeekIndex, 0));
             _run.RequiredScoreOverride = -1;
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
             BeginWeek();
         }
 
@@ -1066,12 +1064,12 @@ namespace GourmetProject.Game.Orchestration
                 if (!mutation.Changed)
                 {
                     _run.MarkNodeTriggered(node.Id);
-                    RunPersistence.Save(_run);
+                    _run?.RequestSave();
                     ProcessNextNode();
                     return;
                 }
 
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 _view.ShowTimelineNodeSkipped(node, mutation, ProcessNextNode);
                 return;
             }
@@ -1084,7 +1082,7 @@ namespace GourmetProject.Game.Orchestration
         {
             _timelinePresentationActive = false;
             _view.EndTimelineAdvanceSequence();
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
             Action cb = _afterNodes;
             _afterNodes = null;
             cb?.Invoke();
@@ -1126,7 +1124,7 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
             cfg.TimelineNode node = TimelineService.GetNode(_run, nodeId);
             if (node == null)
             {
@@ -1159,7 +1157,7 @@ namespace GourmetProject.Game.Orchestration
                             : null,
                         IsExtraTimelineExecution = true,
                     };
-                    IRandomStream rng = GameApp.Random.DomainStream(
+                    IRandomStream rng = _run.Random.DomainStream(
                         SeedDomains.Effect,
                         $"extra_node_w{_run.WeekIndex}_{node.Id}_{action.Id}");
                     ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
@@ -1169,7 +1167,7 @@ namespace GourmetProject.Game.Orchestration
                         () =>
                         {
                             _run.ClearPendingActionExecution();
-                            RunPersistence.Save(_run);
+                            _run?.RequestSave();
                             _view.PlayTimelineNodeCue(
                                 node.Id,
                                 TimelinePresentationCueKind.TriggerComplete,
@@ -1212,7 +1210,7 @@ namespace GourmetProject.Game.Orchestration
                 context.TargetScoreDayOverride = node.Day;
             }
 
-            IRandomStream rng = GameApp.Random.DomainStream(
+            IRandomStream rng = _run.Random.DomainStream(
                 SeedDomains.Effect,
                 $"node_w{_run.WeekIndex}_{node.Id}_{action.Id}_repeat{context.NodeRepeatIndex}");
             ActionOutcome outcome = ActionExecutor.Execute(_run, context, rng);
@@ -1239,7 +1237,7 @@ namespace GourmetProject.Game.Orchestration
                 _run.MarkNodeTriggered(node.Id);
             }
 
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
             if (repeatIndex < repeatTotal)
             {
                 Action showRepeat = () => ActivateAndShowNextTimelineNodeRepeatCard(
@@ -1281,14 +1279,14 @@ namespace GourmetProject.Game.Orchestration
             _run.ClearPendingActionExecution();
             if (context == null || string.IsNullOrEmpty(context.SourceKey))
             {
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 PromptNextAction();
                 return;
             }
 
             if (context.IsExtraTimelineExecution)
             {
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 _view.PlayTimelineNodeCue(
                     context.SourceKey,
                     TimelinePresentationCueKind.TriggerComplete,
@@ -1309,7 +1307,7 @@ namespace GourmetProject.Game.Orchestration
                 _run.MarkNodeTriggered(node.Id);
             }
 
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
             if (node != null)
             {
                 _view.PlayTimelineNodeCue(
@@ -1331,7 +1329,7 @@ namespace GourmetProject.Game.Orchestration
             int repeatTotal,
             Action onNodeDone)
         {
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
             new ItemRuntime(_run).FlashTriggered(
                 model => model.TimelineNodeRepeatCount(action.Behavior) > 1);
             _view.ShowTimelineNodeCard(
@@ -1466,7 +1464,7 @@ namespace GourmetProject.Game.Orchestration
         private void SavePendingActionExecution(ActionExecutionContext context, ActionOutcome outcome, string resolvedEventId = null)
         {
             _run.SetPendingActionExecution(context, outcome, resolvedEventId);
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
         }
 
         private void StartBossBattle(
@@ -1475,7 +1473,7 @@ namespace GourmetProject.Game.Orchestration
             Action onContinue,
             Action onBossComplete)
         {
-            cfg.Tables tables = _run.Tables ?? GameApp.Config.Tables;
+            cfg.Tables tables = _run.Tables;
             cfg.Food boss = tables.TbFood.GetOrDefault(outcome.BossId);
             _run.MarkBossDebuffRolled(outcome.BossDebuffId);
             StartBattle(
@@ -1498,7 +1496,7 @@ namespace GourmetProject.Game.Orchestration
                 ? outcome.BossId
                 : boss?.Id ?? string.Empty;
             MarkBossCompletedAndApplyGold(bossId);
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
         }
 
         private void MarkBossCompletedAndApplyGold(string bossId)
@@ -1542,7 +1540,7 @@ namespace GourmetProject.Game.Orchestration
         private void CompleteFinalWeek()
         {
             ApplyEndOfWeekItemSettlement();
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
             if (_run.HeartsRemaining > 0)
             {
                 OnVictory();
@@ -1595,10 +1593,8 @@ namespace GourmetProject.Game.Orchestration
                 if (_run.HasPendingGenericRewards)
                 {
                     _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.Slot;
-                    RunPersistence.Save(_run);
-                    GameApp.UI.OpenUIForm(
-                        UIForms.Reward,
-                        UIForms.GroupDialog,
+                    _run?.RequestSave();
+                    _view.OpenRewardForm(
                         RewardFormOpenArgs.GenericQueue(PendingGenericRewardContinuationKind.Slot));
                     return;
                 }
@@ -1608,7 +1604,7 @@ namespace GourmetProject.Game.Orchestration
                     config.Event.Id,
                     data.SlotSpinsUsed,
                     SlotExecutionStage.Ready);
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 data = _run.GetPendingActionExecution();
             }
 
@@ -1713,7 +1709,7 @@ namespace GourmetProject.Game.Orchestration
 
             int spinIndex = expectedSpinsUsed + 1;
             string spinKey = SlotService.BuildSpinKey(_run, context, spinIndex);
-            IRandomStream rng = GameApp.Random?.DomainStream(SeedDomains.Slot, spinKey);
+            IRandomStream rng = _run.Random?.DomainStream(SeedDomains.Slot, spinKey);
             SlotSpinResult result = SlotService.Roll(_run, config, rng, context);
             if (!result.Success)
             {
@@ -1735,7 +1731,7 @@ namespace GourmetProject.Game.Orchestration
                     config.Event.Id,
                     spinIndex,
                     SlotExecutionStage.EmptyResult);
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 ShowSlotEmptyResult(context, config, spinIndex, onDone);
                 return;
             }
@@ -1748,10 +1744,8 @@ namespace GourmetProject.Game.Orchestration
                 rewardKey);
             _run.EnqueueGenericRewardOffer(rewardKey, config.Event.Name, result.Offer);
             _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.Slot;
-            RunPersistence.Save(_run);
-            GameApp.UI.OpenUIForm(
-                UIForms.Reward,
-                UIForms.GroupDialog,
+            _run?.RequestSave();
+            _view.OpenRewardForm(
                 RewardFormOpenArgs.GenericQueue(PendingGenericRewardContinuationKind.Slot));
         }
 
@@ -1789,7 +1783,7 @@ namespace GourmetProject.Game.Orchestration
                         config.Event.Id,
                         spinsUsed,
                         SlotExecutionStage.Ready);
-                    RunPersistence.Save(_run);
+                    _run?.RequestSave();
                     if (finished)
                     {
                         FinishSlotAction(onDone);
@@ -1815,7 +1809,7 @@ namespace GourmetProject.Game.Orchestration
             }
 
             _run.ClearPendingActionExecution();
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
             PromptNextAction();
         }
 
@@ -1836,7 +1830,7 @@ namespace GourmetProject.Game.Orchestration
                 ? $"node_{context.SourceKey}_repeat{System.Math.Max(1, context.NodeRepeatIndex)}"
                 : $"action_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_s{_run.ActionStepIndex}";
 
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, seedKey);
+            IRandomStream rng = _run.Random.DomainStream(SeedDomains.Event, seedKey);
             cfg.GameEvent ev = string.IsNullOrEmpty(outcome?.EventId)
                 ? null
                 : _run.Tables.TbEvent.GetOrDefault(outcome.EventId);
@@ -1863,7 +1857,7 @@ namespace GourmetProject.Game.Orchestration
             if (ev == null)
             {
                 _run.ClearPendingActionExecution();
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 onDone?.Invoke();
                 return;
             }
@@ -1898,7 +1892,7 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
         }
 
         private void ResolveEvent(cfg.GameEvent ev, Action onDone)
@@ -1910,7 +1904,7 @@ namespace GourmetProject.Game.Orchestration
             }
 
             // 一个事件复用同一条随机流（Gamble 等随机效果按序派生），parentId 串起后续选项页。
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Event, $"resolve_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_{ev.Id}");
+            IRandomStream rng = _run.Random.DomainStream(SeedDomains.Event, $"resolve_w{_run.WeekIndex}_d{DayKey(_run.CurrentDay)}_{ev.Id}");
             EnterEventPage(ev, ev.Desc, EventService.GetRootOptions(_run, ev.Id), rng, onDone);
         }
 
@@ -2038,7 +2032,7 @@ namespace GourmetProject.Game.Orchestration
 
             // 金币和装饰品都已到账；事件也先标记完成再落盘，避免中断恢复时重复领取。
             EventService.OnEventFinished(_run, ev, result);
-            RunPersistence.Save(_run);
+            _run?.RequestSave();
             _view.ShowDirectPassiveItemAcquire(
                 directReward?.Item,
                 directReward?.AcquireResult ?? default,
@@ -2249,7 +2243,7 @@ namespace GourmetProject.Game.Orchestration
                     onDone,
                     persistEventRewardCompletion: true);
                 _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.Event;
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
                 _view.OpenRewardForm(
                     RewardFormOpenArgs.GenericQueue(PendingGenericRewardContinuationKind.Event));
                 return;
@@ -2273,7 +2267,7 @@ namespace GourmetProject.Game.Orchestration
             if (persistEventRewardCompletion && _run != null)
             {
                 _run.PendingGenericRewardContinuation = PendingGenericRewardContinuationKind.None;
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
             }
 
             ExitEventAndContinueAfterRewards(onDone);
@@ -2409,7 +2403,7 @@ namespace GourmetProject.Game.Orchestration
             {
                 // 事件选项进入的商店复用原事件 pending，没有新的行动快照可写；
                 // 仍需立即保存本次进入金币，避免中断恢复后丢失本次结算。
-                RunPersistence.Save(_run);
+                _run?.RequestSave();
             }
 
             _view.OpenShop();
@@ -2443,6 +2437,36 @@ namespace GourmetProject.Game.Orchestration
         {
             _view.HideBattleWorld();
             _view.ShowRunResult(true, _view.LastBattleTotal);
+        }
+
+        private static void TrackBattleSettled(
+            GameRun run,
+            string battleKey,
+            bool isBoss,
+            string bossId,
+            BigDouble total,
+            bool passed,
+            bool survived,
+            bool terminal,
+            int heartsRemaining)
+        {
+            run?.Execution?.Telemetry.Track(() =>
+                GameAnalyticsService.TrackBattleSettled(
+                    run,
+                    battleKey,
+                    isBoss,
+                    bossId,
+                    total,
+                    passed,
+                    survived,
+                    terminal,
+                    heartsRemaining));
+        }
+
+        private void TrackRunEnded(string reason, bool isDeath)
+        {
+            _run?.Execution?.Telemetry.Track(
+                () => GameAnalyticsService.TrackRunEnded(_run, reason, isDeath));
         }
     }
 }

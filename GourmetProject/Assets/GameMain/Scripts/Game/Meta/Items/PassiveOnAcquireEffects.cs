@@ -17,10 +17,12 @@ namespace GourmetProject.Game.Meta
     public static class PassiveOnAcquireEffects
     {
         private const string Tag = "Item";
-        private static IRandomStream Rng(string itemId)
+        private static IRandomStream Rng(GameRun run, string itemId)
         {
             // 需要随机的效果按 SeedDomains.Item 派生确定性流；未初始化随机系统（如 EditMode 单测）时为 null，逐效果兜底。
-            return GameApp.Random?.DomainStream(SeedDomains.Item, $"onacq_{itemId}");
+            return run?.Random != null && run.Random.IsInitialized
+                ? run.Random.DomainStream(SeedDomains.Item, $"onacq_{itemId}")
+                : null;
         }
 
         /// <summary>随机金币：effectParam="range:min,max"，闭区间随机；无随机流时取区间中值兜底。</summary>
@@ -39,7 +41,7 @@ namespace GourmetProject.Game.Meta
                 max = min;
             }
 
-            IRandomStream rng = Rng(item.Id);
+            IRandomStream rng = Rng(run, item.Id);
             int gold = rng != null ? rng.Range(min, max + 1) : (min + max) / 2;
             run.Gold += System.Math.Max(0, gold);
         }
@@ -93,7 +95,7 @@ namespace GourmetProject.Game.Meta
                 return;
             }
 
-            IRandomStream rng = Rng(sourceItem.Id);
+            IRandomStream rng = Rng(run, sourceItem.Id);
             if (rng == null)
             {
                 Log.Info($"{sourceItem.Name} 缺少随机流，已跳过。", Tag);
@@ -108,7 +110,7 @@ namespace GourmetProject.Game.Meta
             }
 
             run.EnqueueGenericRewardOffer(BuildAcquireKey(run, sourceItem.Id), sourceItem.Name, offer);
-            OpenGenericRewardForm();
+            OpenGenericRewardForm(run);
         }
 
         /// <summary>全家福：EffectValue 金币 + EffectParam="装饰品槽组|食物槽组" 各发一份，合成一个通用领奖包。</summary>
@@ -119,7 +121,7 @@ namespace GourmetProject.Game.Meta
                 return;
             }
 
-            IRandomStream rng = Rng(item.Id);
+            IRandomStream rng = Rng(run, item.Id);
             if (rng == null)
             {
                 Log.Info($"{item.Name} 缺少随机流，已跳过。", Tag);
@@ -144,7 +146,7 @@ namespace GourmetProject.Game.Meta
             }
 
             run.EnqueueGenericRewardOffer(BuildAcquireKey(run, item.Id), item.Name, offer);
-            OpenGenericRewardForm();
+            OpenGenericRewardForm(run);
         }
 
         public static void RandomizeItems(GameRun run, ItemDefinition sourceItem)
@@ -154,7 +156,7 @@ namespace GourmetProject.Game.Meta
                 return;
             }
 
-            IRandomStream rng = Rng(sourceItem.Id);
+            IRandomStream rng = Rng(run, sourceItem.Id);
             if (rng == null)
             {
                 Log.Info("RandomizeItems 缺少随机流，已跳过。", Tag);
@@ -194,9 +196,9 @@ namespace GourmetProject.Game.Meta
                 results.Add(new RandomizedItemResult(item, result));
             }
 
-            RunPersistence.Save(run);
+            run.RequestSave();
 
-            BattleForm battle = BattleForm.Active;
+            BattleForm battle = run.Execution.Presentation.Read(() => BattleForm.Active);
             if (battle != null)
             {
                 battle.OpenRandomizedItemsPanel(sourceItem.Name, results);
@@ -211,7 +213,7 @@ namespace GourmetProject.Game.Meta
             }
 
             run.AddActionRerollCount(count);
-            RunPersistence.Save(run);
+            run.RequestSave();
         }
 
         private static string BuildAcquireKey(GameRun run, string itemId)
@@ -220,14 +222,17 @@ namespace GourmetProject.Game.Meta
             return $"onacq_{itemId}_w{run.WeekIndex}_d{day}_s{run.RunActionStepIndex}_{run.NextActiveUseKey()}";
         }
 
-        private static void OpenGenericRewardForm()
+        private static void OpenGenericRewardForm(GameRun run)
         {
-            if (GameApp.UI.HasUIForm(UIForms.Reward))
+            run?.Execution?.Presentation.Present(() =>
             {
-                return;
-            }
+                if (GameApp.UI.HasUIForm(UIForms.Reward))
+                {
+                    return;
+                }
 
-            GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.GenericQueue());
+                GameApp.UI.OpenUIForm(UIForms.Reward, UIForms.GroupDialog, RewardFormOpenArgs.GenericQueue());
+            });
         }
 
         /// <summary>解析 "range:min,max"（或 "min,max"）到 min/max。</summary>

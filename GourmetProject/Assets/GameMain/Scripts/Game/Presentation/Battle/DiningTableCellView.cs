@@ -76,6 +76,11 @@ namespace GourmetProject.Game.Presentation.Battle
                     return _tableRenderer.bounds;
                 }
 
+                if (_tableRenderer != null && _tableRenderer.sprite != null)
+                {
+                    return _tableRenderer.bounds;
+                }
+
                 return new Bounds(transform.position, Vector3.one);
             }
         }

@@ -272,6 +272,68 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(targetScore.FlatBonus.ToDouble(), Is.EqualTo(24d).Within(0.0001d));
         }
 
+        [Test]
+        public void DishCountInstances_SumsEffectiveServings()
+        {
+            var rule = new SkillRuleDef(
+                "serving_count_rule",
+                "serving_count_skill",
+                0,
+                SkillTrigger.OnSettle,
+                SkillConditionType.DishCount,
+                SkillScope.All,
+                CountUnit.Instances,
+                CountMode.Per,
+                string.Empty,
+                SkillActionType.AddFlat,
+                SkillScope.Self,
+                0,
+                new[] { 1f },
+                Array.Empty<string>());
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            DishDef sourceDef = new DishDef(
+                "serving_count_source",
+                "serving_count_source",
+                0,
+                shape,
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty,
+                countAs: 1);
+            DishDef targetDef = new DishDef(
+                "serving_count_target",
+                "serving_count_target",
+                0,
+                shape,
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty,
+                countAs: 3);
+            var source = new DishInstance(
+                1,
+                sourceDef,
+                new Placement(shape, 0, new GridPos(0, 0)),
+                Array.Empty<string>(),
+                Array.Empty<string>());
+            var target = new DishInstance(
+                2,
+                targetDef,
+                new Placement(shape, 0, new GridPos(1, 0)),
+                Array.Empty<string>(),
+                Array.Empty<string>());
+            var table = new DiningTable(2, 1);
+            table.Place(source);
+            table.Place(target);
+
+            Assert.That(
+                SkillConditionEvaluator.Evaluate(rule, table, EmptyScoreHistory.Instance, source),
+                Is.EqualTo(4));
+        }
+
         [TestCase(CountUnit.Instances, "份")]
         [TestCase(CountUnit.PhysicalInstances, "个")]
         [TestCase(CountUnit.Kinds, "种")]

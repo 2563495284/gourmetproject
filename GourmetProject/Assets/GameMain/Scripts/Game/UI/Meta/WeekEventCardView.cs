@@ -133,7 +133,11 @@ namespace GourmetProject.Game.UI.Meta
         /// <summary>事件「n 选一」单个选项卡：卡名 = 选项文案，页脚标注为节点行动，无耗时行。</summary>
         public void BindEventOption(string optionText, Action onPick)
         {
-            ApplyCommon(string.IsNullOrWhiteSpace(optionText) ? "选项" : optionText, string.Empty, onPick);
+            ApplyCommon(
+                string.IsNullOrWhiteSpace(optionText) ? "选项" : optionText,
+                string.Empty,
+                onPick,
+                formatTitleAsDescription: true);
             ConfigureTitleAnimation(ActionDisplayKind.Event);
             SetFooter(NodeEventFooter, true, FooterNodeColor);
             SetArt(Resources.Load<Sprite>("Sprites/UI/card_action_event"));
@@ -302,10 +306,24 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private void ApplyCommon(string title, string desc, Action onPick)
+        private void ApplyCommon(
+            string title,
+            string desc,
+            Action onPick,
+            bool formatTitleAsDescription = false)
         {
             ApplyCardSkin(CardSkin.Event);
-            SetText(_nameText, title);
+            if (formatTitleAsDescription)
+            {
+                if (_nameText != null)
+                {
+                    SemanticDescriptionFormatter.Set(_nameText, title);
+                }
+            }
+            else
+            {
+                SetText(_nameText, title);
+            }
             SetDescription(desc);
 
             _onPick = onPick;
@@ -380,9 +398,9 @@ namespace GourmetProject.Game.UI.Meta
         private void SetDescription(string desc)
         {
             bool visible = !string.IsNullOrWhiteSpace(desc);
-            SetText(_descText, desc);
             if (_descText != null)
             {
+                SemanticDescriptionFormatter.Set(_descText, desc);
                 _descText.gameObject.SetActive(visible);
             }
 

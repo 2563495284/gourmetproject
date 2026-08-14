@@ -1,5 +1,6 @@
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.UI.Hud;
+using GourmetProject.Game.UI.Common;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -40,9 +41,10 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_descriptionText != null)
             {
-                _descriptionText.text = result != null && result.AcquireResult.Outcome == ItemAcquireOutcome.ConvertedToGold
-                    ? $"金币 +{result.AcquireResult.Gold}"
+                string description = result != null && result.AcquireResult.Outcome == ItemAcquireOutcome.ConvertedToGold
+                    ? $"[gold]金币+{result.AcquireResult.Gold}[/gold]"
                     : item != null ? item.Desc : string.Empty;
+                SemanticDescriptionFormatter.Set(_descriptionText, description);
             }
         }
 

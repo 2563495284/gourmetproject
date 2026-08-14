@@ -59,7 +59,7 @@ namespace GourmetProject.Game.Meta
             }
 
             bool activeItem = kind == cfg.ItemKind.Active;
-            progress ??= MetaProgressPersistence.Load();
+            progress ??= run.MetaProgress;
             List<ItemDefinition> candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: !activeItem, requiredTag, progress);
             if (candidates.Count == 0 && !activeItem)
             {
@@ -122,7 +122,7 @@ namespace GourmetProject.Game.Meta
                 return result;
             }
 
-            progress ??= MetaProgressPersistence.Load();
+            progress ??= run.MetaProgress;
             int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
             int distanceFloor = System.Math.Max(1, tables.TbGameBase.HiddenScoreDistanceFloor);
             List<ItemDefinition> candidates = BuildFilteredCandidates(

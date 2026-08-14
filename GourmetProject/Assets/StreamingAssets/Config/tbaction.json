@@ -184,7 +184,7 @@
   {
     "id": "act_interest",
     "name": "收取利息",
-    "desc": "满4金币收获1金币\n最多收获50金币",
+    "desc": "满[gold]4金币[/gold]收获[gold]1金币[/gold]\n最多收获[gold]50金币[/gold]",
     "behavior": 5,
     "foodId": "",
     "effectType": 0,
@@ -212,7 +212,7 @@
   {
     "id": "act_slot",
     "name": "抽奖机",
-    "desc": "投入金币，抽取未知奖励",
+    "desc": "投入[gold]金币[/gold]，抽取未知奖励",
     "behavior": 7,
     "foodId": "",
     "effectType": 0,
@@ -226,7 +226,7 @@
   {
     "id": "act_loan_repay",
     "name": "偿还高利贷",
-    "desc": "扣除200 金币",
+    "desc": "扣除[gold]200 金币[/gold]",
     "behavior": 6,
     "foodId": "",
     "effectType": 1,
@@ -240,7 +240,7 @@
   {
     "id": "act_gold_clear",
     "name": "月末清算",
-    "desc": "扣除所有金币",
+    "desc": "扣除所有[gold]金币[/gold]",
     "behavior": 6,
     "foodId": "",
     "effectType": 24,

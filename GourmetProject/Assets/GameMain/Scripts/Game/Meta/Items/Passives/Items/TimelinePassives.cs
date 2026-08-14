@@ -13,13 +13,15 @@ namespace GourmetProject.Game.Meta.Passives
         protected IRandomStream Rng()
         {
             string key = $"onacq_{ItemId}_w{Run.WeekIndex}_d{Run.CurrentDay:0.0}_s{Run.RunActionStepIndex}";
-            return GameApp.Random?.DomainStream(SeedDomains.Item, key);
+            return Run?.Random != null && Run.Random.IsInitialized
+                ? Run.Random.DomainStream(SeedDomains.Item, key)
+                : null;
         }
 
         protected void Finish(TimelineMutationResult result)
         {
             MarkIconUsed();
-            RunPersistence.Save(Run);
+            Run.RequestSave();
             PassiveMutationPresenter.ShowTimeline(Run, result);
         }
     }

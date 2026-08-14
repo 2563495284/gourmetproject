@@ -51,7 +51,7 @@
       30
     ],
     "name": "金币",
-    "ruleTemplate": "金币+ {requiredPickCount}"
+    "ruleTemplate": "[gold]金币+ {requiredPickCount}[/gold]"
   },
   {
     "id": "slot_specific_fragment",
@@ -105,7 +105,7 @@
       0
     ],
     "name": "装饰品",
-    "ruleTemplate": "从 {choiceCount} 个装饰品中选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个[term]装饰品[/term]中选择 {requiredPickCount} 个"
   },
   {
     "id": "slot_specific_active_strengthen",
@@ -186,7 +186,7 @@
       0
     ],
     "name": "装饰品",
-    "ruleTemplate": "从 {choiceCount} 个装饰品中选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个[term]装饰品[/term]中选择 {requiredPickCount} 个"
   },
   {
     "id": "slot_specific_hard_active_strengthen",
@@ -294,7 +294,7 @@
       0
     ],
     "name": "装饰品",
-    "ruleTemplate": "从 {choiceCount} 个装饰品中选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个[term]装饰品[/term]中选择 {requiredPickCount} 个"
   },
   {
     "id": "slot_boss_fragment",
@@ -348,7 +348,7 @@
       0
     ],
     "name": "金币",
-    "ruleTemplate": "金币+ {requiredPickCount}"
+    "ruleTemplate": "[gold]金币+ {requiredPickCount}[/gold]"
   },
   {
     "id": "dish_choice_3",
@@ -429,7 +429,7 @@
       0
     ],
     "name": "装饰品",
-    "ruleTemplate": "随机获得 {requiredPickCount} 个装饰品"
+    "ruleTemplate": "随机获得 {requiredPickCount} 个[term]装饰品[/term]"
   },
   {
     "id": "passive_choice_3",
@@ -456,7 +456,7 @@
       0
     ],
     "name": "装饰品",
-    "ruleTemplate": "从 {choiceCount} 个装饰品中选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个[term]装饰品[/term]中选择 {requiredPickCount} 个"
   },
   {
     "id": "passive_grant_2",
@@ -483,7 +483,7 @@
       0
     ],
     "name": "装饰品",
-    "ruleTemplate": "获得全部 {choiceCount} 个装饰品"
+    "ruleTemplate": "获得全部 {choiceCount} 个[term]装饰品[/term]"
   },
   {
     "id": "active_grant_1",
@@ -510,7 +510,7 @@
       0
     ],
     "name": "消耗品",
-    "ruleTemplate": "随机获得 {requiredPickCount} 个消耗品"
+    "ruleTemplate": "随机获得 {requiredPickCount} 个[term]消耗品[/term]"
   },
   {
     "id": "active_grant_2",
@@ -537,7 +537,7 @@
       0
     ],
     "name": "消耗品",
-    "ruleTemplate": "获得全部 {choiceCount} 个消耗品"
+    "ruleTemplate": "获得全部 {choiceCount} 个[term]消耗品[/term]"
   },
   {
     "id": "active_choice_3",
@@ -564,7 +564,7 @@
       0
     ],
     "name": "消耗品选择",
-    "ruleTemplate": "从 {choiceCount} 个消耗品中选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个[term]消耗品[/term]中选择 {requiredPickCount} 个"
   },
   {
     "id": "fragment_choice_3",
@@ -645,7 +645,7 @@
       0
     ],
     "name": "传说装饰品",
-    "ruleTemplate": "随机获得 {requiredPickCount} 个传说装饰品"
+    "ruleTemplate": "随机获得 {requiredPickCount} 个传说[term]装饰品[/term]"
   },
   {
     "id": "lay_wood",
@@ -753,7 +753,7 @@
       30
     ],
     "name": "金币",
-    "ruleTemplate": "金币+ {requiredPickCount}"
+    "ruleTemplate": "[gold]金币+ {requiredPickCount}[/gold]"
   },
   {
     "id": "slot_machine_fragment",
@@ -807,7 +807,7 @@
       0
     ],
     "name": "消耗品",
-    "ruleTemplate": "随机获得 {requiredPickCount} 个消耗品"
+    "ruleTemplate": "随机获得 {requiredPickCount} 个[term]消耗品[/term]"
   },
   {
     "id": "slot_machine_passive",
@@ -834,7 +834,7 @@
       0
     ],
     "name": "装饰品",
-    "ruleTemplate": "从 {choiceCount} 个装饰品中选择 {requiredPickCount} 个"
+    "ruleTemplate": "从 {choiceCount} 个[term]装饰品[/term]中选择 {requiredPickCount} 个"
   },
   {
     "id": "flavored_dish_2",

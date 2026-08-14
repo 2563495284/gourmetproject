@@ -500,7 +500,7 @@ namespace GourmetProject.Game.Meta
                 return run.CurrentWeek;
             }
 
-            return run.TotalWeeks > 0 ? GameApp.Config.Tables.TbWeek.GetOrDefault(run.TotalWeeks) : null;
+            return run.TotalWeeks > 0 ? run.Tables?.TbWeek?.GetOrDefault(run.TotalWeeks) : null;
         }
 
         private static cfg.RewardPackage ResolvePackage(GameRun run, ActionExecutionContext actionContext)

@@ -29,14 +29,16 @@ namespace GourmetProject.Game.Run
 
         public static void Save(GameRun run)
         {
-            if (run == null || _saveSuppressionDepth > 0)
+            if (run == null
+                || !run.Execution.Saves.Enabled
+                || _saveSuppressionDepth > 0)
             {
                 return;
             }
 
             RunSaveData data = run.ToSaveData();
             data.ActionRandomRuleVersion = CurrentActionRandomRuleVersion;
-            data.RandomSnapshot = GameApp.Random.Capture();
+            data.RandomSnapshot = run.Random.Capture();
             GameSaveData root = GameSavePersistence.Load();
             root.Run = data;
             GameSavePersistence.Save(root);
@@ -95,7 +97,13 @@ namespace GourmetProject.Game.Run
                 GameApp.Random.Init(data.SeedText);
             }
 
-            GameRun run = GameRun.FromSaveData(tables, db, data);
+            GameRun run = GameRun.FromSaveData(
+                tables,
+                db,
+                data,
+                RunExecutionEnvironment.CreateLive(
+                    GameApp.Random,
+                    GourmetProject.Game.Meta.MetaProgressPersistence.Load()));
             Log.Info($"Run loaded. character={run.CharacterId}, week={run.WeekIndex}.", Tag);
             return run;
         }

@@ -197,7 +197,7 @@
   {
     "id": "item_active_reroll_action",
     "name": "奖励翻倍单",
-    "desc": "下次营业从基础食物、基础金币、特定奖励中随机一种\n重新随机并额外发放一份",
+    "desc": "下次营业从基础食物、基础[gold]金币[/gold]、特定奖励中随机一种\n重新随机并额外发放一份",
     "specialTags": "",
     "effectType": "DoubleNextBusinessReward",
     "effectValue": 0,
@@ -227,7 +227,7 @@
   {
     "id": "item_active_reroll_last_boss_debuff",
     "name": "评鉴调整单",
-    "desc": "重掷最近的星级评鉴",
+    "desc": "重掷最近的[context]星级评鉴[/context]",
     "specialTags": "",
     "effectType": "ResetBossDebuff",
     "effectValue": 0,

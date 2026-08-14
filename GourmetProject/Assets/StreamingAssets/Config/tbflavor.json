@@ -44,7 +44,7 @@
   {
     "id": "t_sour",
     "name": "酸",
-    "desc": "结算开始时，若仍在食谱中\n场上食物倍率 +0.5",
+    "desc": "[context]结算开始[/context]时，若仍在食谱中\n场上食物[strong]倍率[/strong] [multadd]+0.5[/multadd]",
     "effectType": 10,
     "effectParam": [],
     "effectValue": [
@@ -55,7 +55,7 @@
   {
     "id": "t_salty",
     "name": "咸",
-    "desc": "有 20% 概率额外结算 1 次",
+    "desc": "有 20% 概率[benefit]额外结算[/benefit] 1 次",
     "effectType": 11,
     "effectParam": [],
     "effectValue": [

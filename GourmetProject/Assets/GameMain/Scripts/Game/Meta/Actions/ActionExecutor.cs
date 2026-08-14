@@ -57,7 +57,8 @@ namespace GourmetProject.Game.Meta
 
             float committedCostDays = ResolveTimelineStopCost(run, context);
             prevDay = TimelineService.AdvanceDays(run, committedCostDays);
-            GameAnalyticsService.TrackCrossedDayCheckpoints(run, prevDay);
+            run.Execution.Telemetry.Track(
+                () => GameAnalyticsService.TrackCrossedDayCheckpoints(run, prevDay));
             if (context.HalfDayBuffApplied)
             {
                 run.TryConsumeNextDailyActionHalfCostStack();
@@ -73,7 +74,8 @@ namespace GourmetProject.Game.Meta
             float chance = System.Math.Max(0f, System.Math.Min(1f, context.TimelineStopChance));
             if (plannedCost <= TimelineMath.Epsilon
                 || chance <= 0f
-                || GameApp.Random == null)
+                || run.Random == null
+                || !run.Random.IsInitialized)
             {
                 return plannedCost;
             }
@@ -100,7 +102,7 @@ namespace GourmetProject.Game.Meta
             {
                 string key =
                     $"timeline_stop_r{context.RunStepIndex}_w{run.WeekIndex}_s{context.StepIndex}_d{day}";
-                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Item, key);
+                IRandomStream rng = run.Random.DomainStream(SeedDomains.Item, key);
                 if (rng == null || !rng.NextBool(chance))
                 {
                     continue;

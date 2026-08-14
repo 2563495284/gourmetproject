@@ -1,6 +1,7 @@
 using System;
 using DG.Tweening;
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.UI.Common;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -80,6 +81,13 @@ namespace GourmetProject.Game.UI.Hud
             if (_titleText != null)
             {
                 _titleText.text = item != null ? item.Name : "消耗品";
+            }
+
+            if (_descriptionText != null)
+            {
+                SemanticDescriptionFormatter.Set(
+                    _descriptionText,
+                    BuildDescription(item?.Desc, canUse, disabledReason));
             }
 
             BindButton(_useButton, "使用", canUse, () =>

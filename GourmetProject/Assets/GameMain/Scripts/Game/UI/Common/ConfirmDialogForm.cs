@@ -44,7 +44,7 @@ namespace GourmetProject.Game.UI.Common
 
             _data = userData as ConfirmDialogData ?? new ConfirmDialogData();
             _titleText.text = _data.Title;
-            _messageText.text = _data.Message;
+            SemanticDescriptionFormatter.Set(_messageText, _data.Message);
             _confirmLabel.text = _data.ConfirmText;
             _cancelLabel.text = _data.CancelText;
 

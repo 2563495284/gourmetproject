@@ -7,32 +7,41 @@ namespace GourmetProject.Game.Meta.Passives
     {
         public static void ShowRecipe(GameRun run, RecipeMutationResult result)
         {
-            if (result == null || !result.HasChanges)
+            if (run == null
+                || result == null
+                || !result.HasChanges)
             {
                 return;
             }
 
-            BattleForm.Active?.ShowPassiveRecipeMutation(result);
+            run.Execution.Presentation.Present(
+                () => BattleForm.Active?.ShowPassiveRecipeMutation(result));
         }
 
         public static void ShowCells(GameRun run, CellMutationResult result)
         {
-            if (result == null || !result.HasChanges)
+            if (run == null
+                || result == null
+                || !result.HasChanges)
             {
                 return;
             }
 
-            BattleForm.Active?.ShowPassiveCellMutation(result);
+            run.Execution.Presentation.Present(
+                () => BattleForm.Active?.ShowPassiveCellMutation(result));
         }
 
         public static void ShowTimeline(GameRun run, TimelineMutationResult result)
         {
-            if (result == null || !result.Changed)
+            if (run == null
+                || result == null
+                || !result.Changed)
             {
                 return;
             }
 
-            BattleForm.Active?.ShowPassiveTimelineMutation(result);
+            run.Execution.Presentation.Present(
+                () => BattleForm.Active?.ShowPassiveTimelineMutation(result));
         }
     }
 }

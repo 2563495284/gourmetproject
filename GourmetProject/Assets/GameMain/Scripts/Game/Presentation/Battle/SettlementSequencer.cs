@@ -2549,7 +2549,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             return new SettlementCue(
                 SettlementCueKind.Source,
-                $"分数 {FormatSigned(baseScore)}",
+                $"{Strong("分数")} {Semantic("score", FormatSigned(baseScore))}",
                 feedbackKind: SettlementDishFeedbackKind.DishBase,
                 valueChange: DishValueChange.Base(baseScore),
                 batchKey: batchKey,
@@ -2588,7 +2588,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.DishBase:
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
-                        $"分数 {FormatSigned(line.Value)}",
+                        $"{Strong("分数")} {Semantic("score", FormatSigned(line.Value))}",
                         feedbackKind: SettlementDishFeedbackKind.DishBase,
                         valueChange: DishValueChange.Base(line.After),
                         sourceName: sourceName,
@@ -2603,7 +2603,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
-                        $"分数 {FormatSigned(line.Value)}",
+                        $"{Strong("分数")} {Semantic("score", FormatSigned(line.Value))}",
                         feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.FlatReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.FlatBonus(line.After),
@@ -2619,7 +2619,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
-                        $"永久分数 {FormatSigned(line.Value)}",
+                        $"永久{Strong("分数")} {Semantic("score", FormatSigned(line.Value))}",
                         rise: 0.28f,
                         duration: 0.82f,
                         feedbackKind: SettlementDishFeedbackKind.PermanentFlatBonus,
@@ -2633,7 +2633,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.DishMultiplier:
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
-                        $"倍率 {FormatMultiplier(line.Value)}",
+                        $"{Strong("倍率")} {Semantic("multmul", FormatMultiplier(line.Value))}",
                         feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.Multiplier(line.After),
@@ -2644,7 +2644,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.DishMultiplierAdd:
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
-                        $"倍率 {FormatSigned(line.Value)}",
+                        $"{Strong("倍率")} {Semantic("multadd", FormatSigned(line.Value))}",
                         feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.MultiplierReveal(line.DishInstanceId, line.After, SweetTransferCardDelta(line.Source)),
                         valueChange: DishValueChange.Multiplier(line.After),
@@ -2655,7 +2655,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.ExtraSettlement:
                     cue = new SettlementCue(
                         SettlementCueKind.Source,
-                        $"额外结算 {FormatSigned(line.Value)}",
+                        $"{Semantic("benefit", "额外结算")} {Semantic("score", FormatSigned(line.Value))}",
                         rise: 0.4f,
                         duration: 0.9f,
                         feedbackKind: SettlementDishFeedbackKind.GenericValueChanged,
@@ -2667,7 +2667,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.FinalFlat:
                     cue = new SettlementCue(
                         SettlementCueKind.FinalModifier,
-                        $"分数 {FormatSigned(line.Value)}",
+                        $"{Strong("分数")} {Semantic("score", FormatSigned(line.Value))}",
                         rise: 0.7f,
                         duration: 1.1f,
                         sourceName: sourceName);
@@ -2676,7 +2676,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.FinalMultiplier:
                     cue = new SettlementCue(
                         SettlementCueKind.FinalModifier,
-                        $"倍率 {FormatMultiplier(line.Value)}",
+                        $"{Strong("倍率")} {Semantic("multmul", FormatMultiplier(line.Value))}",
                         rise: 0.7f,
                         duration: 1.1f,
                         sourceName: sourceName);
@@ -2685,7 +2685,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.Gold:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"金币 {FormatSigned(line.Value)}",
+                        Semantic("gold", $"金币 {FormatSigned(line.Value)}"),
                         sourceName: sourceName);
                     return true;
 
@@ -2700,7 +2700,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.SilverItemRoll:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"获得装饰品和消耗品 ×{RoundCount(line.Value)}",
+                        $"获得{Semantic("term", "装饰品")}和{Semantic("term", "消耗品")} ×{RoundCount(line.Value)}",
                         sourceName: sourceName);
                     return true;
 
@@ -2716,7 +2716,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.TriggerSweetTransfer:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        line.Value > 1f ? $"触发甜蜜传递 ×{RoundCount(line.Value)}" : "触发甜蜜传递",
+                        line.Value > 1f
+                            ? $"触发{Semantic("term", "甜蜜传递")} ×{RoundCount(line.Value)}"
+                            : $"触发{Semantic("term", "甜蜜传递")}",
                         feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
                         triggerSweetTransferPhase: TriggerSweetTransferCuePhase.ActivatorStarted,
                         sourceName: sourceName);
@@ -2725,7 +2727,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.TriggeredSweetTransferSource:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        "触发甜蜜传递",
+                        $"触发{Semantic("term", "甜蜜传递")}",
                         feedbackKind: SettlementDishFeedbackKind.SweetTransferSkillTriggered,
                         triggerSweetTransferPhase: line.Value >= line.After
                             ? TriggerSweetTransferCuePhase.FinalSourceStarted
@@ -2737,8 +2739,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
                         line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
-                            ? "挂载甜蜜传递 +2"
-                            : "挂载甜蜜传递 ×1.5",
+                            ? $"挂载{Semantic("term", "甜蜜传递")} +2"
+                            : $"挂载{Semantic("term", "甜蜜传递")} ×1.5",
                         feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
                         sourceName: sourceName);
                     return true;
@@ -2748,7 +2750,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.SideEffect,
                         line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
                             ? $"额外选择 +{RoundCount(line.Value)}"
-                            : $"本行倍率 ×{FormatPlain(line.Value)}",
+                            : $"本行{Strong("倍率")} {Semantic("multmul", $"×{FormatPlain(line.Value)}")}",
                         feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
                         sourceName: sourceName);
                     return true;
@@ -2944,7 +2946,7 @@ namespace GourmetProject.Game.Presentation.Battle
             string summary = string.Empty;
             if (BigDouble.Abs(result.FinalMultiplier - 1f) > 0.001f)
             {
-                summary += FormatMultiplier(result.FinalMultiplier);
+                summary += Semantic("multmul", FormatMultiplier(result.FinalMultiplier));
             }
 
             if (BigDouble.Abs(result.FinalFlat) > 0.001f)
@@ -2954,7 +2956,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     summary += "  ";
                 }
 
-                summary += FormatSigned(result.FinalFlat);
+                summary += Semantic("score", FormatSigned(result.FinalFlat));
             }
 
             return new SettlementCue(
@@ -2981,6 +2983,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 ? value.ToString("G3")
                 : ScoreNumberFormatter.Format(value);
         }
+
+        private static string Strong(string value) => $"[strong]{value}[/strong]";
+
+        private static string Semantic(string tag, string value)
+            => $"[{tag}]{value}[/{tag}]";
 
         private static int RoundCount(BigDouble value)
         {

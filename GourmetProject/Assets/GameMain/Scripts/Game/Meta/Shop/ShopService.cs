@@ -629,15 +629,18 @@ namespace GourmetProject.Game.Meta
 
             run.Gold -= cost;
             run.RecordDishDeleted();
-            GameAnalyticsService.TrackShopPurchase(
-                run,
-                GameRun.BuildShopKey(run.WeekIndex, run.CurrentDay),
-                "dish_delete_service",
-                dishId,
-                cost,
-                goldBefore,
-                run.Gold,
-                archetype);
+            run.Execution.Telemetry.Track(() =>
+            {
+                GameAnalyticsService.TrackShopPurchase(
+                    run,
+                    GameRun.BuildShopKey(run.WeekIndex, run.CurrentDay),
+                    "dish_delete_service",
+                    dishId,
+                    cost,
+                    goldBefore,
+                    run.Gold,
+                    archetype);
+            });
             return true;
         }
 
@@ -661,15 +664,18 @@ namespace GourmetProject.Game.Meta
 
             run.Gold -= cost;
             run.RecordDishDeleted();
-            GameAnalyticsService.TrackShopPurchase(
-                run,
-                GameRun.BuildShopKey(run.WeekIndex, run.CurrentDay),
-                "dish_delete_service",
-                dishId,
-                cost,
-                goldBefore,
-                run.Gold,
-                archetype);
+            run.Execution.Telemetry.Track(() =>
+            {
+                GameAnalyticsService.TrackShopPurchase(
+                    run,
+                    GameRun.BuildShopKey(run.WeekIndex, run.CurrentDay),
+                    "dish_delete_service",
+                    dishId,
+                    cost,
+                    goldBefore,
+                    run.Gold,
+                    archetype);
+            });
             return true;
         }
 
@@ -715,7 +721,7 @@ namespace GourmetProject.Game.Meta
                 return ids;
             }
 
-            IRandomStream rng = GameApp.Random.DomainStream(
+            IRandomStream rng = run.Random.DomainStream(
                 SeedDomains.Shop, $"pack_{run.WeekIndex}_{run.CurrentDay}_{run.FragmentPlacements.Count}");
             int distanceFloor = HiddenScoreDistanceFloor(run.Tables);
             foreach (cfg.TableFragment fragment in WeightedTake(

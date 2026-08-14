@@ -109,7 +109,7 @@
     "deliciousness": 20,
     "skills": "sk_eggtart",
     "category": "",
-    "countAs": 1,
+    "countAs": 2,
     "shapeRows": [
       "XX"
     ],
@@ -132,8 +132,8 @@
     ],
     "sortOrder": 80,
     "archetypeWeights": [
-      0,
       2,
+      0,
       0
     ]
   },
@@ -160,7 +160,7 @@
     "deliciousness": 20,
     "skills": "sk_mousse",
     "category": "cake",
-    "countAs": 1,
+    "countAs": 2,
     "shapeRows": [
       "XX"
     ],
@@ -421,7 +421,7 @@
     "deliciousness": 30,
     "skills": "sk_hawthorn_cake",
     "category": "",
-    "countAs": 1,
+    "countAs": 3,
     "shapeRows": [
       "XXX"
     ],
@@ -548,7 +548,7 @@
     "deliciousness": 30,
     "skills": "sk_soybean_glutinous_roll",
     "category": "",
-    "countAs": 1,
+    "countAs": 3,
     "shapeRows": [
       "X",
       "X",
@@ -679,7 +679,7 @@
     "deliciousness": 30,
     "skills": "sk_mung_bean_cake",
     "category": "",
-    "countAs": 1,
+    "countAs": 4,
     "shapeRows": [
       "XX",
       "XX"
@@ -697,7 +697,7 @@
     "deliciousness": 30,
     "skills": "sk_egg_yolk_pastry",
     "category": "",
-    "countAs": 1,
+    "countAs": 4,
     "shapeRows": [
       "XX",
       "XX"
@@ -805,7 +805,7 @@
     "deliciousness": 40,
     "skills": "sk_taosu",
     "category": "",
-    "countAs": 6,
+    "countAs": 4,
     "shapeRows": [
       "XX",
       "XX"
@@ -823,7 +823,7 @@
     "deliciousness": 40,
     "skills": "sk_brown_sugar_steamed_cake",
     "category": "",
-    "countAs": 5,
+    "countAs": 4,
     "shapeRows": [
       "XX",
       "XX"
@@ -950,7 +950,7 @@
     "deliciousness": 60,
     "skills": "sk_mango_sago",
     "category": "",
-    "countAs": 8,
+    "countAs": 6,
     "shapeRows": [
       "XXX",
       "XXX"
@@ -987,7 +987,7 @@
     "deliciousness": 60,
     "skills": "sk_mala_gao",
     "category": "",
-    "countAs": 1,
+    "countAs": 6,
     "shapeRows": [
       "XX",
       "XX",
@@ -1044,7 +1044,7 @@
     "deliciousness": 100,
     "skills": "sk_double_skin_milk",
     "category": "",
-    "countAs": 1,
+    "countAs": 9,
     "shapeRows": [
       "XXX",
       "XXX",

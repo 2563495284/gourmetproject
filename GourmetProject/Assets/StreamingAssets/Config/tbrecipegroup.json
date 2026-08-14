@@ -28,7 +28,7 @@
     "id": "recipe_glutton_group_2",
     "pool": [
       {
-        "dishId": "jelly",
+        "dishId": "cupcake",
         "weight": 1,
         "maxCount": 1
       },
@@ -41,6 +41,31 @@
         "dishId": "sugarbean",
         "weight": 1,
         "maxCount": 1
+      },
+      {
+        "dishId": "caramel_pudding",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "fruit_candy",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "mochi",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "cup_cake",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "ice_cream",
+        "weight": 1,
+        "maxCount": 1
       }
     ]
   },
@@ -48,108 +73,23 @@
     "id": "recipe_glutton_group_3",
     "pool": [
       {
-        "dishId": "bamboo_tube_cake",
+        "dishId": "tanghulu",
         "weight": 1,
         "maxCount": 1
       },
       {
-        "dishId": "gummy",
+        "dishId": "hawthorn_cake",
+        "weight": 1,
+        "maxCount": 1
+      },
+      {
+        "dishId": "red_bean_ice_pop",
         "weight": 1,
         "maxCount": 1
       },
       {
         "dishId": "cake_roll",
         "weight": 1,
-        "maxCount": 1
-      }
-    ]
-  },
-  {
-    "id": "recipe_wok_group_1",
-    "pool": [
-      {
-        "dishId": "mochi",
-        "weight": 40,
-        "maxCount": 2
-      },
-      {
-        "dishId": "eggroll",
-        "weight": 50,
-        "maxCount": 1
-      }
-    ]
-  },
-  {
-    "id": "recipe_wok_group_2",
-    "pool": [
-      {
-        "dishId": "gummy",
-        "weight": 30,
-        "maxCount": 2
-      },
-      {
-        "dishId": "lollipop",
-        "weight": 30,
-        "maxCount": 2
-      }
-    ]
-  },
-  {
-    "id": "recipe_wok_group_3",
-    "pool": [
-      {
-        "dishId": "mousse",
-        "weight": 40,
-        "maxCount": 2
-      },
-      {
-        "dishId": "cream_cake",
-        "weight": 40,
-        "maxCount": 1
-      }
-    ]
-  },
-  {
-    "id": "recipe_chili_group_1",
-    "pool": [
-      {
-        "dishId": "pudding",
-        "weight": 40,
-        "maxCount": 2
-      },
-      {
-        "dishId": "gold_choco",
-        "weight": 40,
-        "maxCount": 2
-      }
-    ]
-  },
-  {
-    "id": "recipe_chili_group_2",
-    "pool": [
-      {
-        "dishId": "choco_candy",
-        "weight": 70,
-        "maxCount": 2
-      },
-      {
-        "dishId": "choco_bar",
-        "weight": 50,
-        "maxCount": 1
-      }
-    ]
-  },
-  {
-    "id": "recipe_chili_group_3",
-    "pool": [
-      {
-        "dishId": "tanghulu",
-        "weight": 40,
-        "maxCount": 2
-      },
-      {
-        "dishId": "marshmallow",
-        "weight": 40,
         "maxCount": 1
       }
     ]
