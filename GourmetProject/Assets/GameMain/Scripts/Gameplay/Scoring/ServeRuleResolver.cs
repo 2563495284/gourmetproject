@@ -337,21 +337,6 @@ namespace GourmetProject.Gameplay.Scoring
                 }
             }
 
-            if (HasActionParam(rule, "axis:rowcol"))
-            {
-                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(board, self, SkillScope.Row, includeSelf: false))
-                {
-                    Add(dish);
-                }
-
-                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(board, self, SkillScope.Column, includeSelf: false))
-                {
-                    Add(dish);
-                }
-
-                return result;
-            }
-
             foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(board, self, rule.ActionScope, includeSelf: false))
             {
                 Add(dish);

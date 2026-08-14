@@ -83,15 +83,13 @@ namespace GourmetProject.Gameplay.Scoring
 
             IReadOnlyList<DishInstance> targetDishes = ResolveVisualActionDishes(db, board, self, rule, mode, null);
             List<int> targetIds = targetDishes.Select(d => d.Id).Distinct().ToList();
-            List<GridPos> actionScopeCells = UsesRowColumnSweetTransferScope(rule)
-                ? RowColumnScopeCells(board, self)
-                : VisualCellsForScope(
-                    db,
-                    board,
-                    self,
-                    rule,
-                    rule.ActionScope,
-                    isActionScope: true);
+            List<GridPos> actionScopeCells = VisualCellsForScope(
+                db,
+                board,
+                self,
+                rule,
+                rule.ActionScope,
+                isActionScope: true);
             List<GridPos> targetCells = rule.ActionType == SkillActionType.TransferSkills
                 ? board.ExistingCells()
                 : mode == SkillScopeVisualMode.CandidateScope
@@ -171,11 +169,6 @@ namespace GourmetProject.Gameplay.Scoring
                 || rule.ActionType == SkillActionType.TransferSkills)
             {
                 return false;
-            }
-
-            if (UsesRowColumnSweetTransferScope(rule))
-            {
-                return true;
             }
 
             return rule.ActionScope != SkillScope.All
@@ -385,25 +378,6 @@ namespace GourmetProject.Gameplay.Scoring
                 }
             }
 
-            if (HasActionParam(rule, "axis:rowcol"))
-            {
-                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(board, self, SkillScope.Row, includeSelf: false))
-                {
-                    Add(dish);
-                }
-
-                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(board, self, SkillScope.Column, includeSelf: false))
-                {
-                    Add(dish);
-                }
-
-                return result
-                    .OrderBy(BoardTop)
-                    .ThenBy(BoardLeft)
-                    .ThenBy(d => d.Id)
-                    .ToList();
-            }
-
             foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(board, self, rule.ActionScope, includeSelf: false))
             {
                 Add(dish);
@@ -414,20 +388,6 @@ namespace GourmetProject.Gameplay.Scoring
                 .ThenBy(BoardLeft)
                 .ThenBy(d => d.Id)
                 .ToList();
-        }
-
-        private static bool UsesRowColumnSweetTransferScope(SkillRuleDef rule)
-        {
-            return rule != null
-                && rule.ActionType == SkillActionType.TriggerSweetTransfer
-                && HasActionParam(rule, "axis:rowcol");
-        }
-
-        private static List<GridPos> RowColumnScopeCells(GpTable board, DishInstance self)
-        {
-            return UniqueCells(
-                SkillConditionEvaluator.ScopeCells(board, self, SkillScope.Row)
-                    .Concat(SkillConditionEvaluator.ScopeCells(board, self, SkillScope.Column)));
         }
 
         private static List<GridPos> VisualCellsForScope(

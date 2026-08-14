@@ -569,6 +569,11 @@ namespace GourmetProject.Gameplay.Scoring
                     CollectRowOrColumn(board, self, result, row: false, scope == SkillScope.ColumnAndSelf);
                     return result;
 
+                case SkillScope.RowAndColumn:
+                    CollectDishesFromCells(board, ScopeCells(board, self, scope), result);
+                    result.RemoveAll(d => d.Id == self.Id);
+                    return result;
+
                 case SkillScope.Before:
                     foreach (DishInstance d in board.Dishes) if (d.Id < self.Id) result.Add(d);
                     return result;
@@ -904,6 +909,23 @@ namespace GourmetProject.Gameplay.Scoring
                 {
                     var xs = new HashSet<int>();
                     foreach (GridPos c in self.OccupiedCells) xs.Add(c.X);
+                    foreach (int x in xs)
+                        for (int y = 0; y < board.Height; y++) AddCell(new GridPos(x, y));
+                    break;
+                }
+
+                case SkillScope.RowAndColumn:
+                {
+                    var xs = new HashSet<int>();
+                    var ys = new HashSet<int>();
+                    foreach (GridPos c in self.OccupiedCells)
+                    {
+                        xs.Add(c.X);
+                        ys.Add(c.Y);
+                    }
+
+                    foreach (int y in ys)
+                        for (int x = 0; x < board.Width; x++) AddCell(new GridPos(x, y));
                     foreach (int x in xs)
                         for (int y = 0; y < board.Height; y++) AddCell(new GridPos(x, y));
                     break;

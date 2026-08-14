@@ -446,7 +446,6 @@ namespace GourmetProject.Game.Balance
                         continue;
                     }
 
-                    bool rowColumnOverride = HasActionParam(rule, "axis:rowcol");
                     int futureTargetCells = 0;
                     foreach (GridPos cell in session.DiningTable.ExistingCells())
                     {
@@ -459,8 +458,7 @@ namespace GourmetProject.Game.Balance
                         if (IsFutureCellInScope(
                             cell,
                             occupiedByCandidate,
-                            rule.ActionScope,
-                            rowColumnOverride))
+                            rule.ActionScope))
                         {
                             futureTargetCells++;
                         }
@@ -521,8 +519,7 @@ namespace GourmetProject.Game.Balance
         private static bool IsFutureCellInScope(
             GridPos cell,
             HashSet<GridPos> occupied,
-            SkillScope scope,
-            bool rowColumnOverride)
+            SkillScope scope)
         {
             bool sameRow = false;
             bool sameColumn = false;
@@ -542,11 +539,6 @@ namespace GourmetProject.Game.Balance
                 maxY = Math.Max(maxY, source.Y);
             }
 
-            if (rowColumnOverride)
-            {
-                return sameRow || sameColumn;
-            }
-
             switch (scope)
             {
                 case SkillScope.Row:
@@ -555,6 +547,8 @@ namespace GourmetProject.Game.Balance
                 case SkillScope.Column:
                 case SkillScope.ColumnAndSelf:
                     return sameColumn;
+                case SkillScope.RowAndColumn:
+                    return sameRow || sameColumn;
                 case SkillScope.Adjacent:
                 case SkillScope.Round:
                 case SkillScope.RoundAndSelf:

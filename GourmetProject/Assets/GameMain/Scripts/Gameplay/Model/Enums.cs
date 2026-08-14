@@ -125,6 +125,9 @@ namespace GourmetProject.Gameplay.Model
 
         /// <summary>本菜下侧及自身。</summary>
         DownAndSelf = 24,
+
+        /// <summary>同行及同列，不含本菜自身。</summary>
+        RowAndColumn = 25,
     }
 
     /// <summary>比较符。与 cfg.CompareOp 一一对应。</summary>

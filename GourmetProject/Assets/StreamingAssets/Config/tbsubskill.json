@@ -1498,13 +1498,13 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 15,
-    "actionScope": 4,
+    "actionScope": 25,
     "actionCount": 0,
     "actionValue": [
       0
     ],
     "actionParam": [
-      "axis:rowcol;skilltype:TransferSkills"
+      "skilltype:TransferSkills"
     ],
     "signed": false,
     "descTemplate": "[context]同行同列[/context]带有[term]甜蜜传递[/term]的食物\n[benefit]执行[/benefit] 1 次它们的[term]甜蜜传递[/term]",

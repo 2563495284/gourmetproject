@@ -822,7 +822,6 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>
         /// 甜蜜传递来源候选：作用域内「带甜蜜传递」的其它食物。
-        /// <c>actionParam=axis:rowcol</c> 时取同行+同列；
         /// <c>actionCount&gt;0</c> 时从候选中取 N 个（有 TransferTargetSelector 则走随机，否则棋盘序）。
         /// </summary>
         private IReadOnlyList<DishInstance> SweetTransferSources(ScoreContext ctx)
@@ -843,24 +842,9 @@ namespace GourmetProject.Gameplay.Scoring
                 }
             }
 
-            if (HasActionParam(_rule, "axis:rowcol"))
+            foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(ctx.DiningTable, _self, _rule.ActionScope, includeSelf: false))
             {
-                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(ctx.DiningTable, _self, SkillScope.Row, includeSelf: false))
-                {
-                    TryAdd(dish);
-                }
-
-                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(ctx.DiningTable, _self, SkillScope.Column, includeSelf: false))
-                {
-                    TryAdd(dish);
-                }
-            }
-            else
-            {
-                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(ctx.DiningTable, _self, _rule.ActionScope, includeSelf: false))
-                {
-                    TryAdd(dish);
-                }
+                TryAdd(dish);
             }
 
             List<DishInstance> ordered = qualified

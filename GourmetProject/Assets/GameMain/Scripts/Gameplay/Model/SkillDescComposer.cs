@@ -112,6 +112,7 @@ namespace GourmetProject.Gameplay.Model
                 case SkillScope.Round: return "周围";
                 case SkillScope.Row: return "同行";
                 case SkillScope.Column: return "同列";
+                case SkillScope.RowAndColumn: return "同行同列";
                 case SkillScope.RoundAndSelf: return "周围及自身";
                 case SkillScope.RowAndSelf: return "本行";
                 case SkillScope.ColumnAndSelf: return "本列";
@@ -196,6 +197,7 @@ namespace GourmetProject.Gameplay.Model
                     case SkillScope.Round: return "周围";
                     case SkillScope.Row: return "同行";
                     case SkillScope.Column: return "同列";
+                    case SkillScope.RowAndColumn: return "同行同列";
                     case SkillScope.RoundAndSelf: return "周围及自身";
                     case SkillScope.RowAndSelf: return "本行";
                     case SkillScope.ColumnAndSelf: return "本列";
@@ -219,6 +221,7 @@ namespace GourmetProject.Gameplay.Model
                 case SkillScope.Round: return $"周围 {count} 个";
                 case SkillScope.Row: return $"同行 {count} 个";
                 case SkillScope.Column: return $"同列 {count} 个";
+                case SkillScope.RowAndColumn: return $"同行同列 {count} 个";
                 case SkillScope.RoundAndSelf: return $"周围及自身 {count} 个";
                 case SkillScope.RowAndSelf: return $"本行 {count} 个";
                 case SkillScope.ColumnAndSelf: return $"本列 {count} 个";

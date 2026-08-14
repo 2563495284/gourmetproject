@@ -106,8 +106,8 @@ namespace GourmetProject.Tests.EditMode
                 SkillConditionType.None,
                 SkillScope.All,
                 SkillActionType.TriggerSweetTransfer,
-                SkillScope.All,
-                actionParams: new[] { "axis:rowcol;skilltype:TransferSkills" });
+                SkillScope.RowAndColumn,
+                actionParams: new[] { "skilltype:TransferSkills" });
 
             SkillScopeVisual visual = Resolve(rule);
 

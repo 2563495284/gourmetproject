@@ -116,6 +116,10 @@ namespace cfg
         /// 本菜下侧及自身
         /// </summary>
         DownAndSelf = 24,
+        /// <summary>
+        /// 同行及同列（不含自身）
+        /// </summary>
+        RowAndColumn = 25,
     }
 
 } 

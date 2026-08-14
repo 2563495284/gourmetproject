@@ -246,8 +246,8 @@ namespace GourmetProject.Tests.EditMode
                 "sk_big_lollipop_1", "sk_big_lollipop",
                 SkillConditionType.None, SkillScope.All,
                 CountUnit.Instances, CountMode.Gate,
-                SkillActionType.TriggerSweetTransfer, SkillScope.All,
-                0f, "axis:rowcol;skilltype:TransferSkills");
+                SkillActionType.TriggerSweetTransfer, SkillScope.RowAndColumn,
+                0f, "skilltype:TransferSkills");
             SkillDef lollipopSkill = Skill("sk_big_lollipop", triggerRule);
             DishInstance source = Dish(
                 1, "crossing_source", 0, 0, 0, new[] { transferSkill.Id },

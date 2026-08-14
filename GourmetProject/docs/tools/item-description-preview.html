@@ -411,6 +411,7 @@
       22: "UpAndSelf",
       23: "RightAndSelf",
       24: "DownAndSelf",
+      25: "RowAndColumn",
     };
     const CountUnit = Object.freeze({
       Instances: 0,
@@ -1052,6 +1053,7 @@
         case "Round": return "周围";
         case "Row": return "同行";
         case "Column": return "同列";
+        case "RowAndColumn": return "同行同列";
         case "RoundAndSelf": return "周围及自身";
         case "RowAndSelf": return "本行";
         case "ColumnAndSelf": return "本列";
@@ -1085,6 +1087,7 @@
           case "Round": return "周围";
           case "Row": return "同行";
           case "Column": return "同列";
+          case "RowAndColumn": return "同行同列";
           case "RoundAndSelf": return "周围及自身";
           case "RowAndSelf": return "本行";
           case "ColumnAndSelf": return "本列";
@@ -1109,6 +1112,7 @@
         case "Round": return `周围 ${normalizedCount} 个`;
         case "Row": return `同行 ${normalizedCount} 个`;
         case "Column": return `同列 ${normalizedCount} 个`;
+        case "RowAndColumn": return `同行同列 ${normalizedCount} 个`;
         case "RoundAndSelf": return `周围及自身 ${normalizedCount} 个`;
         case "RowAndSelf": return `本行 ${normalizedCount} 个`;
         case "ColumnAndSelf": return `本列 ${normalizedCount} 个`;

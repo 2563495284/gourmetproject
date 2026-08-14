@@ -234,10 +234,10 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(coconutJelly.Desc, Does.Contain("[context]非边缘[/context]"));
 
             Assert.That(lollipop.Rules, Has.Count.EqualTo(1));
-            Assert.That(lollipop.Rules[0].Id, Is.EqualTo("sk_big_lollipop_1"));
+            Assert.That(lollipop.Rules[0].Id, Is.EqualTo("sk_big_lollipop#0"));
             Assert.That(lollipop.Rules[0].ActionType, Is.EqualTo(SkillActionType.TriggerSweetTransfer));
-            Assert.That(lollipop.Rules[0].ActionParam,
-                Does.Contain("axis:rowcol;skilltype:TransferSkills"));
+            Assert.That(lollipop.Rules[0].ActionScope, Is.EqualTo(SkillScope.RowAndColumn));
+            Assert.That(lollipop.Rules[0].ActionParam, Is.EqualTo("skilltype:TransferSkills"));
             Assert.That(lollipop.Desc, Does.Contain("[context]同行同列[/context]"));
             Assert.That(lollipop.Desc, Does.Not.Contain("每有1个技能"));
         }

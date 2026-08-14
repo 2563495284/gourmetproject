@@ -358,7 +358,7 @@
   <script>
     "use strict";
 
-    const SCOPE_NAMES = ["自身", "相邻", "同行", "同列", "全场", "空格", "边缘", "前面", "后面", "食谱", "分类", "周围", "周围及自身", "本行", "本列", "其他食物", "欢乐蛋糕", "左侧", "上侧", "右侧", "下侧", "左侧及自身", "上侧及自身", "右侧及自身", "下侧及自身"];
+    const SCOPE_NAMES = ["自身", "相邻", "同行", "同列", "全场", "空格", "边缘", "前面", "后面", "食谱", "分类", "周围", "周围及自身", "本行", "本列", "其他食物", "欢乐蛋糕", "左侧", "上侧", "右侧", "下侧", "左侧及自身", "上侧及自身", "右侧及自身", "下侧及自身", "同行同列"];
     const CONDITION_NAMES = ["无条件", "占满", "空格数", "处于边缘", "食物数量", "食物大小", "上菜顺序", "相同食物", "本局同种历史", "本场同种历史", "标签数量", "形状匹配", "食谱数量", "欢乐蛋糕层数", "占格数", "分类数量", "行为类数量", "技能数量"];
     const ACTION_NAMES = {0:"无行为",1:"分数增加",2:"倍率乘算",5:"甜蜜传递",6:"增加层数",7:"消耗层数",8:"获得金币",9:"倍率增加",10:"永久加分",12:"增加份数",13:"复制技能",15:"代触发甜蜜传递",17:"增加当前倍率",18:"增加当前分数",19:"移除食谱",20:"增加空格份数",21:"临时分类"};
     const TRIGGER_NAMES = ["结算时", "上菜时"];
@@ -470,6 +470,10 @@
         case 13: ys.forEach(y => { for (let x=0; x<size; x++) add(x,y); }); break;
         case 3:
         case 14: xs.forEach(x => { for (let y=0; y<size; y++) add(x,y); }); break;
+        case 25:
+          ys.forEach(y => { for (let x=0; x<size; x++) add(x,y); });
+          xs.forEach(x => { for (let y=0; y<size; y++) add(x,y); });
+          break;
         case 4:
         case 5: return allCells(size);
         case 6: allCells(size).forEach(cell => { if (cell.x === 0 || cell.y === 0 || cell.x === size-1 || cell.y === size-1) add(cell.x,cell.y); }); break;
@@ -525,15 +529,6 @@
           ? mockDishes(food, origin, size).filter(dish => dish.category.toLowerCase() === category.toLowerCase())
           : baseScopeDishes(rule.actionScope, food, origin, size);
         dishes = dishes.filter(dish => dish.id !== "self");
-      } else if (rule.actionType === 15 && hasActionParam(rule, "axis:rowcol")) {
-        const rowCol = uniq([
-          ...geometricCells(2, food, origin, size),
-          ...geometricCells(3, food, origin, size),
-        ]);
-        dishes = mockDishes(food, origin, size).filter(dish =>
-          dish.id !== "self"
-          && dish.skillType === "TransferSkills"
-          && dish.cells.some(cell => rowCol.some(area => area.x === cell.x && area.y === cell.y)));
       } else if (rule.actionType === 5) {
         dishes = mockDishes(food, origin, size).slice(1);
       } else if (rule.actionScope === 10) {
@@ -553,12 +548,6 @@
 
     function visualCellsForScope(rule, scope, isAction, food = selectedFood(), origin = state.origin, size = state.boardSize, allowSelf = true) {
       if (!rule) return [];
-      if (isAction && usesRowColumnSweetTransferScope(rule)) {
-        return uniq([
-          ...geometricCells(2, food, origin, size),
-          ...geometricCells(3, food, origin, size),
-        ]);
-      }
       if (isAction && allowSelf && hasActionParam(rule, "include:self")) {
         return uniq([...visualCellsForScope(rule, scope, true, food, origin, size, false), ...sourceCells(food, origin, size)]);
       }
@@ -587,11 +576,7 @@
     function canRenderActionRegion(rule) {
       return !!rule
         && ![0,5].includes(rule.actionType)
-        && (usesRowColumnSweetTransferScope(rule) || ![4,15,16].includes(rule.actionScope));
-    }
-
-    function usesRowColumnSweetTransferScope(rule) {
-      return !!rule && rule.actionType === 15 && hasActionParam(rule, "axis:rowcol");
+        && ![4,15,16].includes(rule.actionScope);
     }
 
     function resolveRule(rule, food = selectedFood(), origin = state.origin, size = state.boardSize) {
