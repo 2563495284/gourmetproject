@@ -133,7 +133,7 @@ namespace GourmetProject.Gameplay.Scoring
                 }
                 else if (HasActionParam(rule, "source:target-skill-count"))
                 {
-                    basis = target.SkillIds.Count + target.TransferredSkills.Count;
+                    basis = SkillConditionEvaluator.CountSubSkills(target, Db);
                 }
                 else
                 {
@@ -146,7 +146,16 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
+                int before = GetEffectiveCountAs(target);
                 AddLiveCountAs(target, delta);
+                int after = GetEffectiveCountAs(target);
+                AddLine(
+                    EnsureAccumulator(target),
+                    ScoreLineKind.CountAs,
+                    after - before,
+                    before,
+                    after,
+                    $"份数 {(after - before >= 0 ? "+" : string.Empty)}{after - before}");
             }
         }
 
@@ -334,22 +343,36 @@ namespace GourmetProject.Gameplay.Scoring
 
         public void AddTemporaryCategory(DishInstance dish, string category)
         {
-            if (dish == null || string.IsNullOrEmpty(category) || IsCategory(dish, category))
+            if (dish == null || string.IsNullOrEmpty(category))
             {
                 return;
             }
 
-            if (!_liveTemporaryCategories.TryGetValue(dish.Id, out HashSet<string> categories))
+            bool alreadyCategory = IsCategory(dish, category);
+            HashSet<string> categories = null;
+            if (!alreadyCategory
+                && !_liveTemporaryCategories.TryGetValue(dish.Id, out categories))
             {
                 categories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 _liveTemporaryCategories[dish.Id] = categories;
             }
 
-            if (categories.Add(category))
+            if (!alreadyCategory && categories.Add(category))
             {
                 _temporaryCategories.Add(new TemporaryCategorySideEffect(dish.Id, category));
-                EmitEvent(ScoreEventType.CommandExecuted, $"{dish.Def.Name} 临时视为 {category}");
             }
+
+            string categoryName = string.Equals(category, "cake", StringComparison.OrdinalIgnoreCase)
+                ? "蛋糕"
+                : category;
+            AddLine(
+                EnsureAccumulator(dish),
+                ScoreLineKind.TemporaryCategory,
+                1,
+                alreadyCategory ? 1 : 0,
+                1,
+                $"视为{categoryName}");
+            EmitEvent(ScoreEventType.CommandExecuted, $"{dish.Def.Name} 临时视为 {categoryName}");
         }
 
         /// <summary>

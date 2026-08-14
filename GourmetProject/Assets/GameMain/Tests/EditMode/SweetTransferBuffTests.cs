@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
@@ -11,6 +12,145 @@ namespace GourmetProject.Tests.EditMode
 {
     public sealed class SweetTransferBuffTests
     {
+        [Test]
+        public void EggYolkPastry_AddsSubSkillCountToColumnIncludingItself()
+        {
+            SkillRuleDef countAsRule = Rule(
+                "sk_egg_yolk_pastry_1", "sk_egg_yolk_pastry",
+                SkillConditionType.None, SkillScope.Self,
+                CountUnit.Instances, CountMode.Gate,
+                SkillActionType.AddCountAs, SkillScope.ColumnAndSelf,
+                1f, "source:target-skill-count");
+            SkillDef eggSkill = Skill("sk_egg_yolk_pastry", countAsRule);
+            SkillDef oneRuleSkill = NoOpSkill("one_rule_skill", 1);
+            SkillDef twoRuleSkill = NoOpSkill("two_rule_skill", 2);
+            SkillDef threeRuleSkill = NoOpSkill("three_rule_skill", 3);
+            DishInstance egg = Dish(1, "egg_yolk_pastry", 0, 0, 0, new[] { eggSkill.Id }, countAs: 4);
+            DishInstance oneRuleTarget = Dish(2, "one_rule_target", 0, 0, 1, new[] { oneRuleSkill.Id });
+            DishInstance twoRuleTarget = Dish(3, "two_rule_target", 0, 0, 2, new[] { twoRuleSkill.Id });
+            DishInstance threeRuleTarget = Dish(4, "three_rule_target", 0, 0, 3, new[] { threeRuleSkill.Id });
+            var table = new DiningTable(1, 4);
+            table.Place(egg);
+            table.Place(oneRuleTarget);
+            table.Place(twoRuleTarget);
+            table.Place(threeRuleTarget);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                Database(
+                    new[] { egg.Def, oneRuleTarget.Def, twoRuleTarget.Def, threeRuleTarget.Def },
+                    eggSkill,
+                    oneRuleSkill,
+                    twoRuleSkill,
+                    threeRuleSkill));
+
+            Assert.That(ScoreOf(result, egg).EffectiveCountAs, Is.EqualTo(5));
+            Assert.That(ScoreOf(result, oneRuleTarget).EffectiveCountAs, Is.EqualTo(2));
+            Assert.That(ScoreOf(result, twoRuleTarget).EffectiveCountAs, Is.EqualTo(3));
+            Assert.That(ScoreOf(result, threeRuleTarget).EffectiveCountAs, Is.EqualTo(4));
+            List<ScoreLine> countAsLines = result.ScoreLines
+                .Where(line => line.Kind == ScoreLineKind.CountAs)
+                .ToList();
+            Assert.That(
+                countAsLines.Select(line => line.Value.ToDouble()),
+                Is.EquivalentTo(new[] { 1d, 1d, 2d, 3d }));
+
+            // 一次蛋黄酥主动技能产生一个执行组；来源始终是蛋黄酥，所有目标结果同批展示。
+            Assert.That(countAsLines.Select(line => line.ExecutionGroupId).Distinct().Count(), Is.EqualTo(1));
+            Assert.That(countAsLines[0].ExecutionGroupId, Is.GreaterThan(0));
+            Assert.That(countAsLines, Has.All.Matches<ScoreLine>(line =>
+                line.Source.Type == ScoreSourceType.DishSkill
+                && line.Source.Id == eggSkill.Id
+                && line.Source.DishInstanceId == egg.Id
+                && line.Trace.OwnerDishInstanceId == egg.Id
+                && line.Trace.RuntimeSelfDishInstanceId == egg.Id));
+
+            SettlementPresentationPlan plan = SettlementPresentationPlan.Build(result);
+            SettlementEffectGroup group = plan.Groups.Single(entry =>
+                entry.Lines.Any(line => line.Kind == ScoreLineKind.CountAs));
+            Assert.That(group.ActorDishInstanceId, Is.EqualTo(egg.Id));
+            Assert.That(
+                group.TargetDishIds,
+                Is.EquivalentTo(new[] { egg.Id, oneRuleTarget.Id, twoRuleTarget.Id, threeRuleTarget.Id }));
+            Assert.That(
+                group.Trace.VisualTargetDishInstanceIds,
+                Is.EquivalentTo(new[] { egg.Id, oneRuleTarget.Id, twoRuleTarget.Id, threeRuleTarget.Id }));
+            List<List<int>> batches = SettlementSequencer.BuildResultLineBatches(group);
+            Assert.That(batches.Count, Is.EqualTo(1));
+            Assert.That(batches[0], Is.EquivalentTo(Enumerable.Range(0, countAsLines.Count)));
+            Assert.That(
+                SettlementStageView.FeedbackFor(countAsLines.Single(line => line.DishInstanceId == egg.Id)),
+                Is.EqualTo(SettlementDishFeedbackKind.GenericValueChanged),
+                "蛋黄酥只在效果组开场主动发动一次，自身结果行不得再次表现为发动技能");
+        }
+
+        [Test]
+        public void SkillCount_UsesSubSkillEntriesInsteadOfSkillContainers()
+        {
+            SkillRuleDef scoreRule = Rule(
+                "two_rules_1", "two_rules",
+                SkillConditionType.SkillCount, SkillScope.Self,
+                CountUnit.Instances, CountMode.Per,
+                SkillActionType.AddFlat, SkillScope.Self,
+                10f, string.Empty);
+            SkillRuleDef noOpRule = Rule(
+                "two_rules_2", "two_rules",
+                SkillConditionType.None, SkillScope.Self,
+                CountUnit.Instances, CountMode.Gate,
+                SkillActionType.None, SkillScope.Self,
+                0f, string.Empty,
+                order: 1);
+            SkillDef skill = Skill("two_rules", scoreRule, noOpRule);
+            DishInstance dish = Dish(1, "dish", 0, 0, 0, new[] { skill.Id });
+            var table = new DiningTable(1, 1);
+            table.Place(dish);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                Database(new[] { dish.Def }, skill));
+
+            Assert.That(ScoreOf(result, dish).FlatBonus.ToDouble(), Is.EqualTo(20d).Within(0.0001d));
+        }
+
+        [Test]
+        public void RedVelvetCake_RandomLeftTargetBecomesCakeAndConsumesLayersWithPresentation()
+        {
+            SkillRuleDef categoryRule = Rule(
+                "sk_red_velvet_cake_1", "sk_red_velvet_cake",
+                SkillConditionType.None, SkillScope.Self,
+                CountUnit.Instances, CountMode.Gate,
+                SkillActionType.AddTemporaryCategory, SkillScope.Left,
+                1f, "cat:cake;target:random",
+                actionCount: 1);
+            SkillRuleDef layerRule = Rule(
+                "sk_red_velvet_cake_2", "sk_red_velvet_cake",
+                SkillConditionType.None, SkillScope.Self,
+                CountUnit.Instances, CountMode.Gate,
+                SkillActionType.ConsumeLayer, SkillScope.CakeBuff,
+                10f, string.Empty,
+                order: 1);
+            SkillDef skill = Skill("sk_red_velvet_cake", categoryRule, layerRule);
+            DishInstance target = Dish(1, "target", 0, 0, 0, Array.Empty<string>());
+            DishInstance cake = Dish(2, "red_velvet_cake", 0, 1, 0, new[] { skill.Id });
+            var table = new DiningTable(2, 1);
+            table.Place(target);
+            table.Place(cake);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                table,
+                Database(new[] { target.Def, cake.Def }, skill),
+                initialHappyCakeLayers: 15,
+                randomIntegerSelector: (_, _) => 0);
+
+            Assert.That(result.TemporaryCategories.Count, Is.EqualTo(1));
+            Assert.That(result.TemporaryCategories[0].DishInstanceId, Is.EqualTo(target.Id));
+            Assert.That(result.TemporaryCategories[0].Category, Is.EqualTo("cake"));
+            Assert.That(result.HappyCakeLayerDelta, Is.EqualTo(-10));
+            Assert.That(result.ScoreLines.Any(line =>
+                line.Kind == ScoreLineKind.TemporaryCategory && line.DishInstanceId == target.Id), Is.True);
+            Assert.That(result.ScoreLines.Any(line => line.Kind == ScoreLineKind.Layer), Is.True);
+        }
+
         [Test]
         public void SoybeanGlutinousRoll_UsesLinearMultiplierFromEffectiveServings()
         {
@@ -151,6 +291,19 @@ namespace GourmetProject.Tests.EditMode
 
         private static SkillDef Skill(string id, params SkillRuleDef[] rules)
             => new SkillDef(id, id, string.Empty, Array.Empty<string>(), rules);
+
+        private static SkillDef NoOpSkill(string id, int ruleCount)
+            => Skill(
+                id,
+                Enumerable.Range(0, ruleCount)
+                    .Select(index => Rule(
+                        $"{id}_{index + 1}", id,
+                        SkillConditionType.None, SkillScope.Self,
+                        CountUnit.Instances, CountMode.Gate,
+                        SkillActionType.None, SkillScope.Self,
+                        0f, string.Empty,
+                        order: index))
+                    .ToArray());
 
         private static SkillDef TransferSkill(string id, int transferRuleCount, int targetCount)
         {

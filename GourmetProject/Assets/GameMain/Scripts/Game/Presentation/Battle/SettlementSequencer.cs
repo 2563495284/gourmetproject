@@ -772,6 +772,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.SweetTransferBuffApplied:
                 case ScoreLineKind.SweetTransferBuffTriggered:
                 case ScoreLineKind.SweetTransferFailed:
+                case ScoreLineKind.CountAs:
+                case ScoreLineKind.TemporaryCategory:
                     return SettlementCueKind.SideEffect;
                 default:
                     return SettlementCueKind.DishContribution;
@@ -2755,6 +2757,23 @@ namespace GourmetProject.Game.Presentation.Battle
                         SettlementCueKind.SideEffect,
                         "没有可传递目标",
                         feedbackKind: SettlementDishFeedbackKind.SweetTransferFailed,
+                        sourceName: sourceName);
+                    return true;
+
+                case ScoreLineKind.CountAs:
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        $"{Strong("份数")} {FormatSigned(line.Value)}  →  {FormatPlain(line.After)}",
+                        // 效果组开场已由蛋黄酥播放主动发动；目标这里只播放数值变化反馈。
+                        feedbackKind: SettlementDishFeedbackKind.GenericValueChanged,
+                        sourceName: sourceName);
+                    return true;
+
+                case ScoreLineKind.TemporaryCategory:
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        string.IsNullOrEmpty(line.Message) ? "临时分类生效" : line.Message,
+                        feedbackKind: BuildDishFeedbackKind(line),
                         sourceName: sourceName);
                     return true;
 

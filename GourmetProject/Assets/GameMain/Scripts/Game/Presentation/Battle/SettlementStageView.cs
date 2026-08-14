@@ -870,6 +870,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.SweetTransferBuffApplied:
                 case ScoreLineKind.SweetTransferBuffTriggered:
                     return SettlementDishFeedbackKind.GenericSkillTriggered;
+                case ScoreLineKind.CountAs:
+                    // 主动发动已经在效果组开场由 Actor 播放一次；这里仅表现各目标份数变化，
+                    // 避免蛋黄酥自身的结果行看起来像再次发动技能。
+                    return SettlementDishFeedbackKind.GenericValueChanged;
+                case ScoreLineKind.TemporaryCategory:
+                    return active
+                        ? SettlementDishFeedbackKind.GenericSkillTriggered
+                        : SettlementDishFeedbackKind.GenericValueChanged;
                 default:
                     return SettlementDishFeedbackKind.GenericValueChanged;
             }
@@ -923,6 +931,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 ScoreLineKind.SweetTransferBuffApplied => "甜蜜 Buff",
                 ScoreLineKind.SweetTransferBuffTriggered => "Buff 响应",
                 ScoreLineKind.SweetTransferFailed => "甜蜜传递",
+                ScoreLineKind.CountAs => "份数",
+                ScoreLineKind.TemporaryCategory => "临时分类",
                 _ => "结算结果",
             };
         }
@@ -981,6 +991,10 @@ namespace GourmetProject.Game.Presentation.Battle
                     return "没有可传递目标";
                 case ScoreLineKind.ExtraSettlement:
                     return $"{Benefit("额外结算")} {Score(signed)}";
+                case ScoreLineKind.CountAs:
+                    return $"{Strong("份数")} {signed}  →  {FormatLineValue(line.After)}";
+                case ScoreLineKind.TemporaryCategory:
+                    return string.IsNullOrEmpty(line.Message) ? "临时分类生效" : line.Message;
                 default:
                     return string.IsNullOrEmpty(line.Message) ? signed : line.Message;
             }
