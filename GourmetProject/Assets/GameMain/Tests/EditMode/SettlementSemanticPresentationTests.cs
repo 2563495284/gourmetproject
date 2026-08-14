@@ -23,6 +23,7 @@ namespace GourmetProject.Tests.EditMode
         [TestCase(ScoreLineKind.ExtraSettlement, 20d, "[benefit]额外结算[/benefit] [score]+20[/score]")]
         [TestCase(ScoreLineKind.TriggerSweetTransfer, 1d, "触发[term]甜蜜传递[/term]")]
         [TestCase(ScoreLineKind.Layer, 3d, "层数 +3")]
+        [TestCase(ScoreLineKind.CountAs, 2d, "[strong]份数[/strong] +2  →  2")]
         [TestCase(
             ScoreLineKind.SweetTransferBuffTriggered,
             1.8d,

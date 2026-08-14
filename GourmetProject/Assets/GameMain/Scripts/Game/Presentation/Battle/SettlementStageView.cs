@@ -870,11 +870,16 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.SweetTransferBuffApplied:
                 case ScoreLineKind.SweetTransferBuffTriggered:
                     return SettlementDishFeedbackKind.GenericSkillTriggered;
-                case ScoreLineKind.DishCountAs:
+                case ScoreLineKind.CountAs:
+                    // 主动发动已经在效果组开场由 Actor 播放一次；这里仅表现各目标份数变化，
+                    // 避免蛋黄酥自身的结果行看起来像再次发动技能。
+                    return SettlementDishFeedbackKind.GenericValueChanged;
                 case ScoreLineKind.EmptyCountAs:
                     return SettlementDishFeedbackKind.CountAsChanged;
                 case ScoreLineKind.TemporaryCategory:
-                    return SettlementDishFeedbackKind.TemporaryCategoryApplied;
+                    return active
+                        ? SettlementDishFeedbackKind.GenericSkillTriggered
+                        : SettlementDishFeedbackKind.GenericValueChanged;
                 default:
                     return SettlementDishFeedbackKind.GenericValueChanged;
             }
@@ -928,9 +933,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 ScoreLineKind.SweetTransferBuffApplied => "甜蜜 Buff",
                 ScoreLineKind.SweetTransferBuffTriggered => "Buff 响应",
                 ScoreLineKind.SweetTransferFailed => "甜蜜传递",
-                ScoreLineKind.DishCountAs => "有效份数",
+                ScoreLineKind.CountAs => "份数",
                 ScoreLineKind.EmptyCountAs => "空格份数",
-                ScoreLineKind.TemporaryCategory => "分类赋予",
+                ScoreLineKind.TemporaryCategory => "临时分类",
                 _ => "结算结果",
             };
         }
@@ -987,12 +992,12 @@ namespace GourmetProject.Game.Presentation.Battle
                         : $"本行{Strong("倍率")} {MultiplierMultiply($"×{FormatLineValue(line.Value)}")}";
                 case ScoreLineKind.SweetTransferFailed:
                     return "没有可传递目标";
-                case ScoreLineKind.DishCountAs:
-                    return $"份数 {signed}  →  {Count(line.After)} 份";
+                case ScoreLineKind.CountAs:
+                    return $"{Strong("份数")} {signed}  →  {FormatLineValue(line.After)}";
                 case ScoreLineKind.EmptyCountAs:
                     return $"每个空格 +{Count(line.Value)} 份";
                 case ScoreLineKind.TemporaryCategory:
-                    return string.IsNullOrEmpty(line.Message) ? "视为蛋糕" : line.Message;
+                    return string.IsNullOrEmpty(line.Message) ? "临时分类生效" : line.Message;
                 case ScoreLineKind.ExtraSettlement:
                     return $"{Benefit("额外结算")} {Score(signed)}";
                 default:

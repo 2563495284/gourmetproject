@@ -56,7 +56,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     or ScoreLineKind.SweetTransferBuffApplied
                     or ScoreLineKind.SweetTransferBuffTriggered => SweetTransfer,
                 ScoreLineKind.SweetTransferFailed => Failure,
-                ScoreLineKind.DishCountAs or ScoreLineKind.EmptyCountAs => CountAs,
+                ScoreLineKind.CountAs or ScoreLineKind.EmptyCountAs => CountAs,
                 ScoreLineKind.TemporaryCategory => TemporaryCategory,
                 _ => Special,
             };

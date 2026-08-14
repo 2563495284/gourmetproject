@@ -772,7 +772,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.SweetTransferBuffApplied:
                 case ScoreLineKind.SweetTransferBuffTriggered:
                 case ScoreLineKind.SweetTransferFailed:
-                case ScoreLineKind.DishCountAs:
+                case ScoreLineKind.CountAs:
                 case ScoreLineKind.EmptyCountAs:
                 case ScoreLineKind.TemporaryCategory:
                     return SettlementCueKind.SideEffect;
@@ -2763,13 +2763,14 @@ namespace GourmetProject.Game.Presentation.Battle
                         sourceName: sourceName);
                     return true;
 
-                case ScoreLineKind.DishCountAs:
+                case ScoreLineKind.CountAs:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"份数 {FormatSigned(line.Value)}  →  {RoundCount(line.After)} 份",
+                        $"{Strong("份数")} {FormatSigned(line.Value)}  →  {FormatPlain(line.After)}",
                         rise: 0.34f,
                         duration: 0.84f,
-                        feedbackKind: SettlementDishFeedbackKind.CountAsChanged,
+                        // 效果组开场已由蛋黄酥播放主动发动；目标这里只播放数值变化反馈。
+                        feedbackKind: SettlementDishFeedbackKind.GenericValueChanged,
                         reveal: SettlementRevealSignal.CountAsReveal(
                             line.DishInstanceId,
                             RoundCount(line.After)),
@@ -2792,10 +2793,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.TemporaryCategory:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        "视为蛋糕",
+                        string.IsNullOrEmpty(line.Message) ? "临时分类生效" : line.Message,
                         rise: 0.38f,
                         duration: 0.92f,
-                        feedbackKind: SettlementDishFeedbackKind.TemporaryCategoryApplied,
+                        feedbackKind: BuildDishFeedbackKind(line),
                         reveal: SettlementRevealSignal.TemporaryEffectReveal(line.DishInstanceId),
                         batchKey: BuildDishSkillBatchKey(line),
                         sourceName: sourceName,
@@ -2881,11 +2882,14 @@ namespace GourmetProject.Game.Presentation.Battle
                     return active
                         ? SettlementDishFeedbackKind.ActiveMultiplierAdd
                         : SettlementDishFeedbackKind.PassiveMultiplierAdd;
-                case ScoreLineKind.DishCountAs:
+                case ScoreLineKind.CountAs:
+                    return SettlementDishFeedbackKind.GenericValueChanged;
                 case ScoreLineKind.EmptyCountAs:
                     return SettlementDishFeedbackKind.CountAsChanged;
                 case ScoreLineKind.TemporaryCategory:
-                    return SettlementDishFeedbackKind.TemporaryCategoryApplied;
+                    return active
+                        ? SettlementDishFeedbackKind.GenericSkillTriggered
+                        : SettlementDishFeedbackKind.GenericValueChanged;
                 default:
                     return active
                         ? SettlementDishFeedbackKind.GenericSkillTriggered

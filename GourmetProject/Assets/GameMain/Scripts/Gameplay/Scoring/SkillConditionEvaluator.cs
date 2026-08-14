@@ -120,10 +120,10 @@ namespace GourmetProject.Gameplay.Scoring
                         }
                         return flavors;
                     }
-                    return self.SkillIds.Count + self.TransferredSkills.Count + self.FlavorIds.Count;
+                    return CountSubSkills(self, db) + self.FlavorIds.Count;
 
                 case SkillConditionType.SkillCount:
-                    return CountSkills(ConditionScopeDishes(rule, board, self, ctx));
+                    return CountSkills(ConditionScopeDishes(rule, board, self, ctx), db);
 
                 case SkillConditionType.ShapeMatch:
                     return CountShapeMatch(ConditionScopeDishes(rule, board, self, ctx), rule.CondParam, rule.CondUnit, countAsOf);
@@ -155,7 +155,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
-        private static int CountSkills(IEnumerable<DishInstance> dishes)
+        private static int CountSkills(IEnumerable<DishInstance> dishes, GameplayDatabase db)
         {
             int count = 0;
             var seen = new HashSet<int>();
@@ -163,8 +163,31 @@ namespace GourmetProject.Gameplay.Scoring
             {
                 if (dish != null && seen.Add(dish.Id))
                 {
-                    count += dish.SkillIds.Count + dish.TransferredSkills.Count;
+                    count += CountSubSkills(dish, db);
                 }
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// “技能数”统一按可执行的子技能条目计数：本体 skill 中每条 rule 算 1，
+        /// 甜蜜传递获得的每条 TransferredSkill 也算 1。
+        /// </summary>
+        internal static int CountSubSkills(DishInstance dish, GameplayDatabase db)
+        {
+            if (dish == null)
+            {
+                return 0;
+            }
+
+            int count = dish.TransferredSkills.Count;
+            foreach (string skillId in dish.SkillIds)
+            {
+                SkillDef skill = db?.GetSkill(skillId);
+                // 无数据库的旧式纯条件调用无法展开 rule，保留每个 skill 至少 1 条的兼容回退；
+                // 正式结算始终传入数据库，因此使用真实子技能数。
+                count += skill != null ? skill.Rules.Count : 1;
             }
 
             return count;
