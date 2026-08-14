@@ -239,6 +239,34 @@ namespace GourmetProject.Tests.EditMode
             AssertFormalKind(database, board, cake, "sk_eggtart", 0, SkillScopeRegionKind.Unified);
         }
 
+        [Test]
+        public void FormalCreamCake_CategoryFilterKeepsFullColumnGeometry()
+        {
+            GameplayDatabase database = LoadFormalDatabase();
+            DishDef definition = database.GetDish("cream_cake");
+            SkillDef skill = database.GetSkill("sk_cream_cake");
+            var board = new DiningTable(5, 5);
+            var creamCake = new DishInstance(
+                20,
+                definition,
+                new Placement(definition.Shape, 0, new GridPos(1, 1)),
+                definition.SkillIds,
+                Array.Empty<string>());
+            board.Place(creamCake);
+
+            SkillScopeVisual visual = SkillScopeResolver.Resolve(
+                database,
+                board,
+                creamCake,
+                skill.Rules[1],
+                SkillScopeVisualMode.CandidateScope);
+
+            Assert.That(visual.ScopeRegionKind, Is.EqualTo(SkillScopeRegionKind.Action));
+            Assert.That(visual.ScopeRegionCells, Has.Count.EqualTo(10));
+            Assert.That(visual.ActionScopeCells, Has.Count.EqualTo(10));
+            Assert.That(visual.VisualTargetDishInstanceIds, Is.EquivalentTo(new[] { creamCake.Id }));
+        }
+
         private SkillScopeVisual Resolve(SkillRuleDef rule)
         {
             return SkillScopeResolver.Resolve(

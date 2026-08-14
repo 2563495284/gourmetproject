@@ -415,34 +415,38 @@ namespace GourmetProject.Gameplay.Scoring
             DishInstance self,
             SkillRuleDef rule,
             SkillScope scope,
-            bool isActionScope)
+            bool isActionScope,
+            bool allowActionSelfInclusion = true)
         {
             if (board == null || self == null)
             {
                 return new List<GridPos>();
             }
 
-            if (isActionScope && rule != null)
+            // actionParam 中的分类、技能类型、尺寸等只筛选实际目标，不改变作用范围几何。
+            // include:self 是唯一会扩展几何范围的目标参数，单独并入自身占格。
+            if (isActionScope
+                && allowActionSelfInclusion
+                && rule != null
+                && HasActionParam(rule, "include:self"))
             {
-                string category = TargetFilterCategory(rule);
-                string skillType = ParseSkillTypeParam(rule.ActionParams);
-                if (!string.IsNullOrEmpty(category)
-                    || !string.IsNullOrEmpty(skillType)
-                    || HasActionParam(rule, "include:self"))
+                List<GridPos> cells = VisualCellsForScope(
+                    db,
+                    board,
+                    self,
+                    rule,
+                    scope,
+                    isActionScope: true,
+                    allowActionSelfInclusion: false);
+                foreach (GridPos selfCell in self.OccupiedCells)
                 {
-                    List<DishInstance> filtered = ResolveScopeDishes(
-                        db,
-                        board,
-                        self,
-                        rule,
-                        includeSelfForSelfScope: true);
-                    if (rule.ActionType == SkillActionType.TransferSkills)
+                    if (!cells.Contains(selfCell))
                     {
-                        filtered.RemoveAll(d => d.Id == self.Id);
+                        cells.Add(selfCell);
                     }
-
-                    return CellsForDishes(filtered);
                 }
+
+                return cells;
             }
 
             switch (scope)

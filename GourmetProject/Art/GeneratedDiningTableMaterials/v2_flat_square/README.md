@@ -6,7 +6,7 @@ thickness, plates, food, labels, or cast shadows.
 
 Material mapping:
 
-- `board_cell_flat.png` — 普通木 / light oak
+- `board_cell_flat.png` — 默认白色塑料餐盘 / matte white plastic
 - `board_cell_flat_m_cherry.png` — 樱桃木 / cherry wood
 - `board_cell_flat_m_walnut.png` — 胡桃木 / walnut wood
 - `board_cell_flat_m_marble.png` — 大理石 / white marble
@@ -19,9 +19,10 @@ Generation prompt summary:
 
 > Eight identical, top-down square tabletop tiles in a clean hand-drawn flat
 > cartoon style. Fresh, tidy palette; one base color, one subtle edge, and at
-> most two broad material cues per tile. Exact order: light oak, cherry wood,
-> walnut wood, white marble, obsidian, emerald, gold, silver. No legs, depth,
-> structural details, plates, food, text, icons, props, shadows, or watermark.
+> most two broad material cues per tile. Exact order: matte white plastic,
+> cherry wood, walnut wood, white marble, obsidian, emerald, gold, silver. No
+> legs, depth, structural details, food, text, icons, props, shadows, or
+> watermark.
 
 `review_sheet.png` is the generated review sheet. `export_preview.png` is a
 mint-background contact sheet for quick visual inspection; use the individual
