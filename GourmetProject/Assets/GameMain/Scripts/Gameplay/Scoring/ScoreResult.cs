@@ -166,10 +166,10 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>永久倍率增量（实例 Id → 累乘倍数）。正式结算后写回实例。</summary>
         public IReadOnlyDictionary<int, BigDouble> PermanentMultDeltas { get; }
 
-        /// <summary>银材质登记的获得消耗品掷骰请求次数。正式结算后由 Game 层掷骰发放（预览不掷）。</summary>
+        /// <summary>银材质按占据银格登记的独立消耗品判定次数。正式结算后由 Game 层逐条掷骰发放（预览不掷）。</summary>
         public int SilverItemRollRequests { get; }
 
-        /// <summary>银材质登记的逐条掷骰请求；每条请求保留自己的配置概率。</summary>
+        /// <summary>银材质登记的逐条掷骰请求；每条请求保留自己的概率、食物来源和材质来源。</summary>
         public IReadOnlyList<SilverItemRollRequest> SilverItemRolls { get; }
 
         /// <summary>结算阶段登记的技能复制请求。正式结算后由 BattleSession 用随机流落地。</summary>
@@ -211,15 +211,25 @@ namespace GourmetProject.Gameplay.Scoring
 
     public readonly struct TemporaryCategorySideEffect
     {
-        public TemporaryCategorySideEffect(int dishInstanceId, string category)
+        public TemporaryCategorySideEffect(
+            int dishInstanceId,
+            string category,
+            string sourceName = null,
+            string effectDescription = null)
         {
             DishInstanceId = dishInstanceId;
             Category = category ?? string.Empty;
+            SourceName = sourceName ?? string.Empty;
+            EffectDescription = effectDescription ?? string.Empty;
         }
 
         public int DishInstanceId { get; }
 
         public string Category { get; }
+
+        public string SourceName { get; }
+
+        public string EffectDescription { get; }
     }
 
     public readonly struct RecipeRemovalRequest

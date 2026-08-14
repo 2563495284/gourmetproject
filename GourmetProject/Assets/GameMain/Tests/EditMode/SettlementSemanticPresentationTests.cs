@@ -13,17 +13,17 @@ namespace GourmetProject.Tests.EditMode
     public sealed class SettlementSemanticPresentationTests
     {
         [TestCase(ScoreLineKind.DishFlat, 20d, "[score]+20[/score]")]
-        [TestCase(ScoreLineKind.DishPermanentFlat, 20d, "永久 [score]+20[/score]")]
+        [TestCase(ScoreLineKind.DishPermanentFlat, 20d, "永久[score]+20[/score]")]
         [TestCase(ScoreLineKind.DishMultiplier, 1.8d, "[multmul]×1.8[/multmul]")]
-        [TestCase(ScoreLineKind.DishMultiplierAdd, 0.5d, "[strong]倍率[/strong] [multadd]+0.5[/multadd]")]
+        [TestCase(ScoreLineKind.DishMultiplierAdd, 0.5d, "[multadd]+0.5[/multadd]")]
         [TestCase(ScoreLineKind.FinalFlat, 20d, "总分 [score]+20[/score]  →  120")]
         [TestCase(ScoreLineKind.FinalMultiplier, 1.8d, "总分 [multmul]×1.8[/multmul]  →  120")]
-        [TestCase(ScoreLineKind.Gold, 15d, "[gold]金币 +15[/gold]")]
-        [TestCase(ScoreLineKind.SilverItemRoll, 1d, "[term]消耗品[/term]判定 ×1")]
-        [TestCase(ScoreLineKind.ExtraSettlement, 20d, "[benefit]额外结算[/benefit] [score]+20[/score]")]
-        [TestCase(ScoreLineKind.TriggerSweetTransfer, 1d, "触发[term]甜蜜传递[/term]")]
-        [TestCase(ScoreLineKind.Layer, 3d, "层数 +3")]
-        [TestCase(ScoreLineKind.CountAs, 2d, "[strong]份数[/strong] +2  →  2")]
+        [TestCase(ScoreLineKind.Gold, 15d, "[gold]+15[/gold]")]
+        [TestCase(ScoreLineKind.SilverItemRoll, 1d, "判定消耗品")]
+        [TestCase(ScoreLineKind.ExtraSettlement, 20d, "[benefit]额外结算[/benefit]")]
+        [TestCase(ScoreLineKind.TriggerSweetTransfer, 1d, "发动[term]甜蜜传递[/term]")]
+        [TestCase(ScoreLineKind.Layer, 3d, "+3")]
+        [TestCase(ScoreLineKind.CountAs, 2d, "+2")]
         [TestCase(
             ScoreLineKind.SweetTransferBuffTriggered,
             1.8d,
@@ -41,7 +41,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void SilverItemRoll_ResultHeaderDescribesAJudgmentNotAReward()
+        public void SilverItemRoll_IsHiddenUntilTheActualRewardAndKeepsFallbackCopyPlain()
         {
             MethodInfo method = typeof(SettlementStageView).GetMethod(
                 "ResultHeader",
@@ -50,7 +50,29 @@ namespace GourmetProject.Tests.EditMode
 
             Assert.That(
                 method.Invoke(null, new object[] { BuildLine(ScoreLineKind.SilverItemRoll, 1d) }),
-                Is.EqualTo("银材质判定"));
+                Is.EqualTo("银材质"));
+            Assert.That(
+                SettlementStageView.ShouldShowResultLabel(
+                    BuildLine(ScoreLineKind.SilverItemRoll, 1d)),
+                Is.False);
+        }
+
+        [Test]
+        public void SilverAggregateWithoutScoreLines_DoesNotCreateSyntheticPresentation()
+        {
+            var result = new ScoreResult(
+                System.Array.Empty<DishScore>(),
+                BigDouble.Zero,
+                BigDouble.Zero,
+                BigDouble.One,
+                silverItemRolls: new[]
+                {
+                    new SilverItemRollRequest(0.2f, dishInstanceId: 7, materialId: "m_silver"),
+                });
+
+            SettlementPresentationPlan plan = SettlementPresentationPlan.Build(result);
+
+            Assert.That(plan.Groups, Is.Empty);
         }
 
         [TestCase(
@@ -127,7 +149,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(
                     body.text,
                     Is.EqualTo(
-                        "<b>倍率</b> <material=\"DescriptionMultiplyOutline\"><b><color=#FFFFFF>" +
+                        "<b>倍率</b> <material=\"DescriptionMultiplyOutline\"><b><color=#E15A64>" +
                         "×1.8</color></b></material>"));
             }
             finally

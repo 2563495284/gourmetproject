@@ -384,9 +384,16 @@ namespace GourmetProject.Gameplay.Scoring
                 case SkillActionType.AddTemporaryCategory:
                 {
                     string category = SkillConditionEvaluator.ParseCategoryParam(_rule.ActionParams);
+                    string categoryName = string.Equals(category, "cake", StringComparison.OrdinalIgnoreCase)
+                        ? "蛋糕"
+                        : category;
                     foreach (DishInstance target in Targets(ctx))
                     {
-                        ctx.AddTemporaryCategory(target, category);
+                        ctx.AddTemporaryCategory(
+                            target,
+                            category,
+                            CurrentSkillSourceName(ctx),
+                            $"视为{categoryName}");
                     }
                     break;
                 }
@@ -1022,18 +1029,8 @@ namespace GourmetProject.Gameplay.Scoring
         {
             bool randomTargets = HasActionParam(_rule, "target:random");
             IEnumerable<DishInstance> targets;
-            if (_rule.ActionType == SkillActionType.AddTemporaryCategory)
-            {
-                targets = SkillConditionEvaluator.ScopeDishes(ctx.DiningTable, _self, _rule.ActionScope)
-                    .OrderBy(BoardTop)
-                    .ThenBy(BoardLeft)
-                    .ThenBy(dish => dish.Id);
-                if (_rule.ActionCount > 0 && !randomTargets)
-                {
-                    targets = targets.Take(_rule.ActionCount);
-                }
-            }
-            else if (_rule.ActionScope == SkillScope.Category)
+            if (_rule.ActionScope == SkillScope.Category
+                && _rule.ActionType != SkillActionType.AddTemporaryCategory)
             {
                 targets = ctx.DiningTable.Dishes;
             }

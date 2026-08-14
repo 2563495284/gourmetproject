@@ -50,8 +50,8 @@ namespace GourmetProject.Gameplay.Model
         public float EffectValue => EffectValues.Count > 0 ? EffectValues[0] : 0f;
 
         /// <summary>
-        /// 获得消耗品判定的配置概率，取 EffectValue[0] 并裁剪到 [0, 1]。
-        /// 旧定义未提供 EffectValue 时沿用兼容默认概率。
+        /// 旧版获得消耗品判定的配置概率，取 EffectValue[0] 并裁剪到 [0, 1]。
+        /// 仅供兼容旧定义；当前银材质玩法固定为每个银格独立 20%。
         /// </summary>
         public float ItemRollProbability
         {
@@ -74,7 +74,7 @@ namespace GourmetProject.Gameplay.Model
 
         public string EffectParam => EffectParams.Count > 0 ? EffectParams[0] : string.Empty;
 
-        /// <summary>阈值参数（金/银「占 N 格」判定），取 EffectParam[0]，缺省 2，下限 1。</summary>
+        /// <summary>阈值参数（当前用于金材质「占 N 格」判定），取 EffectParam[0]，缺省 2，下限 1。</summary>
         public int ThresholdParam
         {
             get

@@ -23,6 +23,8 @@ namespace GourmetProject.Game.Presentation.Battle
         public static readonly Color SweetTransfer = new Color32(255, 84, 178, 255);
         public static readonly Color Failure = new Color32(224, 106, 132, 255);
         public static readonly Color Special = new Color32(169, 120, 255, 255);
+        public static readonly Color CountAs = new Color32(255, 204, 82, 255);
+        public static readonly Color TemporaryCategory = new Color32(226, 92, 126, 255);
         public static readonly Color FinalScore = new Color32(255, 158, 26, 255);
 
         // 来源身份
@@ -54,6 +56,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     or ScoreLineKind.SweetTransferBuffApplied
                     or ScoreLineKind.SweetTransferBuffTriggered => SweetTransfer,
                 ScoreLineKind.SweetTransferFailed => Failure,
+                ScoreLineKind.CountAs or ScoreLineKind.EmptyCountAs => CountAs,
+                ScoreLineKind.TemporaryCategory => TemporaryCategory,
                 _ => Special,
             };
         }
@@ -66,6 +70,11 @@ namespace GourmetProject.Game.Presentation.Battle
         public static Color TextFor(Color theme)
         {
             return Color.Lerp(theme, TextLight, 0.30f);
+        }
+
+        public static Color ResultHeaderTextFor(Color semanticColor)
+        {
+            return Color.Lerp(semanticColor, TextLight, 0.18f);
         }
 
         public static Color WithAlpha(Color color, float alpha)
@@ -424,7 +433,6 @@ namespace GourmetProject.Game.Presentation.Battle
             bool hasFinalMultiplier = false;
             bool hasGold = false;
             bool hasLayer = false;
-            bool hasSilverRoll = false;
             for (int i = 0; i < result.ScoreLines.Count; i++)
             {
                 ScoreLine line = result.ScoreLines[i];
@@ -437,7 +445,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 hasFinalMultiplier |= line.Kind == ScoreLineKind.FinalMultiplier;
                 hasGold |= line.Kind == ScoreLineKind.Gold;
                 hasLayer |= line.Kind == ScoreLineKind.Layer;
-                hasSilverRoll |= line.Kind == ScoreLineKind.SilverItemRoll;
             }
 
             var source = ScoreSource.FinalModifier("settlement_fallback", "结算");
@@ -487,13 +494,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     $"层数 {FormatSigned(result.HappyCakeLayerDelta)}"));
             }
 
-            if (!hasSilverRoll && result.SilverItemRollRequests > 0)
-            {
-                AppendSynthetic(plan, SyntheticSideEffect(
-                    ScoreLineKind.SilverItemRoll,
-                    result.SilverItemRollRequests,
-                    $"消耗品判定 ×{result.SilverItemRollRequests}"));
-            }
         }
 
         private static ScoreLine SyntheticSideEffect(ScoreLineKind kind, float value, string message)

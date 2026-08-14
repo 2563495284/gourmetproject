@@ -14,7 +14,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public TextMeshPro HeaderText => _headerText;
         public TextMeshPro BodyText => _bodyText;
 
-        public void Bind(string header, string body, Color theme)
+        public void Bind(string header, string body, Color theme, Color? headerSemanticColor = null)
         {
             _headerText.text = header ?? string.Empty;
             SemanticDescriptionFormatter.Set(_bodyText, body);
@@ -22,7 +22,10 @@ namespace GourmetProject.Game.Presentation.Battle
             _bodyText.ForceMeshUpdate(true, true);
 
             Color textColor = SettlementColorPalette.TextFor(theme);
-            _headerText.color = SettlementColorPalette.WithAlpha(textColor, 0.82f);
+            Color headerColor = headerSemanticColor.HasValue
+                ? SettlementColorPalette.ResultHeaderTextFor(headerSemanticColor.Value)
+                : textColor;
+            _headerText.color = SettlementColorPalette.WithAlpha(headerColor, 0.82f);
             _bodyText.color = textColor;
 
             BattleSorting.Apply(

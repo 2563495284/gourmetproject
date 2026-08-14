@@ -70,7 +70,7 @@ namespace GourmetProject.Tests.EditMode
 
                 view.Bind(new[]
                 {
-                    Entry("m_silver", "银", "进行一次消耗品判定"),
+                    Entry("m_silver", "银", "每占1格银材质\n独立1/5概率获得消耗品"),
                 });
 
                 Assert.That(Content(view).childCount, Is.EqualTo(1));

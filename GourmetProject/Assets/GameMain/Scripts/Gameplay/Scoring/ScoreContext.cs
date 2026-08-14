@@ -282,10 +282,10 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>结算过程中「当前」的全局欢乐蛋糕层数（初始 + 已产生增量）。</summary>
         public int CurrentHappyCakeLayers => Math.Max(0, InitialHappyCakeLayers + _happyCakeLayerDelta);
 
-        /// <summary>本次结算登记的「银材质」获得消耗品掷骰请求次数（正式结算后由 Game 层掷骰发放）。</summary>
+        /// <summary>本次结算按银格登记的独立消耗品判定次数（正式结算后由 Game 层逐条掷骰发放）。</summary>
         public int SilverItemRollRequests => _silverItemRolls.Count;
 
-        /// <summary>本次结算登记的逐条银材质掷骰请求。</summary>
+        /// <summary>本次结算登记的逐条银材质掷骰请求；每条保留自己的概率与来源。</summary>
         public IReadOnlyList<SilverItemRollRequest> SilverItemRolls => _silverItemRolls;
 
         public IReadOnlyList<SkillTransferSideEffect> SkillTransfers => _skillTransfers;
@@ -303,7 +303,15 @@ namespace GourmetProject.Gameplay.Scoring
         {
             if (value > 0)
             {
+                int before = _emptyCountAsPerCell;
                 _emptyCountAsPerCell += value;
+                AddLine(
+                    _current,
+                    ScoreLineKind.EmptyCountAs,
+                    value,
+                    before,
+                    _emptyCountAsPerCell,
+                    $"每个空格视为 {_emptyCountAsPerCell} 份食物");
             }
         }
 
@@ -344,13 +352,23 @@ namespace GourmetProject.Gameplay.Scoring
                 && categories.Contains(category);
         }
 
-        public void AddTemporaryCategory(DishInstance dish, string category)
+        public void AddTemporaryCategory(
+            DishInstance dish,
+            string category,
+            string sourceName = null,
+            string effectDescription = null)
         {
             if (dish == null || string.IsNullOrEmpty(category))
             {
                 return;
             }
 
+            string categoryName = string.Equals(category, "cake", StringComparison.OrdinalIgnoreCase)
+                ? "蛋糕"
+                : category;
+            string resolvedEffect = string.IsNullOrEmpty(effectDescription)
+                ? $"视为{categoryName}"
+                : effectDescription;
             bool alreadyCategory = IsCategory(dish, category);
             HashSet<string> categories = null;
             if (!alreadyCategory
@@ -362,19 +380,23 @@ namespace GourmetProject.Gameplay.Scoring
 
             if (!alreadyCategory && categories.Add(category))
             {
-                _temporaryCategories.Add(new TemporaryCategorySideEffect(dish.Id, category));
+                string resolvedSource = string.IsNullOrEmpty(sourceName)
+                    ? Source?.Name ?? string.Empty
+                    : sourceName;
+                _temporaryCategories.Add(new TemporaryCategorySideEffect(
+                    dish.Id,
+                    category,
+                    resolvedSource,
+                    resolvedEffect));
             }
 
-            string categoryName = string.Equals(category, "cake", StringComparison.OrdinalIgnoreCase)
-                ? "蛋糕"
-                : category;
             AddLine(
                 EnsureAccumulator(dish),
                 ScoreLineKind.TemporaryCategory,
                 1,
                 alreadyCategory ? 1 : 0,
                 1,
-                $"视为{categoryName}");
+                resolvedEffect);
             EmitEvent(ScoreEventType.CommandExecuted, $"{dish.Def.Name} 临时视为 {categoryName}");
         }
 
@@ -653,8 +675,9 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 登记一次使用配置概率获得消耗品的掷骰请求（银材质）。结算层只累计请求、不掷骰，
+        /// 登记一次带指定概率和当前来源的消耗品掷骰请求。结算层只累计请求、不掷骰，
         /// 保证 PreviewScore 纯净；正式 Settle 后由 Game 层用注入的随机流掷骰并发放装饰品和消耗品。
+        /// 无参重载仅保留旧版 50% 默认值；当前银材质路径会显式传入 20%。
         /// </summary>
         public void RequestSilverItemRoll()
         {
@@ -1269,6 +1292,7 @@ namespace GourmetProject.Gameplay.Scoring
             AddLine(_current, ScoreLineKind.Gold, value, before, GoldDelta, $"获得金币 +{value}");
         }
 
+        /// <summary>兼容旧命令的 50% 默认值；当前银材质路径不会调用此重载。</summary>
         internal void ApplyRequestSilverItemRollCommand()
         {
             ApplyRequestSilverItemRollCommand(0.5f);
@@ -1620,7 +1644,7 @@ namespace GourmetProject.Gameplay.Scoring
         public void Execute(ScoreContext context) => context.ApplyGrantGoldCommand(_value);
     }
 
-    /// <summary>登记一次银材质获得消耗品掷骰请求（副作用，不掷骰）。</summary>
+    /// <summary>登记一次带概率和来源的银材质消耗品判定请求（副作用，不掷骰）。</summary>
     public sealed class RequestSilverItemRollCommand : IScoreCommand
     {
         private readonly float _probability;

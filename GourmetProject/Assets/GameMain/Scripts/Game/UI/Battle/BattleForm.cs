@@ -4776,8 +4776,7 @@ namespace GourmetProject.Game.UI.Battle
                     _session.DiningTable,
                     _session.Database,
                     reveal,
-                    _session.LastResult,
-                    _session.IsSettled ? null : _session.PreviewEffectiveCountAs(piece.Instance)));
+                    _session.LastResult));
             }
             else
             {
@@ -4787,7 +4786,9 @@ namespace GourmetProject.Game.UI.Battle
                     _session.DiningTable,
                     _session.Database,
                     preview,
-                    _session.IsSettled ? null : _session.PreviewEffectiveCountAs(piece.Instance)));
+                    _session.IsSettled
+                        ? null
+                        : Math.Max(1, piece.Instance.EffectiveCountAs + _session.ExtraCountAsPerDish)));
             }
 
             tips.Show();
@@ -4820,6 +4821,18 @@ namespace GourmetProject.Game.UI.Battle
             if (signal.TransferredDelta > 0)
             {
                 _settlementReveal.RevealTransferred(signal.DishInstanceId, signal.TransferredDelta);
+            }
+
+            if (signal.HasCountAs)
+            {
+                _settlementReveal.RevealCountAs(signal.DishInstanceId, signal.CountAs);
+            }
+
+            if (signal.TemporaryEffectDelta > 0)
+            {
+                _settlementReveal.RevealTemporaryEffects(
+                    signal.DishInstanceId,
+                    signal.TemporaryEffectDelta);
             }
 
             if (signal.HasCakeLayer)
@@ -5129,7 +5142,9 @@ namespace GourmetProject.Game.UI.Battle
             var settlementBaseline = new SettlementBaselineSnapshot();
             foreach (DishInstance dish in _session.DiningTable.Dishes)
             {
-                reveal.CaptureBaseline(dish);
+                reveal.CaptureBaseline(
+                    dish,
+                    Math.Max(1, dish.EffectiveCountAs + _session.ExtraCountAsPerDish));
                 settlementBaseline.Capture(dish);
             }
 
@@ -5192,10 +5207,20 @@ namespace GourmetProject.Game.UI.Battle
             {
                 foreach (RecipeRemovalOutcome outcome in _session.LastRecipeRemovalOutcomes)
                 {
-                    ShowActiveItemMessage(outcome.Removed ? "移除" : "不移除");
                     try
                     {
-                        await Awaitable.WaitForSecondsAsync(0.75f, destroyCancellationToken);
+                        if (_world != null)
+                        {
+                            await _world.PlayRecipeRemovalOutcomeAsync(
+                                outcome,
+                                destroyCancellationToken);
+                        }
+                        else
+                        {
+                            ShowActiveItemMessage(
+                                $"{outcome.Request.DishName}：{(outcome.Removed ? "移除" : "保留")}");
+                            await Awaitable.WaitForSecondsAsync(0.75f, destroyCancellationToken);
+                        }
                     }
                     catch (OperationCanceledException)
                     {
@@ -5210,10 +5235,44 @@ namespace GourmetProject.Game.UI.Battle
 
             }
 
-            // 结算侧效果写回局外状态：金币入账（经济运营 + 上菜 OnServe）、大局结算历史累计。
+            // 所有需要“先演出、再写回”的判定结束后应用局外结算；银格命中的实际消耗品
+            // 此时已经从实时物品池发放，可按命中顺序逐条展示具体内容。
+            // 判定请求本身不显示，未命中也不显示；同一食物多格命中不会合并。
+            BattleRunSettlement appliedSettlement = null;
             if (_run != null && _session != null)
             {
-                BattleSettlementApplier.ApplyFinal(_run, _session);
+                appliedSettlement = BattleSettlementApplier.ApplyFinal(_run, _session);
+            }
+
+            if (appliedSettlement != null && appliedSettlement.SilverItemGrants.Count > 0)
+            {
+                foreach (SilverItemGrantPresentation grant in appliedSettlement.SilverItemGrants)
+                {
+                    try
+                    {
+                        if (_world != null)
+                        {
+                            await _world.PlaySilverItemGrantAsync(grant, destroyCancellationToken);
+                        }
+                        else
+                        {
+                            ItemAcquireResult acquired = grant.Acquisition;
+                            ShowActiveItemMessage(acquired.HasItem
+                                ? $"银材质：获得{acquired.ItemName}"
+                                : $"银材质：获得金币 +{acquired.Gold}");
+                            await Awaitable.WaitForSecondsAsync(0.82f, destroyCancellationToken);
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+
+                    if (_discardSettlementCallbacks || Active != this)
+                    {
+                        return;
+                    }
+                }
             }
 
             // 领奖期间允许隐藏奖励页查看本场结果，因此保留最终美味值；

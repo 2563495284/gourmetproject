@@ -44,8 +44,11 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(gold.ThresholdParam, Is.EqualTo(1));
             Assert.That(gold.EffectValue, Is.EqualTo(6f).Within(0.000001f));
             Assert.That(silver, Is.Not.Null);
-            Assert.That(silver.ThresholdParam, Is.EqualTo(1));
-            Assert.That(silver.ItemRollProbability, Is.EqualTo(0.2f).Within(0.000001f));
+            Assert.That(silver.MaterialEffect, Is.EqualTo(MaterialEffectType.GrantItemRollIfCellCount));
+            Assert.That(silver.EffectParams, Is.Empty);
+            Assert.That(silver.EffectValue, Is.EqualTo(1f).Within(0.000001f));
+            Assert.That(silver.Desc, Does.Contain("每占1格银材质"));
+            Assert.That(silver.Desc, Does.Contain("独立1/5概率"));
         }
 
         [Test]

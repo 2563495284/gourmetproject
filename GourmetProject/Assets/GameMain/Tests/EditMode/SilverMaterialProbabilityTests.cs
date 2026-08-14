@@ -13,7 +13,7 @@ namespace GourmetProject.Tests.EditMode
     public sealed class SilverMaterialProbabilityTests
     {
         [Test]
-        public void MaterialDef_ItemRollProbabilityUsesConfiguredValueAndLegacyFallback()
+        public void MaterialDef_LegacyItemRollProbabilityUsesConfiguredValueAndFallback()
         {
             Assert.That(Silver("configured", new[] { 0.2f }).ItemRollProbability,
                 Is.EqualTo(0.2f).Within(0.000001f));
@@ -55,7 +55,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void ScoreContext_ParameterlessSilverApisKeepLegacyProbability()
+        public void ScoreContext_ParameterlessLegacySilverApisKeepHalfProbability()
         {
             var context = new ScoreContext(new ScoreSnapshot(
                 new DiningTable(1, 1),
@@ -71,7 +71,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void ScoreCalculator_SilverMaterialCarriesProbabilityAndSourceOncePerDish()
+        public void ScoreCalculator_SilverMaterialCarriesProbabilityAndSourceForEachCell()
         {
             MaterialDef silver = Silver("silver", new[] { 0.2f });
             DishShape shape = DishShape.FromRows(new[] { "XX" });
@@ -88,12 +88,16 @@ namespace GourmetProject.Tests.EditMode
                 table,
                 Database(new[] { dish.Def }, new[] { silver }));
 
-            Assert.That(result.SilverItemRollRequests, Is.EqualTo(1));
-            Assert.That(result.SilverItemRolls.Count, Is.EqualTo(1));
+            Assert.That(result.SilverItemRollRequests, Is.EqualTo(2));
+            Assert.That(result.SilverItemRolls.Count, Is.EqualTo(2));
             Assert.That(result.SilverItemRolls[0].Probability,
                 Is.EqualTo(0.2f).Within(0.000001f));
             Assert.That(result.SilverItemRolls[0].DishInstanceId, Is.EqualTo(dish.Id));
             Assert.That(result.SilverItemRolls[0].MaterialId, Is.EqualTo(silver.Id));
+            Assert.That(result.SilverItemRolls[1].Probability,
+                Is.EqualTo(0.2f).Within(0.000001f));
+            Assert.That(result.SilverItemRolls[1].DishInstanceId, Is.EqualTo(dish.Id));
+            Assert.That(result.SilverItemRolls[1].MaterialId, Is.EqualTo(silver.Id));
         }
 
         [TestCase(0, 0f)]
@@ -151,7 +155,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void BattleSession_SettleRollsEachConfiguredProbabilityInOrder()
+        public void BattleSession_SettleRollsEachSilverCellAtOneFifthInOrder()
         {
             MaterialDef low = Silver("silver_low", new[] { 0.2f });
             MaterialDef high = Silver("silver_high", new[] { 0.7f });
@@ -166,7 +170,7 @@ namespace GourmetProject.Tests.EditMode
             var table = new DiningTable(2, 1, null, materials);
             table.Place(left);
             table.Place(right);
-            var random = new RecordingRandomStream();
+            var random = new RecordingRandomStream(alwaysResult: true);
             var session = new BattleSession(
                 table,
                 Database(new[] { left.Def, right.Def }, new[] { low, high }),
@@ -179,8 +183,9 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(result.SilverItemRollRequests, Is.EqualTo(2));
             Assert.That(random.Probabilities, Has.Count.EqualTo(2));
             Assert.That(random.Probabilities[0], Is.EqualTo(0.2d).Within(0.000001d));
-            Assert.That(random.Probabilities[1], Is.EqualTo(0.7d).Within(0.000001d));
-            Assert.That(session.PendingActiveItemGrants, Is.EqualTo(1));
+            Assert.That(random.Probabilities[1], Is.EqualTo(0.2d).Within(0.000001d));
+            Assert.That(session.PendingActiveItemGrants, Is.EqualTo(2));
+            Assert.That(session.PendingActiveItemGrantSources, Is.EqualTo(new[] { left.Id, right.Id }));
         }
 
         private static MaterialDef Silver(string id, IReadOnlyList<float> values)
@@ -190,7 +195,7 @@ namespace GourmetProject.Tests.EditMode
                 string.Empty,
                 MaterialEffectType.GrantItemRollIfCellCount,
                 values,
-                new[] { "1" },
+                Array.Empty<string>(),
                 string.Empty);
 
         private static MaterialDef Gold(string id, float value)
@@ -236,6 +241,12 @@ namespace GourmetProject.Tests.EditMode
         private sealed class RecordingRandomStream : IRandomStream
         {
             private readonly Xoshiro256SS _inner = new Xoshiro256SS(991UL);
+            private readonly bool _alwaysResult;
+
+            public RecordingRandomStream(bool alwaysResult = false)
+            {
+                _alwaysResult = alwaysResult;
+            }
 
             public List<double> Probabilities { get; } = new List<double>();
 
@@ -262,7 +273,7 @@ namespace GourmetProject.Tests.EditMode
             public bool NextBool(double probability = 0.5)
             {
                 Probabilities.Add(probability);
-                return probability >= 0.5;
+                return _alwaysResult;
             }
 
             public void Shuffle<T>(IList<T> list) => _inner.Shuffle(list);

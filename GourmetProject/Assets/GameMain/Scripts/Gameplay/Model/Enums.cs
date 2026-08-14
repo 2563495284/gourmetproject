@@ -53,7 +53,7 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>本食物占据 &gt;= 阈值(EffectParam) 格本材质时，获得 EffectValue 金币（金）。</summary>
         GrantGoldIfCellCount = 6,
 
-        /// <summary>本食物占据 &gt;= 阈值(EffectParam) 格本材质时，按 EffectValue 概率登记一次获得消耗品判定（银）。</summary>
+        /// <summary>本食物每占据 1 格本材质，独立登记一次 1/5 获得消耗品的掷骰请求（银）。</summary>
         GrantItemRollIfCellCount = 7,
     }
 

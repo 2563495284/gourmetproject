@@ -124,17 +124,9 @@ namespace GourmetProject.Game.Presentation.Battle
                     durationScale: Mathf.Max(0.05f, duration / 0.45f));
             }
 
-            Vector3 anchor = view != null
-                ? view.DishValueBadgeWorldPosition
-                    + Vector3.down * (0.42f * _visualScale)
-                : _mapper.Center;
-            await SpawnLabelAsync(
-                anchor,
-                string.IsNullOrEmpty(dishName) ? "基础美味" : dishName,
-                $"基础贡献  {ScoreNumberFormatter.Format(contribution)}",
-                SettlementColorPalette.WithAlpha(SettlementColorPalette.BaseScore, 0.96f),
-                duration,
-                cancellationToken);
+            // 基础值已由常驻食物数值徽章同步揭示，不再额外生成一条
+            // “食物名 / 基础贡献”结果文本，避免与后续“分数 +N”重复。
+            await Awaitable.WaitForSecondsAsync(Mathf.Max(0.0001f, duration), cancellationToken);
         }
 
         internal async Awaitable FocusSourceAsync(
@@ -369,6 +361,11 @@ namespace GourmetProject.Game.Presentation.Battle
             bool playTargetFeedback,
             CancellationToken cancellationToken)
         {
+            if (!ShouldShowResultLabel(line))
+            {
+                return;
+            }
+
             Color theme = ResultThemeFor(line);
             if (target != null)
             {
@@ -403,7 +400,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 ResultText(line, dishContribution, runningTotal),
                 theme,
                 duration,
-                cancellationToken);
+                cancellationToken,
+                headerSemanticColor: ResultHeaderSemanticColorFor(line, theme));
             if (playTargetFeedback)
             {
                 await impactTask;
@@ -708,7 +706,8 @@ namespace GourmetProject.Game.Presentation.Battle
             bool holdUntilCleared = false,
             bool finalStamp = false,
             Transform parentOverride = null,
-            float visualScaleOverride = -1f)
+            float visualScaleOverride = -1f,
+            Color? headerSemanticColor = null)
         {
             SettlementStageLabelView prefab = finalStamp ? _finaleLabelPrefab : _labelPrefab;
             if (prefab == null)
@@ -724,7 +723,7 @@ namespace GourmetProject.Game.Presentation.Battle
             root.name = finalStamp ? "SettlementFinaleLabel" : "SettlementStageLabel";
             root.transform.position = anchor;
             _transients.Add(root);
-            label.Bind(header, body, theme);
+            label.Bind(header, body, theme, headerSemanticColor);
 
             TextMeshPro headerText = label.HeaderText;
             TextMeshPro bodyText = label.BodyText;
@@ -874,6 +873,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     // 主动发动已经在效果组开场由 Actor 播放一次；这里仅表现各目标份数变化，
                     // 避免蛋黄酥自身的结果行看起来像再次发动技能。
                     return SettlementDishFeedbackKind.GenericValueChanged;
+                case ScoreLineKind.EmptyCountAs:
+                    return SettlementDishFeedbackKind.CountAsChanged;
                 case ScoreLineKind.TemporaryCategory:
                     return active
                         ? SettlementDishFeedbackKind.GenericSkillTriggered
@@ -907,7 +908,37 @@ namespace GourmetProject.Game.Presentation.Battle
                 : SettlementColorPalette.For(line.Kind);
         }
 
-        private static string ResultHeader(ScoreLine line)
+        internal static Color ResultHeaderSemanticColorFor(ScoreLine line, Color fallback)
+        {
+            if (line == null)
+            {
+                return fallback;
+            }
+
+            return line.Kind switch
+            {
+                ScoreLineKind.DishFlat
+                    or ScoreLineKind.DishPermanentFlat
+                    or ScoreLineKind.FinalFlat => new Color32(40, 102, 156, 255),
+                ScoreLineKind.DishMultiplier
+                    or ScoreLineKind.DishMultiplierAdd
+                    or ScoreLineKind.FinalMultiplier => new Color32(178, 58, 72, 255),
+                ScoreLineKind.Gold => new Color32(154, 101, 0, 255),
+                ScoreLineKind.ExtraSettlement => new Color32(118, 86, 168, 255),
+                _ => fallback,
+            };
+        }
+
+        internal static bool ShouldShowResultLabel(ScoreLine line)
+        {
+            // 银材质行只是尚未掷骰的判定请求；命中后的具体消耗品由 Game 层发放后另行逐条展示。
+            // TriggeredSweetTransferSource 只驱动多来源甜蜜传递的逐个交接演出，不是玩家结果。
+            return line != null
+                && line.Kind != ScoreLineKind.SilverItemRoll
+                && line.Kind != ScoreLineKind.TriggeredSweetTransferSource;
+        }
+
+        internal static string ResultHeader(ScoreLine line)
         {
             if (line == null)
             {
@@ -916,23 +947,25 @@ namespace GourmetProject.Game.Presentation.Battle
 
             return line.Kind switch
             {
-                ScoreLineKind.DishFlat => "基础分",
-                ScoreLineKind.DishPermanentFlat => "永久分数",
-                ScoreLineKind.DishMultiplier => "乘倍率",
-                ScoreLineKind.DishMultiplierAdd => "加倍率",
+                ScoreLineKind.DishFlat => "分数",
+                ScoreLineKind.DishPermanentFlat => "分数",
+                ScoreLineKind.DishMultiplier => "倍率",
+                ScoreLineKind.DishMultiplierAdd => "倍率",
                 ScoreLineKind.FinalFlat => "总分加成",
                 ScoreLineKind.FinalMultiplier => "总分倍率",
                 ScoreLineKind.Gold => "金币",
-                ScoreLineKind.Layer => "快乐蛋糕",
-                ScoreLineKind.SilverItemRoll => "银材质判定",
+                ScoreLineKind.Layer => "蛋糕层数",
+                ScoreLineKind.SilverItemRoll => "银材质",
                 ScoreLineKind.CopySkill => "技能复制",
                 ScoreLineKind.TriggerSweetTransfer => "甜蜜传递",
-                ScoreLineKind.TriggeredSweetTransferSource => "传递来源",
-                ScoreLineKind.SweetTransferBuffApplied => "甜蜜 Buff",
-                ScoreLineKind.SweetTransferBuffTriggered => "Buff 响应",
+                ScoreLineKind.TriggeredSweetTransferSource => string.Empty,
+                ScoreLineKind.SweetTransferBuffApplied => string.Empty,
+                ScoreLineKind.SweetTransferBuffTriggered => SweetTransferBuffName(line),
                 ScoreLineKind.SweetTransferFailed => "甜蜜传递",
                 ScoreLineKind.CountAs => "份数",
-                ScoreLineKind.TemporaryCategory => "临时分类",
+                ScoreLineKind.EmptyCountAs => "份数",
+                ScoreLineKind.TemporaryCategory => "赋予",
+                ScoreLineKind.ExtraSettlement => "咸味",
                 _ => "结算结果",
             };
         }
@@ -958,46 +991,64 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.DishFlat:
                     return Score(signed);
                 case ScoreLineKind.DishPermanentFlat:
-                    return $"永久 {Score(signed)}";
+                    return $"永久{Score(signed)}";
                 case ScoreLineKind.DishMultiplier:
                     return MultiplierMultiply($"×{FormatLineValue(line.Value)}");
                 case ScoreLineKind.DishMultiplierAdd:
-                    return $"{Strong("倍率")} {MultiplierAdd(signed)}";
+                    return MultiplierAdd(signed);
                 case ScoreLineKind.FinalFlat:
                     return $"总分 {Score(signed)}  →  {total}";
                 case ScoreLineKind.FinalMultiplier:
                     return $"总分 {MultiplierMultiply($"×{FormatLineValue(line.Value)}")}  →  {total}";
                 case ScoreLineKind.Gold:
-                    return Gold($"金币 {signed}");
+                    return Gold(signed);
                 case ScoreLineKind.Layer:
-                    return $"层数 {signed}";
+                    return signed;
                 case ScoreLineKind.SilverItemRoll:
-                    return $"{Term("消耗品")}判定 ×{Count(line.Value)}";
+                    return "判定消耗品";
                 case ScoreLineKind.CopySkill:
                     return $"获得技能 ×{Count(line.Value)}";
                 case ScoreLineKind.TriggerSweetTransfer:
                     return line.Value > 1f
-                        ? $"触发{Term("甜蜜传递")} ×{Count(line.Value)}"
-                        : $"触发{Term("甜蜜传递")}";
+                        ? $"发动{Term("甜蜜传递")} ×{Count(line.Value)}"
+                        : $"发动{Term("甜蜜传递")}";
                 case ScoreLineKind.TriggeredSweetTransferSource:
-                    return "来源已接力";
+                    return string.Empty;
                 case ScoreLineKind.SweetTransferBuffApplied:
-                    return $"挂载目标 ×{Count(line.Value)}";
+                    return SweetTransferBuffName(line);
                 case ScoreLineKind.SweetTransferBuffTriggered:
                     return line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
                         ? $"额外目标 +{Count(line.Value)}"
                         : $"本行{Strong("倍率")} {MultiplierMultiply($"×{FormatLineValue(line.Value)}")}";
                 case ScoreLineKind.SweetTransferFailed:
                     return "没有可传递目标";
-                case ScoreLineKind.ExtraSettlement:
-                    return $"{Benefit("额外结算")} {Score(signed)}";
                 case ScoreLineKind.CountAs:
-                    return $"{Strong("份数")} {signed}  →  {FormatLineValue(line.After)}";
+                    return signed;
+                case ScoreLineKind.EmptyCountAs:
+                    return signed;
                 case ScoreLineKind.TemporaryCategory:
-                    return string.IsNullOrEmpty(line.Message) ? "临时分类生效" : line.Message;
+                    return TemporaryCategoryText(line.Message);
+                case ScoreLineKind.ExtraSettlement:
+                    return Benefit("额外结算");
                 default:
                     return string.IsNullOrEmpty(line.Message) ? signed : line.Message;
             }
+        }
+
+        internal static string SweetTransferBuffName(ScoreLine line)
+        {
+            string ownerName = line?.Trace?.OwnerDishName;
+            return string.IsNullOrWhiteSpace(ownerName)
+                ? "甜蜜Buff"
+                : $"{ownerName}Buff";
+        }
+
+        private static string TemporaryCategoryText(string message)
+        {
+            string text = string.IsNullOrWhiteSpace(message) ? "视为蛋糕" : message.Trim();
+            return text.StartsWith("本场", StringComparison.Ordinal)
+                ? text.Substring(2).TrimStart()
+                : text;
         }
 
         /// <summary>

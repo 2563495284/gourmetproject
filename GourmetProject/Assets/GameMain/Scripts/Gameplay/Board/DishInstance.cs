@@ -19,6 +19,8 @@ namespace GourmetProject.Gameplay.Board
         private readonly List<TransferredSkill> _transferredSkills = new List<TransferredSkill>();
         private readonly HashSet<string> _temporaryCategories =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly List<TemporaryCategoryEffect> _temporaryCategoryEffects =
+            new List<TemporaryCategoryEffect>();
         private readonly Dictionary<string, float> _serveMultiplierFlatBySource =
             new Dictionary<string, float>(StringComparer.Ordinal);
 
@@ -60,11 +62,19 @@ namespace GourmetProject.Gameplay.Board
                 && (Def.IsCategory(category) || _temporaryCategories.Contains(category));
         }
 
-        public void AddTemporaryCategory(string category)
+        public IReadOnlyList<TemporaryCategoryEffect> TemporaryCategoryEffects => _temporaryCategoryEffects;
+
+        public void AddTemporaryCategory(
+            string category,
+            string sourceName = null,
+            string effectDescription = null)
         {
-            if (!string.IsNullOrEmpty(category))
+            if (!string.IsNullOrEmpty(category) && _temporaryCategories.Add(category))
             {
-                _temporaryCategories.Add(category);
+                _temporaryCategoryEffects.Add(new TemporaryCategoryEffect(
+                    category,
+                    sourceName,
+                    effectDescription));
             }
         }
 
@@ -445,6 +455,23 @@ namespace GourmetProject.Gameplay.Board
                 AddTransferredSkill(t.Effect, t.SourceLabel, t.SourceInstanceId);
             }
         }
+    }
+
+    /// <summary>临时分类效果的运行时展示数据，供食物 Tips 说明来源与效果。</summary>
+    public sealed class TemporaryCategoryEffect
+    {
+        public TemporaryCategoryEffect(string category, string sourceName, string effectDescription)
+        {
+            Category = category ?? string.Empty;
+            SourceName = sourceName ?? string.Empty;
+            EffectDescription = effectDescription ?? string.Empty;
+        }
+
+        public string Category { get; }
+
+        public string SourceName { get; }
+
+        public string EffectDescription { get; }
     }
 
     /// <summary>目标实例上的一条外来子技能：效果(rule+描述) + 来源标签（如「巧克力棒&lt;甜蜜传递&gt;」）。</summary>

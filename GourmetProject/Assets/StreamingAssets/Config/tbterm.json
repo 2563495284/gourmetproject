@@ -67,12 +67,12 @@
   {
     "id": "m_gold",
     "name": "金",
-    "desc": "占据 2 格金餐桌时\n[gold]+15 金币[/gold]"
+    "desc": "占据 1 格金餐桌时\n[gold]+6 金币[/gold]"
   },
   {
     "id": "m_silver",
     "name": "银",
-    "desc": "占据 2 格银餐桌时\n1/2 概率获得[term]消耗品[/term]"
+    "desc": "每占据 1 格银材质\n独立 1/5 概率获得[term]消耗品[/term]"
   },
   {
     "id": "term_food_count_as",

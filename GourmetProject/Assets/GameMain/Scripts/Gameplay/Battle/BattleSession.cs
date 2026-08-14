@@ -122,6 +122,7 @@ namespace GourmetProject.Gameplay.Battle
         private readonly List<RecipeScoreFlatDelta> _lastRecipeScoreFlatDeltas = new List<RecipeScoreFlatDelta>();
         private readonly List<RecipeScoreMultiplierDelta> _lastRecipeScoreMultiplierDeltas = new List<RecipeScoreMultiplierDelta>();
         private readonly List<RecipeRemovalOutcome> _lastRecipeRemovalOutcomes = new List<RecipeRemovalOutcome>();
+        private readonly List<int> _pendingActiveItemGrantSources = new List<int>();
         private readonly List<DishInstance> _temporaryAreaDishes = new List<DishInstance>();
         private readonly Dictionary<int, PendingDishPlacement> _pendingDishPlacements =
             new Dictionary<int, PendingDishPlacement>();
@@ -378,8 +379,11 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本局待入账的金币增量（上菜 OnServe + 结算经济运营累积；由 Game 层写回 GameRun.Gold）。</summary>
         public float PendingGold { get; private set; }
 
-        /// <summary>本局待发放的消耗品数量（银材质结算掷骰命中累积；由 Game 层在结算后发放）。</summary>
-        public int PendingActiveItemGrants { get; private set; }
+        /// <summary>本局待发放的消耗品数量（银格独立 1/5 判定命中数；由 Game 层在结算后发放）。</summary>
+        public int PendingActiveItemGrants => _pendingActiveItemGrantSources.Count;
+
+        /// <summary>每次银格命中对应的来源食物实例 Id，顺序与待发放消耗品一致。</summary>
+        public IReadOnlyList<int> PendingActiveItemGrantSources => _pendingActiveItemGrantSources;
 
         /// <summary>本次结算各 BaseId 的结算增量（供 Game 层累加进 GameRun 大局历史）。</summary>
         public IReadOnlyDictionary<string, int> LastSettledIncrements { get; private set; } = new Dictionary<string, int>();
@@ -1779,12 +1783,13 @@ namespace GourmetProject.Gameplay.Battle
             // 金币入账（结算侧效果）。
             PendingGold += result.GoldDelta;
 
-            // 银材质：对每个获得消耗品请求按配置概率掷骰（仅正式结算掷，预览不掷）。
+            // 银材质：每个银格登记一条带来源的独立判定请求；仅正式结算按请求概率掷骰。
+            _pendingActiveItemGrantSources.Clear();
             foreach (SilverItemRollRequest request in result.SilverItemRolls)
             {
                 if (_rng.NextBool(request.Probability))
                 {
-                    PendingActiveItemGrants++;
+                    _pendingActiveItemGrantSources.Add(request.DishInstanceId);
                 }
             }
 
@@ -1819,7 +1824,10 @@ namespace GourmetProject.Gameplay.Battle
             // 本场临时分类：计分上下文中已即时生效，正式结算后写回实例供后续结算继续读取。
             foreach (TemporaryCategorySideEffect category in result.TemporaryCategories)
             {
-                FindInstance(category.DishInstanceId)?.AddTemporaryCategory(category.Category);
+                FindInstance(category.DishInstanceId)?.AddTemporaryCategory(
+                    category.Category,
+                    category.SourceName,
+                    category.EffectDescription);
             }
 
             // 永久分 / 永久倍率 / 视为食物数：写回实例（经营挑战内跨结算持久）。

@@ -60,21 +60,19 @@
     "desc": "[gold]金币+6[/gold]",
     "effectType": 6,
     "effectParam": [
-      "2"
+      "1"
     ],
     "effectValue": [
-      15
+      6
     ],
     "termId": ""
   },
   {
     "id": "m_silver",
     "name": "银",
-    "desc": "1/5概率获得[term]消耗品[/term]",
+    "desc": "每占1格银材质\n独立1/5概率获得[term]消耗品[/term]",
     "effectType": 7,
-    "effectParam": [
-      "2"
-    ],
+    "effectParam": [],
     "effectValue": [
       1
     ],

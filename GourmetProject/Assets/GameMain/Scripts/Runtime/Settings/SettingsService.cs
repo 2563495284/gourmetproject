@@ -39,6 +39,7 @@ namespace GourmetProject.Runtime.Settings
         // 游戏演出偏好键。
         public const string KeySettlementAcceleration = "Gameplay.SettlementAcceleration";
         public const string KeyRequireServeConfirmation = "Gameplay.RequireServeConfirmation";
+        public const bool DefaultRequireServeConfirmation = false;
 
         public SettingsService(SettingComponent setting, SoundComponent sound)
         {
@@ -126,7 +127,7 @@ namespace GourmetProject.Runtime.Settings
         /// <summary>食物拖到餐桌后是否需要玩家点击“上菜”按钮确认。</summary>
         public bool RequireServeConfirmation
         {
-            get => _setting.GetBool(KeyRequireServeConfirmation, true);
+            get => _setting.GetBool(KeyRequireServeConfirmation, DefaultRequireServeConfirmation);
             set => _setting.SetBool(KeyRequireServeConfirmation, value);
         }
 

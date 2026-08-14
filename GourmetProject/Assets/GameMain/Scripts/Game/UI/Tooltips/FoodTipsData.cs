@@ -138,12 +138,20 @@ namespace GourmetProject.Game.UI.Tooltips
     /// </summary>
     public sealed class FoodTipsReveal
     {
-        public FoodTipsReveal(BigDouble score, BigDouble multiplier, int maxSkills, int maxTransferred)
+        public FoodTipsReveal(
+            BigDouble score,
+            BigDouble multiplier,
+            int maxSkills,
+            int maxTransferred,
+            int countAs = 1,
+            int maxTemporaryEffects = -1)
         {
             Score = score;
             Multiplier = multiplier;
             MaxSkills = maxSkills;
             MaxTransferred = maxTransferred;
+            CountAs = Math.Max(1, countAs);
+            MaxTemporaryEffects = maxTemporaryEffects;
         }
 
         /// <summary>已揭示的分数（基础分数 + 已表演的加法分）。</summary>
@@ -157,6 +165,12 @@ namespace GourmetProject.Game.UI.Tooltips
 
         /// <summary>甜蜜传递子技能最多显示前几条；-1 表示全部。</summary>
         public int MaxTransferred { get; }
+
+        /// <summary>已揭示的有效份数。</summary>
+        public int CountAs { get; }
+
+        /// <summary>临时效果说明最多显示几条；-1 表示全部。</summary>
+        public int MaxTemporaryEffects { get; }
     }
 
     public static class FoodTipsDataFactory
@@ -220,7 +234,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 new FoodScoreTipsData(scoreValue, multiplier),
                 BuildMaterials(dish, table, db),
                 BuildFlavorDetails(dish, db),
-                BuildTransferredSubSkills(dish, -1),
+                BuildTransferredSubSkills(dish, -1, -1),
                 BuildSpecialTags(dish, db, -1, -1));
         }
 
@@ -241,14 +255,16 @@ namespace GourmetProject.Game.UI.Tooltips
                 return new FoodTipsData(null, null, null, null, null, null);
             }
 
-            reveal ??= new FoodTipsReveal(dish.BaseScoreBeforeSettlement, dish.BaseMultiplierBeforeSettlement, -1, -1);
+            reveal ??= new FoodTipsReveal(
+                dish.BaseScoreBeforeSettlement,
+                dish.BaseMultiplierBeforeSettlement,
+                -1,
+                -1,
+                dish.EffectiveCountAs,
+                -1);
 
             DishScore score = FindScore(scoreResult, dish.Id);
-            int effectiveCountAs = Math.Max(
-                1,
-                effectiveCountAsOverride
-                    ?? score?.EffectiveCountAs
-                    ?? ResolveIntrinsicCountAs(dish.Def, dish.SkillIds, dish.FlavorIds, db));
+            int effectiveCountAs = Math.Max(1, reveal.CountAs);
             var summary = new FoodSummaryTipsData(
                 dish.Def != null ? dish.Def.Name : string.Empty,
                 BuildSkills(dish, db, reveal.MaxSkills),
@@ -262,13 +278,13 @@ namespace GourmetProject.Game.UI.Tooltips
                 new FoodScoreTipsData(reveal.Score, reveal.Multiplier),
                 BuildMaterials(dish, table, db),
                 BuildFlavorDetails(dish, db),
-                BuildTransferredSubSkills(dish, reveal.MaxTransferred),
+                BuildTransferredSubSkills(dish, reveal.MaxTransferred, reveal.MaxTemporaryEffects),
                 BuildSpecialTags(dish, db, reveal.MaxSkills, reveal.MaxTransferred));
         }
 
         /// <summary>
-        /// 无餐桌预览使用的固有数量：把食物单独放入最小餐桌并复用正式结算，
-        /// 因而静态 CountAs、自身/范围 AddCountAs 与占格规则保持同一语义。
+        /// 无餐桌预览只展示食物的固有份数。AddCountAs 是主动结算技能，
+        /// 必须等点击“吃”并播放对应 cue 后才揭示，不能在摆放/商店/食谱预览中当成被动属性。
         /// </summary>
         public static int ResolveIntrinsicCountAs(
             DishDef definition,
@@ -281,22 +297,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 return 1;
             }
 
-            if (db == null)
-            {
-                return Math.Max(1, definition.CountAs);
-            }
-
-            int width = Math.Max(1, definition.Shape.Width);
-            int height = Math.Max(1, definition.Shape.Height);
-            var table = new DiningTable(width, height);
-            var placement = new Placement(definition.Shape, 0, new GridPos(0, 0));
-            var dish = new DishInstance(1, definition, placement, skillIds, flavorIds);
-            table.Place(dish);
-
-            DishScore score = FindScore(new ScoreCalculator().Calculate(table, db), dish.Id);
-            return score != null
-                ? score.EffectiveCountAs
-                : Math.Max(1, definition.CountAs);
+            return Math.Max(1, definition.CountAs);
         }
 
         public static int ResolveIntrinsicCountAs(DishDef definition, GameplayDatabase db)
@@ -545,14 +546,19 @@ namespace GourmetProject.Game.UI.Tooltips
             return BuildMaterialsForCells(dish.OccupiedCells, table, db);
         }
 
-        private static IReadOnlyList<FoodInfoEntry> BuildTransferredSubSkills(DishInstance dish, int maxEntries)
+        private static IReadOnlyList<FoodInfoEntry> BuildTransferredSubSkills(
+            DishInstance dish,
+            int maxEntries,
+            int maxTemporaryEffects)
         {
-            if (dish.TransferredSkills == null || dish.TransferredSkills.Count == 0)
+            int transferredCount = dish.TransferredSkills?.Count ?? 0;
+            int temporaryCount = dish.TemporaryCategoryEffects?.Count ?? 0;
+            if (transferredCount == 0 && temporaryCount == 0)
             {
                 return Array.Empty<FoodInfoEntry>();
             }
 
-            int limit = maxEntries < 0 ? dish.TransferredSkills.Count : Math.Min(maxEntries, dish.TransferredSkills.Count);
+            int limit = maxEntries < 0 ? transferredCount : Math.Min(maxEntries, transferredCount);
             var entries = new List<FoodInfoEntry>();
             for (int index = 0; index < limit; index++)
             {
@@ -563,6 +569,26 @@ namespace GourmetProject.Game.UI.Tooltips
                 }
 
                 entries.Add(new FoodInfoEntry(transferred.SourceLabel, transferred.Desc));
+            }
+
+            int temporaryLimit = maxTemporaryEffects < 0
+                ? temporaryCount
+                : Math.Min(maxTemporaryEffects, temporaryCount);
+            for (int index = 0; index < temporaryLimit; index++)
+            {
+                TemporaryCategoryEffect effect = dish.TemporaryCategoryEffects[index];
+                if (effect == null)
+                {
+                    continue;
+                }
+
+                string title = string.IsNullOrEmpty(effect.SourceName)
+                    ? "临时效果"
+                    : $"{effect.SourceName}<分类赋予>";
+                string desc = string.IsNullOrEmpty(effect.EffectDescription)
+                    ? $"视为{effect.Category}"
+                    : effect.EffectDescription;
+                entries.Add(new FoodInfoEntry(title, desc));
             }
 
             return entries;

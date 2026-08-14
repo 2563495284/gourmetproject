@@ -89,6 +89,11 @@ namespace GourmetProject.Game.Run
                         20,
                         run.MetaProgress);
                     result.ActiveItemGrants++;
+                    result.SilverItemGrants.Add(new SilverItemGrantPresentation(
+                        i < session.PendingActiveItemGrantSources.Count
+                            ? session.PendingActiveItemGrantSources[i]
+                            : 0,
+                        acquired));
                     if (acquired.Outcome == ItemAcquireOutcome.ConvertedToGold)
                     {
                         result.FallbackGold += acquired.Gold;
@@ -110,5 +115,20 @@ namespace GourmetProject.Game.Run
         public int FallbackGold;
         public int ActiveItemGrants;
         public List<int> RemovedRecipeIndices { get; } = new List<int>();
+        public List<SilverItemGrantPresentation> SilverItemGrants { get; } = new List<SilverItemGrantPresentation>();
+    }
+
+    /// <summary>一次银格判定命中后的实际发放结果及其来源食物，用于逐条播放获得反馈。</summary>
+    public readonly struct SilverItemGrantPresentation
+    {
+        public SilverItemGrantPresentation(int sourceDishInstanceId, ItemAcquireResult acquisition)
+        {
+            SourceDishInstanceId = sourceDishInstanceId;
+            Acquisition = acquisition;
+        }
+
+        public int SourceDishInstanceId { get; }
+
+        public ItemAcquireResult Acquisition { get; }
     }
 }

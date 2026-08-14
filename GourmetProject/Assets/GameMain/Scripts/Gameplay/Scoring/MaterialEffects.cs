@@ -50,9 +50,11 @@ namespace GourmetProject.Gameplay.Scoring
 
                     break;
                 case MaterialEffectType.GrantItemRollIfCellCount:
-                    if (_cellCount >= _def.ThresholdParam)
+                    // 银材质按该食物实际占据的每个银格独立登记一次判定；
+                    // 正式结算再对每次请求各掷 1/5，预览阶段仍不消耗随机流。
+                    for (int i = 0; i < _cellCount; i++)
                     {
-                        ctx.RequestSilverItemRoll(_def.ItemRollProbability);
+                        ctx.RequestSilverItemRoll(0.2f);
                     }
 
                     break;

@@ -33,6 +33,8 @@ namespace GourmetProject.Game.Presentation.Battle
         SweetTransferExecutor = 15,
         SweetTransferFailed = 16,
         PermanentFlatBonus = 17,
+        CountAsChanged = 18,
+        TemporaryCategoryApplied = 19,
     }
 
     public readonly struct DishGrabVisualSnapshot
@@ -1715,6 +1717,42 @@ namespace GourmetProject.Game.Presentation.Battle
                         sideInCells: 0.065f,
                         rotationDegrees: 5f,
                         color: SettlementColorPalette.WithAlpha(SettlementColorPalette.AddMultiplier, 0.98f));
+
+                case SettlementDishFeedbackKind.CountAsChanged:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.44f,
+                        anticipationScale: 0.88f,
+                        peakScale: new Vector2(1.28f, 1.34f),
+                        liftInCells: 0.13f,
+                        sideInCells: 0f,
+                        rotationDegrees: 2f,
+                        rotationCycles: 1f,
+                        pulseCount: 2f,
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.CountAs, 0.98f),
+                        glowWidth: 0.13f,
+                        glowInflate: 1.11f,
+                        glowFillAlpha: 0.08f,
+                        glowPulseSpeed: 12f,
+                        glowPulseAmplitude: 0.24f,
+                        anticipationFraction: 0.18f);
+
+                case SettlementDishFeedbackKind.TemporaryCategoryApplied:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.48f,
+                        anticipationScale: 0.84f,
+                        peakScale: new Vector2(1.34f, 1.22f),
+                        liftInCells: 0.10f,
+                        sideInCells: 0.035f,
+                        rotationDegrees: 8f,
+                        rotationCycles: 2f,
+                        pulseCount: 2f,
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.TemporaryCategory, 0.98f),
+                        glowWidth: 0.14f,
+                        glowInflate: 1.12f,
+                        glowFillAlpha: 0.10f,
+                        glowPulseSpeed: 13f,
+                        glowPulseAmplitude: 0.25f,
+                        anticipationFraction: 0.20f);
 
                 case SettlementDishFeedbackKind.GenericValueChanged:
                 default:

@@ -27,8 +27,12 @@ namespace GourmetProject.Gameplay.Scoring
         ExtraSettlement = 17,
         /// <summary>主动技能在本次结算中修改食物有效份数。</summary>
         CountAs = 18,
-        /// <summary>主动技能让目标食物临时视为某一分类。</summary>
-        TemporaryCategory = 19,
+        /// <summary>兼容旧名称；与 <see cref="ScoreLineKind.CountAs"/> 表示同一种结算行。</summary>
+        DishCountAs = CountAs,
+        /// <summary>当次结算中每个空格提供的有效份数发生变化。</summary>
+        EmptyCountAs = 19,
+        /// <summary>目标食物在当前经营挑战中获得临时分类。</summary>
+        TemporaryCategory = 20,
     }
 
     /// <summary>一次具体分数变化的可解释记录。</summary>

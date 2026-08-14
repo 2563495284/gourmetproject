@@ -9,6 +9,7 @@ using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
+using GourmetProject.Runtime.Settings;
 using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -278,6 +279,94 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 view.gameObject.SetActive(visible);
             }
+        }
+
+        /// <summary>银格判定命中后，按实际获得内容逐条播放反馈；同一食物多格命中也不会合并。</summary>
+        public async Awaitable PlaySilverItemGrantAsync(
+            SilverItemGrantPresentation grant,
+            CancellationToken cancellationToken)
+        {
+            ItemAcquireResult acquired = grant.Acquisition;
+            string effectText = acquired.HasItem
+                ? $"获得[term]{acquired.ItemName}[/term]"
+                : acquired.Outcome == ItemAcquireOutcome.ConvertedToGold
+                    ? $"获得[gold]金币 +{acquired.Gold}[/gold]"
+                    : "未获得消耗品";
+
+            Vector3 anchor = _boardView != null
+                ? _boardView.Mapper.Center + Vector3.up * (0.45f * _tableVisualScale)
+                : transform.position;
+            if (_dishViewsById.TryGetValue(
+                    grant.SourceDishInstanceId,
+                    out DishPieceView sourceView)
+                && sourceView != null)
+            {
+                anchor = sourceView.WorldBounds.center
+                    + Vector3.up * (sourceView.WorldBounds.extents.y + 0.34f * _tableVisualScale);
+            }
+
+            _sequencer?.PlayFloatingEffect(
+                _fxRoot != null ? _fxRoot : transform,
+                anchor,
+                "银材质",
+                effectText,
+                SettlementColorPalette.SilverReward,
+                rise: 0.52f,
+                duration: 0.82f,
+                visualScale: _tableVisualScale);
+            await Awaitable.WaitForSecondsAsync(0.82f, cancellationToken);
+        }
+
+        /// <summary>
+        /// 营业结算全部完成后播放食谱移除判定。命中时食物在餐桌上溶解，
+        /// 未命中时保留食物并给出失败文字；两种结果都明确展示来源食物和概率。
+        /// </summary>
+        public async Awaitable PlayRecipeRemovalOutcomeAsync(
+            RecipeRemovalOutcome outcome,
+            CancellationToken cancellationToken)
+        {
+            int probabilityPercent = Mathf.RoundToInt(outcome.Request.Probability * 100f);
+            string sourceName = string.IsNullOrEmpty(outcome.Request.DishName)
+                ? "食谱移除"
+                : outcome.Request.DishName;
+            string effectText = outcome.Removed
+                ? $"移除判定成功（{probabilityPercent}%）"
+                : $"移除判定失败（{probabilityPercent}%）";
+
+            if (!_dishViewsById.TryGetValue(
+                    outcome.Request.DishInstanceId,
+                    out DishPieceView view)
+                || view == null)
+            {
+                SetMessage($"{sourceName}：{effectText}");
+                await Awaitable.WaitForSecondsAsync(0.75f, cancellationToken);
+                return;
+            }
+
+            Vector3 textAnchor = view.WorldBounds.center
+                + Vector3.up * (view.WorldBounds.extents.y + 0.34f * _tableVisualScale);
+            _sequencer?.PlayFloatingEffect(
+                _fxRoot != null ? _fxRoot : transform,
+                textAnchor,
+                sourceName,
+                effectText,
+                outcome.Removed
+                    ? SettlementColorPalette.Failure
+                    : SettlementColorPalette.Special,
+                rise: 0.52f,
+                duration: outcome.Removed ? 1.05f : 0.82f,
+                visualScale: _tableVisualScale);
+
+            if (outcome.Removed)
+            {
+                await view.PlayDigestDissolveAsync(cancellationToken);
+                return;
+            }
+
+            await view.PlaySettlementFeedbackAsync(
+                SettlementDishFeedbackKind.GenericValueChanged,
+                cancellationToken,
+                durationScale: 1.15f);
         }
 
         private void Awake()
@@ -1454,7 +1543,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 if (!pending.IsOnDiningTable
                     || !ShouldShowPendingDishActionButton(
                         pending.ActionKind,
-                        GameApp.Settings?.RequireServeConfirmation ?? true)
+                        GameApp.Settings?.RequireServeConfirmation
+                            ?? SettingsService.DefaultRequireServeConfirmation)
                     || !_dishViewsById.TryGetValue(pending.Dish.Id, out DishPieceView piece)
                     || piece == null)
                 {
@@ -1930,7 +2020,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
             bool autoConfirm = ShouldAutoConfirmPendingDish(
                     PendingDishActionKind.Serve,
-                    GameApp.Settings?.RequireServeConfirmation ?? true);
+                    GameApp.Settings?.RequireServeConfirmation
+                        ?? SettingsService.DefaultRequireServeConfirmation);
             if (autoConfirm)
             {
                 // 自动上菜会同步提交数据，再等待落格/触发演出。这里不要先发布
