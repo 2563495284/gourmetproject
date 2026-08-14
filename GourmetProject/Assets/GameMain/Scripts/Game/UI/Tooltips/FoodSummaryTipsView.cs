@@ -46,7 +46,7 @@ namespace GourmetProject.Game.UI.Tooltips
             _duplicateView.gameObject.SetActive(data.IsTemporaryCopy);
             bool showCountAs = data.CountAs > 1;
             _countAsView.gameObject.SetActive(showCountAs);
-            _countAsText.text = data.CountAs.ToString()+"份";
+            _countAsText.text = data.CountAs.ToString()+"<size=20>份</size>";
             float skillsTextWidth = BuildSkills(data.Skills, data.SkillsDisabled);
             BuildFlavors(data.Flavors);
             ResizeToContent(skillsTextWidth, data.Flavors);

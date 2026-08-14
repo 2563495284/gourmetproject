@@ -70,7 +70,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 969930c87f8b4c838bf38a87e82a3d0c, type: 3}
   m_Name: Grotesque Cartoon Render Feature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   material: {fileID: 2100000, guid: e20ed2bd7ded47e68bda026561930dee, type: 2}
   injectionPoint: 600
   saturation: 1.18

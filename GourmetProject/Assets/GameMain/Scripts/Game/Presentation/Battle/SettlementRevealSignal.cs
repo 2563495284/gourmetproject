@@ -18,7 +18,10 @@ namespace GourmetProject.Game.Presentation.Battle
             BigDouble multiplier,
             int copySkillDelta,
             int transferredDelta,
-            int cakeLayerDelta)
+            int cakeLayerDelta,
+            bool hasCountAs = false,
+            int countAs = 1,
+            int temporaryEffectDelta = 0)
         {
             DishInstanceId = dishInstanceId;
             HasFlat = hasFlat;
@@ -28,6 +31,9 @@ namespace GourmetProject.Game.Presentation.Battle
             CopySkillDelta = copySkillDelta;
             TransferredDelta = transferredDelta;
             CakeLayerDelta = cakeLayerDelta;
+            HasCountAs = hasCountAs;
+            CountAs = countAs;
+            TemporaryEffectDelta = temporaryEffectDelta;
         }
 
         public int DishInstanceId { get; }
@@ -51,9 +57,23 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>当前技能 cue 产生的蛋糕层数变化量；HUD 与世界表现按 cue 顺序逐条应用。</summary>
         public int CakeLayerDelta { get; }
 
+        /// <summary>是否揭示目标食物当前的有效份数。</summary>
+        public bool HasCountAs { get; }
+
+        public int CountAs { get; }
+
+        /// <summary>本 cue 新揭示的临时效果说明条数（显示在 4_TransferredSubSkills）。</summary>
+        public int TemporaryEffectDelta { get; }
+
         public bool HasCakeLayer => CakeLayerDelta != 0;
 
-        public bool IsEmpty => !HasFlat && !HasMultiplier && CopySkillDelta == 0 && TransferredDelta == 0 && !HasCakeLayer;
+        public bool IsEmpty => !HasFlat
+            && !HasMultiplier
+            && CopySkillDelta == 0
+            && TransferredDelta == 0
+            && !HasCakeLayer
+            && !HasCountAs
+            && TemporaryEffectDelta == 0;
 
         public static SettlementRevealSignal FlatReveal(int dishInstanceId, BigDouble flatAfter, int transferredDelta = 0)
         {
@@ -78,6 +98,35 @@ namespace GourmetProject.Game.Presentation.Battle
         public static SettlementRevealSignal CakeLayerReveal(int delta)
         {
             return new SettlementRevealSignal(0, false, 0f, false, 0f, 0, 0, delta);
+        }
+
+        public static SettlementRevealSignal CountAsReveal(int dishInstanceId, int countAs)
+        {
+            return new SettlementRevealSignal(
+                dishInstanceId,
+                false,
+                0f,
+                false,
+                0f,
+                0,
+                0,
+                0,
+                hasCountAs: true,
+                countAs: countAs);
+        }
+
+        public static SettlementRevealSignal TemporaryEffectReveal(int dishInstanceId, int count = 1)
+        {
+            return new SettlementRevealSignal(
+                dishInstanceId,
+                false,
+                0f,
+                false,
+                0f,
+                0,
+                0,
+                0,
+                temporaryEffectDelta: count);
         }
     }
 }

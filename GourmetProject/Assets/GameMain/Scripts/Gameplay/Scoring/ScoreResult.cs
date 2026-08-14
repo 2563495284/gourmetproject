@@ -155,15 +155,25 @@ namespace GourmetProject.Gameplay.Scoring
 
     public readonly struct TemporaryCategorySideEffect
     {
-        public TemporaryCategorySideEffect(int dishInstanceId, string category)
+        public TemporaryCategorySideEffect(
+            int dishInstanceId,
+            string category,
+            string sourceName = null,
+            string effectDescription = null)
         {
             DishInstanceId = dishInstanceId;
             Category = category ?? string.Empty;
+            SourceName = sourceName ?? string.Empty;
+            EffectDescription = effectDescription ?? string.Empty;
         }
 
         public int DishInstanceId { get; }
 
         public string Category { get; }
+
+        public string SourceName { get; }
+
+        public string EffectDescription { get; }
     }
 
     public readonly struct RecipeRemovalRequest

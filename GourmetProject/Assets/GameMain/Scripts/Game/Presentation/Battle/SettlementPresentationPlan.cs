@@ -23,6 +23,8 @@ namespace GourmetProject.Game.Presentation.Battle
         public static readonly Color SweetTransfer = new Color32(255, 84, 178, 255);
         public static readonly Color Failure = new Color32(224, 106, 132, 255);
         public static readonly Color Special = new Color32(169, 120, 255, 255);
+        public static readonly Color CountAs = new Color32(255, 204, 82, 255);
+        public static readonly Color TemporaryCategory = new Color32(226, 92, 126, 255);
         public static readonly Color FinalScore = new Color32(255, 158, 26, 255);
 
         // 来源身份
@@ -54,6 +56,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     or ScoreLineKind.SweetTransferBuffApplied
                     or ScoreLineKind.SweetTransferBuffTriggered => SweetTransfer,
                 ScoreLineKind.SweetTransferFailed => Failure,
+                ScoreLineKind.DishCountAs or ScoreLineKind.EmptyCountAs => CountAs,
+                ScoreLineKind.TemporaryCategory => TemporaryCategory,
                 _ => Special,
             };
         }

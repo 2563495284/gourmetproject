@@ -869,6 +869,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.SweetTransferBuffApplied:
                 case ScoreLineKind.SweetTransferBuffTriggered:
                     return SettlementDishFeedbackKind.GenericSkillTriggered;
+                case ScoreLineKind.DishCountAs:
+                case ScoreLineKind.EmptyCountAs:
+                    return SettlementDishFeedbackKind.CountAsChanged;
+                case ScoreLineKind.TemporaryCategory:
+                    return SettlementDishFeedbackKind.TemporaryCategoryApplied;
                 default:
                     return SettlementDishFeedbackKind.GenericValueChanged;
             }
@@ -922,6 +927,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 ScoreLineKind.SweetTransferBuffApplied => "甜蜜 Buff",
                 ScoreLineKind.SweetTransferBuffTriggered => "Buff 响应",
                 ScoreLineKind.SweetTransferFailed => "甜蜜传递",
+                ScoreLineKind.DishCountAs => "有效份数",
+                ScoreLineKind.EmptyCountAs => "空格份数",
+                ScoreLineKind.TemporaryCategory => "分类赋予",
                 _ => "结算结果",
             };
         }
@@ -976,6 +984,12 @@ namespace GourmetProject.Game.Presentation.Battle
                         : $"本行倍率 ×{FormatLineValue(line.Value)}";
                 case ScoreLineKind.SweetTransferFailed:
                     return "没有可传递目标";
+                case ScoreLineKind.DishCountAs:
+                    return $"份数 {signed}  →  {Count(line.After)} 份";
+                case ScoreLineKind.EmptyCountAs:
+                    return $"每个空格 +{Count(line.Value)} 份";
+                case ScoreLineKind.TemporaryCategory:
+                    return string.IsNullOrEmpty(line.Message) ? "视为蛋糕" : line.Message;
                 default:
                     return string.IsNullOrEmpty(line.Message) ? signed : line.Message;
             }

@@ -1544,7 +1544,10 @@ namespace GourmetProject.Gameplay.Battle
             // 本场临时分类：计分上下文中已即时生效，正式结算后写回实例供后续结算继续读取。
             foreach (TemporaryCategorySideEffect category in result.TemporaryCategories)
             {
-                FindInstance(category.DishInstanceId)?.AddTemporaryCategory(category.Category);
+                FindInstance(category.DishInstanceId)?.AddTemporaryCategory(
+                    category.Category,
+                    category.SourceName,
+                    category.EffectDescription);
             }
 
             // 永久分 / 永久倍率 / 视为食物数：写回实例（经营挑战内跨结算持久）。

@@ -4829,8 +4829,7 @@ namespace GourmetProject.Game.UI.Battle
                     _session.DiningTable,
                     _session.Database,
                     reveal,
-                    _session.LastResult,
-                    _session.IsSettled ? null : _session.PreviewEffectiveCountAs(piece.Instance)));
+                    _session.LastResult));
             }
             else
             {
@@ -4840,7 +4839,9 @@ namespace GourmetProject.Game.UI.Battle
                     _session.DiningTable,
                     _session.Database,
                     preview,
-                    _session.IsSettled ? null : _session.PreviewEffectiveCountAs(piece.Instance)));
+                    _session.IsSettled
+                        ? null
+                        : Math.Max(1, piece.Instance.EffectiveCountAs + _session.ExtraCountAsPerDish)));
             }
 
             tips.Show();
@@ -4873,6 +4874,18 @@ namespace GourmetProject.Game.UI.Battle
             if (signal.TransferredDelta > 0)
             {
                 _settlementReveal.RevealTransferred(signal.DishInstanceId, signal.TransferredDelta);
+            }
+
+            if (signal.HasCountAs)
+            {
+                _settlementReveal.RevealCountAs(signal.DishInstanceId, signal.CountAs);
+            }
+
+            if (signal.TemporaryEffectDelta > 0)
+            {
+                _settlementReveal.RevealTemporaryEffects(
+                    signal.DishInstanceId,
+                    signal.TemporaryEffectDelta);
             }
 
             if (signal.HasCakeLayer)
@@ -5182,7 +5195,9 @@ namespace GourmetProject.Game.UI.Battle
             var settlementBaseline = new SettlementBaselineSnapshot();
             foreach (DishInstance dish in _session.DiningTable.Dishes)
             {
-                reveal.CaptureBaseline(dish);
+                reveal.CaptureBaseline(
+                    dish,
+                    Math.Max(1, dish.EffectiveCountAs + _session.ExtraCountAsPerDish));
                 settlementBaseline.Capture(dish);
             }
 
@@ -5246,7 +5261,6 @@ namespace GourmetProject.Game.UI.Battle
                 var removedIndices = new HashSet<int>();
                 foreach (RecipeRemovalOutcome outcome in _session.LastRecipeRemovalOutcomes)
                 {
-                    ShowActiveItemMessage(outcome.Removed ? "移除" : "不移除");
                     if (outcome.Removed && outcome.Request.SourceDishIndex >= 0)
                     {
                         removedIndices.Add(outcome.Request.SourceDishIndex);
@@ -5254,7 +5268,18 @@ namespace GourmetProject.Game.UI.Battle
 
                     try
                     {
-                        await Awaitable.WaitForSecondsAsync(0.75f, destroyCancellationToken);
+                        if (_world != null)
+                        {
+                            await _world.PlayRecipeRemovalOutcomeAsync(
+                                outcome,
+                                destroyCancellationToken);
+                        }
+                        else
+                        {
+                            ShowActiveItemMessage(
+                                $"{outcome.Request.DishName}：{(outcome.Removed ? "移除" : "保留")}");
+                            await Awaitable.WaitForSecondsAsync(0.75f, destroyCancellationToken);
+                        }
                     }
                     catch (OperationCanceledException)
                     {

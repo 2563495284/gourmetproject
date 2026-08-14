@@ -25,6 +25,12 @@ namespace GourmetProject.Gameplay.Scoring
         DishPermanentFlat = 16,
         /// <summary>咸味触发的一次独立额外结算贡献。</summary>
         ExtraSettlement = 17,
+        /// <summary>主动技能让目标当次结算的有效份数发生变化。</summary>
+        DishCountAs = 18,
+        /// <summary>当次结算中每个空格提供的有效份数发生变化。</summary>
+        EmptyCountAs = 19,
+        /// <summary>目标食物在当前经营挑战中获得临时分类。</summary>
+        TemporaryCategory = 20,
     }
 
     /// <summary>一次具体分数变化的可解释记录。</summary>

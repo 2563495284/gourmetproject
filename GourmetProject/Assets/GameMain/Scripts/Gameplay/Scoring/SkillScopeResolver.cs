@@ -144,7 +144,7 @@ namespace GourmetProject.Gameplay.Scoring
             SkillScopeVisualMode mode,
             System.Func<DishInstance, string, bool> categoryMatcher)
         {
-            string category = SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams);
+            string category = TargetFilterCategory(rule);
             List<DishInstance> dishes = !string.IsNullOrEmpty(category)
                 ? board.Dishes.Where(d => MatchesCategory(d, category, categoryMatcher)).ToList()
                 : ResolveScopeDishes(
@@ -174,7 +174,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
             else if (rule.ActionScope == SkillScope.Category)
             {
-                string scopedCategory = SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams);
+                string scopedCategory = TargetFilterCategory(rule);
                 dishes = board.Dishes
                     .Where(d => MatchesCategory(d, scopedCategory, categoryMatcher))
                     .ToList();
@@ -189,7 +189,7 @@ namespace GourmetProject.Gameplay.Scoring
                 dishes.Add(self);
             }
 
-            string category = SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams);
+            string category = TargetFilterCategory(rule);
             if (!string.IsNullOrEmpty(category))
             {
                 dishes = dishes.Where(d => MatchesCategory(d, category, categoryMatcher)).ToList();
@@ -313,7 +313,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             if (isActionScope && rule != null)
             {
-                string category = SkillConditionEvaluator.ParseCategoryParam(rule.ActionParams);
+                string category = TargetFilterCategory(rule);
                 string skillType = ParseSkillTypeParam(rule.ActionParams);
                 if (!string.IsNullOrEmpty(category)
                     || !string.IsNullOrEmpty(skillType)
@@ -579,6 +579,17 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// cat:xxx 通常表示“只选指定分类目标”；AddTemporaryCategory 中它表示“赋予什么分类”，
+        /// 不能反过来过滤已经是该分类的食物。结算、hover 预览和结算范围演出统一走这个解析入口。
+        /// </summary>
+        private static string TargetFilterCategory(SkillRuleDef rule)
+        {
+            return rule != null && rule.ActionType == SkillActionType.AddTemporaryCategory
+                ? string.Empty
+                : SkillConditionEvaluator.ParseCategoryParam(rule?.ActionParams);
         }
 
         private static int BoardTop(DishInstance dish)

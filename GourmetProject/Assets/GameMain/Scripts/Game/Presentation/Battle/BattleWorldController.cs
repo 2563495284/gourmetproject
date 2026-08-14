@@ -280,6 +280,58 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        /// <summary>
+        /// 营业结算全部完成后播放食谱移除判定。命中时食物在餐桌上溶解，
+        /// 未命中时保留食物并给出失败文字；两种结果都明确展示来源食物和概率。
+        /// </summary>
+        public async Awaitable PlayRecipeRemovalOutcomeAsync(
+            RecipeRemovalOutcome outcome,
+            CancellationToken cancellationToken)
+        {
+            int probabilityPercent = Mathf.RoundToInt(outcome.Request.Probability * 100f);
+            string sourceName = string.IsNullOrEmpty(outcome.Request.DishName)
+                ? "食谱移除"
+                : outcome.Request.DishName;
+            string effectText = outcome.Removed
+                ? $"移除判定成功（{probabilityPercent}%）"
+                : $"移除判定失败（{probabilityPercent}%）";
+
+            if (!_dishViewsById.TryGetValue(
+                    outcome.Request.DishInstanceId,
+                    out DishPieceView view)
+                || view == null)
+            {
+                SetMessage($"{sourceName}：{effectText}");
+                await Awaitable.WaitForSecondsAsync(0.75f, cancellationToken);
+                return;
+            }
+
+            Vector3 textAnchor = view.WorldBounds.center
+                + Vector3.up * (view.WorldBounds.extents.y + 0.34f * _tableVisualScale);
+            _sequencer?.PlayFloatingEffect(
+                _fxRoot != null ? _fxRoot : transform,
+                textAnchor,
+                sourceName,
+                effectText,
+                outcome.Removed
+                    ? SettlementColorPalette.Failure
+                    : SettlementColorPalette.Special,
+                rise: 0.52f,
+                duration: outcome.Removed ? 1.05f : 0.82f,
+                visualScale: _tableVisualScale);
+
+            if (outcome.Removed)
+            {
+                await view.PlayDigestDissolveAsync(cancellationToken);
+                return;
+            }
+
+            await view.PlaySettlementFeedbackAsync(
+                SettlementDishFeedbackKind.GenericValueChanged,
+                cancellationToken,
+                durationScale: 1.15f);
+        }
+
         private void Awake()
         {
             Instance = this;

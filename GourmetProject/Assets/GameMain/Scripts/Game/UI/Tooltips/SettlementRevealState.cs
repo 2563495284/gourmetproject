@@ -17,12 +17,14 @@ namespace GourmetProject.Game.UI.Tooltips
             public BigDouble Multiplier;
             public int SkillCount;
             public int TransferredCount;
+            public int CountAs;
+            public int TemporaryEffectCount;
         }
 
         private readonly Dictionary<int, DishReveal> _byDish = new();
 
         /// <summary>结算前对某道菜拍基线：分数=基础、倍率=结算前倍率、技能/传递条目=结算前数量。</summary>
-        public void CaptureBaseline(DishInstance dish)
+        public void CaptureBaseline(DishInstance dish, int? countAsOverride = null)
         {
             if (dish == null)
             {
@@ -36,6 +38,8 @@ namespace GourmetProject.Game.UI.Tooltips
                 Multiplier = dish.BaseMultiplierBeforeSettlement,
                 SkillCount = dish.SkillIds?.Count ?? 0,
                 TransferredCount = dish.TransferredSkills?.Count ?? 0,
+                CountAs = System.Math.Max(1, countAsOverride ?? dish.EffectiveCountAs),
+                TemporaryEffectCount = dish.TemporaryCategoryEffects?.Count ?? 0,
             };
         }
 
@@ -75,6 +79,22 @@ namespace GourmetProject.Game.UI.Tooltips
             }
         }
 
+        public void RevealCountAs(int dishInstanceId, int countAs)
+        {
+            if (_byDish.TryGetValue(dishInstanceId, out DishReveal reveal))
+            {
+                reveal.CountAs = System.Math.Max(1, countAs);
+            }
+        }
+
+        public void RevealTemporaryEffects(int dishInstanceId, int count)
+        {
+            if (count > 0 && _byDish.TryGetValue(dishInstanceId, out DishReveal reveal))
+            {
+                reveal.TemporaryEffectCount += count;
+            }
+        }
+
         /// <summary>取出某道菜当前已揭示的 tips 覆盖参数（未拍基线返回 false）。</summary>
         public bool TryBuildReveal(DishInstance dish, out FoodTipsReveal reveal)
         {
@@ -84,7 +104,9 @@ namespace GourmetProject.Game.UI.Tooltips
                     state.BaseScore + state.Flat,
                     state.Multiplier,
                     state.SkillCount,
-                    state.TransferredCount);
+                    state.TransferredCount,
+                    state.CountAs,
+                    state.TemporaryEffectCount);
                 return true;
             }
 

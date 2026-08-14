@@ -1,0 +1,1277 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>结算 ResultText 演出 GM</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #120d0b;
+      --panel: #1e1713;
+      --panel-2: #271e19;
+      --line: #4a382e;
+      --line-soft: rgba(255, 230, 196, .12);
+      --text: #fff4dc;
+      --muted: #bcae9b;
+      --accent: #ff9e1a;
+      --danger: #e06a84;
+      --stage-edge: #704731;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .42);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 16% -8%, rgba(134, 66, 38, .30), transparent 36rem),
+        radial-gradient(circle at 94% 12%, rgba(255, 132, 33, .08), transparent 30rem),
+        var(--bg);
+      color: var(--text);
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    button, input, select { font: inherit; }
+
+    button { color: inherit; }
+
+    .app-shell {
+      width: min(1680px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 22px 0 34px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-end;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 2.4vw, 38px);
+      line-height: 1.08;
+      letter-spacing: -.025em;
+    }
+
+    .subtitle {
+      max-width: 780px;
+      margin: 8px 0 0;
+      color: var(--muted);
+    }
+
+    .source-note {
+      flex: 0 0 auto;
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(30, 23, 19, .76);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(600px, 1.55fr) minmax(360px, .72fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .card-shell {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(35, 26, 21, .96), rgba(25, 19, 16, .96));
+      box-shadow: var(--shadow);
+    }
+
+    .preview-card { overflow: hidden; }
+
+    .stage-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      min-height: 54px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(15, 11, 9, .45);
+    }
+
+    .stage-status {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--theme, var(--accent));
+      box-shadow: 0 0 16px var(--theme, var(--accent));
+    }
+
+    .status-copy { min-width: 0; }
+
+    .status-copy strong,
+    .status-copy small { display: block; }
+
+    .status-copy strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .status-copy small { color: var(--muted); }
+
+    .phase-pills { display: flex; gap: 5px; }
+
+    .phase-pill {
+      padding: 4px 8px;
+      border: 1px solid var(--line-soft);
+      border-radius: 999px;
+      color: #8f8377;
+      font-size: 11px;
+    }
+
+    .phase-pill.active {
+      border-color: color-mix(in srgb, var(--theme, var(--accent)) 58%, transparent);
+      background: color-mix(in srgb, var(--theme, var(--accent)) 13%, transparent);
+      color: var(--body-color, var(--text));
+    }
+
+    .stage {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      min-height: 390px;
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        linear-gradient(rgba(255, 255, 255, .018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .018) 1px, transparent 1px),
+        radial-gradient(ellipse at 50% 55%, rgba(194, 103, 57, .20), transparent 50%),
+        linear-gradient(145deg, #20140f, #100b09 74%);
+      background-size: 34px 34px, 34px 34px, auto, auto;
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: 4.5% 6%;
+      z-index: -1;
+      border: 2px solid var(--stage-edge);
+      border-radius: 38px;
+      background:
+        linear-gradient(90deg, transparent 49.7%, rgba(255, 255, 255, .025) 50%, transparent 50.3%),
+        linear-gradient(transparent 49.7%, rgba(255, 255, 255, .025) 50%, transparent 50.3%),
+        radial-gradient(ellipse, rgba(107, 49, 28, .26), rgba(38, 22, 16, .88));
+      box-shadow:
+        inset 0 0 0 7px rgba(22, 11, 8, .55),
+        inset 0 18px 60px rgba(255, 156, 88, .035),
+        0 24px 80px rgba(0, 0, 0, .45);
+    }
+
+    .score-rail {
+      position: absolute;
+      top: 4.5%;
+      left: 8%;
+      right: 8%;
+      z-index: 3;
+      display: grid;
+      grid-template-columns: auto minmax(120px, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .score-number, .target-number {
+      font-variant-numeric: tabular-nums;
+      font-weight: 900;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, .6);
+    }
+
+    .score-number { color: #f6c453; font-size: 21px; }
+    .target-number { color: #cbbba8; }
+
+    .score-track {
+      position: relative;
+      height: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 999px;
+      background: rgba(0, 0, 0, .45);
+    }
+
+    .score-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 56%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #d66b2d, #f6c453);
+      box-shadow: 0 0 18px rgba(246, 196, 83, .48);
+      transition: width .28s ease;
+    }
+
+    .dish-grid {
+      position: absolute;
+      inset: 17% 10% 14%;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(70px, 1fr));
+      grid-template-rows: repeat(2, 1fr);
+      gap: 11px;
+    }
+
+    .dish {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-width: 0;
+      overflow: visible;
+      border: 1px solid rgba(255, 225, 195, .14);
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--dish-color) 26%, transparent), transparent 57%),
+        linear-gradient(160deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .008));
+      box-shadow: inset 0 0 26px rgba(0, 0, 0, .28);
+      opacity: .72;
+      transform: scale(.985);
+      transition: opacity .18s ease, transform .18s ease, border-color .18s ease, filter .18s ease;
+    }
+
+    .dish.active {
+      z-index: 2;
+      opacity: 1;
+      transform: scale(1.03);
+      border-color: color-mix(in srgb, var(--theme, var(--accent)) 52%, transparent);
+      filter: brightness(1.07);
+      box-shadow:
+        inset 0 0 28px color-mix(in srgb, var(--theme, var(--accent)) 9%, transparent),
+        0 0 25px color-mix(in srgb, var(--theme, var(--accent)) 15%, transparent);
+    }
+
+    .dish.hit { animation: dish-hit 320ms cubic-bezier(.18, .78, .26, 1); }
+
+    @keyframes dish-hit {
+      0% { transform: scale(1.03); }
+      35% { transform: scale(1.14) rotate(-1.5deg); }
+      68% { transform: scale(.99) rotate(1deg); }
+      100% { transform: scale(1.03); }
+    }
+
+    .dish-icon {
+      display: grid;
+      place-items: center;
+      width: min(64%, 74px);
+      aspect-ratio: 1;
+      border: 2px solid color-mix(in srgb, var(--dish-color) 65%, #fff 5%);
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 32%, #fff0 0 16%, var(--dish-color) 17% 31%, color-mix(in srgb, var(--dish-color) 42%, #1b0e0b) 32% 68%, #130b09 69%);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, .36), inset 0 0 0 5px rgba(255, 255, 255, .035);
+      color: rgba(255, 250, 230, .9);
+      font-size: clamp(19px, 2.1vw, 34px);
+      font-weight: 900;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, .8);
+    }
+
+    .dish-name {
+      position: absolute;
+      bottom: 8px;
+      left: 6px;
+      right: 6px;
+      overflow: hidden;
+      color: #d8c7b6;
+      font-size: 11px;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dish-value {
+      position: absolute;
+      left: 50%;
+      bottom: -9px;
+      z-index: 4;
+      min-width: 42px;
+      padding: 2px 8px;
+      border: 1px solid rgba(246, 196, 83, .46);
+      border-radius: 999px;
+      background: #1b100d;
+      color: #f6c453;
+      font-size: 11px;
+      font-weight: 850;
+      text-align: center;
+      transform: translateX(-50%);
+    }
+
+    .fx-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 8;
+      pointer-events: none;
+    }
+
+    .result-label {
+      position: absolute;
+      left: var(--label-x, 50%);
+      top: var(--label-y, 54%);
+      z-index: 3;
+      min-width: max-content;
+      max-width: min(520px, 78vw);
+      text-align: center;
+      transform-origin: center center;
+      will-change: transform, opacity;
+      filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .85));
+    }
+
+    .result-label .header {
+      color: var(--header-color);
+      opacity: .82;
+      font-size: clamp(13px, 1.35vw, 21px);
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-shadow: 0 0 10px color-mix(in srgb, var(--theme) 38%, transparent), 0 2px 1px #000;
+    }
+
+    .result-label .body {
+      margin-top: -1px;
+      color: var(--body-color);
+      font-size: clamp(20px, 2.25vw, 34px);
+      font-weight: 900;
+      letter-spacing: .015em;
+      white-space: nowrap;
+      text-shadow:
+        0 0 13px color-mix(in srgb, var(--theme) 50%, transparent),
+        0 3px 1px #000,
+        1px 0 1px #000,
+        -1px 0 1px #000;
+    }
+
+    .result-label.finale .header { font-size: clamp(16px, 1.7vw, 27px); }
+    .result-label.finale .body { font-size: clamp(28px, 3.2vw, 46px); }
+
+    .impact-ring {
+      position: absolute;
+      left: var(--ring-x, 50%);
+      top: var(--ring-y, 50%);
+      width: 92px;
+      aspect-ratio: 1;
+      border: 4px solid var(--theme);
+      border-radius: 50%;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(.25);
+      box-shadow: 0 0 24px var(--theme), inset 0 0 18px var(--theme);
+      mix-blend-mode: screen;
+    }
+
+    .stage-vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 7;
+      pointer-events: none;
+      background: radial-gradient(ellipse at var(--focus-x, 50%) var(--focus-y, 50%), transparent 0 13%, rgba(5, 3, 2, .12) 34%, rgba(5, 3, 2, .42) 94%);
+      opacity: .64;
+      transition: opacity .25s ease;
+    }
+
+    .stage-idle .stage-vignette { opacity: .25; }
+
+    .transport {
+      display: grid;
+      grid-template-columns: auto minmax(150px, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      padding: 12px 14px 14px;
+      border-top: 1px solid var(--line);
+      background: #17110e;
+    }
+
+    .transport-buttons { display: flex; gap: 7px; }
+
+    .icon-button, .primary-button, .ghost-button, .chip-button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-2);
+      cursor: pointer;
+      transition: border-color .15s ease, transform .15s ease, background .15s ease;
+    }
+
+    .icon-button:hover, .primary-button:hover, .ghost-button:hover, .chip-button:hover { border-color: #805f4e; }
+    .icon-button:active, .primary-button:active, .ghost-button:active, .chip-button:active { transform: translateY(1px); }
+
+    .icon-button { width: 40px; padding: 0; font-size: 15px; }
+
+    .primary-button {
+      padding: 0 14px;
+      border-color: #c26d21;
+      background: linear-gradient(#ffad32, #df761e);
+      color: #28140a;
+      font-weight: 900;
+    }
+
+    .ghost-button { padding: 0 12px; color: #e9d8c4; }
+
+    .scrub-wrap { display: grid; gap: 4px; }
+
+    .scrub-meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--theme, var(--accent));
+      cursor: pointer;
+    }
+
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    select, .search-input, .number-input {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #17110e;
+      color: var(--text);
+      outline: none;
+    }
+
+    select { padding: 0 28px 0 9px; }
+
+    .library-card {
+      position: sticky;
+      top: 16px;
+      max-height: calc(100vh - 32px);
+      overflow: hidden;
+    }
+
+    .library-head {
+      padding: 15px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .library-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .library-title-row h2 { margin: 0; font-size: 17px; }
+    .library-count { color: var(--muted); font-size: 12px; }
+
+    .search-input { width: 100%; padding: 0 11px; }
+
+    .filter-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      margin-top: 9px;
+      padding-bottom: 2px;
+      scrollbar-width: thin;
+    }
+
+    .chip-button {
+      min-height: 29px;
+      padding: 0 9px;
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .chip-button.active {
+      border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+      background: rgba(255, 158, 26, .12);
+      color: #ffd49a;
+    }
+
+    .effect-list {
+      max-height: calc(100vh - 176px);
+      overflow: auto;
+      padding: 8px;
+      scrollbar-color: #604737 transparent;
+    }
+
+    .effect-item {
+      position: relative;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 8px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      margin: 0 0 6px;
+      padding: 10px 10px 10px 8px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .effect-item:hover { background: rgba(255, 255, 255, .025); }
+
+    .effect-item.active {
+      border-color: color-mix(in srgb, var(--item-theme) 48%, transparent);
+      background: color-mix(in srgb, var(--item-theme) 8%, rgba(255, 255, 255, .018));
+    }
+
+    .theme-stripe {
+      width: 7px;
+      height: 42px;
+      border-radius: 999px;
+      background: var(--item-theme);
+      box-shadow: 0 0 13px color-mix(in srgb, var(--item-theme) 52%, transparent);
+    }
+
+    .effect-copy { min-width: 0; }
+    .effect-copy strong, .effect-copy span { display: block; }
+    .effect-copy strong { font-size: 13px; }
+    .effect-copy span {
+      overflow: hidden;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .kind-code {
+      color: #8f8377;
+      font: 10px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .inspector {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(360px, 1fr) minmax(430px, 1.45fr);
+      gap: 0;
+      overflow: hidden;
+    }
+
+    .inspector-copy, .tuning { padding: 16px; }
+    .tuning { border-left: 1px solid var(--line); }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 13px;
+    }
+
+    .section-title h2 { margin: 0; font-size: 16px; }
+
+    .exact-badge {
+      padding: 4px 8px;
+      border: 1px solid rgba(105, 211, 160, .32);
+      border-radius: 999px;
+      background: rgba(105, 211, 160, .07);
+      color: #8bdfb3;
+      font-size: 10px;
+    }
+
+    .mapping-preview {
+      display: grid;
+      grid-template-columns: 11px minmax(0, 1fr);
+      gap: 10px;
+      align-items: stretch;
+      padding: 13px;
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, .18);
+    }
+
+    .mapping-preview .swatch {
+      border-radius: 999px;
+      background: var(--theme);
+      box-shadow: 0 0 16px color-mix(in srgb, var(--theme) 55%, transparent);
+    }
+
+    .mapping-header { color: var(--header-color); font-size: 12px; font-weight: 800; }
+    .mapping-body { color: var(--body-color); font-size: 21px; font-weight: 900; }
+    .mapping-note { margin-top: 7px; color: var(--muted); font-size: 12px; }
+
+    .param-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(105px, 1fr));
+      gap: 8px;
+    }
+
+    .param-field {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .number-input { width: 100%; padding: 0 9px; color: #ffddb1; }
+
+    .timeline-ruler {
+      position: relative;
+      height: 48px;
+      margin-top: 13px;
+      border: 1px solid var(--line-soft);
+      border-radius: 11px;
+      background: rgba(0, 0, 0, .15);
+    }
+
+    .timeline-track {
+      position: absolute;
+      top: 13px;
+      left: 12px;
+      right: 12px;
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #120c09;
+    }
+
+    .timeline-enter, .timeline-pulse, .timeline-hold, .timeline-fade {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+    }
+
+    .timeline-enter { left: 0; width: 28%; background: #d46b31; }
+    .timeline-pulse { left: 28%; width: 20%; background: #f6c453; }
+    .timeline-hold { left: 48%; width: 28%; background: #63c7a7; }
+    .timeline-fade { left: 76%; right: 0; background: #7b6fa4; }
+
+    .timeline-labels {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 6px;
+      display: grid;
+      grid-template-columns: 28fr 20fr 28fr 24fr;
+      color: #918478;
+      font-size: 9px;
+      text-align: center;
+    }
+
+    .keyboard-hint {
+      margin: 10px 0 0;
+      color: #857a70;
+      font-size: 11px;
+    }
+
+    kbd {
+      padding: 1px 5px;
+      border: 1px solid #5c4639;
+      border-bottom-width: 2px;
+      border-radius: 5px;
+      background: #1a120f;
+      color: #cebba7;
+      font: 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .empty-state { padding: 32px 14px; color: var(--muted); text-align: center; }
+
+    @media (max-width: 1080px) {
+      .workspace { grid-template-columns: 1fr; }
+      .library-card { position: static; max-height: none; }
+      .effect-list { max-height: 410px; }
+      .inspector { grid-template-columns: 1fr; }
+      .tuning { border-top: 1px solid var(--line); border-left: 0; }
+    }
+
+    @media (max-width: 700px) {
+      .app-shell { width: min(100% - 18px, 1680px); padding-top: 12px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .source-note { white-space: normal; }
+      .stage { min-height: 400px; aspect-ratio: auto; }
+      .dish-grid { inset: 18% 7% 12%; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); }
+      .dish:nth-child(n+10) { display: none; }
+      .phase-pills { display: none; }
+      .transport { grid-template-columns: 1fr; }
+      .transport-buttons { justify-content: center; }
+      .speed-control { justify-content: center; }
+      .param-grid { grid-template-columns: repeat(2, 1fr); }
+      .result-label .body { white-space: normal; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; }
+      .dish { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Presentation Lab · Settlement</p>
+        <h1>结算 ResultText 演出 GM</h1>
+        <p class="subtitle">覆盖 <code>SettlementStageView.ResultText</code> 的全部输出分支，并复刻 Unity 中的语义色、弹入、脉冲、上浮和末段淡出节奏。</p>
+      </div>
+      <div class="source-note">基准：SettlementStageView.cs · SettlementPresentationPlan.cs</div>
+    </header>
+
+    <section class="workspace">
+      <section class="preview-card card-shell" aria-label="结算动效预览">
+        <div class="stage-toolbar">
+          <div class="stage-status">
+            <span class="status-dot" aria-hidden="true"></span>
+            <div class="status-copy">
+              <strong id="activeName">基础分 · 正向</strong>
+              <small id="activeKind">ScoreLineKind.DishFlat</small>
+            </div>
+          </div>
+          <div class="phase-pills" aria-label="演出阶段">
+            <span class="phase-pill" data-phase="enter">入场</span>
+            <span class="phase-pill" data-phase="pulse">脉冲</span>
+            <span class="phase-pill" data-phase="hold">停留</span>
+            <span class="phase-pill" data-phase="fade">淡出</span>
+          </div>
+        </div>
+
+        <div id="stage" class="stage stage-idle">
+          <div class="score-rail">
+            <span id="scoreNumber" class="score-number">8,420</span>
+            <div class="score-track"><div id="scoreFill" class="score-fill"></div></div>
+            <span class="target-number">目标 15,000</span>
+          </div>
+          <div id="dishGrid" class="dish-grid"></div>
+          <div id="vignette" class="stage-vignette"></div>
+          <div id="fxLayer" class="fx-layer" aria-live="polite"></div>
+        </div>
+
+        <div class="transport">
+          <div class="transport-buttons">
+            <button id="previousButton" class="icon-button" type="button" title="上一个（←）" aria-label="上一个效果">◀</button>
+            <button id="playButton" class="primary-button" type="button">播放当前</button>
+            <button id="allButton" class="ghost-button" type="button">串播全部</button>
+            <button id="nextButton" class="icon-button" type="button" title="下一个（→）" aria-label="下一个效果">▶</button>
+          </div>
+          <div class="scrub-wrap">
+            <div class="scrub-meta"><span>动画进度</span><span id="timeReadout">0 / 520 ms</span></div>
+            <input id="scrubber" type="range" min="0" max="1000" value="0" aria-label="动画进度">
+          </div>
+          <label class="speed-control">速度
+            <select id="speedSelect" aria-label="播放速度">
+              <option value="0.5">0.5×</option>
+              <option value="0.75">0.75×</option>
+              <option value="1" selected>1.0×</option>
+              <option value="1.4">1.4×</option>
+              <option value="1.8">1.8×</option>
+              <option value="2">2.0×</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <aside class="library-card card-shell" aria-label="ResultText 效果库">
+        <div class="library-head">
+          <div class="library-title-row">
+            <h2>ResultText 效果库</h2>
+            <span id="libraryCount" class="library-count">0 个分支</span>
+          </div>
+          <input id="searchInput" class="search-input" type="search" placeholder="搜索标题、正文或 ScoreLineKind" aria-label="搜索效果">
+          <div id="filterRow" class="filter-row" aria-label="效果分类"></div>
+        </div>
+        <div id="effectList" class="effect-list"></div>
+      </aside>
+
+      <section class="inspector card-shell" aria-label="效果参数检查器">
+        <div class="inspector-copy">
+          <div class="section-title">
+            <h2>当前映射</h2>
+            <span class="exact-badge">C# 文案逐分支复刻</span>
+          </div>
+          <div class="mapping-preview">
+            <span class="swatch" aria-hidden="true"></span>
+            <div>
+              <div id="mappingHeader" class="mapping-header">基础分</div>
+              <div id="mappingBody" class="mapping-body">+120</div>
+              <div id="mappingNote" class="mapping-note">普通固定加分，主题色为 BaseScore。</div>
+            </div>
+          </div>
+          <p class="keyboard-hint"><kbd>Space</kbd> 播放 / 暂停　<kbd>R</kbd> 重播　<kbd>←</kbd><kbd>→</kbd> 切换分支</p>
+        </div>
+        <div class="tuning">
+          <div class="section-title">
+            <h2>动画参数</h2>
+            <button id="resetButton" class="chip-button" type="button">恢复 Unity 默认值</button>
+          </div>
+          <div class="param-grid">
+            <label class="param-field">总时长 / ms<input id="durationInput" class="number-input" type="number" min="100" max="5000" step="10" value="520"></label>
+            <label class="param-field">初始缩放<input id="scaleInput" class="number-input" type="number" min="0.1" max="2" step="0.01" value="0.8"></label>
+            <label class="param-field">脉冲幅度<input id="pulseInput" class="number-input" type="number" min="0" max="0.8" step="0.01" value="0.08"></label>
+            <label class="param-field">上浮 / px<input id="riseInput" class="number-input" type="number" min="0" max="160" step="1" value="10"></label>
+            <label class="param-field">淡出占比<input id="fadeInput" class="number-input" type="number" min="0.05" max="0.9" step="0.01" value="0.24"></label>
+          </div>
+          <div class="timeline-ruler" aria-label="Unity 默认动画阶段">
+            <div class="timeline-track">
+              <span class="timeline-enter"></span><span class="timeline-pulse"></span><span class="timeline-hold"></span><span class="timeline-fade"></span>
+            </div>
+            <div class="timeline-labels"><span>0–28% 入场</span><span>28–48% 回弹</span><span>48–76% 停留</span><span>76–100% 淡出</span></div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    const PALETTE = {
+      BaseScore: "#f6c453",
+      PermanentScore: "#b85a2b",
+      AddMultiplier: "#39d0b0",
+      MultiplyMultiplier: "#ff5a5f",
+      Gold: "#f4b740",
+      CakeLayer: "#ff8a3d",
+      SilverReward: "#a9c4d8",
+      CopySkill: "#36e0f2",
+      SweetTransfer: "#ff54b2",
+      Failure: "#e06a84",
+      Special: "#a978ff",
+      CountAs: "#ffcc52",
+      TemporaryCategory: "#e25c7e",
+      FinalScore: "#ff9e1a",
+      TextLight: "#fff4dc"
+    };
+
+    const CATEGORY_LABELS = {
+      score: "分数",
+      resource: "资源 / 份数",
+      sweet: "甜蜜传递",
+      fallback: "兜底 / 特例"
+    };
+
+    const EFFECTS = [
+      { id: "dish-base", category: "score", name: "食物基础贡献 · 前置", kind: "DishBase", header: "草莓蛋糕", body: "基础贡献  1,260", palette: "BaseScore", note: "来自 PlayBaseAsync，不经过 ResultText；作为结算文本链路的前置拍一并收录。", duration: 380 },
+      { id: "flat-positive", category: "score", name: "基础分 · 正向", kind: "DishFlat", header: "基础分", body: "+120", palette: "BaseScore", note: "普通固定加分；ResultText 返回带正号的 G3 数值。" },
+      { id: "flat-negative", category: "score", name: "基础分 · 负向", kind: "DishFlat", header: "基础分", body: "-35", palette: "BaseScore", note: "负数不补正号，仍使用 BaseScore 语义色。" },
+      { id: "permanent-flat", category: "score", name: "永久分数", kind: "DishPermanentFlat", header: "永久分数", body: "永久 +48", palette: "PermanentScore", note: "当次进入加法区，结算后写回食物实例。" },
+      { id: "multiply", category: "score", name: "乘倍率", kind: "DishMultiplier", header: "乘倍率", body: "×1.5", palette: "MultiplyMultiplier", note: "乘法倍率使用红色 MultiplyMultiplier。" },
+      { id: "add-multiplier", category: "score", name: "加倍率", kind: "DishMultiplierAdd", header: "加倍率", body: "倍率 +0.35", palette: "AddMultiplier", note: "加法倍率使用青绿色 AddMultiplier。" },
+      { id: "extra-settlement", category: "score", name: "咸味额外结算", kind: "ExtraSettlement", header: "结算结果", body: "咸味额外结算第 1 次 +236", palette: "BaseScore", note: "ExtraSettlement 落入默认分支，正文直接使用 ScoreLine.Message。", duration: 900 },
+      { id: "final-flat", category: "score", name: "总分加成", kind: "FinalFlat", header: "总分加成", body: "总分 +800  →  9,220", palette: "BaseScore", note: "最终加法展示运算和运行中总分。", duration: 1100, target: 0 },
+      { id: "final-multiply", category: "score", name: "总分倍率", kind: "FinalMultiplier", header: "总分倍率", body: "总分 ×1.25  →  11,525", palette: "MultiplyMultiplier", note: "FinalMultiplier 即使值接近 0 也不会被“无变化”分支截断。", duration: 1100, target: 0 },
+      { id: "zero", category: "score", name: "数值无变化", kind: "DishFlat", header: "基础分", body: "无变化", palette: "BaseScore", note: "除 FinalMultiplier 和 SweetTransferFailed 外，|Value| ≤ 0.001 时统一显示“无变化”。" },
+
+      { id: "gold", category: "resource", name: "金币", kind: "Gold", header: "金币", body: "金币 +16", palette: "Gold", note: "金币是对外副作用，不直接计入食物贡献。" },
+      { id: "layer", category: "resource", name: "快乐蛋糕层数", kind: "Layer", header: "快乐蛋糕", body: "层数 +2", palette: "CakeLayer", note: "欢乐蛋糕全局层数变化。" },
+      { id: "silver", category: "resource", name: "银材质奖励", kind: "SilverItemRoll", header: "银材质奖励", body: "获得装饰品和消耗品 ×2", palette: "SilverReward", note: "数量使用 AwayFromZero 规则取整。" },
+      { id: "copy", category: "resource", name: "技能复制", kind: "CopySkill", header: "技能复制", body: "获得技能 ×1", palette: "CopySkill", note: "复制技能使用高亮青色 CopySkill。" },
+      { id: "count-as", category: "resource", name: "有效份数", kind: "DishCountAs", header: "有效份数", body: "份数 +2  →  4 份", palette: "CountAs", note: "同时展示本次增量与 After 的最终有效份数。" },
+      { id: "empty-count-as", category: "resource", name: "空格份数", kind: "EmptyCountAs", header: "空格份数", body: "每个空格 +1 份", palette: "CountAs", note: "正文表达每个空格提供的份数。" },
+      { id: "temporary-category", category: "resource", name: "分类赋予 · 默认", kind: "TemporaryCategory", header: "分类赋予", body: "视为蛋糕", palette: "TemporaryCategory", note: "Message 为空时回退到“视为蛋糕”。" },
+      { id: "temporary-category-message", category: "resource", name: "分类赋予 · 自定义", kind: "TemporaryCategory", header: "分类赋予", body: "本场视为甜品", palette: "TemporaryCategory", note: "Message 非空时原样展示。" },
+
+      { id: "trigger-transfer", category: "sweet", name: "触发甜蜜传递", kind: "TriggerSweetTransfer", header: "甜蜜传递", body: "触发甜蜜传递", palette: "SweetTransfer", note: "Value ≤ 1 时使用完整触发文案。" },
+      { id: "trigger-transfer-multi", category: "sweet", name: "触发甜蜜传递 · 多次", kind: "TriggerSweetTransfer", header: "甜蜜传递", body: "触发 ×3", palette: "SweetTransfer", note: "Value > 1 时改为次数表达。" },
+      { id: "transfer-source", category: "sweet", name: "传递来源接力", kind: "TriggeredSweetTransferSource", header: "传递来源", body: "来源已接力", palette: "SweetTransfer", note: "代触发链路切换到实际甜蜜传递来源。" },
+      { id: "buff-applied", category: "sweet", name: "甜蜜 Buff 挂载", kind: "SweetTransferBuffApplied", header: "甜蜜 Buff", body: "挂载目标 ×3", palette: "SweetTransfer", note: "记录单次结算 Buff 的挂载目标数。" },
+      { id: "buff-extra-target", category: "sweet", name: "Buff 响应 · 额外目标", kind: "SweetTransferBuffTriggered", header: "Buff 响应", body: "额外目标 +2", palette: "SweetTransfer", note: "Trace.ActionType 为 TriggerSweetTransfer 时显示额外目标。" },
+      { id: "buff-row-mult", category: "sweet", name: "Buff 响应 · 本行倍率", kind: "SweetTransferBuffTriggered", header: "Buff 响应", body: "本行倍率 ×1.5", palette: "SweetTransfer", note: "其他 ActionType 显示本行倍率。" },
+      { id: "transfer-failed", category: "sweet", name: "甜蜜传递失败", kind: "SweetTransferFailed", header: "甜蜜传递", body: "没有可传递目标", palette: "Failure", note: "失败分支使用独立 Failure 色，并绕过零值“无变化”。" },
+
+      { id: "null-line", category: "fallback", name: "空 ScoreLine", kind: "null", header: "结算结果", body: "总分  8,420", palette: "Special", note: "line == null 时直接展示当前运行总分。", target: 0 },
+      { id: "default-message", category: "fallback", name: "默认分支 · Message", kind: "Unknown", header: "结算结果", body: "草莓酱溢出了甜香", palette: "Special", note: "未知类型且 Message 非空时原样展示 Message。" },
+      { id: "default-value", category: "fallback", name: "默认分支 · 数值", kind: "Unknown", header: "结算结果", body: "+12", palette: "Special", note: "未知类型且 Message 为空时展示 signed Value。" },
+      { id: "finale", category: "fallback", name: "本桌结算收束", kind: "Finale", header: "本桌结算", body: "总分  11,525", palette: "FinalScore", note: "不是 ResultText 分支，但作为同一演出链路的最终收束标签一并提供。", duration: 950, target: 0, finale: true }
+    ];
+
+    const DISHES = [
+      ["蛋挞", "挞", "#d9933f", 840], ["草莓蛋糕", "糕", "#e25c7e", 1260], ["软糖", "糖", "#ff54b2", 520],
+      ["巧克力条", "巧", "#8b4d33", 980], ["枫糖", "枫", "#e87f31", 720], ["法棍", "棍", "#d7a653", 1160],
+      ["芭菲", "芭", "#a978ff", 1380], ["棉花糖", "棉", "#f7b8d8", 640], ["大棒棒糖", "棒", "#36e0f2", 1040], ["焦糖布丁", "布", "#f6c453", 920]
+    ];
+
+    const state = {
+      selectedId: "flat-positive",
+      category: "all",
+      query: "",
+      speed: 1,
+      animation: null,
+      ringAnimation: null,
+      monitorFrame: 0,
+      autoplayToken: 0,
+      playingAll: false
+    };
+
+    const $ = id => document.getElementById(id);
+    const stage = $("stage");
+    const fxLayer = $("fxLayer");
+    const scrubber = $("scrubber");
+    const cssRoot = document.documentElement.style;
+
+    function mix(hexA, hexB, amount) {
+      const parse = hex => [1, 3, 5].map(index => Number.parseInt(hex.slice(index, index + 2), 16));
+      const a = parse(hexA), b = parse(hexB);
+      const values = a.map((value, index) => Math.round(value + (b[index] - value) * amount));
+      return `rgb(${values.join(", ")})`;
+    }
+
+    function smoothStep(value) {
+      const t = Math.max(0, Math.min(1, value));
+      return t * t * (3 - 2 * t);
+    }
+
+    function selectedEffect() {
+      return EFFECTS.find(effect => effect.id === state.selectedId) || EFFECTS[0];
+    }
+
+    function currentParameters(effect = selectedEffect()) {
+      return {
+        duration: Math.max(100, Number($("durationInput").value) || effect.duration || 520),
+        initialScale: Math.max(.1, Number($("scaleInput").value) || .8),
+        pulse: Math.max(0, Number($("pulseInput").value) || 0),
+        rise: Math.max(0, Number($("riseInput").value) || 0),
+        fade: Math.min(.9, Math.max(.05, Number($("fadeInput").value) || .24))
+      };
+    }
+
+    function buildDishes() {
+      $("dishGrid").innerHTML = DISHES.map((dish, index) => `
+        <div class="dish${index === 1 ? " active" : ""}" data-dish-index="${index}" style="--dish-color:${dish[2]}">
+          <span class="dish-icon">${dish[1]}</span>
+          <span class="dish-name">${dish[0]}</span>
+          <span class="dish-value">${dish[3].toLocaleString("zh-CN")}</span>
+        </div>`).join("");
+    }
+
+    function renderFilters() {
+      const buttons = [{ key: "all", label: "全部" }, ...Object.entries(CATEGORY_LABELS).map(([key, label]) => ({ key, label }))];
+      $("filterRow").innerHTML = buttons.map(item => `<button class="chip-button${state.category === item.key ? " active" : ""}" type="button" data-category="${item.key}">${item.label}</button>`).join("");
+      $("filterRow").querySelectorAll("button").forEach(button => {
+        button.addEventListener("click", () => {
+          state.category = button.dataset.category;
+          renderFilters();
+          renderLibrary();
+        });
+      });
+    }
+
+    function filteredEffects() {
+      const query = state.query.trim().toLocaleLowerCase("zh-CN");
+      return EFFECTS.filter(effect => {
+        const categoryMatch = state.category === "all" || effect.category === state.category;
+        const haystack = `${effect.name} ${effect.kind} ${effect.header} ${effect.body} ${effect.note}`.toLocaleLowerCase("zh-CN");
+        return categoryMatch && (!query || haystack.includes(query));
+      });
+    }
+
+    function renderLibrary() {
+      const effects = filteredEffects();
+      $("libraryCount").textContent = `${effects.length} / ${EFFECTS.length} 个分支`;
+      $("effectList").innerHTML = effects.length ? effects.map(effect => {
+        const theme = PALETTE[effect.palette];
+        return `<button class="effect-item${effect.id === state.selectedId ? " active" : ""}" type="button" data-effect-id="${effect.id}" style="--item-theme:${theme}">
+          <span class="theme-stripe" aria-hidden="true"></span>
+          <span class="effect-copy"><strong>${effect.name}</strong><span>${effect.header} · ${effect.body}</span></span>
+          <span class="kind-code">${effect.kind}</span>
+        </button>`;
+      }).join("") : `<div class="empty-state">没有匹配的 ResultText 分支。</div>`;
+      $("effectList").querySelectorAll(".effect-item").forEach(button => {
+        button.addEventListener("click", () => selectEffect(button.dataset.effectId, true));
+      });
+    }
+
+    function applyTheme(effect) {
+      const theme = PALETTE[effect.palette];
+      const body = mix(theme, PALETTE.TextLight, .30);
+      cssRoot.setProperty("--theme", theme);
+      cssRoot.setProperty("--body-color", body);
+      cssRoot.setProperty("--header-color", mix(body, "#000000", .0));
+      $("activeName").textContent = effect.name;
+      $("activeKind").textContent = effect.kind === "null" ? "ScoreLine = null" : `ScoreLineKind.${effect.kind}`;
+      $("mappingHeader").textContent = effect.header;
+      $("mappingBody").textContent = effect.body;
+      $("mappingNote").textContent = effect.note;
+    }
+
+    function selectEffect(id, play = false) {
+      if (!EFFECTS.some(effect => effect.id === id)) return;
+      stopAutoplay();
+      cancelAnimation();
+      state.selectedId = id;
+      const effect = selectedEffect();
+      $("durationInput").value = effect.duration || 520;
+      applyTheme(effect);
+      renderLibrary();
+      if (play) playCurrent();
+    }
+
+    function targetFor(effect) {
+      const index = Number.isInteger(effect.target) ? effect.target : 1;
+      const dishes = [...document.querySelectorAll(".dish")];
+      return { element: dishes[index] || null, index };
+    }
+
+    function anchorFor(effect) {
+      if (effect.target === 0 || effect.finale) return { x: 50, y: effect.finale ? 43 : 51 };
+      const target = targetFor(effect).element;
+      if (!target) return { x: 50, y: 51 };
+      const stageRect = stage.getBoundingClientRect();
+      const rect = target.getBoundingClientRect();
+      return {
+        x: ((rect.left + rect.width / 2 - stageRect.left) / stageRect.width) * 100,
+        y: ((rect.bottom - stageRect.top + 8) / stageRect.height) * 100
+      };
+    }
+
+    function labelFrames(params) {
+      const frames = [];
+      for (let index = 0; index <= 50; index += 1) {
+        const t = index / 50;
+        const enter = smoothStep(t / .28);
+        const pulse = Math.sin(Math.min(1, t / .48) * Math.PI) * params.pulse;
+        const scale = params.initialScale + enter * (1 - params.initialScale) + pulse;
+        const alpha = Math.min(1, Math.max(0, (1 - t) / params.fade));
+        frames.push({
+          offset: t,
+          opacity: alpha,
+          transform: `translate(-50%, -50%) translateY(${-params.rise * enter}px) scale(${scale})`
+        });
+      }
+      return frames;
+    }
+
+    function createLabel(effect, anchor) {
+      const label = document.createElement("div");
+      label.className = `result-label${effect.finale ? " finale" : ""}`;
+      label.style.setProperty("--label-x", `${anchor.x}%`);
+      label.style.setProperty("--label-y", `${anchor.y}%`);
+      label.innerHTML = `<div class="header"></div><div class="body"></div>`;
+      label.querySelector(".header").textContent = effect.header;
+      label.querySelector(".body").textContent = effect.body;
+      fxLayer.appendChild(label);
+      return label;
+    }
+
+    function createImpactRing(anchor, params, finale) {
+      const ring = document.createElement("div");
+      ring.className = "impact-ring";
+      ring.style.setProperty("--ring-x", `${anchor.x}%`);
+      ring.style.setProperty("--ring-y", `${finale ? 54 : anchor.y - 8}%`);
+      fxLayer.appendChild(ring);
+      const endScale = finale ? 8.2 : 2.7;
+      const duration = finale ? params.duration : Math.min(520, params.duration);
+      state.ringAnimation = ring.animate([
+        { opacity: finale ? .42 : .7, transform: "translate(-50%, -50%) scale(.25)" },
+        { opacity: .15, offset: .65, transform: `translate(-50%, -50%) scale(${endScale * .78})` },
+        { opacity: 0, transform: `translate(-50%, -50%) scale(${endScale})` }
+      ], { duration: duration / state.speed, easing: "linear", fill: "forwards" });
+    }
+
+    function playCurrent() {
+      cancelAnimation();
+      const effect = selectedEffect();
+      const params = currentParameters(effect);
+      const anchor = anchorFor(effect);
+      const target = targetFor(effect).element;
+      stage.classList.remove("stage-idle");
+      document.querySelectorAll(".dish").forEach(dish => dish.classList.remove("active", "hit"));
+      if (target && effect.target !== 0) {
+        target.classList.add("active");
+        void target.offsetWidth;
+        target.classList.add("hit");
+      }
+      stage.style.setProperty("--focus-x", `${anchor.x}%`);
+      stage.style.setProperty("--focus-y", `${Math.max(24, anchor.y - 10)}%`);
+      const label = createLabel(effect, anchor);
+      createImpactRing(anchor, params, effect.finale);
+      state.animation = label.animate(labelFrames(params), {
+        duration: params.duration / state.speed,
+        easing: "linear",
+        fill: "forwards"
+      });
+      $("playButton").textContent = "暂停";
+      state.animation.onfinish = () => {
+        $("playButton").textContent = "播放当前";
+        updateProgress(1000, params.duration);
+        stage.classList.add("stage-idle");
+        if (target) target.classList.remove("hit");
+      };
+      monitorAnimation(params.duration);
+      updateScore(effect);
+    }
+
+    function updateScore(effect) {
+      let score = 8420;
+      if (effect.id === "final-flat") score = 9220;
+      if (["final-multiply", "finale"].includes(effect.id)) score = 11525;
+      $("scoreNumber").textContent = score.toLocaleString("zh-CN");
+      $("scoreFill").style.width = `${Math.min(100, score / 15000 * 100)}%`;
+    }
+
+    function monitorAnimation(logicalDuration) {
+      cancelAnimationFrame(state.monitorFrame);
+      const tick = () => {
+        if (!state.animation) return;
+        const visualDuration = logicalDuration / state.speed;
+        const current = Math.max(0, Math.min(visualDuration, Number(state.animation.currentTime) || 0));
+        const progress = visualDuration ? current / visualDuration : 0;
+        updateProgress(progress * 1000, logicalDuration);
+        updatePhase(progress);
+        if (state.animation.playState === "running" || state.animation.playState === "paused") {
+          state.monitorFrame = requestAnimationFrame(tick);
+        }
+      };
+      tick();
+    }
+
+    function updateProgress(value, logicalDuration = currentParameters().duration) {
+      const safe = Math.max(0, Math.min(1000, value));
+      scrubber.value = safe;
+      $("timeReadout").textContent = `${Math.round(logicalDuration * safe / 1000)} / ${Math.round(logicalDuration)} ms`;
+    }
+
+    function updatePhase(progress) {
+      let phase = "enter";
+      if (progress >= .76) phase = "fade";
+      else if (progress >= .48) phase = "hold";
+      else if (progress >= .28) phase = "pulse";
+      document.querySelectorAll(".phase-pill").forEach(pill => pill.classList.toggle("active", pill.dataset.phase === phase));
+    }
+
+    function cancelAnimation() {
+      cancelAnimationFrame(state.monitorFrame);
+      if (state.animation) state.animation.cancel();
+      if (state.ringAnimation) state.ringAnimation.cancel();
+      state.animation = null;
+      state.ringAnimation = null;
+      fxLayer.replaceChildren();
+      document.querySelectorAll(".dish").forEach(dish => dish.classList.remove("hit"));
+      $("playButton").textContent = "播放当前";
+      updateProgress(0);
+      updatePhase(0);
+    }
+
+    function togglePlay() {
+      if (!state.animation || ["finished", "idle"].includes(state.animation.playState)) {
+        playCurrent();
+        return;
+      }
+      if (state.animation.playState === "paused") {
+        state.animation.play();
+        state.ringAnimation?.play();
+        $("playButton").textContent = "暂停";
+      } else {
+        state.animation.pause();
+        state.ringAnimation?.pause();
+        $("playButton").textContent = "继续";
+      }
+    }
+
+    function moveSelection(direction, shouldPlay = true) {
+      const current = EFFECTS.findIndex(effect => effect.id === state.selectedId);
+      const next = (current + direction + EFFECTS.length) % EFFECTS.length;
+      selectEffect(EFFECTS[next].id, shouldPlay);
+      document.querySelector(`[data-effect-id="${EFFECTS[next].id}"]`)?.scrollIntoView({ block: "nearest" });
+    }
+
+    function wait(milliseconds) {
+      return new Promise(resolve => window.setTimeout(resolve, milliseconds));
+    }
+
+    async function playAll() {
+      stopAutoplay();
+      const token = ++state.autoplayToken;
+      state.playingAll = true;
+      $("allButton").textContent = "停止串播";
+      for (const effect of EFFECTS) {
+        if (token !== state.autoplayToken) break;
+        state.selectedId = effect.id;
+        $("durationInput").value = effect.duration || 520;
+        applyTheme(effect);
+        renderLibrary();
+        playCurrent();
+        const duration = currentParameters(effect).duration / state.speed;
+        await wait(duration + 150 / state.speed);
+      }
+      if (token === state.autoplayToken) stopAutoplay();
+    }
+
+    function stopAutoplay() {
+      state.autoplayToken += 1;
+      state.playingAll = false;
+      $("allButton").textContent = "串播全部";
+    }
+
+    function resetParameters() {
+      const effect = selectedEffect();
+      $("durationInput").value = effect.duration || 520;
+      $("scaleInput").value = .8;
+      $("pulseInput").value = .08;
+      $("riseInput").value = 10;
+      $("fadeInput").value = .24;
+      playCurrent();
+    }
+
+    $("searchInput").addEventListener("input", event => {
+      state.query = event.target.value;
+      renderLibrary();
+    });
+    $("playButton").addEventListener("click", togglePlay);
+    $("allButton").addEventListener("click", () => state.playingAll ? (stopAutoplay(), cancelAnimation()) : playAll());
+    $("previousButton").addEventListener("click", () => moveSelection(-1));
+    $("nextButton").addEventListener("click", () => moveSelection(1));
+    $("resetButton").addEventListener("click", resetParameters);
+    $("speedSelect").addEventListener("change", event => {
+      state.speed = Number(event.target.value) || 1;
+      if (state.animation) playCurrent();
+    });
+    scrubber.addEventListener("input", event => {
+      if (!state.animation) playCurrent();
+      state.animation?.pause();
+      state.ringAnimation?.pause();
+      const params = currentParameters();
+      const progress = Number(event.target.value) / 1000;
+      if (state.animation) state.animation.currentTime = progress * (params.duration / state.speed);
+      if (state.ringAnimation) state.ringAnimation.currentTime = progress * (params.duration / state.speed);
+      $("playButton").textContent = "继续";
+      updateProgress(progress * 1000, params.duration);
+      updatePhase(progress);
+    });
+    ["durationInput", "scaleInput", "pulseInput", "riseInput", "fadeInput"].forEach(id => {
+      $(id).addEventListener("change", playCurrent);
+    });
+
+    document.addEventListener("keydown", event => {
+      const target = event.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) return;
+      if (event.code === "Space") { event.preventDefault(); togglePlay(); }
+      if (event.key.toLocaleLowerCase() === "r") playCurrent();
+      if (event.key === "ArrowLeft") moveSelection(-1);
+      if (event.key === "ArrowRight") moveSelection(1);
+    });
+
+    buildDishes();
+    renderFilters();
+    renderLibrary();
+    applyTheme(selectedEffect());
+    updateProgress(0);
+    window.setTimeout(playCurrent, 180);
+  </script>
+</body>
+</html>

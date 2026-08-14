@@ -772,6 +772,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.SweetTransferBuffApplied:
                 case ScoreLineKind.SweetTransferBuffTriggered:
                 case ScoreLineKind.SweetTransferFailed:
+                case ScoreLineKind.DishCountAs:
+                case ScoreLineKind.EmptyCountAs:
+                case ScoreLineKind.TemporaryCategory:
                     return SettlementCueKind.SideEffect;
                 default:
                     return SettlementCueKind.DishContribution;
@@ -1146,6 +1149,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 case SettlementDishFeedbackKind.PassiveFlatBonus:
                 case SettlementDishFeedbackKind.PassiveMultiplier:
                 case SettlementDishFeedbackKind.PassiveMultiplierAdd:
+                case SettlementDishFeedbackKind.CountAsChanged:
+                case SettlementDishFeedbackKind.TemporaryCategoryApplied:
                     return SettlementDishFeedbackKind.GenericSkillTriggered;
                 default:
                     return SettlementDishFeedbackKind.None;
@@ -2756,6 +2761,45 @@ namespace GourmetProject.Game.Presentation.Battle
                         sourceName: sourceName);
                     return true;
 
+                case ScoreLineKind.DishCountAs:
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        $"份数 {FormatSigned(line.Value)}  →  {RoundCount(line.After)} 份",
+                        rise: 0.34f,
+                        duration: 0.84f,
+                        feedbackKind: SettlementDishFeedbackKind.CountAsChanged,
+                        reveal: SettlementRevealSignal.CountAsReveal(
+                            line.DishInstanceId,
+                            RoundCount(line.After)),
+                        batchKey: BuildDishSkillBatchKey(line),
+                        sourceName: sourceName,
+                        effectColor: SettlementColorPalette.CountAs);
+                    return true;
+
+                case ScoreLineKind.EmptyCountAs:
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        $"每个空格 +{RoundCount(line.Value)} 份",
+                        rise: 0.34f,
+                        duration: 0.84f,
+                        feedbackKind: SettlementDishFeedbackKind.CountAsChanged,
+                        sourceName: sourceName,
+                        effectColor: SettlementColorPalette.CountAs);
+                    return true;
+
+                case ScoreLineKind.TemporaryCategory:
+                    cue = new SettlementCue(
+                        SettlementCueKind.SideEffect,
+                        "视为蛋糕",
+                        rise: 0.38f,
+                        duration: 0.92f,
+                        feedbackKind: SettlementDishFeedbackKind.TemporaryCategoryApplied,
+                        reveal: SettlementRevealSignal.TemporaryEffectReveal(line.DishInstanceId),
+                        batchKey: BuildDishSkillBatchKey(line),
+                        sourceName: sourceName,
+                        effectColor: SettlementColorPalette.TemporaryCategory);
+                    return true;
+
                 default:
                     return false;
             }
@@ -2835,6 +2879,11 @@ namespace GourmetProject.Game.Presentation.Battle
                     return active
                         ? SettlementDishFeedbackKind.ActiveMultiplierAdd
                         : SettlementDishFeedbackKind.PassiveMultiplierAdd;
+                case ScoreLineKind.DishCountAs:
+                case ScoreLineKind.EmptyCountAs:
+                    return SettlementDishFeedbackKind.CountAsChanged;
+                case ScoreLineKind.TemporaryCategory:
+                    return SettlementDishFeedbackKind.TemporaryCategoryApplied;
                 default:
                     return active
                         ? SettlementDishFeedbackKind.GenericSkillTriggered
