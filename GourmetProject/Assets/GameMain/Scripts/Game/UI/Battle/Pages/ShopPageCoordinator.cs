@@ -9,6 +9,50 @@ using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.UI.Battle.Pages
 {
+    /// <summary>
+    /// 商品槽会在购买结算时同步刷新；先保留动画所需的视觉快照，再由结算结果决定播放或释放。
+    /// </summary>
+    internal sealed class PreparedShopPurchaseAnimation
+    {
+        private Action _play;
+        private Action _cancel;
+        private bool _resolved;
+
+        public PreparedShopPurchaseAnimation(Action play, Action cancel = null)
+        {
+            _play = play;
+            _cancel = cancel;
+        }
+
+        public void Play()
+        {
+            if (_resolved)
+            {
+                return;
+            }
+
+            _resolved = true;
+            Action play = _play;
+            _play = null;
+            _cancel = null;
+            play?.Invoke();
+        }
+
+        public void Cancel()
+        {
+            if (_resolved)
+            {
+                return;
+            }
+
+            _resolved = true;
+            Action cancel = _cancel;
+            _play = null;
+            _cancel = null;
+            cancel?.Invoke();
+        }
+    }
+
     internal interface IShopPageHost
     {
         GameRun Run { get; }
@@ -27,7 +71,9 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void OpenRecipeInspect(int bookIndex);
 
-        void PlayShopPurchaseAnimation(ShopEntry entry, ShopBuyItemViewBase sourceCard);
+        PreparedShopPurchaseAnimation PrepareShopPurchaseAnimation(
+            ShopEntry entry,
+            ShopBuyItemViewBase sourceCard);
     }
 
     internal sealed class ShopPageCoordinator
@@ -110,10 +156,16 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 entry.BasePrice,
                 entry.Price,
                 entry.SlotIndex);
+            // ShopSession.Purchase 会同步清空/补货槽位并触发卡片重绑；食物预览 RT 必须在此前复制。
+            PreparedShopPurchaseAnimation purchaseAnimation =
+                entry.Kind != ShopEntryKind.Fragment
+                    ? _host.PrepareShopPurchaseAnimation(purchasedVisual, card)
+                    : null;
             ArchetypeVector archetype = ArchetypeService.Capture(run);
             ShopPurchaseResult result = _session?.Purchase(entry);
             if (result?.Success != true)
             {
+                purchaseAnimation?.Cancel();
                 return false;
             }
 
@@ -127,10 +179,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 result.GoldAfter,
                 archetype);
 
-            if (result.Kind != ShopEntryKind.Fragment)
-            {
-                _host.PlayShopPurchaseAnimation(purchasedVisual, card);
-            }
+            purchaseAnimation?.Play();
 
             RefreshPanel();
             ReportStockShown(run);

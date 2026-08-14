@@ -45,6 +45,8 @@ namespace GourmetProject.Gameplay.Scoring
             IReadOnlyList<GridPos> visualTargetCells = null,
             IReadOnlyList<GridPos> conditionCells = null,
             IReadOnlyList<GridPos> actionScopeCells = null,
+            IReadOnlyList<GridPos> scopeRegionCells = null,
+            SkillScopeRegionKind scopeRegionKind = SkillScopeRegionKind.None,
             int visualIndex = -1)
         {
             Kind = kind;
@@ -68,6 +70,8 @@ namespace GourmetProject.Gameplay.Scoring
             VisualTargetCells = visualTargetCells ?? EmptyCells;
             ConditionCells = conditionCells ?? EmptyCells;
             ActionScopeCells = actionScopeCells ?? EmptyCells;
+            ScopeRegionCells = scopeRegionCells ?? EmptyCells;
+            ScopeRegionKind = scopeRegionKind;
             VisualIndex = visualIndex;
         }
 
@@ -113,6 +117,11 @@ namespace GourmetProject.Gameplay.Scoring
 
         public IReadOnlyList<GridPos> ActionScopeCells { get; }
 
+        /// <summary>该子技能最终允许表现层绘制的唯一棋盘范围。</summary>
+        public IReadOnlyList<GridPos> ScopeRegionCells { get; }
+
+        public SkillScopeRegionKind ScopeRegionKind { get; }
+
         public int VisualIndex { get; }
 
         public SkillExecutionTrace WithVisualIndex(int visualIndex)
@@ -139,6 +148,8 @@ namespace GourmetProject.Gameplay.Scoring
                 VisualTargetCells,
                 ConditionCells,
                 ActionScopeCells,
+                ScopeRegionCells,
+                ScopeRegionKind,
                 visualIndex);
         }
 
@@ -168,6 +179,8 @@ namespace GourmetProject.Gameplay.Scoring
                 visualTargetCells,
                 ConditionCells,
                 ActionScopeCells,
+                ScopeRegionCells,
+                ScopeRegionKind,
                 VisualIndex);
         }
 
@@ -199,6 +212,8 @@ namespace GourmetProject.Gameplay.Scoring
                 visualTargetCells,
                 ConditionCells,
                 ActionScopeCells,
+                ScopeRegionCells,
+                ScopeRegionKind,
                 VisualIndex);
         }
 
@@ -240,7 +255,9 @@ namespace GourmetProject.Gameplay.Scoring
                 visual.VisualTargetDishInstanceIds,
                 visual.VisualTargetCells,
                 visual.ConditionCells,
-                visual.ActionScopeCells);
+                visual.ActionScopeCells,
+                visual.ScopeRegionCells,
+                visual.ScopeRegionKind);
         }
 
         public static SkillExecutionTrace CreateWithOwnerFallback(
@@ -283,6 +300,8 @@ namespace GourmetProject.Gameplay.Scoring
                 trace.VisualTargetCells,
                 trace.ConditionCells,
                 trace.ActionScopeCells,
+                trace.ScopeRegionCells,
+                trace.ScopeRegionKind,
                 trace.VisualIndex);
         }
     }

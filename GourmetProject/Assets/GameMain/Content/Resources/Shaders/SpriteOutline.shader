@@ -257,7 +257,7 @@ Shader "GourmetProject/SpriteOutline"
                         * _GlowIntensity
                         * wave);
                     // 单纯乘亮度会让洋红、青色等高饱和语义色迅速裁平，流光看起来像静态实线。
-                    // 高亮头部向白色过渡，确保所有颜色、Action/Condition 两种范围都能看清循环方向。
+                    // 高亮头部向白色过渡，确保统一蓝色范围仍能看清循环方向。
                     half3 flowHighlightRgb = (half3)(
                         half3(1.0, 1.0, 1.0)
                         * max(1.0, _GlowIntensity)

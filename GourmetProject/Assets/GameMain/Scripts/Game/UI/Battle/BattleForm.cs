@@ -1463,7 +1463,9 @@ namespace GourmetProject.Game.UI.Battle
         void IShopPageHost.OpenDeleteDish() => _recipeBookPage?.OpenShopDelete();
         void IShopPageHost.OpenTableEdit(Action onShown) => OpenTableEdit(onShown);
         void IShopPageHost.OpenRecipeInspect(int bookIndex) => OpenRecipeInspect(bookIndex);
-        void IShopPageHost.PlayShopPurchaseAnimation(ShopEntry entry, ShopBuyItemViewBase sourceCard) => PlayShopPurchaseAnimation(entry, sourceCard);
+        PreparedShopPurchaseAnimation IShopPageHost.PrepareShopPurchaseAnimation(
+            ShopEntry entry,
+            ShopBuyItemViewBase sourceCard) => PrepareShopPurchaseAnimation(entry, sourceCard);
 
         GameRun IRewardPageHost.Run => _run;
         RewardDishPackPanel IRewardPageHost.RewardDishPackPanel => _rewardDishPackPanel;
@@ -2346,11 +2348,13 @@ namespace GourmetProject.Game.UI.Battle
             _shopPage?.RefreshPersistent();
         }
 
-        private void PlayShopPurchaseAnimation(ShopEntry entry, ShopBuyItemViewBase sourceCard)
+        private PreparedShopPurchaseAnimation PrepareShopPurchaseAnimation(
+            ShopEntry entry,
+            ShopBuyItemViewBase sourceCard)
         {
             if (entry == null || sourceCard == null || entry.Kind == ShopEntryKind.Fragment)
             {
-                return;
+                return null;
             }
 
             Canvas canvas = GetComponentInParent<Canvas>();
@@ -2358,42 +2362,46 @@ namespace GourmetProject.Game.UI.Battle
             RectTransform sourceRect = sourceCard.PurchaseFlySource;
             if (layer == null || sourceRect == null)
             {
-                return;
+                return null;
             }
 
             Canvas.ForceUpdateCanvases();
             if (!TryGetRectInLayer(sourceRect, layer, out RectSnapshot start))
             {
-                return;
+                return null;
             }
 
             if (entry.Kind == ShopEntryKind.Dish)
             {
-                PlayShopFoodPurchase(sourceCard, layer, start);
-                return;
+                RectTransform target = _infoColumn?.ViewRecipeButtonRect;
+                if (target == null ||
+                    !TryGetRectInLayer(target, layer, out RectSnapshot end))
+                {
+                    return null;
+                }
+
+                RenderTexture texture = sourceCard.CapturePurchaseFlyTexture();
+                if (texture == null)
+                {
+                    return null;
+                }
+
+                return new PreparedShopPurchaseAnimation(
+                    () => PlayShopFoodPurchase(layer, start, end, texture),
+                    () => ReleasePurchaseTexture(texture));
             }
 
-            PlayShopItemPurchase(entry, sourceCard, layer, start);
+            Sprite sprite = sourceCard.PurchaseFlySprite;
+            return new PreparedShopPurchaseAnimation(
+                () => PlayShopItemPurchase(entry, sprite, layer, start));
         }
 
         private void PlayShopFoodPurchase(
-            ShopBuyItemViewBase sourceCard,
             RectTransform layer,
-            RectSnapshot start)
+            RectSnapshot start,
+            RectSnapshot end,
+            RenderTexture texture)
         {
-            RectTransform target = _infoColumn?.ViewRecipeButtonRect;
-            if (target == null ||
-                !TryGetRectInLayer(target, layer, out RectSnapshot end))
-            {
-                return;
-            }
-
-            RenderTexture texture = sourceCard.CapturePurchaseFlyTexture();
-            if (texture == null)
-            {
-                return;
-            }
-
             ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
             if (fly == null)
             {
@@ -2646,7 +2654,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void PlayShopItemPurchase(
             ShopEntry entry,
-            ShopBuyItemViewBase sourceCard,
+            Sprite sourceSprite,
             RectTransform layer,
             RectSnapshot start)
         {
@@ -2677,7 +2685,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            Sprite sprite = sourceCard.PurchaseFlySprite ?? RunItemSlotView.LoadIcon(item) ?? LoadShopItemFallbackIcon(item.Kind);
+            Sprite sprite = sourceSprite ?? RunItemSlotView.LoadIcon(item) ?? LoadShopItemFallbackIcon(item.Kind);
             Color fallbackColor = RunItemSlotView.QualityColor(item.Quality);
             _shopItemFlyInFlight++;
             RegisterShopPurchaseFly(fly);

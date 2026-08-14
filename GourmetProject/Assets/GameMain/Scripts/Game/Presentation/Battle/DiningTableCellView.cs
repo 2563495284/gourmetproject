@@ -9,7 +9,7 @@ using UnityEngine;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 餐桌格表现：Prefab 根节点表示真实网格，桌体与盘子由两个序列化 Renderer 独立承载。
+    /// 餐桌格表现：Prefab 根节点表示真实网格，方形桌面由单个 PlateVisual Renderer 承载。
     /// 固定视觉层级、相对位置、缩放和碰撞范围均由 Prefab 作者配置；运行时只喂数据与状态。
     /// </summary>
     [RequireComponent(typeof(BoxCollider2D))]
@@ -20,16 +20,13 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly int BoingId = Shader.PropertyToID("_Boing");
         private static readonly int EdgeClampPointId = Shader.PropertyToID("_EdgeClampPoint");
 
-        [Tooltip("完整餐桌视觉根节点。其局部位置/缩放由设计师在 Prefab 中调整，运行时不会重建或重排。")]
+        [Tooltip("方形桌面视觉根节点。其局部位置/缩放由设计师在 Prefab 中调整，运行时不会重建或重排。")]
         [SerializeField] private Transform _visualRoot;
 
-        [Tooltip("桌体渲染体：阴影、桌板结构和桌腿，不包含上方盘子。")]
-        [SerializeField] private SpriteRenderer _tableRenderer;
-
-        [Tooltip("上方盘子渲染体。红/绿/黄格子反馈只改变此 Renderer 的颜色。")]
+        [Tooltip("唯一的方形桌面渲染体。红/绿/黄格子反馈直接改变此 Renderer 的颜色。")]
         [SerializeField] private SpriteRenderer _plateRenderer;
 
-        [Tooltip("真实桌面网格的点击命中范围；不包含下方桌腿等装饰。")]
+        [Tooltip("真实桌面网格的点击命中范围，与方形 PlateVisual 对齐。")]
         [SerializeField] private BoxCollider2D _collider;
 
         private GridPos _position;
@@ -71,14 +68,9 @@ namespace GourmetProject.Game.Presentation.Battle
                     return bounds;
                 }
 
-                if (_tableRenderer != null && _tableRenderer.sprite != null)
+                if (_plateRenderer != null && _plateRenderer.sprite != null)
                 {
-                    return _tableRenderer.bounds;
-                }
-
-                if (_tableRenderer != null && _tableRenderer.sprite != null)
-                {
-                    return _tableRenderer.bounds;
+                    return _plateRenderer.bounds;
                 }
 
                 return new Bounds(transform.position, Vector3.one);
@@ -109,11 +101,10 @@ namespace GourmetProject.Game.Presentation.Battle
             if (!sprites.IsValid)
             {
                 throw new InvalidOperationException(
-                    $"{nameof(DiningTableCellView)} 收到不完整的桌体/盘子 Sprite 对。");
+                    $"{nameof(DiningTableCellView)} 收到无效的餐桌格 Sprite。");
             }
 
-            bool spritesChanged = _configuredSprites.Table != sprites.Table
-                                  || _configuredSprites.Plate != sprites.Plate;
+            bool spritesChanged = _configuredSprites.Plate != sprites.Plate;
             bool sizeChanged = !Mathf.Approximately(_configuredSize, size);
             if (sizeChanged)
             {
@@ -125,7 +116,6 @@ namespace GourmetProject.Game.Presentation.Battle
             bool preserveTransformMaterial = IsTransformMaterialActive();
             if (spritesChanged)
             {
-                _tableRenderer.sprite = sprites.Table;
                 _plateRenderer.sprite = sprites.Plate;
                 if (!preserveTransformMaterial)
                 {
@@ -161,9 +151,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            _tableRenderer.SetPropertyBlock(null);
             _plateRenderer.SetPropertyBlock(null);
-            SpriteRenderStyle.ApplyTransformMaterial(_tableRenderer);
             SpriteRenderStyle.ApplyTransformMaterial(_plateRenderer);
             ApplyTransformEffect(0f);
             _transformSequence = DOTween.Sequence()
@@ -185,7 +173,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _hoverExited = exited;
         }
 
-        /// <summary>设置格子的基础颜色/透明度；桌体与盘子保持一致，盘子反馈色会保留基础 Alpha。</summary>
+        /// <summary>设置格子的基础颜色/透明度；反馈色会保留基础 Alpha。</summary>
         public void SetColor(Color color)
         {
             EnsureRefs();
@@ -209,25 +197,17 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplyColors();
         }
 
-        /// <summary>反馈 Overlay 只显示盘子，避免 Fx 层的复制桌体遮住食物。</summary>
-        internal void SetTableBodyVisible(bool visible)
-        {
-            EnsureRefs();
-            _tableRenderer.enabled = visible;
-        }
-
         public void SetDebuffed(bool debuffed)
         {
             EnsureRefs();
-            SetRendererDebuffed(_tableRenderer, debuffed);
             SetRendererDebuffed(_plateRenderer, debuffed);
         }
 
-        /// <summary>调整层内基准序号；实际桌体/盘子仍会叠加逻辑行深度。</summary>
+        /// <summary>调整层内基准序号；方形桌面仍会叠加逻辑行深度。</summary>
         public void SetSortingOrder(int order)
         {
             EnsureRefs();
-            ApplySorting(_tableRenderer.sortingLayerName, order);
+            ApplySorting(_plateRenderer.sortingLayerName, order);
         }
 
         public void SetSorting(string layer, int order)
@@ -251,7 +231,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ApplyColors()
         {
-            _tableRenderer.color = _baseColor;
             _plateRenderer.color = _plateFeedbackActive
                 ? new Color(
                     _plateFeedbackColor.r,
@@ -263,9 +242,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ApplySorting(string layer, int baseOrder)
         {
-            int tableOrder = baseOrder + _position.Y * RowSortingStride;
-            BattleSorting.Apply(_tableRenderer, layer, tableOrder);
-            BattleSorting.Apply(_plateRenderer, layer, tableOrder + 1);
+            int plateOrder = baseOrder + _position.Y * RowSortingStride + 1;
+            BattleSorting.Apply(_plateRenderer, layer, plateOrder);
         }
 
         private static void SetRendererDebuffed(SpriteRenderer renderer, bool debuffed)
@@ -289,7 +267,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _propertyBlock.SetFloat(BrightnessId, t);
             _propertyBlock.SetVector(BoingId, new Vector4(0.2f * t, -0.14f * t, 0f, 0f));
             _propertyBlock.SetVector(EdgeClampPointId, new Vector4(0.24f, 0.24f, 0f, 0f));
-            _tableRenderer.SetPropertyBlock(_propertyBlock);
             _plateRenderer.SetPropertyBlock(_propertyBlock);
         }
 
@@ -297,7 +274,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             return _transformSequence != null
                 && SpriteRenderStyle.SpriteTransformMaterial != null
-                && _tableRenderer.sharedMaterial == SpriteRenderStyle.SpriteTransformMaterial;
+                && _plateRenderer.sharedMaterial == SpriteRenderStyle.SpriteTransformMaterial;
         }
 
         private void KillTransformSequence(bool resetMaterial)
@@ -322,9 +299,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void RestoreUnlitMaterials()
         {
-            _tableRenderer.SetPropertyBlock(null);
             _plateRenderer.SetPropertyBlock(null);
-            SpriteRenderStyle.ApplyUnlitMaterial(_tableRenderer);
             SpriteRenderStyle.ApplyUnlitMaterial(_plateRenderer);
         }
 
@@ -336,12 +311,11 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>固定视觉结构必须由 Prefab 完整绑定；缺失时明确失败，禁止运行时补节点或补组件。</summary>
         private void EnsureRefs()
         {
-            if (_visualRoot == null || _tableRenderer == null || _plateRenderer == null || _collider == null)
+            if (_visualRoot == null || _plateRenderer == null || _collider == null)
             {
                 throw new InvalidOperationException(
                     $"{nameof(DiningTableCellView)} 的 Prefab 绑定不完整：必须配置 " +
-                    $"{nameof(_visualRoot)}、{nameof(_tableRenderer)}、" +
-                    $"{nameof(_plateRenderer)}、{nameof(_collider)}。");
+                    $"{nameof(_visualRoot)}、{nameof(_plateRenderer)}、{nameof(_collider)}。");
             }
 
             if (!_visualScaleCaptured)

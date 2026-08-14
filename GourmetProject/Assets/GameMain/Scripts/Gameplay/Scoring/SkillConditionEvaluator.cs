@@ -30,6 +30,51 @@ namespace GourmetProject.Gameplay.Scoring
             GameplayDatabase db)
             => Evaluate(rule, board, history, self, happyCakeLayers, DefaultCountAs, db, null);
 
+        /// <summary>
+        /// 条件是否真正依赖一片可用于摆位判断的餐桌空间。
+        /// 边缘状态、结算顺序、装饰品/历史/层数/食谱/自身属性等条件虽然仍有
+        /// CondScope 配置占位，但它们没有应当绘制的空间条件范围。
+        /// </summary>
+        public static bool UsesSpatialScope(SkillRuleDef rule)
+        {
+            if (rule == null || rule.CondType == SkillConditionType.None)
+            {
+                return false;
+            }
+
+            switch (rule.CondType)
+            {
+                case SkillConditionType.PositionFilled:
+                case SkillConditionType.EmptyCell:
+                case SkillConditionType.DishCount:
+                case SkillConditionType.DishSize:
+                case SkillConditionType.SameDish:
+                case SkillConditionType.SkillCount:
+                case SkillConditionType.ShapeMatch:
+                case SkillConditionType.SkillTypeCount:
+                    return true;
+
+                case SkillConditionType.TagCount:
+                    return HasParam(rule.CondParam, "source:flavors");
+
+                case SkillConditionType.CategoryCount:
+                    // 全场分类数量的 tiers 只驱动全局欢乐蛋糕档位，不代表一片摆位范围。
+                    return !(rule.CondScope == SkillScope.All
+                             && rule.ActionScope == SkillScope.CakeBuff
+                             && HasParam(rule.CondParam, "tiers:"));
+
+                case SkillConditionType.Edge:
+                case SkillConditionType.ServeOrder:
+                case SkillConditionType.SameKindInRun:
+                case SkillConditionType.SameKindInMeal:
+                case SkillConditionType.RecipeCount:
+                case SkillConditionType.LayerCount:
+                case SkillConditionType.OccupiedCell:
+                default:
+                    return false;
+            }
+        }
+
         private static int Evaluate(SkillRuleDef rule, GpTable board, IScoreHistory history, DishInstance self, int happyCakeLayers, System.Func<DishInstance, int> countAsOf, GameplayDatabase db, ScoreContext ctx)
         {
             if (rule.CondType == SkillConditionType.None)

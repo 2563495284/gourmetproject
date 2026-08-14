@@ -36,8 +36,6 @@ namespace GourmetProject.Game.Presentation.Battle
         // 标签使用压暗的语义底板和提亮的语义文字，避免所有文字看起来都是黑色。
         public static readonly Color TextInk = new Color32(35, 24, 15, 255);
         public static readonly Color TextLight = new Color32(255, 244, 220, 255);
-        public static readonly Color ScopeCondition = new Color32(255, 224, 117, 255);
-
         public static Color For(ScoreLineKind kind)
         {
             return kind switch
