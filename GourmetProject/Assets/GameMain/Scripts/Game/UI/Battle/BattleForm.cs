@@ -2933,42 +2933,13 @@ namespace GourmetProject.Game.UI.Battle
         private void BuildActionCards()
         {
             ClearTimelineNodeCard();
-            List<ActionChoice> choices = BuildDisplayedActionChoices(RollChoices(_run));
+            List<ActionChoice> choices = ActionOfferService.GetOrRoll(_run);
             ReportActionChoicesShown(choices);
             _deck?.ShowActionChoices(
                 choices,
                 OnActionSelectionPicked,
                 OnActionRerollClicked,
                 _run != null ? _run.ActionRerollCount : 0);
-        }
-
-        private List<ActionChoice> BuildDisplayedActionChoices(IReadOnlyList<ActionChoice> baseChoices)
-        {
-            var result = new List<ActionChoice>();
-            if (baseChoices == null)
-            {
-                return result;
-            }
-
-            bool applyHalfDay = _run != null && _run.NextDailyActionHalfCostStacks > 0;
-            foreach (ActionChoice choice in baseChoices)
-            {
-                if (choice == null)
-                {
-                    continue;
-                }
-
-                result.Add(new ActionChoice(
-                    choice.Action,
-                    choice.ActionGroupId,
-                    choice.WeekStepIndex,
-                    choice.RunStepIndex,
-                    applyHalfDay ? _run.PreviewDailyActionCost(choice.CostDays) : choice.CostDays,
-                    halfDayBuffApplied: applyHalfDay,
-                    timelineStopChance: choice.TimelineStopChance));
-            }
-
-            return result;
         }
 
         private void TrackTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
@@ -3007,26 +2978,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private static List<ActionChoice> RollChoices(GameRun run)
         {
-            if (run == null)
-            {
-                return new List<ActionChoice>();
-            }
-
-            string key = GameRun.BuildActionChoiceKey(run.RunActionStepIndex, run.WeekIndex, run.CurrentDay, run.ActionStepIndex);
-            if (run.HasPendingActionChoices(key))
-            {
-                return run.GetPendingActionChoices(key);
-            }
-
-            List<ActionChoice> choices;
-            if (!TutorialActionScheduleOverride.TryBuildChoices(run, out choices))
-            {
-                IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Action, key);
-                choices = ActionScheduleService.GenerateChoices(run, rng);
-            }
-            run.SetPendingActionChoices(key, choices);
-            RunPersistence.Save(run);
-            return choices;
+            return ActionOfferService.GetOrRoll(run);
         }
 
         private void OnActionRerollClicked()
@@ -3038,7 +2990,6 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            string key = GameRun.BuildActionChoiceKey(_run.RunActionStepIndex, _run.WeekIndex, _run.CurrentDay, _run.ActionStepIndex);
             GameAnalyticsService.TrackChoiceOfferResolved(
                 _run,
                 CurrentActionOfferId(),
@@ -3048,10 +2999,7 @@ namespace GourmetProject.Game.UI.Battle
                 _run.PendingActionChoiceRevision + 1,
                 (long)Math.Max(0d, (Time.realtimeSinceStartup - _actionOfferOpenedRealtime) * 1000d),
                 _actionOfferArchetype);
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Action, key + "_player_reroll_" + _run.NextActiveUseKey());
-            List<ActionChoice> rerolled = ActionScheduleService.RerollChoices(_run, rng);
-            _run.SetPendingActionChoices(key, rerolled);
-            RunPersistence.Save(_run);
+            ActionOfferService.RerollAfterSpend(_run);
             RebuildActionAxis();
             RefreshActionCardsAnimated();
         }
@@ -3061,7 +3009,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             TutorialRuntime.Publish(TutorialSignal.ActionPicked);
             ReportActionChoiceSelected(choice);
-            _run?.ClearPendingActionChoices();
+            ActionOfferService.Resolve(_run);
             _deck?.HideThenDestroy(() =>
             {
                 _loop?.OnActionPicked(choice);
@@ -5194,7 +5142,7 @@ namespace GourmetProject.Game.UI.Battle
             _pendingSettlementCakeLayerBonus = Mathf.Max(
                 0,
                 _session.HappyCakeLayers - _displayedCakeLayers - result.HappyCakeLayerDelta);
-            ApplyRecipeScoreDeltasToRun();
+            BattleSettlementApplier.ApplyRecipeGrowth(_run, _session);
             SetSettlementScore(0);
             _infoColumn?.BeginSettlementScorePresentation();
             RefreshFoodActions();
@@ -5243,15 +5191,9 @@ namespace GourmetProject.Game.UI.Battle
             // 美味值已汇总且营业成败已经可以判定后，逐条展示移除判定，再统一按倒序修改食谱。
             if (_session != null && _session.LastRecipeRemovalOutcomes.Count > 0)
             {
-                var removedIndices = new HashSet<int>();
                 foreach (RecipeRemovalOutcome outcome in _session.LastRecipeRemovalOutcomes)
                 {
                     ShowActiveItemMessage(outcome.Removed ? "移除" : "不移除");
-                    if (outcome.Removed && outcome.Request.SourceDishIndex >= 0)
-                    {
-                        removedIndices.Add(outcome.Request.SourceDishIndex);
-                    }
-
                     try
                     {
                         await Awaitable.WaitForSecondsAsync(0.75f, destroyCancellationToken);
@@ -5267,38 +5209,12 @@ namespace GourmetProject.Game.UI.Battle
                     }
                 }
 
-                if (_run != null)
-                {
-                    foreach (int dishIndex in removedIndices.OrderByDescending(index => index))
-                    {
-                        _run.RemoveBonusDishAt(dishIndex);
-                    }
-                }
             }
 
             // 结算侧效果写回局外状态：金币入账（经济运营 + 上菜 OnServe）、大局结算历史累计。
             if (_run != null && _session != null)
             {
-                int gold = (int)System.Math.Round(_session.PendingGold, System.MidpointRounding.AwayFromZero);
-                if (gold != 0)
-                {
-                    _run.Gold = System.Math.Max(0, _run.Gold + gold);
-                }
-
-                // 银材质命中：发放消耗品（掷骰已在 BattleSession 正式结算时完成，这里只落地选取具体装饰品和消耗品）。
-                int silverItems = _session.PendingActiveItemGrants;
-                if (silverItems > 0)
-                {
-                    string itemKey = $"silver_{_run.WeekIndex}_{_run.RunActionStepIndex}_{_session.ServesUsed}";
-                    IRandomStream itemRng = GameApp.Random.DomainStream(SeedDomains.Item, itemKey);
-                    for (int i = 0; i < silverItems; i++)
-                    {
-                        GourmetProject.Game.Meta.ItemPoolService.GrantRandom(
-                            GameApp.Config.Tables, _run, cfg.ItemKind.Active, itemRng, 20);
-                    }
-                }
-
-                _run.AddSettledCounts(_session.LastSettledIncrements);
+                BattleSettlementApplier.ApplyFinal(_run, _session);
             }
 
             // 领奖期间允许隐藏奖励页查看本场结果，因此保留最终美味值；
@@ -5484,24 +5400,6 @@ namespace GourmetProject.Game.UI.Battle
 
             new ItemRuntime(_run).FlashTriggered(model =>
                 string.Equals(model.ItemId, itemId, StringComparison.Ordinal));
-        }
-
-        private void ApplyRecipeScoreDeltasToRun()
-        {
-            if (_run == null || _session == null)
-            {
-                return;
-            }
-
-            foreach (RecipeScoreFlatDelta delta in _session.LastRecipeScoreFlatDeltas)
-            {
-                _run.AddRecipeScoreFlat(delta.DishIndex, delta.Delta);
-            }
-
-            foreach (RecipeScoreMultiplierDelta delta in _session.LastRecipeScoreMultiplierDeltas)
-            {
-                _run.MultiplyRecipeScore(delta.DishIndex, delta.Multiplier);
-            }
         }
 
         private void RefreshAll()

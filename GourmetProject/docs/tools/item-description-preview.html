@@ -17,6 +17,7 @@
       --accent-2: #78d4ff;
       --score: #ffd166;
       --size: #78d4ff;
+      --archetype: #c7a8ff;
       --semantic-context: #137a4a;
       --semantic-score: #28669c;
       --semantic-multiplier: #b23a48;
@@ -189,6 +190,15 @@
       color: var(--size);
     }
 
+    .food-stat.archetype {
+      border-color: color-mix(in srgb, var(--archetype) 48%, var(--line));
+      background: color-mix(in srgb, var(--archetype) 8%, transparent);
+    }
+
+    .food-stat.archetype .food-stat-value {
+      color: var(--archetype);
+    }
+
     .desc {
       margin: 0;
       color: #fff7e8;
@@ -332,6 +342,11 @@
   <script>
     const CONFIG_BASE = "../../Assets/StreamingAssets/Config/";
     const SKILL_SEPARATOR = "。\n";
+    const FOOD_ARCHETYPES = Object.freeze([
+      "甜蜜传递",
+      "份数",
+      "蛋糕",
+    ]);
     const SEMANTIC_TAGS = Object.freeze(new Set([
       "strong",
       "context",
@@ -360,6 +375,7 @@
       "额外被视为",
       "额外选择",
       "额外结算",
+      "执行",
     ]));
 
     const state = {
@@ -396,6 +412,18 @@
       23: "RightAndSelf",
       24: "DownAndSelf",
     };
+    const CountUnit = Object.freeze({
+      Instances: 0,
+      Kinds: 1,
+      PhysicalInstances: 2,
+    });
+    const SkillConditionType = Object.freeze({
+      EmptyCell: 2,
+      TagCount: 10,
+      OccupiedCell: 14,
+      SkillTypeCount: 16,
+      SkillCount: 17,
+    });
 
     const searchInput = document.getElementById("search");
     const modeSelect = document.getElementById("mode");
@@ -514,6 +542,7 @@
 
             const rule = {
               order,
+              condType: subSkill.condType,
               condScope: subSkill.condScope,
               condUnit: subSkill.condUnit,
               condParam: subSkill.condParam || "",
@@ -651,7 +680,7 @@
           case "ascope":
             return semanticActionScope(rule.actionScope, rule.actionCount, rule);
           case "unit":
-            return Number(rule.condUnit) === 1 ? "种" : "个";
+            return countUnitWord(rule);
           case "countas":
             return String(Math.round((Number(rule.actionValues[0]) || 0)) + 1);
           case "thr":
@@ -677,6 +706,25 @@
       });
     }
 
+    function countUnitWord(rule) {
+      const condUnit = Number(rule?.condUnit);
+      const condType = Number(rule?.condType);
+      if (condUnit === CountUnit.Kinds) {
+        return "种";
+      }
+
+      if (condUnit === CountUnit.PhysicalInstances
+        || condType === SkillConditionType.SkillCount
+        || condType === SkillConditionType.SkillTypeCount
+        || condType === SkillConditionType.TagCount
+        || condType === SkillConditionType.EmptyCell
+        || condType === SkillConditionType.OccupiedCell) {
+        return "个";
+      }
+
+      return "份";
+    }
+
     function filterRows(rows) {
       if (!state.query) {
         return rows;
@@ -690,6 +738,8 @@
           row.foodStats?.score,
           row.foodStats?.size,
           row.foodStats?.servings,
+          row.foodStats?.archetypes,
+          row.foodStats?.archetypePoints,
           row.foodStats?.shape,
           ...(row.meta || []),
           ...(row.issues || []),
@@ -740,12 +790,35 @@
       const width = cells.length > 0 ? Math.max(...xs) - Math.min(...xs) + 1 : 0;
       const height = cells.length > 0 ? Math.max(...ys) - Math.min(...ys) + 1 : 0;
       const cellCount = cells.length;
+      const archetype = buildFoodArchetype(dish.archetypeWeights);
 
       return {
         score: formatPlain(dish.deliciousness ?? 0),
         size: `${width}×${height} · ${cellCount}格`,
         servings: formatPlain(dish.countAs ?? 1),
+        archetypes: archetype.label,
+        archetypePoints: archetype.pointsText,
         shape: rows.join(" / "),
+      };
+    }
+
+    function buildFoodArchetype(weights) {
+      const source = Array.isArray(weights) ? weights : [];
+      const points = FOOD_ARCHETYPES.map((_, index) => {
+        const value = Number(source[index]);
+        return Number.isFinite(value) && value > 0 ? value : 0;
+      });
+      const active = FOOD_ARCHETYPES
+        .map((name, index) => ({ name, points: points[index] }))
+        .filter(entry => entry.points > 0);
+
+      return {
+        label: active.length > 0
+          ? active.map(entry => `${entry.name}（${formatPlain(entry.points)}点）`).join(" · ")
+          : "通用",
+        pointsText: FOOD_ARCHETYPES
+          .map((name, index) => `${name} ${formatPlain(points[index])}`)
+          .join("｜"),
       };
     }
 
@@ -767,6 +840,10 @@
           <span class="food-stat servings" title="食物本体的静态有效份数">
             <span class="food-stat-label">份数</span>
             <strong class="food-stat-value">${escapeHtml(stats.servings)}</strong>
+          </span>
+          <span class="food-stat archetype" title="流派点数：${escapeHtml(stats.archetypePoints)}">
+            <span class="food-stat-label">所属流派</span>
+            <strong class="food-stat-value">${escapeHtml(stats.archetypes)}</strong>
           </span>
         </div>
       `;

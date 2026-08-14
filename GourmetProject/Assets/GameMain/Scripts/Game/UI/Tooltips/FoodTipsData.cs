@@ -77,7 +77,7 @@ namespace GourmetProject.Game.UI.Tooltips
         /// <summary>是否为临时复制产生的食物；永久复制品不属于该标记。</summary>
         public bool IsTemporaryCopy { get; }
 
-        /// <summary>当前展示场景下的实际「视为食物数」。</summary>
+        /// <summary>当前展示场景下的有效份数。</summary>
         public int CountAs { get; }
     }
 

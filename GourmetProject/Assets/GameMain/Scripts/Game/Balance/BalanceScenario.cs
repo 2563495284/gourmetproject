@@ -36,6 +36,10 @@ namespace GourmetProject.Game.Balance
     {
         public string ItemId = string.Empty;
         [Min(1)] public int Level = 1;
+        /// <summary>
+        /// 装饰品模型的 per-instance 运行时状态。旧 BalanceScenario 没有此字段时按空状态恢复。
+        /// </summary>
+        [TextArea] public string StateJson = string.Empty;
         public bool AnalyzeContribution;
     }
 

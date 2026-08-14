@@ -828,11 +828,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             reason = string.Empty;
             GameRun run = _host.ActiveRun;
-            if (run == null || item == null || !run.HasItem(item.Id))
-            {
-                reason = "没有可用装饰品和消耗品。";
-                return false;
-            }
+            if (!ItemActiveUsage.CanUse(run, item, contextKind, out reason)) return false;
 
             if (_host.IsTableFragmentEditActive)
             {
@@ -843,18 +839,6 @@ namespace GourmetProject.Game.UI.Battle
             if (_host.IsActiveItemUseBlocked)
             {
                 reason = "当前奖励流程中不能使用消耗品。";
-                return false;
-            }
-
-            if (new ItemRuntime(run).BlocksActiveItems())
-            {
-                reason = "当前被动效果禁止使用消耗品。";
-                return false;
-            }
-
-            if (ItemActiveUsage.IsTodoTimelineEffect(item.EffectType))
-            {
-                reason = "功能开发中：需要玩家在时间轴上指定位置/节点。";
                 return false;
             }
 
@@ -897,12 +881,6 @@ namespace GourmetProject.Game.UI.Battle
                 && (_host.CurrentView != GameplayView.Food || !_host.InBattle))
             {
                 reason = "只能在经营挑战中使用。";
-                return false;
-            }
-
-            if (!ItemActiveUsage.CanUse(item, contextKind))
-            {
-                reason = "现在不是使用时机。";
                 return false;
             }
 

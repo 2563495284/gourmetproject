@@ -86,7 +86,7 @@ namespace GourmetProject.Game.Meta
             }
 
             string bossKey = $"w{run.WeekIndex}_{node.Id}";
-            IRandomStream rng = GameApp.Random.DomainStream(
+            IRandomStream rng = run.Random.DomainStream(
                 SeedDomains.Boss,
                 BuildBossDebuffSeedKey(run, bossKey, node.Id));
             RngState state = rng.State;

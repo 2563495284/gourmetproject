@@ -150,7 +150,7 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            IRandomStream rng = GameApp.Random.DomainStream(SeedDomains.Action, key + "_reroll_" + Run.NextActiveUseKey());
+            IRandomStream rng = Run.Random.DomainStream(SeedDomains.Action, key + "_reroll_" + Run.NextActiveUseKey());
             List<ActionChoice> rerolled = ActionScheduleService.RerollChoices(Run, rng);
             Run.SetPendingActionChoices(key, rerolled);
             return true;

@@ -138,7 +138,8 @@ namespace GourmetProject.Game.Run
             string characterId,
             string seedText,
             int weekIndex = 1,
-            bool isTutorialRun = false)
+            bool isTutorialRun = false,
+            IRunExecutionEnvironment execution = null)
             : this(
                 tables,
                 database,
@@ -146,7 +147,8 @@ namespace GourmetProject.Game.Run
                 seedText,
                 weekIndex,
                 initializeCharacterLoadout: true,
-                isTutorialRun: isTutorialRun)
+                isTutorialRun: isTutorialRun,
+                execution: execution ?? RunExecutionEnvironment.CreateIsolated(tables, seedText))
         {
         }
 
@@ -157,9 +159,11 @@ namespace GourmetProject.Game.Run
             string seedText,
             int weekIndex,
             bool initializeCharacterLoadout,
-            bool isTutorialRun)
+            bool isTutorialRun,
+            IRunExecutionEnvironment execution)
         {
             _tables = tables;
+            Execution = execution ?? RunExecutionEnvironment.CreateIsolated(tables, seedText);
             Database = database;
             Library = GameplayContentBuilder.BuildDishLibrary(database);
             CharacterId = characterId;
@@ -197,6 +201,18 @@ namespace GourmetProject.Game.Run
         public DishLibrary Library { get; }
 
         public cfg.Tables Tables => _tables;
+
+        /// <summary>Run-scoped random, persistence and meta-profile boundary.</summary>
+        public IRunExecutionEnvironment Execution { get; }
+
+        public RandomService Random => Execution.Random;
+
+        public MetaProgressSaveData MetaProgress => Execution.MetaProgress;
+
+        public void RequestSave()
+        {
+            Execution.Save(this);
+        }
 
         public string CharacterId { get; }
 
@@ -2382,8 +2398,16 @@ namespace GourmetProject.Game.Run
         }
 
         /// <summary>从存档数据重建运行（不重复发放初始装饰品和消耗品，整段持有列表以存档为准）。</summary>
-        public static GameRun FromSaveData(cfg.Tables tables, GameplayDatabase database, RunSaveData data)
+        public static GameRun FromSaveData(
+            cfg.Tables tables,
+            GameplayDatabase database,
+            RunSaveData data,
+            IRunExecutionEnvironment execution = null)
         {
+            execution ??= RunExecutionEnvironment.CreateIsolated(
+                tables,
+                data.SeedText,
+                data.RandomSnapshot);
             var run = new GameRun(
                 tables,
                 database,
@@ -2391,7 +2415,8 @@ namespace GourmetProject.Game.Run
                 data.SeedText,
                 data.WeekIndex,
                 initializeCharacterLoadout: false,
-                isTutorialRun: data.IsTutorialRun);
+                isTutorialRun: data.IsTutorialRun,
+                execution: execution);
             run.RunId = string.IsNullOrWhiteSpace(data.RunId)
                 ? System.Guid.NewGuid().ToString("N")
                 : data.RunId;
@@ -3802,15 +3827,15 @@ namespace GourmetProject.Game.Run
 
         private IRandomStream FragmentMaterialRollStream()
         {
-            return GameApp.Random != null && GameApp.Random.IsInitialized
-                ? GameApp.Random.DomainStream(SeedDomains.Reward, "fragment_material_rolls")
+            return Random != null && Random.IsInitialized
+                ? Random.DomainStream(SeedDomains.Reward, "fragment_material_rolls")
                 : null;
         }
 
         private IRandomStream FragmentRotationRollStream()
         {
-            return GameApp.Random != null && GameApp.Random.IsInitialized
-                ? GameApp.Random.DomainStream(SeedDomains.Reward, "fragment_rotation_rolls")
+            return Random != null && Random.IsInitialized
+                ? Random.DomainStream(SeedDomains.Reward, "fragment_rotation_rolls")
                 : null;
         }
 
@@ -3977,9 +4002,9 @@ namespace GourmetProject.Game.Run
         private IRandomStream InitialRecipeStream()
         {
             const string keyPrefix = "initial_";
-            if (GameApp.Random != null && GameApp.Random.IsInitialized)
+            if (Random != null && Random.IsInitialized)
             {
-                return GameApp.Random.DomainStream(SeedDomains.Recipe, keyPrefix + CharacterId);
+                return Random.DomainStream(SeedDomains.Recipe, keyPrefix + CharacterId);
             }
 
             var random = new RandomService();
@@ -4228,7 +4253,8 @@ namespace GourmetProject.Game.Run
                 itemRuntime.FlashTriggered(m => m.ActiveUseGold() > 0);
             }
 
-            GameAnalyticsService.TrackActiveItemUsed(this, itemId, useContext);
+            Execution.Telemetry.Track(
+                () => GameAnalyticsService.TrackActiveItemUsed(this, itemId, useContext));
 
             return true;
         }

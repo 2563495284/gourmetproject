@@ -9,6 +9,99 @@ namespace GourmetProject.Game.Balance
     public enum BuildArchetype { SweetTransfer, Count, Cake }
     public enum MetaRoute { Normal, Event, Interest, Shop }
 
+    /// <summary>自动局的结构化终止原因；与面向人的 <see cref="AutoRunTrace.FailureReason"/> 分离。</summary>
+    public enum AutoRunTerminationKind
+    {
+        None,
+        Completed,
+        HeartsDepleted,
+        GameOver,
+        Cancelled,
+        NoLegalPlacement,
+        PlacementBudgetExhausted,
+        ActionLimitReached,
+        UnsupportedMechanic,
+        InfrastructureError,
+    }
+
+    /// <summary>不一定让样本失效、但必须由报告显式披露的结构化告警。</summary>
+    public enum AutoRunWarningKind
+    {
+        None,
+        PlacementCandidateLimitApplied,
+        PlacementBudgetExhausted,
+        NoLegalPlacement,
+        UnsupportedMechanic,
+    }
+
+    public enum AutoPlacementTerminationKind
+    {
+        None,
+        Completed,
+        InvalidSession,
+        MissingPolicyRandom,
+        PrepareFailed,
+        NoLegalPlacement,
+        NodeBudgetExhausted,
+        CommitFailed,
+    }
+
+    public enum AutoPlacementWarningKind
+    {
+        CandidateLimitApplied,
+        NodeBudgetExhausted,
+    }
+
+    public enum PlacementSelectionKind
+    {
+        RankSoftmax,
+        BestScore,
+    }
+
+    [Serializable]
+    public sealed class AutoRunWarning
+    {
+        public AutoRunWarningKind Kind;
+        public string Code = string.Empty;
+        public string Message = string.Empty;
+        public int Week;
+    }
+
+    [Serializable]
+    public sealed class AutoPlacementWarning
+    {
+        public AutoPlacementWarningKind Kind;
+        public int ServeIndex;
+        public int LegalPlacementCount;
+        public int EvaluatedPlacementCount;
+        public string Message = string.Empty;
+    }
+
+    /// <summary>一次自动摆盘决定的可复现审计记录。</summary>
+    [Serializable]
+    public sealed class PlacementDecisionTrace
+    {
+        public int ServeIndex;
+        public string DishId = string.Empty;
+        public AutoPlayerLevel PlayerLevel;
+        public PlacementSelectionKind SelectionKind;
+        public float RankSoftmaxTemperature;
+        public int LegalPlacementCount;
+        public int CandidateLimit;
+        public int EvaluatedPlacementCount;
+        public int SelectedCandidateIndex = -1;
+        public int SelectedRank = -1;
+        public int RotationIndex;
+        public int OriginX;
+        public int OriginY;
+        public BigDouble PreviewScore;
+        public int FutureOpenSpace;
+        public int EmptyRegionCount;
+        public string SelectionReason = string.Empty;
+        public bool CandidateLimitApplied;
+        public int SearchNodesAfterDecision;
+    }
+
     [Serializable]
     public sealed class AutoPlayerPolicy
     {
@@ -20,7 +113,15 @@ namespace GourmetProject.Game.Balance
         [Min(0)] public int InterestReserve = 50;
         public int MaxActionsPerWeek = 32;
 
-        public int BeamWidth(AutoPlayerLevel level) => level == AutoPlayerLevel.Expert ? ExpertBeamWidth : NormalBeamWidth;
+        public int PlacementCandidateLimit(AutoPlayerLevel level)
+        {
+            int configured = level == AutoPlayerLevel.Expert ? ExpertBeamWidth : NormalBeamWidth;
+            int maximum = level == AutoPlayerLevel.Expert ? 64 : 24;
+            return Mathf.Clamp(configured, 1, maximum);
+        }
+
+        [Obsolete("Use PlacementCandidateLimit; placement is bounded candidate evaluation, not a search beam.")]
+        public int BeamWidth(AutoPlayerLevel level) => PlacementCandidateLimit(level);
     }
 
     [Serializable]
@@ -31,6 +132,28 @@ namespace GourmetProject.Game.Balance
         public int Seed = 1001;
         public AutoPlayerPolicy Policy = new AutoPlayerPolicy();
         public MetaAffinityCatalog MetaAffinity;
+    }
+
+    /// <summary>规则随机与自动玩家决策随机分离时使用的稳定 seed 派生。</summary>
+    public static class AutoRunPolicySeed
+    {
+        public const string Version = "bounded-policy-v1";
+
+        public static ulong Derive(int seed, AutoPlayerLevel level, string scope)
+        {
+            unchecked
+            {
+                ulong hash = 1469598103934665603UL;
+                string text = $"{Version}|{seed}|{level}|{scope ?? string.Empty}";
+                for (int i = 0; i < text.Length; i++)
+                {
+                    hash ^= text[i];
+                    hash *= 1099511628211UL;
+                }
+
+                return hash;
+            }
+        }
     }
 
     [Serializable]
@@ -70,6 +193,9 @@ namespace GourmetProject.Game.Balance
         public bool SolverTruncated;
         public bool NoLegalPlacement;
         public int SolverNodes;
+        public AutoRunTerminationKind Termination;
+        public List<AutoRunWarning> Warnings = new List<AutoRunWarning>();
+        public List<PlacementDecisionTrace> PlacementDecisions = new List<PlacementDecisionTrace>();
         public List<string> Actions = new List<string>();
         public List<string> Rewards = new List<string>();
         public List<string> Purchases = new List<string>();
@@ -84,6 +210,8 @@ namespace GourmetProject.Game.Balance
         public AutoPlayerLevel PlayerLevel;
         public bool Completed;
         public string FailureReason;
+        public AutoRunTerminationKind Termination;
+        public List<AutoRunWarning> Warnings = new List<AutoRunWarning>();
         public int ArchetypeChanges;
         public List<AutoRunStageTrace> Stages = new List<AutoRunStageTrace>();
     }

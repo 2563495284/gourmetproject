@@ -211,7 +211,10 @@ namespace GourmetProject.Game.Procedure
                 characterId,
                 seed,
                 weekIndex: 1,
-                isTutorialRun: isTutorialRun);
+                isTutorialRun: isTutorialRun,
+                execution: RunExecutionEnvironment.CreateLive(
+                    GameApp.Random,
+                    MetaProgressPersistence.Load()));
             GameRunContext.Set(run);
             RunPersistence.Save(run);
             GameAnalyticsService.TrackRunStarted(run);

@@ -774,17 +774,9 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            if (_genericMode)
+            using (RunPersistence.SuppressSave())
             {
-                _run.Gold += _offer.BaseGold;
-                _offer.MarkBaseGoldClaimed();
-            }
-            else
-            {
-                using (RunPersistence.SuppressSave())
-                {
-                    RewardGranter.ApplyBaseGold(_run, _offer);
-                }
+                RewardClaimService.ClaimBaseGold(_run, _offer);
             }
 
             CacheCurrentOffer();
@@ -799,17 +791,9 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            if (_genericMode)
+            using (RunPersistence.SuppressSave())
             {
-                _run.Gold += _offer.BonusGold;
-                _offer.MarkBonusGoldClaimed();
-            }
-            else
-            {
-                using (RunPersistence.SuppressSave())
-                {
-                    RewardGranter.ApplyBonusGold(_run, _offer);
-                }
+                RewardClaimService.ClaimBonusGold(_run, _offer);
             }
 
             CacheCurrentOffer();
@@ -1157,9 +1141,13 @@ namespace GourmetProject.Game.UI.Meta
             // 这样中途退出会整体回到领奖前，不会留下半完成的奖励存档。
         }
 
-        private void MarkChoiceClaimed(int groupIndex, int index)
+        private void MarkChoiceClaimed(int groupIndex, int index, bool markGroup = true)
         {
-            GroupFor(groupIndex).MarkClaimed(index);
+            if (markGroup)
+            {
+                GroupFor(groupIndex).MarkClaimed(index);
+            }
+
             ReportChoiceSelected(groupIndex, index);
             if (IsChoiceResolved(groupIndex))
             {
@@ -1829,13 +1817,13 @@ namespace GourmetProject.Game.UI.Meta
 
             using (RunPersistence.SuppressSave())
             {
-                if (!RewardGranter.TryClaimChoice(_run, currentChoices[index], out _))
+                if (!RewardClaimService.TryClaimChoice(_run, group, index, out _))
                 {
                     return false;
                 }
             }
 
-            MarkChoiceClaimed(groupIndex, index);
+            MarkChoiceClaimed(groupIndex, index, markGroup: false);
             CacheCurrentOffer();
             RefreshBattlePersistentHud();
             return true;
@@ -1886,13 +1874,13 @@ namespace GourmetProject.Game.UI.Meta
 
                 using (RunPersistence.SuppressSave())
                 {
-                    if (!RewardGranter.TryClaimChoice(_run, choice, out _))
+                    if (!RewardClaimService.TryClaimChoice(_run, GroupFor(groupIndex), i, out _))
                     {
                         return;
                     }
                 }
 
-                MarkChoiceClaimed(groupIndex, i);
+                MarkChoiceClaimed(groupIndex, i, markGroup: false);
             }
 
             CacheCurrentOffer();

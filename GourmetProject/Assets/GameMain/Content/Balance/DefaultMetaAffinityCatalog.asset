@@ -1,0 +1,717 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57b82ef7a4b44904942f735e1041d15c, type: 3}
+  m_Name: DefaultMetaAffinityCatalog
+  m_EditorClassIdentifier: 
+  ProfileId: default-meta-affinity-v1
+  Entries:
+  - ItemId: item_active_add_interest_node
+    Normal: 0.25
+    Event: 0
+    Interest: 100
+    Shop: 0
+  - ItemId: item_active_add_lottery_node
+    Normal: 0.25
+    Event: 100
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_add_reward_node
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_add_shop_node
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_active_count_flat_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_delete_timeline_node
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_execute_future_node
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_execute_past_node
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_half_next_action_cost
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_lay_cherry
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_lay_emerald
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_lay_gold
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_lay_marble
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_lay_obsidian
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_lay_silver
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_lay_walnut
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_reroll_action
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_reroll_last_boss_debuff
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_season_bitter
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_season_numb
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_season_salty
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_season_sour
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_season_sweet
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_active_season_umami
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_block_active
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_cake_accel
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_cake_init_bonus
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_cake_req_minus
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_cake_retain
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_cake_to_gold
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_celltag_enhance
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_choice_count_plus1
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_choice_minus1
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_copy_food
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_count_as_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_count_as_cake
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_count_ge_mult
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_count_le_mult
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_discard_dish_flat
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_discard_negative
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_discard_negative_gold
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_discount_active
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_discount_active_festival
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_discount_adjust
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_discount_adjust_festival
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_discount_food
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_discount_food_festival
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_discount_fragment
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_discount_fragment_festival
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_discount_passive
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_discount_passive_festival
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_discount_remove
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_discount_remove_festival
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_dish_hidden_bonus
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_double_daily_cost_repeat_node
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_edge_flat
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_empty_active_slot_mult_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_empty_cell_flat_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_empty_heart_mult_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_every3_next_mult
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_extra_active_slots
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_extra_active_slots_max
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_extra_day
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_extra_food_choice
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_extra_interest
+    Normal: 0.25
+    Event: 0
+    Interest: 100
+    Shop: 0
+  - ItemId: item_extra_item_choice
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_famous_knife
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_first_+2
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_flavor_double_slot
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_flavor_enhance
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_flavor_remove_double
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_flavor_remove_gold
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_flavored_count_as
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_flavored_flat
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_fragment_hidden_bonus
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_gold_boss
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_gold_meal_bonus
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_gold_meal_penalty
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_gold_on_active
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_gold_on_event
+    Normal: 0.25
+    Event: 100
+    Interest: 0
+    Shop: 0
+  - ItemId: item_gold_on_shop
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_gold_on_transfer
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_gold_per5_flat_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_gold_percent
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_gold_random
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_gold_week_clear
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_heart_capacity
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_heart_capacity_deluxe
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_heart_flat_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_interest_cap
+    Normal: 0.25
+    Event: 0
+    Interest: 100
+    Shop: 0
+  - ItemId: item_last_+2
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_loan
+    Normal: 0.25
+    Event: 0
+    Interest: 100
+    Shop: 0
+  - ItemId: item_lucky_chance
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_lucky_guarantee
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_more_events
+    Normal: 0.25
+    Event: 100
+    Interest: 0
+    Shop: 0
+  - ItemId: item_more_super_actions
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_no_remove
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_non_edge_mult
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_passive_hidden_bonus
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_perma_flat_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_perma_flat_all_plus
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_randomize_items
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_randomize_recipe_dishes
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_remove_arrow_cookie_2
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_remove_arrow_cookie_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_req_feast_down
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_req_feast_up
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_req_normal_down
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_req_normal_up
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_req_super_down
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_req_super_up
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_restore_heart
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_restore_hearts
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_same_base_mult_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_score_to_one
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_settle_permanent_flat_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_shop_price_up
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_shop_restock
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_shop_restock_active
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_shop_restock_passive
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_skill_count_mult
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_skip_node
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_skip_reward_dish_luck
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_skip_reward_node
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_skip_reward_passive_luck
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_slot_cost_discount
+    Normal: 0.25
+    Event: 0
+    Interest: 0
+    Shop: 100
+  - ItemId: item_slot_win_chance
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_super_fragment_reward
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_super_material_spread
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_timeline_random
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_timeline_stop_chance
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_transfer_extra_targets
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_transfer_source_mult
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_transfer_target_mult
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_trash_evolve
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_trash_expand
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_trash_mutate
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_trash_upgrade
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_unused_discard_flat_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_unused_discard_mult_all
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+

@@ -412,7 +412,9 @@ namespace GourmetProject.Game.Meta
             bool strictHidden)
         {
             var candidates = new List<ItemDefinition>();
-            MetaProgressSaveData progress = context.Progress ?? MetaProgressPersistence.Load();
+            MetaProgressSaveData progress = context.Progress
+                ?? context.Run?.MetaProgress
+                ?? new MetaProgressSaveData();
             foreach (ItemDefinition item in ItemDefinition.All(context.Tables, kind))
             {
                 if (!ItemPoolService.CanEnterPool(context.Run, item) ||

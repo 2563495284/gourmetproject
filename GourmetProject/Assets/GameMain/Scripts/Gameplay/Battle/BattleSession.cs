@@ -12,6 +12,36 @@ using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Battle
 {
+    /// <summary>一次候选摆放的无副作用预览。</summary>
+    public readonly struct PreparedPlacementPreview
+    {
+        private PreparedPlacementPreview(
+            bool success,
+            ServeOutcome outcome,
+            Placement placement,
+            BigDouble score)
+        {
+            Success = success;
+            Outcome = outcome;
+            Placement = placement;
+            Score = score;
+        }
+
+        public bool Success { get; }
+
+        public ServeOutcome Outcome { get; }
+
+        public Placement Placement { get; }
+
+        public BigDouble Score { get; }
+
+        public static PreparedPlacementPreview Succeeded(Placement placement, BigDouble score)
+            => new PreparedPlacementPreview(true, ServeOutcome.Placed, placement, score);
+
+        public static PreparedPlacementPreview Fail(ServeOutcome outcome, Placement placement)
+            => new PreparedPlacementPreview(false, outcome, placement, BigDouble.Zero);
+    }
+
     /// <summary>一次已经实际落到单个目标的甜蜜传递。</summary>
     public readonly struct SweetTransferOccurrence
     {
@@ -81,6 +111,8 @@ namespace GourmetProject.Gameplay.Battle
         private readonly List<DishInstance> _temporaryAreaDishes = new List<DishInstance>();
         private readonly Dictionary<int, PendingDishPlacement> _pendingDishPlacements =
             new Dictionary<int, PendingDishPlacement>();
+        private bool _runRecipeGrowthApplied;
+        private bool _runSettlementApplied;
         private int _nextInstanceId = 1;
         private int _appetizerRemoved;
         private float _settlementDishMultiplierFlat;
@@ -343,6 +375,42 @@ namespace GourmetProject.Gameplay.Battle
         public IReadOnlyList<RecipeScoreMultiplierDelta> LastRecipeScoreMultiplierDeltas => _lastRecipeScoreMultiplierDeltas;
 
         public IReadOnlyList<RecipeRemovalOutcome> LastRecipeRemovalOutcomes => _lastRecipeRemovalOutcomes;
+
+        /// <summary>Game 层是否已把本场食谱成长写回 GameRun。</summary>
+        public bool IsRunRecipeGrowthApplied => _runRecipeGrowthApplied;
+
+        /// <summary>Game 层是否已把本场最终结算写回 GameRun。</summary>
+        public bool IsRunSettlementApplied => _runSettlementApplied;
+
+        /// <summary>
+        /// 原子标记食谱成长已写回。首次调用返回 true；后续返回 false，供 UI 与无界面流程防止重复应用。
+        /// 本方法只记录生命周期，不执行任何写回。
+        /// </summary>
+        public bool TryMarkRunRecipeGrowthApplied()
+        {
+            if (_runRecipeGrowthApplied)
+            {
+                return false;
+            }
+
+            _runRecipeGrowthApplied = true;
+            return true;
+        }
+
+        /// <summary>
+        /// 原子标记最终结算已写回。首次调用返回 true；后续返回 false，供 UI 与无界面流程防止重复应用。
+        /// 本方法只记录生命周期，不执行任何写回。
+        /// </summary>
+        public bool TryMarkRunSettlementApplied()
+        {
+            if (_runSettlementApplied)
+            {
+                return false;
+            }
+
+            _runSettlementApplied = true;
+            return true;
+        }
 
         /// <summary>本场经营挑战食谱内容（BaseId 列表，供食谱检测）。</summary>
         public IReadOnlyList<string> RecipeBaseIds => _recipeBaseIds;
@@ -916,6 +984,45 @@ namespace GourmetProject.Gameplay.Battle
                 isOnDiningTable: true);
 
             return new ServeResult(ServeOutcome.Placed, instance);
+        }
+
+        /// <summary>
+        /// 在不确认上菜、不触发 OnServe、也不消耗随机流的前提下，预览当前出菜口食物放到指定位置后的分数。
+        /// 临时放置总会在 finally 中回滚，PreparedServe、食谱、上菜次数与餐桌内容保持不变。
+        /// </summary>
+        public PreparedPlacementPreview PreviewPreparedPlacement(Placement placement)
+        {
+            PreparedServeDish prepared = PreparedServe;
+            if (prepared == null)
+            {
+                return PreparedPlacementPreview.Fail(ServeOutcome.NoPreparedDish, placement);
+            }
+
+            if (!prepared.Contains(placement)
+                || !DiningTable.CanPlace(placement.Orientation, placement.Origin))
+            {
+                return PreparedPlacementPreview.Fail(ServeOutcome.InvalidPlacement, placement);
+            }
+
+            DishInstance instance = prepared.Dish;
+            Placement original = instance.Placement;
+            bool placed = false;
+            try
+            {
+                instance.Relocate(placement);
+                DiningTable.Place(instance);
+                placed = true;
+                return PreparedPlacementPreview.Succeeded(placement, PreviewScore().Total);
+            }
+            finally
+            {
+                if (placed)
+                {
+                    DiningTable.RemoveDish(instance);
+                }
+
+                instance.Relocate(original);
+            }
         }
 
         /// <summary>确认一份餐桌预摆菜；出菜口来源执行上菜，临时桌来源只确认位置。</summary>

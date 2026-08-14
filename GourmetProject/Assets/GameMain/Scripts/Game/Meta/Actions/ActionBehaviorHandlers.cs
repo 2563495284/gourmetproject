@@ -66,7 +66,7 @@ namespace GourmetProject.Game.Meta
                     return ActionOutcome.Immediate(string.Empty);
                 }
 
-                IRandomStream debuffRng = GameApp.Random.DomainStream(
+                IRandomStream debuffRng = run.Random.DomainStream(
                     SeedDomains.Boss,
                     BossService.BuildBossDebuffSeedKey(run, bossKey, context.SourceKey));
                 cfg.BossDebuff debuff = BossService.RollBossDebuff(run, debuffRng);

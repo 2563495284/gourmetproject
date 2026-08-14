@@ -134,13 +134,25 @@ namespace GourmetProject.Game.Balance
             {
                 BalanceItemEntry item = checkpoint.Items[i];
                 if ($"item:{i}:{item.ItemId}" == excludedComponentId) continue;
-                save.Items.Add(new RunItemSaveData { ItemId = item.ItemId, Level = Math.Max(1, item.Level), Count = 1 });
+                save.Items.Add(ToRunItemSaveData(item));
             }
             foreach (BalanceFragmentPlacement p in checkpoint.FragmentPlacements)
                 save.FragmentPlacements.Add(new TableFragmentPlacementSaveData { FragmentId = p.FragmentId, Rotation = p.Rotation, OriginX = p.X, OriginY = p.Y });
             foreach (BalanceCellMaterial m in checkpoint.CellMaterials)
                 save.CellMaterialOverrides.Add(new CellMaterialSaveData { X = m.X, Y = m.Y, MaterialId = m.MaterialId });
             return save;
+        }
+
+        internal static RunItemSaveData ToRunItemSaveData(BalanceItemEntry item)
+        {
+            if (item == null) throw new ArgumentNullException(nameof(item));
+            return new RunItemSaveData
+            {
+                ItemId = item.ItemId,
+                Level = Math.Max(1, item.Level),
+                Count = 1,
+                StateJson = item.StateJson ?? string.Empty,
+            };
         }
 
         private static List<ResolvedDish> ResolveDishes(BuildCheckpoint checkpoint, GameplayDatabase database, IRandomStream random, bool applyPerturbation)
