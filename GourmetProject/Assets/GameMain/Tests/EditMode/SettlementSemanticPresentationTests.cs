@@ -19,7 +19,7 @@ namespace GourmetProject.Tests.EditMode
         [TestCase(ScoreLineKind.FinalFlat, 20d, "总分 [score]+20[/score]  →  120")]
         [TestCase(ScoreLineKind.FinalMultiplier, 1.8d, "总分 [multmul]×1.8[/multmul]  →  120")]
         [TestCase(ScoreLineKind.Gold, 15d, "[gold]金币 +15[/gold]")]
-        [TestCase(ScoreLineKind.SilverItemRoll, 1d, "获得[term]装饰品[/term]和[term]消耗品[/term] ×1")]
+        [TestCase(ScoreLineKind.SilverItemRoll, 1d, "[term]消耗品[/term]判定 ×1")]
         [TestCase(ScoreLineKind.ExtraSettlement, 20d, "[benefit]额外结算[/benefit] [score]+20[/score]")]
         [TestCase(ScoreLineKind.TriggerSweetTransfer, 1d, "触发[term]甜蜜传递[/term]")]
         [TestCase(ScoreLineKind.Layer, 3d, "层数 +3")]
@@ -38,6 +38,19 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 SettlementStageView.ResultText(line, BigDouble.Zero, new BigDouble(120)),
                 Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void SilverItemRoll_ResultHeaderDescribesAJudgmentNotAReward()
+        {
+            MethodInfo method = typeof(SettlementStageView).GetMethod(
+                "ResultHeader",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null);
+
+            Assert.That(
+                method.Invoke(null, new object[] { BuildLine(ScoreLineKind.SilverItemRoll, 1d) }),
+                Is.EqualTo("银材质判定"));
         }
 
         [TestCase(

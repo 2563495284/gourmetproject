@@ -357,7 +357,7 @@ namespace GourmetProject.Game.Run
             }
         }
 
-        /// <summary>把玩家用「铺台小票」永久附加的格子材质叠加进餐桌（拼桌后统一 merge，经营挑战与预览一致）。</summary>
+        /// <summary>把玩家用「铺台小票」设置的格子材质覆盖进餐桌（经营挑战与预览一致）。</summary>
         private static void ApplyCellMaterialOverrides(GpTable board, GameRun run)
         {
             if (board == null || run == null)
@@ -367,7 +367,7 @@ namespace GourmetProject.Game.Run
 
             foreach (CellMaterialOverride m in run.CellMaterialOverrides)
             {
-                board.AddMaterialAt(m.Pos, m.MaterialId);
+                board.SetMaterialAt(m.Pos, m.MaterialId);
             }
         }
 

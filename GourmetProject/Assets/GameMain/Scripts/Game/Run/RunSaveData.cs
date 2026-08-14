@@ -151,7 +151,7 @@ namespace GourmetProject.Game.Run
         /// <summary>餐桌格开包时已随机好的局部材质落点；随候选/已拼贴碎片保存。</summary>
         public List<TableFragmentMaterialRollSaveData> FragmentMaterialRolls = new List<TableFragmentMaterialRollSaveData>();
 
-        /// <summary>玩家用「铺台小票」永久附加的格子材质覆盖（坐标 + 材质 id）；旧档缺省 → 空。</summary>
+        /// <summary>玩家用「铺台小票」设置的格子材质覆盖（每坐标至多一条）；旧档重复坐标按最后一条生效。</summary>
         public List<CellMaterialSaveData> CellMaterialOverrides = new List<CellMaterialSaveData>();
 
         /// <summary>已购买但尚未拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。</summary>

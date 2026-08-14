@@ -924,7 +924,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 ScoreLineKind.FinalMultiplier => "总分倍率",
                 ScoreLineKind.Gold => "金币",
                 ScoreLineKind.Layer => "快乐蛋糕",
-                ScoreLineKind.SilverItemRoll => "银材质奖励",
+                ScoreLineKind.SilverItemRoll => "银材质判定",
                 ScoreLineKind.CopySkill => "技能复制",
                 ScoreLineKind.TriggerSweetTransfer => "甜蜜传递",
                 ScoreLineKind.TriggeredSweetTransferSource => "传递来源",
@@ -972,7 +972,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.Layer:
                     return $"层数 {signed}";
                 case ScoreLineKind.SilverItemRoll:
-                    return $"获得{Term("装饰品")}和{Term("消耗品")} ×{Count(line.Value)}";
+                    return $"{Term("消耗品")}判定 ×{Count(line.Value)}";
                 case ScoreLineKind.CopySkill:
                     return $"获得技能 ×{Count(line.Value)}";
                 case ScoreLineKind.TriggerSweetTransfer:

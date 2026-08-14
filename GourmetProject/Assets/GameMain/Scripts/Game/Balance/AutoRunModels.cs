@@ -95,11 +95,64 @@ namespace GourmetProject.Game.Balance
         public int OriginX;
         public int OriginY;
         public BigDouble PreviewScore;
+        public BigDouble PlanningScore;
+        public double DirectionalFuturePotential;
         public int FutureOpenSpace;
         public int EmptyRegionCount;
         public string SelectionReason = string.Empty;
         public bool CandidateLimitApplied;
         public int SearchNodesAfterDecision;
+    }
+
+    /// <summary>
+    /// 一次正式战斗的无损审计记录。周级 Score/BossScore 字段仅为旧报告兼容；
+    /// 新报告必须按 EncounterKey + Day 使用本列表，禁止把同周多个 Boss 混为一个样本。
+    /// </summary>
+    [Serializable]
+    public sealed class AutoRunBattleTrace
+    {
+        public string BattleKey = string.Empty;
+        public string EncounterKey = string.Empty;
+        public int Week;
+        public float Day;
+        public string SourceKey = string.Empty;
+        public string ActionId = string.Empty;
+        public string FoodId = string.Empty;
+        public bool IsBoss;
+        public string BossId = string.Empty;
+        public string BossDebuffId = string.Empty;
+        public int RequiredScore;
+        public BigDouble Score;
+        public bool TargetHit;
+        public int HeartsBefore;
+        public int HeartsAfter;
+        public int HeartsLost;
+        public bool Survived;
+        public bool TerminalDeath;
+        public bool UndyingPrevented;
+        public int PlacementDecisionStart;
+        public int PlacementDecisionCount;
+        public int SolverNodes;
+        public bool SolverTruncated;
+        public bool NoLegalPlacement;
+    }
+
+    /// <summary>一次正式行动候选展示及自动玩家选择的结构化审计记录。</summary>
+    [Serializable]
+    public sealed class AutoRunActionDecisionTrace
+    {
+        public int Week;
+        public float Day;
+        public int RunStepIndex;
+        public string OfferKey = string.Empty;
+        public int Revision;
+        public List<string> CandidateActionIds = new List<string>();
+        public List<float> CandidateCosts = new List<float>();
+        public List<float> CandidatePolicyWeights = new List<float>();
+        public string SelectedActionId = string.Empty;
+        public int SelectedIndex = -1;
+        public string SelectionReason = string.Empty;
+        public bool Rerolled;
     }
 
     [Serializable]
@@ -137,7 +190,7 @@ namespace GourmetProject.Game.Balance
     /// <summary>规则随机与自动玩家决策随机分离时使用的稳定 seed 派生。</summary>
     public static class AutoRunPolicySeed
     {
-        public const string Version = "bounded-policy-v1";
+        public const string Version = "bounded-policy-v5";
 
         public static ulong Derive(int seed, AutoPlayerLevel level, string scope)
         {
@@ -196,6 +249,8 @@ namespace GourmetProject.Game.Balance
         public AutoRunTerminationKind Termination;
         public List<AutoRunWarning> Warnings = new List<AutoRunWarning>();
         public List<PlacementDecisionTrace> PlacementDecisions = new List<PlacementDecisionTrace>();
+        public List<AutoRunBattleTrace> Battles = new List<AutoRunBattleTrace>();
+        public List<AutoRunActionDecisionTrace> ActionDecisions = new List<AutoRunActionDecisionTrace>();
         public List<string> Actions = new List<string>();
         public List<string> Rewards = new List<string>();
         public List<string> Purchases = new List<string>();

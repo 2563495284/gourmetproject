@@ -4,6 +4,7 @@ using NUnit.Framework;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.TestTools;
 using UnityEngine.UI;
 
 namespace GourmetProject.Tests.EditMode
@@ -48,6 +49,35 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(card, Is.Not.Null);
                 Assert.That(card.transform.Find("Title").GetComponent<TMP_Text>().text, Is.EqualTo("樱桃木"));
                 Assert.That(card.transform.Find("Panel/Desc").GetComponent<TMP_Text>().text, Is.EqualTo("分数+80"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void FoodTipsPrefab_MaterialBindingCreatesFoodOtherCardWithoutErrors()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(FoodTipsPrefabPath);
+            Assert.That(prefab, Is.Not.Null);
+            GameObject instance = Object.Instantiate(prefab);
+
+            try
+            {
+                FoodMaterialTipsView view = instance.GetComponentInChildren<FoodMaterialTipsView>(true);
+                Assert.That(view, Is.Not.Null);
+
+                view.Bind(new[]
+                {
+                    Entry("m_silver", "银", "进行一次消耗品判定"),
+                });
+
+                Assert.That(Content(view).childCount, Is.EqualTo(1));
+                Assert.That(
+                    Content(view).GetChild(0).GetComponent<FoodTipCardView>(),
+                    Is.Not.Null);
+                LogAssert.NoUnexpectedReceived();
             }
             finally
             {

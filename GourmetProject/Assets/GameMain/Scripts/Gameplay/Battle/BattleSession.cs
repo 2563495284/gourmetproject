@@ -19,12 +19,14 @@ namespace GourmetProject.Gameplay.Battle
             bool success,
             ServeOutcome outcome,
             Placement placement,
-            BigDouble score)
+            BigDouble score,
+            int scoreCalculationCount)
         {
             Success = success;
             Outcome = outcome;
             Placement = placement;
             Score = score;
+            ScoreCalculationCount = scoreCalculationCount;
         }
 
         public bool Success { get; }
@@ -35,11 +37,22 @@ namespace GourmetProject.Gameplay.Battle
 
         public BigDouble Score { get; }
 
-        public static PreparedPlacementPreview Succeeded(Placement placement, BigDouble score)
-            => new PreparedPlacementPreview(true, ServeOutcome.Placed, placement, score);
+        /// <summary>本次预览实际执行的完整 ScoreCalculator 次数；非法候选为 0。</summary>
+        public int ScoreCalculationCount { get; }
+
+        public static PreparedPlacementPreview Succeeded(
+            Placement placement,
+            BigDouble score,
+            int scoreCalculationCount = 1)
+            => new PreparedPlacementPreview(
+                true,
+                ServeOutcome.Placed,
+                placement,
+                score,
+                Math.Max(0, scoreCalculationCount));
 
         public static PreparedPlacementPreview Fail(ServeOutcome outcome, Placement placement)
-            => new PreparedPlacementPreview(false, outcome, placement, BigDouble.Zero);
+            => new PreparedPlacementPreview(false, outcome, placement, BigDouble.Zero, 0);
     }
 
     /// <summary>一次已经实际落到单个目标的甜蜜传递。</summary>
@@ -96,6 +109,7 @@ namespace GourmetProject.Gameplay.Battle
         private readonly GameplayDatabase _db;
         private readonly IRandomStream _rng;
         private readonly ScoreCalculator _calculator;
+        private readonly SolverPreviewSampler _solverPreviewSampler = new SolverPreviewSampler();
         private readonly List<RecipeSlot> _slots;
         private readonly List<string> _recipeBaseIds = new List<string>();
         private readonly List<TrackedRecipeEntry> _trackedRecipeEntries = new List<TrackedRecipeEntry>();
@@ -991,6 +1005,35 @@ namespace GourmetProject.Gameplay.Battle
         /// 临时放置总会在 finally 中回滚，PreparedServe、食谱、上菜次数与餐桌内容保持不变。
         /// </summary>
         public PreparedPlacementPreview PreviewPreparedPlacement(Placement placement)
+            => PreviewPreparedPlacementCore(placement, solverSample: false);
+
+        /// <summary>
+        /// 自动求解器专用的无副作用候选预览。与 UI 预览不同，这里用一组固定的共同随机样本
+        /// 处理复制、甜蜜传递与概率结算，并且不套用最低上菜数的显示门槛。同一餐桌状态下
+        /// 所有候选从相同样本状态开始，比较候选时没有随机噪声；样本流与局内随机流完全隔离。
+        /// </summary>
+        public PreparedPlacementPreview PreviewPreparedPlacementForSolver(Placement placement)
+            => PreviewPreparedPlacementCore(placement, solverSample: true);
+
+        /// <summary>
+        /// 自动求解器专用的单个共同随机样本；只执行一次完整评分，不消耗局内随机流，
+        /// 也不受最低上菜数显示门槛影响。
+        /// </summary>
+        public BigDouble PreviewScoreForSolver()
+        {
+            // 固定分层序列是 solver policy 的一部分，不读取 _rng.State，更不会推进 _rng。
+            // 每个候选都从相同的 selector 计数开始，因此这是 common-random-number 比较而非
+            // “窥视”正式结算随机。sampler 和 delegate 按 BattleSession 复用，候选热循环不分配 RNG。
+            _solverPreviewSampler.Reset();
+            return CalculatePreviewScore(
+                _solverPreviewSampler.CopySkillSelector,
+                _solverPreviewSampler.TransferTargetSelector,
+                _solverPreviewSampler.RandomIntegerSelector).Total;
+        }
+
+        private PreparedPlacementPreview PreviewPreparedPlacementCore(
+            Placement placement,
+            bool solverSample)
         {
             PreparedServeDish prepared = PreparedServe;
             if (prepared == null)
@@ -1012,7 +1055,10 @@ namespace GourmetProject.Gameplay.Battle
                 instance.Relocate(placement);
                 DiningTable.Place(instance);
                 placed = true;
-                return PreparedPlacementPreview.Succeeded(placement, PreviewScore().Total);
+                BigDouble score = solverSample
+                    ? PreviewScoreForSolver()
+                    : PreviewScore().Total;
+                return PreparedPlacementPreview.Succeeded(placement, score);
             }
             finally
             {
@@ -1023,6 +1069,119 @@ namespace GourmetProject.Gameplay.Battle
 
                 instance.Relocate(original);
             }
+        }
+
+        private static IReadOnlyList<T> SelectRotatingSample<T>(
+            IReadOnlyList<T> candidates,
+            int count,
+            int offset)
+        {
+            if (candidates == null || candidates.Count == 0 || count <= 0)
+            {
+                return Array.Empty<T>();
+            }
+
+            int take = Math.Min(count, candidates.Count);
+            if (take >= candidates.Count)
+            {
+                return candidates;
+            }
+
+            int start = ((offset % candidates.Count) + candidates.Count) % candidates.Count;
+            var selected = new List<T>(take);
+            for (int i = 0; i < take; i++)
+            {
+                selected.Add(candidates[(start + i) % candidates.Count]);
+            }
+
+            return selected;
+        }
+
+        private static IReadOnlyList<T> SelectTransferSample<T>(
+            IReadOnlyList<T> candidates,
+            int count,
+            int offset)
+        {
+            if (candidates == null || candidates.Count == 0 || count <= 0)
+            {
+                return Array.Empty<T>();
+            }
+
+            // 正式传递仅在候选数大于目标数时洗牌。候选全取时保持原顺序，避免
+            // 求解器制造正式规则里不存在的“随机执行顺序”。
+            if (count >= candidates.Count)
+            {
+                return candidates;
+            }
+
+            return SelectRotatingSample(candidates, count, offset);
+        }
+
+        private static int SelectStratifiedInteger(
+            int minInclusive,
+            int maxInclusive,
+            int sample,
+            int sampleCount)
+        {
+            if (maxInclusive < minInclusive)
+            {
+                (minInclusive, maxInclusive) = (maxInclusive, minInclusive);
+            }
+
+            long width = (long)maxInclusive - minInclusive + 1L;
+            if (width <= 1L)
+            {
+                return minInclusive;
+            }
+
+            int stratum = ((sample % sampleCount) + sampleCount) % sampleCount;
+            long offset = ((2L * stratum + 1L) * width) / (2L * sampleCount);
+            return (int)Math.Min(maxInclusive, minInclusive + offset);
+        }
+
+        /// <summary>
+        /// 单评分内复用的固定分层 selector。缓存 method-group delegate，避免每个候选创建
+        /// RNG、闭包和全量 shuffle 池；只有规则确实要求从真子集中取值时才分配结果列表。
+        /// </summary>
+        private sealed class SolverPreviewSampler
+        {
+            private const int IntegerStratumCount = 4;
+            private int _copyCall;
+            private int _transferCall;
+            private int _integerCall;
+
+            public SolverPreviewSampler()
+            {
+                CopySkillSelector = SelectCopySkills;
+                TransferTargetSelector = SelectTransferTargets;
+                RandomIntegerSelector = SelectInteger;
+            }
+
+            public Func<IReadOnlyList<string>, int, IReadOnlyList<string>> CopySkillSelector { get; }
+
+            public Func<IReadOnlyList<int>, int, IReadOnlyList<int>> TransferTargetSelector { get; }
+
+            public Func<int, int, int> RandomIntegerSelector { get; }
+
+            public void Reset()
+            {
+                _copyCall = 0;
+                _transferCall = 0;
+                _integerCall = 0;
+            }
+
+            private IReadOnlyList<string> SelectCopySkills(IReadOnlyList<string> candidates, int count)
+                => SelectRotatingSample(candidates, count, _copyCall++);
+
+            private IReadOnlyList<int> SelectTransferTargets(IReadOnlyList<int> candidates, int count)
+                => SelectTransferSample(candidates, count, _transferCall++);
+
+            private int SelectInteger(int minimum, int maximum)
+                => SelectStratifiedInteger(
+                    minimum,
+                    maximum,
+                    _integerCall++,
+                    IntegerStratumCount);
         }
 
         /// <summary>确认一份餐桌预摆菜；出菜口来源执行上菜，临时桌来源只确认位置。</summary>
@@ -1218,8 +1377,17 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         private ScoreResult CalculatePreviewScore()
+            => CalculatePreviewScore(
+                copySkillSelector: null,
+                transferTargetSelector: null,
+                randomIntegerSelector: null);
+
+        private ScoreResult CalculatePreviewScore(
+            Func<IReadOnlyList<string>, int, IReadOnlyList<string>> copySkillSelector,
+            Func<IReadOnlyList<int>, int, IReadOnlyList<int>> transferTargetSelector,
+            Func<int, int, int> randomIntegerSelector)
         {
-            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount);
+            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: copySkillSelector, transferTargetSelector: transferTargetSelector, randomIntegerSelector: randomIntegerSelector, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount);
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
@@ -1611,10 +1779,10 @@ namespace GourmetProject.Gameplay.Battle
             // 金币入账（结算侧效果）。
             PendingGold += result.GoldDelta;
 
-            // 银材质：对每个「1/2 获得消耗品」请求掷骰（仅正式结算掷，预览不掷，保证可复现纯净）。
-            for (int i = 0; i < result.SilverItemRollRequests; i++)
+            // 银材质：对每个获得消耗品请求按配置概率掷骰（仅正式结算掷，预览不掷）。
+            foreach (SilverItemRollRequest request in result.SilverItemRolls)
             {
-                if (_rng.NextBool(1.0 / 2.0))
+                if (_rng.NextBool(request.Probability))
                 {
                     PendingActiveItemGrants++;
                 }

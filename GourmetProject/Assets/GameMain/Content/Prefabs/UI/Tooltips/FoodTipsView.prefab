@@ -3003,7 +3003,7 @@ MonoBehaviour:
   _scrollRect: {fileID: 1135936743590615358}
   _content: {fileID: 5219624206581841482}
   _scrollbar: {fileID: 9217065917812070768}
-  _itemPrefab: {fileID: 7515748184065321263, guid: 83f1bc883cc564e719906c5c71c2780a, type: 3}
+  _itemPrefab: {fileID: 9109147810092552575, guid: b7f46c62f07384e19b8f068492d1d0af, type: 3}
 --- !u!222 &4322075634655986155
 CanvasRenderer:
   m_ObjectHideFlags: 0

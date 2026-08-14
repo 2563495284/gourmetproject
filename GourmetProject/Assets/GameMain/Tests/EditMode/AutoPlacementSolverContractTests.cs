@@ -7,6 +7,7 @@ using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 
 namespace GourmetProject.Tests.EditMode
@@ -62,6 +63,323 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(session.PreparedServe, Is.SameAs(prepared.PreparedDish));
             Assert.That(session.DiningTable.DishCount, Is.Zero);
             Assert.That(session.ServesUsed, Is.Zero);
+        }
+
+        [Test]
+        public void SolverPreview_UsesOneCommonSampleWithoutConsumingGameplayRandom()
+        {
+            var salty = new FlavorDef(
+                "solver-salty",
+                "solver-salty",
+                string.Empty,
+                FlavorEffectType.ExtraSettlementChance,
+                new[] { 0.5f },
+                Array.Empty<string>(),
+                string.Empty);
+            DishDef dish = Dish("solver-expected", 10, flavorId: salty.Id);
+            var gameplayRandom = new TrackingRandomStream(1001UL, forcedWeightedIndex: 0);
+            BattleSession session = Session(
+                new DiningTable(1, 1),
+                gameplayRandom,
+                new[] { dish },
+                dish.Id,
+                flavors: new[] { salty });
+            ServePrepareResult prepared = session.PrepareServeAutomatically(0);
+            RngState randomBefore = gameplayRandom.State;
+
+            PreparedPlacementPreview ui = session.PreviewPreparedPlacement(prepared.PreparedDish.Placements[0]);
+            PreparedPlacementPreview solver = session.PreviewPreparedPlacementForSolver(
+                prepared.PreparedDish.Placements[0]);
+            PreparedPlacementPreview repeated = session.PreviewPreparedPlacementForSolver(
+                prepared.PreparedDish.Placements[0]);
+
+            Assert.That(ui.Score.ToDouble(), Is.EqualTo(10d), "UI preview keeps its existing no-random semantic");
+            Assert.That(solver.ScoreCalculationCount, Is.EqualTo(1),
+                "one solver node must equal one full ScoreCalculator execution");
+            Assert.That(solver.Score.ToDouble(), Is.EqualTo(10d).Or.EqualTo(20d),
+                "the stable common sample resolves the probabilistic settle exactly once");
+            Assert.That(repeated.Score, Is.EqualTo(solver.Score),
+                "the common sample must be stable across repeated candidate previews");
+            Assert.That(gameplayRandom.State, Is.EqualTo(randomBefore));
+            Assert.That(gameplayRandom.WeightedPickCalls, Is.EqualTo(1));
+            Assert.That(session.PreparedServe, Is.SameAs(prepared.PreparedDish));
+            Assert.That(session.DiningTable.DishCount, Is.Zero);
+            Assert.That(session.ServesUsed, Is.Zero);
+        }
+
+        [Test]
+        public void SolverPreview_ReportsExactlyOneRealScoreCalculation()
+        {
+            DishDef dish = Dish("single-score-calculation", 10);
+            var counter = new CountingScoreEffectSource();
+            var calculator = new ScoreCalculator(effectSources: new[] { counter });
+            BattleSession session = Session(
+                new DiningTable(1, 1),
+                new Xoshiro256SS(1003UL),
+                new[] { dish },
+                dish.Id,
+                calculator: calculator);
+            ServePrepareResult prepared = session.PrepareServeAutomatically(0);
+
+            PreparedPlacementPreview first = session.PreviewPreparedPlacementForSolver(
+                prepared.PreparedDish.Placements[0]);
+            PreparedPlacementPreview second = session.PreviewPreparedPlacementForSolver(
+                prepared.PreparedDish.Placements[0]);
+
+            Assert.That(first.ScoreCalculationCount, Is.EqualTo(1));
+            Assert.That(second.ScoreCalculationCount, Is.EqualTo(1));
+            Assert.That(counter.CollectCalls, Is.EqualTo(2),
+                "two successful previews must run ScoreCalculator exactly twice, not four times each");
+        }
+
+        [Test]
+        public void SolverPreview_BypassesBuffetDisplayGateForEarlyPlacements()
+        {
+            DishDef dish = Dish("buffet-preview", 10);
+            BattleSession session = Session(
+                new DiningTable(1, 1),
+                new Xoshiro256SS(1002UL),
+                new[] { dish },
+                dish.Id);
+            session.MinimumServesForScore = 10;
+            ServePrepareResult prepared = session.PrepareServeAutomatically(0);
+            Placement placement = prepared.PreparedDish.Placements[0];
+
+            Assert.That(session.PreviewPreparedPlacement(placement).Score.ToDouble(), Is.Zero);
+            Assert.That(session.PreviewPreparedPlacementForSolver(placement).Score.ToDouble(), Is.EqualTo(10d));
+            Assert.That(session.PreparedServe, Is.SameAs(prepared.PreparedDish));
+            Assert.That(session.ServesUsed, Is.Zero);
+            Assert.That(session.DiningTable.DishCount, Is.Zero);
+        }
+
+        [Test]
+        public void Expert_TiePrefersFutureCellsInSweetTransferDirection()
+        {
+            const string skillId = "row-transfer";
+            var transfer = new SkillRuleDef(
+                "row-transfer-rule",
+                skillId,
+                0,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.All,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.TransferSkills,
+                SkillScope.Row,
+                1,
+                Array.Empty<float>(),
+                Array.Empty<string>());
+            var payload = new SkillRuleDef(
+                "row-transfer-payload",
+                skillId,
+                1,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.All,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                SkillActionType.AddFlat,
+                SkillScope.Self,
+                1,
+                new[] { 5f },
+                Array.Empty<string>());
+            var skill = new SkillDef(
+                skillId,
+                skillId,
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { transfer, payload });
+            DishDef dish = Dish("row-transfer-dish", 10, new[] { skill.Id });
+            DishDef futureDish = Dish("row-transfer-future", 10);
+            var existing = new[]
+            {
+                new GridPos(0, 0),
+                new GridPos(1, 0),
+                new GridPos(0, 1),
+                new GridPos(1, 1),
+                new GridPos(2, 1),
+            };
+            var db = new GameplayDatabase(
+                new[] { dish, futureDish },
+                new[] { skill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var session = new BattleSession(
+                new DiningTable(3, 2, existing, materials: null),
+                db,
+                new TrackingRandomStream(1003UL, forcedWeightedIndex: 0),
+                new[] { new RecipeSlot("slot", new[] { dish.Id, futureDish.Id, futureDish.Id }) },
+                requiredScore: 0);
+
+            AutoPlacementResult result = AutoPlacementSolver.Solve(
+                session,
+                AutoPlayerLevel.Expert,
+                new AutoPlayerPolicy { PlacementNodeBudget = 20 },
+                policyRandom: null);
+
+            PlacementDecisionTrace decision = result.Decisions.First();
+            Assert.That(decision.PreviewScore.ToDouble(), Is.EqualTo(15d));
+            Assert.That(decision.OriginY, Is.EqualTo(1),
+                "the longer row has two future transfer targets; stable (0,0) only has one");
+        }
+
+        [Test]
+        public void Expert_ArrowCookieCountsFutureTwoCellDishOnceAndReservesItsBuffDirection()
+        {
+            DishDef arrowDish = LeftArrowDish(out SkillDef arrowSkill);
+            var futureDish = new DishDef(
+                "future-two-cell",
+                "future-two-cell",
+                10,
+                DishShape.FromRows(new[] { "XX" }),
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty);
+            var db = new GameplayDatabase(
+                new[] { arrowDish, futureDish },
+                new[] { arrowSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var session = new BattleSession(
+                new DiningTable(4, 1),
+                db,
+                new TrackingRandomStream(10031UL, forcedWeightedIndex: 0),
+                new[] { new RecipeSlot("slot", new[] { arrowDish.Id, futureDish.Id }) },
+                requiredScore: 0);
+
+            AutoPlacementResult result = AutoPlacementSolver.Solve(
+                session,
+                AutoPlayerLevel.Expert,
+                new AutoPlayerPolicy { PlacementNodeBudget = 20 },
+                policyRandom: null);
+
+            PlacementDecisionTrace decision = result.Decisions.First();
+            Assert.That(decision.PreviewScore.ToDouble(), Is.EqualTo(15d));
+            Assert.That(decision.DirectionalFuturePotential, Is.EqualTo(10d).Within(0.000001d),
+                "the two cells belong to one future dish, so the +0.5 multiplier is valued once");
+            Assert.That(decision.OriginX, Is.EqualTo(2),
+                "left-arrow placement must leave the two cells on its left available for future dishes");
+        }
+
+        [Test]
+        public void Expert_LastRecipeEntryHasZeroDirectionalFuturePotential()
+        {
+            DishDef arrowDish = LeftArrowDish(out SkillDef arrowSkill);
+            BattleSession session = Session(
+                new DiningTable(4, 1),
+                new Xoshiro256SS(10032UL),
+                new[] { arrowDish },
+                arrowDish.Id,
+                skills: new[] { arrowSkill });
+
+            AutoPlacementResult result = AutoPlacementSolver.Solve(
+                session,
+                AutoPlayerLevel.Expert,
+                new AutoPlayerPolicy { PlacementNodeBudget = 20 },
+                policyRandom: null);
+
+            PlacementDecisionTrace decision = result.Decisions.Single();
+            Assert.That(decision.DirectionalFuturePotential, Is.Zero);
+            Assert.That(decision.PlanningScore, Is.EqualTo(decision.PreviewScore));
+            Assert.That(decision.OriginX, Is.Zero,
+                "without a future recipe entry the stable coordinate wins an exact score tie");
+        }
+
+        [Test]
+        public void Solver_DiscardsInvalidPreparedDishThroughFormalLimit()
+        {
+            DishDef dish = Dish("invalid-prepared", 10);
+            var table = new DiningTable(1, 1);
+            BattleSession session = Session(
+                table,
+                new Xoshiro256SS(1004UL),
+                new[] { dish },
+                dish.Id);
+            session.ConfigureFoodDiscardLimit(1);
+            ServePrepareResult prepared = session.PrepareServeAutomatically(0);
+            table.SetDisabled(prepared.PreparedDish.Placements[0].Origin, true);
+
+            AutoPlacementResult result = AutoPlacementSolver.Solve(
+                session,
+                AutoPlayerLevel.Expert,
+                new AutoPlayerPolicy { PlacementNodeBudget = 10 },
+                policyRandom: null);
+
+            Assert.That(result.Termination, Is.EqualTo(AutoPlacementTerminationKind.Completed));
+            Assert.That(result.HasLegalSolution, Is.True);
+            Assert.That(result.Decisions, Is.Empty);
+            Assert.That(session.FoodDiscardsUsed, Is.EqualTo(1));
+            Assert.That(session.FoodDiscardsRemaining, Is.Zero);
+            Assert.That(session.PreparedServe, Is.Null);
+            Assert.That(session.DiningTable.DishCount, Is.Zero);
+        }
+
+        [Test]
+        public void Expert_DiscardsClearlyOutclassedPreparedDishAndNeverExceedsFormalLimit()
+        {
+            DishDef weak = Dish("weak-prepared", 10);
+            DishDef strong = Dish("strong-remaining", 30);
+            var db = new GameplayDatabase(
+                new[] { weak, strong },
+                Array.Empty<SkillDef>(),
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var gameplayRandom = new TrackingRandomStream(1005UL, forcedWeightedIndex: 0);
+            var session = new BattleSession(
+                new DiningTable(1, 1),
+                db,
+                gameplayRandom,
+                new[] { new RecipeSlot("slot", new[] { weak.Id, strong.Id }) },
+                requiredScore: 0);
+            session.ConfigureFoodDiscardLimit(1);
+            Assert.That(session.PrepareServeAutomatically(0).PreparedDish.Definition.Id, Is.EqualTo(weak.Id));
+
+            AutoPlacementResult result = AutoPlacementSolver.Solve(
+                session,
+                AutoPlayerLevel.Expert,
+                new AutoPlayerPolicy { PlacementNodeBudget = 20 },
+                policyRandom: null);
+
+            Assert.That(result.Termination, Is.EqualTo(AutoPlacementTerminationKind.Completed));
+            Assert.That(session.FoodDiscardsUsed, Is.EqualTo(1));
+            Assert.That(session.FoodDiscardsRemaining, Is.Zero);
+            Assert.That(session.Slots[0].Count, Is.Zero);
+            Assert.That(session.DiningTable.DishCount, Is.EqualTo(1));
+            Assert.That(session.DiningTable.Dishes.Single().Def.Id, Is.EqualTo(strong.Id));
+            Assert.That(result.Decisions, Has.Count.EqualTo(1));
+            Assert.That(result.Decisions[0].DishId, Is.EqualTo(strong.Id));
+        }
+
+        [Test]
+        public void Solver_DoesNotDiscardEqualScoreCandidate()
+        {
+            DishDef good = Dish("equal-existing", 100);
+            DishDef neutral = Dish("equal-neutral", 0);
+            BattleSession session = Session(
+                new DiningTable(2, 1),
+                new Xoshiro256SS(1006UL),
+                new[] { good, neutral },
+                neutral.Id);
+            Assert.That(session.GenerateDishAt(good.Id, new GridPos(0, 0)), Is.True);
+            session.ConfigureFoodDiscardLimit(1);
+
+            AutoPlacementResult result = AutoPlacementSolver.Solve(
+                session,
+                AutoPlayerLevel.Expert,
+                new AutoPlayerPolicy { PlacementNodeBudget = 10 },
+                policyRandom: null);
+
+            Assert.That(result.Decisions, Has.Count.EqualTo(1));
+            Assert.That(session.FoodDiscardsUsed, Is.Zero);
+            Assert.That(session.FoodDiscardsRemaining, Is.EqualTo(1));
         }
 
         [Test]
@@ -325,7 +643,11 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(session.IsRunSettlementApplied, Is.True);
         }
 
-        private static DishDef Dish(string id, int deliciousness)
+        private static DishDef Dish(
+            string id,
+            int deliciousness,
+            IReadOnlyList<string> skillIds = null,
+            string flavorId = "")
             => new DishDef(
                 id,
                 id,
@@ -334,20 +656,70 @@ namespace GourmetProject.Tests.EditMode
                 0,
                 0,
                 1f,
+                skillIds ?? Array.Empty<string>(),
+                flavorId);
+
+        private static DishDef LeftArrowDish(out SkillDef skill)
+            => ScoringArrowDish(
+                SkillActionType.AddMultFlat,
+                0.5f,
+                out skill,
+                SkillScope.LeftAndSelf);
+
+        private static DishDef ScoringArrowDish(
+            SkillActionType actionType,
+            float actionValue,
+            out SkillDef skill,
+            SkillScope actionScope = SkillScope.RightAndSelf)
+        {
+            const string skillId = "sk_arrow_cookie_fixture";
+            var rule = new SkillRuleDef(
+                "sk_arrow_cookie_fixture_1",
+                skillId,
+                0,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Gate,
+                string.Empty,
+                actionType,
+                actionScope,
+                0,
+                new[] { actionValue },
+                Array.Empty<string>());
+            skill = new SkillDef(
+                skillId,
+                skillId,
+                string.Empty,
                 Array.Empty<string>(),
+                new[] { rule });
+            return new DishDef(
+                "arrow_cookie_fixture",
+                "arrow_cookie_fixture",
+                10,
+                DishShape.FromRows(new[] { "XX" }),
+                0,
+                0,
+                1f,
+                new[] { skill.Id },
                 string.Empty);
+        }
 
         private static BattleSession Session(
             DiningTable table,
             IRandomStream gameplayRandom,
             IReadOnlyList<DishDef> dishes,
             string recipeDishId,
-            IReadOnlyList<MaterialDef> materials = null)
+            IReadOnlyList<MaterialDef> materials = null,
+            IReadOnlyList<SkillDef> skills = null,
+            IReadOnlyList<FlavorDef> flavors = null,
+            ScoreCalculator calculator = null)
         {
             var db = new GameplayDatabase(
                 dishes,
-                Array.Empty<SkillDef>(),
-                Array.Empty<FlavorDef>(),
+                skills ?? Array.Empty<SkillDef>(),
+                flavors ?? Array.Empty<FlavorDef>(),
                 materials ?? Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
             return new BattleSession(
@@ -355,7 +727,18 @@ namespace GourmetProject.Tests.EditMode
                 db,
                 gameplayRandom,
                 new[] { new RecipeSlot("slot", new[] { recipeDishId }) },
-                requiredScore: 0);
+                requiredScore: 0,
+                calculator: calculator);
+        }
+
+        private sealed class CountingScoreEffectSource : IScoreEffectSource
+        {
+            public int CollectCalls { get; private set; }
+
+            public void CollectEffects(ScoreSnapshot snapshot, ScoreEffectCollector collector)
+            {
+                CollectCalls++;
+            }
         }
 
         private sealed class TrackingRandomStream : IRandomStream

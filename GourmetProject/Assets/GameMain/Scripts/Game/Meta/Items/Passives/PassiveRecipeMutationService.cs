@@ -222,14 +222,14 @@ namespace GourmetProject.Game.Meta.Passives
                 GridPos pos = targets[i];
                 string materialId = materials[rng.Range(0, materials.Count)];
                 IReadOnlyList<string> before = MaterialSnapshot(run, pos);
-                if (run.AddCellMaterial(pos, materialId))
+                if (run.SetCellMaterial(pos, materialId))
                 {
                     result.Entries.Add(new CellMutationEntry
                     {
                         Pos = pos,
                         MaterialId = materialId,
                         BeforeMaterialIds = before,
-                        AfterMaterialIds = Append(before, materialId),
+                        AfterMaterialIds = MaterialAfter(materialId),
                     });
                 }
             }
@@ -272,14 +272,14 @@ namespace GourmetProject.Game.Meta.Passives
                 }
 
                 IReadOnlyList<string> before = MaterialSnapshot(run, target);
-                if (run.AddCellMaterial(target, source.MaterialId))
+                if (run.SetCellMaterial(target, source.MaterialId))
                 {
                     result.Entries.Add(new CellMutationEntry
                     {
                         Pos = target,
                         MaterialId = source.MaterialId,
                         BeforeMaterialIds = before,
-                        AfterMaterialIds = Append(before, source.MaterialId),
+                        AfterMaterialIds = MaterialAfter(source.MaterialId),
                     });
                     break;
                 }
@@ -356,12 +356,12 @@ namespace GourmetProject.Game.Meta.Passives
                 }
 
                 CellMutationEntry selected = candidates[rng.Range(0, candidates.Count)];
-                if (!run.AddCellMaterial(selected.Pos, selected.MaterialId))
+                if (!run.SetCellMaterial(selected.Pos, selected.MaterialId))
                 {
                     continue;
                 }
 
-                selected.AfterMaterialIds = Append(selected.BeforeMaterialIds, selected.MaterialId);
+                selected.AfterMaterialIds = MaterialAfter(selected.MaterialId);
                 result.Entries.Add(selected);
                 break;
             }
@@ -528,16 +528,11 @@ namespace GourmetProject.Game.Meta.Passives
                 : new List<string>(preview.MaterialsAt(pos));
         }
 
-        private static IReadOnlyList<string> Append(IReadOnlyList<string> source, string materialId)
+        private static IReadOnlyList<string> MaterialAfter(string materialId)
         {
-            var result = new List<string>(source?.Count + 1 ?? 1);
-            if (source != null)
-            {
-                result.AddRange(source);
-            }
-
-            result.Add(materialId);
-            return result;
+            return string.IsNullOrEmpty(materialId)
+                ? System.Array.Empty<string>()
+                : new[] { materialId };
         }
 
         private static RecipeMutationResult RemoveFlavor(

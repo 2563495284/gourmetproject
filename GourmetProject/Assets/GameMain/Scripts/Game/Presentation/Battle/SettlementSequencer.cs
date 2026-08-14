@@ -2332,7 +2332,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 plan.FinalCues.Add(new SettlementCue(
                     SettlementCueKind.SideEffect,
-                    $"获得装饰品和消耗品 ×{result.SilverItemRollRequests}",
+                    $"消耗品判定 ×{result.SilverItemRollRequests}",
                     sourceName: "银材质"));
             }
 
@@ -2697,7 +2697,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.SilverItemRoll:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        $"获得{Semantic("term", "装饰品")}和{Semantic("term", "消耗品")} ×{RoundCount(line.Value)}",
+                        $"{Semantic("term", "消耗品")}判定 ×{RoundCount(line.Value)}",
                         sourceName: sourceName);
                     return true;
 

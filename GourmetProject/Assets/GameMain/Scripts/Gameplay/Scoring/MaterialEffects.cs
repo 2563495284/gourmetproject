@@ -52,7 +52,7 @@ namespace GourmetProject.Gameplay.Scoring
                 case MaterialEffectType.GrantItemRollIfCellCount:
                     if (_cellCount >= _def.ThresholdParam)
                     {
-                        ctx.RequestSilverItemRoll();
+                        ctx.RequestSilverItemRoll(_def.ItemRollProbability);
                     }
 
                     break;

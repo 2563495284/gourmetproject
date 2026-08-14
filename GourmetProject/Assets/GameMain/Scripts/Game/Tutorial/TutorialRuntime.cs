@@ -125,25 +125,31 @@ namespace GourmetProject.Game.Tutorial
 
         public static bool PlayResultHeart(bool isWin, Action onComplete = null)
         {
-            // 旧版结算说明已由胜败共享的红心说明取代，顺手清掉中断存档中的旧完成状态。
-            if (!TutorialProgressService.IsCompleted(TutorialId.Settlement))
-                TutorialProgressService.Complete(TutorialId.Settlement);
+            return PlayFirstFailureHeart(isWin, onComplete);
+        }
 
-            if (TutorialProgressService.IsCompleted(TutorialId.ResultHeart))
+        internal static bool PlayFirstFailureHeart(bool isWin, Action onComplete = null)
+        {
+            // 胜利不会消费首次失败说明；玩家下一次真正失败时仍会看到新版说明。
+            if (isWin)
             {
                 onComplete?.Invoke();
                 return false;
             }
 
-            if (IsPlaying)
+            bool completed = TutorialProgressService.IsCompleted(TutorialId.FirstFailureHeart);
+            if (!ShouldPlayFirstFailureHeart(isWin, completed, IsPlaying))
             {
                 // 结果流程不能被教程阻塞；本次未能播放时，下一次结算仍会再次尝试。
                 onComplete?.Invoke();
                 return false;
             }
 
-            return Play(TutorialCatalog.BuildResultHeart(isWin), onComplete);
+            return Play(TutorialId.FirstFailureHeart, onComplete);
         }
+
+        internal static bool ShouldPlayFirstFailureHeart(bool isWin, bool completed, bool tutorialPlaying) =>
+            !isWin && !completed && !tutorialPlaying;
 
         private static bool Play(TutorialSequenceDefinition definition, Action onComplete)
         {
@@ -219,7 +225,7 @@ namespace GourmetProject.Game.Tutorial
             if (IsPlaying || !TutorialProgressService.IsCompleted(TutorialId.CoreComplete)) return;
             foreach (string id in TutorialProgressService.Pending())
             {
-                // 旧版失败说明不再单独播放；新的胜败结果共用 ResultHeart。
+                // 旧版失败说明只为存档兼容保留，不再单独播放。
                 if (string.Equals(id, TutorialId.Failure, StringComparison.Ordinal))
                 {
                     TutorialProgressService.Complete(id);

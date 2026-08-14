@@ -2,7 +2,7 @@
   {
     "id": "glutton_dog",
     "name": "甜品",
-    "desc": "糖霜、奶油与烘焙香气打造的甜蜜世界\n众多精致甜品，让甜蜜在餐桌间不断传递，共享蛋糕星级评鉴",
+    "desc": "糖霜、奶油与烘焙香气打造的甜蜜世界",
     "portrait": "Sprites/Characters/char_glutton_dog",
     "initialRecipeId": [
       "recipe_glutton"

@@ -57,12 +57,13 @@ namespace GourmetProject.Tests.EditMode
                 traces.Add(Trace(2000 + i, completed: true, failure: string.Empty, bossReached: i == 0));
 
             AutoRunWeekSummary week = AutoRunReportBuilder.Build(Request(4, 1), traces).WeekSummaries[0];
+            AutoRunBossEncounterSummary boss = week.BossEncounters.Single();
 
             Assert.That(week.BossMetricsValid, Is.True);
             Assert.That(week.BossScores, Is.Not.Null);
             Assert.That(week.BossReachRate, Is.EqualTo(0.25f));
             Assert.That(week.SuggestionValid, Is.False);
-            Assert.That(week.WarningCodes, Does.Contain("boss-survivor-bias"));
+            Assert.That(boss.WarningCodes, Does.Contain("boss-survivor-bias"));
         }
 
         [Test]
@@ -73,7 +74,7 @@ namespace GourmetProject.Tests.EditMode
                 .ToList();
             AutoRunWeekSummary below = AutoRunReportBuilder.Build(Request(29, 1), twentyNine).WeekSummaries[0];
             Assert.That(below.SuggestionValid, Is.False);
-            Assert.That(below.WarningCodes, Does.Contain("boss-samples-below-30"));
+            Assert.That(below.BossEncounters.Single().WarningCodes, Does.Contain("boss-samples-below-30"));
 
             List<AutoRunTrace> thirty = Enumerable.Range(0, 30)
                 .Select(i => Trace(2200 + i, completed: true, failure: string.Empty, bossReached: true))
@@ -81,6 +82,69 @@ namespace GourmetProject.Tests.EditMode
             AutoRunWeekSummary enough = AutoRunReportBuilder.Build(Request(30, 1), thirty).WeekSummaries[0];
             Assert.That(enough.SuggestionValid, Is.True);
             Assert.That(enough.BossScores.P30, Is.EqualTo(new BigDouble(1234)));
+        }
+
+        [Test]
+        public void NoCompletedRunsKeepsBossPercentilesButInvalidatesPolicySuggestionsAndReport()
+        {
+            List<AutoRunTrace> traces = Enumerable.Range(0, 30)
+                .Select(i => Trace(2250 + i, completed: false, failure: "红心耗尽", bossReached: true))
+                .ToList();
+
+            AutoRunReport report = AutoRunReportBuilder.Build(Request(30, 1), traces);
+            AutoRunLevelSummary level = report.LevelSummaries.Single();
+            AutoRunWeekSummary week = report.WeekSummaries.Single();
+            AutoRunBossEncounterSummary boss = week.BossEncounters.Single();
+
+            Assert.That(level.PolicyCalibrationValid, Is.False);
+            Assert.That(report.PolicyCalibrationValid, Is.False);
+            Assert.That(report.IsValid, Is.False);
+            Assert.That(boss.Scores, Is.Not.Null);
+            Assert.That(boss.SuggestionValid, Is.False);
+            Assert.That(boss.WarningCodes, Does.Contain("policy-no-completed-runs"));
+            Assert.That(week.WarningCodes, Does.Contain("policy-no-completed-runs"));
+            Assert.That(AutoRunReportBuilder.ToSummaryCsv(report), Does.Contain("policy-no-completed-runs"));
+        }
+
+        [Test]
+        public void ZeroCompletionLevelIsGatedWithoutDisablingCalibratedLevel()
+        {
+            AutoRunReportRequest request = Request(30, 1);
+            request.Levels = new List<AutoPlayerLevel>
+            {
+                AutoPlayerLevel.Normal,
+                AutoPlayerLevel.Expert,
+            };
+            var traces = new List<AutoRunTrace>();
+            traces.AddRange(Enumerable.Range(0, 30)
+                .Select(i => Trace(2280 + i, completed: false, failure: "红心耗尽", bossReached: true)));
+            traces.AddRange(Enumerable.Range(0, 30)
+                .Select(i =>
+                {
+                    AutoRunTrace trace = Trace(2380 + i, completed: true, failure: string.Empty, bossReached: true);
+                    trace.PlayerLevel = AutoPlayerLevel.Expert;
+                    return trace;
+                }));
+
+            AutoRunReport report = AutoRunReportBuilder.Build(request, traces);
+            AutoRunLevelSummary normal = report.LevelSummaries.Single(
+                level => level.PlayerLevel == AutoPlayerLevel.Normal);
+            AutoRunLevelSummary expert = report.LevelSummaries.Single(
+                level => level.PlayerLevel == AutoPlayerLevel.Expert);
+            AutoRunBossEncounterSummary normalBoss = report.WeekSummaries
+                .Single(week => week.PlayerLevel == AutoPlayerLevel.Normal)
+                .BossEncounters.Single();
+            AutoRunBossEncounterSummary expertBoss = report.WeekSummaries
+                .Single(week => week.PlayerLevel == AutoPlayerLevel.Expert)
+                .BossEncounters.Single();
+
+            Assert.That(normal.PolicyCalibrationValid, Is.False);
+            Assert.That(normalBoss.SuggestionValid, Is.False);
+            Assert.That(normalBoss.WarningCodes, Does.Contain("policy-no-completed-runs"));
+            Assert.That(expert.PolicyCalibrationValid, Is.True);
+            Assert.That(expertBoss.SuggestionValid, Is.True);
+            Assert.That(report.PolicyCalibrationValid, Is.True);
+            Assert.That(report.IsValid, Is.True);
         }
 
         [Test]
@@ -304,6 +368,86 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void BossEncountersAreSeparatedByExactDayAndKey()
+        {
+            var traces = new List<AutoRunTrace>();
+            for (int i = 0; i < 40; i++)
+            {
+                AutoRunTrace trace = Trace(
+                    5000 + i,
+                    completed: true,
+                    failure: string.Empty,
+                    bossReached: false);
+                trace.Stages[0].Battles.Add(BossBattle(
+                    trace.Seed,
+                    day: 4f,
+                    encounterKey: "timeline:w1:d4:boss",
+                    actionId: "act-boss-day4",
+                    bossId: "boss-day4",
+                    requiredScore: 80,
+                    score: 100));
+                if (i < 30)
+                {
+                    trace.Stages[0].Battles.Add(BossBattle(
+                        trace.Seed,
+                        day: 7f,
+                        encounterKey: "timeline:w1:d7:boss",
+                        actionId: "act-boss-day7",
+                        bossId: "boss-day7",
+                        requiredScore: 800,
+                        score: 1000));
+                }
+
+                traces.Add(trace);
+            }
+
+            AutoRunReport report = AutoRunReportBuilder.Build(Request(40, 1), traces);
+            List<AutoRunBossEncounterSummary> bosses = report.WeekSummaries.Single().BossEncounters;
+
+            Assert.That(report.SchemaVersion, Is.EqualTo(3));
+            Assert.That(bosses, Has.Count.EqualTo(2));
+            Assert.That(bosses.Select(boss => boss.Day), Is.EqualTo(new[] { 4f, 7f }));
+            Assert.That(bosses[0].Reached, Is.EqualTo(40));
+            Assert.That(bosses[0].ReachRate, Is.EqualTo(1f));
+            Assert.That(bosses[0].Scores.P30, Is.EqualTo(new BigDouble(100)));
+            Assert.That(bosses[0].SuggestionValid, Is.True);
+            Assert.That(bosses[1].Reached, Is.EqualTo(30));
+            Assert.That(bosses[1].ReachRate, Is.EqualTo(0.75f));
+            Assert.That(bosses[1].Scores.P30, Is.EqualTo(new BigDouble(1000)));
+            Assert.That(bosses[1].SuggestionValid, Is.True);
+        }
+
+        [Test]
+        public void LegacyWeekBossTracePreservesDiagnosticsButNeverRecommends()
+        {
+            List<AutoRunTrace> traces = Enumerable.Range(0, 30)
+                .Select(i => Trace(5500 + i, completed: true, failure: string.Empty, bossReached: true))
+                .ToList();
+            foreach (AutoRunTrace trace in traces)
+                trace.Stages[0].Battles.Clear();
+
+            AutoRunReport report = AutoRunReportBuilder.Build(Request(30, 1), traces);
+            AutoRunWeekSummary week = report.WeekSummaries.Single();
+
+            Assert.That(week.UsesLegacyBossTrace, Is.True);
+            Assert.That(week.BossEncounters, Is.Empty);
+            Assert.That(week.BossMetricsValid, Is.True);
+            Assert.That(week.BossScores, Is.Not.Null);
+            Assert.That(week.WarningCodes, Does.Contain("legacy-boss-trace-ambiguous"));
+            Assert.That(week.SuggestionValid, Is.False);
+
+            report.SchemaVersion = 2;
+            week.UsesLegacyBossTrace = false;
+            week.SuggestionValid = true;
+            week.WarningCodes.Remove("legacy-boss-trace-ambiguous");
+            AutoRunReportBuilder.RefreshValidity(report, configStale: false);
+            Assert.That(week.UsesLegacyBossTrace, Is.True);
+            Assert.That(week.WarningCodes, Does.Contain("legacy-boss-trace-ambiguous"));
+            Assert.That(week.SuggestionValid, Is.False);
+            Assert.That(AutoRunReportBuilder.ToSummaryCsv(report), Does.Contain(",true,30,"));
+        }
+
+        [Test]
         public void CsvAndJsonCarrySameMetadataStatisticsAndFullTrace()
         {
             AutoRunReportRequest request = Request(30, 1);
@@ -314,6 +458,30 @@ namespace GourmetProject.Tests.EditMode
             List<AutoRunTrace> traces = Enumerable.Range(0, 30)
                 .Select(i => Trace(2600 + i, completed: true, failure: string.Empty, bossReached: true))
                 .ToList();
+            foreach (AutoRunTrace trace in traces)
+            {
+                trace.Stages[0].Battles.Add(BossBattle(
+                    trace.Seed,
+                    day: 4f,
+                    encounterKey: "timeline:w1:d4:boss",
+                    actionId: "act-boss-day4",
+                    bossId: "boss-day4",
+                    requiredScore: 800,
+                    score: 900));
+            }
+            traces[0].Stages[0].ActionDecisions.Add(new AutoRunActionDecisionTrace
+            {
+                Week = 1,
+                Day = 3f,
+                RunStepIndex = 2,
+                OfferKey = "offer:w1:d3",
+                CandidateActionIds = new List<string> { "act-meal", "act-shop" },
+                CandidateCosts = new List<float> { 1f, 2f },
+                CandidatePolicyWeights = new List<float> { 0.75f, 0.25f },
+                SelectedActionId = "act-meal",
+                SelectedIndex = 0,
+                SelectionReason = "policy-ranked",
+            });
             AutoRunReport report = AutoRunReportBuilder.Build(request, traces);
 
             string csv = AutoRunReportBuilder.ToSummaryCsv(report);
@@ -324,6 +492,10 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(csv, Does.Contain("unlock-hash"));
             Assert.That(csv, Does.Contain("affinity-hash"));
             Assert.That(csv, Does.Contain(AutoRunPolicySeed.Version));
+            Assert.That(csv, Does.Contain("bossDay"));
+            Assert.That(csv, Does.Contain("bossEncounterKey"));
+            Assert.That(csv, Does.Contain("timeline:w1:d4:boss"));
+            Assert.That(csv, Does.Contain("timeline:w1:d7:boss"));
             BigDouble p30 = report.WeekSummaries[0].BossScores.P30;
             string p30Text = p30.Mantissa.ToString("R", CultureInfo.InvariantCulture)
                              + "e"
@@ -333,9 +505,19 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(restored.UnlockProfileHash, Is.EqualTo(report.UnlockProfileHash));
             Assert.That(restored.MetaAffinityProfileHash, Is.EqualTo(report.MetaAffinityProfileHash));
             Assert.That(restored.PolicyVersion, Is.EqualTo(report.PolicyVersion));
+            Assert.That(restored.PolicyCalibrationValid, Is.EqualTo(report.PolicyCalibrationValid));
+            Assert.That(restored.LevelSummaries[0].PolicyCalibrationValid,
+                Is.EqualTo(report.LevelSummaries[0].PolicyCalibrationValid));
+            Assert.That(restored.SchemaVersion, Is.EqualTo(3));
+            Assert.That(restored.WeekSummaries[0].BossEncounters, Has.Count.EqualTo(2));
             Assert.That(restored.WeekSummaries[0].BossReached, Is.EqualTo(report.WeekSummaries[0].BossReached));
             Assert.That(restored.Traces.Count, Is.EqualTo(30));
             Assert.That(restored.Traces[0].Seed, Is.EqualTo(2600));
+            Assert.That(restored.Traces[0].Stages[0].Battles, Has.Count.EqualTo(2));
+            Assert.That(restored.Traces[0].Stages[0].Battles[0].RequiredScore, Is.EqualTo(1000));
+            Assert.That(restored.Traces[0].Stages[0].Battles[0].HeartsAfter, Is.EqualTo(3));
+            Assert.That(restored.Traces[0].Stages[0].ActionDecisions, Has.Count.EqualTo(1));
+            Assert.That(restored.Traces[0].Stages[0].ActionDecisions[0].SelectedActionId, Is.EqualTo("act-meal"));
         }
 
         private static AutoRunReportRequest Request(int requested, int weeks)
@@ -380,8 +562,51 @@ namespace GourmetProject.Tests.EditMode
                         Termination = budgetTruncated
                             ? AutoRunTerminationKind.PlacementBudgetExhausted
                             : AutoRunTerminationKind.None,
+                        Battles = bossReached
+                            ? new List<AutoRunBattleTrace>
+                            {
+                                BossBattle(
+                                    seed,
+                                    day: 7f,
+                                    encounterKey: "timeline:w1:d7:boss",
+                                    actionId: "act-boss-day7",
+                                    bossId: "boss-day7",
+                                    requiredScore: 1000,
+                                    score: 1234),
+                            }
+                            : new List<AutoRunBattleTrace>(),
                     },
                 },
+            };
+        }
+
+        private static AutoRunBattleTrace BossBattle(
+            int seed,
+            float day,
+            string encounterKey,
+            string actionId,
+            string bossId,
+            int requiredScore,
+            double score)
+        {
+            return new AutoRunBattleTrace
+            {
+                BattleKey = $"seed:{seed}:{encounterKey}",
+                EncounterKey = encounterKey,
+                Week = 1,
+                Day = day,
+                SourceKey = encounterKey,
+                ActionId = actionId,
+                FoodId = bossId,
+                IsBoss = true,
+                BossId = bossId,
+                RequiredScore = requiredScore,
+                Score = new BigDouble(score),
+                TargetHit = score >= requiredScore,
+                HeartsBefore = 3,
+                HeartsAfter = 3,
+                HeartsLost = 0,
+                Survived = true,
             };
         }
     }

@@ -492,7 +492,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 AppendSynthetic(plan, SyntheticSideEffect(
                     ScoreLineKind.SilverItemRoll,
                     result.SilverItemRollRequests,
-                    $"获得装饰品和消耗品 ×{result.SilverItemRollRequests}"));
+                    $"消耗品判定 ×{result.SilverItemRollRequests}"));
             }
         }
 

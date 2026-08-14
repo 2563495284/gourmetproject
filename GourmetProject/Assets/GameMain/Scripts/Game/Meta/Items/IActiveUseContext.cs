@@ -89,7 +89,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>能力：转换目标食物分类。当前数据模型不一定支持，不能执行时返回 false。</summary>
         bool ConvertDishCategory(ActiveTarget target, string category);
 
-        /// <summary>能力：给餐桌格永久附加材质（<paramref name="target"/>.X/Y=格坐标）。</summary>
+        /// <summary>能力：设置餐桌格的唯一永久材质（<paramref name="target"/>.X/Y=格坐标）。</summary>
         bool AddMaterialToCell(ActiveTarget target, string materialId);
 
         /// <summary>能力：生成1 个食物。格目标用 X/Y 指定原点；无格目标由情境选择位置。</summary>
