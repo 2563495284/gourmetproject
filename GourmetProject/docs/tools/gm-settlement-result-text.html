@@ -1071,7 +1071,8 @@
 
     function semanticIdentityColor(effect) {
       switch (effect.kind) {
-        case "DishFlat": return "#28669c";
+        case "DishFlat":
+        case "DishPermanentFlat": return "#28669c";
         case "DishMultiplier":
         case "DishMultiplierAdd": return "#b23a48";
         case "Gold": return "#9a6500";

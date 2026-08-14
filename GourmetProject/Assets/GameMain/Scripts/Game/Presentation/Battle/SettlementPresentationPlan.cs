@@ -72,6 +72,11 @@ namespace GourmetProject.Game.Presentation.Battle
             return Color.Lerp(theme, TextLight, 0.30f);
         }
 
+        public static Color ResultHeaderTextFor(Color semanticColor)
+        {
+            return Color.Lerp(semanticColor, TextLight, 0.18f);
+        }
+
         public static Color WithAlpha(Color color, float alpha)
         {
             color.a = Mathf.Clamp01(alpha);

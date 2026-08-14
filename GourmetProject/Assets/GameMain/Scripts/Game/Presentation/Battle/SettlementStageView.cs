@@ -400,7 +400,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 ResultText(line, dishContribution, runningTotal),
                 theme,
                 duration,
-                cancellationToken);
+                cancellationToken,
+                headerSemanticColor: ResultHeaderSemanticColorFor(line, theme));
             if (playTargetFeedback)
             {
                 await impactTask;
@@ -705,7 +706,8 @@ namespace GourmetProject.Game.Presentation.Battle
             bool holdUntilCleared = false,
             bool finalStamp = false,
             Transform parentOverride = null,
-            float visualScaleOverride = -1f)
+            float visualScaleOverride = -1f,
+            Color? headerSemanticColor = null)
         {
             SettlementStageLabelView prefab = finalStamp ? _finaleLabelPrefab : _labelPrefab;
             if (prefab == null)
@@ -721,7 +723,7 @@ namespace GourmetProject.Game.Presentation.Battle
             root.name = finalStamp ? "SettlementFinaleLabel" : "SettlementStageLabel";
             root.transform.position = anchor;
             _transients.Add(root);
-            label.Bind(header, body, theme);
+            label.Bind(header, body, theme, headerSemanticColor);
 
             TextMeshPro headerText = label.HeaderText;
             TextMeshPro bodyText = label.BodyText;
@@ -904,6 +906,27 @@ namespace GourmetProject.Game.Presentation.Battle
                 || line.Kind == ScoreLineKind.TriggeredSweetTransferSource
                 ? SettlementColorPalette.SweetTransfer
                 : SettlementColorPalette.For(line.Kind);
+        }
+
+        internal static Color ResultHeaderSemanticColorFor(ScoreLine line, Color fallback)
+        {
+            if (line == null)
+            {
+                return fallback;
+            }
+
+            return line.Kind switch
+            {
+                ScoreLineKind.DishFlat
+                    or ScoreLineKind.DishPermanentFlat
+                    or ScoreLineKind.FinalFlat => new Color32(40, 102, 156, 255),
+                ScoreLineKind.DishMultiplier
+                    or ScoreLineKind.DishMultiplierAdd
+                    or ScoreLineKind.FinalMultiplier => new Color32(178, 58, 72, 255),
+                ScoreLineKind.Gold => new Color32(154, 101, 0, 255),
+                ScoreLineKind.ExtraSettlement => new Color32(118, 86, 168, 255),
+                _ => fallback,
+            };
         }
 
         internal static bool ShouldShowResultLabel(ScoreLine line)
