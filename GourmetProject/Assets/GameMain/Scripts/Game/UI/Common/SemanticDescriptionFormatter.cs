@@ -12,6 +12,7 @@ namespace GourmetProject.Game.UI.Common
     {
         public const string ContextColor = "#137A4A";
         public const string ScoreColor = "#28669C";
+        public const string PermanentScoreColor = "#337DB5";
         public const string MultiplierAddColor = "#B23A48";
         public const string GoldColor = "#9A6500";
         public const string TermColor = "#7656A8";
@@ -23,6 +24,7 @@ namespace GourmetProject.Game.UI.Common
             new TagDefinition("strong", "<b>", "</b>"),
             Colored("context", ContextColor),
             Colored("score", ScoreColor),
+            Colored("scoreperm", PermanentScoreColor),
             Colored("multadd", MultiplierAddColor),
             new TagDefinition(
                 "multmul",

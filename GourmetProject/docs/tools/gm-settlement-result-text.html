@@ -17,6 +17,7 @@
       --accent: #ff9e1a;
       --danger: #e06a84;
       --semantic-score: #28669c;
+      --semantic-score-permanent: #337db5;
       --semantic-multiplier: #b23a48;
       --semantic-multiplier-strong: #e15a64;
       --semantic-multiplier-edge: #761d2a;
@@ -382,6 +383,15 @@
 
     .result-label .body.semantic-score {
       text-shadow: 0 0 7px color-mix(in srgb, var(--semantic-score) 34%, transparent), 0 3px 1px #000;
+    }
+
+    .result-label .body.semantic-score-permanent,
+    .mapping-body.semantic-score-permanent {
+      color: var(--semantic-score-permanent);
+    }
+
+    .result-label .body.semantic-score-permanent {
+      text-shadow: 0 0 8px color-mix(in srgb, var(--semantic-score-permanent) 42%, transparent), 0 3px 1px #000;
     }
 
     .result-label .body.semantic-multadd,
@@ -904,7 +914,7 @@
 
     const PALETTE = {
       BaseScore: "#f6c453",
-      PermanentScore: "#b85a2b",
+      PermanentScore: "#337db5",
       AddMultiplier: "#39d0b0",
       MultiplyMultiplier: "#ff5a5f",
       Gold: "#f4b740",
@@ -930,7 +940,7 @@
     const EFFECTS = [
       { id: "flat-positive", category: "score", name: "分数 · 正向", kind: "DishFlat", header: "分数", body: "+120", palette: "BaseScore", note: "普通固定加分；食物基础贡献只更新常驻数值徽章，不再弹 ResultText。" },
       { id: "flat-negative", category: "score", name: "分数 · 负向", kind: "DishFlat", header: "分数", body: "-35", palette: "BaseScore", note: "负数不补正号，仍使用 BaseScore 语义色。" },
-      { id: "permanent-flat", category: "score", name: "分数 · 永久", kind: "DishPermanentFlat", header: "分数", body: "永久+48", palette: "PermanentScore", note: "当次进入加法区，结算后写回食物实例。" },
+      { id: "permanent-flat", category: "score", name: "分数 · 永久", kind: "DishPermanentFlat", header: "分数", body: "永久+48", palette: "PermanentScore", note: "当次进入加法区，结算后写回食物实例；使用比普通分数略强的蓝色。" },
       { id: "multiply", category: "score", name: "倍率 · 乘法", kind: "DishMultiplier", header: "倍率", body: "×1.5", palette: "MultiplyMultiplier", note: "乘法倍率使用红色 MultiplyMultiplier。" },
       { id: "add-multiplier", category: "score", name: "倍率 · 加法", kind: "DishMultiplierAdd", header: "倍率", body: "+0.35", palette: "AddMultiplier", note: "加法倍率使用青绿色 AddMultiplier。" },
       { id: "extra-settlement", category: "score", name: "咸味 · 额外结算", kind: "ExtraSettlement", header: "咸味", body: "额外结算", palette: "BaseScore", note: "实际会完整重跑该食物的技能、风味、材质及对其他食物的影响；账本仍记录本次贡献，但不再把贡献值误作效果正文。", duration: 900 },
@@ -1084,6 +1094,7 @@
     function semanticBodyClass(effect) {
       switch (effect.kind) {
         case "DishFlat": return "semantic-score";
+        case "DishPermanentFlat": return "semantic-score-permanent";
         case "DishMultiplier": return "semantic-multmul";
         case "DishMultiplierAdd": return "semantic-multadd";
         case "Gold": return "semantic-gold";

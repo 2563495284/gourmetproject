@@ -991,7 +991,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.DishFlat:
                     return Score(signed);
                 case ScoreLineKind.DishPermanentFlat:
-                    return $"永久{Score(signed)}";
+                    return PermanentScore($"永久{signed}");
                 case ScoreLineKind.DishMultiplier:
                     return MultiplierMultiply($"×{FormatLineValue(line.Value)}");
                 case ScoreLineKind.DishMultiplierAdd:
@@ -1114,6 +1114,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private static string Strong(string value) => $"[strong]{value}[/strong]";
 
         private static string Score(string value) => $"[score]{value}[/score]";
+
+        private static string PermanentScore(string value) => $"[scoreperm]{value}[/scoreperm]";
 
         private static string MultiplierAdd(string value) => $"[multadd]{value}[/multadd]";
 

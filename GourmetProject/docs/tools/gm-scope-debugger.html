@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>食物范围 GM</title>
+  <style>
+    :root {
+      --ink: #223047;
+      --muted: #68758a;
+      --paper: #f8fbff;
+      --panel: rgba(255, 255, 255, .94);
+      --line: #d6deea;
+      --blue: #0ab8ff;
+      --blue-dark: #007db8;
+      --blue-soft: rgba(10, 184, 255, .22);
+      --gold: #ffbe38;
+      --green: #35d2a0;
+      --red: #ef5a68;
+      --shadow: 0 12px 36px rgba(39, 62, 94, .12);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 4%, rgba(10, 184, 255, .16), transparent 25%),
+        radial-gradient(circle at 92% 96%, rgba(53, 210, 160, .12), transparent 24%),
+        #edf3fa;
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      overflow: hidden;
+    }
+
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+
+    .app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+    header {
+      min-height: 70px;
+      padding: 11px 18px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: rgba(250, 253, 255, .92);
+      border-bottom: 1px solid #c8d5e4;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 3px 16px rgba(39, 62, 94, .08);
+      z-index: 10;
+    }
+    .brand { min-width: 238px; }
+    .brand h1 { margin: 0; font-size: 22px; letter-spacing: .035em; }
+    .brand p { margin: 1px 0 0; color: var(--muted); font-size: 12px; }
+    .header-stats { flex: 1; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .stat {
+      padding: 5px 10px;
+      border: 1px solid #cfe0ef;
+      border-radius: 999px;
+      background: #f7fbff;
+      color: #466078;
+      white-space: nowrap;
+    }
+    .stat strong { color: var(--ink); }
+    .source-time { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+    .btn {
+      min-height: 36px;
+      padding: 6px 12px;
+      border: 1px solid #b8cadb;
+      border-radius: 9px;
+      background: #fff;
+      font-weight: 700;
+      box-shadow: 0 2px 0 rgba(48, 72, 103, .07);
+    }
+    .btn:hover { border-color: #68bde5; background: #f3fbff; transform: translateY(-1px); }
+    .btn.active, .btn.primary { background: var(--blue); color: #05283a; border-color: var(--blue-dark); }
+    .btn.slim { min-height: 30px; padding: 4px 8px; font-size: 12px; }
+
+    .workspace { min-height: 0; display: grid; grid-template-columns: 282px minmax(570px, 1fr) 390px; }
+    .pane { min-height: 0; background: var(--panel); }
+    .sidebar { display: grid; grid-template-rows: auto auto auto 1fr; border-right: 1px solid var(--line); }
+    .inspector { display: grid; grid-template-rows: auto 1fr; border-left: 1px solid var(--line); }
+    .pane-head { padding: 13px 14px 9px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .pane-head h2 { margin: 0; font-size: 16px; }
+    .pane-head span { color: var(--muted); font-size: 12px; }
+
+    .search { padding: 0 12px 9px; }
+    input, select {
+      width: 100%;
+      min-height: 36px;
+      padding: 6px 9px;
+      border: 1px solid #c5d2df;
+      border-radius: 9px;
+      background: #fff;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(10,184,255,.14); }
+    .filters { padding: 0 12px 9px; display: flex; gap: 5px; flex-wrap: wrap; }
+    .filter {
+      padding: 4px 8px;
+      border: 1px solid #cfdae5;
+      border-radius: 999px;
+      background: #fff;
+      color: #53657a;
+      font-size: 12px;
+    }
+    .filter.active { color: #004e74; border-color: #48bfe8; background: #e8f8ff; }
+    .food-list { overflow: auto; padding: 0 8px 14px; }
+    .food-item {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 46px 1fr auto;
+      align-items: center;
+      gap: 9px;
+      margin: 4px 0;
+      padding: 8px;
+      text-align: left;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      background: transparent;
+    }
+    .food-item:hover { background: #f0f8fd; }
+    .food-item.active { background: #dff6ff; border-color: #53c5ee; box-shadow: inset 3px 0 0 var(--blue); }
+    .food-thumb { width: 46px; height: 38px; object-fit: contain; border-radius: 7px; background: #f2f5f8; }
+    .food-fallback { display: grid; place-items: center; font-size: 20px; }
+    .food-name { font-weight: 800; }
+    .food-id { max-width: 150px; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font: 10px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .rule-count { min-width: 25px; padding: 2px 6px; text-align: center; border-radius: 999px; background: #e8edf3; color: #53657a; font-size: 11px; }
+    .rule-count.has { color: #006b9d; background: #ccefff; }
+
+    .center { min-height: 0; display: grid; grid-template-rows: auto 1fr; background: rgba(242, 247, 252, .8); }
+    .tabs { padding: 9px 13px 0; display: flex; gap: 4px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.72); }
+    .tab {
+      padding: 8px 13px;
+      border: 0;
+      border-bottom: 3px solid transparent;
+      background: transparent;
+      font-weight: 800;
+    }
+    .tab.active { color: #0078af; border-bottom-color: var(--blue); }
+    .view { display: none; min-height: 0; }
+    .view.active { display: grid; }
+
+    #boardView { grid-template-rows: auto minmax(0, 1fr) auto; }
+    .board-toolbar {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      background: rgba(255,255,255,.74);
+      border-bottom: 1px solid var(--line);
+    }
+    .board-toolbar label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+    .board-toolbar select { width: auto; min-height: 32px; padding: 3px 8px; }
+    .divider { width: 1px; height: 26px; background: var(--line); margin: 0 3px; }
+    .board-stage { min-height: 0; overflow: auto; padding: 28px; display: grid; place-items: center; }
+    .board-wrap { position: relative; }
+    .board {
+      --board-size: 7;
+      display: grid;
+      grid-template-columns: repeat(var(--board-size), 58px);
+      grid-template-rows: repeat(var(--board-size), 58px);
+      gap: 4px;
+      padding: 10px;
+      border: 2px solid #72869c;
+      border-radius: 17px;
+      background: #8ca1b4;
+      box-shadow: 0 18px 45px rgba(36, 58, 86, .22), inset 0 0 0 4px rgba(255,255,255,.28);
+      user-select: none;
+    }
+    .cell {
+      position: relative;
+      display: grid;
+      place-items: center;
+      border: 1px solid #ccd7df;
+      border-radius: 8px;
+      background: #f8fbfd;
+      overflow: hidden;
+      transition: background .12s, border-color .12s, transform .12s;
+    }
+    .cell:hover { transform: scale(.97); border-color: #7cbcd8; }
+    .cell.in-scope {
+      background: var(--blue-soft);
+      border: 3px solid var(--blue);
+      box-shadow: inset 0 0 18px rgba(0,171,243,.25), 0 0 11px rgba(10,184,255,.62);
+    }
+    .cell.source {
+      background: #ffe5a3;
+      border: 3px solid #efaa1c;
+      box-shadow: inset 0 0 12px rgba(255,190,56,.38);
+    }
+    .cell.source.in-scope { background: linear-gradient(135deg, #ffe5a3 0 48%, rgba(10,184,255,.42) 48%); border-color: var(--blue); }
+    .cell.target-hit::after {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border: 3px solid var(--green);
+      border-radius: 7px;
+      box-shadow: 0 0 9px rgba(53,210,160,.75);
+      pointer-events: none;
+    }
+    .mock { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; font-weight: 900; font-size: 11px; color: #fff; box-shadow: 0 2px 7px rgba(32,54,78,.2); }
+    .mock.normal { background: #7489a0; }
+    .mock.cake { background: #a36ee1; }
+    .mock.transfer { background: #ef7f64; }
+    .source-mark { position: relative; z-index: 2; font-size: 19px; filter: drop-shadow(0 1px 1px rgba(67,43,8,.2)); }
+    .coord { position: absolute; right: 3px; bottom: 1px; color: #9aa7b5; font: 8px/1 ui-monospace, monospace; }
+    .board-hint { padding: 0 18px 16px; text-align: center; color: var(--muted); font-size: 12px; }
+    .legend-row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 5px; }
+    .legend-key { display: inline-flex; align-items: center; gap: 5px; }
+    .swatch { width: 14px; height: 14px; border-radius: 4px; border: 2px solid; }
+    .swatch.scope { border-color: var(--blue); background: var(--blue-soft); box-shadow: 0 0 5px rgba(10,184,255,.5); }
+    .swatch.source { border-color: #efaa1c; background: #ffe5a3; }
+    .swatch.target { border-color: var(--green); background: #fff; }
+
+    #auditView { grid-template-rows: auto 1fr; }
+    .audit-summary { padding: 12px 15px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: rgba(255,255,255,.75); border-bottom: 1px solid var(--line); }
+    .audit-summary input { width: min(340px, 100%); }
+    .audit-table-wrap { overflow: auto; padding: 13px; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
+    th, td { padding: 8px 9px; text-align: left; border-bottom: 1px solid #e7edf3; vertical-align: top; }
+    th { position: sticky; top: 0; z-index: 2; background: #eaf3f9; color: #50647a; font-size: 11px; letter-spacing: .02em; }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #f3fbff; }
+    .audit-food { border: 0; padding: 0; background: transparent; color: #006f9f; font-weight: 800; text-align: left; }
+    .mono { font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: #596a7d; }
+
+    .inspector-scroll { overflow: auto; padding: 0 13px 20px; }
+    .food-card { display: grid; grid-template-columns: 92px 1fr; gap: 11px; align-items: center; margin: 2px 0 12px; padding: 11px; border: 1px solid var(--line); border-radius: 13px; background: #fff; box-shadow: var(--shadow); }
+    .food-card img { width: 92px; height: 76px; object-fit: contain; border-radius: 10px; background: #f3f6f9; }
+    .food-card h3 { margin: 0; font-size: 19px; }
+    .food-card p { margin: 2px 0; color: var(--muted); font-size: 11px; }
+    .shape-mini { display: flex; flex-direction: column; gap: 2px; margin-top: 5px; }
+    .shape-row { display: flex; gap: 2px; }
+    .shape-dot { width: 10px; height: 10px; border-radius: 2px; background: #d8e0e8; }
+    .shape-dot.on { background: var(--gold); border: 1px solid #d7920a; }
+    .rule-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 11px; }
+    .rule-tab { padding: 5px 9px; border: 1px solid #c9d7e4; border-radius: 8px; background: #f7fafc; font-size: 12px; font-weight: 750; }
+    .rule-tab.active { background: #dff6ff; border-color: var(--blue); color: #006995; }
+    .result-card { margin-bottom: 12px; padding: 12px; border: 2px solid var(--blue); border-radius: 13px; background: linear-gradient(145deg, rgba(10,184,255,.16), rgba(255,255,255,.9)); box-shadow: 0 0 22px rgba(10,184,255,.13); }
+    .result-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .kind-badge { padding: 3px 9px; border-radius: 999px; background: var(--blue); color: #03334a; font-weight: 900; }
+    .kind-badge.none { color: #6f7c8a; background: #e3e8ed; }
+    .result-card strong { font-size: 15px; }
+    .reason { margin: 5px 0 0; color: #526579; }
+    .scope-count { margin-left: auto; color: #0073a7; font-weight: 800; }
+    .section { margin: 10px 0; padding: 11px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.72); }
+    .section h3 { margin: 0 0 8px; font-size: 13px; }
+    .kv { display: grid; grid-template-columns: 110px 1fr; gap: 5px 9px; padding: 3px 0; font-size: 12px; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; overflow-wrap: anywhere; }
+    .desc { white-space: pre-wrap; padding: 9px; border-left: 4px solid #78bedb; border-radius: 7px; background: #edf7fb; color: #40546a; }
+    .view-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin: 9px 0 2px; }
+    .view-switch .btn { padding: 5px; font-size: 11px; }
+    .warning { color: #ad3f4b; background: #fff0f1; border-color: #f1a9b0; }
+    .empty-state { padding: 30px 15px; text-align: center; color: var(--muted); }
+
+    .toast { position: fixed; right: 18px; bottom: 18px; z-index: 50; padding: 11px 14px; border-radius: 10px; background: #26394d; color: #fff; box-shadow: var(--shadow); opacity: 0; transform: translateY(8px); pointer-events: none; transition: .18s; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: #9b3944; }
+
+    @media (max-width: 1180px) {
+      .workspace { grid-template-columns: 235px minmax(500px, 1fr) 335px; }
+      .board { grid-template-columns: repeat(var(--board-size), 51px); grid-template-rows: repeat(var(--board-size), 51px); }
+    }
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .app { height: auto; min-height: 100%; }
+      .workspace { display: block; }
+      .sidebar, .inspector { border: 0; }
+      .sidebar { max-height: 440px; }
+      .center { min-height: 720px; }
+      .inspector { min-height: 600px; }
+      .source-time { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <h1>食物范围 GM</h1>
+        <p>正式配置 · 单范围解析 · 只读调试</p>
+      </div>
+      <div class="header-stats" id="headerStats"></div>
+      <span class="source-time" id="sourceTime">正在读取配置…</span>
+      <button class="btn primary" id="reloadBtn">刷新正式配置</button>
+    </header>
+
+    <main class="workspace">
+      <aside class="pane sidebar">
+        <div class="pane-head"><h2>全部食物</h2><span id="foodCount">0</span></div>
+        <div class="search"><input id="foodSearch" type="search" placeholder="搜索名称 / ID / 技能"></div>
+        <div class="filters" id="foodFilters">
+          <button class="filter active" data-filter="all">全部</button>
+          <button class="filter" data-filter="visible">有范围</button>
+          <button class="filter" data-filter="hidden">无范围</button>
+          <button class="filter" data-filter="conflict">异常</button>
+        </div>
+        <div class="food-list" id="foodList"></div>
+      </aside>
+
+      <section class="center">
+        <nav class="tabs">
+          <button class="tab active" data-view="boardView">单食物棋盘</button>
+          <button class="tab" data-view="auditView">全量范围审计</button>
+        </nav>
+
+        <div class="view active" id="boardView">
+          <div class="board-toolbar">
+            <label>棋盘
+              <select id="boardSize"><option>5</option><option selected>7</option><option>9</option></select>
+            </label>
+            <span class="divider"></span>
+            <button class="btn slim active" id="targetModeBtn">布置目标</button>
+            <button class="btn slim" id="moveModeBtn">移动本菜</button>
+            <button class="btn slim" id="centerBtn">本菜居中</button>
+            <button class="btn slim" id="sampleBtn">重置示例目标</button>
+            <button class="btn slim" id="clearBtn">清空目标</button>
+          </div>
+          <div class="board-stage"><div class="board-wrap"><div class="board" id="board"></div></div></div>
+          <div class="board-hint">
+            <div class="legend-row">
+              <span class="legend-key"><i class="swatch scope"></i>当前查看范围（统一蓝色）</span>
+              <span class="legend-key"><i class="swatch source"></i>技能来源食物</span>
+              <span class="legend-key"><i class="swatch target"></i>实际命中目标</span>
+            </div>
+            <span id="interactionHint">点击格子循环添加：普通 → 蛋糕 → 甜蜜传递 → 空。</span>
+          </div>
+        </div>
+
+        <div class="view" id="auditView">
+          <div class="audit-summary">
+            <input id="auditSearch" type="search" placeholder="筛选食物、子技能、范围或状态">
+            <span class="stat">审计使用当前 <strong id="auditBoardSize">7×7</strong> 棋盘与居中摆位</span>
+            <span class="stat">每条子技能最多 <strong>1</strong> 个范围</span>
+          </div>
+          <div class="audit-table-wrap">
+            <table>
+              <thead><tr><th>食物 / 子技能</th><th>最终范围</th><th>条件</th><th>作用</th><th>格数</th><th>状态</th></tr></thead>
+              <tbody id="auditBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <aside class="pane inspector">
+        <div class="pane-head"><h2>范围解析</h2><span>与 Gameplay 语义一致</span></div>
+        <div class="inspector-scroll" id="inspector"></div>
+      </aside>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    "use strict";
+
+    const SCOPE_NAMES = ["自身", "相邻", "同行", "同列", "全场", "空格", "边缘", "前面", "后面", "食谱", "分类", "周围", "周围及自身", "本行", "本列", "其他食物", "欢乐蛋糕", "左侧", "上侧", "右侧", "下侧", "左侧及自身", "上侧及自身", "右侧及自身", "下侧及自身"];
+    const CONDITION_NAMES = ["无条件", "占满", "空格数", "处于边缘", "食物数量", "食物大小", "上菜顺序", "相同食物", "本局同种历史", "本场同种历史", "标签数量", "形状匹配", "食谱数量", "欢乐蛋糕层数", "占格数", "分类数量", "行为类数量", "技能数量"];
+    const ACTION_NAMES = {0:"无行为",1:"分数增加",2:"倍率乘算",5:"甜蜜传递",6:"增加层数",7:"消耗层数",8:"获得金币",9:"倍率增加",10:"永久加分",12:"增加份数",13:"复制技能",15:"代触发甜蜜传递",17:"增加当前倍率",18:"增加当前分数",19:"移除食谱",20:"增加空格份数",21:"临时分类"};
+    const TRIGGER_NAMES = ["结算时", "上菜时"];
+    const UNIT_NAMES = ["份", "种", "个"];
+    const MODE_NAMES = ["每有", "达到", "闸门"];
+    const KIND_LABELS = {None:"无范围", Condition:"条件范围", Unified:"统一范围", Action:"作用范围"};
+
+    const state = {
+      foods: [], selectedFoodId: "", selectedRule: 0, foodFilter: "all", boardSize: 7,
+      origin: {x: 2, y: 2}, mocks: new Map(), interactionMode: "target", viewMode: "final",
+      activeView: "boardView", payload: null,
+    };
+
+    const $ = selector => document.querySelector(selector);
+    const $$ = selector => [...document.querySelectorAll(selector)];
+    const keyOf = (x, y) => `${x},${y}`;
+    const coordOf = key => key.split(",").map(Number);
+    const uniq = cells => [...new Map(cells.map(cell => [keyOf(cell.x, cell.y), cell])).values()];
+    const sameCells = (a, b) => a.length === b.length && a.every(cell => b.some(other => other.x === cell.x && other.y === cell.y));
+    const escapeHtml = text => String(text ?? "").replace(/[&<>"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[char]));
+
+    function selectedFood() { return state.foods.find(food => food.id === state.selectedFoodId) || state.foods[0]; }
+    function selectedRule() { const food = selectedFood(); return food?.rules[state.selectedRule] || food?.rules[0] || null; }
+    function scopeName(value) { return SCOPE_NAMES[value] ?? `未知(${value})`; }
+    function conditionName(value) { return CONDITION_NAMES[value] ?? `未知(${value})`; }
+    function actionName(value) { return ACTION_NAMES[value] ?? `未知(${value})`; }
+    function containsParam(value, token) { return String(value || "").toLowerCase().includes(token.toLowerCase()); }
+    function hasActionParam(rule, token) { return (rule?.actionParam || []).some(value => containsParam(value, token)); }
+
+    function categoryOf(value) {
+      for (const raw of String(value || "").split(";")) {
+        const part = raw.trim();
+        if (part && !/^(tiers|div|include|source|skilltype|cat):/i.test(part)) return part;
+      }
+      return "";
+    }
+
+    function paramValue(values, prefix) {
+      for (const value of values || []) {
+        for (const raw of String(value).split(";")) {
+          const part = raw.trim();
+          if (part.toLowerCase().startsWith(prefix.toLowerCase() + ":")) return part.slice(prefix.length + 1).split(/[,|]/)[0].trim();
+        }
+      }
+      return "";
+    }
+
+    function sourceCells(food = selectedFood(), origin = state.origin, size = state.boardSize) {
+      const cells = [];
+      (food?.shapeRows || ["X"]).forEach((row, y) => [...row].forEach((char, x) => {
+        if (char !== "." && char !== "0" && char !== " ") {
+          const cell = {x: origin.x + x, y: origin.y + y};
+          if (cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size) cells.push(cell);
+        }
+      }));
+      return cells;
+    }
+
+    function shapeBounds(food = selectedFood()) {
+      const rows = food?.shapeRows || ["X"];
+      return {width: Math.max(1, ...rows.map(row => row.length)), height: rows.length};
+    }
+
+    function centeredOrigin(food = selectedFood(), size = state.boardSize) {
+      const bounds = shapeBounds(food);
+      return {x: Math.max(0, Math.floor((size - bounds.width) / 2)), y: Math.max(0, Math.floor((size - bounds.height) / 2))};
+    }
+
+    function fitsAt(food, origin, size = state.boardSize) {
+      const cells = sourceCells(food, origin, size);
+      const expected = (food?.shapeRows || ["X"]).join("").split("").filter(char => char !== "." && char !== "0" && char !== " ").length;
+      return cells.length === expected && cells.every(cell => !state.mocks.has(keyOf(cell.x, cell.y)));
+    }
+
+    function allCells(size = state.boardSize) {
+      return Array.from({length: size * size}, (_, index) => ({x: index % size, y: Math.floor(index / size)}));
+    }
+
+    function mockDishes(food = selectedFood(), origin = state.origin, size = state.boardSize) {
+      const source = sourceCells(food, origin, size);
+      const sourceOrder = origin.y * size + origin.x;
+      const mocks = [...state.mocks.entries()].map(([key, type]) => {
+        const [x, y] = coordOf(key);
+        return {id:key, cells:[{x,y}], category:type === "cake" ? "cake" : "", skillType:type === "transfer" ? "TransferSkills" : "", order:y * size + x, type};
+      });
+      return [{id:"self", cells:source, category:food?.category || "", skillType:foodHasAction(food, 5) ? "TransferSkills" : "", order:sourceOrder, type:"self"}, ...mocks];
+    }
+
+    function foodHasAction(food, actionType) { return (food?.rules || []).some(rule => rule.actionType === actionType); }
+    function cellsForDishes(dishes) { return uniq(dishes.flatMap(dish => dish.cells)); }
+
+    function geometricCells(scope, food = selectedFood(), origin = state.origin, size = state.boardSize) {
+      const self = sourceCells(food, origin, size);
+      const selfKeys = new Set(self.map(cell => keyOf(cell.x, cell.y)));
+      const result = [];
+      const add = (x, y) => { if (x >= 0 && y >= 0 && x < size && y < size && !result.some(cell => cell.x === x && cell.y === y)) result.push({x,y}); };
+      const addNeighbor = (x, y) => { if (!selfKeys.has(keyOf(x,y))) add(x,y); };
+      const xs = [...new Set(self.map(cell => cell.x))];
+      const ys = [...new Set(self.map(cell => cell.y))];
+      switch (scope) {
+        case 0: self.forEach(cell => add(cell.x, cell.y)); break;
+        case 1:
+        case 11:
+        case 12:
+          if (scope === 12) self.forEach(cell => add(cell.x, cell.y));
+          self.forEach(cell => { addNeighbor(cell.x+1,cell.y); addNeighbor(cell.x-1,cell.y); addNeighbor(cell.x,cell.y+1); addNeighbor(cell.x,cell.y-1); });
+          break;
+        case 2:
+        case 13: ys.forEach(y => { for (let x=0; x<size; x++) add(x,y); }); break;
+        case 3:
+        case 14: xs.forEach(x => { for (let y=0; y<size; y++) add(x,y); }); break;
+        case 4:
+        case 5: return allCells(size);
+        case 6: allCells(size).forEach(cell => { if (cell.x === 0 || cell.y === 0 || cell.x === size-1 || cell.y === size-1) add(cell.x,cell.y); }); break;
+        case 17:
+        case 21: {
+          const byRow = new Map(); self.forEach(cell => byRow.set(cell.y, Math.min(byRow.get(cell.y) ?? cell.x, cell.x)));
+          byRow.forEach((edge,y) => { for (let x=0; x<edge; x++) add(x,y); }); if (scope === 21) self.forEach(cell => add(cell.x,cell.y)); break;
+        }
+        case 19:
+        case 23: {
+          const byRow = new Map(); self.forEach(cell => byRow.set(cell.y, Math.max(byRow.get(cell.y) ?? cell.x, cell.x)));
+          byRow.forEach((edge,y) => { for (let x=edge+1; x<size; x++) add(x,y); }); if (scope === 23) self.forEach(cell => add(cell.x,cell.y)); break;
+        }
+        case 18:
+        case 22: {
+          const byCol = new Map(); self.forEach(cell => byCol.set(cell.x, Math.min(byCol.get(cell.x) ?? cell.y, cell.y)));
+          byCol.forEach((edge,x) => { for (let y=0; y<edge; y++) add(x,y); }); if (scope === 22) self.forEach(cell => add(cell.x,cell.y)); break;
+        }
+        case 20:
+        case 24: {
+          const byCol = new Map(); self.forEach(cell => byCol.set(cell.x, Math.max(byCol.get(cell.x) ?? cell.y, cell.y)));
+          byCol.forEach((edge,x) => { for (let y=edge+1; y<size; y++) add(x,y); }); if (scope === 24) self.forEach(cell => add(cell.x,cell.y)); break;
+        }
+      }
+      return result;
+    }
+
+    function baseScopeDishes(scope, food, origin, size) {
+      const dishes = mockDishes(food, origin, size);
+      const self = dishes[0];
+      if (scope === 0) return [self];
+      if (scope === 4) return dishes;
+      if (scope === 15) return dishes.slice(1);
+      if (scope === 7) return dishes.filter(dish => dish.id !== "self" && dish.order < self.order);
+      if (scope === 8) return dishes.filter(dish => dish.id !== "self" && dish.order > self.order);
+      if (scope === 6) return dishes.filter(dish => dish.cells.some(cell => cell.x === 0 || cell.y === 0 || cell.x === size-1 || cell.y === size-1));
+      if (scope === 16 || scope === 9 || scope === 5) return [];
+      const geometry = geometricCells(scope, food, origin, size);
+      return dishes.filter(dish => {
+        if (dish.id === "self" && ![12,13,14,21,22,23,24].includes(scope)) return false;
+        return dish.cells.some(cell => geometry.some(area => area.x === cell.x && area.y === cell.y));
+      });
+    }
+
+    function targetFilterCategory(rule) { return rule?.actionType === 21 ? "" : paramValue(rule?.actionParam, "cat"); }
+
+    function actionTargetDishes(rule, food = selectedFood(), origin = state.origin, size = state.boardSize) {
+      if (!rule || [6,7,8].includes(rule.actionType)) return [];
+      let dishes;
+      if (rule.actionType === 13) {
+        const category = targetFilterCategory(rule);
+        dishes = category
+          ? mockDishes(food, origin, size).filter(dish => dish.category.toLowerCase() === category.toLowerCase())
+          : baseScopeDishes(rule.actionScope, food, origin, size);
+        dishes = dishes.filter(dish => dish.id !== "self");
+      } else if (rule.actionType === 15 && hasActionParam(rule, "axis:rowcol")) {
+        const rowCol = uniq([
+          ...geometricCells(2, food, origin, size),
+          ...geometricCells(3, food, origin, size),
+        ]);
+        dishes = mockDishes(food, origin, size).filter(dish =>
+          dish.id !== "self"
+          && dish.skillType === "TransferSkills"
+          && dish.cells.some(cell => rowCol.some(area => area.x === cell.x && area.y === cell.y)));
+      } else if (rule.actionType === 5) {
+        dishes = mockDishes(food, origin, size).slice(1);
+      } else if (rule.actionScope === 10) {
+        const category = targetFilterCategory(rule);
+        dishes = mockDishes(food, origin, size).filter(dish => dish.category.toLowerCase() === category.toLowerCase());
+      } else {
+        dishes = baseScopeDishes(rule.actionScope, food, origin, size);
+      }
+      if (hasActionParam(rule, "include:self") && !dishes.some(dish => dish.id === "self")) dishes.push(mockDishes(food, origin, size)[0]);
+      const category = targetFilterCategory(rule);
+      if (category) dishes = dishes.filter(dish => dish.category.toLowerCase() === category.toLowerCase());
+      const skillType = paramValue(rule.actionParam, "skilltype");
+      if (skillType) dishes = dishes.filter(dish => dish.skillType.toLowerCase() === skillType.toLowerCase());
+      if (hasActionParam(rule, "position:non-edge")) dishes = dishes.filter(dish => !dish.cells.some(cell => cell.x === 0 || cell.y === 0 || cell.x === size-1 || cell.y === size-1));
+      return dishes;
+    }
+
+    function visualCellsForScope(rule, scope, isAction, food = selectedFood(), origin = state.origin, size = state.boardSize, allowSelf = true) {
+      if (!rule) return [];
+      if (isAction && allowSelf && hasActionParam(rule, "include:self")) {
+        return uniq([...visualCellsForScope(rule, scope, true, food, origin, size, false), ...sourceCells(food, origin, size)]);
+      }
+      if (scope === 0) return sourceCells(food, origin, size);
+      if (scope === 4 || scope === 5) return allCells(size);
+      if (scope === 10) {
+        const category = isAction ? paramValue(rule.actionParam, "cat") : categoryOf(rule.condParam);
+        return cellsForDishes(mockDishes(food, origin, size).filter(dish => dish.category.toLowerCase() === category.toLowerCase()));
+      }
+      if ([7,8,15].includes(scope)) return cellsForDishes(baseScopeDishes(scope, food, origin, size));
+      if (scope === 6) return geometricCells(6, food, origin, size);
+      let cells = geometricCells(scope, food, origin, size);
+      if (!isAction && containsParam(rule.condParam, "include:self")) cells = uniq([...cells, ...sourceCells(food, origin, size)]);
+      if (cells.length) return cells;
+      return cellsForDishes(baseScopeDishes(scope, food, origin, size));
+    }
+
+    function usesSpatialScope(rule) {
+      if (!rule || rule.condType === 0) return false;
+      if ([1,2,4,5,7,11,16,17].includes(rule.condType)) return true;
+      if (rule.condType === 10) return containsParam(rule.condParam, "source:flavors");
+      if (rule.condType === 15) return !(rule.condScope === 4 && rule.actionScope === 16 && containsParam(rule.condParam, "tiers:"));
+      return false;
+    }
+
+    function canRenderActionRegion(rule) {
+      return !!rule && ![0,5].includes(rule.actionType) && ![4,15,16].includes(rule.actionScope);
+    }
+
+    function resolveRule(rule, food = selectedFood(), origin = state.origin, size = state.boardSize) {
+      if (!rule) return {kind:"None", region:[], action:[], condition:[], targets:[], reason:"该食物没有子技能"};
+      const action = visualCellsForScope(rule, rule.actionScope, true, food, origin, size);
+      const condition = visualCellsForScope(rule, rule.condScope, false, food, origin, size);
+      const spatialCondition = usesSpatialScope(rule) && condition.length > 0;
+      const renderAction = canRenderActionRegion(rule) && action.length > 0;
+      let kind = "None", region = [], reason = "";
+      if (spatialCondition && renderAction && sameCells(condition, action)) {
+        kind = "Unified"; region = action; reason = "空间条件与作用范围完全相同，合并为一个范围。";
+      } else if (renderAction) {
+        kind = "Action"; region = action; reason = spatialCondition ? "条件与作用范围不同；运行时只选择优先级更高的作用范围。" : "显示可绘制的作用范围。";
+      } else if (spatialCondition) {
+        kind = "Condition"; region = condition; reason = [4,15,16].includes(rule.actionScope) ? "全局作用范围不画棋盘边界，回退显示空间条件范围。" : "只有空间条件可绘制，显示条件范围。";
+      } else {
+        kind = "None";
+        if (!usesSpatialScope(rule) && rule.condType !== 0 && [4,15,16].includes(rule.actionScope)) reason = "特殊条件不画范围；全局作用范围也不画棋盘边界。";
+        else if (!usesSpatialScope(rule) && rule.condType !== 0) reason = "该条件属于非空间特殊条件，不生成范围。";
+        else if ([4,15,16].includes(rule.actionScope)) reason = "该作用范围是全局语义，只保留目标反馈，不画棋盘边界。";
+        else if (rule.actionType === 5) reason = "甜蜜传递仅显示目标反馈，不画棋盘边界。";
+        else reason = "当前规则没有可绘制的棋盘范围。";
+      }
+      const conflict = spatialCondition && renderAction && !sameCells(condition, action);
+      return {kind, region, action, condition, targets:actionTargetDishes(rule, food, origin, size), reason, conflict};
+    }
+
+    function resetSamples() {
+      state.mocks.clear();
+      const n = state.boardSize;
+      const candidates = [
+        [0,0,"cake"],[n-1,0,"normal"],[0,n-1,"transfer"],[n-1,n-1,"cake"],
+        [1,Math.floor(n/2),"normal"],[n-2,Math.floor(n/2),"cake"],
+        [Math.floor(n/2),1,"transfer"],[Math.floor(n/2),n-2,"normal"],
+      ];
+      const occupied = new Set(sourceCells().map(cell => keyOf(cell.x,cell.y)));
+      candidates.forEach(([x,y,type]) => { if (!occupied.has(keyOf(x,y))) state.mocks.set(keyOf(x,y), type); });
+    }
+
+    function ensureOrigin() {
+      const origin = centeredOrigin();
+      state.origin = origin;
+      for (const cell of sourceCells()) state.mocks.delete(keyOf(cell.x,cell.y));
+    }
+
+    function displayCells(result) {
+      if (state.viewMode === "condition") return result.condition;
+      if (state.viewMode === "action") return result.action;
+      return result.region;
+    }
+
+    function renderBoard() {
+      const board = $("#board");
+      const food = selectedFood();
+      const rule = selectedRule();
+      const result = resolveRule(rule);
+      const scopeKeys = new Set(displayCells(result).map(cell => keyOf(cell.x,cell.y)));
+      const selfKeys = new Set(sourceCells().map(cell => keyOf(cell.x,cell.y)));
+      const targetKeys = new Set(cellsForDishes(result.targets).map(cell => keyOf(cell.x,cell.y)));
+      board.style.setProperty("--board-size", state.boardSize);
+      board.innerHTML = allCells().map(cell => {
+        const key = keyOf(cell.x,cell.y);
+        const type = state.mocks.get(key);
+        const classes = ["cell", scopeKeys.has(key) ? "in-scope" : "", selfKeys.has(key) ? "source" : "", targetKeys.has(key) ? "target-hit" : ""].filter(Boolean).join(" ");
+        const inner = selfKeys.has(key) ? `<span class="source-mark">🍰</span>` : type ? `<span class="mock ${type}">${type === "cake" ? "蛋糕" : type === "transfer" ? "传递" : "普通"}</span>` : "";
+        return `<button class="${classes}" data-x="${cell.x}" data-y="${cell.y}" aria-label="格子 ${cell.x},${cell.y}">${inner}<span class="coord">${cell.x},${cell.y}</span></button>`;
+      }).join("");
+      board.querySelectorAll(".cell").forEach(cell => cell.addEventListener("click", onCellClick));
+    }
+
+    function onCellClick(event) {
+      const x = Number(event.currentTarget.dataset.x), y = Number(event.currentTarget.dataset.y);
+      if (state.interactionMode === "move") {
+        const next = {x, y};
+        if (!fitsAt(selectedFood(), next)) { toast("这里放不下当前食物，请先清掉目标或换个位置。", true); return; }
+        state.origin = next;
+      } else {
+        if (sourceCells().some(cell => cell.x === x && cell.y === y)) return;
+        const key = keyOf(x,y), current = state.mocks.get(key);
+        const next = !current ? "normal" : current === "normal" ? "cake" : current === "cake" ? "transfer" : "";
+        if (next) state.mocks.set(key, next); else state.mocks.delete(key);
+      }
+      renderAllDynamic();
+    }
+
+    function foodSummary(food) {
+      if (!food.rules.length) return {visible:0, hidden:0, conflict:0};
+      const origin = centeredOrigin(food, state.boardSize);
+      return food.rules.reduce((sum, rule) => {
+        const result = resolveRule(rule, food, origin, state.boardSize);
+        sum[result.kind === "None" ? "hidden" : "visible"]++;
+        if (result.conflict) sum.conflict++;
+        return sum;
+      }, {visible:0, hidden:0, conflict:0});
+    }
+
+    function renderFoodList() {
+      const query = $("#foodSearch").value.trim().toLowerCase();
+      const foods = state.foods.filter(food => {
+        const summary = foodSummary(food);
+        const haystack = `${food.name} ${food.id} ${food.skillIds.join(" ")} ${food.rules.map(rule => rule.id).join(" ")}`.toLowerCase();
+        if (query && !haystack.includes(query)) return false;
+        if (state.foodFilter === "visible" && !summary.visible) return false;
+        if (state.foodFilter === "hidden" && !summary.hidden) return false;
+        if (state.foodFilter === "conflict" && !summary.conflict) return false;
+        return true;
+      });
+      $("#foodCount").textContent = `${foods.length} / ${state.foods.length}`;
+      $("#foodList").innerHTML = foods.map(food => {
+        const summary = foodSummary(food);
+        const thumb = food.imageUrl ? `<img class="food-thumb" src="${food.imageUrl}" alt="">` : `<span class="food-thumb food-fallback">🍮</span>`;
+        return `<button class="food-item ${food.id === state.selectedFoodId ? "active" : ""}" data-id="${escapeHtml(food.id)}">${thumb}<span><span class="food-name">${escapeHtml(food.name)}</span><span class="food-id">${escapeHtml(food.id)}</span></span><span class="rule-count ${summary.visible ? "has" : ""}" title="${summary.visible} 条显示范围，${summary.hidden} 条隐藏">${food.rules.length}</span></button>`;
+      }).join("") || `<div class="empty-state">没有匹配的食物</div>`;
+      $("#foodList").querySelectorAll(".food-item").forEach(item => item.addEventListener("click", () => selectFood(item.dataset.id)));
+    }
+
+    function miniShape(food) {
+      return `<div class="shape-mini">${food.shapeRows.map(row => `<div class="shape-row">${[...row].map(char => `<i class="shape-dot ${char !== "." && char !== "0" && char !== " " ? "on" : ""}"></i>`).join("")}</div>`).join("")}</div>`;
+    }
+
+    function renderInspector() {
+      const food = selectedFood();
+      if (!food) { $("#inspector").innerHTML = `<div class="empty-state">没有食物配置</div>`; return; }
+      const rule = selectedRule();
+      const result = resolveRule(rule);
+      const image = food.imageUrl ? `<img src="${food.imageUrl}" alt="${escapeHtml(food.name)}">` : `<div class="food-thumb food-fallback">🍮</div>`;
+      const rules = food.rules.length ? `<div class="rule-tabs">${food.rules.map((item,index) => `<button class="rule-tab ${index === state.selectedRule ? "active" : ""}" data-index="${index}">子技能 ${index+1}</button>`).join("")}</div>` : "";
+      const viewButtons = `<div class="view-switch"><button class="btn ${state.viewMode === "final" ? "active" : ""}" data-scope-view="final">最终范围</button><button class="btn ${state.viewMode === "condition" ? "active" : ""}" data-scope-view="condition">原始条件</button><button class="btn ${state.viewMode === "action" ? "active" : ""}" data-scope-view="action">原始作用</button></div>`;
+      const ruleHtml = rule ? `
+        <div class="result-card ${result.conflict ? "warning" : ""}">
+          <div class="result-head"><span class="kind-badge ${result.kind === "None" ? "none" : ""}">${KIND_LABELS[result.kind]}</span><strong>${escapeHtml(rule.id)}</strong><span class="scope-count">${result.region.length} 格</span></div>
+          <p class="reason">${escapeHtml(result.reason)}</p>${viewButtons}
+        </div>
+        <div class="section"><h3>子技能文案</h3><div class="desc">${formatDescription(rule)}</div></div>
+        <div class="section"><h3>条件配置 ${usesSpatialScope(rule) ? "· 空间条件" : "· 特殊条件"}</h3><dl class="kv">
+          <dt>类型</dt><dd>${conditionName(rule.condType)} <span class="mono">${rule.condType}</span></dd>
+          <dt>范围</dt><dd>${scopeName(rule.condScope)} <span class="mono">${rule.condScope}</span></dd>
+          <dt>单位 / 模式</dt><dd>${UNIT_NAMES[rule.condUnit] ?? rule.condUnit} / ${MODE_NAMES[rule.condMode] ?? rule.condMode}</dd>
+          <dt>参数</dt><dd class="mono">${escapeHtml(rule.condParam || "—")}</dd>
+          <dt>原始格数</dt><dd>${result.condition.length}</dd>
+        </dl></div>
+        <div class="section"><h3>作用配置 ${canRenderActionRegion(rule) ? "· 可绘制" : "· 边界隐藏"}</h3><dl class="kv">
+          <dt>类型</dt><dd>${actionName(rule.actionType)} <span class="mono">${rule.actionType}</span></dd>
+          <dt>范围</dt><dd>${scopeName(rule.actionScope)} <span class="mono">${rule.actionScope}</span></dd>
+          <dt>数值</dt><dd class="mono">${escapeHtml(JSON.stringify(rule.actionValue || []))}</dd>
+          <dt>参数</dt><dd class="mono">${escapeHtml((rule.actionParam || []).join(" · ") || "—")}</dd>
+          <dt>原始格数</dt><dd>${result.action.length}</dd>
+          <dt>当前目标</dt><dd>${result.targets.length} 个（绿框）</dd>
+        </dl></div>
+        <div class="section"><h3>调试说明</h3><div class="desc">最终范围始终只显示一个蓝色区域。切换“原始条件 / 原始作用”只用于查看解析中间值，不代表游戏会同时画两个框。</div></div>` : `<div class="empty-state">该食物没有子技能规则</div>`;
+      $("#inspector").innerHTML = `<div class="food-card">${image}<div><h3>${escapeHtml(food.name)}</h3><p>${escapeHtml(food.id)} · ${food.category ? `分类 ${escapeHtml(food.category)}` : "无分类"} · ${food.deliciousness} 分</p><p>${food.skillIds.map(escapeHtml).join(" · ") || "无技能"}</p>${miniShape(food)}</div></div>${rules}${ruleHtml}`;
+      $("#inspector").querySelectorAll(".rule-tab").forEach(tab => tab.addEventListener("click", () => { state.selectedRule = Number(tab.dataset.index); state.viewMode = "final"; renderAllDynamic(); }));
+      $("#inspector").querySelectorAll("[data-scope-view]").forEach(button => button.addEventListener("click", () => { state.viewMode = button.dataset.scopeView; renderAllDynamic(); }));
+    }
+
+    function formatDescription(rule) {
+      let text = String(rule.descTemplate || "（无文案）")
+        .replace(/\[\/?.+?\]/g, "")
+        .replace(/\{cscope\}/g, scopeName(rule.condScope))
+        .replace(/\{ascope\}/g, scopeName(rule.actionScope))
+        .replace(/\{unit\}/g, UNIT_NAMES[rule.condUnit] || "")
+        .replace(/\{count\}/g, String(rule.actionCount || 0));
+      (rule.actionValue || []).forEach((value,index) => { text = text.replaceAll(`{${index}}`, String(value)); });
+      return escapeHtml(text);
+    }
+
+    function renderAudit() {
+      const query = $("#auditSearch").value.trim().toLowerCase();
+      const rows = [];
+      for (const food of state.foods) {
+        const origin = centeredOrigin(food, state.boardSize);
+        for (const [index, rule] of food.rules.entries()) {
+          const result = resolveRule(rule, food, origin, state.boardSize);
+          const status = result.conflict ? "⚠ 双空间范围（运行时选作用）" : result.kind === "None" ? "隐藏" : "正常";
+          const haystack = `${food.name} ${food.id} ${rule.id} ${KIND_LABELS[result.kind]} ${scopeName(rule.condScope)} ${scopeName(rule.actionScope)} ${status}`.toLowerCase();
+          if (query && !haystack.includes(query)) continue;
+          rows.push(`<tr><td><button class="audit-food" data-food="${escapeHtml(food.id)}" data-rule="${index}">${escapeHtml(food.name)} · ${index+1}</button><div class="mono">${escapeHtml(rule.id)}</div></td><td><span class="kind-badge ${result.kind === "None" ? "none" : ""}">${KIND_LABELS[result.kind]}</span></td><td>${conditionName(rule.condType)}<br><span class="mono">${scopeName(rule.condScope)} · ${usesSpatialScope(rule) ? "空间" : "特殊"}</span></td><td>${actionName(rule.actionType)}<br><span class="mono">${scopeName(rule.actionScope)} · ${canRenderActionRegion(rule) ? "可绘制" : "隐藏"}</span></td><td>${result.region.length}</td><td>${status}<br><span class="mono">${escapeHtml(result.reason)}</span></td></tr>`);
+        }
+      }
+      $("#auditBody").innerHTML = rows.join("") || `<tr><td colspan="6" class="empty-state">没有匹配结果</td></tr>`;
+      $("#auditBody").querySelectorAll(".audit-food").forEach(button => button.addEventListener("click", () => {
+        selectFood(button.dataset.food, Number(button.dataset.rule));
+        switchView("boardView");
+      }));
+      $("#auditBoardSize").textContent = `${state.boardSize}×${state.boardSize}`;
+    }
+
+    function renderStats() {
+      let visible = 0, hidden = 0, conflict = 0, rules = 0;
+      state.foods.forEach(food => { const summary = foodSummary(food); visible += summary.visible; hidden += summary.hidden; conflict += summary.conflict; rules += food.rules.length; });
+      $("#headerStats").innerHTML = `<span class="stat"><strong>${state.foods.length}</strong> 食物</span><span class="stat"><strong>${rules}</strong> 子技能</span><span class="stat"><strong>${visible}</strong> 显示范围</span><span class="stat"><strong>${hidden}</strong> 隐藏范围</span><span class="stat"><strong>${conflict}</strong> 配置冲突</span>`;
+    }
+
+    function renderAllDynamic() {
+      renderBoard();
+      renderInspector();
+      renderFoodList();
+      renderAudit();
+      renderStats();
+    }
+
+    function selectFood(id, ruleIndex = 0) {
+      state.selectedFoodId = id;
+      state.selectedRule = ruleIndex;
+      state.viewMode = "final";
+      state.origin = centeredOrigin(selectedFood());
+      resetSamples();
+      localStorage.setItem("scope-gm-food", id);
+      renderAllDynamic();
+    }
+
+    function switchView(id) {
+      state.activeView = id;
+      $$(".view").forEach(view => view.classList.toggle("active", view.id === id));
+      $$(".tab").forEach(tab => tab.classList.toggle("active", tab.dataset.view === id));
+    }
+
+    function setInteractionMode(mode) {
+      state.interactionMode = mode;
+      $("#targetModeBtn").classList.toggle("active", mode === "target");
+      $("#moveModeBtn").classList.toggle("active", mode === "move");
+      $("#interactionHint").textContent = mode === "target" ? "点击格子循环添加：普通 → 蛋糕 → 甜蜜传递 → 空。" : "点击空格移动本菜左上角；方向、边缘、本行和本列范围会立即重算。";
+    }
+
+    function toast(message, error = false) {
+      const node = $("#toast");
+      node.textContent = message;
+      node.className = `toast show${error ? " error" : ""}`;
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => node.className = "toast", 2400);
+    }
+
+    async function loadData(showToast = false) {
+      $("#reloadBtn").disabled = true;
+      try {
+        const response = await fetch(`/api/scope-data?ts=${Date.now()}`, {cache:"no-store"});
+        const payload = await response.json();
+        if (!response.ok || payload.error) throw new Error(payload.error || `HTTP ${response.status}`);
+        state.payload = payload;
+        state.foods = payload.foods || [];
+        const saved = localStorage.getItem("scope-gm-food");
+        state.selectedFoodId = state.foods.some(food => food.id === saved) ? saved : state.foods[0]?.id || "";
+        state.selectedRule = 0;
+        ensureOrigin();
+        resetSamples();
+        const newest = Math.max(...Object.values(payload.sources || {none:0}));
+        $("#sourceTime").textContent = `正式配置更新：${new Date(newest * 1000).toLocaleString("zh-CN")}`;
+        renderAllDynamic();
+        if (payload.missingReferences?.length) toast(`发现 ${payload.missingReferences.length} 个失效引用`, true);
+        else if (showToast) toast("正式配置已刷新");
+      } catch (error) {
+        $("#sourceTime").textContent = "配置读取失败";
+        $("#inspector").innerHTML = `<div class="empty-state">无法读取正式配置：${escapeHtml(error.message)}<br>请通过 gm-scope-debugger-server.py 启动页面。</div>`;
+        toast(`加载失败：${error.message}`, true);
+      } finally {
+        $("#reloadBtn").disabled = false;
+      }
+    }
+
+    $("#reloadBtn").addEventListener("click", () => loadData(true));
+    $("#foodSearch").addEventListener("input", renderFoodList);
+    $("#auditSearch").addEventListener("input", renderAudit);
+    $("#foodFilters").addEventListener("click", event => {
+      const button = event.target.closest("[data-filter]"); if (!button) return;
+      state.foodFilter = button.dataset.filter;
+      $$(".filter").forEach(item => item.classList.toggle("active", item === button));
+      renderFoodList();
+    });
+    $$(".tab").forEach(tab => tab.addEventListener("click", () => switchView(tab.dataset.view)));
+    $("#boardSize").addEventListener("change", event => {
+      state.boardSize = Number(event.target.value); ensureOrigin(); resetSamples(); renderAllDynamic();
+    });
+    $("#targetModeBtn").addEventListener("click", () => setInteractionMode("target"));
+    $("#moveModeBtn").addEventListener("click", () => setInteractionMode("move"));
+    $("#centerBtn").addEventListener("click", () => { ensureOrigin(); renderAllDynamic(); });
+    $("#sampleBtn").addEventListener("click", () => { resetSamples(); renderAllDynamic(); });
+    $("#clearBtn").addEventListener("click", () => { state.mocks.clear(); renderAllDynamic(); });
+    window.addEventListener("keydown", event => {
+      if (event.target.matches("input,select")) return;
+      const delta = {ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[event.key];
+      if (!delta) return;
+      const next = {x:state.origin.x+delta[0], y:state.origin.y+delta[1]};
+      if (fitsAt(selectedFood(), next)) { state.origin = next; renderAllDynamic(); }
+      event.preventDefault();
+    });
+
+    loadData();
+  </script>
+</body>
+</html>
