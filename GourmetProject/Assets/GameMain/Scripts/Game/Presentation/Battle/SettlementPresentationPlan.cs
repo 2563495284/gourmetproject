@@ -13,7 +13,7 @@ namespace GourmetProject.Game.Presentation.Battle
     {
         // 结果属性
         public static readonly Color BaseScore = new Color32(246, 196, 83, 255);
-        public static readonly Color PermanentScore = new Color32(184, 90, 43, 255);
+        public static readonly Color PermanentScore = new Color32(51, 125, 181, 255);
         public static readonly Color AddMultiplier = new Color32(57, 208, 176, 255);
         public static readonly Color MultiplyMultiplier = new Color32(255, 90, 95, 255);
         public static readonly Color Gold = new Color32(244, 183, 64, 255);

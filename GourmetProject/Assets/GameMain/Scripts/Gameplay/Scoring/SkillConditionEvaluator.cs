@@ -32,12 +32,14 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>
         /// 条件是否真正依赖一片可用于摆位判断的餐桌空间。
-        /// 边缘状态、结算顺序、装饰品/历史/层数/食谱/自身属性等条件虽然仍有
-        /// CondScope 配置占位，但它们没有应当绘制的空间条件范围。
+        /// 边缘状态、结算顺序、装饰品/历史/层数/食谱/自身属性及全场统计等条件
+        /// 虽然仍有 CondScope 配置占位，但它们没有应当绘制的空间条件范围。
         /// </summary>
         public static bool UsesSpatialScope(SkillRuleDef rule)
         {
-            if (rule == null || rule.CondType == SkillConditionType.None)
+            if (rule == null
+                || rule.CondType == SkillConditionType.None
+                || rule.CondScope == SkillScope.All)
             {
                 return false;
             }
@@ -58,10 +60,7 @@ namespace GourmetProject.Gameplay.Scoring
                     return HasParam(rule.CondParam, "source:flavors");
 
                 case SkillConditionType.CategoryCount:
-                    // 全场分类数量的 tiers 只驱动全局欢乐蛋糕档位，不代表一片摆位范围。
-                    return !(rule.CondScope == SkillScope.All
-                             && rule.ActionScope == SkillScope.CakeBuff
-                             && HasParam(rule.CondParam, "tiers:"));
+                    return true;
 
                 case SkillConditionType.Edge:
                 case SkillConditionType.ServeOrder:
