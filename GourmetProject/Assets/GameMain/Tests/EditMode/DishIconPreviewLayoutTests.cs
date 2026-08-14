@@ -56,17 +56,17 @@ namespace GourmetProject.Tests.EditMode
         public void PreviewTable_UsesPrefabVisualOffsetAndScale()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CellPrefabPath);
-            Transform tableVisual = prefab.transform.Find("TableVisual");
+            Transform plateVisual = prefab.transform.Find("PlateVisual");
             DishShape shape = DishShape.FromRows(new[] { "XXX" });
 
             Vector3 position = DishIconPreviewRenderer.PreviewTableVisualPosition(
-                tableVisual,
+                plateVisual,
                 shape,
                 new GridPos(1, 0));
-            Vector3 scale = DishIconPreviewRenderer.PreviewTableVisualScale(tableVisual);
+            Vector3 scale = DishIconPreviewRenderer.PreviewTableVisualScale(plateVisual);
 
-            Assert.That(position, Is.EqualTo(tableVisual.localPosition));
-            Assert.That(scale, Is.EqualTo(tableVisual.localScale));
+            Assert.That(position, Is.EqualTo(plateVisual.localPosition));
+            Assert.That(scale, Is.EqualTo(plateVisual.localScale));
         }
 
         [Test]
