@@ -553,6 +553,12 @@
 
     function visualCellsForScope(rule, scope, isAction, food = selectedFood(), origin = state.origin, size = state.boardSize, allowSelf = true) {
       if (!rule) return [];
+      if (isAction && usesRowColumnSweetTransferScope(rule)) {
+        return uniq([
+          ...geometricCells(2, food, origin, size),
+          ...geometricCells(3, food, origin, size),
+        ]);
+      }
       if (isAction && allowSelf && hasActionParam(rule, "include:self")) {
         return uniq([...visualCellsForScope(rule, scope, true, food, origin, size, false), ...sourceCells(food, origin, size)]);
       }
@@ -571,7 +577,7 @@
     }
 
     function usesSpatialScope(rule) {
-      if (!rule || rule.condType === 0) return false;
+      if (!rule || rule.condType === 0 || rule.condScope === 4) return false;
       if ([1,2,4,5,7,11,16,17].includes(rule.condType)) return true;
       if (rule.condType === 10) return containsParam(rule.condParam, "source:flavors");
       if (rule.condType === 15) return !(rule.condScope === 4 && rule.actionScope === 16 && containsParam(rule.condParam, "tiers:"));
@@ -579,7 +585,13 @@
     }
 
     function canRenderActionRegion(rule) {
-      return !!rule && ![0,5].includes(rule.actionType) && ![4,15,16].includes(rule.actionScope);
+      return !!rule
+        && ![0,5].includes(rule.actionType)
+        && (usesRowColumnSweetTransferScope(rule) || ![4,15,16].includes(rule.actionScope));
+    }
+
+    function usesRowColumnSweetTransferScope(rule) {
+      return !!rule && rule.actionType === 15 && hasActionParam(rule, "axis:rowcol");
     }
 
     function resolveRule(rule, food = selectedFood(), origin = state.origin, size = state.boardSize) {
@@ -597,7 +609,8 @@
         kind = "Condition"; region = condition; reason = [4,15,16].includes(rule.actionScope) ? "全局作用范围不画棋盘边界，回退显示空间条件范围。" : "只有空间条件可绘制，显示条件范围。";
       } else {
         kind = "None";
-        if (!usesSpatialScope(rule) && rule.condType !== 0 && [4,15,16].includes(rule.actionScope)) reason = "特殊条件不画范围；全局作用范围也不画棋盘边界。";
+        if (rule.condScope === 4 && rule.condType !== 0 && [4,15,16].includes(rule.actionScope)) reason = "全局统计条件与全局作用均不画棋盘边界。";
+        else if (!usesSpatialScope(rule) && rule.condType !== 0 && [4,15,16].includes(rule.actionScope)) reason = "特殊条件不画范围；全局作用范围也不画棋盘边界。";
         else if (!usesSpatialScope(rule) && rule.condType !== 0) reason = "该条件属于非空间特殊条件，不生成范围。";
         else if ([4,15,16].includes(rule.actionScope)) reason = "该作用范围是全局语义，只保留目标反馈，不画棋盘边界。";
         else if (rule.actionType === 5) reason = "甜蜜传递仅显示目标反馈，不画棋盘边界。";

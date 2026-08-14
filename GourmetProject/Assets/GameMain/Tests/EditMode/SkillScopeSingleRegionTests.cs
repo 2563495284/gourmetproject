@@ -37,7 +37,9 @@ namespace GourmetProject.Tests.EditMode
         [TestCase(SkillConditionType.SameKindInMeal, SkillScope.All, "", false)]
         [TestCase((SkillConditionType)999, SkillScope.Self, "future:self-property", false)]
         [TestCase(SkillConditionType.PositionFilled, SkillScope.RoundAndSelf, "", true)]
-        [TestCase(SkillConditionType.EmptyCell, SkillScope.All, "", true)]
+        [TestCase(SkillConditionType.PositionFilled, SkillScope.All, "", false)]
+        [TestCase(SkillConditionType.EmptyCell, SkillScope.All, "", false)]
+        [TestCase(SkillConditionType.DishSize, SkillScope.All, "eq:2", false)]
         [TestCase(SkillConditionType.DishCount, SkillScope.RowAndSelf, "gte:2", true)]
         [TestCase(SkillConditionType.SkillCount, SkillScope.RoundAndSelf, "", true)]
         [TestCase(SkillConditionType.TagCount, SkillScope.RowAndSelf, "source:flavors", true)]
@@ -98,6 +100,32 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void Resolve_TriggerSweetTransferRowColumn_UsesCrossActionRegion()
+        {
+            SkillRuleDef rule = Rule(
+                SkillConditionType.None,
+                SkillScope.All,
+                SkillActionType.TriggerSweetTransfer,
+                SkillScope.All,
+                actionParams: new[] { "axis:rowcol;skilltype:TransferSkills" });
+
+            SkillScopeVisual visual = Resolve(rule);
+
+            Assert.That(visual.ScopeRegionKind, Is.EqualTo(SkillScopeRegionKind.Action));
+            AssertCells(
+                visual.ScopeRegionCells,
+                new GridPos(0, 2),
+                new GridPos(1, 2),
+                new GridPos(2, 2),
+                new GridPos(3, 2),
+                new GridPos(4, 2),
+                new GridPos(2, 0),
+                new GridPos(2, 1),
+                new GridPos(2, 3),
+                new GridPos(2, 4));
+        }
+
+        [Test]
         public void Resolve_MatchingConditionAndAction_MergesUnifiedRegion()
         {
             SkillRuleDef rule = Rule(
@@ -128,17 +156,21 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(visual.ScopeRegionCells, Has.Count.EqualTo(5));
         }
 
-        [TestCase(SkillConditionType.Edge, "")]
-        [TestCase(SkillConditionType.ServeOrder, "first:settlement")]
-        [TestCase(SkillConditionType.TagCount, "source:passive-items")]
-        [TestCase(SkillConditionType.OccupiedCell, "source:board")]
-        public void Resolve_SpecialConditionAndGlobalAction_HidesBoardRegion(
+        [TestCase(SkillConditionType.PositionFilled, SkillScope.All, "")]
+        [TestCase(SkillConditionType.EmptyCell, SkillScope.All, "")]
+        [TestCase(SkillConditionType.DishSize, SkillScope.All, "eq:2")]
+        [TestCase(SkillConditionType.Edge, SkillScope.Self, "")]
+        [TestCase(SkillConditionType.ServeOrder, SkillScope.Self, "first:settlement")]
+        [TestCase(SkillConditionType.TagCount, SkillScope.Self, "source:passive-items")]
+        [TestCase(SkillConditionType.OccupiedCell, SkillScope.All, "source:board")]
+        public void Resolve_NonRenderableConditionAndGlobalAction_HidesBoardRegion(
             SkillConditionType conditionType,
+            SkillScope conditionScope,
             string conditionParam)
         {
             SkillRuleDef rule = Rule(
                 conditionType,
-                SkillScope.Self,
+                conditionScope,
                 SkillActionType.AddMultFlat,
                 SkillScope.All,
                 conditionParam);
@@ -233,10 +265,12 @@ namespace GourmetProject.Tests.EditMode
             AssertFormalKind(database, board, cake, "sk_fruit_cake", 1, SkillScopeRegionKind.None);
             AssertFormalKind(database, board, cake, "sk_caramel_pudding", 0, SkillScopeRegionKind.None);
             AssertFormalKind(database, board, cake, "sk_coconut_milk_jelly", 0, SkillScopeRegionKind.None);
-            AssertFormalKind(database, board, cake, "sk_cream_puff", 0, SkillScopeRegionKind.Condition);
-            AssertFormalKind(database, board, cake, "sk_hawthorn_cake", 0, SkillScopeRegionKind.Condition);
+            AssertFormalKind(database, board, cake, "sk_cream_puff", 0, SkillScopeRegionKind.None);
+            AssertFormalKind(database, board, cake, "sk_hawthorn_cake", 0, SkillScopeRegionKind.None);
+            AssertFormalKind(database, board, cake, "sk_tree_ring_cake", 0, SkillScopeRegionKind.None);
             AssertFormalKind(database, board, cake, "sk_jelly", 0, SkillScopeRegionKind.Unified);
             AssertFormalKind(database, board, cake, "sk_eggtart", 0, SkillScopeRegionKind.Unified);
+            AssertFormalKind(database, board, cake, "sk_big_lollipop", 0, SkillScopeRegionKind.Action);
         }
 
         [Test]
@@ -282,7 +316,8 @@ namespace GourmetProject.Tests.EditMode
             SkillScope conditionScope,
             SkillActionType actionType,
             SkillScope actionScope,
-            string conditionParam = "")
+            string conditionParam = "",
+            IReadOnlyList<string> actionParams = null)
         {
             return new SkillRuleDef(
                 "test-rule",
@@ -298,7 +333,7 @@ namespace GourmetProject.Tests.EditMode
                 actionScope,
                 0,
                 new[] { 1f },
-                Array.Empty<string>());
+                actionParams ?? Array.Empty<string>());
         }
 
         private static SkillRuleDef CopyWithoutActionFilters(SkillRuleDef source)
