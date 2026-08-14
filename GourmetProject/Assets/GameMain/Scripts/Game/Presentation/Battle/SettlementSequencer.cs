@@ -376,127 +376,138 @@ namespace GourmetProject.Game.Presentation.Battle
                         ScaleSettlementDuration(_scopeRevealDuration),
                         cancellationToken);
 
-                    var resultTasks = new List<Awaitable>(group.Lines.Count);
-                    var resultStackCounts = new Dictionary<int, int>();
-                    var resultStackIndices = new Dictionary<int, int>();
-                    for (int lineIndex = 0; lineIndex < group.Lines.Count; lineIndex++)
-                    {
-                        int targetId = group.Lines[lineIndex].DishInstanceId;
-                        resultStackCounts.TryGetValue(targetId, out int count);
-                        resultStackCounts[targetId] = count + 1;
-                    }
-
                     int groupTargetCount = CountDistinctTargets(group, dishViews);
                     SettlementImpactTier groupImpact = StrongestImpact(group, groupTargetCount);
-                    Dictionary<int, int> primaryFeedbackLines = BuildPrimaryFeedbackLines(
-                        group,
-                        groupTargetCount);
                     _cameraFeedback.PlayImpact(groupImpact, groupTargetCount);
                     if (groupImpact >= SettlementImpactTier.Strong)
                     {
                         scoreFire?.Burst(groupImpact >= SettlementImpactTier.Chain ? 0.72f : 0.46f);
                     }
 
-                    // 同一技能组的计分明细仍按原顺序写入账本与发出事件，但所有结果动画
-                    // 在同一帧启动。这样保留正式因果顺序，同时恢复“一起触发”的节奏。
-                    for (int lineIndex = 0; lineIndex < group.Lines.Count; lineIndex++)
+                    // 普通技能组保持一次性并发；蛋糕层数会按加分、加倍率、乘倍率的真实顺序
+                    // 分成连续批次。每一批里的多个蛋糕仍在同一帧启动，避免同一蛋糕的三种
+                    // 反馈互相取消，也不会把多个蛋糕退化成逐个播放。
+                    List<List<int>> resultLineBatches = BuildResultLineBatches(group);
+                    for (int batchIndex = 0; batchIndex < resultLineBatches.Count; batchIndex++)
                     {
-                        await WaitWhilePlaybackPausedAsync(cancellationToken);
-                        ScoreLine line = group.Lines[lineIndex];
-                        AdvanceSettlementCue(playback, CueKindFor(line));
-                        SettlementCue cue = null;
-                        if (TryBuildCue(line, out SettlementCue builtCue))
+                        List<int> resultLineIndices = resultLineBatches[batchIndex];
+                        var resultTasks = new List<Awaitable>(resultLineIndices.Count);
+                        var resultStackCounts = new Dictionary<int, int>();
+                        var resultStackIndices = new Dictionary<int, int>();
+                        for (int i = 0; i < resultLineIndices.Count; i++)
                         {
-                            cue = builtCue;
-                            AttachPassiveSource(line, cue);
-                            EmitPassiveTriggered(onPassiveTriggered, cue);
-                            EmitReveal(onReveal, cue);
+                            int targetId = group.Lines[resultLineIndices[i]].DishInstanceId;
+                            resultStackCounts.TryGetValue(targetId, out int count);
+                            resultStackCounts[targetId] = count + 1;
                         }
 
-                        IReadOnlyList<SettlementPlaybackStep> sweetSteps = BuildSweetTransferSteps(line, cue);
-                        BeginTriggerSweetTransferStateIfNeeded(
-                            sweetTransferPlayback,
-                            sweetSteps,
-                            dishViews,
-                            cancellationToken);
-                        await UpdateSweetTransferVisualsAsync(
-                            sweetTransferPlayback,
-                            ResolveSweetTransferVisualContext(sweetSteps),
-                            dishViews,
-                            fxRoot,
-                            cancellationToken);
-
-                        if (line.Kind == ScoreLineKind.SweetTransferBuffApplied)
-                        {
-                            ApplySweetTransferBuffMarkers(line, dishViews);
-                        }
-                        else if (line.Kind == ScoreLineKind.SweetTransferBuffTriggered)
-                        {
-                            await PlaySweetTransferBuffTriggerAsync(line, dishViews, cancellationToken);
-                        }
-                        else if (line.Kind == ScoreLineKind.SweetTransferFailed)
-                        {
-                            await PlaySweetTransferFailureAsync(line, dishViews, cancellationToken);
-                        }
-
-                        BigDouble beforeTotal = ledger.CurrentTotal;
-                        BigDouble contribution = ledger.Apply(line);
-                        SettlementImpactTier impactTier = ImpactFor(line, groupTargetCount);
-                        SettlementPacePhase nextPhase = ResolvePacePhase(
-                            ledger.CurrentTotal,
-                            session?.RequiredScore ?? 0,
-                            _currentPacePhase);
-                        bool reachedTarget = _currentPacePhase < SettlementPacePhase.TargetReached
-                            && nextPhase >= SettlementPacePhase.TargetReached;
-                        bool playPrimaryFeedback = primaryFeedbackLines.TryGetValue(
-                                line.DishInstanceId,
-                                out int primaryLine)
-                            && primaryLine == lineIndex;
-                        dishViews.TryGetValue(line.DishInstanceId, out DishPieceView target);
-                        if (target != null && ChangesDishValue(line.Kind))
-                        {
-                            target.SetDishValueBadge(contribution);
-                            if (playPrimaryFeedback)
-                            {
-                                target.PunchDishValueBadge(
-                                    DishValuePunchScale,
-                                    ScaleSettlementDuration(DishValuePunchDuration));
-                            }
-                        }
-
-                        renderScore?.Invoke(ledger.CurrentTotal);
-                        EmitScoreBeat(
-                            onBeat,
-                            group.SourceName,
-                            line.DishInstanceId,
-                            playback,
-                            line.Kind,
-                            beforeTotal,
-                            ledger.CurrentTotal,
-                            impactTier,
-                            groupTargetCount,
-                            reachedTarget);
-                        resultStackIndices.TryGetValue(line.DishInstanceId, out int stackIndex);
-                        resultStackIndices[line.DishInstanceId] = stackIndex + 1;
-                        resultTasks.Add(_stage.ShowResultAsync(
+                        Dictionary<int, int> primaryFeedbackLines = BuildPrimaryFeedbackLines(
                             group,
-                            line,
-                            target,
-                            contribution,
-                            ledger.CurrentTotal,
-                            ScaleSettlementDuration(_resultBeatDuration),
-                            stackIndex,
-                            resultStackCounts[line.DishInstanceId],
-                            impactTier,
-                            Mathf.Lerp(0.96f, 1.18f, NormalizedProgress(playback)),
-                            playPrimaryFeedback,
-                            cancellationToken));
-                        PromoteSettlementPace(playback, nextPhase);
-                    }
+                            resultLineIndices,
+                            groupTargetCount);
 
-                    for (int resultIndex = 0; resultIndex < resultTasks.Count; resultIndex++)
-                    {
-                        await resultTasks[resultIndex];
+                        // 同一批次的计分明细仍按原顺序写入账本与发出事件，但所有结果动画
+                        // 在同一帧启动。这样保留正式因果顺序，同时恢复“一起触发”的节奏。
+                        for (int i = 0; i < resultLineIndices.Count; i++)
+                        {
+                            int lineIndex = resultLineIndices[i];
+                            await WaitWhilePlaybackPausedAsync(cancellationToken);
+                            ScoreLine line = group.Lines[lineIndex];
+                            AdvanceSettlementCue(playback, CueKindFor(line));
+                            SettlementCue cue = null;
+                            if (TryBuildCue(line, out SettlementCue builtCue))
+                            {
+                                cue = builtCue;
+                                AttachPassiveSource(line, cue);
+                                EmitPassiveTriggered(onPassiveTriggered, cue);
+                                EmitReveal(onReveal, cue);
+                            }
+
+                            IReadOnlyList<SettlementPlaybackStep> sweetSteps = BuildSweetTransferSteps(line, cue);
+                            BeginTriggerSweetTransferStateIfNeeded(
+                                sweetTransferPlayback,
+                                sweetSteps,
+                                dishViews,
+                                cancellationToken);
+                            await UpdateSweetTransferVisualsAsync(
+                                sweetTransferPlayback,
+                                ResolveSweetTransferVisualContext(sweetSteps),
+                                dishViews,
+                                fxRoot,
+                                cancellationToken);
+
+                            if (line.Kind == ScoreLineKind.SweetTransferBuffApplied)
+                            {
+                                ApplySweetTransferBuffMarkers(line, dishViews);
+                            }
+                            else if (line.Kind == ScoreLineKind.SweetTransferBuffTriggered)
+                            {
+                                await PlaySweetTransferBuffTriggerAsync(line, dishViews, cancellationToken);
+                            }
+                            else if (line.Kind == ScoreLineKind.SweetTransferFailed)
+                            {
+                                await PlaySweetTransferFailureAsync(line, dishViews, cancellationToken);
+                            }
+
+                            BigDouble beforeTotal = ledger.CurrentTotal;
+                            BigDouble contribution = ledger.Apply(line);
+                            SettlementImpactTier impactTier = ImpactFor(line, groupTargetCount);
+                            SettlementPacePhase nextPhase = ResolvePacePhase(
+                                ledger.CurrentTotal,
+                                session?.RequiredScore ?? 0,
+                                _currentPacePhase);
+                            bool reachedTarget = _currentPacePhase < SettlementPacePhase.TargetReached
+                                && nextPhase >= SettlementPacePhase.TargetReached;
+                            bool playPrimaryFeedback = primaryFeedbackLines.TryGetValue(
+                                    line.DishInstanceId,
+                                    out int primaryLine)
+                                && primaryLine == lineIndex;
+                            dishViews.TryGetValue(line.DishInstanceId, out DishPieceView target);
+                            if (target != null && ChangesDishValue(line.Kind))
+                            {
+                                target.SetDishValueBadge(contribution);
+                                if (playPrimaryFeedback)
+                                {
+                                    target.PunchDishValueBadge(
+                                        DishValuePunchScale,
+                                        ScaleSettlementDuration(DishValuePunchDuration));
+                                }
+                            }
+
+                            renderScore?.Invoke(ledger.CurrentTotal);
+                            EmitScoreBeat(
+                                onBeat,
+                                group.SourceName,
+                                line.DishInstanceId,
+                                playback,
+                                line.Kind,
+                                beforeTotal,
+                                ledger.CurrentTotal,
+                                impactTier,
+                                groupTargetCount,
+                                reachedTarget);
+                            resultStackIndices.TryGetValue(line.DishInstanceId, out int stackIndex);
+                            resultStackIndices[line.DishInstanceId] = stackIndex + 1;
+                            resultTasks.Add(_stage.ShowResultAsync(
+                                group,
+                                line,
+                                target,
+                                contribution,
+                                ledger.CurrentTotal,
+                                ScaleSettlementDuration(_resultBeatDuration),
+                                stackIndex,
+                                resultStackCounts[line.DishInstanceId],
+                                impactTier,
+                                Mathf.Lerp(0.96f, 1.18f, NormalizedProgress(playback)),
+                                playPrimaryFeedback,
+                                cancellationToken));
+                            PromoteSettlementPace(playback, nextPhase);
+                        }
+
+                        for (int resultIndex = 0; resultIndex < resultTasks.Count; resultIndex++)
+                        {
+                            await resultTasks[resultIndex];
+                        }
                     }
 
                     if (group.Lines.Count > 0)
@@ -904,19 +915,49 @@ namespace GourmetProject.Game.Presentation.Battle
             return strongest;
         }
 
+        internal static List<List<int>> BuildResultLineBatches(SettlementEffectGroup group)
+        {
+            var batches = new List<List<int>>();
+            if (group == null || group.Lines.Count == 0)
+            {
+                return batches;
+            }
+
+            bool splitCakeLayerResults = group.Source?.Type == ScoreSourceType.TableTag
+                && string.Equals(group.Source.Id, "cake_layer_buff", StringComparison.Ordinal);
+            List<int> current = null;
+            ScoreLineKind currentKind = default;
+            for (int i = 0; i < group.Lines.Count; i++)
+            {
+                ScoreLineKind kind = group.Lines[i].Kind;
+                if (current == null || (splitCakeLayerResults && kind != currentKind))
+                {
+                    current = new List<int>();
+                    batches.Add(current);
+                    currentKind = kind;
+                }
+
+                current.Add(i);
+            }
+
+            return batches;
+        }
+
         private static Dictionary<int, int> BuildPrimaryFeedbackLines(
             SettlementEffectGroup group,
+            IReadOnlyList<int> lineIndices,
             int targetCount)
         {
             var result = new Dictionary<int, int>();
-            if (group == null)
+            if (group == null || lineIndices == null)
             {
                 return result;
             }
 
-            for (int i = 0; i < group.Lines.Count; i++)
+            for (int i = 0; i < lineIndices.Count; i++)
             {
-                ScoreLine line = group.Lines[i];
+                int lineIndex = lineIndices[i];
+                ScoreLine line = group.Lines[lineIndex];
                 int targetId = line.DishInstanceId;
                 if (targetId <= 0)
                 {
@@ -926,7 +967,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 if (!result.TryGetValue(targetId, out int current)
                     || ImpactFor(line, targetCount) > ImpactFor(group.Lines[current], targetCount))
                 {
-                    result[targetId] = i;
+                    result[targetId] = lineIndex;
                 }
             }
 

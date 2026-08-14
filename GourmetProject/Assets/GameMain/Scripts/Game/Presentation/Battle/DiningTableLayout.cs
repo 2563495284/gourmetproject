@@ -23,7 +23,7 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public static class DiningTableLayout
     {
-        public const float Gap = 0f;
+        public const float Gap = 0.2f;
         public const float MaxCellSize = 1.2f;
         public const float MinCellSize = 0.42f;
 

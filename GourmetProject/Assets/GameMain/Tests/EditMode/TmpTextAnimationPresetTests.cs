@@ -4,6 +4,7 @@ using GourmetProject.Game.UI.Meta;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -94,6 +95,56 @@ namespace GourmetProject.Tests.EditMode
             finally
             {
                 Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Rebuild_WhenTitleShrinks_DropsOldCharacterVertices(bool remainsActive)
+        {
+            var canvasObject = new GameObject(
+                "TmpAnimationShrinkCanvas",
+                typeof(RectTransform),
+                typeof(Canvas),
+                typeof(CanvasScaler),
+                typeof(GraphicRaycaster));
+            var gameObject = new GameObject(
+                "TmpAnimationShrinkTest",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI),
+                typeof(TmpTextVertexAnimator));
+
+            try
+            {
+                gameObject.transform.SetParent(canvasObject.transform, false);
+                var rect = gameObject.GetComponent<RectTransform>();
+                rect.sizeDelta = new Vector2(400f, 80f);
+
+                var text = gameObject.GetComponent<TextMeshProUGUI>();
+                text.font = TMP_Settings.defaultFontAsset;
+                var animator = gameObject.GetComponent<TmpTextVertexAnimator>();
+
+                text.text = "ABCDE";
+                animator.SetPreset(TmpTextAnimationPreset.TipTitle);
+                animator.Rebuild();
+                Assert.That(text.textInfo.characterCount, Is.EqualTo(5));
+
+                gameObject.SetActive(remainsActive);
+                text.text = "XYZ";
+                animator.Rebuild();
+
+                Assert.That(text.textInfo.characterCount, Is.EqualTo(3));
+                TMP_MeshInfo meshInfo = text.textInfo.meshInfo[0];
+                for (int i = meshInfo.vertexCount; i < meshInfo.vertices.Length; i++)
+                {
+                    Assert.That(meshInfo.vertices[i], Is.EqualTo(Vector3.zero),
+                        $"Unused vertex {i} still contains geometry from the longer title.");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(canvasObject);
             }
         }
     }

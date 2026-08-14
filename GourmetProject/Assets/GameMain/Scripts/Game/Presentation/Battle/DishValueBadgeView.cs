@@ -8,6 +8,7 @@ namespace GourmetProject.Game.Presentation.Battle
     {
         [Header("固定结构（prefab 预拼）")]
         [SerializeField] private SpriteRenderer _background;
+        [SerializeField] private SpriteRenderer _valueBacking;
         [SerializeField] private SpriteRenderer _icon;
         [SerializeField] private MeshRenderer _valueMeshRenderer;
         [SerializeField] private TextMeshPro _valueText;
@@ -16,6 +17,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private int _sortingOrder = BattleSorting.OrderFloatingText;
         private bool _dimmed;
         private Color _backgroundColorBeforeDim;
+        private Color _valueBackingColorBeforeDim;
         private Color _iconColorBeforeDim;
         private Color _textColorBeforeDim;
 
@@ -30,6 +32,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 return Mathf.Max(
                     SpriteTopExtent(_background),
+                    SpriteTopExtent(_valueBacking),
                     SpriteTopExtent(_icon));
             }
         }
@@ -80,6 +83,14 @@ namespace GourmetProject.Game.Presentation.Battle
                         0.5f);
                 }
 
+                if (_valueBacking != null)
+                {
+                    _valueBackingColorBeforeDim = _valueBacking.color;
+                    _valueBacking.color = WithAlphaMultiplier(
+                        _valueBackingColorBeforeDim,
+                        0.5f);
+                }
+
                 if (_valueText != null)
                 {
                     _textColorBeforeDim = _valueText.color;
@@ -101,6 +112,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 _icon.color = _iconColorBeforeDim;
             }
 
+            if (_valueBacking != null)
+            {
+                _valueBacking.color = _valueBackingColorBeforeDim;
+            }
+
             if (_valueText != null)
             {
                 _valueText.color = _textColorBeforeDim;
@@ -119,6 +135,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             BattleSorting.Apply(_background, _sortingLayer, _sortingOrder);
+            BattleSorting.Apply(_valueBacking, _sortingLayer, _sortingOrder + 1);
             BattleSorting.Apply(_icon, _sortingLayer, _sortingOrder + 3);
         }
 

@@ -94,7 +94,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 await SpawnLabelAsync(
                     anchor,
-                    ReadableName(sourceName, "效果触发"),
+                    ReadableName(sourceName, "技能触发"),
                     effectText,
                     theme,
                     duration,
@@ -178,7 +178,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             await SpawnLabelAsync(
                 anchor,
-                group.Trace?.Kind == SkillExecutionKind.SweetTransfer ? "执行技能" : "效果触发",
+                "技能触发",
                 group.Trace?.Kind == SkillExecutionKind.SweetTransfer
                     ? ReadableName(group.Trace.SkillName, group.SourceName)
                     : group.SourceName,

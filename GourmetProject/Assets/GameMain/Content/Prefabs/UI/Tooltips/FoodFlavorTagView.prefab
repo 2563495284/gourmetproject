@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 1953585838460831598}
   - component: {fileID: 3093587409907831200}
   - component: {fileID: 2770046072943331309}
-  - component: {fileID: 4826549728632676553}
   - component: {fileID: 6829497938149084074}
   - component: {fileID: 6704665882520571800}
   m_Layer: 0
@@ -62,16 +61,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.96}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: f025292de16af40f49ff348235c7edda, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -79,21 +78,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &4826549728632676553
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 518985590912048483}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0, g: 0, b: 0, a: 1}
-  m_EffectDistance: {x: 2, y: -2}
-  m_UseGraphicAlpha: 1
 --- !u!114 &6829497938149084074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -126,7 +110,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8212bd4b85e024e1b9e26e0298bb5859, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Tooltips.FoodFlavorTagView
+  _backgroundImage: {fileID: 2770046072943331309}
   _labelText: {fileID: 3019575285354231613}
+  _styles:
+  - _label: "\u8FA3"
+    _background: {fileID: 21300000, guid: f025292de16af40f49ff348235c7edda, type: 3}
+    _textColor: {r: 1, g: 0.8745098, b: 0.49803922, a: 1}
+  - _label: "\u9178"
+    _background: {fileID: 21300000, guid: 12f950df7df714e8b9abb28e6640bf66, type: 3}
+    _textColor: {r: 0.41568628, g: 0.4, b: 0, a: 1}
+  - _label: "\u82E6"
+    _background: {fileID: 21300000, guid: 7f0ac51c65b5e4cc0ba01472374ef6fa, type: 3}
+    _textColor: {r: 0, g: 0, b: 0, a: 1}
+  - _label: "\u751C"
+    _background: {fileID: 21300000, guid: 2ff09f708ab1a4e6d8ddb9b71002f43c, type: 3}
+    _textColor: {r: 1, g: 0.8352941, b: 0.8352941, a: 1}
+  - _label: "\u54B8"
+    _background: {fileID: 21300000, guid: 29f754795980f477bbc14040f7a0a507, type: 3}
+    _textColor: {r: 0.19607843, g: 0.30588236, b: 0.6627451, a: 1}
+  - _label: "\u9EBB"
+    _background: {fileID: 21300000, guid: afb225885d56843aa8d50fc674899338, type: 3}
+    _textColor: {r: 1, g: 0.9764706, b: 0.70980394, a: 1}
+  - _label: "\u9C9C"
+    _background: {fileID: 21300000, guid: c48e773c95a244fa29b86f48cdbf4468, type: 3}
+    _textColor: {r: 0.48235294, g: 0.28235295, b: 0, a: 1}
+  _fallbackBackground: {fileID: 21300000, guid: 7f0ac51c65b5e4cc0ba01472374ef6fa, type: 3}
+  _fallbackTextColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!1 &969351728310055069
 GameObject:
   m_ObjectHideFlags: 0
@@ -192,7 +201,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text:
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
   m_sharedMaterial: {fileID: -8718148927222724939, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
@@ -202,7 +211,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
+  m_fontColor: {r: 1, g: 0.8745098, b: 0.49803922, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -219,8 +228,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20
-  m_fontSizeBase: 20
+  m_fontSize: 24
+  m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 20

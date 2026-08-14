@@ -26,6 +26,7 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private RectTransform _specialTagsRoot;
         [SerializeField] private RectTransform _transferredSubSkillsRoot;
         [SerializeField] private FoodTipCardView _infoCardPrefab;
+        [SerializeField] private FoodFlavorDetailView _flavorDetailPrefab;
 
         private Tween _visibilityTween;
 
@@ -78,7 +79,7 @@ namespace GourmetProject.Game.UI.Tooltips
             _materialsView.Bind(data.Materials);
             _scoreView.Bind(data.Score);
             _summaryView.Bind(data.Summary);
-            BuildInfoCards(_flavorDetailsRoot, data.FlavorDetails, "FlavorDetail");
+            BuildFlavorDetails(data.FlavorDetails);
             BuildInfoCards(
                 _specialTagsRoot,
                 BuildSpecialTagsWithCountAs(data.SpecialTags, data.Summary.CountAs),
@@ -272,7 +273,22 @@ namespace GourmetProject.Game.UI.Tooltips
             valid &= ReportMissing(_specialTagsRoot, nameof(_specialTagsRoot));
             valid &= ReportMissing(_transferredSubSkillsRoot, nameof(_transferredSubSkillsRoot));
             valid &= ReportMissing(_infoCardPrefab, nameof(_infoCardPrefab));
+            valid &= ReportMissing(_flavorDetailPrefab, nameof(_flavorDetailPrefab));
             return valid;
+        }
+
+        private void BuildFlavorDetails(IReadOnlyList<FoodInfoEntry> entries)
+        {
+            FoodTipUiUtility.ClearChildren(_flavorDetailsRoot);
+            int count = entries != null ? entries.Count : 0;
+            _flavorDetailsRoot.gameObject.SetActive(count > 0);
+            for (int i = 0; i < count; i++)
+            {
+                FoodInfoEntry entry = entries[i];
+                FoodFlavorDetailView card = Instantiate(_flavorDetailPrefab, _flavorDetailsRoot, false);
+                card.name = $"FlavorDetail_{i}";
+                card.Bind(entry.Title, entry.Desc);
+            }
         }
 
         private void BuildInfoCards(RectTransform root, IReadOnlyList<FoodInfoEntry> entries, string prefix)

@@ -73,9 +73,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (_titleText != null)
             {
-                _titleText.text = args.IsTerminal
-                    ? "最后一颗心碎了"
-                    : (_lostCount >= 2 ? "两颗心碎了" : "一颗心碎了");
+                _titleText.text = "营业失败";
             }
 
             if (_heartCountText != null)

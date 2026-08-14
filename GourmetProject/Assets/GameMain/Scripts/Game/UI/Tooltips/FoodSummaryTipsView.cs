@@ -19,7 +19,7 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private TMP_Text _countAsText;
         [SerializeField] private RectTransform _skillsContent;
         [SerializeField] private RectTransform _flavorContent;
-        [SerializeField] private FoodTipCardView _skillCardPrefab;
+        [SerializeField] private FoodSkillDescriptionView _skillCardPrefab;
         [SerializeField] private FoodFlavorTagView _flavorTagPrefab;
 
         private const int MaxFlavorColumns = 1;
@@ -46,7 +46,7 @@ namespace GourmetProject.Game.UI.Tooltips
             _duplicateView.gameObject.SetActive(data.IsTemporaryCopy);
             bool showCountAs = data.CountAs > 1;
             _countAsView.gameObject.SetActive(showCountAs);
-            _countAsText.text = data.CountAs.ToString();
+            _countAsText.text = data.CountAs.ToString()+"份";
             float skillsTextWidth = BuildSkills(data.Skills, data.SkillsDisabled);
             BuildFlavors(data.Flavors);
             ResizeToContent(skillsTextWidth, data.Flavors);
@@ -105,10 +105,10 @@ namespace GourmetProject.Game.UI.Tooltips
             for (int i = 0; i < count; i++)
             {
                 FoodInfoEntry skill = skills[i];
-                FoodTipCardView card = Instantiate(_skillCardPrefab, _skillsContent, false);
+                FoodSkillDescriptionView card = Instantiate(_skillCardPrefab, _skillsContent, false);
                 card.name = $"Skill_{i}";
-                card.Bind(skill.Title, skill.Desc, debuffed);
-                maxTextWidth = Mathf.Max(maxTextWidth, card.PreferredDescWidth, card.PreferredTitleWidth);
+                card.Bind(skill.Desc, debuffed);
+                maxTextWidth = Mathf.Max(maxTextWidth, card.PreferredDescWidth);
             }
 
             return maxTextWidth;

@@ -104,22 +104,30 @@ namespace GourmetProject.Game.Procedure
                 GameApp.UI.AddUIGroup(UIForms.GroupDialog, 1);
             }
 
+            if (!GameApp.UI.HasUIGroup(UIForms.GroupTooltip))
+            {
+                GameApp.UI.AddUIGroup(UIForms.GroupTooltip, 2);
+            }
+
             if (!GameApp.UI.HasUIGroup(UIForms.GroupTutorial))
             {
-                GameApp.UI.AddUIGroup(UIForms.GroupTutorial, 2);
+                GameApp.UI.AddUIGroup(UIForms.GroupTutorial, 3);
             }
 
             if (!GameApp.UI.HasUIGroup(UIForms.GroupTransition))
             {
-                GameApp.UI.AddUIGroup(UIForms.GroupTransition, 3);
+                GameApp.UI.AddUIGroup(UIForms.GroupTransition, 4);
             }
 
             // GameFramework 的界面组容器由框架运行时创建，只有普通 Transform，
             // 子界面用 stretch 锚点会塌缩到 Canvas 原点。这里把组容器升级为撑满 Canvas 的 RectTransform。
             StretchGroupHelper(UIForms.GroupDefault);
             StretchGroupHelper(UIForms.GroupDialog);
+            StretchGroupHelper(UIForms.GroupTooltip);
             StretchGroupHelper(UIForms.GroupTutorial);
             StretchGroupHelper(UIForms.GroupTransition);
+            MoveGroupToFront(UIForms.GroupTooltip);
+            MoveGroupToFront(UIForms.GroupTutorial);
             MoveTransitionGroupToFront();
         }
 
@@ -148,8 +156,13 @@ namespace GourmetProject.Game.Procedure
 
         private static void MoveTransitionGroupToFront()
         {
-            var transitionGroup = GameApp.UI.GetUIGroup(UIForms.GroupTransition);
-            if (transitionGroup?.Helper is Component helper)
+            MoveGroupToFront(UIForms.GroupTransition);
+        }
+
+        private static void MoveGroupToFront(string groupName)
+        {
+            var group = GameApp.UI.GetUIGroup(groupName);
+            if (group?.Helper is Component helper)
             {
                 helper.transform.SetAsLastSibling();
             }

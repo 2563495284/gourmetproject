@@ -99,14 +99,18 @@ namespace GourmetProject.Game.Presentation.Battle
                     origin,
                     maxWidth,
                     maxHeight);
-            GridPlacementFeedbackState feedbackState = ToFeedbackState(status);
             List<GridPos> localCells = TableFragmentBuilder.FilledCells(fragment);
+            HashSet<GridPos> existing = TableFragmentBuilder.ToExistingSet(table);
+            GridPlacementFeedbackState feedbackState = ToFeedbackState(status);
             var cells = new List<GridPlacementFeedbackCell>(localCells.Count);
             foreach (GridPos local in localCells)
             {
+                GridPos absolute = local.Offset(origin.X, origin.Y);
                 cells.Add(new GridPlacementFeedbackCell(
-                    local.Offset(origin.X, origin.Y),
-                    feedbackState));
+                    absolute,
+                    IsCellBlocked(existing, absolute, maxWidth, maxHeight)
+                        ? GridPlacementFeedbackState.Blocked
+                        : GridPlacementFeedbackState.Valid));
             }
 
             BuildPlacementBounds(table, localCells, origin, out TableFragmentBuilder.PlacementBounds currentBounds, out TableFragmentBuilder.PlacementBounds projectedBounds);
@@ -117,6 +121,42 @@ namespace GourmetProject.Game.Presentation.Battle
                 new GridPlacementFeedback(centerCell, feedbackState, cells),
                 currentBounds,
                 projectedBounds);
+        }
+
+        private static bool IsCellBlocked(
+            HashSet<GridPos> existing,
+            GridPos candidate,
+            int maxWidth,
+            int maxHeight)
+        {
+            if (existing == null || existing.Count == 0 || maxWidth <= 0 || maxHeight <= 0)
+            {
+                return true;
+            }
+
+            if (existing.Contains(candidate))
+            {
+                return true;
+            }
+
+            int minX = int.MaxValue;
+            int minY = int.MaxValue;
+            int maxX = int.MinValue;
+            int maxY = int.MinValue;
+            foreach (GridPos cell in existing)
+            {
+                minX = Math.Min(minX, cell.X);
+                minY = Math.Min(minY, cell.Y);
+                maxX = Math.Max(maxX, cell.X);
+                maxY = Math.Max(maxY, cell.Y);
+            }
+
+            int projectedMinX = Math.Min(minX, candidate.X);
+            int projectedMinY = Math.Min(minY, candidate.Y);
+            int projectedMaxX = Math.Max(maxX, candidate.X);
+            int projectedMaxY = Math.Max(maxY, candidate.Y);
+            return projectedMaxX - projectedMinX + 1 > maxWidth
+                || projectedMaxY - projectedMinY + 1 > maxHeight;
         }
 
         public static bool ExtendsAboveExistingTop(GpTable table, TableFragmentDef fragment, GridPos origin)

@@ -8,6 +8,7 @@ using GourmetProject.Game.UI.Tooltips;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
+using GourmetProject.Runtime.UI;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -707,8 +708,9 @@ namespace GourmetProject.Game.UI.Meta
 
         private Transform TipLayerParent()
         {
-            Canvas canvas = GetComponentInParent<Canvas>();
-            return canvas != null ? canvas.transform : transform;
+            UGuiForm form = GetComponentInParent<UGuiForm>();
+            Transform fallback = form != null ? form.UIGroupTransform : transform;
+            return UIForms.ResolveTooltipLayer(fallback);
         }
 
         private void MoveTipToTopLayer(MonoBehaviour view)

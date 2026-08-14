@@ -1,4 +1,5 @@
 using GourmetProject.Game.UI.Tooltips;
+using GourmetProject.Runtime.UI;
 using UnityEngine;
 using Log = GourmetProject.Core.Diagnostics.Log;
 
@@ -6,7 +7,7 @@ namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
     /// 经营挑战界面 hover Tip 注册表：持有装饰品和消耗品、时间轴和食物 Tip 预制体，
-    /// 惰性实例化到最外层 Canvas 下并缓存，界面关闭时统一隐藏。
+    /// 惰性实例化到跨 Dialog 的 Tooltip UI Group 下并缓存，界面关闭时统一隐藏。
     /// </summary>
     public sealed class BattleTipRegistry : MonoBehaviour
     {
@@ -111,8 +112,9 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private Transform TipLayerParent()
         {
-            Canvas canvas = GetComponentInParent<Canvas>();
-            return canvas != null ? canvas.transform : transform;
+            UGuiForm form = GetComponentInParent<UGuiForm>();
+            Transform fallback = form != null ? form.UIGroupTransform : transform;
+            return UIForms.ResolveTooltipLayer(fallback);
         }
 
         private static void DestroyRuntimeTip(MonoBehaviour tip)

@@ -122,7 +122,6 @@ GameObject:
   m_Component:
   - component: {fileID: 3372829438299543394}
   - component: {fileID: 6442013025224525628}
-  - component: {fileID: 5580916347410191122}
   m_Layer: 0
   m_Name: Cards
   m_TagString: Untagged
@@ -158,37 +157,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 3808945467721869248}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Script: {fileID: 11500000, guid: 24af08b1b29aa49e5b2b1e682c872ab2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.EvenlySpacedHorizontalLayoutGroup
   m_Padding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
-    m_Bottom: 0
+    m_Left: 80
+    m_Right: 80
+    m_Top: 150
+    m_Bottom: 160
   m_ChildAlignment: 4
-  m_Spacing: 0
-  m_ChildForceExpandWidth: 0
-  m_ChildForceExpandHeight: 0
-  m_ChildControlWidth: 1
-  m_ChildControlHeight: 0
-  m_ChildScaleWidth: 0
-  m_ChildScaleHeight: 0
-  m_ReverseArrangement: 0
---- !u!114 &5580916347410191122
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3808945467721869248}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3245ec927659c4140ac4f8d17403cc18, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
-  m_HorizontalFit: 0
-  m_VerticalFit: 0
+  _spacing: 24
+  _controlChildSquareSize: 1
+  _minChildSize: 180
+  _maxChildSize: 200
 --- !u!1 &9182606573274174461
 GameObject:
   m_ObjectHideFlags: 0

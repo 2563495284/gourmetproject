@@ -204,8 +204,8 @@ namespace GourmetProject.Game.UI.Menu
             {
                 Title = "返回主菜单",
                 Message = "当前未保存的进度将丢失，可以从上一次存档继续游戏。",
-                ConfirmText = "返回",
-                CancelText = "确定",
+                ConfirmText = "确定",
+                CancelText = "返回",
                 OnConfirm = ReturnToMenuWithoutSave,
             };
             GameApp.UI.OpenUIForm(UIForms.ConfirmDialog, UIForms.GroupDialog, data);
