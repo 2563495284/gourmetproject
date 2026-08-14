@@ -1,3 +1,4 @@
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.Visual;
 using TMPro;
 using UnityEngine;
@@ -15,7 +16,8 @@ namespace GourmetProject.Game.UI.Tooltips
         public float PreferredDescWidthFor(string value)
         {
             return _descText != null
-                ? _descText.GetPreferredValues(value ?? string.Empty).x
+                ? _descText.GetPreferredValues(
+                    SemanticDescriptionFormatter.Format(value)).x
                 : 0f;
         }
 
@@ -26,7 +28,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 return;
             }
 
-            _descText.text = desc ?? string.Empty;
+            SemanticDescriptionFormatter.Set(_descText, desc);
             SetDebuffed(debuffed);
         }
 
