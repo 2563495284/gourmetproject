@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using BreakInfinity;
 using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Balance;
@@ -485,7 +486,11 @@ namespace GourmetProject.Tests.EditMode
             AutoRunReport report = AutoRunReportBuilder.Build(request, traces);
 
             string csv = AutoRunReportBuilder.ToSummaryCsv(report);
-            string json = AutoRunReportBuilder.ToFullJson(report, prettyPrint: false);
+            string legacyJson = AutoRunReportBuilder.ToFullJson(report, prettyPrint: false);
+            var jsonWriter = new StringWriter(CultureInfo.InvariantCulture);
+            AutoRunReportBuilder.WriteFullJson(report, jsonWriter);
+            string json = jsonWriter.ToString();
+            Assert.That(json, Is.EqualTo(legacyJson));
             AutoRunReport restored = JsonUtility.FromJson<AutoRunReport>(json);
 
             Assert.That(csv, Does.Contain("unlockProfileHash"));
@@ -518,6 +523,98 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(restored.Traces[0].Stages[0].Battles[0].HeartsAfter, Is.EqualTo(3));
             Assert.That(restored.Traces[0].Stages[0].ActionDecisions, Has.Count.EqualTo(1));
             Assert.That(restored.Traces[0].Stages[0].ActionDecisions[0].SelectedActionId, Is.EqualTo("act-meal"));
+        }
+
+        [Test]
+        public void StreamingJsonPreservesCancelledPartialReportByteForByte()
+        {
+            AutoRunReportRequest request = Request(30, 1);
+            request.Cancelled = true;
+            List<AutoRunTrace> traces = Enumerable.Range(0, 5)
+                .Select(i => Trace(7100 + i, completed: true, failure: string.Empty, bossReached: true))
+                .ToList();
+            traces[0].Stages[0].Actions.Add("带引号\"、反斜杠\\和换行\n的行动");
+            AutoRunReport report = AutoRunReportBuilder.Build(request, traces);
+
+            string legacyJson = AutoRunReportBuilder.ToFullJson(report, prettyPrint: false);
+            var output = new StringWriter(CultureInfo.InvariantCulture);
+            AutoRunReportBuilder.WriteFullJson(report, output);
+            string streamedJson = output.ToString();
+            AutoRunReport restored = JsonUtility.FromJson<AutoRunReport>(streamedJson);
+
+            Assert.That(streamedJson, Is.EqualTo(legacyJson));
+            Assert.That(restored.Cancelled, Is.True);
+            Assert.That(restored.Partial, Is.True);
+            Assert.That(restored.SamplingComplete, Is.False);
+            Assert.That(restored.RequestedTraceCount, Is.EqualTo(30));
+            Assert.That(restored.ActualTraceCount, Is.EqualTo(5));
+            Assert.That(restored.Traces, Has.Count.EqualTo(5));
+            Assert.That(restored.Traces[0].Stages[0].Actions[0],
+                Is.EqualTo("带引号\"、反斜杠\\和换行\n的行动"));
+        }
+
+        [Test]
+        public void StreamingJsonWritesTraceSizedChunksInsteadOfWholeReport()
+        {
+            const int traceCount = 100;
+            List<AutoRunTrace> traces = Enumerable.Range(0, traceCount)
+                .Select(i => Trace(7200 + i, completed: true, failure: string.Empty, bossReached: true))
+                .ToList();
+            AutoRunReport report = AutoRunReportBuilder.Build(Request(traceCount, 1), traces);
+            string legacyJson = AutoRunReportBuilder.ToFullJson(report, prettyPrint: false);
+            var output = new ChunkObservingWriter();
+
+            AutoRunReportBuilder.WriteFullJson(report, output);
+
+            Assert.That(output.CharactersWritten, Is.EqualTo((long)legacyJson.Length));
+            Assert.That(output.StringWrites, Is.GreaterThanOrEqualTo(traceCount));
+            Assert.That(output.MaxStringWrite, Is.LessThan(legacyJson.Length / 4),
+                "streaming export must never hand the writer a whole-report-sized string");
+        }
+
+        [Test]
+        public void AtomicStreamingJsonReplacesExistingFileAsUtf8WithoutBom()
+        {
+            string directory = Path.Combine(
+                Path.GetTempPath(),
+                "gourmet-balance-json-" + Guid.NewGuid().ToString("N"));
+            string path = Path.Combine(directory, "report.json");
+            try
+            {
+                AutoRunReport first = AutoRunReportBuilder.Build(
+                    Request(1, 1),
+                    new[] { Trace(7300, completed: true, failure: string.Empty, bossReached: true) });
+                AutoRunReportRequest replacementRequest = Request(1, 1);
+                replacementRequest.BaseSeed = 9876;
+                replacementRequest.CharacterName = "替换后的角色";
+                AutoRunReport replacement = AutoRunReportBuilder.Build(
+                    replacementRequest,
+                    new[] { Trace(7301, completed: true, failure: string.Empty, bossReached: true) });
+
+                AutoRunReportBuilder.WriteFullJsonFileAtomically(first, path);
+                AutoRunReportBuilder.WriteFullJsonFileAtomically(replacement, path);
+
+                byte[] bytes = File.ReadAllBytes(path);
+                Assert.That(bytes.Length, Is.GreaterThan(3));
+                Assert.That(bytes.Take(3), Is.Not.EqualTo(new byte[] { 0xEF, 0xBB, 0xBF }));
+                string json = Encoding.UTF8.GetString(bytes);
+                Assert.That(json, Is.EqualTo(AutoRunReportBuilder.ToFullJson(replacement, prettyPrint: false)));
+                AutoRunReport restored = JsonUtility.FromJson<AutoRunReport>(json);
+                Assert.That(restored.BaseSeed, Is.EqualTo(9876));
+                Assert.That(restored.CharacterName, Is.EqualTo("替换后的角色"));
+                Assert.That(restored.Traces.Single().Seed, Is.EqualTo(7301));
+                Assert.That(Directory.GetFiles(directory, "*.tmp"), Is.Empty);
+                Assert.That(Directory.GetFiles(directory, "*.old"), Is.Empty);
+            }
+            finally
+            {
+                if (File.Exists(path)) File.Delete(path);
+                if (Directory.Exists(directory))
+                {
+                    foreach (string file in Directory.GetFiles(directory)) File.Delete(file);
+                    Directory.Delete(directory);
+                }
+            }
         }
 
         private static AutoRunReportRequest Request(int requested, int weeks)
@@ -608,6 +705,30 @@ namespace GourmetProject.Tests.EditMode
                 HeartsLost = 0,
                 Survived = true,
             };
+        }
+
+        private sealed class ChunkObservingWriter : TextWriter
+        {
+            public override Encoding Encoding => Encoding.UTF8;
+
+            public long CharactersWritten { get; private set; }
+
+            public int StringWrites { get; private set; }
+
+            public int MaxStringWrite { get; private set; }
+
+            public override void Write(char value)
+            {
+                CharactersWritten++;
+            }
+
+            public override void Write(string value)
+            {
+                if (value == null) return;
+                StringWrites++;
+                CharactersWritten += value.Length;
+                MaxStringWrite = Math.Max(MaxStringWrite, value.Length);
+            }
         }
     }
 }

@@ -109,7 +109,7 @@
     "deliciousness": 20,
     "skills": "sk_eggtart",
     "category": "",
-    "countAs": 2,
+    "countAs": 1,
     "shapeRows": [
       "XX"
     ],
@@ -160,7 +160,7 @@
     "deliciousness": 20,
     "skills": "sk_mousse",
     "category": "cake",
-    "countAs": 2,
+    "countAs": 1,
     "shapeRows": [
       "XX"
     ],
@@ -230,7 +230,7 @@
     "deliciousness": 20,
     "skills": "sk_mochi",
     "category": "",
-    "countAs": 2,
+    "countAs": 1,
     "shapeRows": [
       "X",
       "X"
@@ -302,7 +302,7 @@
     "deliciousness": 30,
     "skills": "sk_eggroll",
     "category": "",
-    "countAs": 3,
+    "countAs": 2,
     "shapeRows": [
       "XXX"
     ],
@@ -421,7 +421,7 @@
     "deliciousness": 30,
     "skills": "sk_hawthorn_cake",
     "category": "",
-    "countAs": 3,
+    "countAs": 2,
     "shapeRows": [
       "XXX"
     ],
@@ -548,7 +548,7 @@
     "deliciousness": 30,
     "skills": "sk_soybean_glutinous_roll",
     "category": "",
-    "countAs": 3,
+    "countAs": 2,
     "shapeRows": [
       "X",
       "X",
@@ -567,7 +567,7 @@
     "deliciousness": 30,
     "skills": "sk_bamboo_tube_cake",
     "category": "",
-    "countAs": 3,
+    "countAs": 2,
     "shapeRows": [
       "X",
       "X",
@@ -679,7 +679,7 @@
     "deliciousness": 30,
     "skills": "sk_mung_bean_cake",
     "category": "",
-    "countAs": 4,
+    "countAs": 3,
     "shapeRows": [
       "XX",
       "XX"
@@ -697,7 +697,7 @@
     "deliciousness": 30,
     "skills": "sk_egg_yolk_pastry",
     "category": "",
-    "countAs": 4,
+    "countAs": 3,
     "shapeRows": [
       "XX",
       "XX"
@@ -805,7 +805,7 @@
     "deliciousness": 40,
     "skills": "sk_taosu",
     "category": "",
-    "countAs": 4,
+    "countAs": 3,
     "shapeRows": [
       "XX",
       "XX"
@@ -823,7 +823,7 @@
     "deliciousness": 40,
     "skills": "sk_brown_sugar_steamed_cake",
     "category": "",
-    "countAs": 4,
+    "countAs": 3,
     "shapeRows": [
       "XX",
       "XX"
@@ -950,7 +950,7 @@
     "deliciousness": 60,
     "skills": "sk_mango_sago",
     "category": "",
-    "countAs": 6,
+    "countAs": 4,
     "shapeRows": [
       "XXX",
       "XXX"
@@ -987,7 +987,7 @@
     "deliciousness": 60,
     "skills": "sk_mala_gao",
     "category": "",
-    "countAs": 6,
+    "countAs": 4,
     "shapeRows": [
       "XX",
       "XX",
@@ -1044,7 +1044,7 @@
     "deliciousness": 100,
     "skills": "sk_double_skin_milk",
     "category": "",
-    "countAs": 9,
+    "countAs": 6,
     "shapeRows": [
       "XXX",
       "XXX",

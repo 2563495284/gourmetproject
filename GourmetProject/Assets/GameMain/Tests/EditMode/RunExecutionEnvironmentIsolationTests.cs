@@ -138,6 +138,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        [Timeout(600000)]
         [Explicit("Nightly Balance Lab soak and deterministic reverse replay: 1000 seeds per player level.")]
         [Category("BalanceLabNightly")]
         public void ProductionConfig_Nightly1000SeedsPerLevel_HasNoInfrastructureFailuresAndReplaysDeterministically()
@@ -188,6 +189,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        [Timeout(600000)]
         [Explicit("Nightly Balance Lab performance gate: 5000 total runs on the approved editor baseline.")]
         [Category("BalanceLabPerformance")]
         public void ProductionConfig_Nightly5000Runs_StaysWithinApprovedPerformanceBaseline()

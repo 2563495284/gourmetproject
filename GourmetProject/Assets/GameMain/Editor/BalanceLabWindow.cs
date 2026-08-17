@@ -1088,10 +1088,15 @@ namespace GourmetProject.EditorTools
             string timestamp = generated.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
             string stem = $"balance-auto-{SafeFileName(_lastAutoReport.CharacterId)}-{_lastAutoReport.BaseSeed}-{timestamp}";
             string path = Path.Combine(directory, stem + (json ? ".json" : ".csv"));
-            string content = json
-                ? AutoRunReportBuilder.ToFullJson(_lastAutoReport, true)
-                : AutoRunReportBuilder.ToSummaryCsv(_lastAutoReport);
-            File.WriteAllText(path, content, json ? new UTF8Encoding(false) : new UTF8Encoding(true));
+            if (json)
+            {
+                AutoRunReportBuilder.WriteFullJsonFileAtomically(_lastAutoReport, path);
+            }
+            else
+            {
+                string content = AutoRunReportBuilder.ToSummaryCsv(_lastAutoReport);
+                File.WriteAllText(path, content, new UTF8Encoding(true));
+            }
             _lastExportPath = path;
             ShowNotification(new GUIContent($"已导出 {Path.GetFileName(path)}"));
         }

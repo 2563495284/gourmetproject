@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using BreakInfinity;
@@ -203,6 +205,10 @@ namespace GourmetProject.Game.Balance
     public static class AutoRunReportBuilder
     {
         private const string HeartsExhaustedReason = "红心耗尽";
+        private const string EmptyTraceArrayJson = "\"Traces\":[]";
+        private const int JsonStreamBufferSize = 64 * 1024;
+        private static readonly FieldInfo[] ReportSerializationFields = typeof(AutoRunReport)
+            .GetFields(BindingFlags.Instance | BindingFlags.Public);
 
         private sealed class LegacyBossSample
         {
@@ -831,6 +837,166 @@ namespace GourmetProject.Game.Balance
         {
             if (report == null) throw new ArgumentNullException(nameof(report));
             return JsonUtility.ToJson(report, prettyPrint);
+        }
+
+        /// <summary>
+        /// 以与 <see cref="ToFullJson(AutoRunReport, bool)"/> compact 输出逐字节一致的格式写出完整报告。
+        /// 顶层元数据只序列化一次，trace 则逐条交给 JsonUtility，避免为整份报告创建单体 UTF-16 字符串。
+        /// </summary>
+        public static void WriteFullJson(AutoRunReport report, TextWriter writer)
+        {
+            if (report == null) throw new ArgumentNullException(nameof(report));
+            if (writer == null) throw new ArgumentNullException(nameof(writer));
+
+            AutoRunReport envelopeReport = CopyWithoutTraces(report);
+            string envelopeJson = JsonUtility.ToJson(envelopeReport, prettyPrint: false);
+            int markerIndex = envelopeJson.IndexOf(EmptyTraceArrayJson, StringComparison.Ordinal);
+            if (markerIndex < 0
+                || envelopeJson.IndexOf(
+                    EmptyTraceArrayJson,
+                    markerIndex + EmptyTraceArrayJson.Length,
+                    StringComparison.Ordinal) >= 0)
+            {
+                throw new InvalidOperationException(
+                    "AutoRunReport compact JSON did not contain exactly one empty Traces array.");
+            }
+
+            int arrayOffset = markerIndex + "\"Traces\":".Length;
+            writer.Write(envelopeJson.Substring(0, arrayOffset));
+            writer.Write('[');
+            List<AutoRunTrace> traces = report.Traces ?? new List<AutoRunTrace>();
+            for (int i = 0; i < traces.Count; i++)
+            {
+                if (i > 0) writer.Write(',');
+                AutoRunTrace trace = traces[i];
+                writer.Write(trace == null ? "null" : JsonUtility.ToJson(trace, prettyPrint: false));
+            }
+
+            writer.Write(']');
+            writer.Write(envelopeJson.Substring(arrayOffset + 2));
+        }
+
+        /// <summary>
+        /// 将完整 JSON 先写入同目录临时文件并刷盘，再原子替换目标，避免中断时留下半份报告。
+        /// </summary>
+        public static void WriteFullJsonFileAtomically(AutoRunReport report, string path)
+        {
+            if (report == null) throw new ArgumentNullException(nameof(report));
+            if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("path must not be empty", nameof(path));
+
+            string fullPath = Path.GetFullPath(path);
+            string directory = Path.GetDirectoryName(fullPath);
+            if (string.IsNullOrEmpty(directory))
+                throw new ArgumentException("path must have a parent directory", nameof(path));
+            Directory.CreateDirectory(directory);
+
+            string temporaryPath = fullPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                using (var stream = new FileStream(
+                           temporaryPath,
+                           FileMode.CreateNew,
+                           FileAccess.Write,
+                           FileShare.None,
+                           JsonStreamBufferSize,
+                           FileOptions.SequentialScan))
+                using (var output = new StreamWriter(
+                           stream,
+                           new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+                           JsonStreamBufferSize,
+                           leaveOpen: true))
+                {
+                    WriteFullJson(report, output);
+                    output.Flush();
+                    stream.Flush(flushToDisk: true);
+                }
+
+                ReplaceCompletedFile(temporaryPath, fullPath);
+            }
+            finally
+            {
+                SafeDelete(temporaryPath);
+            }
+        }
+
+        private static AutoRunReport CopyWithoutTraces(AutoRunReport source)
+        {
+            var copy = new AutoRunReport();
+            foreach (FieldInfo field in ReportSerializationFields)
+            {
+                if (!string.Equals(field.Name, nameof(AutoRunReport.Traces), StringComparison.Ordinal))
+                    field.SetValue(copy, field.GetValue(source));
+            }
+
+            copy.Traces = new List<AutoRunTrace>();
+            return copy;
+        }
+
+        private static void ReplaceCompletedFile(string completedPath, string destinationPath)
+        {
+            if (!File.Exists(destinationPath))
+            {
+                File.Move(completedPath, destinationPath);
+                return;
+            }
+
+            try
+            {
+                File.Replace(completedPath, destinationPath, destinationBackupFileName: null);
+            }
+            catch (PlatformNotSupportedException)
+            {
+                ReplaceByMoveWithRollback(completedPath, destinationPath);
+            }
+            catch (IOException)
+            {
+                ReplaceByMoveWithRollback(completedPath, destinationPath);
+            }
+        }
+
+        private static void ReplaceByMoveWithRollback(string completedPath, string destinationPath)
+        {
+            string displacedPath = destinationPath + "." + Guid.NewGuid().ToString("N") + ".old";
+            File.Move(destinationPath, displacedPath);
+            bool displacedCanBeDeleted = false;
+            try
+            {
+                File.Move(completedPath, destinationPath);
+                displacedCanBeDeleted = true;
+            }
+            catch (Exception replacementException)
+            {
+                try
+                {
+                    if (!File.Exists(destinationPath) && File.Exists(displacedPath))
+                        File.Move(displacedPath, destinationPath);
+                    displacedCanBeDeleted = File.Exists(destinationPath);
+                }
+                catch (Exception rollbackException)
+                {
+                    throw new IOException(
+                        $"Failed to replace '{destinationPath}' and could not restore the original file at '{displacedPath}'.",
+                        new AggregateException(replacementException, rollbackException));
+                }
+
+                throw;
+            }
+            finally
+            {
+                if (displacedCanBeDeleted) SafeDelete(displacedPath);
+            }
+        }
+
+        private static void SafeDelete(string path)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(path) && File.Exists(path)) File.Delete(path);
+            }
+            catch
+            {
+                // 临时文件清理失败不覆盖原始导出异常。
+            }
         }
 
         private static void AddDynamicWarnings(
