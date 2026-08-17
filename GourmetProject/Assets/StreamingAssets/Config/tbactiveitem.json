@@ -2,7 +2,7 @@
   {
     "id": "item_active_season_sweet",
     "name": "甜味箱",
-    "desc": "选择1个食物\n添加「甜」风味",
+    "desc": "选择1个食物\n添加「甜」风味\n（对餐桌上的食物使用）",
     "specialTags": "",
     "effectType": "AddFlavor",
     "effectValue": 0,
@@ -17,7 +17,7 @@
   {
     "id": "item_active_season_bitter",
     "name": "苦味箱",
-    "desc": "选择1个食物\n添加「苦」风味",
+    "desc": "选择1个食物\n添加「苦」风味\n（对餐桌上的食物使用）",
     "specialTags": "",
     "effectType": "AddFlavor",
     "effectValue": 0,
@@ -32,7 +32,7 @@
   {
     "id": "item_active_season_umami",
     "name": "鲜味箱",
-    "desc": "选择1个食物\n添加「鲜」风味",
+    "desc": "选择1个食物\n添加「鲜」风味\n（对餐桌上的食物使用）",
     "specialTags": "",
     "effectType": "AddFlavor",
     "effectValue": 0,
@@ -47,7 +47,7 @@
   {
     "id": "item_active_season_numb",
     "name": "麻味箱",
-    "desc": "选择1个食物\n添加「麻」风味",
+    "desc": "选择1个食物\n添加「麻」风味\n（对餐桌上的食物使用）",
     "specialTags": "",
     "effectType": "AddFlavor",
     "effectValue": 0,
@@ -62,7 +62,7 @@
   {
     "id": "item_active_season_sour",
     "name": "酸味箱",
-    "desc": "选择1个食物\n添加「酸」风味",
+    "desc": "选择1个食物\n添加「酸」风味\n（对餐桌上的食物使用）",
     "specialTags": "",
     "effectType": "AddFlavor",
     "effectValue": 0,
@@ -77,7 +77,7 @@
   {
     "id": "item_active_season_salty",
     "name": "咸味箱",
-    "desc": "选择1个食物\n添加「咸」风味",
+    "desc": "选择1个食物\n添加「咸」风味\n（对餐桌上的食物使用）",
     "specialTags": "",
     "effectType": "AddFlavor",
     "effectValue": 0,
@@ -92,7 +92,7 @@
   {
     "id": "item_active_lay_cherry",
     "name": "樱桃木箱",
-    "desc": "选择1个餐桌格\n将其铺装为「樱桃木」材质",
+    "desc": "选择1个餐桌格\n将其铺装为「樱桃木」材质\n（对营业中的餐桌使用）",
     "specialTags": "LayWood",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -107,7 +107,7 @@
   {
     "id": "item_active_lay_walnut",
     "name": "胡桃木箱",
-    "desc": "选择1个餐桌格\n将其铺装为「胡桃木」材质",
+    "desc": "选择1个餐桌格\n将其铺装为「胡桃木」材质\n（对营业中的餐桌使用）",
     "specialTags": "LayWood",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -122,7 +122,7 @@
   {
     "id": "item_active_lay_marble",
     "name": "大理石箱",
-    "desc": "选择1个餐桌格\n将其铺装为「大理石」材质",
+    "desc": "选择1个餐桌格\n将其铺装为「大理石」材质\n（对营业中的餐桌使用）",
     "specialTags": "LayStone",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -137,7 +137,7 @@
   {
     "id": "item_active_lay_obsidian",
     "name": "黑曜石箱",
-    "desc": "选择1个餐桌格\n将其铺装为「黑曜石」材质",
+    "desc": "选择1个餐桌格\n将其铺装为「黑曜石」材质\n（对营业中的餐桌使用）",
     "specialTags": "LayStone",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -152,7 +152,7 @@
   {
     "id": "item_active_lay_emerald",
     "name": "翡翠箱",
-    "desc": "选择1个餐桌格\n将其铺装为「翡翠」材质",
+    "desc": "选择1个餐桌格\n将其铺装为「翡翠」材质\n（对营业中的餐桌使用）",
     "specialTags": "LayStone",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -167,7 +167,7 @@
   {
     "id": "item_active_lay_gold",
     "name": "金质箱",
-    "desc": "选择1个餐桌格\n将其铺装为「金」材质",
+    "desc": "选择1个餐桌格\n将其铺装为「金」材质\n（对营业中的餐桌使用）",
     "specialTags": "LayMetal",
     "effectType": "AddMaterial",
     "effectValue": 0,
@@ -182,7 +182,7 @@
   {
     "id": "item_active_lay_silver",
     "name": "银质箱",
-    "desc": "选择1个餐桌格\n将其铺装为「银」材质",
+    "desc": "选择1个餐桌格\n将其铺装为「银」材质\n（对营业中的餐桌使用）",
     "specialTags": "LayMetal",
     "effectType": "AddMaterial",
     "effectValue": 0,
