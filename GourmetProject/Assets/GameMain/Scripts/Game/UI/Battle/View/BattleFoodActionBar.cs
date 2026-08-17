@@ -4,6 +4,7 @@ using GourmetProject.Gameplay.Battle;
 using GourmetProject.Runtime.UI;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Battle.View
@@ -42,6 +43,9 @@ namespace GourmetProject.Game.UI.Battle.View
         private CanvasGroup _toolsInteractionGroup;
         private bool _hasRecipeInspectAction;
         private int? _recipeCountPresentationOverride;
+        private bool _food;
+        private BattleSession _session;
+        private BattleWorldController _world;
 
         public RectTransform SettleRect =>
             _eatButton != null ? _eatButton.transform as RectTransform : transform as RectTransform;
@@ -99,10 +103,13 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public void Refresh(bool food, BattleSession session, BattleWorldController world)
         {
+            _food = food;
+            _session = session;
+            _world = world;
+
             bool doodleReady = food && world != null;
             BattleDoodleTool tool = world != null ? world.DoodleTool : BattleDoodleTool.None;
-            bool toolActive = doodleReady && tool != BattleDoodleTool.None;
-            SetInteractionLocked(toolActive);
+            SetInteractionLocked(false);
             RefreshRecipeInfo(food, session);
 
             if (_eatButton != null)
@@ -110,12 +117,9 @@ namespace GourmetProject.Game.UI.Battle.View
                 _eatButton.interactable = food
                     && session != null
                     && !session.IsSettled
-                    && (world == null || !world.IsFoodInteractionBusy)
-                    && !toolActive;
+                    && (world == null || !world.IsFoodInteractionBusy);
             }
 
-            // 涂鸦工具栏在绘制期间仍是唯一可交互区域：画笔和橡皮需要能直接互相切换，
-            // 清空与显隐也不应要求玩家先退出当前工具。
             SetInteractable(_doodleDrawButton, doodleReady);
             SetInteractable(_doodleEraseButton, doodleReady);
             SetInteractable(_doodleClearButton, doodleReady);
@@ -191,9 +195,50 @@ namespace GourmetProject.Game.UI.Battle.View
                 food && session != null && _hasRecipeInspectAction);
         }
 
+        private void Update()
+        {
+            if (_world == null || _world.DoodleTool == BattleDoodleTool.None)
+            {
+                return;
+            }
+
+            if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                return;
+            }
+
+            if (!ShouldExitDoodleToolOnUiClick(WorldInput.PointerClickHandler, DoodleToolsRoot))
+            {
+                return;
+            }
+
+            _world.ExitDoodleTool();
+            Refresh(_food, _session, _world);
+        }
+
         private void OnDisable()
         {
             SetInteractionLocked(false);
+        }
+
+        private Transform DoodleToolsRoot
+        {
+            get
+            {
+                EnsureInteractionGroups();
+                return _toolsInteractionGroup != null ? _toolsInteractionGroup.transform : null;
+            }
+        }
+
+        internal static bool ShouldExitDoodleToolOnUiClick(GameObject clickHandler, Transform doodleToolsRoot)
+        {
+            if (clickHandler == null || doodleToolsRoot == null)
+            {
+                return false;
+            }
+
+            Transform target = clickHandler.transform;
+            return target != doodleToolsRoot && !target.IsChildOf(doodleToolsRoot);
         }
 
         private void SetInteractionLocked(bool locked)

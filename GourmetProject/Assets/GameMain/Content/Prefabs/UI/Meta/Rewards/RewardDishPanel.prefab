@@ -606,7 +606,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8634008777499492716}
-  - component: {fileID: 6977437264872629100}
+  - component: {fileID: 6877236205101520600}
   m_Layer: 5
   m_Name: ChoiceContainer
   m_TagString: Untagged
@@ -634,7 +634,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: -440}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &6977437264872629100
+--- !u!114 &6877236205101520600
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -643,23 +643,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 8466178698854675555}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Script: {fileID: 11500000, guid: 7c3000cc0823942d490600756b85cf5f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.BalancedWrapLayoutGroup
   m_Padding:
     m_Left: 0
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 4
-  m_Spacing: 0
-  m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 0
-  m_ChildControlWidth: 0
-  m_ChildControlHeight: 0
-  m_ChildScaleWidth: 0
-  m_ChildScaleHeight: 0
-  m_ReverseArrangement: 0
+  _maxColumns: 3
+  _spacing: 24
+  _maxChildSize: 400
 --- !u!1001 &6523165847673886883
 PrefabInstance:
   m_ObjectHideFlags: 0

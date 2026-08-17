@@ -3509,6 +3509,14 @@ namespace GourmetProject.Game.Presentation.Battle
             return _doodle.ToggleTool(tool);
         }
 
+        public void ExitDoodleTool()
+        {
+            if (_doodle != null && _doodle.Tool != BattleDoodleTool.None)
+            {
+                _doodle.SetTool(BattleDoodleTool.None);
+            }
+        }
+
         /// <summary>每次进入经营挑战时清空笔迹，并把涂鸦层复位为可见。</summary>
         public void ResetDoodle()
         {

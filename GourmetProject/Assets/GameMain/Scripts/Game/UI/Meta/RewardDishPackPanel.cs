@@ -180,13 +180,14 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _cardTemplate.gameObject.SetActive(false);
-            HorizontalLayoutGroup layout = _choiceContainer.GetComponent<HorizontalLayoutGroup>();
+            BalancedWrapLayoutGroup layout = _choiceContainer.GetComponent<BalancedWrapLayoutGroup>();
             if (layout != null)
             {
                 layout.enabled = true;
                 layout.childAlignment = TextAnchor.MiddleCenter;
             }
 
+            var pending = new List<(RewardDishChoiceCardView card, RewardChoice choice, DishDef dish, int index)>();
             for (int i = 0; i < _choices.Count; i++)
             {
                 int index = i;
@@ -195,6 +196,16 @@ namespace GourmetProject.Game.UI.Meta
                 RewardDishChoiceCardView card = Instantiate(_cardTemplate, _choiceContainer);
                 card.gameObject.name = $"RewardDishChoice_{index + 1}";
                 card.gameObject.SetActive(true);
+                pending.Add((card, choice, dish, index));
+                _spawnedCards.Add(card);
+            }
+
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_choiceContainer);
+
+            for (int i = 0; i < pending.Count; i++)
+            {
+                (RewardDishChoiceCardView card, RewardChoice choice, DishDef dish, int index) = pending[i];
                 card.Bind(
                     choice,
                     dish,
@@ -203,11 +214,7 @@ namespace GourmetProject.Game.UI.Meta
                     OnChoiceClicked,
                     ShowDishTips,
                     HideDishTips);
-                _spawnedCards.Add(card);
             }
-
-            Canvas.ForceUpdateCanvases();
-            LayoutRebuilder.ForceRebuildLayoutImmediate(_choiceContainer);
         }
 
         private void ClearCards()

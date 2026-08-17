@@ -60,6 +60,29 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        public static GameObject PointerClickHandler
+        {
+            get
+            {
+                if (!PointerOverUi)
+                {
+                    return null;
+                }
+
+                for (int i = 0; i < UiRaycastResults.Count; i++)
+                {
+                    GameObject handler = ExecuteEvents.GetEventHandler<IPointerClickHandler>(
+                        UiRaycastResults[i].gameObject);
+                    if (handler != null)
+                    {
+                        return handler;
+                    }
+                }
+
+                return null;
+            }
+        }
+
         public static Vector3 MouseWorld(Camera camera)
         {
             if (camera == null || Mouse.current == null)
