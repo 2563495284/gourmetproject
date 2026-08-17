@@ -481,7 +481,29 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private GpTable SourceBattleTable()
         {
-            return _sourceView == GameplayView.Food ? _host.Session?.DiningTable : null;
+            BattleSession session = _host.Session;
+            GpTable currentRunTable = _sourceView == GameplayView.Food
+                && (session == null || session.IsSettled)
+                    ? _host.Run?.BuildTablePreviewFromFragments()
+                    : null;
+            return ResolveTableInspectionSource(_sourceView, session, currentRunTable);
+        }
+
+        internal static GpTable ResolveTableInspectionSource(
+            GameplayView sourceView,
+            BattleSession session,
+            GpTable currentRunTable)
+        {
+            if (sourceView != GameplayView.Food)
+            {
+                return null;
+            }
+
+            // 经营中查看的是本场实时餐桌；结算后的 BattleSession 是开战时快照，
+            // RewardForm 拼入新碎片后必须改用 GameRun 重建的最新餐桌。
+            return session != null && !session.IsSettled
+                ? session.DiningTable
+                : currentRunTable;
         }
 
         private IReadOnlyList<RecipeReadonlyDishEntry> BuildBattleReadonlyEntries(int bookIndex)
