@@ -238,6 +238,140 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(ScoreOf(result, targetB).Multiplier.ToDouble(), Is.EqualTo(1d).Within(0.0001d));
         }
 
+        [TestCase(0, 8)]
+        [TestCase(9999, 4)]
+        public void ChocolateTruffle_RollsOncePerTargetAfterFixedBonuses(
+            int randomRoll,
+            int expectedTargetCount)
+        {
+            SkillRuleDef truffleRule = Rule(
+                "sk_chocolate_truffle_1", "sk_chocolate_truffle",
+                SkillConditionType.None, SkillScope.Self,
+                CountUnit.Instances, CountMode.Gate,
+                SkillActionType.TriggerSweetTransfer, SkillScope.All,
+                1f, "modifier:add-targets;chance:0.5");
+            SkillRuleDef fixedBonusRule = Rule(
+                "sk_marshmallow_1", "sk_marshmallow",
+                SkillConditionType.None, SkillScope.Self,
+                CountUnit.Instances, CountMode.Gate,
+                SkillActionType.TriggerSweetTransfer, SkillScope.All,
+                2f, "modifier:add-targets");
+            SkillDef truffleSkill = Skill("sk_chocolate_truffle", truffleRule);
+            SkillDef fixedBonusSkill = Skill("sk_marshmallow", fixedBonusRule);
+            SkillDef transferSkill = TransferSkill("transfer_two", 1, 2);
+            DishInstance truffle = Dish(1, "chocolate_truffle", 0, 0, 0, new[] { truffleSkill.Id });
+            DishInstance marshmallow = Dish(2, "marshmallow", 0, 1, 0, new[] { fixedBonusSkill.Id });
+            DishInstance source = Dish(3, "source", 0, 2, 0, new[] { transferSkill.Id });
+            var dishes = new List<DishInstance> { truffle, marshmallow, source };
+            for (int i = 0; i < 8; i++)
+            {
+                dishes.Add(Dish(10 + i, "target_" + i, 0, i, 1, Array.Empty<string>()));
+            }
+
+            var table = new DiningTable(8, 2);
+            foreach (DishInstance dish in dishes)
+            {
+                table.Place(dish);
+            }
+
+            int rollCount = 0;
+            int selectedCount = 0;
+            new ScoreCalculator().Calculate(
+                table,
+                Database(dishes.Select(dish => dish.Def).ToArray(), truffleSkill, fixedBonusSkill, transferSkill),
+                transferTargetSelector: (ids, count) =>
+                {
+                    selectedCount = count;
+                    return ids.Take(count).ToArray();
+                },
+                randomIntegerSelector: (_, _) =>
+                {
+                    rollCount++;
+                    return randomRoll;
+                });
+
+            Assert.That(rollCount, Is.EqualTo(4), "原目标 2 + 固定额外目标 2，应独立判定 4 次");
+            Assert.That(selectedCount, Is.EqualTo(expectedTargetCount));
+        }
+
+        [Test]
+        public void ChocolateTruffle_MultipleOwnersRollIndependentlyAndTargetsRemainCapped()
+        {
+            SkillRuleDef truffleRule = Rule(
+                "sk_chocolate_truffle_1", "sk_chocolate_truffle",
+                SkillConditionType.None, SkillScope.Self,
+                CountUnit.Instances, CountMode.Gate,
+                SkillActionType.TriggerSweetTransfer, SkillScope.All,
+                1f, "modifier:add-targets;chance:0.5");
+            SkillDef truffleSkill = Skill("sk_chocolate_truffle", truffleRule);
+            SkillDef transferSkill = TransferSkill("transfer_one", 1, 1);
+            DishInstance truffleA = Dish(1, "truffle_a", 0, 0, 0, new[] { truffleSkill.Id });
+            DishInstance truffleB = Dish(2, "truffle_b", 0, 1, 0, new[] { truffleSkill.Id });
+            DishInstance source = Dish(3, "source", 0, 2, 0, new[] { transferSkill.Id });
+            var table = new DiningTable(3, 1);
+            table.Place(truffleA);
+            table.Place(truffleB);
+            table.Place(source);
+
+            int rollCount = 0;
+            int selectedCount = 0;
+            new ScoreCalculator().Calculate(
+                table,
+                Database(new[] { truffleA.Def, truffleB.Def, source.Def }, truffleSkill, transferSkill),
+                transferTargetSelector: (ids, count) =>
+                {
+                    selectedCount = count;
+                    return ids.Take(count).ToArray();
+                },
+                randomIntegerSelector: (_, _) =>
+                {
+                    rollCount++;
+                    return 0;
+                });
+
+            Assert.That(rollCount, Is.EqualTo(2), "两个松露应各自对原目标独立判定一次");
+            Assert.That(selectedCount, Is.EqualTo(2), "请求 3 个目标时应受两个合法候选封顶");
+        }
+
+        [Test]
+        public void ChocolateTruffle_DoesNotAffectTransfersResolvedBeforeIt()
+        {
+            SkillDef transferSkill = TransferSkill("early_transfer", 1, 1);
+            SkillRuleDef truffleRule = Rule(
+                "sk_chocolate_truffle_1", "sk_chocolate_truffle",
+                SkillConditionType.None, SkillScope.Self,
+                CountUnit.Instances, CountMode.Gate,
+                SkillActionType.TriggerSweetTransfer, SkillScope.All,
+                1f, "modifier:add-targets;chance:0.5");
+            SkillDef truffleSkill = Skill("sk_chocolate_truffle", truffleRule);
+            DishInstance source = Dish(1, "source", 0, 0, 0, new[] { transferSkill.Id });
+            DishInstance truffle = Dish(2, "chocolate_truffle", 0, 1, 0, new[] { truffleSkill.Id });
+            DishInstance target = Dish(3, "target", 0, 2, 0, Array.Empty<string>());
+            var table = new DiningTable(3, 1);
+            table.Place(source);
+            table.Place(truffle);
+            table.Place(target);
+
+            int rollCount = 0;
+            int selectedCount = 0;
+            new ScoreCalculator().Calculate(
+                table,
+                Database(new[] { source.Def, truffle.Def, target.Def }, transferSkill, truffleSkill),
+                transferTargetSelector: (ids, count) =>
+                {
+                    selectedCount = count;
+                    return ids.Take(count).ToArray();
+                },
+                randomIntegerSelector: (_, _) =>
+                {
+                    rollCount++;
+                    return 0;
+                });
+
+            Assert.That(rollCount, Is.Zero);
+            Assert.That(selectedCount, Is.EqualTo(1));
+        }
+
         [Test]
         public void BigLollipop_RowColumnUnionExecutesCrossingSourceOnlyOnce()
         {

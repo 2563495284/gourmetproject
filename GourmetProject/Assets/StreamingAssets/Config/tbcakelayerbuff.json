@@ -5,25 +5,25 @@
     "threshold": 1,
     "category": "cake",
     "effectType": 1,
-    "valuePerLayer": 3,
-    "desc": "层数≥1：[term]蛋糕[/term]基础[strong]分数[/strong] [score]+3×层数[/score]"
+    "valuePerLayer": 2,
+    "desc": "层数≥1：[term]蛋糕[/term]基础[strong]分数[/strong] [score]+2×层数[/score]"
   },
   {
     "id": "clb_multflat",
     "order": 1,
-    "threshold": 50,
+    "threshold": 80,
     "category": "cake",
     "effectType": 9,
-    "valuePerLayer": 0.05,
-    "desc": "层数≥50：[term]蛋糕[/term][strong]倍率[/strong] [multadd]+0.05×层数[/multadd]"
+    "valuePerLayer": 0.02,
+    "desc": "层数≥100：[term]蛋糕[/term][strong]倍率[/strong] [multadd]+0.02×层数[/multadd]"
   },
   {
     "id": "clb_mult",
     "order": 2,
-    "threshold": 100,
+    "threshold": 240,
     "category": "cake",
     "effectType": 2,
-    "valuePerLayer": 0.02,
-    "desc": "层数≥100：[term]蛋糕[/term][strong]倍率[/strong] [multmul]×(0.02×层数)[/multmul]"
+    "valuePerLayer": 0.01,
+    "desc": "层数≥240：[term]蛋糕[/term][strong]倍率[/strong] [multmul]×(0.01×层数)[/multmul]"
   }
 ]

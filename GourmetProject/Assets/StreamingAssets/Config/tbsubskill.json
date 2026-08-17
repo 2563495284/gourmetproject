@@ -258,7 +258,7 @@
     "actionScope": 22,
     "actionCount": 0,
     "actionValue": [
-      0.5
+      0.8
     ],
     "actionParam": [],
     "signed": true,
@@ -275,7 +275,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 2,
+    "actionCount": 1,
     "actionValue": [
       0
     ],
@@ -467,7 +467,7 @@
     "actionScope": 23,
     "actionCount": 0,
     "actionValue": [
-      1
+      1.2
     ],
     "actionParam": [],
     "signed": true,
@@ -602,7 +602,7 @@
     "actionScope": 13,
     "actionCount": 0,
     "actionValue": [
-      30
+      40
     ],
     "actionParam": [],
     "signed": true,
@@ -758,7 +758,7 @@
     "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
-      40
+      50
     ],
     "actionParam": [
       "when:receive-transfer;resultscope:BuffTargets"
@@ -779,7 +779,7 @@
     "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
-      15
+      8
     ],
     "actionParam": [],
     "signed": true,
@@ -840,7 +840,7 @@
     "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
-      0.7
+      0.8
     ],
     "actionParam": [
       "when:transfer;resultscope:BuffTargets"
@@ -861,7 +861,7 @@
     "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
-      10
+      15
     ],
     "actionParam": [],
     "signed": true,
@@ -982,7 +982,7 @@
       0
     ],
     "actionParam": [
-      "random:int:20|80"
+      "random:int:20|60"
     ],
     "signed": true,
     "descTemplate": "[term]欢乐蛋糕[/term] +20～80 层",
@@ -1037,16 +1037,16 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 15,
-    "actionScope": 13,
+    "actionScope": 4,
     "actionCount": 0,
     "actionValue": [
       1
     ],
     "actionParam": [
-      "modifier:add-targets"
+      "modifier:add-targets;chance:0.5"
     ],
     "signed": false,
-    "descTemplate": "[context]结算[/context]后\n{ascope}食物发动[term]甜蜜传递[/term]时\n[benefit]额外选择[/benefit] 1 个目标",
+    "descTemplate": "[context]结算[/context]后\n所有食物发动[term]甜蜜传递[/term]时\n每个目标有 50% 概率使其[benefit]额外选择[/benefit] 1 个目标",
     "termId": "term_sweet_transfer"
   },
   {
@@ -1118,10 +1118,10 @@
     "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
-      1.5
+      1.4
     ],
     "actionParam": [
-      "multfloor:20"
+      "multfloor:15"
     ],
     "signed": false,
     "descTemplate": "[term]欢乐蛋糕[/term]层数 ×{0}\n至少 +{floor} 层",
@@ -1236,7 +1236,7 @@
     "condUnit": 0,
     "condMode": 0,
     "condParam": "",
-    "actionType": 9,
+    "actionType": 2,
     "actionScope": 0,
     "actionCount": 0,
     "actionValue": [
@@ -1244,7 +1244,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}技能\n[strong]倍率[/strong] [multadd]{0}[/multadd]",
+    "descTemplate": "{cscope}每有 1 {unit}技能\n[strong]倍率[/strong][/multmul]×{0}[/multmul]",
     "termId": ""
   },
   {
@@ -1257,7 +1257,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 3,
+    "actionCount": 2,
     "actionValue": [
       0
     ],
@@ -1417,7 +1417,7 @@
     "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
-      1.5
+      1.3
     ],
     "actionParam": [
       "cat:cake"
@@ -1477,10 +1477,10 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 15,
-    "actionScope": 14,
+    "actionScope": 13,
     "actionCount": 0,
     "actionValue": [
-      2
+      3
     ],
     "actionParam": [
       "modifier:add-targets"
