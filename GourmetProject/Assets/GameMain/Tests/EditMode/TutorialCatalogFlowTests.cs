@@ -185,20 +185,32 @@ namespace GourmetProject.Tests.EditMode
         [Test]
         public void UnlockHooks_UseApprovedCopyAndStepCounts()
         {
+            TutorialSequenceDefinition flavor = Require(TutorialId.Flavor, 2);
             AssertMessages(
-                Require(TutorialId.Flavor, 2),
+                flavor,
                 "老板，食物现在有风味啦！每个食物只有 1 个风味位哦。",
                 "风味会改变食物的属性和结算效果，强化箱道具可以帮我们为食物附加风味。");
+            AssertAllAnchors(flavor, TutorialAnchorId.AcquiredActiveItem);
+
+            TutorialSequenceDefinition material = Require(TutorialId.Material, 2);
             AssertMessages(
-                Require(TutorialId.Material, 2),
+                material,
                 "老板，餐桌现在有材质啦！每个餐桌格只有 1 个材质哦。",
                 "放置在餐桌格上的食物会获得对应效果；强化箱道具可以帮我们为餐桌附加材质。");
+            AssertAllAnchors(material, TutorialAnchorId.AcquiredActiveItem);
+
+            TutorialSequenceDefinition adjustment = Require(TutorialId.Adjustment, 1);
             AssertMessages(
-                Require(TutorialId.Adjustment, 1),
+                adjustment,
                 "这是调整单！它可以修改节点和行动。");
+            AssertAllAnchors(adjustment, TutorialAnchorId.AcquiredActiveItem);
+
+            TutorialSequenceDefinition passiveItem = Require(TutorialId.PassiveItem, 1);
             AssertMessages(
-                Require(TutorialId.PassiveItem, 1),
+                passiveItem,
                 "装饰品获得后会永久生效。这可是我们提升餐厅实力的重要方面呢！");
+            AssertAllAnchors(passiveItem, TutorialAnchorId.AcquiredPassiveItem);
+
             AssertMessages(
                 Require(TutorialId.Boss, 2),
                 "我们终于来到星级评鉴啦！星级评鉴拥有特殊规则，需要的美味值也更高。",
@@ -297,6 +309,16 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(sequence.Steps[i].Message, Is.EqualTo(expectedMessages[i]));
                 Assert.That(sequence.Steps[i].Mode, Is.EqualTo(TutorialAdvanceMode.Continue));
                 Assert.That(sequence.Steps[i].Signal, Is.Empty);
+            }
+        }
+
+        private static void AssertAllAnchors(
+            TutorialSequenceDefinition sequence,
+            params string[] expectedAnchors)
+        {
+            foreach (TutorialStepDefinition step in sequence.Steps)
+            {
+                CollectionAssert.AreEqual(expectedAnchors, step.Anchors);
             }
         }
     }

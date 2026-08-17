@@ -1539,10 +1539,7 @@ namespace GourmetProject.Game.Presentation.Battle
             foreach (PendingDishPlacement pending in _session.PendingDishPlacements)
             {
                 if (!pending.IsOnDiningTable
-                    || !ShouldShowPendingDishActionButton(
-                        pending.ActionKind,
-                        GameApp.Settings?.RequireServeConfirmation
-                            ?? SettingsService.DefaultRequireServeConfirmation)
+                    || !ShouldShowPendingDishActionButton(RequireServeConfirmationSetting)
                     || !_dishViewsById.TryGetValue(pending.Dish.Id, out DishPieceView piece)
                     || piece == null)
                 {
@@ -2016,11 +2013,7 @@ namespace GourmetProject.Game.Presentation.Battle
             PlayDropDust(placement, footprintSize, releaseVelocity);
             PlayScopeAffectedDishFeedback(affectedDishIds);
 
-            bool autoConfirm = ShouldAutoConfirmPendingDish(
-                    PendingDishActionKind.Serve,
-                    GameApp.Settings?.RequireServeConfirmation
-                        ?? SettingsService.DefaultRequireServeConfirmation);
-            if (autoConfirm)
+            if (ShouldAutoConfirmPendingDish(RequireServeConfirmationSetting))
             {
                 // 自动上菜会同步提交数据，再等待落格/触发演出。这里不要先发布
                 // PendingDish 中间态，否则出餐口会闪成“等待上菜/确认”。
@@ -2037,18 +2030,22 @@ namespace GourmetProject.Game.Presentation.Battle
             return true;
         }
 
-        internal static bool ShouldAutoConfirmPendingDish(
-            PendingDishActionKind actionKind,
-            bool requireServeConfirmation)
+        private static bool RequireServeConfirmationSetting
+            => GameApp.Settings?.RequireServeConfirmation
+                ?? SettingsService.DefaultRequireServeConfirmation;
+
+        /// <summary>
+        /// 关闭“需确认上菜”时落桌即确认，出菜口上菜与临时桌回摆走同一套语义，
+        /// 代价是放弃预摆期间重新拖动的机会。
+        /// </summary>
+        internal static bool ShouldAutoConfirmPendingDish(bool requireServeConfirmation)
         {
-            return !requireServeConfirmation && actionKind == PendingDishActionKind.Serve;
+            return !requireServeConfirmation;
         }
 
-        internal static bool ShouldShowPendingDishActionButton(
-            PendingDishActionKind actionKind,
-            bool requireServeConfirmation)
+        internal static bool ShouldShowPendingDishActionButton(bool requireServeConfirmation)
         {
-            return actionKind != PendingDishActionKind.Serve || requireServeConfirmation;
+            return !ShouldAutoConfirmPendingDish(requireServeConfirmation);
         }
 
         private DishPieceView InstantiateLoosePiece(DishInstance dish, string objectName)
@@ -2535,8 +2532,19 @@ namespace GourmetProject.Game.Presentation.Battle
             PlayDropDust(placement, footprintSize, releaseVelocity);
             FlashServeScopeHighlights(dish, GetPresentationToken());
             PendingDishPlacement pending = _session.FindPendingDishPlacement(dish.Id);
-            string actionLabel = pending?.ActionKind == PendingDishActionKind.Serve ? "上菜" : "确认";
-            SetMessage($"已摆放：{dish.Def.Name}，点击下方“{actionLabel}”按钮确认。");
+            bool serveAction = pending?.ActionKind == PendingDishActionKind.Serve;
+            if (ShouldAutoConfirmPendingDish(RequireServeConfirmationSetting))
+            {
+                // 与出菜口自动上菜一致：确认会同步提交数据并接管后续演出，
+                // 这里不要先发布 PendingDish 中间态。
+                SetMessage(serveAction
+                    ? $"已摆放：{dish.Def.Name}，正在上菜。"
+                    : $"已摆放：{dish.Def.Name}。");
+                RequestPendingDishConfirmation(dish.Id);
+                return;
+            }
+
+            SetMessage($"已摆放：{dish.Def.Name}，点击下方“{(serveAction ? "上菜" : "确认")}”按钮确认。");
             PlayPendingServeTriggerCues();
             RefreshPendingDishActionButtons();
             _stateChanged?.Invoke();

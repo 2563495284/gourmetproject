@@ -170,6 +170,9 @@ namespace GourmetProject.Game.UI.Battle
         private ActiveItemUseCoordinator _activeItemUse;
         private int _shopItemFlyInFlight;
         private readonly HashSet<ShopPurchaseFlyView> _activeShopPurchaseFlys = new();
+        private string _pendingTutorialAcquiredItemId = string.Empty;
+        private cfg.ItemKind? _pendingTutorialAcquiredItemKind;
+        private RectTransform _tutorialAcquiredItemAnchor;
         private int? _battleMusicSerialId;
         private cfg.BossDebuff _currentBossDebuff;
         [SerializeField] private BossDebuffPresentationView _bossPresentation;
@@ -335,6 +338,7 @@ namespace GourmetProject.Game.UI.Battle
             TutorialRuntime.CloseForPageChange();
             UnregisterTutorialCommands();
             UnregisterTutorialAnchors();
+            ClearTutorialAcquiredItemAnchor();
             if (Active == this)
             {
                 Active = null;
@@ -1743,6 +1747,7 @@ namespace GourmetProject.Game.UI.Battle
                     return;
                 }
 
+                TryRegisterTutorialAcquiredItemAnchor();
                 activeFly = CreateShopPurchaseFly(layer);
                 if (activeFly == null)
                 {
@@ -2314,6 +2319,7 @@ namespace GourmetProject.Game.UI.Battle
                 _tips != null ? _tips.Item : null,
                 OnActiveItemClicked,
                 ShowItemInfo);
+            TryRegisterTutorialAcquiredItemAnchor();
         }
 
         private void ShowItemInfo(ItemDefinition item, RunItemState state)
@@ -5487,7 +5493,63 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnContentAcquired(RunContentAcquisition acquisition)
         {
+            ClearTutorialAcquiredItemAnchor();
+            if (acquisition?.Kind == RunContentAcquisitionKind.Item
+                && !string.IsNullOrEmpty(acquisition.ItemId))
+            {
+                _pendingTutorialAcquiredItemId = acquisition.ItemId;
+                _pendingTutorialAcquiredItemKind = acquisition.ItemKind;
+            }
+
             TutorialRuntime.ObserveContentAcquired(acquisition);
+        }
+
+        private void TryRegisterTutorialAcquiredItemAnchor()
+        {
+            if (_itemsColumn == null
+                || string.IsNullOrEmpty(_pendingTutorialAcquiredItemId)
+                || !_pendingTutorialAcquiredItemKind.HasValue)
+            {
+                return;
+            }
+
+            RunItemSlotView slot = _itemsColumn.GetItemSlot(
+                _pendingTutorialAcquiredItemId,
+                _pendingTutorialAcquiredItemKind.Value);
+            RectTransform target = slot?.VisualRectTransform;
+            if (target == null)
+            {
+                return;
+            }
+
+            if (_tutorialAcquiredItemAnchor != null && _tutorialAcquiredItemAnchor != target)
+            {
+                TutorialAnchorRegistry.Unregister(
+                    TutorialAnchorId.AcquiredPassiveItem,
+                    _tutorialAcquiredItemAnchor);
+                TutorialAnchorRegistry.Unregister(
+                    TutorialAnchorId.AcquiredActiveItem,
+                    _tutorialAcquiredItemAnchor);
+            }
+
+            string anchorId = _pendingTutorialAcquiredItemKind.Value == cfg.ItemKind.Passive
+                ? TutorialAnchorId.AcquiredPassiveItem
+                : TutorialAnchorId.AcquiredActiveItem;
+            TutorialAnchorRegistry.Register(anchorId, target);
+            _tutorialAcquiredItemAnchor = target;
+        }
+
+        private void ClearTutorialAcquiredItemAnchor()
+        {
+            TutorialAnchorRegistry.Unregister(
+                TutorialAnchorId.AcquiredPassiveItem,
+                _tutorialAcquiredItemAnchor);
+            TutorialAnchorRegistry.Unregister(
+                TutorialAnchorId.AcquiredActiveItem,
+                _tutorialAcquiredItemAnchor);
+            _tutorialAcquiredItemAnchor = null;
+            _pendingTutorialAcquiredItemId = string.Empty;
+            _pendingTutorialAcquiredItemKind = null;
         }
 
         private void StartBattleMusic()
