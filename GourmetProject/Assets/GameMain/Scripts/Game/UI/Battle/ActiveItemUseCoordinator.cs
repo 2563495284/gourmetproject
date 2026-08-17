@@ -818,6 +818,11 @@ namespace GourmetProject.Game.UI.Battle
                 result.BoardChanged,
                 result.ActionChoicesChanged,
                 refreshActionContent);
+            if (!string.IsNullOrEmpty(result.PresentationNodeId))
+            {
+                _host.PlayActiveItemBossDebuffReroll(result);
+            }
+
             if (ctx.ContextKind == ActiveUseContextKind.Reward)
             {
                 _host.CommitRewardInventoryMutation();

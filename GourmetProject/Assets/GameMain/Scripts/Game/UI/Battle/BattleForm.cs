@@ -891,6 +891,22 @@ namespace GourmetProject.Game.UI.Battle
             });
         }
 
+        public void DismissTimelineNodeCard(Action onDone)
+        {
+            if (_deck == null)
+            {
+                ClearTimelineNodeCard();
+                onDone?.Invoke();
+                return;
+            }
+
+            _deck.HideThenDestroy(() =>
+            {
+                ClearTimelineNodeCard();
+                onDone?.Invoke();
+            });
+        }
+
         public void ShowTimelineNodeSkipped(
             cfg.TimelineNode node,
             TimelineMutationResult result,
@@ -5778,6 +5794,45 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             RefreshAll();
+        }
+
+        internal void PlayActiveItemBossDebuffReroll(ActiveItemUseResult result)
+        {
+            if (string.IsNullOrEmpty(result.PresentationNodeId))
+            {
+                return;
+            }
+
+            if (_currentTimelineNodeCard != null
+                && string.Equals(_currentTimelineNodeCard.Id, result.PresentationNodeId, StringComparison.Ordinal))
+            {
+                RebindCurrentTimelineNodeCard();
+            }
+
+            _axisBinder?.PlayBossDebuffRerollTip(
+                result.PresentationNodeId,
+                result.OldTipTitle,
+                result.OldTipDesc,
+                result.NewTipTitle,
+                result.NewTipDesc);
+        }
+
+        private void RebindCurrentTimelineNodeCard()
+        {
+            if (_currentTimelineNodeCard == null || _deck == null)
+            {
+                return;
+            }
+
+            int? interestThreshold = _run != null ? _run.InterestThreshold : null;
+            int? interestGoldPer = _run != null ? _run.InterestGoldPer : null;
+            Action onPick = _currentTimelineNodePick;
+            _deck.TryRebindTimelineNode(
+                _currentTimelineNodeCard,
+                interestThreshold,
+                interestGoldPer,
+                _currentTimelineNodeInterestMaxGain,
+                () => OnTimelineNodePicked(onPick));
         }
 
         private void SetMessage(string message)

@@ -56,6 +56,7 @@ namespace GourmetProject.Game.UI.Tooltips
         private Action _beforeShow;
         private bool _pointerInsideOwner;
         private bool _isShown;
+        private bool _forcedVisible;
 
         /// <summary>运行时注入 / 替换目标 Tips（多个触发器可共用一个 Tips 实例）。</summary>
         public void SetTip(ActionTipView tip)
@@ -128,6 +129,52 @@ namespace GourmetProject.Game.UI.Tooltips
             _beforeShow = null;
             _pointerInsideOwner = false;
             _isShown = false;
+            _forcedVisible = false;
+        }
+
+        /// <summary>强制围绕目标显示，忽略悬停进离直到 <see cref="EndForcedShow"/>。</summary>
+        public void BeginForcedShow(RectTransform target = null)
+        {
+            MonoBehaviour tip = ActiveTip;
+            if (tip == null)
+            {
+                return;
+            }
+
+            _forcedVisible = true;
+            _isShown = true;
+            ShowTip(tip);
+            tip.transform.SetAsLastSibling();
+            Canvas.ForceUpdateCanvases();
+
+            if (_tipRect == null)
+            {
+                _tipRect = tip.transform as RectTransform;
+            }
+
+            if (_canvas == null && tip != null)
+            {
+                _canvas = tip.GetComponentInParent<Canvas>();
+            }
+
+            var parent = _tipRect != null ? _tipRect.parent as RectTransform : null;
+            RectTransform around = target != null
+                ? target
+                : (_targetOverride != null ? _targetOverride : transform as RectTransform);
+            if (parent != null && around != null)
+            {
+                PositionAroundTarget(parent, around);
+            }
+        }
+
+        /// <summary>结束强制显示；指针不在其上时隐藏。</summary>
+        public void EndForcedShow()
+        {
+            _forcedVisible = false;
+            if (!_pointerInsideOwner)
+            {
+                HideActiveTip();
+            }
         }
 
         public void OnPointerEnter(PointerEventData eventData)
@@ -151,11 +198,16 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private void OnDisable()
         {
+            _forcedVisible = false;
             HideActiveTip();
         }
 
         private void UpdateHoverState(PointerEventData eventData)
         {
+            if (_forcedVisible)
+            {
+                return;
+            }
             MonoBehaviour tip = ActiveTip;
             if (tip == null)
             {
@@ -245,6 +297,12 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private void HideActiveTip()
         {
+            if (_forcedVisible)
+            {
+                _pointerInsideOwner = false;
+                return;
+            }
+
             _pointerInsideOwner = false;
             if (_isShown && ActiveTip != null)
             {

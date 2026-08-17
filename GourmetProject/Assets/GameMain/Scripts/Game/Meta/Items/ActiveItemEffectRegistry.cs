@@ -12,13 +12,23 @@ namespace GourmetProject.Game.Meta
             bool boardChanged,
             string message,
             bool actionChoicesChanged = false,
-            string createdTimelineNodeId = "")
+            string createdTimelineNodeId = "",
+            string presentationNodeId = "",
+            string oldTipTitle = "",
+            string oldTipDesc = "",
+            string newTipTitle = "",
+            string newTipDesc = "")
         {
             Success = success;
             BoardChanged = boardChanged;
             Message = message;
             ActionChoicesChanged = actionChoicesChanged;
             CreatedTimelineNodeId = createdTimelineNodeId ?? string.Empty;
+            PresentationNodeId = presentationNodeId ?? string.Empty;
+            OldTipTitle = oldTipTitle ?? string.Empty;
+            OldTipDesc = oldTipDesc ?? string.Empty;
+            NewTipTitle = newTipTitle ?? string.Empty;
+            NewTipDesc = newTipDesc ?? string.Empty;
         }
 
         public bool Success { get; }
@@ -30,6 +40,16 @@ namespace GourmetProject.Game.Meta
         public bool ActionChoicesChanged { get; }
 
         public string CreatedTimelineNodeId { get; }
+
+        public string PresentationNodeId { get; }
+
+        public string OldTipTitle { get; }
+
+        public string OldTipDesc { get; }
+
+        public string NewTipTitle { get; }
+
+        public string NewTipDesc { get; }
     }
 
     /// <summary>
@@ -131,10 +151,28 @@ namespace GourmetProject.Game.Meta
                         : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法使用。");
 
                 case ItemEffectTypes.ResetBossDebuff:
-                    // TODO: 为星级评鉴调整单补专属重掷表现；当前先完成确定性随机结果与时间轴提示刷新。
-                    return ctx.ResetLastBossDebuff()
-                        ? new ActiveItemUseResult(true, false, $"{item.Name}：已重新随机最后一个 星级评鉴节点的餐食类别。")
-                        : new ActiveItemUseResult(false, false, $"{item.Name}：没有可重掷的 星级评鉴节点。");
+                    cfg.TimelineNode bossNode = TimelineService.GetNearestUntriggeredBossNode(ctx.Run);
+                    if (bossNode == null)
+                    {
+                        return new ActiveItemUseResult(false, false, $"{item.Name}：没有可重掷的 星级评鉴节点。");
+                    }
+
+                    cfg.BossDebuff oldDebuff = BossService.PreviewBossDebuff(ctx.Run, bossNode);
+                    if (!ctx.ResetLastBossDebuff())
+                    {
+                        return new ActiveItemUseResult(false, false, $"{item.Name}：没有可重掷的 星级评鉴节点。");
+                    }
+
+                    cfg.BossDebuff newDebuff = BossService.PreviewBossDebuff(ctx.Run, bossNode);
+                    return new ActiveItemUseResult(
+                        true,
+                        false,
+                        $"{item.Name}：已重新随机最后一个 星级评鉴节点的餐食类别。",
+                        presentationNodeId: bossNode.Id,
+                        oldTipTitle: oldDebuff?.Name ?? string.Empty,
+                        oldTipDesc: oldDebuff?.Desc ?? string.Empty,
+                        newTipTitle: newDebuff?.Name ?? string.Empty,
+                        newTipDesc: newDebuff?.Desc ?? string.Empty);
 
                 case ItemEffectTypes.TimelineExecuteFuture:
                 case ItemEffectTypes.TimelineExecutePast:

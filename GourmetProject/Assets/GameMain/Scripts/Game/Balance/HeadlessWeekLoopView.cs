@@ -373,6 +373,8 @@ namespace GourmetProject.Game.Balance
             Enqueue(onPick);
         }
 
+        public void DismissTimelineNodeCard(Action onDone) => Enqueue(onDone);
+
         public void ShowTimelineNodeSkipped(
             cfg.TimelineNode node,
             TimelineMutationResult result,
