@@ -215,8 +215,8 @@
     "parentId": "",
     "text": "激情互喷",
     "resultText": "争论吸引了大量关注，有支持也有贬低",
-    "condition": "hasRecipeDish",
-    "conditionText": "需要食谱中至少有 1 个食物",
+    "condition": "",
+    "conditionText": "",
     "effectTypes": [
       0
     ],
