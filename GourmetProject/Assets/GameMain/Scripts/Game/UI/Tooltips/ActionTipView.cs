@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using GameStartStudio.UI;
 using GourmetProject.Game.UI.Common;
@@ -22,6 +23,9 @@ namespace GourmetProject.Game.UI.Tooltips
     {
         private const float ShowDuration = 0.12f;
         private const float HideDuration = 0.08f;
+        private const float RerollReadDuration = 0.28f;
+        private const float RerollPunchDuration = 0.34f;
+        private const float RerollHoldDuration = 1.2f;
 
         [Header("Root")]
         [SerializeField] private CanvasGroup _canvasGroup;
@@ -39,6 +43,7 @@ namespace GourmetProject.Game.UI.Tooltips
         protected TMP_Text DescText => _descText;
 
         private Tween _visibilityTween;
+        private Sequence _rerollSequence;
 
         /// <summary>显示 Tips（不吃射线，纯展示）。</summary>
         public void Show()
@@ -91,6 +96,41 @@ namespace GourmetProject.Game.UI.Tooltips
                 });
         }
 
+        /// <summary>先展示旧文案，再跳动切换到新文案；新旧相同也播一遍。</summary>
+        public void PlayRerollTexts(
+            string oldTitle,
+            string oldDesc,
+            string newTitle,
+            string newDesc,
+            Action onComplete = null)
+        {
+            KillRerollSequence();
+            ApplyTexts(oldTitle, oldDesc);
+            ApplyFooter(null);
+            Show();
+
+            RectTransform titleRect = _titleText != null ? _titleText.rectTransform : null;
+            RectTransform descRect = _descText != null ? _descText.rectTransform : null;
+            ResetPunchScale(titleRect);
+            ResetPunchScale(descRect);
+
+            Sequence sequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+            sequence.AppendInterval(ShowDuration + RerollReadDuration);
+            AppendPunch(sequence, titleRect, 0.18f);
+            JoinPunch(sequence, descRect, 0.12f);
+            sequence.AppendCallback(() => ApplyTexts(newTitle, newDesc));
+            AppendPunch(sequence, titleRect, 0.22f);
+            JoinPunch(sequence, descRect, 0.16f);
+            sequence.AppendInterval(RerollHoldDuration);
+            sequence.OnComplete(() =>
+            {
+                _rerollSequence = null;
+                Hide();
+                onComplete?.Invoke();
+            });
+            _rerollSequence = sequence;
+        }
+
         /// <summary>设置标题与描述框正文。</summary>
         protected void ApplyTexts(string title, string desc)
         {
@@ -110,6 +150,7 @@ namespace GourmetProject.Game.UI.Tooltips
         private void OnDisable()
         {
             KillVisibilityTween();
+            KillRerollSequence();
         }
 
         private void EnsureTitleAnimator()
@@ -131,6 +172,51 @@ namespace GourmetProject.Game.UI.Tooltips
 
             _visibilityTween.Kill();
             _visibilityTween = null;
+        }
+
+        private void KillRerollSequence()
+        {
+            if (_rerollSequence == null)
+            {
+                return;
+            }
+
+            _rerollSequence.Kill();
+            _rerollSequence = null;
+        }
+
+        private static void AppendPunch(Sequence sequence, RectTransform target, float punch)
+        {
+            if (sequence == null)
+            {
+                return;
+            }
+
+            if (target == null)
+            {
+                sequence.AppendInterval(RerollPunchDuration);
+                return;
+            }
+
+            sequence.Append(target.DOPunchScale(Vector3.one * punch, RerollPunchDuration, 8, 0.62f));
+        }
+
+        private static void JoinPunch(Sequence sequence, RectTransform target, float punch)
+        {
+            if (sequence == null || target == null)
+            {
+                return;
+            }
+
+            sequence.Join(target.DOPunchScale(Vector3.one * punch, RerollPunchDuration, 8, 0.62f));
+        }
+
+        private static void ResetPunchScale(RectTransform target)
+        {
+            if (target != null)
+            {
+                target.localScale = Vector3.one;
+            }
         }
 
         /// <summary>设置底部信息行；<paramref name="footer"/> 为空则隐藏整行。</summary>

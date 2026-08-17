@@ -41,6 +41,9 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>时间轴节点卡片：先展示节点卡，玩家点击后再执行节点效果。</summary>
         void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick);
 
+        /// <summary>收起当前节点行动卡；隐藏完成后再回调，避免误当成日常行动重铺。</summary>
+        void DismissTimelineNodeCard(Action onDone);
+
         void ShowTimelineNodeSkipped(
             cfg.TimelineNode node,
             TimelineMutationResult result,
@@ -140,6 +143,7 @@ namespace GourmetProject.Game.Orchestration
         private bool _timelinePresentationActive;
         private float _timelinePresentationCursor;
         private float _timelinePresentationTarget;
+        private string _presentedTimelineNodeId = string.Empty;
 
         public WeekLoopController(GameRun run, IWeekLoopView view)
         {
@@ -170,7 +174,21 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>删除尚未开始执行的节点；到期节点每轮动态重扫，无需维护队列快照。</summary>
         public bool RemoveTimelineNode(string nodeId)
         {
-            return _run.RemoveRuntimeTimelineNode(nodeId);
+            bool removed = _run.RemoveRuntimeTimelineNode(nodeId);
+            if (!removed)
+            {
+                return false;
+            }
+
+            // 只有删掉正在展示的节点卡才续跑序列。删其它节点只改时间轴，不能白刷当前页。
+            if (!string.IsNullOrEmpty(nodeId)
+                && string.Equals(_presentedTimelineNodeId, nodeId, StringComparison.Ordinal))
+            {
+                _presentedTimelineNodeId = string.Empty;
+                _view.DismissTimelineNodeCard(ProcessNextNode);
+            }
+
+            return true;
         }
 
         /// <summary>进入（或继续）一周：随机/沿用时间轴后开始行动循环。</summary>
@@ -1078,6 +1096,7 @@ namespace GourmetProject.Game.Orchestration
             }
 
             // 节点即「放置来源的原子行动」：先展示放置行动卡，玩家点击后走与普通行动完全相同的执行路径。
+            _presentedTimelineNodeId = node.Id;
             _view.ShowTimelineNodeCard(node, InterestMaxGain(), () => ExecutePlacedAction(node, action));
         }
 
@@ -1183,6 +1202,23 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>放置行动执行：与普通行动共用 <see cref="ActionExecutor"/> 与 <see cref="DispatchOutcome"/>，节点不消耗天数/步数。</summary>
         private void ExecutePlacedAction(cfg.TimelineNode node, cfg.GameAction action)
         {
+            bool wasPresented = node != null
+                && string.Equals(_presentedTimelineNodeId, node.Id, StringComparison.Ordinal);
+            if (wasPresented)
+            {
+                _presentedTimelineNodeId = string.Empty;
+            }
+
+            if (node == null || TimelineService.GetNode(_run, node.Id) == null)
+            {
+                if (wasPresented)
+                {
+                    ProcessNextNode();
+                }
+
+                return;
+            }
+
             int repeatTotal = FoodService.IsBossAction(_run?.Tables, action)
                 ? 1
                 : new ItemRuntime(_run).TimelineNodeRepeatCount(action.Behavior);

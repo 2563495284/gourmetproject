@@ -503,14 +503,19 @@ namespace GourmetProject.Gameplay.Scoring
         private static List<GridPos> EdgeCells(GpTable board)
         {
             var result = new List<GridPos>();
-            if (board == null || !board.TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY))
+            if (board == null)
             {
                 return result;
             }
 
+            // 与 SkillConditionEvaluator.IsOnEdge 保持一致：按实际轮廓取边缘，
+            // 即四邻中存在「不存在格」（含越界）的存在格。
             foreach (GridPos cell in board.ExistingCells())
             {
-                if (cell.X == minX || cell.X == maxX || cell.Y == minY || cell.Y == maxY)
+                if (!board.Exists(cell.Offset(1, 0))
+                    || !board.Exists(cell.Offset(-1, 0))
+                    || !board.Exists(cell.Offset(0, 1))
+                    || !board.Exists(cell.Offset(0, -1)))
                 {
                     result.Add(cell);
                 }

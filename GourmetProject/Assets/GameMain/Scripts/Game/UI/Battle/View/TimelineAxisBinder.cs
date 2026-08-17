@@ -222,6 +222,33 @@ namespace GourmetProject.Game.UI.Battle.View
             return false;
         }
 
+        public void PlayBossDebuffRerollTip(
+            string nodeId,
+            string oldTitle,
+            string oldDesc,
+            string newTitle,
+            string newDesc)
+        {
+            TimelineNodeTipView tip = _timelineTip?.Invoke();
+            if (tip == null
+                || string.IsNullOrEmpty(nodeId)
+                || _axis == null
+                || !_axis.TryGetNodeBubble(nodeId, out TimelineNodeBubbleView bubble)
+                || bubble == null)
+            {
+                return;
+            }
+
+            TipHoverTrigger trigger = bubble.GetComponent<TipHoverTrigger>();
+            tip.PlayRerollTexts(
+                oldTitle,
+                oldDesc,
+                newTitle,
+                newDesc,
+                () => trigger?.EndForcedShow());
+            trigger?.BeginForcedShow(bubble.Rect);
+        }
+
         private static List<string> TargetIds(IReadOnlyList<ActiveTarget> targets)
         {
             var ids = new List<string>(targets?.Count ?? 0);

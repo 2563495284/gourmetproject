@@ -391,6 +391,8 @@ namespace GourmetProject.Tests.EditMode
 
             public void ShowTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick) { }
 
+            public void DismissTimelineNodeCard(Action onDone) => onDone?.Invoke();
+
             public void ShowTimelineNodeSkipped(
                 cfg.TimelineNode node,
                 TimelineMutationResult result,

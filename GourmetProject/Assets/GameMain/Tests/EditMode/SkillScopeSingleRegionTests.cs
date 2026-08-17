@@ -301,6 +301,83 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(visual.VisualTargetDishInstanceIds, Is.EquivalentTo(new[] { creamCake.Id }));
         }
 
+        [Test]
+        public void Edge_DishAdjacentToHole_CountsAsEdgeByContour()
+        {
+            // 5x5 棋盘，挖掉内部一格 (2,1) 形成凹口；(2,2) 仍处在包围盒内部，
+            // 旧的包围盒判定会漏掉，新的轮廓判定应识别为边缘。
+            var board = new DiningTable(5, 5);
+            board.SetExists(new GridPos(2, 1), false);
+
+            DishInstance atHole = CreateDish(31, new GridPos(2, 2));
+            board.Place(atHole);
+
+            Assert.That(
+                SkillConditionEvaluator.Evaluate(EdgeRule(), board, null, atHole),
+                Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Edge_FullySurroundedDish_IsNotEdge()
+        {
+            // 完整 5x5 棋盘，(2,2) 四邻都存在，不算边缘。
+            var board = new DiningTable(5, 5);
+            DishInstance interior = CreateDish(32, new GridPos(2, 2));
+            board.Place(interior);
+
+            Assert.That(
+                SkillConditionEvaluator.Evaluate(EdgeRule(), board, null, interior),
+                Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Edge_MultiCellDishTouchingBoardBorder_IsEdge()
+        {
+            // 贴着棋盘外边界的多格菜品：越界邻格视为不存在，应算边缘。
+            var board = new DiningTable(5, 5);
+            DishInstance border = CreateDish(33, new GridPos(0, 2));
+            board.Place(border);
+
+            Assert.That(
+                SkillConditionEvaluator.Evaluate(EdgeRule(), board, null, border),
+                Is.EqualTo(1));
+        }
+
+        [Test]
+        public void EdgeVisual_IrregularBoard_HighlightsContourCells()
+        {
+            // 可视化的边缘范围必须与判定一致：凹口周围的存在格也应高亮。
+            var board = new DiningTable(5, 5);
+            board.SetExists(new GridPos(2, 1), false);
+            DishInstance self = CreateDish(34, new GridPos(2, 2));
+            board.Place(self);
+
+            SkillRuleDef rule = Rule(
+                SkillConditionType.Edge,
+                SkillScope.Self,
+                SkillActionType.AddFlat,
+                SkillScope.Edge);
+
+            SkillScopeVisual visual = SkillScopeResolver.Resolve(
+                null,
+                board,
+                self,
+                rule,
+                SkillScopeVisualMode.CandidateScope);
+
+            Assert.That(visual.ScopeRegionKind, Is.EqualTo(SkillScopeRegionKind.Action));
+            Assert.That(visual.ScopeRegionCells, Contains.Item(new GridPos(2, 2)));
+        }
+
+        private static SkillRuleDef EdgeRule()
+        {
+            return Rule(
+                SkillConditionType.Edge,
+                SkillScope.Self,
+                SkillActionType.AddFlat,
+                SkillScope.Self);
+        }
+
         private SkillScopeVisual Resolve(SkillRuleDef rule)
         {
             return SkillScopeResolver.Resolve(

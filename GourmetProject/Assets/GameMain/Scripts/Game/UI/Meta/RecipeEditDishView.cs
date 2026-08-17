@@ -365,6 +365,57 @@ namespace GourmetProject.Game.UI.Meta
                 });
         }
 
+        public void PlayPassiveMutationDissolve(Action onComplete)
+        {
+            EnsureDragStateRefs();
+            HideHover();
+            if (_rect != null)
+            {
+                DOTween.Kill(_rect);
+            }
+
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.blocksRaycasts = false;
+            }
+
+            if (_dishPreview == null)
+            {
+                FadeCardThenComplete(onComplete);
+                return;
+            }
+
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.alpha = 1f;
+            }
+
+            _dishPreview.PlayDissolve(() =>
+            {
+                if (_canvasGroup != null)
+                {
+                    _canvasGroup.alpha = 0f;
+                }
+
+                onComplete?.Invoke();
+            });
+        }
+
+        private void FadeCardThenComplete(Action onComplete)
+        {
+            if (_canvasGroup == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            _canvasGroup.DOFade(0f, 0.85f)
+                .SetEase(Ease.InSine)
+                .SetUpdate(true)
+                .SetLink(gameObject)
+                .OnComplete(() => onComplete?.Invoke());
+        }
+
         /// <summary>播放与商店购买失败一致的横向衰减晃动。</summary>
         public void PlayInteractionFailed()
         {

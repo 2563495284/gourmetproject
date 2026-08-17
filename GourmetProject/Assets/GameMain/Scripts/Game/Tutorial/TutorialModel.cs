@@ -63,6 +63,8 @@ namespace GourmetProject.Game.Tutorial
         public const string Settle = "battle.settle";
         public const string RewardList = "reward.list";
         public const string RewardContinue = "reward.continue";
+        public const string AcquiredPassiveItem = "item.acquired.passive";
+        public const string AcquiredActiveItem = "item.acquired.active";
         public const string HeartBreak = "failure.heart";
         public const string BossRule = "boss.rule";
     }
@@ -171,8 +173,8 @@ namespace GourmetProject.Game.Tutorial
         public static TutorialSequenceDefinition BuildResultHeart(bool isWin)
         {
             string message = isWin
-                ? "太棒了，老板！这次经营成功，❤️红心不会减少。红心代表餐厅还能承受失败的次数：日常营业、火热营业和星级评鉴失败都会损失 1 颗；红心归零，本局就会结束。"
-                : "别灰心，老板！这次没有达到目标，失败会让我们损失❤️红心。日常营业、火热营业和星级评鉴失败都会损失 1 颗；红心归零，本局就会结束。";
+                ? "太棒了，老板！这次经营成功，❤️红心不会减少。红心代表餐厅还能承受失败的次数：日常营业、火热营业和星级评鉴失败都会损失1颗；红心归零，本局就会结束。"
+                : "别灰心，老板！这次没有达到目标，失败会让我们损失❤️红心。日常营业、火热营业和星级评鉴失败都会损失1颗；红心归零，本局就会结束。";
             return new TutorialSequenceDefinition(
                 TutorialId.ResultHeart,
                 new TutorialStepDefinition(
@@ -200,7 +202,7 @@ namespace GourmetProject.Game.Tutorial
                     allowTargetInteraction: false,
                     TutorialAnchorId.Hearts),
                 new TutorialStepDefinition(
-                    "日常营业、火热营业和星级评鉴失败都会损失 1 颗。❤️归零，本局就会结束。",
+                    "日常营业、火热营业和星级评鉴失败都会损失1颗。❤️归零，本局就会结束。",
                     TutorialMascotPose.Remind,
                     TutorialAdvanceMode.Continue,
                     signal: null,
@@ -321,7 +323,16 @@ namespace GourmetProject.Game.Tutorial
                         enterCommand: null,
                         exitCommand: null,
                         allowTargetInteraction: false,
-                        TutorialAnchorId.Settle)),
+                        TutorialAnchorId.Settle),
+                    new TutorialStepDefinition(
+                        "食物会从上到下，从左到右开始结算。",
+                        TutorialMascotPose.Explain,
+                        TutorialAdvanceMode.Continue,
+                        signal: null,
+                        enterCommand: null,
+                        exitCommand: null,
+                        allowTargetInteraction: false,
+                        TutorialAnchorId.Table)),
 
                 [TutorialId.Settlement] = new TutorialSequenceDefinition(
                     TutorialId.Settlement,
@@ -333,26 +344,37 @@ namespace GourmetProject.Game.Tutorial
 
                 [TutorialId.SecondAction] = new TutorialSequenceDefinition(
                     TutorialId.SecondAction,
-                    S("这是火热营业，目标更高，但奖励规格也更高。", TutorialSignal.ActionPicked, TutorialAnchorId.ActionDeck)),
+                    // ActionCard2 对应 TutorialActionScheduleOverride 里 tutorial_second 组的 act_food_hard_gold。
+                    C("这是火热营业，目标更高，但奖励规格也更高。", TutorialAnchorId.ActionCard2)),
 
                 [TutorialId.TimelineNode] = new TutorialSequenceDefinition(
                     TutorialId.TimelineNode,
                     C("普通行动推进时间轴时，经过的节点会出现在行动卡中。", TutorialAnchorId.ActionAxis),
-                    S("这些是节点行动，不会消耗天数。这个节点会结算利息。", TutorialSignal.TimelineNodePicked, TutorialAnchorId.ActionCard0)),
+                    S("这些是节点行动，不会消耗天数。", TutorialSignal.TimelineNodePicked, TutorialAnchorId.ActionCard0)),
 
                 [TutorialId.Flavor] = new TutorialSequenceDefinition(
                     TutorialId.Flavor,
-                    C("老板，食物现在有风味啦！每个食物只有 1 个风味位哦。"),
-                    C("风味会改变食物的属性和结算效果，强化箱道具可以帮我们为食物附加风味。")),
+                    C(
+                        "老板，食物现在有风味啦！每个食物只有 1 个风味位哦。",
+                        TutorialAnchorId.AcquiredActiveItem),
+                    C(
+                        "风味会改变食物的属性和结算效果，强化箱道具可以帮我们为食物附加风味。",
+                        TutorialAnchorId.AcquiredActiveItem)),
 
                 [TutorialId.Material] = new TutorialSequenceDefinition(
                     TutorialId.Material,
-                    C("老板，餐桌现在有材质啦！每个餐桌格只有 1 个材质哦。"),
-                    C("放置在餐桌格上的食物会获得对应效果；强化箱道具可以帮我们为餐桌附加材质。")),
+                    C(
+                        "老板，餐桌现在有材质啦！每个餐桌格只有 1 个材质哦。",
+                        TutorialAnchorId.AcquiredActiveItem),
+                    C(
+                        "放置在餐桌格上的食物会获得对应效果；强化箱道具可以帮我们为餐桌附加材质。",
+                        TutorialAnchorId.AcquiredActiveItem)),
 
                 [TutorialId.Adjustment] = new TutorialSequenceDefinition(
                     TutorialId.Adjustment,
-                    C("这是调整单！它可以修改节点和行动。")),
+                    C(
+                        "这是调整单！它可以修改节点和行动。",
+                        TutorialAnchorId.AcquiredActiveItem)),
 
                 [TutorialId.Boss] = new TutorialSequenceDefinition(
                     TutorialId.Boss,
@@ -367,7 +389,9 @@ namespace GourmetProject.Game.Tutorial
 
                 [TutorialId.PassiveItem] = new TutorialSequenceDefinition(
                     TutorialId.PassiveItem,
-                    C("装饰品获得后会永久生效。这可是我们提升餐厅实力的重要方面呢！")),
+                    C(
+                        "装饰品获得后会永久生效。这可是我们提升餐厅实力的重要方面呢！",
+                        TutorialAnchorId.AcquiredPassiveItem)),
             };
         }
     }

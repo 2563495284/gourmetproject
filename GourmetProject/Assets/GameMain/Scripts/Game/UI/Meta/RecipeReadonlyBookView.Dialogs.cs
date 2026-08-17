@@ -52,7 +52,9 @@ namespace GourmetProject.Game.UI.Meta
                 Message = $"确定要从食谱中删除「{dishName}」吗？",
                 ConfirmText = "确定",
                 CancelText = "返回",
-                OnConfirm = () => onConfirm?.Invoke(target),
+                OnConfirm = () => PlayLiveRecipeDishDissolve(
+                    target,
+                    () => onConfirm?.Invoke(target)),
                 OnCancel = onCancel,
             };
             GameApp.UI.OpenUIForm(
@@ -85,22 +87,41 @@ namespace GourmetProject.Game.UI.Meta
                 Message = $"花费 [gold]{cost}金币[/gold]\n从食谱中删除「{def.Name}」？",
                 ConfirmText = "确定",
                 CancelText = "返回",
-                OnConfirm = () =>
-                {
-                    if (!ShopService.DeleteDishAt(_run, target.Y))
+                OnConfirm = () => PlayLiveRecipeDishDissolve(
+                    target,
+                    () =>
                     {
-                        RebuildWarehouseForCurrentState();
-                        return;
-                    }
+                        if (!ShopService.DeleteDishAt(_run, target.Y))
+                        {
+                            RebuildWarehouseForCurrentState();
+                            return;
+                        }
 
-                    _onChanged?.Invoke();
-                    _onExit?.Invoke();
-                },
+                        _onChanged?.Invoke();
+                        _onExit?.Invoke();
+                    }),
             };
             GameApp.UI.OpenUIForm(
                 UIForms.ConfirmDialog,
                 UIForms.GroupDialog,
                 data);
+        }
+
+        private void PlayLiveRecipeDishDissolve(ActiveTarget target, Action onComplete)
+        {
+            RecipeEditDishView dish = FindDish(target.X, target.Y);
+            if (dish == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            _liveMutationPlaying = true;
+            dish.PlayPassiveMutationDissolve(() =>
+            {
+                _liveMutationPlaying = false;
+                onComplete?.Invoke();
+            });
         }
     }
 }

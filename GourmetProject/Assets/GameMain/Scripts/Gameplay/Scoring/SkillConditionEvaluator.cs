@@ -1015,16 +1015,27 @@ namespace GourmetProject.Gameplay.Scoring
             if (seen.Add(key)) cells.Add(p);
         }
 
+        /// <summary>
+        /// 按棋盘实际轮廓判定边缘：菜品任一占用格的上、下、左、右四邻中，
+        /// 只要存在一个「不存在格」（含越界），即视为处于边缘（闸门）。
+        /// 这样不规则/阶梯形棋盘的凹凸边缘也能被正确识别。
+        /// </summary>
         internal static bool IsOnEdge(GpTable board, DishInstance self)
         {
-            if (!board.TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY))
+            if (board == null)
             {
                 return false;
             }
 
             foreach (GridPos c in self.OccupiedCells)
             {
-                if (c.X == minX || c.X == maxX || c.Y == minY || c.Y == maxY) return true;
+                if (!board.Exists(c.Offset(1, 0))
+                    || !board.Exists(c.Offset(-1, 0))
+                    || !board.Exists(c.Offset(0, 1))
+                    || !board.Exists(c.Offset(0, -1)))
+                {
+                    return true;
+                }
             }
 
             return false;

@@ -21,6 +21,15 @@ Shader "GourmetProject/DigestDissolve"
         _UseGlobalTime ("Use Global Time", Range(0, 1)) = 1
         _MotionSpeed ("Motion Speed", Range(0, 2)) = 1.6
         _WarpStrength ("Warp Strength", Range(0, 1)) = 1
+
+        _StencilComp ("Stencil Comparison", Float) = 8
+        _Stencil ("Stencil ID", Float) = 0
+        _StencilOp ("Stencil Operation", Float) = 0
+        _StencilWriteMask ("Stencil Write Mask", Float) = 255
+        _StencilReadMask ("Stencil Read Mask", Float) = 255
+        _ColorMask ("Color Mask", Float) = 15
+
+        [Toggle(UNITY_UI_ALPHACLIP)] _UseUIAlphaClip ("Use Alpha Clip", Float) = 0
     }
 
     SubShader
@@ -35,10 +44,20 @@ Shader "GourmetProject/DigestDissolve"
             "RenderPipeline" = "UniversalPipeline"
         }
 
+        Stencil
+        {
+            Ref [_Stencil]
+            Comp [_StencilComp]
+            Pass [_StencilOp]
+            ReadMask [_StencilReadMask]
+            WriteMask [_StencilWriteMask]
+        }
+
         Cull Off
         Lighting Off
         ZWrite Off
         Blend SrcAlpha OneMinusSrcAlpha
+        ColorMask [_ColorMask]
 
         Pass
         {
@@ -46,6 +65,8 @@ Shader "GourmetProject/DigestDissolve"
             #pragma target 3.0
             #pragma vertex Vert
             #pragma fragment Frag
+            #pragma multi_compile_local _ UNITY_UI_CLIP_RECT
+            #pragma multi_compile_local _ UNITY_UI_ALPHACLIP
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
             struct Attributes
@@ -60,11 +81,13 @@ Shader "GourmetProject/DigestDissolve"
                 float4 positionCS : SV_POSITION;
                 half4 color : COLOR;
                 float2 uv : TEXCOORD0;
+                float4 worldPosition : TEXCOORD1;
             };
 
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
             half4 _TextureSampleAdd;
+            float4 _ClipRect;
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
@@ -309,12 +332,19 @@ Shader "GourmetProject/DigestDissolve"
                 return rgb;
             }
 
+            half UnityGet2DClippingHlsl(float2 position, float4 clipRect)
+            {
+                float2 inside = step(clipRect.xy, position) * step(position, clipRect.zw);
+                return (half)(inside.x * inside.y);
+            }
+
             Varyings Vert(Attributes input)
             {
                 Varyings output;
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.color = input.color * _Color;
                 output.uv = input.uv;
+                output.worldPosition = input.positionOS;
                 return output;
             }
 
@@ -352,7 +382,17 @@ Shader "GourmetProject/DigestDissolve"
                 rgb = lerp(rgb, acid, (half)(innerEdge * 0.82));
                 rgb *= (half)(1.0 - _DigestProgress * 0.18);
 
-                return half4(rgb, tex.a * (half)visibleMask);
+                half4 color = half4(rgb, tex.a * (half)visibleMask);
+
+                #ifdef UNITY_UI_CLIP_RECT
+                color.a *= UnityGet2DClippingHlsl(input.worldPosition.xy, _ClipRect);
+                #endif
+
+                #ifdef UNITY_UI_ALPHACLIP
+                clip(color.a - 0.001);
+                #endif
+
+                return color;
             }
             ENDHLSL
         }

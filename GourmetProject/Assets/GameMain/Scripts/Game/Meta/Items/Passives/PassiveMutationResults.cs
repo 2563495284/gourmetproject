@@ -4,11 +4,20 @@ using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Game.Meta.Passives
 {
+    public enum RecipeMutationPresentation
+    {
+        Book = 0,
+        FlavorStage,
+        CopyFly,
+    }
+
     public sealed class RecipeMutationResult
     {
         public string SourceItemId { get; set; } = string.Empty;
 
         public string Title { get; set; } = string.Empty;
+
+        public RecipeMutationPresentation Presentation { get; set; } = RecipeMutationPresentation.Book;
 
         public List<RecipeMutationEntry> Entries { get; } = new List<RecipeMutationEntry>();
 
@@ -29,6 +38,14 @@ namespace GourmetProject.Game.Meta.Passives
         public RecipeDishSnapshot Before { get; set; }
 
         public RecipeDishSnapshot After { get; set; }
+
+        public bool HasBeforeDish => !string.IsNullOrEmpty(Before?.DishId);
+
+        public bool HasAfterDish => !string.IsNullOrEmpty(After?.DishId);
+
+        public bool IsRemove => HasBeforeDish && !HasAfterDish;
+
+        public bool IsAdd => !HasBeforeDish && HasAfterDish;
     }
 
     public sealed class RecipeDishSnapshot

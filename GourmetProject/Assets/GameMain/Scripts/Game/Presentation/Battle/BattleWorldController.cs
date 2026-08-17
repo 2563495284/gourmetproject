@@ -36,8 +36,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float FoodTableBottomMargin = 2.7f;
         private const float EditTableBottomMargin = 3.6f;
         private const float TemporaryAreaPadding = 0.12f;
-        private const float TemporaryAreaPiecePaddingRatio = 0.84f;
-        private const float TemporaryAreaVisibleRatio = 0.7f;
+        // 面板内容区（约 1.86 宽）比横放的 3 格菜（3.6 宽）窄，压叠必然发生：
+        // 留白压到 0.92、可见宽压到 0.45，在能看出叠了几张的前提下把缩放做到最大。
+        private const float TemporaryAreaPiecePaddingRatio = 0.92f;
+        private const float TemporaryAreaVisibleRatio = 0.45f;
         private const float TemporaryAreaLayoutDuration = 0.18f;
         private const float TemporaryAreaFadeDuration = 0.18f;
         private const float TemporaryAreaFlyDuration = 0.38f;
@@ -916,11 +918,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 LayoutTemporaryAreaPieces(animated: true, slotsOverride: targetSlots);
                 TemporaryAreaStackSlot targetSlot = index >= 0 && index < targetSlots.Length
                     ? targetSlots[index]
-                    : new TemporaryAreaStackSlot(
-                        _temporaryArea != null
-                            ? (Vector2)_temporaryArea.position
-                            : (Vector2)transform.position,
-                        1f);
+                    : new TemporaryAreaStackSlot(TemporaryAreaFallbackCenter(), 1f);
 
                 piece.PlayActiveItemNumbTransform(temporaryDish.Placement, () =>
                 {
@@ -1541,10 +1539,7 @@ namespace GourmetProject.Game.Presentation.Battle
             foreach (PendingDishPlacement pending in _session.PendingDishPlacements)
             {
                 if (!pending.IsOnDiningTable
-                    || !ShouldShowPendingDishActionButton(
-                        pending.ActionKind,
-                        GameApp.Settings?.RequireServeConfirmation
-                            ?? SettingsService.DefaultRequireServeConfirmation)
+                    || !ShouldShowPendingDishActionButton(RequireServeConfirmationSetting)
                     || !_dishViewsById.TryGetValue(pending.Dish.Id, out DishPieceView piece)
                     || piece == null)
                 {
@@ -1947,7 +1942,7 @@ namespace GourmetProject.Game.Presentation.Battle
             DishDragPlacementResult result = EvaluateDragPlacement(_outletDragPiece, world);
             if (result != null
                 && result.CanCommit
-                && !_session.PreparedServe.Contains(result.Placement))
+                && !ContainsPlacement(_session.FindPreparedServePlacements(), result.Placement))
             {
                 result = WithOverallState(result, DishDragCellState.Blocked);
             }
@@ -2018,11 +2013,7 @@ namespace GourmetProject.Game.Presentation.Battle
             PlayDropDust(placement, footprintSize, releaseVelocity);
             PlayScopeAffectedDishFeedback(affectedDishIds);
 
-            bool autoConfirm = ShouldAutoConfirmPendingDish(
-                    PendingDishActionKind.Serve,
-                    GameApp.Settings?.RequireServeConfirmation
-                        ?? SettingsService.DefaultRequireServeConfirmation);
-            if (autoConfirm)
+            if (ShouldAutoConfirmPendingDish(RequireServeConfirmationSetting))
             {
                 // 自动上菜会同步提交数据，再等待落格/触发演出。这里不要先发布
                 // PendingDish 中间态，否则出餐口会闪成“等待上菜/确认”。
@@ -2039,18 +2030,22 @@ namespace GourmetProject.Game.Presentation.Battle
             return true;
         }
 
-        internal static bool ShouldAutoConfirmPendingDish(
-            PendingDishActionKind actionKind,
-            bool requireServeConfirmation)
+        private static bool RequireServeConfirmationSetting
+            => GameApp.Settings?.RequireServeConfirmation
+                ?? SettingsService.DefaultRequireServeConfirmation;
+
+        /// <summary>
+        /// 关闭“需确认上菜”时落桌即确认，出菜口上菜与临时桌回摆走同一套语义，
+        /// 代价是放弃预摆期间重新拖动的机会。
+        /// </summary>
+        internal static bool ShouldAutoConfirmPendingDish(bool requireServeConfirmation)
         {
-            return !requireServeConfirmation && actionKind == PendingDishActionKind.Serve;
+            return !requireServeConfirmation;
         }
 
-        internal static bool ShouldShowPendingDishActionButton(
-            PendingDishActionKind actionKind,
-            bool requireServeConfirmation)
+        internal static bool ShouldShowPendingDishActionButton(bool requireServeConfirmation)
         {
-            return actionKind != PendingDishActionKind.Serve || requireServeConfirmation;
+            return !ShouldAutoConfirmPendingDish(requireServeConfirmation);
         }
 
         private DishPieceView InstantiateLoosePiece(DishInstance dish, string objectName)
@@ -2537,8 +2532,19 @@ namespace GourmetProject.Game.Presentation.Battle
             PlayDropDust(placement, footprintSize, releaseVelocity);
             FlashServeScopeHighlights(dish, GetPresentationToken());
             PendingDishPlacement pending = _session.FindPendingDishPlacement(dish.Id);
-            string actionLabel = pending?.ActionKind == PendingDishActionKind.Serve ? "上菜" : "确认";
-            SetMessage($"已摆放：{dish.Def.Name}，点击下方“{actionLabel}”按钮确认。");
+            bool serveAction = pending?.ActionKind == PendingDishActionKind.Serve;
+            if (ShouldAutoConfirmPendingDish(RequireServeConfirmationSetting))
+            {
+                // 与出菜口自动上菜一致：确认会同步提交数据并接管后续演出，
+                // 这里不要先发布 PendingDish 中间态。
+                SetMessage(serveAction
+                    ? $"已摆放：{dish.Def.Name}，正在上菜。"
+                    : $"已摆放：{dish.Def.Name}。");
+                RequestPendingDishConfirmation(dish.Id);
+                return;
+            }
+
+            SetMessage($"已摆放：{dish.Def.Name}，点击下方“{(serveAction ? "上菜" : "确认")}”按钮确认。");
             PlayPendingServeTriggerCues();
             RefreshPendingDishActionButtons();
             _stateChanged?.Invoke();
@@ -2593,11 +2599,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 TemporaryAreaStackSlot slot = i < slots.Count
                     ? slots[i]
-                    : new TemporaryAreaStackSlot(
-                        _temporaryArea != null
-                            ? (Vector2)_temporaryArea.position
-                            : (Vector2)transform.position,
-                        1f);
+                    : new TemporaryAreaStackSlot(TemporaryAreaFallbackCenter(), 1f);
                 Vector3 slotCenter = new Vector3(
                     slot.Center.x,
                     slot.Center.y,
@@ -2655,9 +2657,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return Array.Empty<TemporaryAreaStackSlot>();
             }
 
-            Vector2 fallbackCenter = _temporaryArea != null
-                ? (Vector2)_temporaryArea.position
-                : (Vector2)transform.position;
+            Vector2 fallbackCenter = TemporaryAreaFallbackCenter();
             if (!TryGetTemporaryAreaContentRect(out Rect rect))
             {
                 var fallback = new TemporaryAreaStackSlot[count];
@@ -2699,6 +2699,23 @@ namespace GourmetProject.Game.Presentation.Battle
                 Mathf.Max(_cellSize, (shape.Height - 1) * pitch + _cellSize));
         }
 
+        /// <summary>内容矩形算不出来时的兜底中心：面板世界矩形中心，而不是可能贴边的 Pivot 点。</summary>
+        private Vector2 TemporaryAreaFallbackCenter()
+        {
+            if (_temporaryArea == null)
+            {
+                return transform.position;
+            }
+
+            var corners = new Vector3[4];
+            _temporaryArea.GetWorldCorners(corners);
+            return new Vector2(
+                (Mathf.Min(corners[0].x, corners[1].x, corners[2].x, corners[3].x)
+                    + Mathf.Max(corners[0].x, corners[1].x, corners[2].x, corners[3].x)) * 0.5f,
+                (Mathf.Min(corners[0].y, corners[1].y, corners[2].y, corners[3].y)
+                    + Mathf.Max(corners[0].y, corners[1].y, corners[2].y, corners[3].y)) * 0.5f);
+        }
+
         private bool TryGetTemporaryAreaContentRect(out Rect rect)
         {
             rect = default;
@@ -2724,7 +2741,23 @@ namespace GourmetProject.Game.Presentation.Battle
                     titleCorners[1].y,
                     titleCorners[2].y,
                     titleCorners[3].y);
-                maxY = Mathf.Min(maxY, titleMinY);
+                float titleMaxY = Mathf.Max(
+                    titleCorners[0].y,
+                    titleCorners[1].y,
+                    titleCorners[2].y,
+                    titleCorners[3].y);
+                // 标题允许摆在面板外（当前场景摆在面板下方），只有真正压住面板内部时才让出空间。
+                if (titleMaxY > minY && titleMinY < maxY)
+                {
+                    if (titleMinY + titleMaxY >= minY + maxY)
+                    {
+                        maxY = Mathf.Max(minY, titleMinY);
+                    }
+                    else
+                    {
+                        minY = Mathf.Min(maxY, titleMaxY);
+                    }
+                }
             }
 
             rect = Rect.MinMaxRect(

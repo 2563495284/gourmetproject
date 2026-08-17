@@ -74,6 +74,9 @@ namespace GourmetProject.Game.UI.Battle.View
         // 不会因为视图尚未在动画交换点写入而遗留一个被冻结的 Center。
         public bool IsActive => _sourceView != GameplayView.None;
 
+        // 外部覆盖层可把自身恢复挂到这类查看会话的统一关闭流程上。
+        public bool ManagesSourcePresentation => IsActive && _manageSourcePresentation;
+
         public bool IsTableVisible => _view == BattleInspectionView.Table;
 
         public bool IsTableTargeting => IsTableVisible && _tableTargeting;
@@ -161,7 +164,8 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public bool ShowPassiveRecipe(
             IReadOnlyList<RecipeReadonlyDishEntry> entries,
-            Action onShown)
+            Action onShown,
+            bool hideExitButton = false)
         {
             if (_tableTargeting
                 || IsTransitioning
@@ -173,7 +177,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (_view == BattleInspectionView.Recipe)
             {
-                BindPassiveRecipe(entries);
+                BindPassiveRecipe(entries, hideExitButton);
                 _host.RefreshPersistent();
                 onShown?.Invoke();
                 return true;
@@ -192,7 +196,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     EndTablePresentation();
                     _host.SetActionAxisVisible(false);
                     _view = BattleInspectionView.Recipe;
-                    BindPassiveRecipe(entries);
+                    BindPassiveRecipe(entries, hideExitButton);
                 },
                 () =>
                 {
@@ -233,6 +237,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     if (_host.InspectionLayer.TablePanel != null)
                     {
                         _host.InspectionLayer.TablePanel.gameObject.SetActive(true);
+                        _host.InspectionLayer.TablePanel.SetExitVisible(true);
                     }
 
                     world.BeginTableView(_host.Run, SourceBattleTable());
@@ -242,7 +247,7 @@ namespace GourmetProject.Game.UI.Battle.View
             return true;
         }
 
-        public bool ShowPassiveTable(GpTable table, Action onShown)
+        public bool ShowPassiveTable(GpTable table, Action onShown, bool hideExitButton = false)
         {
             if (_tableTargeting
                 || IsTransitioning
@@ -255,6 +260,7 @@ namespace GourmetProject.Game.UI.Battle.View
             BattleWorldController world = _host.World;
             if (_view == BattleInspectionView.Table)
             {
+                _host.InspectionLayer.TablePanel?.SetExitVisible(!hideExitButton);
                 world.EndTableView();
                 world.BeginTableView(_host.Run, table);
                 _host.BindWorldHoverCallbacks();
@@ -279,6 +285,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     if (_host.InspectionLayer.TablePanel != null)
                     {
                         _host.InspectionLayer.TablePanel.gameObject.SetActive(true);
+                        _host.InspectionLayer.TablePanel.SetExitVisible(!hideExitButton);
                     }
 
                     world.BeginTableView(_host.Run, table);
@@ -467,7 +474,9 @@ namespace GourmetProject.Game.UI.Battle.View
             _host.RefreshPersistent();
         }
 
-        private void BindPassiveRecipe(IReadOnlyList<RecipeReadonlyDishEntry> entries)
+        private void BindPassiveRecipe(
+            IReadOnlyList<RecipeReadonlyDishEntry> entries,
+            bool hideExitButton)
         {
             _host.InspectionLayer.RecipeView.Open(
                 _host.Run,
@@ -475,7 +484,8 @@ namespace GourmetProject.Game.UI.Battle.View
                     0,
                     Close,
                     _host.RefreshPersistent,
-                    entries),
+                    entries,
+                    hideExitButton),
                 _host.FoodTips);
         }
 

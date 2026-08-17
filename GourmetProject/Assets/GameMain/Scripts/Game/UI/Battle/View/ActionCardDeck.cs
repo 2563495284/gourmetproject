@@ -130,6 +130,28 @@ namespace GourmetProject.Game.UI.Battle.View
             SpawnCard(0.03f, 0.97f, card => card.Bind(node, interestThreshold, interestGoldPer, interestMaxGain, () => onPick?.Invoke()));
         }
 
+        /// <summary>原地重绑当前节点卡，不销毁重建，避免白刷。</summary>
+        public bool TryRebindTimelineNode(
+            cfg.TimelineNode node,
+            int? interestThreshold,
+            int? interestGoldPer,
+            int? interestMaxGain,
+            Action onPick)
+        {
+            if (_cards.Count == 0 || _cards[0] == null)
+            {
+                return false;
+            }
+
+            _cards[0].Bind(
+                node,
+                interestThreshold,
+                interestGoldPer,
+                interestMaxGain,
+                () => onPick?.Invoke());
+            return true;
+        }
+
         /// <summary>退场：卡片播放隐藏动画后销毁，全部完成再触发 onHidden。</summary>
         public void HideThenDestroy(Action onHidden)
         {

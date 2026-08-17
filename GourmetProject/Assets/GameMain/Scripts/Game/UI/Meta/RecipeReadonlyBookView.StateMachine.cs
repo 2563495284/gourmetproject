@@ -32,6 +32,11 @@ namespace GourmetProject.Game.UI.Meta
 
             public void OnExitClicked()
             {
+                if (_panel._liveMutationPlaying)
+                {
+                    return;
+                }
+
                 Current?.OnExitClicked(_panel);
             }
 
@@ -119,15 +124,19 @@ namespace GourmetProject.Game.UI.Meta
         private sealed class ReadonlyRecipeBookState : RecipeReadonlyBookState
         {
             private readonly int _bookIndex;
+            private readonly bool _hideExitButton;
 
-            public ReadonlyRecipeBookState(int bookIndex)
+            public ReadonlyRecipeBookState(int bookIndex, bool hideExitButton = false)
             {
                 _bookIndex = bookIndex;
+                _hideExitButton = hideExitButton;
             }
 
             public override string PanelTitle => "查看食谱";
 
             public override string ExitButtonText => "返回";
+
+            public override bool ShowExitButton => !_hideExitButton;
 
             public override int BookIndexFilter => _bookIndex;
 

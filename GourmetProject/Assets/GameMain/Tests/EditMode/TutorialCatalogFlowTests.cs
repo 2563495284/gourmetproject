@@ -130,7 +130,7 @@ namespace GourmetProject.Tests.EditMode
         [Test]
         public void FirstBattleSettleHint_IsOptionalContinueStepOnSettleButton()
         {
-            TutorialSequenceDefinition sequence = Require(TutorialId.FirstBattleSettleHint, 1);
+            TutorialSequenceDefinition sequence = Require(TutorialId.FirstBattleSettleHint, 2);
 
             AssertStep(
                 sequence,
@@ -140,6 +140,15 @@ namespace GourmetProject.Tests.EditMode
                 string.Empty,
                 TutorialAnchorId.Settle);
             Assert.That(sequence.Steps[0].AllowTargetInteraction, Is.False);
+
+            AssertStep(
+                sequence,
+                1,
+                "食物会从上到下，从左到右开始结算。",
+                TutorialAdvanceMode.Continue,
+                string.Empty,
+                TutorialAnchorId.Table);
+            Assert.That(sequence.Steps[1].AllowTargetInteraction, Is.False);
         }
 
         [Test]
@@ -159,10 +168,10 @@ namespace GourmetProject.Tests.EditMode
                 secondAction,
                 0,
                 "这是火热营业，目标更高，但奖励规格也更高。",
-                TutorialAdvanceMode.Signal,
-                TutorialSignal.ActionPicked,
-                TutorialAnchorId.ActionDeck);
-            Assert.That(secondAction.Steps[0].AllowTargetInteraction, Is.True);
+                TutorialAdvanceMode.Continue,
+                string.Empty,
+                TutorialAnchorId.ActionCard2);
+            Assert.That(secondAction.Steps[0].AllowTargetInteraction, Is.False);
 
             TutorialSequenceDefinition timeline = Require(TutorialId.TimelineNode, 2);
             AssertStep(
@@ -185,20 +194,32 @@ namespace GourmetProject.Tests.EditMode
         [Test]
         public void UnlockHooks_UseApprovedCopyAndStepCounts()
         {
+            TutorialSequenceDefinition flavor = Require(TutorialId.Flavor, 2);
             AssertMessages(
-                Require(TutorialId.Flavor, 2),
+                flavor,
                 "老板，食物现在有风味啦！每个食物只有 1 个风味位哦。",
                 "风味会改变食物的属性和结算效果，强化箱道具可以帮我们为食物附加风味。");
+            AssertAllAnchors(flavor, TutorialAnchorId.AcquiredActiveItem);
+
+            TutorialSequenceDefinition material = Require(TutorialId.Material, 2);
             AssertMessages(
-                Require(TutorialId.Material, 2),
+                material,
                 "老板，餐桌现在有材质啦！每个餐桌格只有 1 个材质哦。",
                 "放置在餐桌格上的食物会获得对应效果；强化箱道具可以帮我们为餐桌附加材质。");
+            AssertAllAnchors(material, TutorialAnchorId.AcquiredActiveItem);
+
+            TutorialSequenceDefinition adjustment = Require(TutorialId.Adjustment, 1);
             AssertMessages(
-                Require(TutorialId.Adjustment, 1),
+                adjustment,
                 "这是调整单！它可以修改节点和行动。");
+            AssertAllAnchors(adjustment, TutorialAnchorId.AcquiredActiveItem);
+
+            TutorialSequenceDefinition passiveItem = Require(TutorialId.PassiveItem, 1);
             AssertMessages(
-                Require(TutorialId.PassiveItem, 1),
+                passiveItem,
                 "装饰品获得后会永久生效。这可是我们提升餐厅实力的重要方面呢！");
+            AssertAllAnchors(passiveItem, TutorialAnchorId.AcquiredPassiveItem);
+
             AssertMessages(
                 Require(TutorialId.Boss, 2),
                 "我们终于来到星级评鉴啦！星级评鉴拥有特殊规则，需要的美味值也更高。",
@@ -215,7 +236,7 @@ namespace GourmetProject.Tests.EditMode
             AssertMessages(
                 sequence,
                 "别灰心，老板！这次没有达到目标，我们会损失❤️。",
-                "日常营业、火热营业和星级评鉴失败都会损失 1 颗。❤️归零，本局就会结束。");
+                "日常营业、火热营业和星级评鉴失败都会损失1颗。❤️归零，本局就会结束。");
             foreach (TutorialStepDefinition step in sequence.Steps)
             {
                 Assert.That(step.Mode, Is.EqualTo(TutorialAdvanceMode.Continue));
@@ -251,10 +272,10 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(loss.Id, Is.EqualTo(TutorialId.ResultHeart));
             Assert.That(
                 win.Steps[0].Message,
-                Is.EqualTo("太棒了，老板！这次经营成功，❤️红心不会减少。红心代表餐厅还能承受失败的次数：日常营业、火热营业和星级评鉴失败都会损失 1 颗；红心归零，本局就会结束。"));
+                Is.EqualTo("太棒了，老板！这次经营成功，❤️红心不会减少。红心代表餐厅还能承受失败的次数：日常营业、火热营业和星级评鉴失败都会损失1颗；红心归零，本局就会结束。"));
             Assert.That(
                 loss.Steps[0].Message,
-                Is.EqualTo("别灰心，老板！这次没有达到目标，失败会让我们损失❤️红心。日常营业、火热营业和星级评鉴失败都会损失 1 颗；红心归零，本局就会结束。"));
+                Is.EqualTo("别灰心，老板！这次没有达到目标，失败会让我们损失❤️红心。日常营业、火热营业和星级评鉴失败都会损失1颗；红心归零，本局就会结束。"));
             Assert.That(
                 settlement.Steps[0].Message,
                 Is.EqualTo("这里是本次营业的结果。总美味值达到目标即为成功，否则营业失败。"));
@@ -297,6 +318,16 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(sequence.Steps[i].Message, Is.EqualTo(expectedMessages[i]));
                 Assert.That(sequence.Steps[i].Mode, Is.EqualTo(TutorialAdvanceMode.Continue));
                 Assert.That(sequence.Steps[i].Signal, Is.Empty);
+            }
+        }
+
+        private static void AssertAllAnchors(
+            TutorialSequenceDefinition sequence,
+            params string[] expectedAnchors)
+        {
+            foreach (TutorialStepDefinition step in sequence.Steps)
+            {
+                CollectionAssert.AreEqual(expectedAnchors, step.Anchors);
             }
         }
     }

@@ -135,6 +135,14 @@ namespace GourmetProject.Game.UI.Hud
             return _dayGroups.TryGetValue(day, out TimelineDayNodeGroupView group) ? group : null;
         }
 
+        public bool TryGetNodeBubble(string nodeId, out TimelineNodeBubbleView bubble)
+        {
+            bubble = null;
+            return !string.IsNullOrEmpty(nodeId)
+                && _nodeBubbles.TryGetValue(nodeId, out bubble)
+                && bubble != null;
+        }
+
         public void Build(
             GameRun run,
             Action<cfg.TimelineNode, GameObject> onNodeCreated = null,
