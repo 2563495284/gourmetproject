@@ -92,6 +92,46 @@ namespace GourmetProject.Gameplay.Model
             return current;
         }
 
+        /// <summary>
+        /// 把 <paramref name="fromOrientation"/> 绕其占格质心转到 <paramref name="toOrientation"/> 后应使用的新原点。
+        /// 使新占格质心尽量贴近原占格质心，与表现层麻风味「绕视觉中心旋转」一致。
+        /// </summary>
+        public static GridPos OriginAfterCenteredRotation(
+            DishShape fromOrientation,
+            GridPos fromOrigin,
+            DishShape toOrientation)
+        {
+            if (fromOrientation == null)
+            {
+                throw new ArgumentNullException(nameof(fromOrientation));
+            }
+
+            if (toOrientation == null)
+            {
+                throw new ArgumentNullException(nameof(toOrientation));
+            }
+
+            Centroid(fromOrientation, out double fromLocalX, out double fromLocalY);
+            Centroid(toOrientation, out double toLocalX, out double toLocalY);
+            return new GridPos(
+                (int)Math.Round(fromOrigin.X + fromLocalX - toLocalX, MidpointRounding.AwayFromZero),
+                (int)Math.Round(fromOrigin.Y + fromLocalY - toLocalY, MidpointRounding.AwayFromZero));
+        }
+
+        private static void Centroid(DishShape shape, out double x, out double y)
+        {
+            double sumX = 0d;
+            double sumY = 0d;
+            foreach (GridPos cell in shape.Cells)
+            {
+                sumX += cell.X;
+                sumY += cell.Y;
+            }
+
+            x = sumX / shape.CellCount;
+            y = sumY / shape.CellCount;
+        }
+
         private static GridPos[] Normalize(IEnumerable<GridPos> cells)
         {
             var distinct = new List<GridPos>();

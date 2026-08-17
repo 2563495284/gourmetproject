@@ -2172,6 +2172,7 @@ namespace GourmetProject.Gameplay.Battle
 
         /// <summary>
         /// 按麻风味变化量旋转已上桌食物，并移动到独立临时桌。正数逆时针，负数顺时针。
+        /// 绕当前占格质心旋转后再归一化原点，避免 1×3 等非正方形把占格平移到视觉中心之外。
         /// 不回滚该菜已发生的上菜次数、OnServe 或费用副作用。
         /// </summary>
         public bool MoveDishToTemporaryAreaAfterRotationDelta(int dishId, int ccwSteps)
@@ -2188,10 +2189,14 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             int rotationIndex = ((dish.Placement.RotationIndex - ccwSteps) % 4 + 4) % 4;
+            DishShape orientation = dish.Def.Shape.RotatedBy(rotationIndex);
             var rotatedPlacement = new Placement(
-                dish.Def.Shape.RotatedBy(rotationIndex),
+                orientation,
                 rotationIndex,
-                dish.Placement.Origin);
+                DishShape.OriginAfterCenteredRotation(
+                    dish.Placement.Orientation,
+                    dish.Placement.Origin,
+                    orientation));
 
             DiningTable.RemoveDish(dish);
             dish.Relocate(rotatedPlacement);
