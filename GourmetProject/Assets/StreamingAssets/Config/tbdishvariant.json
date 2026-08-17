@@ -75,7 +75,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -92,7 +92,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -109,7 +109,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -126,7 +126,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -143,7 +143,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -160,7 +160,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -177,7 +177,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -194,7 +194,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -211,7 +211,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -228,7 +228,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -245,7 +245,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -262,7 +262,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -279,7 +279,7 @@
     "price": 30,
     "hiddenRange": {
       "min": 10,
-      "max": 45
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 70,
@@ -296,7 +296,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -313,7 +313,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -330,7 +330,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -347,7 +347,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -364,7 +364,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -381,7 +381,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -398,7 +398,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -415,7 +415,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -432,7 +432,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -449,7 +449,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -466,7 +466,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -483,7 +483,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -500,7 +500,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -517,7 +517,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -534,7 +534,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -551,7 +551,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -568,7 +568,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -585,7 +585,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -602,7 +602,7 @@
     "price": 45,
     "hiddenRange": {
       "min": 23,
-      "max": 60
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 90,
@@ -619,7 +619,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -636,7 +636,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -653,7 +653,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -670,7 +670,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -687,7 +687,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -704,7 +704,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -721,7 +721,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -738,7 +738,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -755,7 +755,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -772,7 +772,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -789,7 +789,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -806,7 +806,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -823,7 +823,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -840,7 +840,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -857,7 +857,7 @@
     "price": 60,
     "hiddenRange": {
       "min": 30,
-      "max": 75
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 110,
@@ -873,8 +873,8 @@
     "baseWeight": 1200,
     "price": 90,
     "hiddenRange": {
-      "min": 36,
-      "max": 90
+      "min": 30,
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 160,
@@ -890,8 +890,8 @@
     "baseWeight": 1200,
     "price": 90,
     "hiddenRange": {
-      "min": 36,
-      "max": 90
+      "min": 30,
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 160,
@@ -907,8 +907,8 @@
     "baseWeight": 1200,
     "price": 90,
     "hiddenRange": {
-      "min": 36,
-      "max": 90
+      "min": 30,
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 160,
@@ -924,8 +924,8 @@
     "baseWeight": 1200,
     "price": 90,
     "hiddenRange": {
-      "min": 36,
-      "max": 90
+      "min": 30,
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 160,
@@ -941,8 +941,8 @@
     "baseWeight": 1200,
     "price": 90,
     "hiddenRange": {
-      "min": 36,
-      "max": 90
+      "min": 30,
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 160,
@@ -958,8 +958,8 @@
     "baseWeight": 1200,
     "price": 90,
     "hiddenRange": {
-      "min": 36,
-      "max": 90
+      "min": 30,
+      "max": 100
     },
     "flavoredBaseWeight": 100,
     "flavoredPrice": 160,
