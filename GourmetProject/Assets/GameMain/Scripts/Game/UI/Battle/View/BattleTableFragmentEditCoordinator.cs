@@ -238,14 +238,16 @@ namespace GourmetProject.Game.UI.Battle.View
 
             _host.RestoreFragmentEditSource();
             _host.SetInspectionNavigationBlocked(false);
-            _host.RefreshPersistent();
 
             Action<bool> completed = _completed;
             _completed = null;
-            completed?.Invoke(placed);
-
-            _host.FragmentEditLayer?.HideImmediate();
             ResetState();
+
+            // 先退出编辑态，再刷新常驻栏。否则结算领奖页会从刚恢复的旧战斗世界
+            // 读取餐桌格数，把已经拼入 GameRun 的新碎片显示成旧值。
+            _host.RefreshPersistent();
+            completed?.Invoke(placed);
+            _host.FragmentEditLayer?.HideImmediate();
             _host.NotifyParentRestored();
         }
 
