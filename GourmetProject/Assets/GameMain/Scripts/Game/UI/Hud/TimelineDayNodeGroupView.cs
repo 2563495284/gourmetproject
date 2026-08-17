@@ -24,14 +24,25 @@ namespace GourmetProject.Game.UI.Hud
             public TimelineNodeFanPose Pose;
         }
 
-        private const float MaximumSpan = 124f;
         private const string PreviewId = "__preview__";
+
+        [Header("Prefab 引用")]
+        [SerializeField] private RectTransform _rect;
+        [SerializeField] private Graphic _hitArea;
+
+        [Header("扇形排布")]
+        [SerializeField] private TimelineNodeFanSettings _fanSettings = new TimelineNodeFanSettings
+        {
+            BaseHeight = 20f,
+            Step = 29f,
+            MaximumSpan = 124f,
+            ArcHeight = 9f,
+            MaximumAngle = 7f,
+        };
 
         private readonly List<Entry> _entries = new List<Entry>();
         private readonly HashSet<string> _targetableIds = new HashSet<string>();
 
-        private RectTransform _rect;
-        private Image _hitArea;
         private bool _nodeTargetMode;
         private bool _destructiveTarget;
         private string _hoveredId;
@@ -42,26 +53,28 @@ namespace GourmetProject.Game.UI.Hud
         public int NodeCount => _entries.Count - (_entries.Exists(entry => entry.Preview) ? 1 : 0);
         public bool IsAnimating => _axisTween?.IsActive() ?? false;
 
+        private void Awake()
+        {
+            EnsureRefs();
+        }
+
+        /// <summary>绑定日期与轴向位置；RectTransform 的锚点纵向位置、尺寸与命中区样式由 Prefab 授权。</summary>
         public void Initialize(int day, float axisX)
         {
-            _rect = transform as RectTransform;
+            EnsureRefs();
             Day = day;
-            axisX = Mathf.Clamp01(axisX);
+            gameObject.name = $"DayNodeGroup_{day}";
+            if (_hitArea != null)
+            {
+                _hitArea.raycastTarget = false;
+            }
 
-            _rect.anchorMin = new Vector2(axisX, 0.27f);
-            _rect.anchorMax = new Vector2(axisX, 0.27f);
-            _rect.pivot = new Vector2(0.5f, 0f);
-            _rect.sizeDelta = new Vector2(MaximumSpan + 52f, 96f);
-            _rect.anchoredPosition = Vector2.zero;
-            _rect.localScale = Vector3.one;
-
-            _hitArea = GetComponent<Image>();
-            _hitArea.color = new Color(1f, 1f, 1f, 0.001f);
-            _hitArea.raycastTarget = false;
+            SetAxisPosition(axisX, animate: false);
         }
 
         public void SetAxisPosition(float axisX, bool animate, float speed = 1f)
         {
+            EnsureRefs();
             if (_rect == null)
             {
                 return;
@@ -104,6 +117,7 @@ namespace GourmetProject.Game.UI.Hud
                 return;
             }
 
+            EnsureRefs();
             Remove(id, animate: false);
             bubble.transform.SetParent(_rect, preserveWorldPosition);
             bubble.gameObject.name = preview ? "NodeBubble_Preview" : $"NodeBubble_{id}";
@@ -266,7 +280,11 @@ namespace GourmetProject.Game.UI.Hud
                 }
             }
 
-            _hitArea.raycastTarget = _targetableIds.Count > 0;
+            if (_hitArea != null)
+            {
+                _hitArea.raycastTarget = _targetableIds.Count > 0;
+            }
+
             foreach (Entry entry in _entries)
             {
                 entry.Bubble?.SetRaycastEnabled(false);
@@ -306,6 +324,7 @@ namespace GourmetProject.Game.UI.Hud
             string arcingNodeId = null,
             float speed = 1f)
         {
+            EnsureRefs();
             int count = _entries.Count;
             for (int i = 0; i < count; i++)
             {
@@ -315,7 +334,7 @@ namespace GourmetProject.Game.UI.Hud
                     continue;
                 }
 
-                TimelineNodeFanPose pose = TimelineNodeFanLayout.Calculate(i, count);
+                TimelineNodeFanPose pose = TimelineNodeFanLayout.Calculate(i, count, _fanSettings);
                 _entries[i].Pose = pose;
                 bubble.SetLayout(
                     _rect,
@@ -437,6 +456,12 @@ namespace GourmetProject.Game.UI.Hud
         private void OnDestroy()
         {
             _axisTween?.Kill();
+        }
+
+        private void EnsureRefs()
+        {
+            _rect ??= transform as RectTransform;
+            _hitArea ??= GetComponent<Graphic>();
         }
     }
 }

@@ -6,8 +6,6 @@ using GourmetProject.Game.Meta;
 using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
 using TMPro;
 
 namespace GourmetProject.Game.UI.Hud
@@ -31,11 +29,12 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private RectTransform _container;
         [SerializeField] private RectTransform _positionMarker;
         [SerializeField] private TMP_Text _currentDayText;
-        [SerializeField] private Image _fillTemplate;
-        [SerializeField] private Image _tickTemplate;
-        [SerializeField] private TMP_Text _dayLabelTemplate;
-        [SerializeField] private Image _nodeIconTemplate;
-        [SerializeField] private TMP_Text _nodeLabelTemplate;
+        [Tooltip("已过天数进度条；代码只驱动其 anchorMax.x")]
+        [SerializeField] private RectTransform _railFill;
+
+        [Header("Prefab")]
+        [SerializeField] private TimelineDayPointView _dayPointPrefab;
+        [SerializeField] private TimelineDayNodeGroupView _dayNodeGroupPrefab;
         [SerializeField] private TimelineNodeBubbleView _nodeBubblePrefab;
 
         [Header("节点图标")]
@@ -44,13 +43,11 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Sprite _bossNodeSprite;
         [SerializeField] private Sprite _eventNodeSprite;
 
-        [Header("样式")]
-        [SerializeField] private Color _fillColor = new Color(0.30f, 0.76f, 0.28f, 0.95f);
-        [SerializeField] private Color _tickColor = new Color(1f, 0.66f, 0.08f, 1f);
-        [SerializeField] private Color _dayTextColor = new Color(0.22f, 0.12f, 0.07f, 1f);
-
-        private readonly List<GameObject> _axisSpawned = new List<GameObject>();
-        private readonly Dictionary<int, Image> _dayDots = new Dictionary<int, Image>();
+        private readonly Dictionary<int, TimelineDayPointView> _dayPoints =
+            new Dictionary<int, TimelineDayPointView>();
+        private readonly List<TimelineDayPointView> _dayPointPool =
+            new List<TimelineDayPointView>();
+        private readonly List<int> _spareDays = new List<int>();
         private readonly Dictionary<int, TimelineDayNodeGroupView> _dayGroups =
             new Dictionary<int, TimelineDayNodeGroupView>();
         private readonly Dictionary<string, TimelineNodeBubbleView> _nodeBubbles =
@@ -78,8 +75,6 @@ namespace GourmetProject.Game.UI.Hud
         private Action<int> _confirmDay;
         private Action<string> _confirmNode;
         private Action _cancelSelection;
-        private TMP_FontAsset _cachedFont;
-        private Sprite _whiteSprite;
         private string _builtTimelineId;
         private string _presentedExecutingNodeId;
         private bool _hasBuiltNodes;
@@ -87,7 +82,6 @@ namespace GourmetProject.Game.UI.Hud
         private IReadOnlyList<RuntimeTimelineNodeSnapshot> _presentationNodes;
         private float _presentationLengthDays;
         private TimelineAxisViewState _viewState;
-        private Image _elapsedRail;
         private float _displayedDay;
         private bool _presentationBusy;
         private bool _completingPresentation;
@@ -124,9 +118,9 @@ namespace GourmetProject.Game.UI.Hud
                     }
                 }
 
-                foreach (Image dot in _dayDots.Values)
+                foreach (TimelineDayPointView point in _dayPoints.Values)
                 {
-                    if (dot != null && DOTween.IsTweening(dot.rectTransform))
+                    if (point != null && point.IsAnimating)
                     {
                         return true;
                     }
@@ -388,7 +382,7 @@ namespace GourmetProject.Game.UI.Hud
                         {
                             for (int day = lastWholeDay + 1; day <= wholeDay; day++)
                             {
-                                PulseDayDot(day, speed);
+                                PulseDayPoint(day, speed);
                                 PulseNodesAtDay(day, speed);
                             }
 
@@ -482,17 +476,9 @@ namespace GourmetProject.Game.UI.Hud
             void ApplyLength(float displayLength)
             {
                 displayLength = Mathf.Max(1f, displayLength);
-                foreach (KeyValuePair<int, Image> pair in _dayDots)
+                foreach (KeyValuePair<int, TimelineDayPointView> pair in _dayPoints)
                 {
-                    if (pair.Value == null
-                        || !(pair.Value.transform.parent is RectTransform hit))
-                    {
-                        continue;
-                    }
-
-                    float x = Mathf.Clamp01(pair.Key / displayLength);
-                    hit.anchorMin = new Vector2(x, hit.anchorMin.y);
-                    hit.anchorMax = new Vector2(x, hit.anchorMax.y);
+                    pair.Value?.SetAxisPosition(Mathf.Clamp01(pair.Key / displayLength));
                 }
 
                 foreach (KeyValuePair<int, TimelineDayNodeGroupView> pair in _dayGroups)
@@ -817,7 +803,7 @@ namespace GourmetProject.Game.UI.Hud
                 : null;
             _onNodeCreated?.Invoke(runtimeNode, bubble.gameObject);
 
-            SetDayDotHighlight(day, false);
+            SetDayPointHighlight(day, false);
             _hoveredPreviewDay = -1;
             _previewBubble = null;
             _previewGroup = null;
@@ -827,111 +813,99 @@ namespace GourmetProject.Game.UI.Hud
 
         private void RebuildAxisChrome()
         {
-            ClearAxisChrome();
             if (_viewState == null || _container == null)
             {
                 return;
             }
 
-            _whiteSprite ??= Resources.Load<Sprite>("Sprites/UI/white");
             float length = Mathf.Max(1f, _viewState.LengthDays);
             int wholeDays = Mathf.Max(1, Mathf.FloorToInt(length + TimelineMath.Epsilon));
-            float ratio = Mathf.Clamp01(_displayedDay / length);
-
-            BuildRail(ratio);
-            BuildDayPoints(wholeDays, length);
-            PositionMarker(ratio);
-            RefreshCurrentDay();
+            SyncDayPoints(wholeDays, length);
+            UpdateProgressVisual(_displayedDay, length);
             BringGroupsToFront();
         }
 
-        private void BuildRail(float ratio)
+        private void SyncDayPoints(int wholeDays, float length)
         {
-            Image baseRail = CreateImage("AxisRail", _container, _whiteSprite);
-            SetAnchoredRect(
-                baseRail.rectTransform,
-                new Vector2(0f, 0.27f),
-                new Vector2(1f, 0.27f),
-                new Vector2(0f, 6f));
-            baseRail.color = new Color(0.38f, 0.28f, 0.18f, 0.28f);
-            baseRail.raycastTarget = false;
-            baseRail.transform.SetAsFirstSibling();
-
-            _elapsedRail = CreateImage("AxisElapsed", _container, _whiteSprite);
-            _elapsedRail.rectTransform.anchorMin = new Vector2(0f, 0.27f);
-            _elapsedRail.rectTransform.anchorMax = new Vector2(ratio, 0.27f);
-            _elapsedRail.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            _elapsedRail.rectTransform.sizeDelta = new Vector2(0f, 7f);
-            _elapsedRail.rectTransform.anchoredPosition = Vector2.zero;
-            _elapsedRail.color = _fillColor;
-            _elapsedRail.raycastTarget = false;
-            _elapsedRail.transform.SetSiblingIndex(1);
-        }
-
-        private void BuildDayPoints(int wholeDays, float length)
-        {
-            for (int day = 0; day <= wholeDays; day++)
+            _spareDays.Clear();
+            foreach (int day in _dayPoints.Keys)
             {
-                float x = Mathf.Clamp01(day / length);
-                Image hit = CreateImage($"DayHit_{day}", _container, _whiteSprite);
-                SetAnchoredRect(
-                    hit.rectTransform,
-                    new Vector2(x, 0.27f),
-                    new Vector2(x, 0.27f),
-                    new Vector2(46f, 58f));
-                hit.color = new Color(1f, 1f, 1f, 0.001f);
-                hit.raycastTarget = _selectionMode == TimelineAxisSelectionMode.AddDay
-                    && _validAddDays.Contains(day)
-                    && !_commitInProgress;
-
-                Image dot = CreateImage($"DayDot_{day}", hit.rectTransform, _whiteSprite);
-                SetAnchoredRect(
-                    dot.rectTransform,
-                    new Vector2(0.5f, 0.5f),
-                    new Vector2(0.5f, 0.5f),
-                    new Vector2(14f, 14f));
-                dot.color = day <= _displayedDay + TimelineMath.Epsilon ? _fillColor : _tickColor;
-                dot.raycastTarget = false;
-                Outline outline = dot.gameObject.AddComponent<Outline>();
-                outline.effectColor = new Color(0.25f, 0.14f, 0.07f, 0.50f);
-                outline.effectDistance = new Vector2(1f, -1f);
-                _dayDots[day] = dot;
-
-                if (day > 0)
+                if (day > wholeDays)
                 {
-                    TMP_Text label = CreateText($"DayLabel_{day}", _container);
-                    label.text = day.ToString(CultureInfo.InvariantCulture);
-                    label.color = _dayTextColor;
-                    label.alignment = TextAlignmentOptions.Top;
-                    label.enableAutoSizing = true;
-                    label.fontSizeMin = 9;
-                    label.fontSizeMax = 17;
-                    label.raycastTarget = false;
-                    SetAnchoredRect(
-                        label.rectTransform,
-                        new Vector2(x, 0.27f),
-                        new Vector2(x, 0.27f),
-                        new Vector2(34f, 24f),
-                        new Vector2(0f, -24f));
-                }
-
-                if (hit.raycastTarget)
-                {
-                    int capturedDay = day;
-                    TimelineAxisPointerTarget pointer =
-                        hit.gameObject.AddComponent<TimelineAxisPointerTarget>();
-                    pointer.Bind(
-                        () => HoverAddDay(capturedDay),
-                        () => ExitAddDay(capturedDay),
-                        data =>
-                        {
-                            if (data.button == PointerEventData.InputButton.Left)
-                            {
-                                SelectAddDay(capturedDay);
-                            }
-                        });
+                    _spareDays.Add(day);
                 }
             }
+
+            foreach (int day in _spareDays)
+            {
+                RecycleDayPoint(_dayPoints[day]);
+                _dayPoints.Remove(day);
+            }
+
+            for (int day = 0; day <= wholeDays; day++)
+            {
+                if (!_dayPoints.TryGetValue(day, out TimelineDayPointView point) || point == null)
+                {
+                    point = RentDayPoint();
+                    if (point == null)
+                    {
+                        return;
+                    }
+
+                    _dayPoints[day] = point;
+                }
+
+                point.Bind(day, Mathf.Clamp01(day / length));
+                point.SetHighlighted(day == _hoveredPreviewDay);
+                bool targetable = _selectionMode == TimelineAxisSelectionMode.AddDay
+                    && _validAddDays.Contains(day)
+                    && !_commitInProgress;
+                int capturedDay = day;
+                point.ConfigureAddDayTarget(
+                    targetable,
+                    () => HoverAddDay(capturedDay),
+                    () => ExitAddDay(capturedDay),
+                    () => SelectAddDay(capturedDay));
+            }
+        }
+
+        private TimelineDayPointView RentDayPoint()
+        {
+            while (_dayPointPool.Count > 0)
+            {
+                int last = _dayPointPool.Count - 1;
+                TimelineDayPointView pooled = _dayPointPool[last];
+                _dayPointPool.RemoveAt(last);
+                if (pooled != null)
+                {
+                    pooled.gameObject.SetActive(true);
+                    return pooled;
+                }
+            }
+
+            TimelineDayPointView prefab = _dayPointPrefab != null
+                ? _dayPointPrefab
+                : Resources.Load<TimelineDayPointView>("Prefabs/UI/Hud/TimelineDayPointView");
+            if (prefab == null)
+            {
+                Debug.LogError($"{nameof(ActionAxisBar)} 缺少 TimelineDayPointView Prefab。", this);
+                return null;
+            }
+
+            return Instantiate(prefab, _container);
+        }
+
+        private void RecycleDayPoint(TimelineDayPointView point)
+        {
+            if (point == null)
+            {
+                return;
+            }
+
+            point.KillTweens();
+            point.ConfigureAddDayTarget(false, null, null, null);
+            point.gameObject.SetActive(false);
+            _dayPointPool.Add(point);
         }
 
         private void ReconcileNodeGroups(bool animate, float animationSpeed = 1f)
@@ -967,6 +941,11 @@ namespace GourmetProject.Game.UI.Hud
                         Mathf.Clamp01(node.Day / length),
                         animate,
                         animationSpeed);
+                if (group == null)
+                {
+                    continue;
+                }
+
                 bool moved = false;
                 TimelineNodeBubbleView movedBubble = null;
                 if (_nodeDays.TryGetValue(node.Id, out int previousDay)
@@ -1115,15 +1094,19 @@ namespace GourmetProject.Game.UI.Hud
 
             ClearPreview(animate: true);
             _hoveredPreviewDay = day;
-            SetDayDotHighlight(day, true);
+            SetDayPointHighlight(day, true);
 
             cfg.GameAction action = _run.Tables.TbAction.GetOrDefault(_previewActionId);
             ActionDisplayKind kind = ActionDisplay.KindOf(_run.Tables, action);
             float length = Mathf.Max(1f, _run.TimelineLengthDays);
             _previewGroup = GetOrCreateDayGroup(day, Mathf.Clamp01(day / length));
-            _previewBubble = CreateBubble(_previewGroup.transform);
+            _previewBubble = _previewGroup != null
+                ? CreateBubble(_previewGroup.transform)
+                : null;
             if (_previewBubble == null)
             {
+                _previewGroup = null;
+                SetDayPointHighlight(day, false);
                 _hoveredPreviewDay = -1;
                 return;
             }
@@ -1196,7 +1179,7 @@ namespace GourmetProject.Game.UI.Hud
             _hoveredPreviewDay = -1;
             if (previousDay >= 0)
             {
-                SetDayDotHighlight(previousDay, false);
+                SetDayPointHighlight(previousDay, false);
             }
 
             if (_previewGroup != null)
@@ -1239,14 +1222,19 @@ namespace GourmetProject.Game.UI.Hud
                 return existing;
             }
 
-            var go = new GameObject(
-                $"DayNodeGroup_{day}",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image),
-                typeof(TimelineDayNodeGroupView));
-            go.transform.SetParent(_container, false);
-            TimelineDayNodeGroupView group = go.GetComponent<TimelineDayNodeGroupView>();
+            TimelineDayNodeGroupView prefab = _dayNodeGroupPrefab != null
+                ? _dayNodeGroupPrefab
+                : Resources.Load<TimelineDayNodeGroupView>(
+                    "Prefabs/UI/Hud/TimelineDayNodeGroupView");
+            if (prefab == null)
+            {
+                Debug.LogError(
+                    $"{nameof(ActionAxisBar)} 缺少 TimelineDayNodeGroupView Prefab。",
+                    this);
+                return null;
+            }
+
+            TimelineDayNodeGroupView group = Instantiate(prefab, _container);
             group.Initialize(day, axisX);
             _dayGroups[day] = group;
             return group;
@@ -1266,68 +1254,12 @@ namespace GourmetProject.Game.UI.Hud
             return Instantiate(prefab, parent);
         }
 
-        private void SetDayDotHighlight(int day, bool highlighted)
+        private void SetDayPointHighlight(int day, bool highlighted)
         {
-            if (!_dayDots.TryGetValue(day, out Image dot))
+            if (_dayPoints.TryGetValue(day, out TimelineDayPointView point))
             {
-                return;
+                point?.SetHighlighted(highlighted);
             }
-
-            dot.color = highlighted
-                ? new Color(0.02f, 0.86f, 0.67f, 1f)
-                : (day <= _run.CurrentDay + TimelineMath.Epsilon ? _fillColor : _tickColor);
-            dot.rectTransform.sizeDelta = highlighted ? new Vector2(21f, 21f) : new Vector2(14f, 14f);
-        }
-
-        private Image CreateImage(string objectName, Transform parent, Sprite sprite)
-        {
-            var go = new GameObject(
-                objectName,
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image));
-            go.transform.SetParent(parent, false);
-            var image = go.GetComponent<Image>();
-            image.sprite = sprite;
-            if (parent == _container)
-            {
-                _axisSpawned.Add(go);
-            }
-
-            return image;
-        }
-
-        private TMP_Text CreateText(string objectName, Transform parent)
-        {
-            var go = new GameObject(
-                objectName,
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(TextMeshProUGUI));
-            go.transform.SetParent(parent, false);
-            var text = go.GetComponent<TMP_Text>();
-            text.font = ResolveFont();
-            if (parent == _container)
-            {
-                _axisSpawned.Add(go);
-            }
-
-            return text;
-        }
-
-        private static void SetAnchoredRect(
-            RectTransform rect,
-            Vector2 anchorMin,
-            Vector2 anchorMax,
-            Vector2 size,
-            Vector2? position = null)
-        {
-            rect.anchorMin = anchorMin;
-            rect.anchorMax = anchorMax;
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = size;
-            rect.anchoredPosition = position ?? Vector2.zero;
-            rect.localScale = Vector3.one;
         }
 
         private void PositionMarker(float ratio)
@@ -1356,43 +1288,26 @@ namespace GourmetProject.Game.UI.Hud
         private void UpdateProgressVisual(float day, float length)
         {
             float ratio = Mathf.Clamp01(day / Mathf.Max(1f, length));
-            if (_elapsedRail != null)
+            if (_railFill != null)
             {
-                RectTransform elapsed = _elapsedRail.rectTransform;
-                elapsed.anchorMax = new Vector2(ratio, elapsed.anchorMax.y);
+                _railFill.anchorMax = new Vector2(ratio, _railFill.anchorMax.y);
             }
 
             PositionMarker(ratio);
-            foreach (KeyValuePair<int, Image> pair in _dayDots)
+            foreach (KeyValuePair<int, TimelineDayPointView> pair in _dayPoints)
             {
-                if (pair.Value != null)
-                {
-                    pair.Value.color = pair.Key <= day + TimelineMath.Epsilon
-                        ? _fillColor
-                        : _tickColor;
-                }
+                pair.Value?.SetPassed(pair.Key <= day + TimelineMath.Epsilon);
             }
 
             RefreshCurrentDay();
         }
 
-        private void PulseDayDot(int day, float speed)
+        private void PulseDayPoint(int day, float speed)
         {
-            if (!_dayDots.TryGetValue(day, out Image dot) || dot == null)
+            if (_dayPoints.TryGetValue(day, out TimelineDayPointView point))
             {
-                return;
+                point?.PlayAdvancePulse(speed);
             }
-
-            dot.rectTransform.DOKill();
-            dot.rectTransform.localScale = Vector3.one;
-            dot.rectTransform
-                .DOPunchScale(
-                    new Vector3(0.28f, -0.18f, 0f),
-                    0.12f / Mathf.Max(0.05f, speed),
-                    4,
-                    0.45f)
-                .SetUpdate(true)
-                .SetTarget(dot.rectTransform);
         }
 
         private void PulseNodesAtDay(int day, float speed)
@@ -1428,27 +1343,27 @@ namespace GourmetProject.Game.UI.Hud
             }
         }
 
-        private void ClearAxisChrome()
+        private void DestroyDayPoints()
         {
-            foreach (Image dot in _dayDots.Values)
+            foreach (TimelineDayPointView point in _dayPoints.Values)
             {
-                if (dot != null)
+                if (point != null)
                 {
-                    dot.rectTransform.DOKill(complete: false);
+                    point.KillTweens();
+                    Destroy(point.gameObject);
                 }
             }
 
-            foreach (GameObject go in _axisSpawned)
+            foreach (TimelineDayPointView pooled in _dayPointPool)
             {
-                if (go != null)
+                if (pooled != null)
                 {
-                    Destroy(go);
+                    Destroy(pooled.gameObject);
                 }
             }
 
-            _axisSpawned.Clear();
-            _dayDots.Clear();
-            _elapsedRail = null;
+            _dayPoints.Clear();
+            _dayPointPool.Clear();
         }
 
         private void ClearGroups()
@@ -1468,22 +1383,6 @@ namespace GourmetProject.Game.UI.Hud
             _previewBubble = null;
             _previewGroup = null;
             _hoveredPreviewDay = -1;
-        }
-
-        private TMP_FontAsset ResolveFont()
-        {
-            if (_currentDayText != null && _currentDayText.font != null)
-            {
-                return _currentDayText.font;
-            }
-
-            if (_cachedFont == null)
-            {
-                _cachedFont = Resources.Load<TMP_FontAsset>("Fonts/AlimamaShuHeiTi-Bold SDF")
-                    ?? TMP_Settings.defaultFontAsset;
-            }
-
-            return _cachedFont;
         }
 
         private Sprite NodeSprite(ActionDisplayKind kind)
@@ -1562,7 +1461,7 @@ namespace GourmetProject.Game.UI.Hud
         {
             AbortPresentation();
             ClearPreview(animate: false);
-            ClearAxisChrome();
+            DestroyDayPoints();
             ClearGroups();
         }
     }
