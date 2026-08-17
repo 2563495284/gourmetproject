@@ -133,6 +133,82 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void ScoreCalculator_DiagnosticsOffMatchesEveryRuleResultWithoutCapturingLinesEventsOrRandom()
+        {
+            var salty = new FlavorDef(
+                "fast-path-salty",
+                "fast-path-salty",
+                string.Empty,
+                FlavorEffectType.ExtraSettlementChance,
+                new[] { 1f },
+                Array.Empty<string>(),
+                string.Empty);
+            DishDef dishDef = Dish("fast-path-dish", 10, flavorId: salty.Id);
+            var table = new DiningTable(1, 1);
+            var dish = new DishInstance(
+                1,
+                dishDef,
+                new Placement(dishDef.Shape, 0, new GridPos(0, 0)),
+                Array.Empty<string>(),
+                new[] { salty.Id });
+            dish.SetSourceRecipeIndex(0, 0);
+            table.Place(dish);
+            var db = new GameplayDatabase(
+                new[] { dishDef },
+                Array.Empty<SkillDef>(),
+                new[] { salty },
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var calculator = new ScoreCalculator(
+                effectSources: new[] { new DiagnosticsParityEffectSource(dish) });
+            int fullCopyCalls = 0;
+            int fastCopyCalls = 0;
+            int fullRandomCalls = 0;
+            int fastRandomCalls = 0;
+
+            ScoreResult full = calculator.Calculate(
+                table,
+                db,
+                initialHappyCakeLayers: 3,
+                copySkillSelector: (candidates, count) =>
+                {
+                    fullCopyCalls++;
+                    return candidates.Take(count).ToArray();
+                },
+                randomIntegerSelector: (minimum, maximum) =>
+                {
+                    fullRandomCalls++;
+                    return minimum;
+                },
+                captureDiagnostics: true);
+            ScoreResult fast = calculator.Calculate(
+                table,
+                db,
+                initialHappyCakeLayers: 3,
+                copySkillSelector: (candidates, count) =>
+                {
+                    fastCopyCalls++;
+                    return candidates.Take(count).ToArray();
+                },
+                randomIntegerSelector: (minimum, maximum) =>
+                {
+                    fastRandomCalls++;
+                    return minimum;
+                },
+                captureDiagnostics: false);
+
+            Assert.That(NonDiagnosticSignature(fast), Is.EqualTo(NonDiagnosticSignature(full)),
+                "turning diagnostics off must not change score, rule commands, or side-effect requests");
+            Assert.That(full.ScoreLines, Is.Not.Empty);
+            Assert.That(full.ScoreEvents, Is.Not.Empty);
+            Assert.That(fast.ScoreLines, Is.Empty);
+            Assert.That(fast.ScoreEvents, Is.Empty);
+            Assert.That(fastCopyCalls, Is.EqualTo(fullCopyCalls).And.EqualTo(1));
+            Assert.That(fastRandomCalls, Is.EqualTo(fullRandomCalls).And.EqualTo(1));
+            Assert.That(table.Dishes.Single(), Is.SameAs(dish));
+        }
+
+        [Test]
         public void SolverPreview_BypassesBuffetDisplayGateForEarlyPlacements()
         {
             DishDef dish = Dish("buffet-preview", 10);
@@ -405,6 +481,57 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(result.Decisions[0].DishId, Is.EqualTo(insertedDish.Id));
             Assert.That(session.Slots[0].Count, Is.EqualTo(1), "inserted dish must not consume the recipe entry");
             Assert.That(session.DiningTable.Dishes.Single().Def.Id, Is.EqualTo(insertedDish.Id));
+        }
+
+        [Test]
+        public void AutomaticPrepare_ChoosesOnlyFittingCandidatesAndReturnsEveryPlacementForChosenDish()
+        {
+            DishDef oneCell = Dish("fit-one", 10);
+            var twoCell = new DishDef(
+                "fit-two",
+                "fit-two",
+                20,
+                DishShape.FromRows(new[] { "XX" }),
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty);
+            var tooWide = new DishDef(
+                "too-wide",
+                "too-wide",
+                40,
+                DishShape.FromRows(new[] { "XXXX" }),
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty);
+            var table = new DiningTable(3, 1);
+            var db = new GameplayDatabase(
+                new[] { oneCell, twoCell, tooWide },
+                Array.Empty<SkillDef>(),
+                Array.Empty<FlavorDef>(),
+                Array.Empty<MaterialDef>(),
+                Array.Empty<RecipeDef>());
+            var random = new TrackingRandomStream(110UL, forcedWeightedIndex: 1);
+            var session = new BattleSession(
+                table,
+                db,
+                random,
+                new[] { new RecipeSlot("slot", new[] { oneCell.Id, twoCell.Id, tooWide.Id }) },
+                requiredScore: 0);
+
+            ServePrepareResult prepared = session.PrepareServeAutomatically(0);
+
+            Assert.That(prepared.Success, Is.True);
+            Assert.That(prepared.PreparedDish.Definition.Id, Is.EqualTo(twoCell.Id));
+            Assert.That(prepared.PreparedDish.Placements.Select(value => value.Origin),
+                Is.EqualTo(new[] { new GridPos(0, 0), new GridPos(1, 0) }));
+            Assert.That(random.WeightedPickCalls, Is.EqualTo(1));
+            Assert.That(random.LastWeights, Is.EqualTo(new[] { 1f, 2f }),
+                "the impossible four-cell dish must not enter the formal weighted roll");
+            Assert.That(session.Slots[0].Count, Is.EqualTo(2));
         }
 
         [Test]
@@ -739,6 +866,81 @@ namespace GourmetProject.Tests.EditMode
             {
                 CollectCalls++;
             }
+        }
+
+        private sealed class DiagnosticsParityEffectSource : IScoreEffectSource
+        {
+            private readonly DishInstance _dish;
+
+            public DiagnosticsParityEffectSource(DishInstance dish)
+            {
+                _dish = dish;
+            }
+
+            public void CollectEffects(ScoreSnapshot snapshot, ScoreEffectCollector collector)
+            {
+                collector.Add(new ScoreEffectEntry(
+                    ScorePhase.BeforeAll,
+                    ScoreSource.Relic("diagnostics-parity", "diagnostics-parity"),
+                    new DiagnosticsParityEffect(_dish)));
+            }
+        }
+
+        private sealed class DiagnosticsParityEffect : IScoreEffect
+        {
+            private readonly DishInstance _dish;
+
+            public DiagnosticsParityEffect(DishInstance dish)
+            {
+                _dish = dish;
+            }
+
+            public void Apply(ScoreContext context)
+            {
+                context.AddFlatTo(_dish, 2);
+                context.MultiplyTo(_dish, 1.5);
+                context.AddPermanentFlatTo(_dish, 3);
+                context.AddPermanentMultTo(_dish, 1.25);
+                context.GrantGold(7);
+                context.RequestSilverItemRoll(0.2f);
+                context.AddHappyCakeLayers(2, mult: false);
+                context.AddFinalFlat(5);
+                context.MultiplyFinalBy(1.1);
+                context.AddTemporaryCategory(_dish, "cake", "fixture", "fixture category");
+                context.RequestRecipeRemoval(_dish, 0.4f);
+                context.RecordSkillTransfer(
+                    _dish,
+                    new[] { new SkillEffect(null, "fixture transfer") },
+                    "fixture",
+                    99);
+                context.RecordCopySkill(_dish, new[] { "missing-fixture-skill" }, 1, "fixture");
+            }
+        }
+
+        private static string NonDiagnosticSignature(ScoreResult result)
+        {
+            var values = new List<string>
+            {
+                $"score:{result.RawSum}|{result.FinalFlat}|{result.FinalMultiplier}|{result.Total}",
+                $"global:{result.GoldDelta}|{result.HappyCakeLayerDelta}",
+            };
+            values.AddRange(result.DishScores.Select(score =>
+                $"dish:{score.DishInstanceId}|{score.DishId}|{score.BaseValue}|{score.FlatBonus}|{score.Multiplier}|{score.EffectiveCountAs}|{score.ExtraSettlementContribution}|{score.ExtraSettlementCount}|{score.Contribution}"));
+            values.AddRange(result.PermanentFlatDeltas.OrderBy(pair => pair.Key)
+                .Select(pair => $"permanent-flat:{pair.Key}|{pair.Value}"));
+            values.AddRange(result.PermanentMultDeltas.OrderBy(pair => pair.Key)
+                .Select(pair => $"permanent-mult:{pair.Key}|{pair.Value}"));
+            values.AddRange(result.SilverItemRolls.Select(request =>
+                $"silver:{request.Probability}|{request.DishInstanceId}|{request.MaterialId}"));
+            values.AddRange(result.SkillTransfers.Select(request =>
+                $"transfer:{request.TargetInstanceId}|{request.SourceName}|{request.SourceInstanceId}|{request.Effects.Count}"));
+            values.AddRange(result.CopySkillRequests.Select(request =>
+                $"copy:{request.TargetInstanceId}|{request.Count}|{request.SourceName}|{string.Join(",", request.Candidates)}|{string.Join(",", request.SelectedSkillIds)}"));
+            values.AddRange(result.TemporaryCategories.Select(request =>
+                $"category:{request.DishInstanceId}|{request.Category}|{request.SourceName}|{request.EffectDescription}"));
+            values.AddRange(result.RecipeRemovalRequests.Select(request =>
+                $"remove:{request.DishInstanceId}|{request.SourceDishIndex}|{request.DishId}|{request.DishName}|{request.Probability}"));
+            return string.Join("\n", values);
         }
 
         private sealed class TrackingRandomStream : IRandomStream

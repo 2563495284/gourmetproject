@@ -73,6 +73,7 @@ namespace GourmetProject.Game.Balance
                 ? Math.Min(ExpertMaximumCandidates, policy.PlacementCandidateLimit(playerLevel))
                 : Math.Min(NormalMaximumCandidates, policy.PlacementCandidateLimit(playerLevel));
             int budget = Math.Max(1, policy.PlacementNodeBudget);
+            var geometryScratch = new GeometryScratch(session.DiningTable);
 
             while (session.CanServeAny())
             {
@@ -129,7 +130,8 @@ namespace GourmetProject.Game.Balance
                         session,
                         prepared.PreparedDish.Dish,
                         legal[i],
-                        i));
+                        i,
+                        geometryScratch));
                 }
 
                 rankedCandidates.Sort(CompareGeometryForPreview);
@@ -336,17 +338,20 @@ namespace GourmetProject.Game.Balance
             BattleSession session,
             DishInstance dish,
             Placement placement,
-            int candidateIndex)
+            int candidateIndex,
+            GeometryScratch scratch)
         {
             DiningTable table = session.DiningTable;
-            var occupiedByCandidate = new HashSet<GridPos>();
+            HashSet<GridPos> occupiedByCandidate = scratch.OccupiedByCandidate;
+            occupiedByCandidate.Clear();
             foreach (GridPos local in placement.Orientation.Cells)
             {
                 occupiedByCandidate.Add(local.Offset(placement.Origin.X, placement.Origin.Y));
             }
 
-            var remaining = new HashSet<GridPos>();
-            foreach (GridPos cell in table.ExistingCells())
+            HashSet<GridPos> remaining = scratch.Remaining;
+            remaining.Clear();
+            foreach (GridPos cell in scratch.ExistingCells)
             {
                 if (table.IsEmpty(cell) && !occupiedByCandidate.Contains(cell))
                 {
@@ -356,7 +361,8 @@ namespace GourmetProject.Game.Balance
 
             int regions = 0;
             int largestRegion = 0;
-            var queue = new Queue<GridPos>();
+            Queue<GridPos> queue = scratch.Queue;
+            queue.Clear();
             while (remaining.Count > 0)
             {
                 GridPos start = default;
@@ -388,13 +394,14 @@ namespace GourmetProject.Game.Balance
                 placement,
                 largestRegion,
                 regions,
-                DirectionalFuturePotential(session, dish, occupiedByCandidate));
+                DirectionalFuturePotential(session, dish, occupiedByCandidate, scratch.ExistingCells));
         }
 
         private static double DirectionalFuturePotential(
             BattleSession session,
             DishInstance dish,
-            HashSet<GridPos> occupiedByCandidate)
+            HashSet<GridPos> occupiedByCandidate,
+            IReadOnlyList<GridPos> existingCells)
         {
             if (session?.Database == null || dish?.SkillIds == null || dish.SkillIds.Count == 0)
             {
@@ -447,7 +454,7 @@ namespace GourmetProject.Game.Balance
                     }
 
                     int futureTargetCells = 0;
-                    foreach (GridPos cell in session.DiningTable.ExistingCells())
+                    foreach (GridPos cell in existingCells)
                     {
                         if (!session.DiningTable.IsEmpty(cell)
                             || occupiedByCandidate.Contains(cell))
@@ -680,6 +687,29 @@ namespace GourmetProject.Game.Balance
             public int EmptyRegionCount { get; }
 
             public double DirectionalFuturePotential { get; }
+        }
+
+        /// <summary>
+        /// 一次求解内复用的几何工作区。餐桌存在格在经营挑战内不会变化；占用状态仍在
+        /// 每个候选分析时从正式餐桌重新读取，因此只消除临时集合分配，不缓存候选结果。
+        /// </summary>
+        private sealed class GeometryScratch
+        {
+            public GeometryScratch(DiningTable table)
+            {
+                ExistingCells = table.ExistingCells();
+                OccupiedByCandidate = new HashSet<GridPos>();
+                Remaining = new HashSet<GridPos>();
+                Queue = new Queue<GridPos>();
+            }
+
+            public IReadOnlyList<GridPos> ExistingCells { get; }
+
+            public HashSet<GridPos> OccupiedByCandidate { get; }
+
+            public HashSet<GridPos> Remaining { get; }
+
+            public Queue<GridPos> Queue { get; }
         }
     }
 }

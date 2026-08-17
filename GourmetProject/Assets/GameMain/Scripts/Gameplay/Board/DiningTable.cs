@@ -304,8 +304,14 @@ namespace GourmetProject.Gameplay.Board
                 return false;
             }
 
-            foreach (GridPos cell in orientation.Cells)
+            // DishShape.Cells is exposed as IReadOnlyList but backed by an array. Iterating it
+            // through foreach boxes the array enumerator on Mono; CanPlace is called millions of
+            // times by bounded placement preview, so that tiny allocation dominated long GM runs.
+            // Indexing preserves the exact cell order and placement semantics without allocating.
+            IReadOnlyList<GridPos> cells = orientation.Cells;
+            for (int i = 0; i < cells.Count; i++)
             {
+                GridPos cell = cells[i];
                 GridPos abs = cell.Offset(origin.X, origin.Y);
                 if (!Exists(abs) || _disabled[Index(abs)] || _cells[Index(abs)] != Empty)
                 {
@@ -377,7 +383,37 @@ namespace GourmetProject.Gameplay.Board
             }
         }
 
-        public bool CanFit(DishDef def) => FindValidPlacements(def).Count > 0;
+        public bool CanFit(DishDef def)
+        {
+            if (def == null)
+            {
+                throw new ArgumentNullException(nameof(def));
+            }
+
+            return CanFit(def.Shape);
+        }
+
+        /// <summary>判断固定朝向是否至少有一个合法位置；找到首个位置后立即返回。</summary>
+        public bool CanFit(DishShape shape)
+        {
+            if (shape == null)
+            {
+                throw new ArgumentNullException(nameof(shape));
+            }
+
+            for (int y = 0; y <= Height - shape.Height; y++)
+            {
+                for (int x = 0; x <= Width - shape.Width; x++)
+                {
+                    if (CanPlace(shape, new GridPos(x, y)))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>放置一个已构造好的实例。若占格非法或已被占用则抛出。</summary>
         public void Place(DishInstance dish)

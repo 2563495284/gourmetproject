@@ -41,10 +41,11 @@ namespace GourmetProject.Gameplay.Scoring
             Func<int, int, int> randomIntegerSelector = null,
             int passiveItemCount = 0,
             int remainingFoodDiscards = 0,
-            int sweetTransferExtraTargetCount = 0)
+            int sweetTransferExtraTargetCount = 0,
+            bool captureDiagnostics = true)
         {
             IScoreEffectSource[] sources = MergeSources(extraSources);
-            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction, reverseDishOrder, unservedRecipeDishes, copySkillSelector, transferTargetSelector, randomIntegerSelector, passiveItemCount, remainingFoodDiscards, sweetTransferExtraTargetCount));
+            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction, reverseDishOrder, unservedRecipeDishes, copySkillSelector, transferTargetSelector, randomIntegerSelector, passiveItemCount, remainingFoodDiscards, sweetTransferExtraTargetCount, captureDiagnostics));
         }
 
         public ScoreResult Calculate(ScoreSnapshot snapshot)
@@ -56,7 +57,10 @@ namespace GourmetProject.Gameplay.Scoring
 
             List<ScoreEffectEntry> entries = CollectEntries(snapshot);
             var ctx = new ScoreContext(snapshot);
-            ctx.EmitEvent(ScoreEventType.CalculationStarted, "开始分数结算");
+            if (snapshot.CaptureDiagnostics)
+            {
+                ctx.EmitEvent(ScoreEventType.CalculationStarted, "开始分数结算");
+            }
 
             RunGlobalPhase(ctx, entries, ScorePhase.BeforeAll);
 
@@ -96,7 +100,10 @@ namespace GourmetProject.Gameplay.Scoring
             ctx.FinalizeDishes();
             ctx.RecordInitialFinalModifiers();
             RunGlobalPhase(ctx, entries, ScorePhase.Final);
-            ctx.EmitEvent(ScoreEventType.CalculationFinished, "结束分数结算");
+            if (snapshot.CaptureDiagnostics)
+            {
+                ctx.EmitEvent(ScoreEventType.CalculationFinished, "结束分数结算");
+            }
             return ctx.ToResult();
         }
 

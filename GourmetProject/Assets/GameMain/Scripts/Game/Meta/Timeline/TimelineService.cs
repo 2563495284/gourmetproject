@@ -33,8 +33,9 @@ namespace GourmetProject.Game.Meta
             int idCount = timelineIds?.Count ?? 0;
             int weightCount = timelineWeights?.Count ?? 0;
             int pairCount = System.Math.Min(idCount, weightCount);
+            bool allowsExternalSideEffects = run.Execution?.AllowsExternalSideEffects == true;
 
-            if (idCount != weightCount)
+            if (idCount != weightCount && allowsExternalSideEffects)
             {
                 Log.Warning($"第 {run.WeekIndex} 周时间轴配置长度不一致（ids={idCount}, weights={weightCount}），只使用两边都有值的部分。", Tag);
             }
@@ -51,7 +52,10 @@ namespace GourmetProject.Game.Meta
                 cfg.Timeline tl = tables.TbTimeline.GetOrDefault(timelineId);
                 if (tl == null)
                 {
-                    Log.Warning($"第 {run.WeekIndex} 周配置了不存在的时间轴：{timelineId}。", Tag);
+                    if (allowsExternalSideEffects)
+                    {
+                        Log.Warning($"第 {run.WeekIndex} 周配置了不存在的时间轴：{timelineId}。", Tag);
+                    }
                     continue;
                 }
 
@@ -61,7 +65,10 @@ namespace GourmetProject.Game.Meta
 
             if (candidates.Count == 0)
             {
-                Log.Warning($"第 {run.WeekIndex} 周无可用时间轴，回退为 {DefaultLengthDays} 天空轴。", Tag);
+                if (allowsExternalSideEffects)
+                {
+                    Log.Warning($"第 {run.WeekIndex} 周无可用时间轴，回退为 {DefaultLengthDays} 天空轴。", Tag);
+                }
                 run.BeginTimeline(string.Empty, DefaultLengthDays);
                 ApplyWeekTimelinePassives(run);
                 return string.Empty;
@@ -72,7 +79,10 @@ namespace GourmetProject.Game.Meta
             float length = ResolveTimelineLength(run, chosen, nodes);
             run.BeginTimeline(chosen.Id, length, nodes);
             ApplyWeekTimelinePassives(run);
-            Log.Info($"第 {run.WeekIndex} 周时间轴 = {chosen.Id}（{length} 天）。", Tag);
+            if (allowsExternalSideEffects)
+            {
+                Log.Info($"第 {run.WeekIndex} 周时间轴 = {chosen.Id}（{length} 天）。", Tag);
+            }
             return chosen.Id;
         }
 

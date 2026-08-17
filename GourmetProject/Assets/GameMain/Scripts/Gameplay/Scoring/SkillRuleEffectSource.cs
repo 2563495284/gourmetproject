@@ -51,16 +51,18 @@ namespace GourmetProject.Gameplay.Scoring
                             null,
                             rule.Order,
                             boardOrder,
-                            SkillExecutionTrace.Create(
-                                snapshot.Db,
-                                snapshot.DiningTable,
-                                dish,
-                                dish,
-                                skill,
-                                rule,
-                                TraceKindForSourceLabel(sourceLabel),
-                                sourceLabel,
-                                SkillScopeVisualMode.ResolvedTargets)));
+                            snapshot.CaptureDiagnostics
+                                ? SkillExecutionTrace.Create(
+                                    snapshot.Db,
+                                    snapshot.DiningTable,
+                                    dish,
+                                    dish,
+                                    skill,
+                                    rule,
+                                    TraceKindForSourceLabel(sourceLabel),
+                                    sourceLabel,
+                                    SkillScopeVisualMode.ResolvedTargets)
+                                : null));
                     }
                 }
 
@@ -84,28 +86,30 @@ namespace GourmetProject.Gameplay.Scoring
                         null,
                         rule.Order,
                         boardOrder,
-                        owner != null
-                            ? SkillExecutionTrace.Create(
-                                snapshot.Db,
-                                snapshot.DiningTable,
-                                owner,
-                                dish,
-                                parent,
-                                rule,
-                                SkillExecutionKind.SweetTransfer,
-                                transferred.SourceLabel,
-                                SkillScopeVisualMode.ResolvedTargets)
-                            : SkillExecutionTrace.CreateWithOwnerFallback(
-                                snapshot.Db,
-                                snapshot.DiningTable,
-                                transferred.SourceInstanceId,
-                                SourceNameWithoutTag(transferred.SourceLabel),
-                                dish,
-                                parent,
-                                rule,
-                                SkillExecutionKind.SweetTransfer,
-                                transferred.SourceLabel,
-                                SkillScopeVisualMode.ResolvedTargets)));
+                        !snapshot.CaptureDiagnostics
+                            ? null
+                            : owner != null
+                                ? SkillExecutionTrace.Create(
+                                    snapshot.Db,
+                                    snapshot.DiningTable,
+                                    owner,
+                                    dish,
+                                    parent,
+                                    rule,
+                                    SkillExecutionKind.SweetTransfer,
+                                    transferred.SourceLabel,
+                                    SkillScopeVisualMode.ResolvedTargets)
+                                : SkillExecutionTrace.CreateWithOwnerFallback(
+                                    snapshot.Db,
+                                    snapshot.DiningTable,
+                                    transferred.SourceInstanceId,
+                                    SourceNameWithoutTag(transferred.SourceLabel),
+                                    dish,
+                                    parent,
+                                    rule,
+                                    SkillExecutionKind.SweetTransfer,
+                                    transferred.SourceLabel,
+                                    SkillScopeVisualMode.ResolvedTargets)));
                 }
             }
         }
@@ -490,16 +494,18 @@ namespace GourmetProject.Gameplay.Scoring
                             null,
                             transferRule.Order,
                             boardOrder,
-                            SkillExecutionTrace.Create(
-                                ctx.Db,
-                                ctx.DiningTable,
-                                source,
-                                source,
-                                skill,
-                                transferRule,
-                                SkillRuleEffectSource.TraceKindForSourceLabel(sourceLabel),
-                                sourceLabel,
-                                SkillScopeVisualMode.CandidateScope));
+                            ctx.CaptureDiagnostics
+                                ? SkillExecutionTrace.Create(
+                                    ctx.Db,
+                                    ctx.DiningTable,
+                                    source,
+                                    source,
+                                    skill,
+                                    transferRule,
+                                    SkillRuleEffectSource.TraceKindForSourceLabel(sourceLabel),
+                                    sourceLabel,
+                                    SkillScopeVisualMode.CandidateScope)
+                                : null);
                         ctx.ResolveTransferredEffect(entry);
                     }
                 }
@@ -732,7 +738,9 @@ namespace GourmetProject.Gameplay.Scoring
                 ?? Array.Empty<DishInstance>();
             var ids = targetList.Select(target => target.Id).ToArray();
             var cells = targetList.SelectMany(target => target.OccupiedCells).Distinct().ToArray();
-            SkillExecutionTrace trace = buff.Trace?.WithRuntimeContext(buff.Owner, _self, ids, cells);
+            SkillExecutionTrace trace = ctx.CaptureDiagnostics
+                ? buff.Trace?.WithRuntimeContext(buff.Owner, _self, ids, cells)
+                : null;
             int boardOrder = buff.Owner.Placement.Origin.Y * ctx.DiningTable.Width
                 + buff.Owner.Placement.Origin.X;
             var entry = new ScoreEffectEntry(
@@ -806,16 +814,18 @@ namespace GourmetProject.Gameplay.Scoring
                     null,
                     rule.Order,
                     boardOrder,
-                    SkillExecutionTrace.Create(
-                        ctx.Db,
-                        ctx.DiningTable,
-                        _self,
-                        target,
-                        parent,
-                        rule,
-                        SkillExecutionKind.SweetTransfer,
-                        sourceLabel,
-                        SkillScopeVisualMode.ResolvedTargets));
+                    ctx.CaptureDiagnostics
+                        ? SkillExecutionTrace.Create(
+                            ctx.Db,
+                            ctx.DiningTable,
+                            _self,
+                            target,
+                            parent,
+                            rule,
+                            SkillExecutionKind.SweetTransfer,
+                            sourceLabel,
+                            SkillScopeVisualMode.ResolvedTargets)
+                        : null);
                 ctx.ResolveTransferredEffect(entry);
             }
         }

@@ -76,7 +76,7 @@
   },
   {
     "id": "term_food_count_as",
-    "name": "食物",
+    "name": "多份食物",
     "desc": "视为{x}份食物\n（无标识为1份）"
   }
 ]

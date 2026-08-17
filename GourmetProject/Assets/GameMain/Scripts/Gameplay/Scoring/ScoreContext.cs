@@ -32,8 +32,8 @@ namespace GourmetProject.Gameplay.Scoring
         private readonly Dictionary<int, DishAccumulator> _accums = new Dictionary<int, DishAccumulator>();
         private readonly List<int> _order = new List<int>();
         private readonly List<DishScore> _dishScores = new List<DishScore>();
-        private readonly List<ScoreLine> _lines = new List<ScoreLine>();
-        private readonly List<ScoreEvent> _events = new List<ScoreEvent>();
+        private readonly List<ScoreLine> _lines;
+        private readonly List<ScoreEvent> _events;
         private readonly Queue<PendingScoreCommand> _commands = new Queue<PendingScoreCommand>();
         private int _happyCakeLayerDelta;
         private readonly List<SilverItemRollRequest> _silverItemRolls = new List<SilverItemRollRequest>();
@@ -66,6 +66,12 @@ namespace GourmetProject.Gameplay.Scoring
             FinalFlat = snapshot.InitialFinalFlat;
             FinalMultiplier = snapshot.InitialFinalMultiplier;
             InitialHappyCakeLayers = snapshot.InitialHappyCakeLayers;
+            CaptureDiagnostics = snapshot.CaptureDiagnostics;
+            if (CaptureDiagnostics)
+            {
+                _lines = new List<ScoreLine>();
+                _events = new List<ScoreEvent>();
+            }
 
             // 预建全部菜的累加器，保证「A 改 B 的分」无论 B 是否已开始都有效。
             foreach (DishInstance dish in snapshot.DishesInDefaultOrder)
@@ -149,13 +155,16 @@ namespace GourmetProject.Gameplay.Scoring
                 int before = GetEffectiveCountAs(target);
                 AddLiveCountAs(target, delta);
                 int after = GetEffectiveCountAs(target);
-                AddLine(
-                    EnsureAccumulator(target),
-                    ScoreLineKind.CountAs,
-                    after - before,
-                    before,
-                    after,
-                    $"份数 {(after - before >= 0 ? "+" : string.Empty)}{after - before}");
+                if (CaptureDiagnostics)
+                {
+                    AddLine(
+                        EnsureAccumulator(target),
+                        ScoreLineKind.CountAs,
+                        after - before,
+                        before,
+                        after,
+                        $"份数 {(after - before >= 0 ? "+" : string.Empty)}{after - before}");
+                }
             }
         }
 
@@ -225,7 +234,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>用规则运行时实际命中的食物刷新当前演出范围。</summary>
         public void UpdateTraceVisualTargets(IReadOnlyList<DishInstance> targets)
         {
-            if (Trace == null || targets == null)
+            if (!CaptureDiagnostics || Trace == null || targets == null)
             {
                 return;
             }
@@ -269,9 +278,16 @@ namespace GourmetProject.Gameplay.Scoring
 
         public IReadOnlyList<DishScore> DishScores => _dishScores;
 
-        public IReadOnlyList<ScoreLine> Lines => _lines;
+        public IReadOnlyList<ScoreLine> Lines => _lines != null
+            ? (IReadOnlyList<ScoreLine>)_lines
+            : Array.Empty<ScoreLine>();
 
-        public IReadOnlyList<ScoreEvent> Events => _events;
+        public IReadOnlyList<ScoreEvent> Events => _events != null
+            ? (IReadOnlyList<ScoreEvent>)_events
+            : Array.Empty<ScoreEvent>();
+
+        /// <summary>是否捕获仅供解释和演出的结算诊断数据。</summary>
+        public bool CaptureDiagnostics { get; }
 
         /// <summary>本场经营挑战开始时的全局欢乐蛋糕层数。</summary>
         public int InitialHappyCakeLayers { get; }
@@ -305,13 +321,16 @@ namespace GourmetProject.Gameplay.Scoring
             {
                 int before = _emptyCountAsPerCell;
                 _emptyCountAsPerCell += value;
-                AddLine(
-                    _current,
-                    ScoreLineKind.EmptyCountAs,
-                    value,
-                    before,
-                    _emptyCountAsPerCell,
-                    $"每个空格视为 {_emptyCountAsPerCell} 份食物");
+                if (CaptureDiagnostics)
+                {
+                    AddLine(
+                        _current,
+                        ScoreLineKind.EmptyCountAs,
+                        value,
+                        before,
+                        _emptyCountAsPerCell,
+                        $"每个空格视为 {_emptyCountAsPerCell} 份食物");
+                }
             }
         }
 
@@ -390,14 +409,17 @@ namespace GourmetProject.Gameplay.Scoring
                     resolvedEffect));
             }
 
-            AddLine(
-                EnsureAccumulator(dish),
-                ScoreLineKind.TemporaryCategory,
-                1,
-                alreadyCategory ? 1 : 0,
-                1,
-                resolvedEffect);
-            EmitEvent(ScoreEventType.CommandExecuted, $"{dish.Def.Name} 临时视为 {categoryName}");
+            if (CaptureDiagnostics)
+            {
+                AddLine(
+                    EnsureAccumulator(dish),
+                    ScoreLineKind.TemporaryCategory,
+                    1,
+                    alreadyCategory ? 1 : 0,
+                    1,
+                    resolvedEffect);
+                EmitEvent(ScoreEventType.CommandExecuted, $"{dish.Def.Name} 临时视为 {categoryName}");
+            }
         }
 
         /// <summary>
@@ -433,7 +455,10 @@ namespace GourmetProject.Gameplay.Scoring
                 dish.Def.Id,
                 dish.Def.Name,
                 probability));
-            EmitEvent(ScoreEventType.CommandExecuted, $"登记 {dish.Def.Name} 营业后移除判定");
+            if (CaptureDiagnostics)
+            {
+                EmitEvent(ScoreEventType.CommandExecuted, $"登记 {dish.Def.Name} 营业后移除判定");
+            }
         }
 
         /// <summary>本次结算登记的永久加法分增量（实例 Id → 累加值）。正式结算后写回实例。</summary>
@@ -444,6 +469,11 @@ namespace GourmetProject.Gameplay.Scoring
 
         public void EmitEvent(ScoreEventType type, string message)
         {
+            if (!CaptureDiagnostics)
+            {
+                return;
+            }
+
             int dishInstanceId = Dish != null ? Dish.Id : 0;
             string dishId = Dish != null ? Dish.Def.Id : string.Empty;
             _events.Add(new ScoreEvent(
@@ -466,7 +496,10 @@ namespace GourmetProject.Gameplay.Scoring
             Source = ScoreSource.Dish(dish);
             Phase = ScorePhase.BeforeDish;
             EffectDef = null;
-            EmitEvent(ScoreEventType.DishStarted, $"开始结算 {dish.Def.Name}");
+            if (CaptureDiagnostics)
+            {
+                EmitEvent(ScoreEventType.DishStarted, $"开始结算 {dish.Def.Name}");
+            }
         }
 
         public void RecordDishBase()
@@ -479,17 +512,20 @@ namespace GourmetProject.Gameplay.Scoring
             Phase = ScorePhase.DishBase;
             Source = ScoreSource.Dish(Dish);
             BigDouble baseScore = Dish.BaseScoreBeforeSettlement;
-            _lines.Add(new ScoreLine(
-                Phase,
-                ScoreLineKind.DishBase,
-                Source,
-                Dish.Id,
-                Dish.Def.Id,
-                null,
-                baseScore,
-                0f,
-                baseScore,
-                $"{Dish.Def.Name} 基础分数 {baseScore}"));
+            if (CaptureDiagnostics)
+            {
+                _lines.Add(new ScoreLine(
+                    Phase,
+                    ScoreLineKind.DishBase,
+                    Source,
+                    Dish.Id,
+                    Dish.Def.Id,
+                    null,
+                    baseScore,
+                    0f,
+                    baseScore,
+                    $"{Dish.Def.Name} 基础分数 {baseScore}"));
+            }
         }
 
         /// <summary>
@@ -516,18 +552,21 @@ namespace GourmetProject.Gameplay.Scoring
             accumulator.ExtraSettlementContribution += contribution;
             accumulator.ExtraSettlementCount++;
             _extraSettlementDishId = 0;
-            _lines.Add(new ScoreLine(
-                ScorePhase.AfterDish,
-                ScoreLineKind.ExtraSettlement,
-                ScoreSource.DishFlavor(saltyFlavor, dish),
-                dish.Id,
-                dish.Def.Id,
-                null,
-                contribution,
-                before,
-                accumulator.ExtraSettlementContribution,
-                $"咸味额外结算第 {accumulator.ExtraSettlementCount} 次 +{contribution}",
-                executionGroupId: ++_nextExecutionGroupId));
+            if (CaptureDiagnostics)
+            {
+                _lines.Add(new ScoreLine(
+                    ScorePhase.AfterDish,
+                    ScoreLineKind.ExtraSettlement,
+                    ScoreSource.DishFlavor(saltyFlavor, dish),
+                    dish.Id,
+                    dish.Def.Id,
+                    null,
+                    contribution,
+                    before,
+                    accumulator.ExtraSettlementContribution,
+                    $"咸味额外结算第 {accumulator.ExtraSettlementCount} 次 +{contribution}",
+                    executionGroupId: ++_nextExecutionGroupId));
+            }
         }
 
         public BigDouble CurrentFlatOf(DishInstance dish)
@@ -577,15 +616,20 @@ namespace GourmetProject.Gameplay.Scoring
             Source = entry.Source;
             CurrentCell = entry.Cell;
             EffectDef = entry.EffectDef;
-            Trace = entry.Trace;
+            Trace = CaptureDiagnostics ? entry.Trace : null;
             _currentExecutionGroupId = ++_nextExecutionGroupId;
-            string effectName = Source.Name;
-            EmitEvent(ScoreEventType.EffectStarted, $"开始效果 {effectName}");
+            if (CaptureDiagnostics)
+            {
+                EmitEvent(ScoreEventType.EffectStarted, $"开始效果 {Source.Name}");
+            }
             try
             {
                 entry.Effect.Apply(this);
                 ResolveCommandQueue();
-                EmitEvent(ScoreEventType.EffectFinished, $"结束效果 {effectName}");
+                if (CaptureDiagnostics)
+                {
+                    EmitEvent(ScoreEventType.EffectFinished, $"结束效果 {Source.Name}");
+                }
             }
             finally
             {
@@ -745,7 +789,10 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             _skillTransfers.Add(new SkillTransferSideEffect(target.Id, effects, sourceName, sourceInstanceId));
-            EmitEvent(ScoreEventType.CommandExecuted, $"技能传递给 {target.Def.Name}（{effects.Count} 个）");
+            if (CaptureDiagnostics)
+            {
+                EmitEvent(ScoreEventType.CommandExecuted, $"技能传递给 {target.Def.Name}（{effects.Count} 个）");
+            }
         }
 
         /// <summary>
@@ -789,7 +836,9 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            SkillExecutionTrace trace = Trace?.WithVisualTargets(ids, cells);
+            SkillExecutionTrace trace = CaptureDiagnostics
+                ? Trace?.WithVisualTargets(ids, cells)
+                : null;
             _sweetTransferBuffs.Add(new SweetTransferBuffRegistration(
                 owner,
                 rule,
@@ -797,15 +846,18 @@ namespace GourmetProject.Gameplay.Scoring
                 ids,
                 Source,
                 trace));
-            AddLine(
-                EnsureAccumulator(owner),
-                ScoreLineKind.SweetTransferBuffApplied,
-                ids.Count,
-                0f,
-                ids.Count,
-                $"挂载甜蜜传递 Buff ×{ids.Count}",
-                Source,
-                trace);
+            if (CaptureDiagnostics)
+            {
+                AddLine(
+                    EnsureAccumulator(owner),
+                    ScoreLineKind.SweetTransferBuffApplied,
+                    ids.Count,
+                    0f,
+                    ids.Count,
+                    $"挂载甜蜜传递 Buff ×{ids.Count}",
+                    Source,
+                    trace);
+            }
         }
 
         public IReadOnlyList<SweetTransferBuffRegistration> SweetTransferBuffsFor(DishInstance source)
@@ -854,7 +906,7 @@ namespace GourmetProject.Gameplay.Scoring
             float value,
             IReadOnlyList<DishInstance> visualTargets)
         {
-            if (registration?.Owner == null || transferSource == null)
+            if (!CaptureDiagnostics || registration?.Owner == null || transferSource == null)
             {
                 return;
             }
@@ -901,7 +953,7 @@ namespace GourmetProject.Gameplay.Scoring
 
         public void RecordSweetTransferFailed(DishInstance sourceDish)
         {
-            if (sourceDish == null)
+            if (!CaptureDiagnostics || sourceDish == null)
             {
                 return;
             }
@@ -924,7 +976,7 @@ namespace GourmetProject.Gameplay.Scoring
         public void RecordTriggerSweetTransfer(DishInstance sourceDish, IReadOnlyList<DishInstance> sources)
         {
             int sourceCount = sources?.Count ?? 0;
-            if (sourceDish == null || sourceCount <= 0)
+            if (!CaptureDiagnostics || sourceDish == null || sourceCount <= 0)
             {
                 return;
             }
@@ -965,7 +1017,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>记录「代触发」流程中某个来源食物开始执行，供逐个演出与状态收尾。</summary>
         public void RecordTriggeredSweetTransferSource(DishInstance sourceDish, int index, int total)
         {
-            if (sourceDish == null || index <= 0 || total <= 0)
+            if (!CaptureDiagnostics || sourceDish == null || index <= 0 || total <= 0)
             {
                 return;
             }
@@ -1037,9 +1089,12 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             _copySkillRequests.Add(new CopySkillRequest(target.Id, candidates, selected.Count, sourceName, selected));
-            DishAccumulator accum = EnsureAccumulator(target);
-            AddLine(accum, ScoreLineKind.CopySkill, selected.Count, target.SkillIds.Count, target.SkillIds.Count + selected.Count, $"复制技能 +{selected.Count}");
-            EmitEvent(ScoreEventType.CommandExecuted, $"技能复制给 {target.Def.Name}（{selected.Count} 个）");
+            if (CaptureDiagnostics)
+            {
+                DishAccumulator accum = EnsureAccumulator(target);
+                AddLine(accum, ScoreLineKind.CopySkill, selected.Count, target.SkillIds.Count, target.SkillIds.Count + selected.Count, $"复制技能 +{selected.Count}");
+                EmitEvent(ScoreEventType.CommandExecuted, $"技能复制给 {target.Def.Name}（{selected.Count} 个）");
+            }
             ResolveCopiedSkillEffects(target, selected, sourceName);
         }
 
@@ -1102,16 +1157,18 @@ namespace GourmetProject.Gameplay.Scoring
                         null,
                         rule.Order,
                         boardOrder,
-                        SkillExecutionTrace.Create(
-                            Db,
-                            DiningTable,
-                            target,
-                            target,
-                            skill,
-                            rule,
-                            SkillExecutionKind.CopiedSkill,
-                            sourceLabel,
-                            SkillScopeVisualMode.ResolvedTargets));
+                        CaptureDiagnostics
+                            ? SkillExecutionTrace.Create(
+                                Db,
+                                DiningTable,
+                                target,
+                                target,
+                                skill,
+                                rule,
+                                SkillExecutionKind.CopiedSkill,
+                                sourceLabel,
+                                SkillScopeVisualMode.ResolvedTargets)
+                            : null);
                     SubmitCommand(new ResolveScoreEffectCommand(entry));
                 }
             }
@@ -1143,7 +1200,10 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            EmitEvent(ScoreEventType.DishCompleted, $"{Dish.Def.Name} 阶段结束");
+            if (CaptureDiagnostics)
+            {
+                EmitEvent(ScoreEventType.DishCompleted, $"{Dish.Def.Name} 阶段结束");
+            }
         }
 
         /// <summary>所有逐菜阶段跑完后，统一把每个食物的累加器定稿为贡献并求和。</summary>
@@ -1181,6 +1241,11 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             _initialFinalModifiersRecorded = true;
+            if (!CaptureDiagnostics)
+            {
+                return;
+            }
+
             var source = ScoreSource.FinalModifier("initial_final_modifier", "局级修正");
             if (Math.Abs(Snapshot.InitialFinalFlat) > 0.0001f)
             {
@@ -1222,8 +1287,8 @@ namespace GourmetProject.Gameplay.Scoring
                 RawSum,
                 FinalFlat,
                 FinalMultiplier,
-                scoreLines: _lines,
-                scoreEvents: _events,
+                scoreLines: Lines,
+                scoreEvents: Events,
                 goldDelta: GoldDelta,
                 happyCakeLayerDelta: _happyCakeLayerDelta,
                 skillTransfers: _skillTransfers,
@@ -1246,7 +1311,10 @@ namespace GourmetProject.Gameplay.Scoring
 
             BigDouble before = a.Flat;
             a.Flat += value;
-            AddLine(a, ScoreLineKind.DishFlat, value, before, a.Flat, $"美味值 +{value}");
+            if (CaptureDiagnostics)
+            {
+                AddLine(a, ScoreLineKind.DishFlat, value, before, a.Flat, $"美味值 +{value}");
+            }
         }
 
         internal void ApplyDishPermanentFlatCommand(int dishId, BigDouble value)
@@ -1258,7 +1326,10 @@ namespace GourmetProject.Gameplay.Scoring
 
             BigDouble before = a.Flat;
             a.Flat += value;
-            AddLine(a, ScoreLineKind.DishPermanentFlat, value, before, a.Flat, $"永久美味值 +{value}");
+            if (CaptureDiagnostics)
+            {
+                AddLine(a, ScoreLineKind.DishPermanentFlat, value, before, a.Flat, $"永久美味值 +{value}");
+            }
         }
 
         internal void ApplyDishMultiplierCommand(int dishId, BigDouble value)
@@ -1270,7 +1341,10 @@ namespace GourmetProject.Gameplay.Scoring
 
             BigDouble before = a.Mult;
             a.Mult *= value;
-            AddLine(a, ScoreLineKind.DishMultiplier, value, before, a.Mult, $"倍率 x{value}");
+            if (CaptureDiagnostics)
+            {
+                AddLine(a, ScoreLineKind.DishMultiplier, value, before, a.Mult, $"倍率 x{value}");
+            }
         }
 
         internal void ApplyDishMultFlatCommand(int dishId, BigDouble value)
@@ -1282,14 +1356,20 @@ namespace GourmetProject.Gameplay.Scoring
 
             BigDouble before = a.Mult;
             a.Mult += value;
-            AddLine(a, ScoreLineKind.DishMultiplierAdd, value, before, a.Mult, $"倍率 +{value}");
+            if (CaptureDiagnostics)
+            {
+                AddLine(a, ScoreLineKind.DishMultiplierAdd, value, before, a.Mult, $"倍率 +{value}");
+            }
         }
 
         internal void ApplyGrantGoldCommand(float value)
         {
             float before = GoldDelta;
             GoldDelta += value;
-            AddLine(_current, ScoreLineKind.Gold, value, before, GoldDelta, $"获得金币 +{value}");
+            if (CaptureDiagnostics)
+            {
+                AddLine(_current, ScoreLineKind.Gold, value, before, GoldDelta, $"获得金币 +{value}");
+            }
         }
 
         /// <summary>兼容旧命令的 50% 默认值；当前银材质路径不会调用此重载。</summary>
@@ -1308,7 +1388,10 @@ namespace GourmetProject.Gameplay.Scoring
                 ? Source.Id
                 : string.Empty;
             _silverItemRolls.Add(new SilverItemRollRequest(probability, dishInstanceId, materialId));
-            AddLine(_current, ScoreLineKind.SilverItemRoll, 1, before, _silverItemRolls.Count, "登记消耗品判定");
+            if (CaptureDiagnostics)
+            {
+                AddLine(_current, ScoreLineKind.SilverItemRoll, 1, before, _silverItemRolls.Count, "登记消耗品判定");
+            }
         }
 
         internal void ApplyHappyCakeLayerCommand(float value, bool mult, int floor)
@@ -1334,21 +1417,30 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             _happyCakeLayerDelta += after - before;
-            AddLine(_current, ScoreLineKind.Layer, after - before, before, after, mult ? $"欢乐蛋糕层数 x{value}" : $"欢乐蛋糕层数 {(value >= 0 ? "+" : string.Empty)}{value}");
+            if (CaptureDiagnostics)
+            {
+                AddLine(_current, ScoreLineKind.Layer, after - before, before, after, mult ? $"欢乐蛋糕层数 x{value}" : $"欢乐蛋糕层数 {(value >= 0 ? "+" : string.Empty)}{value}");
+            }
         }
 
         internal void ApplyFinalFlatCommand(BigDouble value)
         {
             BigDouble before = FinalFlat;
             FinalFlat += value;
-            AddLine(null, ScoreLineKind.FinalFlat, value, before, FinalFlat, $"总分 +{value}");
+            if (CaptureDiagnostics)
+            {
+                AddLine(null, ScoreLineKind.FinalFlat, value, before, FinalFlat, $"总分 +{value}");
+            }
         }
 
         internal void ApplyFinalMultiplierCommand(BigDouble value)
         {
             BigDouble before = FinalMultiplier;
             FinalMultiplier *= value;
-            AddLine(null, ScoreLineKind.FinalMultiplier, value, before, FinalMultiplier, $"总分倍率 x{value}");
+            if (CaptureDiagnostics)
+            {
+                AddLine(null, ScoreLineKind.FinalMultiplier, value, before, FinalMultiplier, $"总分倍率 x{value}");
+            }
         }
 
         private DishAccumulator EnsureAccumulator(DishInstance dish)
@@ -1397,11 +1489,14 @@ namespace GourmetProject.Gameplay.Scoring
                     Source = pending.Source;
                     CurrentCell = pending.Cell;
                     EffectDef = pending.EffectDef;
-                    Trace = pending.Trace;
+                    Trace = CaptureDiagnostics ? pending.Trace : null;
                     _currentExecutionGroupId = pending.ExecutionGroupId;
                     try
                     {
-                        EmitEvent(ScoreEventType.CommandExecuted, $"执行命令 {pending.Command.Name}");
+                        if (CaptureDiagnostics)
+                        {
+                            EmitEvent(ScoreEventType.CommandExecuted, $"执行命令 {pending.Command.Name}");
+                        }
                         pending.Command.Execute(this);
                     }
                     finally
@@ -1431,6 +1526,11 @@ namespace GourmetProject.Gameplay.Scoring
             ScoreSource sourceOverride = null,
             SkillExecutionTrace traceOverride = null)
         {
+            if (!CaptureDiagnostics)
+            {
+                return;
+            }
+
             if (accum != null
                 && accum.Dish.Id == _extraSettlementDishId
                 && (kind == ScoreLineKind.DishFlat

@@ -15,6 +15,8 @@ namespace GourmetProject.Tests.EditMode
             "Fonts & Materials/DescriptionMultiplyOutline";
         private const string FoodSkillDescriptionPrefabPath =
             "Assets/GameMain/Content/Prefabs/UI/Tooltips/FoodSkillDescriptionView.prefab";
+        private const string FoodFlavorDetailPrefabPath =
+            "Assets/GameMain/Content/Prefabs/UI/Tooltips/FoodFlavorDetailView.prefab";
 
         [TestCase(null, "")]
         [TestCase("", "")]
@@ -326,6 +328,41 @@ namespace GourmetProject.Tests.EditMode
                     Is.EqualTo(
                         "<b><color=#137A4A>上侧及自身</color></b>\n" +
                         "<b>倍率</b> <b><color=#B23A48>+0.5</color></b>"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [TestCase(
+            "[benefit]额外结算[/benefit]",
+            "<b><color=#7656A8>额外结算</color></b>")]
+        [TestCase(
+            "[context]结算开始[/context]\n[strong]倍率[/strong] [multadd]+0.5[/multadd]",
+            "<b><color=#137A4A>结算开始</color></b>\n<b>倍率</b> <b><color=#B23A48>+0.5</color></b>")]
+        public void FoodFlavorDetailBind_FormatsSemanticMarkup(string source, string expected)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                FoodFlavorDetailPrefabPath);
+            Assert.That(prefab, Is.Not.Null);
+
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                FoodFlavorDetailView view = instance.GetComponent<FoodFlavorDetailView>();
+                Assert.That(view, Is.Not.Null);
+
+                var serializedView = new SerializedObject(view);
+                TMP_Text target = serializedView.FindProperty("_descriptionText")
+                    .objectReferenceValue as TMP_Text;
+                Assert.That(target, Is.Not.Null);
+                target.richText = false;
+
+                view.Bind("咸", source);
+
+                Assert.That(target.richText, Is.True);
+                Assert.That(target.text, Is.EqualTo(expected));
             }
             finally
             {

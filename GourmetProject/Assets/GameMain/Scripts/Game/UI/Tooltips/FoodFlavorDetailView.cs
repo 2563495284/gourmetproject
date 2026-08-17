@@ -1,4 +1,5 @@
 using System;
+using GourmetProject.Game.UI.Common;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -40,7 +41,7 @@ namespace GourmetProject.Game.UI.Tooltips
 
             string normalizedTitle = title?.Trim() ?? string.Empty;
             _titleText.text = normalizedTitle;
-            _descriptionText.text = description ?? string.Empty;
+            SemanticDescriptionFormatter.Set(_descriptionText, description);
 
             if (TryGetStyle(normalizedTitle, out FlavorStyle style))
             {

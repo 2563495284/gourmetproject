@@ -28,7 +28,8 @@ namespace GourmetProject.Gameplay.Scoring
             Func<int, int, int> randomIntegerSelector = null,
             int passiveItemCount = 0,
             int remainingFoodDiscards = 0,
-            int sweetTransferExtraTargetCount = 0)
+            int sweetTransferExtraTargetCount = 0,
+            bool captureDiagnostics = true)
         {
             DiningTable = board ?? throw new ArgumentNullException(nameof(board));
             Db = db ?? throw new ArgumentNullException(nameof(db));
@@ -46,6 +47,7 @@ namespace GourmetProject.Gameplay.Scoring
             PassiveItemCount = Math.Max(0, passiveItemCount);
             RemainingFoodDiscards = Math.Max(0, remainingFoodDiscards);
             SweetTransferExtraTargetCount = Math.Max(0, sweetTransferExtraTargetCount);
+            CaptureDiagnostics = captureDiagnostics;
 
             // 结算优先级层级（甜=+1、苦=-1，多风味累加）：层级高者先结算；同层再按棋盘从上到下、从左到右。
             IEnumerable<DishInstance> alive = DiningTable.Dishes.Where(d => !d.ExcludedFromScore);
@@ -160,6 +162,12 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>本次结算时仍未上菜的食谱条目（槽索引 + dishId），供酸/咸在结算开始时遍历。</summary>
         public IReadOnlyList<UnservedRecipeDish> UnservedRecipeDishes { get; }
+
+        /// <summary>
+        /// 是否捕获仅供解释与演出的 ScoreLine、ScoreEvent 和 SkillExecutionTrace。
+        /// 关闭时计分规则、命令及副作用请求仍完整执行。
+        /// </summary>
+        public bool CaptureDiagnostics { get; }
     }
 
     /// <summary>一条未上菜的食谱条目：来源槽、食物 id，以及按获得顺序排列的全部风味。</summary>

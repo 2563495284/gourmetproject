@@ -804,10 +804,11 @@ namespace GourmetProject.Gameplay.Battle
                         continue;
                     }
 
-                    List<Placement> candidatePlacements = FindServePlacements(dish, slot.Entries[i]);
-                    if (candidatePlacements.Count > 0)
+                    // 抽菜权重只依赖食物占格数，不依赖合法位置数量。候选阶段只需判断
+                    // 能否放下；正式 RNG 选中后再为唯一一道菜生成完整位置列表。
+                    if (CanServeDish(dish, slot.Entries[i]))
                     {
-                        candidates.Add(new ServeCandidate(i, dish, candidatePlacements));
+                        candidates.Add(new ServeCandidate(i, dish, placements: null));
                     }
                 }
 
@@ -836,7 +837,7 @@ namespace GourmetProject.Gameplay.Battle
                 ServeCandidate chosen = rollCandidates[_rng.WeightedPickIndex(weights)];
                 entry = slot.RemoveEntryAt(chosen.SlotEntryIndex);
                 servedDish = chosen.Dish;
-                placements = chosen.Placements;
+                placements = FindServePlacements(servedDish, entry);
             }
 
             Placement initialPlacement = placements[0];
@@ -1032,7 +1033,8 @@ namespace GourmetProject.Gameplay.Battle
             return CalculatePreviewScore(
                 _solverPreviewSampler.CopySkillSelector,
                 _solverPreviewSampler.TransferTargetSelector,
-                _solverPreviewSampler.RandomIntegerSelector).Total;
+                _solverPreviewSampler.RandomIntegerSelector,
+                captureDiagnostics: false).Total;
         }
 
         private PreparedPlacementPreview PreviewPreparedPlacementCore(
@@ -1321,6 +1323,23 @@ namespace GourmetProject.Gameplay.Battle
             return placements;
         }
 
+        private bool CanServeDish(DishDef dish, RecipeSlotEntry entry)
+        {
+            // 与 FindServePlacements 保持相同的「麻」旋转及放不下时回退基础朝向规则，
+            // 但只寻找第一个合法位置，避免为未被抽中的菜构造完整 Placement 列表。
+            int numbSteps = NumbStepsFor(ComposeServeFlavors(dish, entry));
+            if (numbSteps > 0)
+            {
+                int rotationIndex = (4 - (numbSteps % 4)) % 4;
+                if (DiningTable.CanFit(dish.Shape.RotatedBy(rotationIndex)))
+                {
+                    return true;
+                }
+            }
+
+            return DiningTable.CanFit(dish.Shape);
+        }
+
         /// <summary>枚举刚上桌且尚未锁定的食物在当前餐桌上的合法重定位位置。</summary>
         public IReadOnlyList<Placement> FindMovableDishPlacements(DishInstance dish)
         {
@@ -1389,9 +1408,10 @@ namespace GourmetProject.Gameplay.Battle
         private ScoreResult CalculatePreviewScore(
             Func<IReadOnlyList<string>, int, IReadOnlyList<string>> copySkillSelector,
             Func<IReadOnlyList<int>, int, IReadOnlyList<int>> transferTargetSelector,
-            Func<int, int, int> randomIntegerSelector)
+            Func<int, int, int> randomIntegerSelector,
+            bool captureDiagnostics = true)
         {
-            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: copySkillSelector, transferTargetSelector: transferTargetSelector, randomIntegerSelector: randomIntegerSelector, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount);
+            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: copySkillSelector, transferTargetSelector: transferTargetSelector, randomIntegerSelector: randomIntegerSelector, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount, captureDiagnostics: captureDiagnostics);
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
