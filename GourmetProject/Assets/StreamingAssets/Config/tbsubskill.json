@@ -1243,8 +1243,8 @@
       2
     ],
     "actionParam": [],
-    "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}技能\n[strong]倍率[/strong][/multmul]×{0}[/multmul]",
+    "signed": false,
+    "descTemplate": "{cscope}每有 1 {unit}技能\n[strong]倍率[/strong] [multmul]×{0}[/multmul]",
     "termId": ""
   },
   {
