@@ -42,7 +42,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [TestCase(false, 1)]
-        [TestCase(true, 2)]
+        [TestCase(true, 1)]
         public void FormalWeekLoop_FailedBattleLosesConfiguredHeartCount(bool isBoss, int expectedLoss)
         {
             GameRun run = CreateRun($"heart-loss-{isBoss}");
@@ -63,8 +63,8 @@ namespace GourmetProject.Tests.EditMode
         public void FormalWeekLoop_UndyingConsumesKnifeAndKeepsHeartsAndRewardFlow()
         {
             GameRun run = CreateRun("undying-boss");
-            Assert.That(run.TryLoseHearts(1, out _, out _), Is.True);
-            Assert.That(run.HeartsRemaining, Is.EqualTo(2));
+            Assert.That(run.TryLoseHearts(2, out _, out _), Is.True);
+            Assert.That(run.HeartsRemaining, Is.EqualTo(1));
             Assert.That(
                 run.AcquireItem("item_famous_knife", fallbackGold: 0, fireOnAcquire: false).Outcome,
                 Is.EqualTo(ItemAcquireOutcome.Added));
@@ -73,7 +73,7 @@ namespace GourmetProject.Tests.EditMode
 
             loop.OnBattleSettled(EmptyScore(), isWin: false, finalHappyCakeLayers: 0);
 
-            Assert.That(run.HeartsRemaining, Is.EqualTo(2));
+            Assert.That(run.HeartsRemaining, Is.EqualTo(1));
             Assert.That(run.HasItem("item_famous_knife"), Is.False);
             Assert.That(view.HeartBreak, Is.Null);
             Assert.That(view.NoticeCount, Is.EqualTo(1));

@@ -125,6 +125,9 @@ namespace GourmetProject.Game.Orchestration
         private const string KitchenGodStatueEventId = "ev_kitchen_god_statue";
         private const string KitchenGodDirectNegativeOptionId = "opt_kitchen_god_statue_choice_2";
 
+        /// <summary>日常营业、火热营业与星级评鉴失败都只损失这么多红心。</summary>
+        internal const int HeartLossPerFailedBattle = 1;
+
         private readonly GameRun _run;
         private readonly IWeekLoopView _view;
 
@@ -548,7 +551,7 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            int heartLoss = _currentBattleIsBoss ? 2 : 1;
+            int heartLoss = HeartLossPerFailedBattle;
             if (_run.HeartsRemaining <= heartLoss && _run.TryConsumeUndying())
             {
                 // 最后一颗心优先由名刀挡下：不失去红心，仍按“失败但存活”完整结算本场奖励。

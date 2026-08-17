@@ -22674,6 +22674,38 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8055366757439057992}
     m_Modifications:
+    - target: {fileID: 289976381863930353, guid: 48d3a81dcfa1340668de05ac06a4d781, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 289976381863930353, guid: 48d3a81dcfa1340668de05ac06a4d781, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3592069386171761140, guid: 48d3a81dcfa1340668de05ac06a4d781, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3592069386171761140, guid: 48d3a81dcfa1340668de05ac06a4d781, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3592069386171761140, guid: 48d3a81dcfa1340668de05ac06a4d781, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3592069386171761140, guid: 48d3a81dcfa1340668de05ac06a4d781, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3592069386171761140, guid: 48d3a81dcfa1340668de05ac06a4d781, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3592069386171761140, guid: 48d3a81dcfa1340668de05ac06a4d781, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7160227510795449163, guid: 48d3a81dcfa1340668de05ac06a4d781, type: 3}
       propertyPath: m_Name
       value: EventPanel
