@@ -8,9 +8,9 @@
     "linearBase": 0,
     "weekCoeff": 0,
     "dayCoeff": 0,
-    "expConstant": 5.3,
+    "expConstant": 5.2,
     "expWeekCoeff": 0,
-    "expDayCoeff": 0.5,
+    "expDayCoeff": 0.44,
     "roundTo": 100
   },
   {
@@ -22,9 +22,9 @@
     "linearBase": 0,
     "weekCoeff": 0,
     "dayCoeff": 0,
-    "expConstant": 8.9,
+    "expConstant": 8.2,
     "expWeekCoeff": 0,
-    "expDayCoeff": 0.4945,
+    "expDayCoeff": 0.403,
     "roundTo": 1000
   },
   {
@@ -36,9 +36,9 @@
     "linearBase": 0,
     "weekCoeff": 0,
     "dayCoeff": 0,
-    "expConstant": 12.4,
+    "expConstant": 11,
     "expWeekCoeff": 0,
-    "expDayCoeff": 0.4957,
+    "expDayCoeff": 0.375,
     "roundTo": 10000
   },
   {

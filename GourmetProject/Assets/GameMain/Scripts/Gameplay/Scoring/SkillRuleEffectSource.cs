@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using BreakInfinity;
 using GourmetProject.Gameplay.Board;
@@ -429,8 +430,14 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             IReadOnlyList<SweetTransferBuffRegistration> buffs = ctx.SweetTransferBuffsFor(_self);
-            int extraTargetCount = ExtraTargetCount(buffs)
-                + Math.Max(0, ctx.Snapshot.SweetTransferExtraTargetCount);
+            int itemExtraTargetCount = Math.Max(0, ctx.Snapshot.SweetTransferExtraTargetCount);
+            int fixedBuffExtraTargetCount = FixedExtraTargetCount(buffs);
+            int chanceRollCount = _rule.ActionCount <= 0
+                ? 0
+                : _rule.ActionCount + itemExtraTargetCount + fixedBuffExtraTargetCount;
+            IReadOnlyDictionary<SweetTransferBuffRegistration, int> resolvedBuffExtraTargets =
+                ResolveBuffExtraTargetCounts(ctx, buffs, chanceRollCount);
+            int extraTargetCount = itemExtraTargetCount + resolvedBuffExtraTargets.Values.Sum();
             IReadOnlyList<DishInstance> targets = SelectTransferTargets(ctx, candidates, extraTargetCount);
             if (targets.Count == 0)
             {
@@ -438,7 +445,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            ApplyRegisteredSweetTransferBuffs(ctx, buffs, targets);
+            ApplyRegisteredSweetTransferBuffs(ctx, buffs, targets, resolvedBuffExtraTargets);
 
             string sourceName = CurrentSkillSourceName(ctx);
             foreach (DishInstance target in targets)
@@ -581,7 +588,7 @@ namespace GourmetProject.Gameplay.Scoring
             return result;
         }
 
-        private static int ExtraTargetCount(IReadOnlyList<SweetTransferBuffRegistration> buffs)
+        private static int FixedExtraTargetCount(IReadOnlyList<SweetTransferBuffRegistration> buffs)
         {
             int extra = 0;
             if (buffs == null)
@@ -594,7 +601,8 @@ namespace GourmetProject.Gameplay.Scoring
                 SkillRuleDef rule = buff?.Rule;
                 if (rule == null
                     || rule.ActionType != SkillActionType.TriggerSweetTransfer
-                    || !HasActionParam(rule, "modifier:add-targets"))
+                    || !HasActionParam(rule, "modifier:add-targets")
+                    || HasActionParam(rule, "chance:"))
                 {
                     continue;
                 }
@@ -609,14 +617,17 @@ namespace GourmetProject.Gameplay.Scoring
             return extra;
         }
 
-        private void ApplyRegisteredSweetTransferBuffs(
+        private static IReadOnlyDictionary<SweetTransferBuffRegistration, int> ResolveBuffExtraTargetCounts(
             ScoreContext ctx,
             IReadOnlyList<SweetTransferBuffRegistration> buffs,
-            IReadOnlyList<DishInstance> transferTargets)
+            int chanceRollCount)
         {
-            buffs ??= Array.Empty<SweetTransferBuffRegistration>();
+            var resolved = new Dictionary<SweetTransferBuffRegistration, int>();
+            if (buffs == null)
+            {
+                return resolved;
+            }
 
-            // 先表现/登记棉花糖的目标数修饰，再结算软糖倍率响应。
             foreach (SweetTransferBuffRegistration buff in buffs)
             {
                 SkillRuleDef rule = buff?.Rule;
@@ -627,11 +638,69 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
-                int extra = Math.Max(
+                int amountPerSuccess = Math.Max(
                     0,
                     (int)Math.Round(
                         rule.ActionValue * buff.ConditionCount,
                         MidpointRounding.AwayFromZero));
+                if (!HasActionParam(rule, "chance:"))
+                {
+                    resolved[buff] = amountPerSuccess;
+                    continue;
+                }
+
+                TryParseChance(rule, out float chance);
+                int successExtra = 0;
+                if (amountPerSuccess > 0
+                    && chanceRollCount > 0
+                    && ctx.Snapshot.RandomIntegerSelector != null)
+                {
+                    int threshold = Math.Max(
+                        0,
+                        Math.Min(10000, (int)Math.Round(chance * 10000f)));
+                    for (int i = 0; i < chanceRollCount; i++)
+                    {
+                        if (ctx.Snapshot.RandomIntegerSelector(0, 9999) < threshold)
+                        {
+                            successExtra += amountPerSuccess;
+                        }
+                    }
+                }
+
+                resolved[buff] = successExtra;
+            }
+
+            return resolved;
+        }
+
+        private void ApplyRegisteredSweetTransferBuffs(
+            ScoreContext ctx,
+            IReadOnlyList<SweetTransferBuffRegistration> buffs,
+            IReadOnlyList<DishInstance> transferTargets,
+            IReadOnlyDictionary<SweetTransferBuffRegistration, int> resolvedBuffExtraTargets)
+        {
+            buffs ??= Array.Empty<SweetTransferBuffRegistration>();
+
+            // 先表现已兑现的目标数修饰，再结算软糖倍率响应。
+            foreach (SweetTransferBuffRegistration buff in buffs)
+            {
+                SkillRuleDef rule = buff?.Rule;
+                if (rule == null
+                    || rule.ActionType != SkillActionType.TriggerSweetTransfer
+                    || !HasActionParam(rule, "modifier:add-targets"))
+                {
+                    continue;
+                }
+
+                int extra = resolvedBuffExtraTargets != null
+                    && resolvedBuffExtraTargets.TryGetValue(buff, out int resolved)
+                        ? resolved
+                        : 0;
+                if (extra <= 0)
+                {
+                    continue;
+                }
+
                 ResolveSweetTransferBuffTrigger(ctx, buff, transferTargets, extra, SkillActionType.None);
             }
 
@@ -907,6 +976,40 @@ namespace GourmetProject.Gameplay.Scoring
             {
                 if (param != null && param.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryParseChance(SkillRuleDef rule, out float chance)
+        {
+            chance = 0f;
+            if (rule?.ActionParams == null)
+            {
+                return false;
+            }
+
+            foreach (string param in rule.ActionParams)
+            {
+                if (string.IsNullOrEmpty(param))
+                {
+                    continue;
+                }
+
+                int index = param.IndexOf("chance:", StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                {
+                    continue;
+                }
+
+                string value = param.Substring(index + "chance:".Length)
+                    .Split(';', ',', '|')[0]
+                    .Trim();
+                if (float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out chance))
+                {
+                    chance = Math.Max(0f, Math.Min(1f, chance));
                     return true;
                 }
             }
