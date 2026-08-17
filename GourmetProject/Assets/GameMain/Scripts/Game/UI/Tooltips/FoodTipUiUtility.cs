@@ -1,3 +1,4 @@
+using System.Globalization;
 using UnityEngine;
 using BreakInfinity;
 using GourmetProject.Gameplay.Scoring;
@@ -43,9 +44,23 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public static string FormatNumber(BigDouble value)
         {
-            return BigDouble.Abs(value) < ScoreNumberFormatter.ScientificThreshold
-                ? value.ToString("G3")
-                : ScoreNumberFormatter.Format(value);
+            if (BigDouble.IsNaN(value) || BigDouble.IsInfinity(value))
+            {
+                return value.ToString();
+            }
+
+            if (BigDouble.Abs(value) >= ScoreNumberFormatter.ScientificThreshold)
+            {
+                return ScoreNumberFormatter.Format(value);
+            }
+
+            BigDouble rounded = BigDouble.Round(value, System.MidpointRounding.AwayFromZero);
+            if (BigDouble.Abs(value - rounded) < 0.001d)
+            {
+                return rounded.ToString("F0");
+            }
+
+            return value.ToDouble().ToString("0.##", CultureInfo.InvariantCulture);
         }
     }
 }

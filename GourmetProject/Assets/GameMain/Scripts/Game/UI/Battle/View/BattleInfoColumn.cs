@@ -559,7 +559,9 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (_scoreRequiredText != null)
             {
-                _scoreRequiredText.text = showScore ? session.RequiredScore.ToString() : "-";
+                _scoreRequiredText.text = showScore
+                    ? ScoreNumberFormatter.Format(session.RequiredScore)
+                    : "-";
             }
 
             if (_discardCountText != null)
