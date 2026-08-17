@@ -383,7 +383,7 @@ MonoBehaviour:
   m_text: "\u9009\u62E9\u7ECF\u8425\u65B9\u5411"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
-  m_sharedMaterial: {fileID: 0}
+  m_sharedMaterial: {fileID: -8718148927222724939, guid: 2a438c07708d34c3fafd27b4341313e8, type: 2}
   m_fontSharedMaterials:
   - {fileID: 0}
   m_fontMaterial: {fileID: 0}
@@ -466,6 +466,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb6ab94b050794383b3faea712bad4de, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GameStartStudio.UI.TmpTextVertexAnimator
+  preset: 0
+  intensity: 1
+  speed: 1
   breathDuration: 3
   breathScale: 0.02
   waveInterval: 4
@@ -1577,7 +1580,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  m_Sprite: {fileID: 21300000, guid: f933bae1d9e524cd2a13b4e8e0cd3b9f, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1905,7 +1908,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  m_Sprite: {fileID: 21300000, guid: f933bae1d9e524cd2a13b4e8e0cd3b9f, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
