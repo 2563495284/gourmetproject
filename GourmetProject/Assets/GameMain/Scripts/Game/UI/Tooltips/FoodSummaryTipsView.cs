@@ -55,7 +55,7 @@ namespace GourmetProject.Game.UI.Tooltips
 
         internal static string FormatCountAs(int countAs)
         {
-            return $"{Mathf.Max(1, countAs)}<Size=20>份</font>";
+            return $"{Mathf.Max(1, countAs)}<voffset=0.1em><size=20>份</size>";
         }
 
         public void Show()
