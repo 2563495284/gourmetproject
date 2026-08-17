@@ -41,6 +41,15 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
+        public RectTransform RewardIconTarget
+        {
+            get
+            {
+                EnsureRefs();
+                return _icon != null ? _icon.rectTransform : transform as RectTransform;
+            }
+        }
+
         public RectTransform SelectionFlySource => TipPlacementTarget;
 
         public Sprite SelectionFlySprite

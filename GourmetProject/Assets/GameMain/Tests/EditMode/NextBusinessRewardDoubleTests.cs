@@ -8,6 +8,8 @@ using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Meta;
+using GourmetProject.Game.UI.Tooltips;
+using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Data;
 using Luban.SimpleJSON;
 using NUnit.Framework;
@@ -397,6 +399,67 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
+        [Test]
+        public void RewardForm_DirectFoodRewardUsesFoodIconAsTipBounds()
+        {
+            GameRun run = CreateRun();
+            const string dishId = "mango_sago";
+            var choice = new RewardChoice(
+                cfg.RewardKind.DishChoice,
+                dishId,
+                "芒果西米露",
+                string.Empty);
+            var offer = new RewardOffer(
+                0,
+                new[] { new RewardChoiceGroup("直接食物", new[] { choice }, 1) },
+                new RewardChoiceGroup("特定奖励", null, 0),
+                baseGoldClaimed: true);
+
+            GameObject root = new GameObject("RewardFormFoodIconTest", typeof(RectTransform), typeof(RewardForm));
+            try
+            {
+                RewardForm form = root.GetComponent<RewardForm>();
+                RectTransform content = new GameObject("Content", typeof(RectTransform))
+                    .GetComponent<RectTransform>();
+                content.SetParent(root.transform, false);
+                RewardChoiceRowView template = CreateFoodRewardRowTemplate(content);
+
+                SetPrivateField(form, "_run", run);
+                SetPrivateField(form, "_offer", offer);
+                SetPrivateField(form, "_rewardListContent", content);
+                SetPrivateField(form, "_rewardRowTemplate", template);
+
+                InvokePrivate(form, "RebuildRewardRowsImmediate");
+                RewardChoiceRowView row = GetSpawnedRows(form).Single();
+                Image icon = row.transform.Find("IconFrame/Icon").GetComponent<Image>();
+                DishIconRenderTexturePreview preview = row.transform
+                    .Find("IconFrame/DishRenderTexture/Output")
+                    .GetComponent<DishIconRenderTexturePreview>();
+                TipHoverTrigger trigger = row.GetComponent<TipHoverTrigger>();
+
+                Assert.That(icon.enabled, Is.True);
+                Assert.That(icon.sprite, Is.Not.Null);
+                Assert.That(icon.sprite.name, Is.EqualTo(dishId));
+                Assert.That(preview.gameObject.activeSelf, Is.False);
+                Assert.That(row.RewardIconTarget, Is.SameAs(icon.rectTransform));
+                Assert.That(row.TipPlacementTarget, Is.SameAs(icon.rectTransform));
+                Assert.That(trigger, Is.Not.Null);
+                Assert.That(
+                    GetPrivateField<RectTransform>(trigger, "_targetOverride"),
+                    Is.SameAs(icon.rectTransform));
+                Assert.That(
+                    GetPrivateField<bool>(trigger, "_preferVerticalPlacement"),
+                    Is.False);
+                Assert.That(
+                    GetPrivateField<bool>(trigger, "_followPointer"),
+                    Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
         private RewardOffer GenerateOffer(
             cfg.GameAction action,
             int stacks,
@@ -528,6 +591,34 @@ namespace GourmetProject.Tests.EditMode
             CreateText(rowObject.transform, "Description");
             CreateText(rowObject.transform, "State");
             return rowObject.GetComponent<RewardChoiceRowView>();
+        }
+
+        private static RewardChoiceRowView CreateFoodRewardRowTemplate(Transform parent)
+        {
+            RewardChoiceRowView row = CreateRewardRowTemplate(parent);
+            Transform rowTransform = row.transform;
+            var iconFrame = new GameObject("IconFrame", typeof(RectTransform));
+            iconFrame.transform.SetParent(rowTransform, false);
+            var icon = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+            icon.transform.SetParent(iconFrame.transform, false);
+            var dishRenderTexture = new GameObject("DishRenderTexture", typeof(RectTransform));
+            dishRenderTexture.transform.SetParent(iconFrame.transform, false);
+            var output = new GameObject(
+                "Output",
+                typeof(RectTransform),
+                typeof(RawImage),
+                typeof(DishIconRenderTexturePreview));
+            output.transform.SetParent(dishRenderTexture.transform, false);
+            return row;
+        }
+
+        private static T GetPrivateField<T>(object target, string fieldName)
+        {
+            FieldInfo field = target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, fieldName);
+            return (T)field.GetValue(target);
         }
 
         private static string RowTitle(RewardChoiceRowView row)

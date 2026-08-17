@@ -189,7 +189,9 @@ namespace GourmetProject.Game.UI.Tooltips
 
             PlaceLeft(_materialsView.transform as RectTransform, targetRect, canvasRect.rect);
             PlaceAbove(_scoreView.transform as RectTransform, targetRect, canvasRect.rect);
+            SeparateScoreFromMaterials(canvasRect, targetRect);
             PlaceSummaryGroup(targetRect, canvasRect);
+            SeparateSummaryGroupFromPrimaryModules(canvasRect, targetRect);
         }
 
         public void PlaceAroundRectTransform(RectTransform target, Canvas canvas)
@@ -217,7 +219,9 @@ namespace GourmetProject.Game.UI.Tooltips
 
             PlaceLeft(_materialsView.transform as RectTransform, targetRect, canvasRect.rect);
             PlaceAbove(_scoreView.transform as RectTransform, targetRect, canvasRect.rect);
+            SeparateScoreFromMaterials(canvasRect, targetRect);
             PlaceSummaryGroup(targetRect, canvasRect);
+            SeparateSummaryGroupFromPrimaryModules(canvasRect, targetRect);
         }
 
         private void PlaceSummaryGroup(Rect targetRect, RectTransform canvasRect)
@@ -555,6 +559,230 @@ namespace GourmetProject.Game.UI.Tooltips
                     rect.anchoredPosition += offset;
                 }
             }
+        }
+
+        private void SeparateScoreFromMaterials(RectTransform canvasRect, Rect targetRect)
+        {
+            RectTransform scoreRect = _scoreView.transform as RectTransform;
+            if (scoreRect == null || !scoreRect.gameObject.activeSelf)
+            {
+                return;
+            }
+
+            var obstacles = new List<Rect>(2)
+            {
+                Expand(targetRect, _targetGap),
+            };
+            AddVisibleObstacle(obstacles, _materialsView.transform as RectTransform, canvasRect);
+            Vector2 offset = BestSeparationOffset(
+                RectTransformToLocalRect(scoreRect, canvasRect),
+                obstacles,
+                InsetBounds(canvasRect.rect));
+            scoreRect.anchoredPosition += offset;
+        }
+
+        private void SeparateSummaryGroupFromPrimaryModules(
+            RectTransform canvasRect,
+            Rect targetRect)
+        {
+            RectTransform[] summaryGroup =
+            {
+                _summaryView.transform as RectTransform,
+                _flavorDetailsRoot,
+                _specialTagsRoot,
+                _transferredSubSkillsRoot,
+            };
+            if (!TryGroupBounds(summaryGroup, canvasRect, out Rect groupBounds))
+            {
+                return;
+            }
+
+            var obstacles = new List<Rect>(3)
+            {
+                Expand(targetRect, _targetGap),
+            };
+            AddVisibleObstacle(obstacles, _materialsView.transform as RectTransform, canvasRect);
+            AddVisibleObstacle(obstacles, _scoreView.transform as RectTransform, canvasRect);
+            Vector2 bestOffset = BestSeparationOffset(
+                groupBounds,
+                obstacles,
+                InsetBounds(canvasRect.rect));
+            if (bestOffset.sqrMagnitude <= 0.01f)
+            {
+                return;
+            }
+
+            for (int i = 0; i < summaryGroup.Length; i++)
+            {
+                RectTransform rect = summaryGroup[i];
+                if (rect != null && rect.gameObject.activeSelf)
+                {
+                    rect.anchoredPosition += bestOffset;
+                }
+            }
+        }
+
+        private static Vector2 BestSeparationOffset(
+            Rect movingBounds,
+            IReadOnlyList<Rect> obstacles,
+            Rect allowedBounds)
+        {
+            var candidates = new List<Vector2>(5) { Vector2.zero };
+            float moveRight = 0f;
+            float moveLeft = 0f;
+            float moveUp = 0f;
+            float moveDown = 0f;
+            for (int i = 0; i < obstacles.Count; i++)
+            {
+                Rect obstacle = obstacles[i];
+                if (!movingBounds.Overlaps(obstacle))
+                {
+                    continue;
+                }
+
+                moveRight = Mathf.Max(moveRight, obstacle.xMax - movingBounds.xMin);
+                moveLeft = Mathf.Min(moveLeft, obstacle.xMin - movingBounds.xMax);
+                moveUp = Mathf.Max(moveUp, obstacle.yMax - movingBounds.yMin);
+                moveDown = Mathf.Min(moveDown, obstacle.yMin - movingBounds.yMax);
+            }
+
+            if (moveRight > 0f)
+            {
+                candidates.Add(new Vector2(moveRight, 0f));
+            }
+
+            if (moveLeft < 0f)
+            {
+                candidates.Add(new Vector2(moveLeft, 0f));
+            }
+
+            if (moveUp > 0f)
+            {
+                candidates.Add(new Vector2(0f, moveUp));
+            }
+
+            if (moveDown < 0f)
+            {
+                candidates.Add(new Vector2(0f, moveDown));
+            }
+
+            Vector2 bestOffset = Vector2.zero;
+            float bestScore = float.MaxValue;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                Vector2 offset = ClampGroupOffset(candidates[i], movingBounds, allowedBounds);
+                Rect moved = Offset(movingBounds, offset);
+                float overlap = 0f;
+                for (int j = 0; j < obstacles.Count; j++)
+                {
+                    overlap += OverlapArea(moved, obstacles[j]);
+                }
+
+                float score = overlap * 1000000f + offset.sqrMagnitude;
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    bestOffset = offset;
+                }
+            }
+
+            return bestOffset;
+        }
+
+        private void AddVisibleObstacle(
+            ICollection<Rect> obstacles,
+            RectTransform rect,
+            RectTransform canvasRect)
+        {
+            if (rect == null || !rect.gameObject.activeSelf)
+            {
+                return;
+            }
+
+            obstacles.Add(Expand(RectTransformToLocalRect(rect, canvasRect), _detailGap));
+        }
+
+        private bool TryGroupBounds(
+            IReadOnlyList<RectTransform> group,
+            RectTransform canvasRect,
+            out Rect bounds)
+        {
+            bool hasBounds = false;
+            bounds = default;
+            for (int i = 0; i < group.Count; i++)
+            {
+                RectTransform rect = group[i];
+                if (rect == null || !rect.gameObject.activeSelf)
+                {
+                    continue;
+                }
+
+                Rect childBounds = RectTransformToLocalRect(rect, canvasRect);
+                bounds = hasBounds
+                    ? Rect.MinMaxRect(
+                        Mathf.Min(bounds.xMin, childBounds.xMin),
+                        Mathf.Min(bounds.yMin, childBounds.yMin),
+                        Mathf.Max(bounds.xMax, childBounds.xMax),
+                        Mathf.Max(bounds.yMax, childBounds.yMax))
+                    : childBounds;
+                hasBounds = true;
+            }
+
+            return hasBounds;
+        }
+
+        private static Rect Expand(Rect rect, float padding)
+        {
+            return Rect.MinMaxRect(
+                rect.xMin - padding,
+                rect.yMin - padding,
+                rect.xMax + padding,
+                rect.yMax + padding);
+        }
+
+        private Rect InsetBounds(Rect rect)
+        {
+            return Rect.MinMaxRect(
+                rect.xMin + _screenPadding,
+                rect.yMin + _screenPadding,
+                rect.xMax - _screenPadding,
+                rect.yMax - _screenPadding);
+        }
+
+        private static Rect Offset(Rect rect, Vector2 offset)
+        {
+            rect.position += offset;
+            return rect;
+        }
+
+        private static Vector2 ClampGroupOffset(Vector2 offset, Rect group, Rect bounds)
+        {
+            if (group.width > bounds.width)
+            {
+                offset.x = bounds.center.x - group.center.x;
+            }
+            else
+            {
+                offset.x = Mathf.Clamp(offset.x, bounds.xMin - group.xMin, bounds.xMax - group.xMax);
+            }
+
+            if (group.height > bounds.height)
+            {
+                offset.y = bounds.center.y - group.center.y;
+            }
+            else
+            {
+                offset.y = Mathf.Clamp(offset.y, bounds.yMin - group.yMin, bounds.yMax - group.yMax);
+            }
+
+            return offset;
+        }
+
+        private static float OverlapArea(Rect a, Rect b)
+        {
+            float width = Mathf.Max(0f, Mathf.Min(a.xMax, b.xMax) - Mathf.Max(a.xMin, b.xMin));
+            float height = Mathf.Max(0f, Mathf.Min(a.yMax, b.yMax) - Mathf.Max(a.yMin, b.yMin));
+            return width * height;
         }
 
         private Vector2 PreferredSize(RectTransform rect)

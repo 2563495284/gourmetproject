@@ -1655,7 +1655,18 @@ namespace GourmetProject.Game.UI.Meta
                     return;
                 }
 
-                Sprite icon = LoadGroupRowIcon(group, groupIndex, choice, out bool suppressDishPreview);
+                bool directFoodReward = choice?.Kind == cfg.RewardKind.DishChoice;
+                Sprite icon;
+                bool suppressDishPreview;
+                if (directFoodReward)
+                {
+                    icon = LoadChoiceIcon(choice);
+                    suppressDishPreview = true;
+                }
+                else
+                {
+                    icon = LoadGroupRowIcon(group, groupIndex, choice, out suppressDishPreview);
+                }
 
                 row.Bind(
                     string.IsNullOrWhiteSpace(choice?.Name) ? FallbackGroupTitle(group) : choice.Name,
@@ -2341,10 +2352,11 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
+            bool foodTip = choice.Kind == cfg.RewardKind.DishChoice;
             TipHoverTrigger trigger = row.EnsureTipTrigger();
-            trigger.SetTarget(row.TipPlacementTarget);
-            trigger.SetFollowPointer(true);
-            trigger.SetPreferVerticalPlacement(true);
+            trigger.SetTarget(foodTip ? row.RewardIconTarget : row.TipPlacementTarget);
+            trigger.SetFollowPointer(!foodTip);
+            trigger.SetPreferVerticalPlacement(!foodTip);
 
             if (choice.Kind == cfg.RewardKind.DishChoice && _foodTipsView != null)
             {
@@ -2359,6 +2371,9 @@ namespace GourmetProject.Game.UI.Meta
                         {
                             _foodTipsView.Bind(data);
                             MoveTipToTop(_foodTipsView);
+                            _foodTipsView.PlaceAroundRectTransform(
+                                row.RewardIconTarget,
+                                row.GetComponentInParent<Canvas>());
                         });
                     return;
                 }

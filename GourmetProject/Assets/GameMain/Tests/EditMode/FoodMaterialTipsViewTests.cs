@@ -143,6 +143,79 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
+        [Test]
+        public void PlaceAroundRectTransform_SeparatesVisibleModulesAroundFoodIcon()
+        {
+            var canvasObject = new GameObject(
+                "FoodTipsLayoutTest",
+                typeof(RectTransform),
+                typeof(Canvas));
+            try
+            {
+                RectTransform canvasRect = canvasObject.GetComponent<RectTransform>();
+                canvasRect.sizeDelta = new Vector2(640f, 720f);
+                Canvas canvas = canvasObject.GetComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+                var targetObject = new GameObject("FoodIcon", typeof(RectTransform), typeof(Image));
+                RectTransform target = targetObject.GetComponent<RectTransform>();
+                target.SetParent(canvasRect, false);
+                target.sizeDelta = new Vector2(48f, 48f);
+                target.anchoredPosition = new Vector2(-190f, 130f);
+
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(FoodTipsPrefabPath);
+                FoodTipsView tips = Object.Instantiate(prefab, canvasRect, false)
+                    .GetComponent<FoodTipsView>();
+                tips.Bind(new FoodTipsData(
+                    new FoodSummaryTipsData(
+                        "芒果西米露",
+                        System.Array.Empty<FoodInfoEntry>(),
+                        System.Array.Empty<string>(),
+                        countAs: 6),
+                    new FoodScoreTipsData(6f, 1f),
+                    new[] { Entry("material", "材质", "描述") },
+                    System.Array.Empty<FoodInfoEntry>(),
+                    System.Array.Empty<FoodInfoEntry>(),
+                    System.Array.Empty<FoodInfoEntry>()));
+                tips.Show();
+                tips.PlaceAroundRectTransform(target, canvas);
+                Canvas.ForceUpdateCanvases();
+
+                Rect targetRect = LocalRect(target, canvasRect);
+                var visibleModules = new List<RectTransform>();
+                for (int i = 0; i < tips.transform.childCount; i++)
+                {
+                    if (tips.transform.GetChild(i) is RectTransform child
+                        && child.gameObject.activeSelf)
+                    {
+                        visibleModules.Add(child);
+                    }
+                }
+
+                Assert.That(visibleModules, Has.Count.EqualTo(4));
+                for (int i = 0; i < visibleModules.Count; i++)
+                {
+                    Rect moduleRect = LocalRect(visibleModules[i], canvasRect);
+                    Assert.That(
+                        moduleRect.Overlaps(targetRect),
+                        Is.False,
+                        $"{visibleModules[i].name} overlaps the food icon.");
+                    for (int j = i + 1; j < visibleModules.Count; j++)
+                    {
+                        Rect otherRect = LocalRect(visibleModules[j], canvasRect);
+                        Assert.That(
+                            moduleRect.Overlaps(otherRect),
+                            Is.False,
+                            $"{visibleModules[i].name} overlaps {visibleModules[j].name}.");
+                    }
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(canvasObject);
+            }
+        }
+
         private static void AssertPrefabConfiguration(
             string path,
             FoodTipCardView expectedCard,
@@ -178,6 +251,22 @@ namespace GourmetProject.Tests.EditMode
         private static RectTransform Content(FoodMaterialTipsView view)
         {
             return view.GetComponentInChildren<ScrollRect>(true).content;
+        }
+
+        private static Rect LocalRect(RectTransform rect, RectTransform parent)
+        {
+            var corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            Vector2 min = parent.InverseTransformPoint(corners[0]);
+            Vector2 max = min;
+            for (int i = 1; i < corners.Length; i++)
+            {
+                Vector2 point = parent.InverseTransformPoint(corners[i]);
+                min = Vector2.Min(min, point);
+                max = Vector2.Max(max, point);
+            }
+
+            return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
         }
 
         private static IReadOnlyList<FoodMaterialTipsEntry> CreateEntries(int count)
