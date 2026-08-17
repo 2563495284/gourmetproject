@@ -640,7 +640,7 @@
   {
     "id": "red_velvet_cake",
     "name": "红丝绒蛋糕",
-    "deliciousness": 30,
+    "deliciousness": 40,
     "skills": "sk_red_velvet_cake",
     "category": "cake",
     "countAs": 1,
@@ -658,7 +658,7 @@
   {
     "id": "matcha_cake",
     "name": "抹茶蛋糕",
-    "deliciousness": 30,
+    "deliciousness": 40,
     "skills": "sk_matcha_cake",
     "category": "cake",
     "countAs": 1,
@@ -676,7 +676,7 @@
   {
     "id": "mung_bean_cake",
     "name": "绿豆糕",
-    "deliciousness": 30,
+    "deliciousness": 40,
     "skills": "sk_mung_bean_cake",
     "category": "",
     "countAs": 3,
@@ -694,7 +694,7 @@
   {
     "id": "egg_yolk_pastry",
     "name": "蛋黄酥",
-    "deliciousness": 30,
+    "deliciousness": 40,
     "skills": "sk_egg_yolk_pastry",
     "category": "",
     "countAs": 3,
@@ -712,7 +712,7 @@
   {
     "id": "chocolate_truffle",
     "name": "松露巧克力",
-    "deliciousness": 30,
+    "deliciousness": 40,
     "skills": "sk_chocolate_truffle",
     "category": "",
     "countAs": 1,
@@ -730,7 +730,7 @@
   {
     "id": "liquor_chocolate",
     "name": "酒心巧克力",
-    "deliciousness": 30,
+    "deliciousness": 40,
     "skills": "sk_liquor_chocolate",
     "category": "",
     "countAs": 1,
@@ -748,7 +748,7 @@
   {
     "id": "palmier",
     "name": "蝴蝶酥",
-    "deliciousness": 30,
+    "deliciousness": 40,
     "skills": "sk_palmier",
     "category": "",
     "countAs": 1,

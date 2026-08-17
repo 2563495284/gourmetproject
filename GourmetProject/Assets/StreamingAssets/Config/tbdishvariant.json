@@ -616,16 +616,16 @@
     "baseId": "red_velvet_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_fresh",
     "baseWeight": 1200,
-    "price": 45,
+    "price": 60,
     "hiddenRange": {
-      "min": 20,
-      "max": 60
+      "min": 30,
+      "max": 75
     },
     "flavoredBaseWeight": 100,
-    "flavoredPrice": 90,
+    "flavoredPrice": 110,
     "flavoredHiddenRange": {
-      "min": 50,
-      "max": 90
+      "min": 55,
+      "max": 100
     }
   },
   {
@@ -633,16 +633,16 @@
     "baseId": "matcha_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_fresh",
     "baseWeight": 1200,
-    "price": 45,
+    "price": 60,
     "hiddenRange": {
-      "min": 20,
-      "max": 60
+      "min": 30,
+      "max": 75
     },
     "flavoredBaseWeight": 100,
-    "flavoredPrice": 90,
+    "flavoredPrice": 110,
     "flavoredHiddenRange": {
-      "min": 50,
-      "max": 90
+      "min": 55,
+      "max": 100
     }
   },
   {
@@ -650,16 +650,16 @@
     "baseId": "mung_bean_cake",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_fresh",
     "baseWeight": 1200,
-    "price": 45,
+    "price": 60,
     "hiddenRange": {
-      "min": 20,
-      "max": 60
+      "min": 30,
+      "max": 75
     },
     "flavoredBaseWeight": 100,
-    "flavoredPrice": 90,
+    "flavoredPrice": 110,
     "flavoredHiddenRange": {
-      "min": 50,
-      "max": 90
+      "min": 55,
+      "max": 100
     }
   },
   {
@@ -667,16 +667,16 @@
     "baseId": "egg_yolk_pastry",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_fresh",
     "baseWeight": 1200,
-    "price": 45,
+    "price": 60,
     "hiddenRange": {
-      "min": 20,
-      "max": 60
+      "min": 30,
+      "max": 75
     },
     "flavoredBaseWeight": 100,
-    "flavoredPrice": 90,
+    "flavoredPrice": 110,
     "flavoredHiddenRange": {
-      "min": 50,
-      "max": 90
+      "min": 55,
+      "max": 100
     }
   },
   {
@@ -684,16 +684,16 @@
     "baseId": "chocolate_truffle",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_fresh",
     "baseWeight": 1200,
-    "price": 45,
+    "price": 60,
     "hiddenRange": {
-      "min": 20,
-      "max": 60
+      "min": 30,
+      "max": 75
     },
     "flavoredBaseWeight": 100,
-    "flavoredPrice": 90,
+    "flavoredPrice": 110,
     "flavoredHiddenRange": {
-      "min": 50,
-      "max": 90
+      "min": 55,
+      "max": 100
     }
   },
   {
@@ -701,16 +701,16 @@
     "baseId": "liquor_chocolate",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_fresh",
     "baseWeight": 1200,
-    "price": 45,
+    "price": 60,
     "hiddenRange": {
-      "min": 20,
-      "max": 60
+      "min": 30,
+      "max": 75
     },
     "flavoredBaseWeight": 100,
-    "flavoredPrice": 90,
+    "flavoredPrice": 110,
     "flavoredHiddenRange": {
-      "min": 50,
-      "max": 90
+      "min": 55,
+      "max": 100
     }
   },
   {
@@ -718,16 +718,16 @@
     "baseId": "palmier",
     "flavorIds": "t_sweet|t_sour|t_salty|t_bitter|t_numb|t_fresh",
     "baseWeight": 1200,
-    "price": 45,
+    "price": 60,
     "hiddenRange": {
-      "min": 20,
-      "max": 60
+      "min": 30,
+      "max": 75
     },
     "flavoredBaseWeight": 100,
-    "flavoredPrice": 90,
+    "flavoredPrice": 110,
     "flavoredHiddenRange": {
-      "min": 50,
-      "max": 90
+      "min": 55,
+      "max": 100
     }
   },
   {
