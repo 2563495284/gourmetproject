@@ -335,7 +335,8 @@ namespace GourmetProject.Game.Tutorial
 
                 [TutorialId.SecondAction] = new TutorialSequenceDefinition(
                     TutorialId.SecondAction,
-                    S("这是火热营业，目标更高，但奖励规格也更高。", TutorialSignal.ActionPicked, TutorialAnchorId.ActionDeck)),
+                    // ActionCard2 对应 TutorialActionScheduleOverride 里 tutorial_second 组的 act_food_hard_gold。
+                    C("这是火热营业，目标更高，但奖励规格也更高。", TutorialAnchorId.ActionCard2)),
 
                 [TutorialId.TimelineNode] = new TutorialSequenceDefinition(
                     TutorialId.TimelineNode,

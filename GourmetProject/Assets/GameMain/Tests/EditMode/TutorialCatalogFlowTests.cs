@@ -159,10 +159,10 @@ namespace GourmetProject.Tests.EditMode
                 secondAction,
                 0,
                 "这是火热营业，目标更高，但奖励规格也更高。",
-                TutorialAdvanceMode.Signal,
-                TutorialSignal.ActionPicked,
-                TutorialAnchorId.ActionDeck);
-            Assert.That(secondAction.Steps[0].AllowTargetInteraction, Is.True);
+                TutorialAdvanceMode.Continue,
+                string.Empty,
+                TutorialAnchorId.ActionCard2);
+            Assert.That(secondAction.Steps[0].AllowTargetInteraction, Is.False);
 
             TutorialSequenceDefinition timeline = Require(TutorialId.TimelineNode, 2);
             AssertStep(
