@@ -10,22 +10,23 @@ namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
     /// 事件页面中部面板：先展示事件选项，选择后改为展示以结果文本为标签的结束按钮。
-    /// 规则与结算由 WeekLoopController / EventService 驱动，本组件只负责数据绑定和点击回调。
+    /// 规则与结算由 WeekLoopController / EventService 驱动，本组件只负责数据绑定和点击回调；
+    /// 版式与视觉全部来自 EventPanel.prefab 与选项模板，代码不再运行时创建节点或改样式。
     /// </summary>
     public sealed class EventPagePanel : MonoBehaviour
     {
-        private const float ResultButtonMinWidth = 128f;
-        private const float ResultButtonHorizontalPadding = 56f;
-        private const float RequirementHeight = 28f;
-        private const float RequirementInset = 8f;
-        [SerializeField] private Image _backgroundImage;
-        [SerializeField] private Sprite _defaultBackgroundSprite;
         [SerializeField] private Image _illustrationImage;
         [SerializeField] private TMP_Text _titleText;
         [SerializeField] private TMP_Text _descriptionText;
         [SerializeField] private RectTransform _optionsRoot;
-        [SerializeField] private Button _optionButtonTemplate;
-        private readonly List<Button> _spawnedButtons = new();
+
+        [Tooltip("事件选项模板；有选项时的结束按钮也复用它。")]
+        [SerializeField] private EventOptionView _optionTemplate;
+
+        [Tooltip("无选项时的独立结束按钮模板，留空则回退到选项模板。")]
+        [SerializeField] private EventOptionView _resultTemplate;
+
+        private readonly List<EventOptionView> _spawnedOptions = new();
         private bool _resolved;
         private Tween _autoContinueTween;
 
@@ -42,16 +43,21 @@ namespace GourmetProject.Game.UI.Meta
             float autoContinueDelaySeconds = 0f)
         {
             StopAutoContinue();
-            ClearButtons();
+            ClearOptions();
             _resolved = false;
             gameObject.SetActive(true);
 
-            SetText(_titleText, title);
+            if (_titleText != null)
+            {
+                _titleText.text = title ?? string.Empty;
+            }
+
             if (_descriptionText != null)
             {
                 SemanticDescriptionFormatter.Set(_descriptionText, description);
+                _descriptionText.gameObject.SetActive(!string.IsNullOrWhiteSpace(description));
             }
-            SetVisible(_descriptionText, !string.IsNullOrWhiteSpace(description));
+
             SetIllustration(bgSpritePath);
 
             int count = options?.Count ?? 0;
@@ -60,17 +66,12 @@ namespace GourmetProject.Game.UI.Meta
                 && (!string.IsNullOrWhiteSpace(resultButtonText) || count == 0);
             if (_optionsRoot != null)
             {
-                _optionsRoot.gameObject.SetActive(showResultButton || count > 0);
+                _optionsRoot.gameObject.SetActive(!autoContinue && (showResultButton || count > 0));
             }
 
             if (autoContinue)
             {
                 _resolved = true;
-                if (_optionsRoot != null)
-                {
-                    _optionsRoot.gameObject.SetActive(false);
-                }
-
                 _autoContinueTween = DOVirtual.DelayedCall(
                         autoContinueDelaySeconds,
                         () =>
@@ -100,7 +101,7 @@ namespace GourmetProject.Game.UI.Meta
         public void Close()
         {
             StopAutoContinue();
-            ClearButtons();
+            ClearOptions();
             gameObject.SetActive(false);
         }
 
@@ -122,285 +123,102 @@ namespace GourmetProject.Game.UI.Meta
             bool interactable,
             Action<int> onPick)
         {
-            if (_optionsRoot == null || _optionButtonTemplate == null)
-            {
-                return;
-            }
-
-            Button button = Instantiate(_optionButtonTemplate, _optionsRoot);
-            button.gameObject.name = $"EventOption_{index + 1}";
-            button.gameObject.SetActive(true);
-            TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
-            if (text != null)
-            {
-                SemanticDescriptionFormatter.Set(
-                    text,
-                    string.IsNullOrWhiteSpace(label) ? "继续" : label);
-                ApplyOptionVisual(button, text, requirement, interactable);
-            }
-
-            button.onClick.RemoveAllListeners();
-            button.interactable = interactable;
-            if (interactable)
-            {
-                button.onClick.AddListener(() =>
-                {
-                    if (_resolved)
-                    {
-                        return;
-                    }
-
-                    _resolved = true;
-                    SetButtonsInteractable(false);
-                    onPick?.Invoke(index);
-                });
-            }
-            _spawnedButtons.Add(button);
-        }
-
-        private void ApplyOptionVisual(
-            Button button,
-            TMP_Text title,
-            string requirement,
-            bool interactable)
-        {
-            bool hasRequirement = !string.IsNullOrWhiteSpace(requirement);
-            OptionPalette palette = ResolveOptionPalette();
-            Image rootImage = button.targetGraphic as Image ?? button.GetComponent<Image>();
-            if (rootImage != null)
-            {
-                button.targetGraphic = rootImage;
-                Color main = interactable ? palette.Main : palette.DisabledMain;
-                ColorBlock colors = button.colors;
-                colors.normalColor = main;
-                colors.highlightedColor = Color.Lerp(main, Color.white, 0.1f);
-                colors.pressedColor = Color.Lerp(main, Color.black, 0.14f);
-                colors.selectedColor = colors.highlightedColor;
-                colors.disabledColor = palette.DisabledMain;
-                colors.colorMultiplier = 1f;
-                colors.fadeDuration = 0.08f;
-                button.colors = colors;
-                rootImage.color = Color.white;
-            }
-
-            title.color = interactable ? palette.Title : palette.DisabledTitle;
-            title.fontWeight = FontWeight.Medium;
-            title.fontSize = hasRequirement ? 28f : 30f;
-            title.fontSizeMax = title.fontSize;
-            title.alignment = TextAlignmentOptions.Center;
-
-            if (!hasRequirement)
-            {
-                return;
-            }
-
-            Image requirementBackground = CreateRequirementContainer(
-                button.transform,
-                rootImage != null ? rootImage.sprite : null,
-                out RectTransform requirementContainer);
-            requirementBackground.color = interactable ? palette.Requirement : palette.DisabledRequirement;
-
-            TMP_Text requirementText = Instantiate(title, requirementContainer);
-            requirementText.gameObject.name = "RequirementText";
-            SemanticDescriptionFormatter.Set(requirementText, requirement);
-            requirementText.color = interactable ? palette.RequirementText : palette.DisabledRequirementText;
-            requirementText.fontWeight = FontWeight.Regular;
-            requirementText.fontSize = 19f;
-            requirementText.fontSizeMax = 19f;
-            requirementText.fontSizeMin = 12f;
-            requirementText.alignment = TextAlignmentOptions.Center;
-            requirementText.transform.SetAsLastSibling();
-        }
-
-        private static Image CreateRequirementContainer(
-            Transform parent,
-            Sprite sprite,
-            out RectTransform container)
-        {
-            var gameObject = new GameObject(
-                "Requirement",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image),
-                typeof(HorizontalLayoutGroup),
-                typeof(LayoutElement));
-            gameObject.layer = parent.gameObject.layer;
-            container = gameObject.GetComponent<RectTransform>();
-            container.SetParent(parent, false);
-            gameObject.transform.SetAsLastSibling();
-
-            Image image = gameObject.GetComponent<Image>();
-            image.sprite = sprite;
-            image.type = sprite != null ? Image.Type.Sliced : Image.Type.Simple;
-            image.raycastTarget = false;
-
-            HorizontalLayoutGroup layout = gameObject.GetComponent<HorizontalLayoutGroup>();
-            layout.childAlignment = TextAnchor.MiddleCenter;
-            layout.childControlWidth = true;
-            layout.childControlHeight = true;
-            layout.childForceExpandWidth = false;
-            layout.childForceExpandHeight = false;
-
-            LayoutElement layoutElement = gameObject.GetComponent<LayoutElement>();
-            layoutElement.minHeight = RequirementHeight;
-            layoutElement.preferredHeight = RequirementHeight;
-            layoutElement.flexibleHeight = 0f;
-            return image;
-        }
-
-        private static OptionPalette ResolveOptionPalette()
-        {
-            return new OptionPalette(
-                Hex("C4EDAC"), Hex("438F47"), Hex("173D1C"), Hex("FFFAF0"),
-                Hex("D6D8D2"), Hex("5D625B"), Hex("737870"), Hex("F4F5F1"));
-        }
-
-        private static Color Hex(string value)
-        {
-            return ColorUtility.TryParseHtmlString($"#{value}", out Color color)
-                ? color
-                : Color.white;
-        }
-
-        private readonly struct OptionPalette
-        {
-            public OptionPalette(
-                Color main,
-                Color requirement,
-                Color title,
-                Color requirementText,
-                Color disabledMain,
-                Color disabledRequirement,
-                Color disabledTitle,
-                Color disabledRequirementText)
-            {
-                Main = main;
-                Requirement = requirement;
-                Title = title;
-                RequirementText = requirementText;
-                DisabledMain = disabledMain;
-                DisabledRequirement = disabledRequirement;
-                DisabledTitle = disabledTitle;
-                DisabledRequirementText = disabledRequirementText;
-            }
-
-            public Color Main { get; }
-            public Color Requirement { get; }
-            public Color Title { get; }
-            public Color RequirementText { get; }
-            public Color DisabledMain { get; }
-            public Color DisabledRequirement { get; }
-            public Color DisabledTitle { get; }
-            public Color DisabledRequirementText { get; }
+            EventOptionView option = Spawn(_optionTemplate, $"EventOption_{index + 1}");
+            option?.Bind(
+                string.IsNullOrWhiteSpace(label) ? "继续" : label,
+                requirement,
+                interactable,
+                () => ResolveOnce(() => onPick?.Invoke(index)));
         }
 
         private void CreateResultButton(string resultText, Action onEnd, bool styleAsOption)
         {
-            if (_optionsRoot == null || _optionButtonTemplate == null)
+            EventOptionView template = styleAsOption || _resultTemplate == null
+                ? _optionTemplate
+                : _resultTemplate;
+            EventOptionView result = Spawn(template, "EventResult");
+            if (result == null)
             {
                 onEnd?.Invoke();
                 return;
             }
 
-            Button button = Instantiate(_optionButtonTemplate, _optionsRoot);
-            button.gameObject.name = "EventResult";
-            button.gameObject.SetActive(true);
+            result.Bind(
+                string.IsNullOrWhiteSpace(resultText) ? "结束" : resultText,
+                string.Empty,
+                interactable: true,
+                () => ResolveOnce(onEnd));
+        }
 
-            TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
-            if (text != null)
+        private EventOptionView Spawn(EventOptionView template, string objectName)
+        {
+            if (_optionsRoot == null || template == null)
             {
-                SemanticDescriptionFormatter.Set(
-                    text,
-                    string.IsNullOrWhiteSpace(resultText) ? "结束" : resultText);
-                if (styleAsOption)
+                return null;
+            }
+
+            EventOptionView view = Instantiate(template, _optionsRoot);
+            view.gameObject.name = objectName;
+            view.gameObject.SetActive(true);
+            _spawnedOptions.Add(view);
+            return view;
+        }
+
+        private void ResolveOnce(Action resolve)
+        {
+            if (_resolved)
+            {
+                return;
+            }
+
+            _resolved = true;
+            foreach (EventOptionView option in _spawnedOptions)
+            {
+                if (option != null)
                 {
-                    ApplyOptionVisual(button, text, string.Empty, interactable: true);
+                    option.SetInteractable(false);
+                }
+            }
+
+            resolve?.Invoke();
+        }
+
+        private void ClearOptions()
+        {
+            foreach (EventOptionView option in _spawnedOptions)
+            {
+                if (option == null)
+                {
+                    continue;
+                }
+
+                option.gameObject.SetActive(false);
+                if (Application.isPlaying)
+                {
+                    Destroy(option.gameObject);
                 }
                 else
                 {
-                    ApplyResultButtonWidth(button, text);
+                    DestroyImmediate(option.gameObject);
                 }
             }
 
-            button.onClick.RemoveAllListeners();
-            button.interactable = true;
-            button.onClick.AddListener(() =>
-            {
-                if (_resolved)
-                {
-                    return;
-                }
-
-                _resolved = true;
-                SetButtonsInteractable(false);
-                onEnd?.Invoke();
-            });
-            _spawnedButtons.Add(button);
+            _spawnedOptions.Clear();
+            HideTemplate(_optionTemplate);
+            HideTemplate(_resultTemplate);
         }
 
-        private static void ApplyResultButtonWidth(Button button, TMP_Text label)
+        private static void HideTemplate(EventOptionView template)
         {
-            float width = Mathf.Max(ResultButtonMinWidth, label.preferredWidth + ResultButtonHorizontalPadding);
-            ContentSizeFitter contentSizeFitter = button.GetComponent<ContentSizeFitter>();
-            if (contentSizeFitter != null)
+            if (template != null)
             {
-                contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-            }
-
-            if (button.transform is RectTransform rectTransform)
-            {
-                rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
-            }
-
-            LayoutElement layoutElement = button.GetComponent<LayoutElement>();
-            if (layoutElement != null)
-            {
-                layoutElement.minWidth = width;
-                layoutElement.preferredWidth = width;
-                layoutElement.flexibleWidth = 0f;
-            }
-        }
-
-        private void SetButtonsInteractable(bool interactable)
-        {
-            foreach (Button button in _spawnedButtons)
-            {
-                if (button != null)
-                {
-                    button.interactable = interactable;
-                }
-            }
-        }
-
-        private void ClearButtons()
-        {
-            foreach (Button button in _spawnedButtons)
-            {
-                if (button != null)
-                {
-                    button.gameObject.SetActive(false);
-                    if (Application.isPlaying)
-                    {
-                        Destroy(button.gameObject);
-                    }
-                    else
-                    {
-                        DestroyImmediate(button.gameObject);
-                    }
-                }
-            }
-
-            _spawnedButtons.Clear();
-            if (_optionButtonTemplate != null)
-            {
-                _optionButtonTemplate.gameObject.SetActive(false);
+                template.gameObject.SetActive(false);
             }
         }
 
         private void SetIllustration(string spritePath)
         {
-            Image illustration = EnsureIllustrationImage();
-            if (illustration == null)
+            if (_illustrationImage == null)
             {
                 return;
             }
@@ -409,63 +227,13 @@ namespace GourmetProject.Game.UI.Meta
             Sprite sprite = string.IsNullOrWhiteSpace(resourcePath)
                 ? null
                 : Resources.Load<Sprite>(resourcePath);
-            illustration.sprite = sprite;
-            illustration.enabled = sprite != null;
-            illustration.gameObject.SetActive(sprite != null);
+            _illustrationImage.sprite = sprite;
+            _illustrationImage.gameObject.SetActive(sprite != null);
 
             if (sprite == null && !string.IsNullOrWhiteSpace(resourcePath))
             {
                 Debug.LogWarning($"事件插画加载失败：{resourcePath}");
             }
-        }
-
-        private Image EnsureIllustrationImage()
-        {
-            if (_illustrationImage != null)
-            {
-                ConfigureIllustrationImage(_illustrationImage);
-                return _illustrationImage;
-            }
-
-            var illustrationObject = new GameObject(
-                "Illustration",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image));
-            illustrationObject.layer = gameObject.layer;
-            RectTransform rect = illustrationObject.GetComponent<RectTransform>();
-            rect.SetParent(transform, false);
-
-            _illustrationImage = illustrationObject.GetComponent<Image>();
-            ConfigureIllustrationImage(_illustrationImage);
-            _illustrationImage.enabled = false;
-            illustrationObject.SetActive(false);
-            return _illustrationImage;
-        }
-
-        private void ConfigureIllustrationImage(Image illustration)
-        {
-            if (illustration == null)
-            {
-                return;
-            }
-
-            if (illustration.transform is RectTransform rect)
-            {
-                rect.anchorMin = Vector2.zero;
-                rect.anchorMax = Vector2.one;
-                rect.offsetMin = Vector2.zero;
-                rect.offsetMax = Vector2.zero;
-
-                // 保持插画位于 Shade 之上、Content 之下：颜色清晰，同时不会盖住标题和选项。
-                rect.SetSiblingIndex(Mathf.Max(0, transform.childCount - 2));
-            }
-
-            illustration.type = Image.Type.Simple;
-            // 事件图按照 EventPanel 的 Background 安全区构图，直接铺满以避免露底或窄条显示。
-            illustration.preserveAspect = false;
-            illustration.raycastTarget = false;
-            illustration.color = Color.white;
         }
 
         private static string NormalizeResourcePath(string spritePath)
@@ -489,22 +257,6 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             return path.TrimStart('/');
-        }
-
-        private static void SetText(TMP_Text text, string value)
-        {
-            if (text != null)
-            {
-                text.text = value ?? string.Empty;
-            }
-        }
-
-        private static void SetVisible(Behaviour component, bool visible)
-        {
-            if (component != null)
-            {
-                component.gameObject.SetActive(visible);
-            }
         }
     }
 }

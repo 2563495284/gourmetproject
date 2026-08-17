@@ -532,7 +532,7 @@ namespace GourmetProject.Game.Balance
         {
             int heartsBefore = _run.HeartsRemaining;
             bool hadUndying = new ItemRuntime(_run).HasUndying();
-            int expectedHeartLoss = battleTrace.IsBoss ? 2 : 1;
+            int expectedHeartLoss = WeekLoopController.HeartLossPerFailedBattle;
             battleTrace.HeartsBefore = heartsBefore;
 
             // OnBattleSettled 是正式扣心唯一入口；必须等它同步返回后再读取 heartsAfter。
