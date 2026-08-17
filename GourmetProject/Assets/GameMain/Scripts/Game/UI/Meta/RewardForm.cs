@@ -1116,14 +1116,22 @@ namespace GourmetProject.Game.UI.Meta
 
         private void RestoreAfterRewardSubflow()
         {
+            _continueButton.interactable = true;
+
+            // 领取动作可能已经触发装饰品的菜谱/餐桌表现。此时把子流程挂起平移为
+            // 常驻查看挂起，避免 RewardForm 在查看层关闭前重新盖住表现。
+            if (BattleForm.Active?.IsInspectionOverlayActive == true
+                && TryBeginPersistentInspection())
+            {
+                return;
+            }
+
             if (_transitionGroup != null)
             {
                 _transitionGroup.alpha = 1f;
                 _transitionGroup.interactable = true;
                 _transitionGroup.blocksRaycasts = true;
             }
-
-            _continueButton.interactable = true;
         }
 
         private void CacheCurrentOffer()

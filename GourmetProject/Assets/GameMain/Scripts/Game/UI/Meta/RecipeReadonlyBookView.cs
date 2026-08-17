@@ -49,6 +49,7 @@ namespace GourmetProject.Game.UI.Meta
         private IReadOnlyList<RecipeReadonlyDishEntry> _readonlyEntries;
         private IReadOnlyList<RecipeBookSlot> _readonlySlots;
         private bool _wired;
+        private bool _liveMutationPlaying;
 
         private void Awake()
         {
@@ -197,7 +198,9 @@ namespace GourmetProject.Game.UI.Meta
             {
                 case RecipeReadonlyBookMode.ReadonlyBook:
                     _stateMachine.Switch(
-                        new ReadonlyRecipeBookState(request.BookIndex));
+                        new ReadonlyRecipeBookState(
+                            request.BookIndex,
+                            request.HideExitButton));
                     break;
                 case RecipeReadonlyBookMode.ShopDeleteDish:
                     _stateMachine.Switch(
@@ -273,14 +276,25 @@ namespace GourmetProject.Game.UI.Meta
             foreach (RecipeMutationEntry entry in result.Entries)
             {
                 RecipeEditDishView dish = FindDish(entry.BookIndex, entry.DishIndex);
-                if (dish == null || entry.After == null || string.IsNullOrEmpty(entry.After.DishId))
+                if (dish == null)
                 {
                     continue;
                 }
 
-                if (entry.Before == null || string.IsNullOrEmpty(entry.Before.DishId))
+                if (entry.IsRemove)
+                {
+                    animations.Add(done => dish.PlayPassiveMutationDissolve(done));
+                    continue;
+                }
+
+                if (entry.IsAdd)
                 {
                     animations.Add(done => dish.PlayPassiveMutationAppear(done));
+                    continue;
+                }
+
+                if (!entry.HasAfterDish)
+                {
                     continue;
                 }
 
@@ -613,6 +627,11 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnRecipeDishClicked(RecipeEditDishView dish)
         {
+            if (_liveMutationPlaying)
+            {
+                return;
+            }
+
             _stateMachine?.Current?.OnDishClicked(this, dish);
         }
 

@@ -240,6 +240,8 @@ namespace GourmetProject.Game.UI.Battle
             _current == GameplayView.ActionSelect && _currentTimelineNodeCard == null;
         internal BattleInspectionView ActiveInspectionView =>
             _inspectionCoordinator?.View ?? BattleInspectionView.None;
+        internal bool IsInspectionOverlayActive =>
+            _inspectionCoordinator?.ManagesSourcePresentation == true;
         internal bool IsTableFragmentEditActive => _fragmentEditCoordinator?.IsActive == true;
         internal BattleWorldController ActiveWorld => _world ?? BattleWorldController.Instance;
         internal ActiveItemActionPopup ActiveItemPopupPrefab => _activeItemPopupPrefab;
@@ -1007,28 +1009,46 @@ namespace GourmetProject.Game.UI.Battle
 
         public void ShowPassiveRecipeMutation(RecipeMutationResult result)
         {
+            ShowRecipeMutation(result, null);
+        }
+
+        public void ShowEventRecipeMutation(
+            RecipeMutationResult result,
+            Action onComplete)
+        {
             if (result == null || !result.HasChanges)
             {
+                onComplete?.Invoke();
                 return;
             }
 
-            if (string.Equals(
-                    result.SourceItemId,
-                    "item_copy_food",
-                    StringComparison.Ordinal))
+            ShowRecipeMutation(result, onComplete);
+        }
+
+        private void ShowRecipeMutation(RecipeMutationResult result, Action onComplete)
+        {
+            if (result == null || !result.HasChanges)
             {
-                ShowPassiveRecipeCopyMutation(result);
+                onComplete?.Invoke();
                 return;
             }
 
-            if (result.SourceItemId?.StartsWith(
-                    "item_flavor_",
-                    StringComparison.Ordinal) == true)
+            switch (result.Presentation)
             {
-                ShowPassiveFlavorMutation(result);
-                return;
+                case RecipeMutationPresentation.CopyFly:
+                    ShowPassiveRecipeCopyMutation(result, onComplete);
+                    return;
+                case RecipeMutationPresentation.FlavorStage:
+                    ShowFlavorMutation(result, onComplete);
+                    return;
+                default:
+                    ShowPassiveRecipeBookMutation(result, onComplete);
+                    return;
             }
+        }
 
+        private void ShowPassiveRecipeBookMutation(RecipeMutationResult result, Action onComplete)
+        {
             IReadOnlyList<RecipeReadonlyDishEntry> beforeEntries = BuildRecipeMutationEntries(result, before: true);
             IReadOnlyList<RecipeReadonlyDishEntry> afterEntries = BuildRecipeMutationEntries(result, before: false);
             BattleInspectionView restoreView = ActiveInspectionView;
@@ -1036,42 +1056,75 @@ namespace GourmetProject.Game.UI.Battle
                 ? BuildTablePresentationSnapshot(null, before: false)
                 : null;
 
+            bool completed = false;
+            void CompleteOnce()
+            {
+                if (completed)
+                {
+                    return;
+                }
+
+                completed = true;
+                onComplete?.Invoke();
+            }
+
             EnqueuePassivePresentation(done =>
             {
-                bool opened = _inspectionCoordinator?.ShowPassiveRecipe(beforeEntries, () =>
+                void Finish()
                 {
-                    RecipeReadonlyBookView recipe = _inspectionLayer?.RecipeView;
-                    DelayPassivePresentation(1f, () =>
-                    {
-                        if (recipe == null)
-                        {
-                            WaitPassiveHold(() => RestorePassiveInspection(
-                                restoreView,
-                                afterEntries,
-                                restoreTable,
-                                done));
-                            return;
-                        }
+                    done();
+                    CompleteOnce();
+                }
 
-                        recipe.PlayPassiveMutation(result, afterEntries, () =>
-                            WaitPassiveHold(() => RestorePassiveInspection(
-                                restoreView,
-                                afterEntries,
-                                restoreTable,
-                                done)));
-                    });
-                }) == true;
+                bool opened = _inspectionCoordinator?.ShowPassiveRecipe(
+                    beforeEntries,
+                    () =>
+                    {
+                        RecipeReadonlyBookView recipe = _inspectionLayer?.RecipeView;
+                        DelayPassivePresentation(1f, () =>
+                        {
+                            if (recipe == null)
+                            {
+                                WaitPassiveHold(() => RestorePassiveInspection(
+                                    restoreView,
+                                    afterEntries,
+                                    restoreTable,
+                                    Finish));
+                                return;
+                            }
+
+                            recipe.PlayPassiveMutation(result, afterEntries, () =>
+                                WaitPassiveHold(() => RestorePassiveInspection(
+                                    restoreView,
+                                    afterEntries,
+                                    restoreTable,
+                                    Finish)));
+                        });
+                    },
+                    hideExitButton: true) == true;
 
                 if (!opened)
                 {
                     RefreshPersistent();
-                    done();
+                    Finish();
                 }
-            });
+            }, CompleteOnce);
         }
 
-        private void ShowPassiveRecipeCopyMutation(RecipeMutationResult result)
+        private void ShowPassiveRecipeCopyMutation(RecipeMutationResult result, Action onComplete)
         {
+            bool completed = false;
+            void CompleteOnce()
+            {
+                if (completed)
+                {
+                    return;
+                }
+
+                completed = true;
+                onComplete?.Invoke();
+            }
+
             EnqueuePassivePresentation(done =>
             {
                 Canvas canvas = GetComponentInParent<Canvas>();
@@ -1100,7 +1153,11 @@ namespace GourmetProject.Game.UI.Battle
                     || GameApp.Random == null
                     || !TryGetRectInLayer(target, layer, out RectSnapshot targetRect))
                 {
-                    FinishPassiveRecipeCopyMutation(done);
+                    FinishPassiveRecipeCopyMutation(() =>
+                    {
+                        done();
+                        CompleteOnce();
+                    });
                     return;
                 }
 
@@ -1119,13 +1176,25 @@ namespace GourmetProject.Game.UI.Battle
                             initialRecipeCount + arrived);
                         RefreshPersistent();
                     },
-                    () => FinishPassiveRecipeCopyMutation(done),
+                    () => FinishPassiveRecipeCopyMutation(() =>
+                    {
+                        done();
+                        CompleteOnce();
+                    }),
                     _passiveRecipeCopyFlys);
                 if (!started)
                 {
-                    FinishPassiveRecipeCopyMutation(done);
+                    FinishPassiveRecipeCopyMutation(() =>
+                    {
+                        done();
+                        CompleteOnce();
+                    });
                 }
-            }, CancelPassiveRecipeCopyMutation);
+            }, () =>
+            {
+                CancelPassiveRecipeCopyMutation();
+                CompleteOnce();
+            });
         }
 
         private void FinishPassiveRecipeCopyMutation(Action onComplete)
@@ -1140,11 +1209,6 @@ namespace GourmetProject.Game.UI.Battle
             CancelRecipeCopyFlys(_passiveRecipeCopyFlys);
             _infoColumn?.SetRecipeCountPresentationOverride(null);
             RefreshPersistent();
-        }
-
-        private void ShowPassiveFlavorMutation(RecipeMutationResult result)
-        {
-            ShowFlavorMutation(result, null);
         }
 
         private void ShowFlavorMutation(
@@ -1208,14 +1272,17 @@ namespace GourmetProject.Game.UI.Battle
             {
                 _world = _world ?? BattleWorldController.Instance;
                 _world?.SetTableArea(_boardArea);
-                bool opened = _inspectionCoordinator?.ShowPassiveTable(beforeTable, () =>
-                    DelayPassivePresentation(1f, () =>
-                        PlayPassiveCellMutations(result, () =>
-                            WaitPassiveHold(() => RestorePassiveInspection(
-                                restoreView,
-                                restoreRecipe,
-                                afterTable,
-                                done))))) == true;
+                bool opened = _inspectionCoordinator?.ShowPassiveTable(
+                    beforeTable,
+                    () =>
+                        DelayPassivePresentation(1f, () =>
+                            PlayPassiveCellMutations(result, () =>
+                                WaitPassiveHold(() => RestorePassiveInspection(
+                                    restoreView,
+                                    restoreRecipe,
+                                    afterTable,
+                                    done)))),
+                    hideExitButton: true) == true;
 
                 if (!opened)
                 {
@@ -1330,6 +1397,16 @@ namespace GourmetProject.Game.UI.Battle
             if (_rewardPeekOnly)
             {
                 RewardForm.Active?.SetResultPeekInspectionActive(true);
+            }
+
+            // RewardForm 位于 Dialog 组，会覆盖 BattleForm 内的查看层。装饰品自动触发的
+            // 菜谱/餐桌表现也需要挂起奖励页，并由 RestoreInspectionSource 统一恢复。
+            RewardForm reward = RewardForm.Active;
+            if (reward != null
+                && !reward.IsSuspendedForRewardSubflow
+                && !reward.IsPersistentInspectionActive)
+            {
+                reward.TryBeginPersistentInspection();
             }
         }
 
@@ -1683,19 +1760,6 @@ namespace GourmetProject.Game.UI.Battle
                     _deck?.SetCardsActive(false);
                 },
                 onExited);
-        }
-
-        public void ShowEventRecipeMutation(
-            RecipeMutationResult result,
-            Action onComplete)
-        {
-            if (result == null || !result.HasChanges)
-            {
-                onComplete?.Invoke();
-                return;
-            }
-
-            ShowFlavorMutation(result, onComplete);
         }
 
         public void ShowDirectPassiveItemAcquire(

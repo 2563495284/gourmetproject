@@ -323,7 +323,16 @@ namespace GourmetProject.Game.Tutorial
                         enterCommand: null,
                         exitCommand: null,
                         allowTargetInteraction: false,
-                        TutorialAnchorId.Settle)),
+                        TutorialAnchorId.Settle),
+                    new TutorialStepDefinition(
+                        "食物会从上到下，从左到右开始结算。",
+                        TutorialMascotPose.Explain,
+                        TutorialAdvanceMode.Continue,
+                        signal: null,
+                        enterCommand: null,
+                        exitCommand: null,
+                        allowTargetInteraction: false,
+                        TutorialAnchorId.Table)),
 
                 [TutorialId.Settlement] = new TutorialSequenceDefinition(
                     TutorialId.Settlement,

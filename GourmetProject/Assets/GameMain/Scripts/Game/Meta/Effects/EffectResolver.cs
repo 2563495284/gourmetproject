@@ -121,7 +121,12 @@ namespace GourmetProject.Game.Meta
                     return EnqueueConfigReward(run, rng, effectParam, "风味食物", 60);
 
                 case cfg.EffectType.RemoveRandomRecipeDish:
-                    return RemoveRandomRecipeDish(run, rng, System.Math.Max(1, value), effectParam);
+                    return RemoveRandomRecipeDish(
+                        run,
+                        rng,
+                        System.Math.Max(1, value),
+                        effectParam,
+                        out recipeMutation);
 
                 case cfg.EffectType.LoseAllGold:
                     int lost = run.Gold;
@@ -335,7 +340,11 @@ namespace GourmetProject.Game.Meta
             int count,
             out RecipeMutationResult mutation)
         {
-            mutation = new RecipeMutationResult { Title = "添加风味" };
+            mutation = new RecipeMutationResult
+            {
+                Title = "添加风味",
+                Presentation = RecipeMutationPresentation.FlavorStage,
+            };
             var emptyFlavorTargets = new List<int>();
             var allTargets = new List<int>();
             IReadOnlyList<RecipeBookSlot> recipe = run.RecipeEntries;
@@ -557,31 +566,69 @@ namespace GourmetProject.Game.Meta
             return ids;
         }
 
-        private static string RemoveRandomRecipeDish(GameRun run, IRandomStream rng, int count, string param)
+        private static string RemoveRandomRecipeDish(
+            GameRun run,
+            IRandomStream rng,
+            int count,
+            string param,
+            out RecipeMutationResult mutation)
         {
+            mutation = new RecipeMutationResult { Title = "删除食物" };
             bool requireFlavor = string.Equals(param, "flavored", StringComparison.OrdinalIgnoreCase);
-            int removed = 0;
-            for (int i = 0; i < count; i++)
-            {
-                List<(int DishIndex, string DishName)> targets = RecipeDishTargets(run, requireFlavor);
-                if (targets.Count == 0)
-                {
-                    break;
-                }
-
-                (int dishIndex, _) = targets[rng != null ? rng.Range(0, targets.Count) : 0];
-                if (run.RemoveBonusDishAt(dishIndex))
-                {
-                    removed++;
-                }
-            }
-
-            if (removed <= 0)
+            if (run == null || count <= 0)
             {
                 return requireFlavor ? "食谱中没有带风味的食物可献上。" : "食谱为空，无法献上食物。";
             }
 
-            return requireFlavor ? $"随机献上了 {removed} 道带风味的食物。" : $"随机献上了 {removed} 道食物。";
+            for (int i = 0; i < run.RecipeEntries.Count; i++)
+            {
+                mutation.BeforeRecipe.Add(PassiveRecipeMutationService.Snapshot(run, i));
+            }
+
+            List<(int DishIndex, string DishName)> pool = RecipeDishTargets(run, requireFlavor);
+            var picked = new List<int>();
+            for (int i = 0; i < count && pool.Count > 0; i++)
+            {
+                int pick = rng != null ? rng.Range(0, pool.Count) : 0;
+                picked.Add(pool[pick].DishIndex);
+                pool.RemoveAt(pick);
+            }
+
+            picked.Sort((left, right) => right.CompareTo(left));
+            int removed = 0;
+            for (int i = 0; i < picked.Count; i++)
+            {
+                int dishIndex = picked[i];
+                RecipeDishSnapshot before = PassiveRecipeMutationService.Snapshot(run, dishIndex);
+                if (!run.RemoveBonusDishAt(dishIndex))
+                {
+                    continue;
+                }
+
+                removed++;
+                mutation.Entries.Insert(0, new RecipeMutationEntry
+                {
+                    BookIndex = 0,
+                    DishIndex = dishIndex,
+                    Before = before,
+                    After = new RecipeDishSnapshot(),
+                });
+            }
+
+            if (removed <= 0)
+            {
+                mutation.BeforeRecipe.Clear();
+                return requireFlavor ? "食谱中没有带风味的食物可献上。" : "食谱为空，无法献上食物。";
+            }
+
+            for (int i = 0; i < run.RecipeEntries.Count; i++)
+            {
+                mutation.AfterRecipe.Add(PassiveRecipeMutationService.Snapshot(run, i));
+            }
+
+            return requireFlavor
+                ? $"随机献上了 {removed} 道带风味的食物。"
+                : $"随机献上了 {removed} 道食物。";
         }
 
         private static List<(int DishIndex, string DishName)> RecipeDishTargets(GameRun run, bool requireFlavor)

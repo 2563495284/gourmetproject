@@ -25,7 +25,8 @@ namespace GourmetProject.Game.UI.Meta
             ItemDefinition item,
             string title,
             int bookIndex,
-            IReadOnlyList<RecipeReadonlyDishEntry> readonlyEntries)
+            IReadOnlyList<RecipeReadonlyDishEntry> readonlyEntries,
+            bool hideExitButton = false)
         {
             Mode = mode;
             OnExit = onExit;
@@ -36,6 +37,7 @@ namespace GourmetProject.Game.UI.Meta
             Title = title;
             BookIndex = bookIndex;
             ReadonlyEntries = readonlyEntries;
+            HideExitButton = hideExitButton;
         }
 
         public RecipeReadonlyBookMode Mode { get; }
@@ -56,11 +58,14 @@ namespace GourmetProject.Game.UI.Meta
 
         public IReadOnlyList<RecipeReadonlyDishEntry> ReadonlyEntries { get; }
 
+        public bool HideExitButton { get; }
+
         public static RecipeReadonlyBookRequest ReadonlyBook(
             int bookIndex,
             Action onExit,
             Action onChanged,
-            IReadOnlyList<RecipeReadonlyDishEntry> readonlyEntries = null)
+            IReadOnlyList<RecipeReadonlyDishEntry> readonlyEntries = null,
+            bool hideExitButton = false)
         {
             return new RecipeReadonlyBookRequest(
                 RecipeReadonlyBookMode.ReadonlyBook,
@@ -71,7 +76,8 @@ namespace GourmetProject.Game.UI.Meta
                 null,
                 null,
                 bookIndex,
-                readonlyEntries);
+                readonlyEntries,
+                hideExitButton);
         }
 
         public static RecipeReadonlyBookRequest ShopDeleteDish(Action onExit, Action onChanged)

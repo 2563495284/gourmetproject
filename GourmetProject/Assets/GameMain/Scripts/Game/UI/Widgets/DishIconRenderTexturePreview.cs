@@ -100,10 +100,16 @@ namespace GourmetProject.Game.UI.Widgets
         private const float TransformInDuration = 0.14f;
         private const float TransformOutDuration = 0.2f;
         private const float TransformHoldDuration = 0.5f;
+        private const float DissolveDuration = 0.85f;
         private const float PrefabGridSize = 3f;
         private static readonly int BrightnessId = Shader.PropertyToID("_Brightness");
         private static readonly int BoingId = Shader.PropertyToID("_Boing");
         private static readonly int EdgeClampPointId = Shader.PropertyToID("_EdgeClampPoint");
+        private static readonly int DigestProgressId = Shader.PropertyToID("_DigestProgress");
+        private static readonly int DigestCenterId = Shader.PropertyToID("_DigestCenter");
+        private static readonly int DigestGridSizeId = Shader.PropertyToID("_DigestGridSize");
+        private static readonly int DigestSeedId = Shader.PropertyToID("_DigestSeed");
+        private static readonly int SpriteUvRectId = Shader.PropertyToID("_SpriteUvRect");
 
         [SerializeField] private RawImage _targetImage;
         [SerializeField] private AspectRatioFitter _aspectRatioFitter;
@@ -117,6 +123,7 @@ namespace GourmetProject.Game.UI.Widgets
         private RenderTexture _renderTexture;
         private Sequence _transformSequence;
         private Material _transformMaterial;
+        private Material _dissolveMaterial;
         private Material _materialBeforeTransform;
         private RectTransform _displaySizeTarget;
         private DishIconPreviewMode _mode;
@@ -420,6 +427,62 @@ namespace GourmetProject.Game.UI.Widgets
                 });
         }
 
+        public void PlayDissolve(Action onComplete)
+        {
+            EnsureRefs();
+            KillTransformSequence();
+            if (_targetImage == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            if (!BeginDissolveMaterial())
+            {
+                Color start = _targetImage.color;
+                _transformSequence = DOTween.Sequence()
+                    .Append(DOTween.To(
+                            () => 0f,
+                            value =>
+                            {
+                                Color faded = start;
+                                faded.a = start.a * (1f - Mathf.SmoothStep(0f, 1f, value));
+                                _targetImage.color = faded;
+                            },
+                            1f,
+                            DissolveDuration)
+                        .SetEase(Ease.Linear))
+                    .SetUpdate(true)
+                    .SetLink(gameObject)
+                    .OnComplete(() =>
+                    {
+                        _transformSequence = null;
+                        Color faded = start;
+                        faded.a = 0f;
+                        _targetImage.color = faded;
+                        onComplete?.Invoke();
+                    });
+                return;
+            }
+
+            ApplyDissolveProgress(0f);
+            _transformSequence = DOTween.Sequence()
+                .Append(DOTween.To(
+                        () => 0f,
+                        ApplyDissolveProgress,
+                        1f,
+                        DissolveDuration)
+                    .SetEase(Ease.Linear))
+                .SetUpdate(true)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    _transformSequence = null;
+                    ApplyDissolveProgress(1f);
+                    onComplete?.Invoke();
+                });
+        }
+
         public void Hide()
         {
             EnsureRefs();
@@ -455,6 +518,20 @@ namespace GourmetProject.Game.UI.Widgets
 
                 _transformMaterial = null;
             }
+
+            if (_dissolveMaterial != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(_dissolveMaterial);
+                }
+                else
+                {
+                    DestroyImmediate(_dissolveMaterial);
+                }
+
+                _dissolveMaterial = null;
+            }
         }
 
         private void KillTransformSequence()
@@ -466,6 +543,7 @@ namespace GourmetProject.Game.UI.Widgets
             }
 
             EndTransformMaterial();
+            EndDissolveMaterial();
         }
 
         private bool BeginTransformMaterial()
@@ -512,6 +590,62 @@ namespace GourmetProject.Game.UI.Widgets
 
             _materialBeforeTransform = null;
             ApplyTransformEffect(0f);
+        }
+
+        private bool BeginDissolveMaterial()
+        {
+            Material source = SpriteRenderStyle.DigestDissolveMaterial;
+            if (_targetImage == null || source == null)
+            {
+                return false;
+            }
+
+            if (_dissolveMaterial == null)
+            {
+                _dissolveMaterial = new Material(source)
+                {
+                    name = $"{name}_DigestDissolve",
+                    hideFlags = HideFlags.DontSave,
+                };
+            }
+
+            _materialBeforeTransform = _targetImage.material;
+            _targetImage.material = _dissolveMaterial;
+            _dissolveMaterial.SetVector(SpriteUvRectId, new Vector4(0f, 0f, 1f, 1f));
+            _dissolveMaterial.SetVector(DigestCenterId, new Vector2(0.5f, 0.5f));
+            _dissolveMaterial.SetVector(
+                DigestGridSizeId,
+                new Vector2(
+                    Mathf.Max(1, DisplayedGridSize.x),
+                    Mathf.Max(1, DisplayedGridSize.y)));
+            _dissolveMaterial.SetFloat(DigestSeedId, _boundVisualSeed);
+            if (_targetImage.texture != null)
+            {
+                _dissolveMaterial.mainTexture = _targetImage.texture;
+            }
+
+            return true;
+        }
+
+        private void ApplyDissolveProgress(float amount)
+        {
+            if (_dissolveMaterial == null)
+            {
+                return;
+            }
+
+            _dissolveMaterial.SetFloat(DigestProgressId, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(amount)));
+        }
+
+        private void EndDissolveMaterial()
+        {
+            if (_targetImage != null && _targetImage.material == _dissolveMaterial)
+            {
+                _targetImage.material = _materialBeforeTransform;
+            }
+
+            _materialBeforeTransform = null;
+            ApplyDissolveProgress(0f);
         }
 
         private void EnsureRefs()

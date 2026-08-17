@@ -14,7 +14,11 @@ namespace GourmetProject.Game.Meta.Passives
             int count,
             IRandomStream rng)
         {
-            var result = new RecipeMutationResult { Title = title };
+            var result = new RecipeMutationResult
+            {
+                Title = title,
+                Presentation = RecipeMutationPresentation.CopyFly,
+            };
             int sourceCount = run?.RecipeEntries.Count ?? 0;
             if (run == null || rng == null || sourceCount == 0 || count <= 0)
             {
@@ -46,7 +50,11 @@ namespace GourmetProject.Game.Meta.Passives
 
         public static RecipeMutationResult AddRandomFlavors(GameRun run, string title, int count, IRandomStream rng)
         {
-            var result = new RecipeMutationResult { Title = title };
+            var result = new RecipeMutationResult
+            {
+                Title = title,
+                Presentation = RecipeMutationPresentation.FlavorStage,
+            };
             List<RecipeTarget> targets = NoFlavorRecipeTargets(run);
             List<string> flavors = FlavorIds(run);
             if (run == null || rng == null || targets.Count == 0 || flavors.Count == 0 || count <= 0)
@@ -110,7 +118,11 @@ namespace GourmetProject.Game.Meta.Passives
 
         public static RecipeMutationResult ContagionFlavor(GameRun run, string title, IRandomStream rng)
         {
-            var result = new RecipeMutationResult { Title = title };
+            var result = new RecipeMutationResult
+            {
+                Title = title,
+                Presentation = RecipeMutationPresentation.FlavorStage,
+            };
             List<RecipeTarget> sources = FlavorSourceTargets(run);
             List<RecipeTarget> targets = RecipeTargetsWithFreeFlavorSlot(run);
             if (run == null || rng == null || sources.Count == 0 || targets.Count == 0)
@@ -541,7 +553,11 @@ namespace GourmetProject.Game.Meta.Passives
             IRandomStream rng,
             System.Func<RecipeTarget, bool> afterRemove)
         {
-            var result = new RecipeMutationResult { Title = title };
+            var result = new RecipeMutationResult
+            {
+                Title = title,
+                Presentation = RecipeMutationPresentation.FlavorStage,
+            };
             List<RecipeTarget> targets = ExtraFlavorTargets(run);
             if (run == null || rng == null || targets.Count == 0)
             {

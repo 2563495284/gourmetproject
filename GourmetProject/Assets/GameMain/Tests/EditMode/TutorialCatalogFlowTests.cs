@@ -130,7 +130,7 @@ namespace GourmetProject.Tests.EditMode
         [Test]
         public void FirstBattleSettleHint_IsOptionalContinueStepOnSettleButton()
         {
-            TutorialSequenceDefinition sequence = Require(TutorialId.FirstBattleSettleHint, 1);
+            TutorialSequenceDefinition sequence = Require(TutorialId.FirstBattleSettleHint, 2);
 
             AssertStep(
                 sequence,
@@ -140,6 +140,15 @@ namespace GourmetProject.Tests.EditMode
                 string.Empty,
                 TutorialAnchorId.Settle);
             Assert.That(sequence.Steps[0].AllowTargetInteraction, Is.False);
+
+            AssertStep(
+                sequence,
+                1,
+                "食物会从上到下，从左到右开始结算。",
+                TutorialAdvanceMode.Continue,
+                string.Empty,
+                TutorialAnchorId.Table);
+            Assert.That(sequence.Steps[1].AllowTargetInteraction, Is.False);
         }
 
         [Test]

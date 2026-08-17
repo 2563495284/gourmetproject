@@ -23,6 +23,14 @@ namespace GourmetProject.Game.UI.Battle.View
             _exitEditButton.onClick.AddListener(OnExitClicked);
         }
 
+        public void SetExitVisible(bool visible)
+        {
+            if (_exitEditButton != null)
+            {
+                _exitEditButton.gameObject.SetActive(visible);
+            }
+        }
+
         private void OnDestroy()
         {
             if (_exitEditButton != null)
