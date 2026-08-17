@@ -263,14 +263,14 @@ namespace GourmetProject.Gameplay.Scoring
 
                 case ItemScoreEffectType.CountThresholdAllDishMult:
                 {
-                    // 结算开场检查当前食物数；命中后逐个食物产生倍率明细，
-                    // 让演出层对全场食物播放 ×value，而不是生成一条总分倍率演出。
+                    // 结算开场按有效份数检查门槛；命中后逐个食物产生倍率加区明细，
+                    // 让演出层对全场食物播放 +value，而不是生成一条总分倍率演出。
                     int count = dishes.Sum(ctx.GetEffectiveCountAs);
                     if (MatchesThreshold(count, _spec.Param))
                     {
                         foreach (DishInstance d in dishes)
                         {
-                            ctx.MultiplyTo(d, value);
+                            ctx.AddMultFlatTo(d, value);
                         }
                     }
 

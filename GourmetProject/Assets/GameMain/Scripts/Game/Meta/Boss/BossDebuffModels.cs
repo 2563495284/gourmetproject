@@ -110,7 +110,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
     public sealed class DineAndDashBossDebuffModel : BossDebuffModel
     {
         public override void ApplyToBattle(BattleSession session)
-            => session.ConfigureConfirmedServeGoldCost(5, DebuffId, Definition?.Name);
+            => session.ConfigureConfirmedServeGoldCost(3, DebuffId, Definition?.Name);
     }
 
     [Preserve]

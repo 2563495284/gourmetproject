@@ -109,7 +109,7 @@
     "repeatable": true,
     "bgSprite": "Sprites/UI/Events/event_slot_machine",
     "resultText": "这次什么也没有。",
-    "slotEmptyProbability": 0.4,
+    "slotEmptyProbability": 0.45,
     "slotRewardSlotIds": [
       "slot_machine_gold",
       "slot_machine_fragment",

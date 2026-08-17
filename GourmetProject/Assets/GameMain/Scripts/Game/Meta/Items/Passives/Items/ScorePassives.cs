@@ -38,7 +38,7 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
-    /// <summary>结算开始时检查食物数阈值，命中后所有食物倍率 ×N（lte/gte 由 effectParam 区分）。</summary>
+    /// <summary>结算开始时检查食物份数阈值，命中后所有食物倍率 +N（lte/gte 由 effectParam 区分）。</summary>
     [Preserve]
     [PassiveItemModel("item_count_le_mult")]
     [PassiveItemModel("item_count_ge_mult")]

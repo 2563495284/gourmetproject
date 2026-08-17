@@ -25,7 +25,7 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>所有食物永久倍率 ×(1+value)（写回实例，跨结算累积）。</summary>
         PermanentAddMultAll = 5,
 
-        /// <summary>结算开始时，食物数量与阈值比较满足则所有参与结算的食物倍率 ×value（param: "lte:N" 或 "gte:N"）。</summary>
+        /// <summary>结算开始时，食物份数与阈值比较满足则所有参与结算的食物倍率加区 +value（param: "lte:N" 或 "gte:N"）。</summary>
         CountThresholdAllDishMult = 6,
 
         /// <summary>结算时每个食物倍率 +value×(食物总数)（每结算 1 个食物 +value 倍）。</summary>

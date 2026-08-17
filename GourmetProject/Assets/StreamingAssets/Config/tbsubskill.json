@@ -916,15 +916,15 @@
     "condParam": "",
     "actionType": 18,
     "actionScope": 10,
-    "actionCount": 0,
+    "actionCount": 2,
     "actionValue": [
       1
     ],
     "actionParam": [
-      "cat:cake"
+      "cat:cake;target:random"
     ],
     "signed": false,
-    "descTemplate": "将自身[strong]分数[/strong]\n加至{cat}类食物上",
+    "descTemplate": "将自身[strong]分数[/strong]\n加至{count}个{cat}类食物上",
     "termId": ""
   },
   {
