@@ -215,7 +215,7 @@ namespace GourmetProject.Tests.EditMode
             AssertMessages(
                 sequence,
                 "别灰心，老板！这次没有达到目标，我们会损失❤️。",
-                "日常营业、火热营业和星级评鉴失败都会损失 1 颗。❤️归零，本局就会结束。");
+                "日常营业、火热营业和星级评鉴失败都会损失1颗。❤️归零，本局就会结束。");
             foreach (TutorialStepDefinition step in sequence.Steps)
             {
                 Assert.That(step.Mode, Is.EqualTo(TutorialAdvanceMode.Continue));
@@ -251,10 +251,10 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(loss.Id, Is.EqualTo(TutorialId.ResultHeart));
             Assert.That(
                 win.Steps[0].Message,
-                Is.EqualTo("太棒了，老板！这次经营成功，❤️红心不会减少。红心代表餐厅还能承受失败的次数：日常营业、火热营业和星级评鉴失败都会损失 1 颗；红心归零，本局就会结束。"));
+                Is.EqualTo("太棒了，老板！这次经营成功，❤️红心不会减少。红心代表餐厅还能承受失败的次数：日常营业、火热营业和星级评鉴失败都会损失1颗；红心归零，本局就会结束。"));
             Assert.That(
                 loss.Steps[0].Message,
-                Is.EqualTo("别灰心，老板！这次没有达到目标，失败会让我们损失❤️红心。日常营业、火热营业和星级评鉴失败都会损失 1 颗；红心归零，本局就会结束。"));
+                Is.EqualTo("别灰心，老板！这次没有达到目标，失败会让我们损失❤️红心。日常营业、火热营业和星级评鉴失败都会损失1颗；红心归零，本局就会结束。"));
             Assert.That(
                 settlement.Steps[0].Message,
                 Is.EqualTo("这里是本次营业的结果。总美味值达到目标即为成功，否则营业失败。"));

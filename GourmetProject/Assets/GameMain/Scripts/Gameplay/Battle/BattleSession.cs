@@ -976,6 +976,24 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
+        /// 枚举出菜口食物以准备时确定的朝向放到餐桌的全部合法位置。
+        /// <see cref="PreparedServeDish.Placements"/> 是准备那一刻的快照，出菜口等待期间餐桌仍可能变化
+        /// （麻风味挪菜、临时桌放回、道具移除菜），因此玩家侧判定一律用本方法实时重算。
+        /// </summary>
+        public IReadOnlyList<Placement> FindPreparedServePlacements()
+        {
+            PreparedServeDish prepared = PreparedServe;
+            if (prepared == null)
+            {
+                return Array.Empty<Placement>();
+            }
+
+            return DiningTable.FindValidPlacements(
+                prepared.Dish.Placement.Orientation,
+                prepared.Dish.Placement.RotationIndex);
+        }
+
+        /// <summary>
         /// 把出菜口食物预摆到玩家选择的位置。预摆会占用餐桌并参与预览，
         /// 但在 <see cref="ConfirmPendingDish"/> 前不增加上菜次数或触发 OnServe。
         /// </summary>
@@ -987,14 +1005,19 @@ namespace GourmetProject.Gameplay.Battle
                 return ServeResult.Fail(ServeOutcome.NoPreparedDish);
             }
 
-            if (!prepared.Contains(placement) || !DiningTable.CanPlace(placement.Orientation, placement.Origin))
+            Placement preparedPlacement = prepared.Dish.Placement;
+            if (placement.RotationIndex != preparedPlacement.RotationIndex
+                || !DiningTable.CanPlace(preparedPlacement.Orientation, placement.Origin))
             {
                 return ServeResult.Fail(ServeOutcome.InvalidPlacement);
             }
 
             PreparedServe = null;
             DishInstance instance = prepared.Dish;
-            instance.Relocate(placement);
+            instance.Relocate(new Placement(
+                preparedPlacement.Orientation,
+                preparedPlacement.RotationIndex,
+                placement.Origin));
             DiningTable.Place(instance);
             _pendingDishPlacements[instance.Id] = new PendingDishPlacement(
                 instance,
@@ -1047,8 +1070,9 @@ namespace GourmetProject.Gameplay.Battle
                 return PreparedPlacementPreview.Fail(ServeOutcome.NoPreparedDish, placement);
             }
 
-            if (!prepared.Contains(placement)
-                || !DiningTable.CanPlace(placement.Orientation, placement.Origin))
+            Placement preparedPlacement = prepared.Dish.Placement;
+            if (placement.RotationIndex != preparedPlacement.RotationIndex
+                || !DiningTable.CanPlace(preparedPlacement.Orientation, placement.Origin))
             {
                 return PreparedPlacementPreview.Fail(ServeOutcome.InvalidPlacement, placement);
             }
@@ -1058,7 +1082,10 @@ namespace GourmetProject.Gameplay.Battle
             bool placed = false;
             try
             {
-                instance.Relocate(placement);
+                instance.Relocate(new Placement(
+                    preparedPlacement.Orientation,
+                    preparedPlacement.RotationIndex,
+                    placement.Origin));
                 DiningTable.Place(instance);
                 placed = true;
                 BigDouble score = solverSample
