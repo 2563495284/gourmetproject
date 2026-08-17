@@ -1098,7 +1098,9 @@ namespace GourmetProject.Game.Presentation.Battle
             RefreshAll();
             EnsureCakeLayerFx();
             // 初始/继承层数只更新 HUD，不生成世界蛋糕；世界表现只响应本局实际加层事件。
+            // 餐桌编辑会把蛋糕根藏起来，进 Food 局必须重新打开，否则加层会生成在隐藏节点上。
             _cakeLayerFx?.Clear();
+            _cakeLayerFx?.SetVisible(true);
         }
 
         public void SetDishHoverCallbacks(Action<DishPieceView> entered, Action<DishPieceView> exited)

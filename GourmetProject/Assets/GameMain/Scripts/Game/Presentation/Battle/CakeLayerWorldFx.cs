@@ -68,6 +68,12 @@ namespace GourmetProject.Game.Presentation.Battle
         public void PlayChange(int before, int after)
         {
             int delta = after - before;
+            if (delta == 0)
+            {
+                return;
+            }
+
+            SetVisible(true);
             if (delta > 0)
             {
                 for (int i = 0; i < delta; i++)
@@ -133,10 +139,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public void RestoreState(IReadOnlyList<CakeLayerVisualState> states)
         {
             Clear();
-            if (_root != null)
-            {
-                _root.gameObject.SetActive(true);
-            }
+            SetVisible(true);
 
             if (_camera == null || states == null)
             {

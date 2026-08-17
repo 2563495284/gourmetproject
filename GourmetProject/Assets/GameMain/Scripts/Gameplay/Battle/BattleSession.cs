@@ -698,7 +698,7 @@ namespace GourmetProject.Gameplay.Battle
 
         /// <summary>
         /// 当前餐桌状态下，指定食谱条目是否至少存在一个合法上菜位置。
-        /// 与真正上菜共用同一套风味旋转/回退规则，供 HUD 实时展示可放置状态。
+        /// 与真正上菜共用同一套风味旋转规则，供 HUD 实时展示可放置状态。
         /// </summary>
         public bool CanFitRecipeEntry(int slotIndex, int entryIndex)
         {
@@ -1337,31 +1337,23 @@ namespace GourmetProject.Gameplay.Battle
 
         private List<Placement> FindServePlacements(DishDef dish, RecipeSlotEntry entry)
         {
-            // 麻：食谱里带「麻」风味的菜在上菜前即按逆时针 n×90° 旋转，用旋转后的形状随机放置；放不下则回退不旋转。
+            // 麻：食谱里带「麻」风味的菜在上菜前即按逆时针 n×90° 旋转，用旋转后的形状随机放置；
+            // 放不下则不出这道菜，不回退到未旋转朝向。
             int numbSteps = NumbStepsFor(ComposeServeFlavors(dish, entry));
-            List<Placement> placements = numbSteps > 0
+            return numbSteps > 0
                 ? DiningTable.FindValidPlacementsRotatedCcw(dish, numbSteps)
                 : DiningTable.FindValidPlacements(dish);
-            if (placements.Count == 0 && numbSteps > 0)
-            {
-                placements = DiningTable.FindValidPlacements(dish);
-            }
-
-            return placements;
         }
 
         private bool CanServeDish(DishDef dish, RecipeSlotEntry entry)
         {
-            // 与 FindServePlacements 保持相同的「麻」旋转及放不下时回退基础朝向规则，
+            // 与 FindServePlacements 保持相同的「麻」旋转规则，
             // 但只寻找第一个合法位置，避免为未被抽中的菜构造完整 Placement 列表。
             int numbSteps = NumbStepsFor(ComposeServeFlavors(dish, entry));
             if (numbSteps > 0)
             {
                 int rotationIndex = (4 - (numbSteps % 4)) % 4;
-                if (DiningTable.CanFit(dish.Shape.RotatedBy(rotationIndex)))
-                {
-                    return true;
-                }
+                return DiningTable.CanFit(dish.Shape.RotatedBy(rotationIndex));
             }
 
             return DiningTable.CanFit(dish.Shape);
@@ -1376,15 +1368,9 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             int numbSteps = NumbStepsFor(dish.FlavorIds);
-            List<Placement> placements = numbSteps > 0
+            return numbSteps > 0
                 ? DiningTable.FindValidPlacementsRotatedCcw(dish.Def, numbSteps)
                 : DiningTable.FindValidPlacements(dish.Def);
-            if (placements.Count == 0 && numbSteps > 0)
-            {
-                placements = DiningTable.FindValidPlacements(dish.Def);
-            }
-
-            return placements;
         }
 
         /// <summary>计算当前餐桌的预览分数（不标记结算，不产生副作用），供 UI 实时展示。</summary>
