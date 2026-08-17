@@ -70,7 +70,7 @@
   {
     "id": "m_silver",
     "name": "银",
-    "desc": "每占1格银材质\n独立1/5概率获得[term]消耗品[/term]",
+    "desc": "1/5概率获得[term]消耗品[/term]",
     "effectType": 7,
     "effectParam": [],
     "effectValue": [
