@@ -19,14 +19,14 @@ namespace GourmetProject.Game.UI.Tooltips
             FoodScoreTipsData score,
             IReadOnlyList<FoodMaterialTipsEntry> materials,
             IReadOnlyList<FoodInfoEntry> flavorDetails,
-            IReadOnlyList<FoodInfoEntry> transferredSubSkills,
+            IReadOnlyList<FoodInfoEntry> externalSkills,
             IReadOnlyList<FoodInfoEntry> specialTags)
         {
             Summary = summary ?? FoodSummaryTipsData.Empty;
             Score = score ?? FoodScoreTipsData.Empty;
             Materials = materials ?? Array.Empty<FoodMaterialTipsEntry>();
             FlavorDetails = flavorDetails ?? Array.Empty<FoodInfoEntry>();
-            TransferredSubSkills = transferredSubSkills ?? Array.Empty<FoodInfoEntry>();
+            ExternalSkills = externalSkills ?? Array.Empty<FoodInfoEntry>();
             SpecialTags = specialTags ?? Array.Empty<FoodInfoEntry>();
         }
 
@@ -38,7 +38,8 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public IReadOnlyList<FoodInfoEntry> FlavorDetails { get; }
 
-        public IReadOnlyList<FoodInfoEntry> TransferredSubSkills { get; }
+        /// <summary>外源技能：复制获得的技能、甜蜜传递子技能、临时效果。</summary>
+        public IReadOnlyList<FoodInfoEntry> ExternalSkills { get; }
 
         public IReadOnlyList<FoodInfoEntry> SpecialTags { get; }
     }
@@ -142,6 +143,7 @@ namespace GourmetProject.Game.UI.Tooltips
             BigDouble score,
             BigDouble multiplier,
             int maxSkills,
+            int maxCopied,
             int maxTransferred,
             int countAs = 1,
             int maxTemporaryEffects = -1)
@@ -149,6 +151,7 @@ namespace GourmetProject.Game.UI.Tooltips
             Score = score;
             Multiplier = multiplier;
             MaxSkills = maxSkills;
+            MaxCopied = maxCopied;
             MaxTransferred = maxTransferred;
             CountAs = Math.Max(1, countAs);
             MaxTemporaryEffects = maxTemporaryEffects;
@@ -160,8 +163,11 @@ namespace GourmetProject.Game.UI.Tooltips
         /// <summary>已揭示的倍率（已表演到的倍率）。</summary>
         public BigDouble Multiplier { get; }
 
-        /// <summary>技能列表最多显示前几条（含复制技能追加项）；-1 表示全部。</summary>
+        /// <summary>固有技能最多显示前几条；-1 表示全部。</summary>
         public int MaxSkills { get; }
+
+        /// <summary>复制获得的技能最多显示前几条；-1 表示全部。</summary>
+        public int MaxCopied { get; }
 
         /// <summary>甜蜜传递子技能最多显示前几条；-1 表示全部。</summary>
         public int MaxTransferred { get; }
@@ -234,8 +240,8 @@ namespace GourmetProject.Game.UI.Tooltips
                 new FoodScoreTipsData(scoreValue, multiplier),
                 BuildMaterials(dish, table, db),
                 BuildFlavorDetails(dish, db),
-                BuildTransferredSubSkills(dish, -1, -1),
-                BuildSpecialTags(dish, db, -1, -1));
+                BuildExternalSkills(dish, db, -1, -1, -1),
+                BuildSpecialTags(dish, db, -1, -1, -1));
         }
 
         /// <summary>
@@ -260,6 +266,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 dish.BaseMultiplierBeforeSettlement,
                 -1,
                 -1,
+                -1,
                 dish.EffectiveCountAs,
                 -1);
 
@@ -278,8 +285,13 @@ namespace GourmetProject.Game.UI.Tooltips
                 new FoodScoreTipsData(reveal.Score, reveal.Multiplier),
                 BuildMaterials(dish, table, db),
                 BuildFlavorDetails(dish, db),
-                BuildTransferredSubSkills(dish, reveal.MaxTransferred, reveal.MaxTemporaryEffects),
-                BuildSpecialTags(dish, db, reveal.MaxSkills, reveal.MaxTransferred));
+                BuildExternalSkills(
+                    dish,
+                    db,
+                    reveal.MaxCopied,
+                    reveal.MaxTransferred,
+                    reveal.MaxTemporaryEffects),
+                BuildSpecialTags(dish, db, reveal.MaxSkills, reveal.MaxCopied, reveal.MaxTransferred));
         }
 
         /// <summary>
@@ -335,25 +347,29 @@ namespace GourmetProject.Game.UI.Tooltips
                 return Array.Empty<FoodInfoEntry>();
             }
 
-            int limit = maxEntries < 0 ? dish.SkillIds.Count : Math.Min(maxEntries, dish.SkillIds.Count);
             var entries = new List<FoodInfoEntry>();
-            for (int index = 0; index < limit; index++)
+            int added = 0;
+            for (int index = 0; index < dish.SkillIds.Count; index++)
             {
                 string skillId = dish.SkillIds[index];
+                if (HasSkillSource(dish, skillId))
+                {
+                    continue;
+                }
+
+                if (maxEntries >= 0 && added >= maxEntries)
+                {
+                    break;
+                }
+
+                added++;
                 SkillDef skill = db.GetSkill(skillId);
                 if (skill == null)
                 {
                     continue;
                 }
 
-                string title = skill.Name;
-                string sourceLabel = dish.GetSkillSource(skillId);
-                if (!string.IsNullOrEmpty(sourceLabel))
-                {
-                    title = sourceLabel;
-                }
-
-                AppendSkillEntries(entries, skill, title);
+                AppendSkillEntries(entries, skill, skill.Name);
             }
 
             return entries;
@@ -546,21 +562,21 @@ namespace GourmetProject.Game.UI.Tooltips
             return BuildMaterialsForCells(dish.OccupiedCells, table, db);
         }
 
-        private static IReadOnlyList<FoodInfoEntry> BuildTransferredSubSkills(
+        private static IReadOnlyList<FoodInfoEntry> BuildExternalSkills(
             DishInstance dish,
-            int maxEntries,
+            GameplayDatabase db,
+            int maxCopied,
+            int maxTransferred,
             int maxTemporaryEffects)
         {
-            int transferredCount = dish.TransferredSkills?.Count ?? 0;
-            int temporaryCount = dish.TemporaryCategoryEffects?.Count ?? 0;
-            if (transferredCount == 0 && temporaryCount == 0)
-            {
-                return Array.Empty<FoodInfoEntry>();
-            }
-
-            int limit = maxEntries < 0 ? transferredCount : Math.Min(maxEntries, transferredCount);
             var entries = new List<FoodInfoEntry>();
-            for (int index = 0; index < limit; index++)
+            AppendCopiedSkillEntries(entries, dish, db, maxCopied);
+
+            int transferredCount = dish.TransferredSkills?.Count ?? 0;
+            int transferredLimit = maxTransferred < 0
+                ? transferredCount
+                : Math.Min(maxTransferred, transferredCount);
+            for (int index = 0; index < transferredLimit; index++)
             {
                 TransferredSkill transferred = dish.TransferredSkills[index];
                 if (transferred == null)
@@ -571,6 +587,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 entries.Add(new FoodInfoEntry(transferred.SourceLabel, transferred.Desc));
             }
 
+            int temporaryCount = dish.TemporaryCategoryEffects?.Count ?? 0;
             int temporaryLimit = maxTemporaryEffects < 0
                 ? temporaryCount
                 : Math.Min(maxTemporaryEffects, temporaryCount);
@@ -594,7 +611,54 @@ namespace GourmetProject.Game.UI.Tooltips
             return entries;
         }
 
-        private static IReadOnlyList<FoodInfoEntry> BuildSpecialTags(DishInstance dish, GameplayDatabase db, int maxSkills, int maxTransferred)
+        private static void AppendCopiedSkillEntries(
+            List<FoodInfoEntry> entries,
+            DishInstance dish,
+            GameplayDatabase db,
+            int maxCopied)
+        {
+            if (entries == null || dish.SkillIds == null || db == null)
+            {
+                return;
+            }
+
+            int added = 0;
+            for (int index = 0; index < dish.SkillIds.Count; index++)
+            {
+                string skillId = dish.SkillIds[index];
+                string sourceLabel = dish.GetSkillSource(skillId);
+                if (string.IsNullOrEmpty(sourceLabel))
+                {
+                    continue;
+                }
+
+                if (maxCopied >= 0 && added >= maxCopied)
+                {
+                    break;
+                }
+
+                added++;
+                SkillDef skill = db.GetSkill(skillId);
+                if (skill == null)
+                {
+                    continue;
+                }
+
+                AppendSkillEntries(entries, skill, sourceLabel);
+            }
+        }
+
+        private static bool HasSkillSource(DishInstance dish, string skillId)
+        {
+            return !string.IsNullOrEmpty(dish.GetSkillSource(skillId));
+        }
+
+        private static IReadOnlyList<FoodInfoEntry> BuildSpecialTags(
+            DishInstance dish,
+            GameplayDatabase db,
+            int maxSkills,
+            int maxCopied,
+            int maxTransferred)
         {
             var tags = new List<FoodInfoEntry>();
             if (dish.SkillsDisabled)
@@ -607,14 +671,36 @@ namespace GourmetProject.Game.UI.Tooltips
                 tags.Add(new FoodInfoEntry("不计分", "该食物不会参与结算得分。"));
             }
 
-            // 收集去重后的 termId（技能各子技能 + 甜蜜传递外来子技能），再解析为术语说明卡。
+            // 收集去重后的 termId（固有技能 + 复制技能 + 甜蜜传递外来子技能），再解析为术语说明卡。
             var termIds = new List<string>();
             if (db != null && dish.SkillIds != null)
             {
-                int skillLimit = maxSkills < 0 ? dish.SkillIds.Count : Math.Min(maxSkills, dish.SkillIds.Count);
-                for (int index = 0; index < skillLimit; index++)
+                int intrinsicAdded = 0;
+                int copiedAdded = 0;
+                for (int index = 0; index < dish.SkillIds.Count; index++)
                 {
-                    SkillDef skill = db.GetSkill(dish.SkillIds[index]);
+                    string skillId = dish.SkillIds[index];
+                    bool copied = HasSkillSource(dish, skillId);
+                    if (copied)
+                    {
+                        if (maxCopied >= 0 && copiedAdded >= maxCopied)
+                        {
+                            continue;
+                        }
+
+                        copiedAdded++;
+                    }
+                    else
+                    {
+                        if (maxSkills >= 0 && intrinsicAdded >= maxSkills)
+                        {
+                            continue;
+                        }
+
+                        intrinsicAdded++;
+                    }
+
+                    SkillDef skill = db.GetSkill(skillId);
                     if (skill != null)
                     {
                         AddUniqueRange(termIds, skill.TermIds);

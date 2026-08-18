@@ -16,6 +16,7 @@ namespace GourmetProject.Game.UI.Tooltips
             public BigDouble Flat;
             public BigDouble Multiplier;
             public int SkillCount;
+            public int CopiedCount;
             public int TransferredCount;
             public int CountAs;
             public int TemporaryEffectCount;
@@ -36,7 +37,8 @@ namespace GourmetProject.Game.UI.Tooltips
                 BaseScore = dish.BaseScoreBeforeSettlement,
                 Flat = 0f,
                 Multiplier = dish.BaseMultiplierBeforeSettlement,
-                SkillCount = dish.SkillIds?.Count ?? 0,
+                SkillCount = CountIntrinsicSkills(dish),
+                CopiedCount = CountCopiedSkills(dish),
                 TransferredCount = dish.TransferredSkills?.Count ?? 0,
                 CountAs = System.Math.Max(1, countAsOverride ?? dish.EffectiveCountAs),
                 TemporaryEffectCount = dish.TemporaryCategoryEffects?.Count ?? 0,
@@ -61,12 +63,12 @@ namespace GourmetProject.Game.UI.Tooltips
             }
         }
 
-        /// <summary>揭示某道菜结算阶段新复制到的技能（追加在技能列表末尾）。</summary>
+        /// <summary>揭示某道菜结算阶段新复制到的技能（追加在外源技能列表中的复制技能末尾）。</summary>
         public void RevealCopiedSkills(int dishInstanceId, int count)
         {
             if (count > 0 && _byDish.TryGetValue(dishInstanceId, out DishReveal reveal))
             {
-                reveal.SkillCount += count;
+                reveal.CopiedCount += count;
             }
         }
 
@@ -104,6 +106,7 @@ namespace GourmetProject.Game.UI.Tooltips
                     state.BaseScore + state.Flat,
                     state.Multiplier,
                     state.SkillCount,
+                    state.CopiedCount,
                     state.TransferredCount,
                     state.CountAs,
                     state.TemporaryEffectCount);
@@ -112,6 +115,36 @@ namespace GourmetProject.Game.UI.Tooltips
 
             reveal = null;
             return false;
+        }
+
+        private static int CountIntrinsicSkills(DishInstance dish)
+        {
+            return CountSkillsBySource(dish, copied: false);
+        }
+
+        private static int CountCopiedSkills(DishInstance dish)
+        {
+            return CountSkillsBySource(dish, copied: true);
+        }
+
+        private static int CountSkillsBySource(DishInstance dish, bool copied)
+        {
+            if (dish?.SkillIds == null)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int i = 0; i < dish.SkillIds.Count; i++)
+            {
+                bool hasSource = !string.IsNullOrEmpty(dish.GetSkillSource(dish.SkillIds[i]));
+                if (hasSource == copied)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
     }
 }

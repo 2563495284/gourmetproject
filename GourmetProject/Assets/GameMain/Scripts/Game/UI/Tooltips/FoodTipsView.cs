@@ -5,6 +5,7 @@ using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Tooltips
@@ -24,7 +25,8 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private FoodSummaryTipsView _summaryView;
         [SerializeField] private RectTransform _flavorDetailsRoot;
         [SerializeField] private RectTransform _specialTagsRoot;
-        [SerializeField] private RectTransform _transferredSubSkillsRoot;
+        [FormerlySerializedAs("_transferredSubSkillsRoot")]
+        [SerializeField] private RectTransform _externalSkillsRoot;
         [SerializeField] private FoodTipCardView _infoCardPrefab;
         [SerializeField] private FoodFlavorDetailView _flavorDetailPrefab;
 
@@ -84,7 +86,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 _specialTagsRoot,
                 BuildSpecialTagsWithCountAs(data.SpecialTags, data.Summary.CountAs),
                 "SpecialTag");
-            BuildInfoCards(_transferredSubSkillsRoot, data.TransferredSubSkills, "TransferredSubSkill");
+            BuildInfoCards(_externalSkillsRoot, data.ExternalSkills, "ExternalSkill");
         }
 
         public void BindMaterialsOnly(IReadOnlyList<FoodMaterialTipsEntry> materials)
@@ -99,10 +101,10 @@ namespace GourmetProject.Game.UI.Tooltips
             _summaryView.Hide();
             FoodTipUiUtility.ClearChildren(_flavorDetailsRoot);
             FoodTipUiUtility.ClearChildren(_specialTagsRoot);
-            FoodTipUiUtility.ClearChildren(_transferredSubSkillsRoot);
+            FoodTipUiUtility.ClearChildren(_externalSkillsRoot);
             _flavorDetailsRoot.gameObject.SetActive(false);
             _specialTagsRoot.gameObject.SetActive(false);
-            _transferredSubSkillsRoot.gameObject.SetActive(false);
+            _externalSkillsRoot.gameObject.SetActive(false);
         }
 
         public void Show()
@@ -234,7 +236,7 @@ namespace GourmetProject.Game.UI.Tooltips
             // upward instead of being clamped into (and overlapping) the summary card.
             PlaceBelow(_flavorDetailsRoot, summaryRect);
             PlaceAbove(_specialTagsRoot, summaryRect);
-            PlaceRight(_transferredSubSkillsRoot, summaryRect);
+            PlaceRight(_externalSkillsRoot, summaryRect);
             Canvas.ForceUpdateCanvases();
             ClampSummaryGroupToBounds(canvasRect, canvasRect.rect, summaryRect);
         }
@@ -275,7 +277,7 @@ namespace GourmetProject.Game.UI.Tooltips
             valid &= ReportMissing(_summaryView, nameof(_summaryView));
             valid &= ReportMissing(_flavorDetailsRoot, nameof(_flavorDetailsRoot));
             valid &= ReportMissing(_specialTagsRoot, nameof(_specialTagsRoot));
-            valid &= ReportMissing(_transferredSubSkillsRoot, nameof(_transferredSubSkillsRoot));
+            valid &= ReportMissing(_externalSkillsRoot, nameof(_externalSkillsRoot));
             valid &= ReportMissing(_infoCardPrefab, nameof(_infoCardPrefab));
             valid &= ReportMissing(_flavorDetailPrefab, nameof(_flavorDetailPrefab));
             return valid;
@@ -485,7 +487,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 summaryRect,
                 _flavorDetailsRoot,
                 _specialTagsRoot,
-                _transferredSubSkillsRoot,
+                _externalSkillsRoot,
             };
 
             bool hasVisibleRect = false;
@@ -590,7 +592,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 _summaryView.transform as RectTransform,
                 _flavorDetailsRoot,
                 _specialTagsRoot,
-                _transferredSubSkillsRoot,
+                _externalSkillsRoot,
             };
             if (!TryGroupBounds(summaryGroup, canvasRect, out Rect groupBounds))
             {

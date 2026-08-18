@@ -48,7 +48,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public BigDouble Multiplier { get; }
 
-        /// <summary>本次新揭示的复制技能条数（追加进技能列表末尾）。</summary>
+        /// <summary>本次新揭示的复制技能条数（追加进外源技能列表）。</summary>
         public int CopySkillDelta { get; }
 
         /// <summary>本次新揭示的甜蜜传递子技能条数（追加进传递列表末尾）。</summary>
@@ -62,7 +62,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public int CountAs { get; }
 
-        /// <summary>本 cue 新揭示的临时效果说明条数（显示在 4_TransferredSubSkills）。</summary>
+        /// <summary>本 cue 新揭示的临时效果说明条数（显示在 4_ExternalSkills）。</summary>
         public int TemporaryEffectDelta { get; }
 
         public bool HasCakeLayer => CakeLayerDelta != 0;

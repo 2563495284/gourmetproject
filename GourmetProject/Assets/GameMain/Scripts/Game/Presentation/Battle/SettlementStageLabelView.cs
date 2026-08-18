@@ -25,7 +25,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Color headerColor = headerSemanticColor.HasValue
                 ? SettlementColorPalette.ResultHeaderTextFor(headerSemanticColor.Value)
                 : textColor;
-            _headerText.color = SettlementColorPalette.WithAlpha(headerColor, 0.82f);
+            _headerText.color = SettlementColorPalette.WithAlpha(headerColor, 1f);
             _bodyText.color = textColor;
 
             BattleSorting.Apply(
