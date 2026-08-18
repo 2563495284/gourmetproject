@@ -198,7 +198,7 @@ namespace GourmetProject.Game.Run
 
         /// <summary>
         /// 由经营方向配置构建本局餐桌：初始胃形状取自碎片库，最大包围盒取经营方向 max 尺寸。
-        /// Boss Debuff 模型可在构建前调整最大包围盒（初始碎片超出部分自动裁掉）。
+        /// 形变类 Boss Debuff 在造盘完成后改现有格子，不要在构建前改包围盒。
         /// </summary>
         private static GpTable BuildTable(
             GameRun run,

@@ -12,8 +12,6 @@ namespace GourmetProject.Game.Meta.BossDebuffs
     [BossDebuffModel("debuff_indulgent")]
     public sealed class IndulgentBossDebuffModel : BossDebuffModel
     {
-        public override void ModifyTableBounds(ref int maxWidth, ref int maxHeight) => maxHeight += 1;
-
         public override void ModifyBuiltTable(DiningTable table, int recipeEntryCount, IRandomStream rng)
             => BossDebuffOperations.AddBottomCells(table);
     }
@@ -22,8 +20,6 @@ namespace GourmetProject.Game.Meta.BossDebuffs
     [BossDebuffModel("debuff_binge")]
     public sealed class BingeBossDebuffModel : BossDebuffModel
     {
-        public override void ModifyTableBounds(ref int maxWidth, ref int maxHeight) => maxWidth += 1;
-
         public override void ModifyBuiltTable(DiningTable table, int recipeEntryCount, IRandomStream rng)
             => BossDebuffOperations.AddRightCells(table);
     }
