@@ -4,10 +4,10 @@ using BreakInfinity;
 
 namespace GourmetProject.Gameplay.Scoring
 {
-    /// <summary>统一美味值显示：八位数以下完整整数，八位数起使用最多三位有效数字的科学计数。</summary>
+    /// <summary>统一美味值显示：七位数以下完整整数，七位数起使用最多三位有效数字的科学计数。</summary>
     public static class ScoreNumberFormatter
     {
-        public static readonly BigDouble ScientificThreshold = new BigDouble(10_000_000d);
+        public static readonly BigDouble ScientificThreshold = new BigDouble(1_000_000d);
 
         public static string Format(BigDouble value)
         {
