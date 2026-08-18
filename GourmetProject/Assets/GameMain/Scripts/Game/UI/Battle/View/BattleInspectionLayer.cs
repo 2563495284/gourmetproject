@@ -37,6 +37,8 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField, Min(0f)] private float _fadeInSeconds = 0.14f;
 
         private Tween _transition;
+        private readonly PendingPresentationCallbacks _pending = new();
+        private bool _forceHiding;
 
         internal bool IsConfigured => _group != null && _recipeView != null && _tablePanel != null;
 
@@ -76,6 +78,7 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             KillTransition();
+            _pending.SetShown(onShown);
             bool wasVisible = gameObject.activeSelf;
             gameObject.SetActive(true);
             _group.interactable = false;
@@ -94,7 +97,7 @@ namespace GourmetProject.Game.UI.Battle.View
                     .SetEase(Ease.OutSine)
                     .SetUpdate(true)
                     .SetTarget(this)
-                    .OnComplete(() => CompleteTransition(onShown));
+                    .OnComplete(CompleteShownTransition);
                 return;
             }
 
@@ -116,16 +119,17 @@ namespace GourmetProject.Game.UI.Battle.View
                     value => _group.alpha = value,
                     1f,
                     _fadeInSeconds).SetEase(Ease.OutSine))
-                .OnComplete(() => CompleteTransition(onShown));
+                .OnComplete(CompleteShownTransition);
         }
 
         public void Hide(Action onHidden = null)
         {
             KillTransition();
+            _pending.CompleteShown();
+            _pending.SetHidden(onHidden);
             if (!gameObject.activeSelf || _group == null)
             {
                 ForceHide();
-                onHidden?.Invoke();
                 return;
             }
 
@@ -139,26 +143,36 @@ namespace GourmetProject.Game.UI.Battle.View
                 .SetEase(Ease.InSine)
                 .SetUpdate(true)
                 .SetTarget(this)
-                .OnComplete(() =>
-                {
-                    ForceHide();
-                    onHidden?.Invoke();
-                });
+                .OnComplete(() => ForceHide());
         }
 
         public void ForceHide()
         {
-            KillTransition();
-            SetActive(_recipeView, false);
-            SetActive(_tablePanel, false);
-            if (_group != null)
+            if (_forceHiding)
             {
-                _group.alpha = 0f;
-                _group.interactable = false;
-                _group.blocksRaycasts = false;
+                return;
             }
 
-            gameObject.SetActive(false);
+            _forceHiding = true;
+            try
+            {
+                KillTransition();
+                _pending.CompleteAll();
+                SetActive(_recipeView, false);
+                SetActive(_tablePanel, false);
+                if (_group != null)
+                {
+                    _group.alpha = 0f;
+                    _group.interactable = false;
+                    _group.blocksRaycasts = false;
+                }
+
+                gameObject.SetActive(false);
+            }
+            finally
+            {
+                _forceHiding = false;
+            }
         }
 
         private void ApplyView(BattleInspectionView view)
@@ -167,7 +181,7 @@ namespace GourmetProject.Game.UI.Battle.View
             SetActive(_tablePanel, view == BattleInspectionView.Table);
         }
 
-        private void CompleteTransition(Action onShown)
+        private void CompleteShownTransition()
         {
             _transition = null;
             if (_group != null)
@@ -177,7 +191,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 _group.blocksRaycasts = true;
             }
 
-            onShown?.Invoke();
+            _pending.CompleteShown();
         }
 
         private void KillTransition()

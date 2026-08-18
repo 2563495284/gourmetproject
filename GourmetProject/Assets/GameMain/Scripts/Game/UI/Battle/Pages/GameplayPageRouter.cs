@@ -79,6 +79,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         public bool IsTransitioning => _transitionTween != null && _transitionTween.IsActive();
 
         private Tween _transitionTween;
+        private Action _pendingSwitchTo;
 
         GameRun IBattleViewHost.Run => _host.Run;
 
@@ -91,9 +92,11 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             if (IsTransitioning)
             {
+                _pendingSwitchTo = () => SwitchTo(next, buildCenter, onShown);
                 return;
             }
 
+            _pendingSwitchTo = null;
             _host.Deck?.KillPendingShow();
             GameplayView previous = Current;
             bool previousAxisVisible = _host.ActionAxisVisible;
@@ -118,6 +121,9 @@ namespace GourmetProject.Game.UI.Battle.Pages
             {
                 _transitionTween = null;
                 onShown?.Invoke();
+                Action pending = _pendingSwitchTo;
+                _pendingSwitchTo = null;
+                pending?.Invoke();
             };
 
             _transitionTween = requiresCover
@@ -181,6 +187,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
         public void HideHud()
         {
             CancelTransition();
+            _pendingSwitchTo = null;
             InBattle = false;
             Current = GameplayView.None;
 

@@ -43,6 +43,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _plateFeedbackActive;
         private bool _hovered;
         private Sequence _transformSequence;
+        private Action _transformOnComplete;
 
         public GridPos Position => _position;
 
@@ -133,6 +134,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             EnsureRefs();
             KillTransformSequence(resetMaterial: false);
+            _transformOnComplete = onComplete;
 
             if (SpriteRenderStyle.SpriteTransformMaterial == null)
             {
@@ -143,11 +145,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _transformSequence = DOTween.Sequence()
                     .Append(_visualRoot.DOPunchScale(visualPunch, 0.24f, vibrato: 6, elasticity: 0.6f))
                     .InsertCallback(0.12f, () => onSpriteSwitch?.Invoke())
-                    .OnComplete(() =>
-                    {
-                        _transformSequence = null;
-                        onComplete?.Invoke();
-                    });
+                    .OnComplete(() => CompleteTransform());
                 return;
             }
 
@@ -160,10 +158,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 .Append(DOTween.To(() => 1f, ApplyTransformEffect, 0f, 0.2f).SetEase(Ease.InOutQuad))
                 .OnComplete(() =>
                 {
-                    _transformSequence = null;
                     RestoreUnlitMaterials();
                     ApplyColors();
-                    onComplete?.Invoke();
+                    CompleteTransform();
                 });
         }
 
@@ -277,6 +274,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 && _plateRenderer.sharedMaterial == SpriteRenderStyle.SpriteTransformMaterial;
         }
 
+        private void CompleteTransform()
+        {
+            _transformSequence = null;
+            Action callback = _transformOnComplete;
+            _transformOnComplete = null;
+            callback?.Invoke();
+        }
+
         private void KillTransformSequence(bool resetMaterial)
         {
             if (_transformSequence != null)
@@ -295,6 +300,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 RestoreUnlitMaterials();
                 ApplyColors();
             }
+
+            CompleteTransform();
         }
 
         private void RestoreUnlitMaterials()

@@ -201,23 +201,16 @@ namespace GourmetProject.Game.UI.Battle
         private int _displayedCakeLayers;
         private int? _pendingSettlementCakeLayers;
         private int _pendingSettlementCakeLayerBonus;
-        private readonly Queue<PassivePresentationWork> _passivePresentationQueue = new();
-        private PassivePresentationWork _activePassivePresentation;
+        private readonly PassivePresentationScheduler _passivePresentations = new();
         private Sequence _passivePresentationDelay;
         private CanvasGroup _passivePresentationInputBlocker;
-        private int _passivePresentationVersion;
+        private int _switchRequestId;
         private CanvasGroup _passiveFlavorMutationPage;
         private RectTransform _passiveFlavorMutationContent;
         private readonly List<RecipeEditDishView> _passiveFlavorMutationDishes = new();
         private readonly List<RecipeMutationEntry> _passiveFlavorMutationEntries = new();
         private readonly HashSet<ShopPurchaseFlyView> _passiveFlavorMutationFlys = new();
         private readonly HashSet<ShopPurchaseFlyView> _passiveRecipeCopyFlys = new();
-
-        private sealed class PassivePresentationWork
-        {
-            public Action<Action> Start;
-            public Action Cancel;
-        }
 
         public GameRun Run => _run;
         public BattleSession Session => _session;
@@ -262,6 +255,7 @@ namespace GourmetProject.Game.UI.Battle
 
             EnsureCenterTransitionCover();
             EnsurePassivePresentationInputBlocker();
+            _passivePresentations.BindLock(SetPassivePresentationInputLocked);
             EnsureRewardSubflowLayer();
             _inspectionLayer?.Initialize();
             _fragmentEditLayer?.Initialize();
@@ -361,6 +355,7 @@ namespace GourmetProject.Game.UI.Battle
             _fragmentEditCoordinator?.ForceClose();
             _settlementReveal = null;
             _loop = null;
+            _switchRequestId++;
             CancelPassivePresentations();
             _activeItemUse?.Dispose();
             _rewardPeekOnly = false;
@@ -397,7 +392,7 @@ namespace GourmetProject.Game.UI.Battle
         internal bool IsRewardItemContextActive => RewardForm.Active != null;
 
         internal bool IsActiveItemUseBlocked
-            => _activePassivePresentation != null
+            => _passivePresentations.IsBusy
                 || _fragmentEditCoordinator?.IsActive == true
                 || _rewardPage?.IsActive == true
                 || (RewardForm.Active != null && !RewardForm.Active.AllowsPersistentInteractions)
@@ -1084,6 +1079,7 @@ namespace GourmetProject.Game.UI.Battle
                 onComplete?.Invoke();
             }
 
+            bool cancelled = false;
             EnqueuePassivePresentation(done =>
             {
                 void Finish()
@@ -1096,9 +1092,21 @@ namespace GourmetProject.Game.UI.Battle
                     beforeEntries,
                     () =>
                     {
+                        if (cancelled)
+                        {
+                            Finish();
+                            return;
+                        }
+
                         RecipeReadonlyBookView recipe = _inspectionLayer?.RecipeView;
                         DelayPassivePresentation(1f, () =>
                         {
+                            if (cancelled)
+                            {
+                                Finish();
+                                return;
+                            }
+
                             if (recipe == null)
                             {
                                 WaitPassiveHold(() => RestorePassiveInspection(
@@ -1110,11 +1118,19 @@ namespace GourmetProject.Game.UI.Battle
                             }
 
                             recipe.PlayPassiveMutation(result, afterEntries, () =>
+                            {
+                                if (cancelled)
+                                {
+                                    Finish();
+                                    return;
+                                }
+
                                 WaitPassiveHold(() => RestorePassiveInspection(
                                     restoreView,
                                     afterEntries,
                                     restoreTable,
-                                    Finish)));
+                                    Finish));
+                            });
                         });
                     },
                     hideExitButton: true) == true;
@@ -1124,7 +1140,12 @@ namespace GourmetProject.Game.UI.Battle
                     RefreshPersistent();
                     Finish();
                 }
-            }, CompleteOnce);
+            }, () =>
+            {
+                cancelled = true;
+                _inspectionCoordinator?.ForceClose();
+                CompleteOnce();
+            });
         }
 
         private void ShowPassiveRecipeCopyMutation(RecipeMutationResult result, Action onComplete)
@@ -1284,20 +1305,33 @@ namespace GourmetProject.Game.UI.Battle
                 ? BuildCurrentRecipeEntries()
                 : null;
 
+            bool cancelled = false;
             EnqueuePassivePresentation(done =>
             {
+                void ContinueOrFinish(Action next)
+                {
+                    if (cancelled)
+                    {
+                        done();
+                        return;
+                    }
+
+                    next();
+                }
+
                 _world = _world ?? BattleWorldController.Instance;
                 _world?.SetTableArea(_boardArea);
                 bool opened = _inspectionCoordinator?.ShowPassiveTable(
                     beforeTable,
-                    () =>
-                        DelayPassivePresentation(1f, () =>
-                            PlayPassiveCellMutations(result, () =>
-                                WaitPassiveHold(() => RestorePassiveInspection(
-                                    restoreView,
-                                    restoreRecipe,
-                                    afterTable,
-                                    done)))),
+                    () => ContinueOrFinish(() =>
+                        DelayPassivePresentation(1f, () => ContinueOrFinish(() =>
+                            PlayPassiveCellMutations(result, () => ContinueOrFinish(() =>
+                                WaitPassiveHold(() => ContinueOrFinish(() =>
+                                    RestorePassiveInspection(
+                                        restoreView,
+                                        restoreRecipe,
+                                        afterTable,
+                                        done)))))))),
                     hideExitButton: true) == true;
 
                 if (!opened)
@@ -1305,6 +1339,10 @@ namespace GourmetProject.Game.UI.Battle
                     RefreshPersistent();
                     done();
                 }
+            }, () =>
+            {
+                cancelled = true;
+                _inspectionCoordinator?.ForceClose();
             });
         }
 
@@ -1326,12 +1364,21 @@ namespace GourmetProject.Game.UI.Battle
         /// </summary>
         private void SwitchTo(GameplayView next, Action buildCenter = null, Action onShown = null)
         {
-            _pageRouter?.SwitchTo(next, buildCenter, () =>
+            int requestId = ++_switchRequestId;
+            _passivePresentations.WhenIdle(() =>
             {
+                if (requestId != _switchRequestId)
+                {
+                    return;
+                }
+
+                _pageRouter?.SwitchTo(next, buildCenter, () =>
+                {
+                    SyncPageStateFromRouter();
+                    onShown?.Invoke();
+                });
                 SyncPageStateFromRouter();
-                onShown?.Invoke();
             });
-            SyncPageStateFromRouter();
         }
 
         private void EnsureCenterTransitionCover()
@@ -1521,6 +1568,7 @@ namespace GourmetProject.Game.UI.Battle
         bool IGameplayPageRouterHost.ActionAxisVisible => _actionAxisBar != null && _actionAxisBar.gameObject.activeSelf;
         void IGameplayPageRouterHost.OnLeavingPage(GameplayView current, GameplayView next)
         {
+            CancelPassivePresentations();
             _inspectionCoordinator?.ForceClose();
             if (current != next)
             {
@@ -1556,6 +1604,8 @@ namespace GourmetProject.Game.UI.Battle
         ShopForm IShopPageHost.ShopPanel => _shopPanel;
         bool IShopPageHost.ShouldRefreshItemsAfterShopChange => _shopItemFlyInFlight <= 0;
         void IShopPageHost.OnShopClosed() => OnShopClosed();
+        void IShopPageHost.WhenPassivePresentationsIdle(Action onIdle) =>
+            _passivePresentations.WhenIdle(onIdle);
         void IShopPageHost.RefreshPersistent(bool refreshItems) => RefreshPersistent(refreshItems);
         void IShopPageHost.OpenDeleteDish() => _recipeBookPage?.OpenShopDelete();
         void IShopPageHost.OpenTableEdit(Action onShown) => OpenTableEdit(onShown);
@@ -3235,6 +3285,7 @@ namespace GourmetProject.Game.UI.Battle
         private void HideHud()
         {
             _rewardPeekOnly = false;
+            _switchRequestId++;
             CancelPassivePresentations();
             _inspectionCoordinator?.ForceClose();
             _rewardPage?.CloseRewardPages();
@@ -3609,63 +3660,16 @@ namespace GourmetProject.Game.UI.Battle
 
         private void EnqueuePassivePresentation(Action<Action> start, Action cancel = null)
         {
-            if (start == null)
-            {
-                cancel?.Invoke();
-                return;
-            }
-
-            _passivePresentationQueue.Enqueue(new PassivePresentationWork
-            {
-                Start = start,
-                Cancel = cancel,
-            });
-            if (_activePassivePresentation == null)
-            {
-                StartNextPassivePresentation();
-            }
-        }
-
-        private void StartNextPassivePresentation()
-        {
-            if (_passivePresentationQueue.Count == 0)
-            {
-                _activePassivePresentation = null;
-                SetPassivePresentationInputLocked(false);
-                return;
-            }
-
-            _activePassivePresentation = _passivePresentationQueue.Dequeue();
-            SetPassivePresentationInputLocked(true);
-            int version = ++_passivePresentationVersion;
-            bool completed = false;
-            _activePassivePresentation.Start(() =>
-            {
-                if (completed || version != _passivePresentationVersion)
-                {
-                    return;
-                }
-
-                completed = true;
-                _passivePresentationDelay = null;
-                _activePassivePresentation = null;
-                StartNextPassivePresentation();
-            });
+            _passivePresentations.Enqueue(start, cancel);
         }
 
         private void CancelPassivePresentations()
         {
-            _passivePresentationVersion++;
             _passivePresentationDelay?.Kill();
             _passivePresentationDelay = null;
-            _activePassivePresentation?.Cancel?.Invoke();
-            _activePassivePresentation = null;
-            while (_passivePresentationQueue.Count > 0)
-            {
-                _passivePresentationQueue.Dequeue().Cancel?.Invoke();
-            }
-
-            SetPassivePresentationInputLocked(false);
+            _infoColumn?.CancelWeekIndexChange(complete: false);
+            _actionAxisBar?.CancelPresentation();
+            _passivePresentations.CancelAll();
         }
 
         private void DelayPassivePresentation(float seconds, Action onComplete)
@@ -3796,7 +3800,12 @@ namespace GourmetProject.Game.UI.Battle
                 {
                     FinishTimelineMutation();
                 }
-            }, onCancelled);
+            }, () =>
+            {
+                _actionAxisBar?.CancelPresentation();
+                _infoColumn?.CancelWeekIndexChange(complete: false);
+                onCancelled?.Invoke();
+            });
         }
 
         private void RestorePassiveInspection(

@@ -302,7 +302,7 @@ namespace GourmetProject.Game.UI.Hud
         /// <summary>中断所有表现而不触发表现回调；页面销毁或实验室重置时使用。</summary>
         public void CancelPresentation()
         {
-            AbortPresentation();
+            AbortPresentation(notifyWaiters: false);
         }
 
         private void PlayNextCue()
@@ -1435,15 +1435,17 @@ namespace GourmetProject.Game.UI.Hud
 
         private void OnDisable()
         {
-            AbortPresentation(convergeToFinalState: true);
+            AbortPresentation(convergeToFinalState: true, notifyWaiters: true);
         }
 
-        private void AbortPresentation(bool convergeToFinalState = false)
+        private void AbortPresentation(bool convergeToFinalState = false, bool notifyWaiters = false)
         {
             TimelineAxisViewState finalState = _activePresentation?.Cue?.TargetState;
+            PresentationWork active = _activePresentation;
+            var queued = new List<PresentationWork>(_presentationQueue);
             if (convergeToFinalState)
             {
-                foreach (PresentationWork work in _presentationQueue)
+                foreach (PresentationWork work in queued)
                 {
                     finalState = work.Cue?.TargetState ?? finalState;
                 }
@@ -1462,6 +1464,15 @@ namespace GourmetProject.Game.UI.Hud
             if (convergeToFinalState && finalState != null)
             {
                 BindState(finalState, _run, _onNodeCreated, animate: false);
+            }
+
+            if (notifyWaiters)
+            {
+                active?.OnComplete?.Invoke();
+                for (int i = 0; i < queued.Count; i++)
+                {
+                    queued[i]?.OnComplete?.Invoke();
+                }
             }
         }
 

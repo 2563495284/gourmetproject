@@ -63,6 +63,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void OnShopClosed();
 
+        void WhenPassivePresentationsIdle(Action onIdle);
+
         void RefreshPersistent(bool refreshItems = true);
 
         void OpenDeleteDish();
@@ -248,7 +250,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 _host.ShopPanel.gameObject.SetActive(false);
             }
 
-            _host.OnShopClosed();
+            _host.WhenPassivePresentationsIdle(_host.OnShopClosed);
         }
     }
 }

@@ -57,6 +57,7 @@ namespace GourmetProject.Game.UI.Battle.View
         private bool _recipeInspectionAvailable;
         private bool _tableInspectionAvailable;
         private Sequence _weekChangeSequence;
+        private Action _weekChangeOnComplete;
         private int? _recipeCountPresentationOverride;
         private RectTransform _scoreSection;
         private RectTransform _scoreMeter;
@@ -141,10 +142,21 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void OnDisable()
         {
-            _weekChangeSequence?.Kill();
-            _weekChangeSequence = null;
+            CancelWeekIndexChange(complete: true);
             EndSettlementScorePresentation();
             ResetBossStatPresentation();
+        }
+
+        internal void CancelWeekIndexChange(bool complete)
+        {
+            _weekChangeSequence?.Kill();
+            _weekChangeSequence = null;
+            Action callback = _weekChangeOnComplete;
+            _weekChangeOnComplete = null;
+            if (complete)
+            {
+                callback?.Invoke();
+            }
         }
 
         internal void PlayWeekIndexChange(
@@ -159,11 +171,12 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            _weekChangeSequence?.Kill();
+            CancelWeekIndexChange(complete: true);
             RectTransform rect = _weekText.rectTransform;
             Vector3 originalScale = rect.localScale;
             Color originalColor = _weekText.color;
             _weekText.text = WeekText(run, beforeWeekIndex);
+            _weekChangeOnComplete = onComplete;
             _weekChangeSequence = DOTween.Sequence()
                 .SetUpdate(true)
                 .AppendInterval(0.10f)
@@ -177,7 +190,9 @@ namespace GourmetProject.Game.UI.Battle.View
                     _weekText.color = originalColor;
                     _weekText.text = WeekText(run, afterWeekIndex);
                     _weekChangeSequence = null;
-                    onComplete?.Invoke();
+                    Action callback = _weekChangeOnComplete;
+                    _weekChangeOnComplete = null;
+                    callback?.Invoke();
                 });
         }
 
