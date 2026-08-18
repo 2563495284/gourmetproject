@@ -383,7 +383,7 @@ namespace GourmetProject.Game.UI.Meta
             //     : "奖励";
             _continueButton.gameObject.SetActive(true);
 
-            SetButtonLabel(_continueButton, "放弃");
+            SetButtonLabel(_continueButton, "跳过");
 
             RebuildRewardRows();
         }
