@@ -10,6 +10,7 @@ using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.Visual;
 using TMPro;
+using UnityEngine.UI;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -803,6 +804,18 @@ namespace GourmetProject.Game.Presentation.Battle
             _settlementFocusColors.Clear();
         }
 
+        public void SetBodyRenderersEnabled(bool enabled)
+        {
+            EnsureRefs();
+            foreach (SpriteRenderer renderer in EnumerateBodyRenderers())
+            {
+                if (renderer != null)
+                {
+                    renderer.enabled = enabled;
+                }
+            }
+        }
+
         private IEnumerable<SpriteRenderer> EnumerateBodyRenderers()
         {
             if (_spriteRenderer == null)
@@ -1038,6 +1051,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
+            SetBodyRenderersEnabled(true);
             Transform target = VisualAnimationTarget();
             if (target != null)
             {
@@ -2165,6 +2179,18 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplyFlavorVisual();
             ApplyDebuffVisual();
             RefreshScopeTargetGlow();
+        }
+
+        internal void ApplyFlavorVisualToGraphic(Graphic graphic, Material flavorMaterial)
+        {
+            FlavorOrganicVisual.ApplyToGraphic(
+                graphic,
+                flavorMaterial,
+                _spriteRenderer != null ? _spriteRenderer.sprite : null,
+                Instance?.FlavorIds,
+                Instance != null ? Instance.Id : 0f,
+                _flavorVisualIntensity,
+                useGlobalTime: true);
         }
 
         /// <summary>

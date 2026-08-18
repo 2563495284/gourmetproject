@@ -1,4 +1,3 @@
-using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Battle;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,10 +6,10 @@ using TMPro;
 namespace GourmetProject.Game.UI.Hud
 {
     /// <summary>
-    /// 经营挑战左下角的世界空间垃圾桶。只负责显示剩余次数与屏幕点命中，
+    /// 经营挑战左下角的 Overlay 垃圾桶。只负责显示剩余次数与屏幕点命中，
     /// 实际丢弃由 BattleSession/BattleWorldController 完成。
     /// </summary>
-    [RequireComponent(typeof(Canvas), typeof(CanvasGroup))]
+    [RequireComponent(typeof(CanvasGroup))]
     public sealed class FoodDiscardBinView : MonoBehaviour
     {
         [SerializeField] private Image _binImage;
@@ -21,26 +20,7 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Color _hoverColor = new Color(1f, 0.45f, 0.32f, 1f);
 
         private BattleSession _session;
-        private Camera _worldCamera;
-        private Canvas _worldCanvas;
         private bool _dragHovered;
-
-        public void ConfigureWorldSpace(Camera worldCamera)
-        {
-            _worldCamera = worldCamera != null ? worldCamera : Camera.main;
-            _worldCanvas = GetComponent<Canvas>();
-            if (_worldCanvas == null)
-            {
-                Debug.LogError($"{nameof(FoodDiscardBinView)} 缺少 World Space Canvas。", this);
-                return;
-            }
-
-            _worldCanvas.renderMode = RenderMode.WorldSpace;
-            _worldCanvas.worldCamera = _worldCamera;
-            _worldCanvas.overrideSorting = true;
-            _worldCanvas.sortingLayerName = BattleSorting.WorldUi;
-            _worldCanvas.sortingOrder = 1;
-        }
 
         public void SetVisible(bool visible)
         {
@@ -74,8 +54,9 @@ namespace GourmetProject.Game.UI.Hud
                 return false;
             }
 
-            Camera eventCamera = _worldCanvas != null && _worldCanvas.renderMode != RenderMode.ScreenSpaceOverlay
-                ? _worldCamera
+            Canvas canvas = GetComponentInParent<Canvas>();
+            Camera eventCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? canvas.worldCamera
                 : null;
             return RectTransformUtility.RectangleContainsScreenPoint(
                 (RectTransform)transform,

@@ -65,7 +65,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private BattleDoodleController _doodle;
         [Tooltip("Battle 场景内可直接移动和缩放的餐桌布局区域；存在时优先于 HUD BoardArea。")]
         [SerializeField] private RectTransform _sceneBoardArea;
-        [Tooltip("麻风味旋转后的食物暂存区。")]
+        [Tooltip("暂存区 HUD 框。由 BattleForm 注入 Overlay 矩形；世界棋子仍在 PiecesRoot。")]
         [SerializeField] private RectTransform _temporaryArea;
 
         // —— 运行时实例化用的 prefab ——
@@ -121,6 +121,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private Placement? _movingHoverPlacement;
         private DishPieceView _temporaryAreaDragPiece;
         private Placement? _temporaryAreaHoverPlacement;
+        private DishPieceView _temporaryAreaFlyInPiece;
         private bool _activeItemTransitioning;
         private bool _bossPresentationBusy;
         private Vector3 _dragPointerPreviousWorld;
@@ -188,6 +189,31 @@ namespace GourmetProject.Game.Presentation.Battle
                 || _temporaryAreaDragPiece != null;
 
         public bool IsSettlementPlaying => _settling;
+
+        internal DishPieceView ActiveDragPiece =>
+            _outletDragPiece != null
+                ? _outletDragPiece
+                : _movingPiece != null
+                    ? _movingPiece
+                    : _temporaryAreaDragPiece;
+
+        internal void CopyTemporaryAreaOverlayPieces(List<DishPieceView> dest)
+        {
+            dest.Clear();
+            for (int i = 0; i < _temporaryAreaPieces.Count; i++)
+            {
+                DishPieceView piece = _temporaryAreaPieces[i];
+                if (piece != null)
+                {
+                    dest.Add(piece);
+                }
+            }
+
+            if (_temporaryAreaFlyInPiece != null && !dest.Contains(_temporaryAreaFlyInPiece))
+            {
+                dest.Add(_temporaryAreaFlyInPiece);
+            }
+        }
 
         public bool PauseSettlementPlayback()
         {
@@ -930,10 +956,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
                     piece.SetFlying(true);
                     piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
+                    _temporaryAreaFlyInPiece = piece;
                     Vector3 slotCenter = new Vector3(
                         targetSlot.Center.x,
                         targetSlot.Center.y,
-                        _temporaryArea != null ? _temporaryArea.position.z : transform.position.z);
+                        TemporaryAreaWorldZ());
                     Vector3 targetPosition = TemporaryAreaPieceRootPosition(
                         piece,
                         slotCenter,
@@ -960,6 +987,7 @@ namespace GourmetProject.Game.Presentation.Battle
             int index,
             Action onComplete)
         {
+            _temporaryAreaFlyInPiece = null;
             _activeItemTransitioning = false;
             if (piece == null || dish == null)
             {
@@ -1375,6 +1403,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             if (_temporaryArea == null)
             {
+                SetTemporaryAreaPiecesVisible(false);
                 return;
             }
 
@@ -1383,15 +1412,17 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_temporaryAreaCanvasGroup == null)
             {
                 _temporaryArea.gameObject.SetActive(visible);
+                SetTemporaryAreaPiecesVisible(visible && _temporaryArea.gameObject.activeInHierarchy);
                 return;
             }
 
-            _temporaryAreaCanvasGroup.interactable = visible;
-            _temporaryAreaCanvasGroup.blocksRaycasts = visible;
+            _temporaryAreaCanvasGroup.interactable = false;
+            _temporaryAreaCanvasGroup.blocksRaycasts = false;
             if (!animated)
             {
                 _temporaryAreaCanvasGroup.alpha = visible ? 1f : 0f;
                 _temporaryArea.gameObject.SetActive(visible);
+                SetTemporaryAreaPiecesVisible(visible && _temporaryArea.gameObject.activeInHierarchy);
                 return;
             }
 
@@ -1403,6 +1434,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     _temporaryArea.gameObject.SetActive(true);
                 }
 
+                SetTemporaryAreaPiecesVisible(_temporaryArea.gameObject.activeInHierarchy);
                 if (_temporaryAreaCanvasGroup.alpha >= 0.999f)
                 {
                     return;
@@ -1423,6 +1455,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (!_temporaryArea.gameObject.activeSelf)
             {
                 _temporaryAreaCanvasGroup.alpha = 0f;
+                SetTemporaryAreaPiecesVisible(false);
                 return;
             }
 
@@ -1441,7 +1474,23 @@ namespace GourmetProject.Game.Presentation.Battle
                     {
                         _temporaryArea.gameObject.SetActive(false);
                     }
+
+                    SetTemporaryAreaPiecesVisible(false);
                 });
+        }
+
+        private void SetTemporaryAreaPiecesVisible(bool visible)
+        {
+            for (int i = 0; i < _temporaryAreaPieces.Count; i++)
+            {
+                DishPieceView piece = _temporaryAreaPieces[i];
+                if (piece == null || piece == _temporaryAreaDragPiece)
+                {
+                    continue;
+                }
+
+                piece.gameObject.SetActive(visible);
+            }
         }
 
         private void EnsureTemporaryAreaCanvasGroup()
@@ -2605,11 +2654,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 Vector3 slotCenter = new Vector3(
                     slot.Center.x,
                     slot.Center.y,
-                    _temporaryArea != null ? _temporaryArea.position.z : transform.position.z);
+                    TemporaryAreaWorldZ());
                 Vector3 targetPosition = TemporaryAreaPieceRootPosition(piece, slotCenter, slot.Scale);
                 piece.transform.DOKill();
                 piece.SetDragPresentation(false);
-                // TemporaryArea 是 WorldUI Canvas；临时菜需保持在 PiecesFlying 层才能显示在桌面背景之上。
+                // 临时菜仍在 PiecesFlying 层，才能盖过桌布；HUD 框只提供落点。
                 piece.SetFlying(true);
                 piece.SetSortingOrderOffset(i * TemporaryAreaSortingStride);
                 piece.SetClickEnabled(true);
@@ -2704,61 +2753,51 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>内容矩形算不出来时的兜底中心：面板世界矩形中心，而不是可能贴边的 Pivot 点。</summary>
         private Vector2 TemporaryAreaFallbackCenter()
         {
-            if (_temporaryArea == null)
+            if (TryGetRectTransformWorldBounds(
+                    _temporaryArea,
+                    out float left,
+                    out float right,
+                    out float bottom,
+                    out float top))
             {
-                return transform.position;
+                return new Vector2((left + right) * 0.5f, (bottom + top) * 0.5f);
             }
 
-            var corners = new Vector3[4];
-            _temporaryArea.GetWorldCorners(corners);
-            return new Vector2(
-                (Mathf.Min(corners[0].x, corners[1].x, corners[2].x, corners[3].x)
-                    + Mathf.Max(corners[0].x, corners[1].x, corners[2].x, corners[3].x)) * 0.5f,
-                (Mathf.Min(corners[0].y, corners[1].y, corners[2].y, corners[3].y)
-                    + Mathf.Max(corners[0].y, corners[1].y, corners[2].y, corners[3].y)) * 0.5f);
+            return transform.position;
         }
 
         private bool TryGetTemporaryAreaContentRect(out Rect rect)
         {
             rect = default;
-            if (_temporaryArea == null)
+            if (!TryGetRectTransformWorldBounds(
+                    _temporaryArea,
+                    out float minX,
+                    out float maxX,
+                    out float minY,
+                    out float maxY))
             {
                 return false;
             }
 
-            var corners = new Vector3[4];
-            _temporaryArea.GetWorldCorners(corners);
-            float minX = Mathf.Min(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
-            float maxX = Mathf.Max(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
-            float minY = Mathf.Min(corners[0].y, corners[1].y, corners[2].y, corners[3].y);
-            float maxY = Mathf.Max(corners[0].y, corners[1].y, corners[2].y, corners[3].y);
-
             RectTransform title = _temporaryArea.Find("Title") as RectTransform;
-            if (title != null)
+            if (title != null
+                && TryGetRectTransformWorldBounds(
+                    title,
+                    out _,
+                    out _,
+                    out float titleMinY,
+                    out float titleMaxY)
+                && titleMaxY > minY
+                && titleMinY < maxY)
             {
-                var titleCorners = new Vector3[4];
-                title.GetWorldCorners(titleCorners);
-                float titleMinY = Mathf.Min(
-                    titleCorners[0].y,
-                    titleCorners[1].y,
-                    titleCorners[2].y,
-                    titleCorners[3].y);
-                float titleMaxY = Mathf.Max(
-                    titleCorners[0].y,
-                    titleCorners[1].y,
-                    titleCorners[2].y,
-                    titleCorners[3].y);
-                // 标题允许摆在面板外（当前场景摆在面板下方），只有真正压住面板内部时才让出空间。
-                if (titleMaxY > minY && titleMinY < maxY)
+                // 标题允许摆在面板外；只有真正压住面板内部时才让出空间。
+                if (titleMinY + titleMaxY >= minY + maxY)
                 {
-                    if (titleMinY + titleMaxY >= minY + maxY)
-                    {
-                        maxY = Mathf.Max(minY, titleMinY);
-                    }
-                    else
-                    {
-                        minY = Mathf.Min(maxY, titleMaxY);
-                    }
+                    maxY = Mathf.Max(minY, titleMinY);
+                }
+                else
+                {
+                    minY = Mathf.Min(maxY, titleMaxY);
                 }
             }
 
@@ -2768,6 +2807,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 maxX - TemporaryAreaPadding,
                 maxY - TemporaryAreaPadding);
             return rect.width > 0.01f && rect.height > 0.01f;
+        }
+
+        private float TemporaryAreaWorldZ()
+        {
+            return _piecesRoot != null ? _piecesRoot.position.z : transform.position.z;
         }
 
         private Vector3 TemporaryAreaPieceRootPosition(
@@ -3023,6 +3067,30 @@ namespace GourmetProject.Game.Presentation.Battle
             _hudBoardArea = area;
         }
 
+        /// <summary>注入 BattleForm Overlay 暂存区框。棋子仍在世界层，仅用此矩形投影落位。</summary>
+        public void SetTemporaryArea(RectTransform area)
+        {
+            if (_temporaryArea == area)
+            {
+                RefreshTemporaryAreaPresentation();
+                return;
+            }
+
+            CancelTemporaryAreaFade();
+            _temporaryArea = area;
+            _temporaryAreaCanvasGroup = null;
+            RefreshTemporaryAreaPresentation();
+        }
+
+        public void RefreshTemporaryAreaPresentation()
+        {
+            RefreshTemporaryAreaVisibility(animated: false);
+            if (_temporaryArea != null && _temporaryArea.gameObject.activeInHierarchy)
+            {
+                LayoutTemporaryAreaPieces();
+            }
+        }
+
         internal bool TryComputeTableAreaPlacement(GpTable board, out BoardPlacement placement)
         {
             if (board != null && TryComputeTableAreaRect(out float left, out float right, out float bottom, out float top))
@@ -3069,18 +3137,28 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>读取场景或 HUD 布局区域，得到餐桌可用区的世界矩形边界。</summary>
         private bool TryComputeTableAreaRect(out float left, out float right, out float bottom, out float top)
         {
-            left = right = bottom = top = 0f;
             RectTransform boardArea = _sceneBoardArea != null ? _sceneBoardArea : _hudBoardArea;
-            if (boardArea == null || _camera == null)
+            return TryGetRectTransformWorldBounds(boardArea, out left, out right, out bottom, out top);
+        }
+
+        private bool TryGetRectTransformWorldBounds(
+            RectTransform rect,
+            out float left,
+            out float right,
+            out float bottom,
+            out float top)
+        {
+            left = right = bottom = top = 0f;
+            if (rect == null)
             {
                 return false;
             }
 
             var corners = new Vector3[4];
-            boardArea.GetWorldCorners(corners);
-
-            Canvas canvas = boardArea.GetComponentInParent<Canvas>();
-            if (canvas == null)
+            rect.GetWorldCorners(corners);
+            Canvas canvas = rect.GetComponentInParent<Canvas>();
+            bool overlayOrCamera = canvas != null && canvas.renderMode != RenderMode.WorldSpace;
+            if (!overlayOrCamera)
             {
                 left = Mathf.Min(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
                 right = Mathf.Max(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
@@ -3089,13 +3167,22 @@ namespace GourmetProject.Game.Presentation.Battle
                 return right > left && top > bottom;
             }
 
+            Camera worldCamera = WorldCamera;
+            if (worldCamera == null)
+            {
+                return false;
+            }
+
             Camera uiCam = canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-            float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
-            float depth = -_camera.transform.position.z;
+            float minX = float.MaxValue;
+            float maxX = float.MinValue;
+            float minY = float.MaxValue;
+            float maxY = float.MinValue;
+            float depth = -worldCamera.transform.position.z;
             for (int i = 0; i < 4; i++)
             {
                 Vector2 screen = RectTransformUtility.WorldToScreenPoint(uiCam, corners[i]);
-                Vector3 world = _camera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, depth));
+                Vector3 world = worldCamera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, depth));
                 minX = Mathf.Min(minX, world.x);
                 maxX = Mathf.Max(maxX, world.x);
                 minY = Mathf.Min(minY, world.y);

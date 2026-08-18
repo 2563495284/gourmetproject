@@ -229,7 +229,6 @@ namespace GourmetProject.Editor
                 SetObjectReference(outlet, "_preparedDishRoot", preparedDish);
                 SetObjectReference(outlet, "_dishPreview", preview);
                 SetObjectReference(outlet, "_dishHoverTrigger", hoverTrigger);
-                SetObjectReference(outlet, "_worldCanvas", outlet.GetComponent<Canvas>());
                 container.SetAsLastSibling();
             });
         }
