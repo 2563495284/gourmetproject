@@ -143,6 +143,7 @@ namespace GourmetProject.Game.UI.Meta
         private bool _hasBuiltRewardRows;
         private bool _isClosing;
         private bool _isSuspendedForRewardSubflow;
+        private bool _waitingForBattleOverlays;
         private bool _completingFromRewardSubflow;
         private float _suspendedScrollPosition = 1f;
         private PersistentInspectionOrigin _persistentInspectionOrigin;
@@ -219,6 +220,7 @@ namespace GourmetProject.Game.UI.Meta
             _peekHidden = false;
             _peekInspectionActive = false;
             _isSuspendedForRewardSubflow = false;
+            _waitingForBattleOverlays = false;
             _completingFromRewardSubflow = false;
             _persistentInspectionOrigin = PersistentInspectionOrigin.None;
             _persistentInspectionScrollPosition = 1f;
@@ -326,6 +328,7 @@ namespace GourmetProject.Game.UI.Meta
 
             _isClosing = false;
             _isSuspendedForRewardSubflow = false;
+            _waitingForBattleOverlays = false;
             _completingFromRewardSubflow = false;
             _peekInspectionActive = false;
             _persistentInspectionOrigin = PersistentInspectionOrigin.None;
@@ -898,7 +901,7 @@ namespace GourmetProject.Game.UI.Meta
             MarkChoiceClaimed(groupIndex, index);
             CacheCurrentOffer();
             RefreshBattlePersistentHud(refreshItems: !itemFlyStarted);
-            RefreshOffer();
+            ContinueAfterRewardClaim();
         }
 
         private bool IsChoiceResolved(int groupIndex)
@@ -1021,7 +1024,17 @@ namespace GourmetProject.Game.UI.Meta
 
         internal void ResumeFromRewardSubflow()
         {
-            if (!_isSuspendedForRewardSubflow || _isClosing)
+            if (_isClosing || _waitingForBattleOverlays)
+            {
+                return;
+            }
+
+            if (TryYieldToBattleOverlays())
+            {
+                return;
+            }
+
+            if (!_isSuspendedForRewardSubflow)
             {
                 return;
             }
@@ -1904,6 +1917,62 @@ namespace GourmetProject.Game.UI.Meta
 
             CacheCurrentOffer();
             RefreshBattlePersistentHud();
+            ContinueAfterRewardClaim();
+        }
+
+        /// <summary>
+        /// 领取装饰品可能立刻在 BattleForm 打开风味/菜谱/餐桌/时间轴演出或随机结果页。
+        /// 这些层都在 Default 组，必须先挂起本窗，演完再刷新或关闭，避免 Dialog 组挡住。
+        /// </summary>
+        private void ContinueAfterRewardClaim()
+        {
+            if (TryYieldToBattleOverlays())
+            {
+                return;
+            }
+
+            RefreshOffer();
+        }
+
+        private bool TryYieldToBattleOverlays()
+        {
+            BattleForm battle = BattleForm.Active;
+            if (battle == null || !battle.HasRewardCoveredPresentation)
+            {
+                return false;
+            }
+
+            if (_waitingForBattleOverlays)
+            {
+                return true;
+            }
+
+            _waitingForBattleOverlays = true;
+            SuspendForRewardSubflow();
+            battle.WhenRewardCoveredPresentationsIdle(OnBattleOverlaysFinishedAfterClaim);
+            return true;
+        }
+
+        private void OnBattleOverlaysFinishedAfterClaim()
+        {
+            _waitingForBattleOverlays = false;
+            if (_isClosing || !ReferenceEquals(Active, this))
+            {
+                return;
+            }
+
+            if (_offer != null && _offer.IsFullyClaimed)
+            {
+                CompleteFromRewardSubflow();
+                return;
+            }
+
+            if (_isSuspendedForRewardSubflow)
+            {
+                ResumeFromRewardSubflow();
+                return;
+            }
+
             RefreshOffer();
         }
 

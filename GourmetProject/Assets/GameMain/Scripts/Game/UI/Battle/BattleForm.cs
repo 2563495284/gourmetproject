@@ -1604,6 +1604,40 @@ namespace GourmetProject.Game.UI.Battle
         ShopForm IShopPageHost.ShopPanel => _shopPanel;
         bool IShopPageHost.ShouldRefreshItemsAfterShopChange => _shopItemFlyInFlight <= 0;
         void IShopPageHost.OnShopClosed() => OnShopClosed();
+        /// <summary>
+        /// RewardForm 盖在 Dialog 组上。Battle 里的被动演出和领奖子页都在 Default 组，
+        /// 领取后必须等这些层结束，RewardForm 才能重新显示或关闭。
+        /// </summary>
+        internal bool HasRewardCoveredPresentation =>
+            _passivePresentations.IsBusy || (_rewardPage != null && _rewardPage.IsActive);
+
+        internal void WhenRewardCoveredPresentationsIdle(Action onIdle)
+        {
+            if (onIdle == null)
+            {
+                return;
+            }
+
+            void Continue()
+            {
+                if (_passivePresentations.IsBusy)
+                {
+                    _passivePresentations.WhenIdle(Continue);
+                    return;
+                }
+
+                if (_rewardPage != null && _rewardPage.IsActive)
+                {
+                    _rewardPage.WhenIdle(Continue);
+                    return;
+                }
+
+                onIdle();
+            }
+
+            Continue();
+        }
+
         void IShopPageHost.WhenPassivePresentationsIdle(Action onIdle) =>
             _passivePresentations.WhenIdle(onIdle);
         void IShopPageHost.RefreshPersistent(bool refreshItems) => RefreshPersistent(refreshItems);
