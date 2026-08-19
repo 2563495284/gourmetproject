@@ -180,26 +180,49 @@ namespace GourmetProject.Game.Presentation.Battle
                 holdUntilCleared: true);
         }
 
-        internal async Awaitable PlaySweetTransferHandoffAsync(
-            SettlementSweetTransferPresentationContext context,
-            DishPieceView source,
-            DishPieceView executor,
+        internal readonly struct SweetTransferHandoffVisual
+        {
+            public SweetTransferHandoffVisual(
+                SettlementSweetTransferPresentationContext context,
+                DishPieceView source,
+                DishPieceView executor)
+            {
+                Context = context;
+                Source = source;
+                Executor = executor;
+            }
+
+            public SettlementSweetTransferPresentationContext Context { get; }
+            public DishPieceView Source { get; }
+            public DishPieceView Executor { get; }
+        }
+
+        /// <summary>
+        /// 同一波甜蜜传递的所有 source→executor 粒子同时起飞，只等待最长飞行时间。
+        /// 不再逐目标弹出「技能来源 / 接收并执行」舞台字。
+        /// </summary>
+        internal async Awaitable PlaySweetTransferHandoffsAsync(
+            IReadOnlyList<SweetTransferHandoffVisual> handoffs,
             SweetTransferParticleView particlePrefab,
-            float sourceDuration,
             float travelDuration,
             float executorDuration,
             CancellationToken cancellationToken)
         {
             EndGroupImmediate();
             DimAllDishes();
-            Color theme = SettlementColorPalette.SweetTransferSource;
-            string sourceName = ReadableName(context.SourceName, "技能来源");
-            string executorName = ReadableName(context.ExecutorName, "接收者");
-            string skillName = ReadableName(context.SkillName, "甜蜜传递技能");
-
-            source?.SetSettlementFocus(1f);
-            if (source == null || executor == null)
+            if (handoffs == null || handoffs.Count == 0)
             {
+                return;
+            }
+
+            var travelTasks = new List<Awaitable>(handoffs.Count);
+            float executorScale = Mathf.Max(0.05f, executorDuration / 0.34f);
+            for (int i = 0; i < handoffs.Count; i++)
+            {
+                SweetTransferHandoffVisual handoff = handoffs[i];
+                DishPieceView source = handoff.Source;
+                DishPieceView executor = handoff.Executor;
+                source?.SetSettlementFocus(1f);
                 executor?.SetSettlementFocus(1f);
                 if (executor != null)
                 {
@@ -208,59 +231,68 @@ namespace GourmetProject.Game.Presentation.Battle
                         executor,
                         SettlementDishFeedbackKind.SweetTransferExecutor,
                         cancellationToken,
-                        durationScale: Mathf.Max(0.05f, executorDuration / 0.34f));
+                        durationScale: executorScale);
                 }
 
-                await SpawnLabelAsync(
-                    _mapper.Center + Vector3.up * (0.45f * _visualScale),
-                    "甜蜜传递",
-                    $"{sourceName} 的技能由 {executorName} 执行",
-                    theme,
-                    Mathf.Max(0.0001f, sourceDuration + travelDuration + executorDuration),
-                    cancellationToken);
-                return;
-            }
+                if (source == null
+                    || executor == null
+                    || handoff.Context.IsSelfTransfer)
+                {
+                    source?.SetSettlementFocus(SweetTransferSourceBrightness);
+                    continue;
+                }
 
-            Vector3 sourceAnchor = source.WorldBounds.center
-                + Vector3.up * (source.WorldBounds.extents.y + 0.42f * _visualScale);
-            await SpawnLabelAsync(
-                sourceAnchor,
-                "技能来源",
-                sourceName,
-                theme,
-                sourceDuration,
-                cancellationToken);
-
-            if (!context.IsSelfTransfer)
-            {
-                await SweetTransferParticleView.PlayAsync(
+                travelTasks.Add(SweetTransferParticleView.PlayAsync(
                     particlePrefab,
                     _fxRoot,
                     source.WorldBounds.center,
                     executor.WorldBounds.center,
                     travelDuration,
                     cancellationToken,
-                    visualScale: _visualScale);
+                    visualScale: _visualScale));
                 source.SetSettlementFocus(SweetTransferSourceBrightness);
             }
 
-            executor.SetSettlementFocus(1f);
-            executor.BeginSweetTransferExecutorFeedback();
-            _ = PlayFeedbackSafelyAsync(
-                executor,
-                SettlementDishFeedbackKind.SweetTransferExecutor,
-                cancellationToken,
-                durationScale: Mathf.Max(0.05f, executorDuration / 0.34f));
+            for (int i = 0; i < travelTasks.Count; i++)
+            {
+                await travelTasks[i];
+            }
+        }
 
-            Vector3 executorAnchor = executor.WorldBounds.center
-                + Vector3.up * (executor.WorldBounds.extents.y + 0.42f * _visualScale);
-            await SpawnLabelAsync(
-                executorAnchor,
-                context.IsSelfTransfer ? "自身执行" : "接收并执行",
-                $"{executorName} · {skillName}",
-                theme,
-                executorDuration,
-                cancellationToken);
+        internal void ApplyWaveFocus(
+            IReadOnlyCollection<int> sourceDishIds,
+            IReadOnlyCollection<int> executorDishIds,
+            IReadOnlyCollection<int> targetDishIds)
+        {
+            if (_dishViews == null)
+            {
+                return;
+            }
+
+            foreach (KeyValuePair<int, DishPieceView> entry in _dishViews)
+            {
+                DishPieceView view = entry.Value;
+                if (view == null)
+                {
+                    continue;
+                }
+
+                float brightness = DimmedDishBrightness;
+                if (sourceDishIds != null && sourceDishIds.Contains(entry.Key))
+                {
+                    brightness = 1f;
+                }
+                else if (executorDishIds != null && executorDishIds.Contains(entry.Key))
+                {
+                    brightness = 1f;
+                }
+                else if (targetDishIds != null && targetDishIds.Contains(entry.Key))
+                {
+                    brightness = ScopeDishBrightness;
+                }
+
+                view.SetSettlementFocus(brightness);
+            }
         }
 
         internal async Awaitable PlaySweetTransferBuffTriggerAsync(
@@ -322,10 +354,21 @@ namespace GourmetProject.Game.Presentation.Battle
             float duration,
             CancellationToken cancellationToken)
         {
+            await ShowScopeAsync(
+                group?.TargetDishIds,
+                duration,
+                cancellationToken);
+        }
+
+        internal async Awaitable ShowScopeAsync(
+            IReadOnlyCollection<int> targetDishIds,
+            float duration,
+            CancellationToken cancellationToken)
+        {
             var shakenTargets = new List<DishPieceView>();
-            if (group != null && _dishViews != null)
+            if (targetDishIds != null && _dishViews != null)
             {
-                foreach (int id in group.TargetDishIds)
+                foreach (int id in targetDishIds)
                 {
                     DishPieceView target = TryGetDish(id);
                     if (target == null)
@@ -347,6 +390,15 @@ namespace GourmetProject.Game.Presentation.Battle
             await Awaitable.WaitForSecondsAsync(Mathf.Max(0.0001f, duration), cancellationToken);
         }
 
+        internal static Vector3 ResultLabelScatterOffset(float visualScale, float xUnit, float yUnit)
+        {
+            float scale = Mathf.Max(0.0001f, visualScale);
+            return new Vector3(
+                Mathf.Clamp(xUnit, -1f, 1f) * 0.12f * scale,
+                Mathf.Clamp01(yUnit) * 0.18f * scale,
+                0f);
+        }
+
         internal async Awaitable ShowResultAsync(
             SettlementEffectGroup group,
             ScoreLine line,
@@ -354,8 +406,6 @@ namespace GourmetProject.Game.Presentation.Battle
             BigDouble dishContribution,
             BigDouble runningTotal,
             float duration,
-            int stackIndex,
-            int stackCount,
             SettlementImpactTier impactTier,
             float audioPitch,
             bool playTargetFeedback,
@@ -385,12 +435,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 ? target.DishValueBadgeWorldPosition
                     + Vector3.down * (0.42f * _visualScale)
                 : _mapper.Center + Vector3.up * (0.20f * _visualScale);
-            if (stackCount > 1)
-            {
-                float centeredIndex = stackIndex - (stackCount - 1) * 0.5f;
-                anchor += Vector3.up
-                    * (centeredIndex * 0.54f * _visualScale);
-            }
+            anchor += ResultLabelScatterOffset(
+                _visualScale,
+                UnityEngine.Random.Range(-1f, 1f),
+                UnityEngine.Random.Range(0f, 1f));
             Awaitable impactTask = playTargetFeedback
                 ? PlayImpactRingAsync(target, theme, impactTier, cancellationToken)
                 : default;
@@ -401,7 +449,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 theme,
                 duration,
                 cancellationToken,
-                headerSemanticColor: ResultHeaderSemanticColorFor(line, theme));
+                headerSemanticColor: ResultHeaderSemanticColorFor(line, theme),
+                sortingOrder: WorldLabelSorting.NextOrder());
             if (playTargetFeedback)
             {
                 await impactTask;
@@ -707,7 +756,8 @@ namespace GourmetProject.Game.Presentation.Battle
             bool finalStamp = false,
             Transform parentOverride = null,
             float visualScaleOverride = -1f,
-            Color? headerSemanticColor = null)
+            Color? headerSemanticColor = null,
+            int sortingOrder = -1)
         {
             SettlementStageLabelView prefab = finalStamp ? _finaleLabelPrefab : _labelPrefab;
             if (prefab == null)
@@ -723,7 +773,7 @@ namespace GourmetProject.Game.Presentation.Battle
             root.name = finalStamp ? "SettlementFinaleLabel" : "SettlementStageLabel";
             root.transform.position = anchor;
             _transients.Add(root);
-            label.Bind(header, body, theme, headerSemanticColor);
+            label.Bind(header, body, theme, headerSemanticColor, sortingOrder);
 
             TextMeshPro headerText = label.HeaderText;
             TextMeshPro bodyText = label.BodyText;

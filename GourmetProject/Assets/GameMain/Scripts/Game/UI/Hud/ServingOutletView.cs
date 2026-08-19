@@ -1,5 +1,4 @@
 using System;
-using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Battle;
 using UnityEngine;
@@ -18,9 +17,9 @@ namespace GourmetProject.Game.UI.Hud
 
     /// <summary>
     /// 经营挑战底部出菜口：负责显示等待玩家拖到餐桌的自动出菜食物。
-    /// 具体餐桌预览与提交由 <see cref="BattleWorldController"/> 完成。
+    /// 具体餐桌预览与提交由 BattleWorldController 完成。
     /// </summary>
-    [RequireComponent(typeof(Canvas), typeof(GraphicRaycaster))]
+    [RequireComponent(typeof(CanvasGroup))]
     public sealed class ServingOutletView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         private const float PreparedDishRaycastPadding = 24f;
@@ -30,7 +29,6 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private ServingOutletDishHoverTrigger _dishHoverTrigger;
         [SerializeField] private TMP_Text _statusText;
         [SerializeField] private CanvasGroup _canvasGroup;
-        [SerializeField] private Canvas _worldCanvas;
 
         [Header("State Colors")]
         [SerializeField] private Color _readyColor = new Color(0.86f, 0.98f, 0.76f, 1f);
@@ -42,27 +40,11 @@ namespace GourmetProject.Game.UI.Hud
         private Action<Vector2> _drag;
         private Func<Vector2, bool> _endDrag;
         private bool _dragging;
-        private Camera _worldCamera;
 
         public ServingOutletState State { get; private set; }
 
-        public void ConfigureWorldSpace(Camera worldCamera)
-        {
-            _worldCamera = worldCamera != null ? worldCamera : Camera.main;
-            if (_worldCanvas == null)
-            {
-                Debug.LogError(
-                    $"{nameof(ServingOutletView)} prefab 未绑定 World Space Canvas。",
-                    this);
-                return;
-            }
-
-            _worldCanvas.renderMode = RenderMode.WorldSpace;
-            _worldCanvas.worldCamera = _worldCamera;
-            _worldCanvas.overrideSorting = true;
-            _worldCanvas.sortingLayerName = BattleSorting.WorldUi;
-            _worldCanvas.sortingOrder = 0;
-        }
+        public RectTransform TipPlacementTarget =>
+            _preparedDishRoot != null ? _preparedDishRoot : transform as RectTransform;
 
         public void SetVisible(bool visible)
         {
@@ -143,12 +125,14 @@ namespace GourmetProject.Game.UI.Hud
                     : Vector4.zero);
                 if (waitingForDrag)
                 {
+                    _dishPreview.SetDisplayLockedToDefaultFoodCell(true);
                     _dishPreview.Bind(
                         DishPreviewRequest.FromInstance(prepared.Dish));
                     SetDishAlpha(1f);
                 }
                 else
                 {
+                    _dishPreview.SetDisplayLockedToDefaultFoodCell(false);
                     _dishPreview.Hide();
                 }
             }
@@ -227,28 +211,6 @@ namespace GourmetProject.Game.UI.Hud
             }
 
             _dishPreview.SetAlpha(alpha);
-        }
-
-        public Bounds DishWorldBounds
-        {
-            get
-            {
-                if (_dishPreview == null)
-                {
-                    return new Bounds(transform.position, Vector3.zero);
-                }
-
-                var rect = (RectTransform)_dishPreview.transform;
-                var corners = new Vector3[4];
-                rect.GetWorldCorners(corners);
-                var bounds = new Bounds(corners[0], Vector3.zero);
-                for (int i = 1; i < corners.Length; i++)
-                {
-                    bounds.Encapsulate(corners[i]);
-                }
-
-                return bounds;
-            }
         }
 
         private void SetBackground(Color color)

@@ -81,6 +81,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         private readonly IRewardPageHost _host;
         private readonly List<Frame> _stack = new List<Frame>();
+        private Action _onIdle;
         private bool _returning;
         private bool _inspectionSuspended;
 
@@ -92,6 +93,22 @@ namespace GourmetProject.Game.UI.Battle.Pages
         public bool IsActive => _stack.Count > 0;
 
         internal int Depth => _stack.Count;
+
+        internal void WhenIdle(Action onIdle)
+        {
+            if (onIdle == null)
+            {
+                return;
+            }
+
+            if (!IsActive)
+            {
+                onIdle();
+                return;
+            }
+
+            _onIdle += onIdle;
+        }
 
         internal bool IsInspectionSuspended => _inspectionSuspended;
 
@@ -324,6 +341,7 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             _stack.Clear();
             _host.HideRewardSubflowLayer();
+            NotifyIdle();
         }
 
         private bool TryPush(Frame frame)
@@ -442,6 +460,19 @@ namespace GourmetProject.Game.UI.Battle.Pages
             _host.HideRewardSubflowLayer();
             _host.NotifyRewardSubflowLifecycle(RewardSubflowLifecycle.ParentRestored);
             _returning = false;
+            NotifyIdle();
+        }
+
+        private void NotifyIdle()
+        {
+            if (IsActive)
+            {
+                return;
+            }
+
+            Action idle = _onIdle;
+            _onIdle = null;
+            idle?.Invoke();
         }
 
         private static Frame CreateFrame(

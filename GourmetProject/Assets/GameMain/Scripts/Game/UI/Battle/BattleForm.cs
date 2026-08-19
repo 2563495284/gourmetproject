@@ -140,11 +140,27 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private GameObject _shopItemFlyFxPrefab;
 
         [Header("Food Battle (center)")]
-        [Tooltip("美食战斗专属 UI 根节点：MessageText / FoodActions / BuffList。")]
+        [Tooltip("美食战斗专属 UI 根节点：MessageText / FoodActions / BuffList / ServingOutlet / FoodDiscardBin / TemporaryArea。")]
         [SerializeField] private GameObject _foodBattlePanel;
         [SerializeField] private BattleFoodActionBar _foodBar;
         [SerializeField] private ServingOutletView _servingOutlet;
         [SerializeField] private FoodDiscardBinView _foodDiscardBin;
+        [Tooltip("美食战斗 HUD 里的暂存区框：世界棋子按此矩形投影落位。")]
+        [SerializeField] private RectTransform _temporaryArea;
+        [SerializeField] private RectTransform _bottomUi;
+        [Tooltip("BottomUI（含出餐口）下滑出屏时长（秒）。")]
+        [SerializeField] private float _foodSettlementLayoutDuration = 0.32f;
+        [Tooltip("TableLayoutArea 放大、餐桌跟上的时长（秒）。")]
+        [SerializeField] private float _foodSettlementTableLayoutDuration = 0.64f;
+        [Tooltip("布局动画结束后、开始结算演出前的停顿（秒）。")]
+        [SerializeField] private float _foodSettlementHoldDuration = 0.5f;
+
+        private DishDragGhostOverlay _dragGhostOverlay;
+        private TemporaryAreaDishOverlay _temporaryAreaDishOverlay;
+        private CanvasGroup _bottomUiGroup;
+        private Vector2 _bottomUiRestPosition;
+        private bool _bottomUiRestCaptured;
+        private Tween _bottomUiTween;
 
         private bool _inBattle;
         private GameplayView _current = GameplayView.None;
@@ -471,6 +487,7 @@ namespace GourmetProject.Game.UI.Battle
         public void HideBattleWorld()
         {
             CancelBossPresentation();
+            RestoreBottomUiImmediate();
             _infoColumn?.SetBattleScoreOverride(null);
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             world?.HideWorld();
@@ -648,7 +665,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _world.SetTableArea(_boardArea);
+            BindWorldHudAreas();
             _world.Initialize(
                 _run,
                 _session,
@@ -1549,6 +1566,40 @@ namespace GourmetProject.Game.UI.Battle
         ShopForm IShopPageHost.ShopPanel => _shopPanel;
         bool IShopPageHost.ShouldRefreshItemsAfterShopChange => _shopItemFlyInFlight <= 0;
         void IShopPageHost.OnShopClosed() => OnShopClosed();
+        /// <summary>
+        /// RewardForm 盖在 Dialog 组上。Battle 里的被动演出和领奖子页都在 Default 组，
+        /// 领取后必须等这些层结束，RewardForm 才能重新显示或关闭。
+        /// </summary>
+        internal bool HasRewardCoveredPresentation =>
+            _passivePresentations.IsBusy || (_rewardPage != null && _rewardPage.IsActive);
+
+        internal void WhenRewardCoveredPresentationsIdle(Action onIdle)
+        {
+            if (onIdle == null)
+            {
+                return;
+            }
+
+            void Continue()
+            {
+                if (_passivePresentations.IsBusy)
+                {
+                    _passivePresentations.WhenIdle(Continue);
+                    return;
+                }
+
+                if (_rewardPage != null && _rewardPage.IsActive)
+                {
+                    _rewardPage.WhenIdle(Continue);
+                    return;
+                }
+
+                onIdle();
+            }
+
+            Continue();
+        }
+
         void IShopPageHost.WhenPassivePresentationsIdle(Action onIdle) =>
             _passivePresentations.WhenIdle(onIdle);
         void IShopPageHost.RefreshPersistent(bool refreshItems) => RefreshPersistent(refreshItems);
@@ -1661,7 +1712,7 @@ namespace GourmetProject.Game.UI.Battle
         void IBattleTableFragmentEditHost.BeginTableFragmentChoice(TableFragmentChoiceRequest request)
         {
             _world = _world ?? BattleWorldController.Instance;
-            _world?.SetTableArea(_boardArea);
+            BindWorldHudAreas();
             _world?.BeginTableFragmentChoice(request);
             BindWorldHoverCallbacks();
         }
@@ -2015,7 +2066,7 @@ namespace GourmetProject.Game.UI.Battle
                 _world = BattleWorldController.Instance;
             }
 
-            _world?.SetTableArea(_boardArea);
+            BindWorldHudAreas();
             return _fragmentEditCoordinator != null
                 && _fragmentEditCoordinator.Open(candidateIds, completed, onShown);
         }
@@ -2115,7 +2166,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            _world.SetTableArea(_boardArea);
+            BindWorldHudAreas();
             _world.Initialize(
                 _run,
                 _session,
@@ -2188,15 +2239,282 @@ namespace GourmetProject.Game.UI.Battle
                 _foodBattlePanel.SetActive(visible);
             }
 
+            if (visible)
+            {
+                SyncBottomUiToSession();
+            }
+
             _foodBar?.SetVisible(visible);
             ServingOutletView servingOutlet = ResolveServingOutlet();
-            BattleWorldController world = _world ?? BattleWorldController.Instance;
-            servingOutlet?.ConfigureWorldSpace(world != null ? world.WorldCamera : Camera.main);
             servingOutlet?.SetVisible(visible);
             FoodDiscardBinView discardBin = ResolveFoodDiscardBin();
-            discardBin?.ConfigureWorldSpace(world != null ? world.WorldCamera : Camera.main);
             discardBin?.Bind(_session);
             discardBin?.SetVisible(visible && !_bossDiscardRevealPending);
+            (_world ?? BattleWorldController.Instance)?.RefreshTemporaryAreaPresentation();
+        }
+
+        private async Awaitable PlayFoodSettlementLayoutAsync()
+        {
+            EnsureBottomUi();
+            KillBottomUiTween();
+            float bottomDuration = Mathf.Max(0.01f, _foodSettlementLayoutDuration > 0.01f ? _foodSettlementLayoutDuration : 0.32f);
+            float tableDuration = Mathf.Max(0.01f, _foodSettlementTableLayoutDuration > 0.01f ? _foodSettlementTableLayoutDuration : 0.64f);
+            Sequence sequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+            sequence.Pause();
+            Tween bottomTween = CreateBottomUiHideTween(bottomDuration);
+            if (bottomTween != null)
+            {
+                sequence.Append(bottomTween);
+            }
+
+            _world?.AppendFoodSettlementLayoutTween(sequence, tableDuration);
+
+            if (sequence.Duration() <= 0f)
+            {
+                ApplyBottomUiHiddenImmediate();
+                _world?.ApplySettlementLayoutImmediate();
+            }
+
+            float holdDuration = _foodSettlementHoldDuration > 0.01f ? _foodSettlementHoldDuration : 0.5f;
+            sequence.AppendInterval(holdDuration);
+
+            if (sequence.Duration() <= 0f)
+            {
+                sequence.Kill();
+                return;
+            }
+
+            _bottomUiTween = sequence;
+            sequence.Play();
+            try
+            {
+                await sequence.AsyncWaitForCompletion();
+            }
+            catch (System.OperationCanceledException)
+            {
+            }
+
+            _bottomUiTween = null;
+            ApplyBottomUiHiddenImmediate();
+        }
+
+        private void SyncBottomUiToSession()
+        {
+            if (_session != null && _session.IsSettled)
+            {
+                ApplyBottomUiHiddenImmediate();
+                return;
+            }
+
+            RestoreBottomUiImmediate();
+        }
+
+        private void RestoreBottomUiImmediate()
+        {
+            EnsureBottomUi();
+            KillBottomUiTween();
+            if (_bottomUi == null)
+            {
+                return;
+            }
+
+            _bottomUi.anchoredPosition = _bottomUiRestPosition;
+            SetBottomUiInteractable(true);
+        }
+
+        private void ApplyBottomUiHiddenImmediate()
+        {
+            EnsureBottomUi();
+            KillBottomUiTween();
+            if (_bottomUi == null)
+            {
+                return;
+            }
+
+            _bottomUi.anchoredPosition = HiddenBottomUiPosition();
+            SetBottomUiInteractable(false);
+        }
+
+        private Tween CreateBottomUiHideTween(float duration)
+        {
+            EnsureBottomUi();
+            if (_bottomUi == null)
+            {
+                return null;
+            }
+
+            SetBottomUiInteractable(false);
+            return _bottomUi
+                .DOAnchorPos(HiddenBottomUiPosition(), duration)
+                .SetEase(Ease.InCubic);
+        }
+
+        private Vector2 HiddenBottomUiPosition()
+        {
+            float height = _bottomUi != null ? Mathf.Max(_bottomUi.rect.height, _bottomUi.sizeDelta.y) : 410f;
+            return new Vector2(_bottomUiRestPosition.x, _bottomUiRestPosition.y - height);
+        }
+
+        private void EnsureBottomUi()
+        {
+            if (_bottomUi == null && _foodBattlePanel != null)
+            {
+                Transform found = _foodBattlePanel.transform.Find("BottomUI");
+                _bottomUi = found as RectTransform;
+            }
+
+            if (_bottomUi == null)
+            {
+                return;
+            }
+
+            if (_bottomUiGroup == null)
+            {
+                _bottomUiGroup = _bottomUi.GetComponent<CanvasGroup>();
+                if (_bottomUiGroup == null)
+                {
+                    _bottomUiGroup = _bottomUi.gameObject.AddComponent<CanvasGroup>();
+                }
+            }
+
+            if (!_bottomUiRestCaptured)
+            {
+                _bottomUiRestPosition = _bottomUi.anchoredPosition;
+                _bottomUiRestCaptured = true;
+            }
+        }
+
+        private void SetBottomUiInteractable(bool interactable)
+        {
+            if (_bottomUiGroup == null)
+            {
+                return;
+            }
+
+            _bottomUiGroup.interactable = interactable;
+            _bottomUiGroup.blocksRaycasts = interactable;
+        }
+
+        private void KillBottomUiTween()
+        {
+            if (_bottomUiTween != null && _bottomUiTween.IsActive())
+            {
+                _bottomUiTween.Kill(false);
+            }
+
+            _bottomUiTween = null;
+        }
+
+        private void BindWorldHudAreas()
+        {
+            _world ??= BattleWorldController.Instance;
+            _world?.SetTableArea(_boardArea);
+            EnsureDragGhostOverlay();
+            ConfigureTemporaryAreaOverlayFrame();
+            EnsureTemporaryAreaDishOverlay();
+            _world?.SetTemporaryArea(_temporaryArea);
+        }
+
+        /// <summary>
+        /// 临时桌跟出餐口一样用实心底。菜在世界层会被 Overlay 盖住，
+        /// 所以另外在框上叠一层 Overlay 菜图。
+        /// </summary>
+        private void ConfigureTemporaryAreaOverlayFrame()
+        {
+            if (_temporaryArea == null)
+            {
+                return;
+            }
+
+            Image image = _temporaryArea.GetComponent<Image>();
+            if (image != null)
+            {
+                image.fillCenter = true;
+                image.raycastTarget = false;
+            }
+
+            CanvasGroup group = _temporaryArea.GetComponent<CanvasGroup>();
+            if (group != null)
+            {
+                group.blocksRaycasts = false;
+                group.interactable = false;
+            }
+        }
+
+        private void EnsureTemporaryAreaDishOverlay()
+        {
+            if (_temporaryArea == null)
+            {
+                return;
+            }
+
+            if (_temporaryAreaDishOverlay == null)
+            {
+                _temporaryAreaDishOverlay = _temporaryArea.GetComponentInChildren<TemporaryAreaDishOverlay>(true);
+            }
+
+            if (_temporaryAreaDishOverlay == null)
+            {
+                var go = new GameObject(
+                    "TemporaryAreaDishOverlay",
+                    typeof(RectTransform),
+                    typeof(TemporaryAreaDishOverlay));
+                go.layer = _temporaryArea.gameObject.layer;
+                var rect = (RectTransform)go.transform;
+                rect.SetParent(_temporaryArea, false);
+                rect.SetAsFirstSibling();
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                rect.localScale = Vector3.one;
+                var group = go.AddComponent<CanvasGroup>();
+                group.blocksRaycasts = false;
+                group.interactable = false;
+                _temporaryAreaDishOverlay = go.GetComponent<TemporaryAreaDishOverlay>();
+            }
+
+            _temporaryAreaDishOverlay.Bind(_world ?? BattleWorldController.Instance);
+        }
+
+        /// <summary>
+        /// Overlay 永远盖住世界棋子。拖拽残影单独放在更高 sortingOrder 的 Overlay 层，
+        /// 才能画在出餐口上面，又不必把出餐口搬进场景。
+        /// </summary>
+        private void EnsureDragGhostOverlay()
+        {
+            BattleWorldController world = _world ?? BattleWorldController.Instance;
+            if (_dragGhostOverlay == null)
+            {
+                var go = new GameObject(
+                    "DragGhostOverlay",
+                    typeof(RectTransform),
+                    typeof(Canvas),
+                    typeof(CanvasGroup),
+                    typeof(DishDragGhostOverlay));
+                go.layer = gameObject.layer;
+                var rect = (RectTransform)go.transform;
+                rect.SetParent(transform, false);
+                rect.SetAsLastSibling();
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                rect.localScale = Vector3.one;
+
+                Canvas canvas = go.GetComponent<Canvas>();
+                canvas.overrideSorting = true;
+                canvas.sortingOrder = 250;
+
+                CanvasGroup group = go.GetComponent<CanvasGroup>();
+                group.blocksRaycasts = false;
+                group.interactable = false;
+                group.ignoreParentGroups = true;
+
+                _dragGhostOverlay = go.GetComponent<DishDragGhostOverlay>();
+            }
+
+            _dragGhostOverlay.Bind(world);
         }
 
         /// <summary>初始化经营挑战态的出菜口、弃置区与世界拖拽回调。</summary>
@@ -2205,8 +2523,6 @@ namespace GourmetProject.Game.UI.Battle
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             ServingOutletView servingOutlet = ResolveServingOutlet();
             FoodDiscardBinView discardBin = ResolveFoodDiscardBin();
-            servingOutlet?.ConfigureWorldSpace(world != null ? world.WorldCamera : Camera.main);
-            discardBin?.ConfigureWorldSpace(world != null ? world.WorldCamera : Camera.main);
             discardBin?.Bind(_session);
             if (world != null)
             {
@@ -3939,7 +4255,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _world = _world ?? BattleWorldController.Instance;
-            _world?.SetTableArea(_boardArea);
+            BindWorldHudAreas();
 
             RewardForm reward = RewardForm.Active;
             bool managesReward = reward != null && !reward.IsSuspendedForRewardSubflow;
@@ -4114,7 +4430,7 @@ namespace GourmetProject.Game.UI.Battle
                 () =>
                 {
                     StartBattleMusic();
-                    _world.SetTableArea(_boardArea);
+                    BindWorldHudAreas();
                     if (string.Equals(bossPlan?.DebuffId, "debuff_gluttony", StringComparison.Ordinal))
                     {
                         _foodBar?.SetRecipeCountPresentationOverride(bossPlan.InitialRecipeEntryCount);
@@ -4730,9 +5046,8 @@ namespace GourmetProject.Game.UI.Battle
 
             BattleWorldController world = _world ?? BattleWorldController.Instance;
             world?.ClearDishScopeHighlights();
-            tips.PlaceAroundWorldBounds(
-                servingOutlet.DishWorldBounds,
-                world != null ? world.WorldCamera : Camera.main,
+            tips.PlaceAroundRectTransform(
+                servingOutlet.TipPlacementTarget,
                 GetComponentInParent<Canvas>());
             return true;
         }
@@ -5011,6 +5326,18 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            _world ??= BattleWorldController.Instance;
+            _world?.SetFoodSettlementLayoutBusy(true);
+            RefreshFoodActions();
+            await PlayFoodSettlementLayoutAsync();
+
+            if (_discardSettlementCallbacks || Active != this || _session == null || _session.IsSettled)
+            {
+                _world?.SetFoodSettlementLayoutBusy(false);
+                RefreshFoodActions();
+                return;
+            }
+
             // 结算前拍基线：演出用它逐 cue 揭示，hover tips 与表演同步，而非一上来就显示全部结算信息。
             var reveal = new SettlementRevealState();
             var settlementBaseline = new SettlementBaselineSnapshot();
@@ -5045,6 +5372,7 @@ namespace GourmetProject.Game.UI.Battle
                     OnSettlementPassiveTriggered,
                     OnSettlementBeat,
                     () => OnSettlementComplete(result));
+                _world.SetFoodSettlementLayoutBusy(false);
             }
             else
             {

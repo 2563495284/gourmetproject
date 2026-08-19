@@ -65,7 +65,9 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private BattleDoodleController _doodle;
         [Tooltip("Battle 场景内可直接移动和缩放的餐桌布局区域；存在时优先于 HUD BoardArea。")]
         [SerializeField] private RectTransform _sceneBoardArea;
-        [Tooltip("麻风味旋转后的食物暂存区。")]
+        [Tooltip("结算时 TableLayoutArea 放大时长（秒）。BattleForm 传入有效时长时以此为准。")]
+        [SerializeField] private float _foodSettlementLayoutDuration = 0.64f;
+        [Tooltip("暂存区 HUD 框。由 BattleForm 注入 Overlay 矩形；世界棋子仍在 PiecesRoot。")]
         [SerializeField] private RectTransform _temporaryArea;
 
         // —— 运行时实例化用的 prefab ——
@@ -114,6 +116,15 @@ namespace GourmetProject.Game.Presentation.Battle
         private GameRun _run;
         private BattleSession _session;
         private bool _settling;
+        private bool _foodSettlementLayoutBusy;
+        private bool _foodSettlementLayoutActive;
+        private float _foodLayoutBuiltCellSize;
+        private float _foodLayoutRestVisualScale = 1f;
+        private Vector3 _foodLayoutRestBoardPosition;
+        private Vector3 _foodLayoutRestBoardScale = Vector3.one;
+        private bool _foodLayoutRestCaptured;
+        private Tween _foodSettlementLayoutTween;
+        private BattleTableLayoutArea _tableLayoutArea;
         private DishPieceView _outletDragPiece;
         private Placement? _outletHoverPlacement;
         private DishPieceView _movingPiece;
@@ -121,6 +132,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private Placement? _movingHoverPlacement;
         private DishPieceView _temporaryAreaDragPiece;
         private Placement? _temporaryAreaHoverPlacement;
+        private DishPieceView _temporaryAreaFlyInPiece;
         private bool _activeItemTransitioning;
         private bool _bossPresentationBusy;
         private Vector3 _dragPointerPreviousWorld;
@@ -181,6 +193,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public bool IsFoodInteractionBusy
             => _settling
+                || _foodSettlementLayoutBusy
                 || _activeItemTransitioning
                 || _bossPresentationBusy
                 || _outletDragPiece != null
@@ -188,6 +201,31 @@ namespace GourmetProject.Game.Presentation.Battle
                 || _temporaryAreaDragPiece != null;
 
         public bool IsSettlementPlaying => _settling;
+
+        internal DishPieceView ActiveDragPiece =>
+            _outletDragPiece != null
+                ? _outletDragPiece
+                : _movingPiece != null
+                    ? _movingPiece
+                    : _temporaryAreaDragPiece;
+
+        internal void CopyTemporaryAreaOverlayPieces(List<DishPieceView> dest)
+        {
+            dest.Clear();
+            for (int i = 0; i < _temporaryAreaPieces.Count; i++)
+            {
+                DishPieceView piece = _temporaryAreaPieces[i];
+                if (piece != null)
+                {
+                    dest.Add(piece);
+                }
+            }
+
+            if (_temporaryAreaFlyInPiece != null && !dest.Contains(_temporaryAreaFlyInPiece))
+            {
+                dest.Add(_temporaryAreaFlyInPiece);
+            }
+        }
 
         public bool PauseSettlementPlayback()
         {
@@ -203,6 +241,17 @@ namespace GourmetProject.Game.Presentation.Battle
         public void SetBossPresentationBusy(bool busy)
         {
             _bossPresentationBusy = busy;
+            SetPlacedPiecesClickEnabled(!busy);
+            if (busy)
+            {
+                CancelServeInteractions();
+                ClearDishScopeHighlights();
+            }
+        }
+
+        public void SetFoodSettlementLayoutBusy(bool busy)
+        {
+            _foodSettlementLayoutBusy = busy;
             SetPlacedPiecesClickEnabled(!busy);
             if (busy)
             {
@@ -729,6 +778,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EnsureTableEdit();
             EndTableView();
+            RestoreFoodLayoutImmediate();
 
             gameObject.SetActive(true);
             CancelPresentationTasks();
@@ -755,6 +805,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EnsureTableEdit();
             ResetTableViewFade();
+            RestoreFoodLayoutImmediate();
             if (_boardEdit.IsEditing)
             {
                 _boardEdit.EndTableEdit();
@@ -786,6 +837,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EnsureTableEdit();
             ResetTableViewFade();
+            RestoreFoodLayoutImmediate();
             if (_boardEdit.IsEditing)
             {
                 _boardEdit.EndTableEdit();
@@ -870,10 +922,12 @@ namespace GourmetProject.Game.Presentation.Battle
 
                     piece.SetFlying(true);
                     piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
+                    _temporaryAreaFlyInPiece = piece;
+                    BuildHudFood(piece, temporaryDish, _dishClicked);
                     Vector3 slotCenter = new Vector3(
                         targetSlot.Center.x,
                         targetSlot.Center.y,
-                        _temporaryArea != null ? _temporaryArea.position.z : transform.position.z);
+                        TemporaryAreaWorldZ());
                     Vector3 targetPosition = TemporaryAreaPieceRootPosition(
                         piece,
                         slotCenter,
@@ -900,6 +954,7 @@ namespace GourmetProject.Game.Presentation.Battle
             int index,
             Action onComplete)
         {
+            _temporaryAreaFlyInPiece = null;
             _activeItemTransitioning = false;
             if (piece == null || dish == null)
             {
@@ -922,6 +977,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 piece.SetFlying(true);
                 piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
                 piece.SetClickEnabled(true);
+                BuildHudFood(piece, dish, _dishClicked);
 
                 int insertIndex = Mathf.Clamp(index, 0, _temporaryAreaPieces.Count);
                 _temporaryAreaPieces.Insert(insertIndex, piece);
@@ -966,6 +1022,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             CancelTemporaryAreaFade();
+            RestoreFoodLayoutImmediate();
             CancelPresentationTasks();
         }
 
@@ -1013,10 +1070,17 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearPendingRewardPresentation();
             _worldMode = WorldMode.Food;
             _settling = false;
+            _foodSettlementLayoutBusy = false;
             _activeItemTransitioning = false;
             _bossPresentationBusy = false;
+            RestoreFoodLayoutImmediate();
             ComputeViewport();
             BuildTable(session.DiningTable);
+            CaptureFoodLayoutRestFromBuiltTable();
+            if (session != null && session.IsSettled)
+            {
+                ApplySettlementLayoutImmediate();
+            }
             EnsureSequencer();
             // 装饰品和消耗品（装饰品/消耗品）与右下角食谱仍在屏幕空间 HUD；
             // 出菜口是 World Space Canvas，和餐桌、食物、上菜/结算演出、涂鸦一起由经营挑战世界承载。
@@ -1105,6 +1169,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public void SuspendWorld()
         {
             CancelPresentationTasks();
+            RestoreFoodLayoutImmediate();
             ResetTableViewFade();
             if (_boardEdit != null && _boardEdit.IsEditing)
             {
@@ -1113,6 +1178,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EndTableView();
             _settling = false;
+            _foodSettlementLayoutBusy = false;
             _activeItemTransitioning = false;
             CancelServeInteractions();
             SetFoodWorldElementsVisible(false);
@@ -1174,7 +1240,9 @@ namespace GourmetProject.Game.Presentation.Battle
         public void ClearBattleTable()
         {
             CancelPresentationTasks();
+            RestoreFoodLayoutImmediate();
             _settling = false;
+            _foodSettlementLayoutBusy = false;
             CancelServeInteractions();
             if (_session != null)
             {
@@ -1315,6 +1383,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             if (_temporaryArea == null)
             {
+                SetTemporaryAreaPiecesVisible(false);
                 return;
             }
 
@@ -1323,15 +1392,17 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_temporaryAreaCanvasGroup == null)
             {
                 _temporaryArea.gameObject.SetActive(visible);
+                SetTemporaryAreaPiecesVisible(visible && _temporaryArea.gameObject.activeInHierarchy);
                 return;
             }
 
-            _temporaryAreaCanvasGroup.interactable = visible;
-            _temporaryAreaCanvasGroup.blocksRaycasts = visible;
+            _temporaryAreaCanvasGroup.interactable = false;
+            _temporaryAreaCanvasGroup.blocksRaycasts = false;
             if (!animated)
             {
                 _temporaryAreaCanvasGroup.alpha = visible ? 1f : 0f;
                 _temporaryArea.gameObject.SetActive(visible);
+                SetTemporaryAreaPiecesVisible(visible && _temporaryArea.gameObject.activeInHierarchy);
                 return;
             }
 
@@ -1343,6 +1414,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     _temporaryArea.gameObject.SetActive(true);
                 }
 
+                SetTemporaryAreaPiecesVisible(_temporaryArea.gameObject.activeInHierarchy);
                 if (_temporaryAreaCanvasGroup.alpha >= 0.999f)
                 {
                     return;
@@ -1363,6 +1435,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (!_temporaryArea.gameObject.activeSelf)
             {
                 _temporaryAreaCanvasGroup.alpha = 0f;
+                SetTemporaryAreaPiecesVisible(false);
                 return;
             }
 
@@ -1381,7 +1454,23 @@ namespace GourmetProject.Game.Presentation.Battle
                     {
                         _temporaryArea.gameObject.SetActive(false);
                     }
+
+                    SetTemporaryAreaPiecesVisible(false);
                 });
+        }
+
+        private void SetTemporaryAreaPiecesVisible(bool visible)
+        {
+            for (int i = 0; i < _temporaryAreaPieces.Count; i++)
+            {
+                DishPieceView piece = _temporaryAreaPieces[i];
+                if (piece == null || piece == _temporaryAreaDragPiece)
+                {
+                    continue;
+                }
+
+                piece.gameObject.SetActive(visible);
+            }
         }
 
         private void EnsureTemporaryAreaCanvasGroup()
@@ -2000,9 +2089,24 @@ namespace GourmetProject.Game.Presentation.Battle
 
             DishPieceView piece = Instantiate(_dishPiecePrefab, _piecesRoot);
             piece.gameObject.name = objectName;
-            piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, null);
+            BuildHudFood(piece, dish, null);
             piece.SetHoverCallbacks(null, null);
             return piece;
+        }
+
+        private void BuildHudFood(DishPieceView piece, DishInstance dish, Action<DishInstance> clicked)
+        {
+            if (piece == null || dish == null)
+            {
+                return;
+            }
+
+            piece.BuildPlaced(
+                dish,
+                _spriteProvider.Get(dish.Def),
+                DiningTableLayout.DefaultFoodCellSize,
+                DiningTableLayout.DefaultFoodCellSize + Gap,
+                clicked);
         }
 
         private void ClearOutletDragPreview()
@@ -2545,11 +2649,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 Vector3 slotCenter = new Vector3(
                     slot.Center.x,
                     slot.Center.y,
-                    _temporaryArea != null ? _temporaryArea.position.z : transform.position.z);
+                    TemporaryAreaWorldZ());
                 Vector3 targetPosition = TemporaryAreaPieceRootPosition(piece, slotCenter, slot.Scale);
                 piece.transform.DOKill();
                 piece.SetDragPresentation(false);
-                // TemporaryArea 是 WorldUI Canvas；临时菜需保持在 PiecesFlying 层才能显示在桌面背景之上。
+                // 临时菜仍在 PiecesFlying 层，才能盖过桌布；HUD 框只提供落点。
                 piece.SetFlying(true);
                 piece.SetSortingOrderOffset(i * TemporaryAreaSortingStride);
                 piece.SetClickEnabled(true);
@@ -2629,76 +2733,59 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private Vector2 TemporaryAreaFootprint(DishInstance dish)
         {
-            DishShape shape = dish?.Placement.Orientation;
-            if (shape == null)
-            {
-                return Vector2.one * Mathf.Max(_cellSize, 0.01f);
-            }
-
-            float pitch = _cellSize + Gap;
-            return new Vector2(
-                Mathf.Max(_cellSize, (shape.Width - 1) * pitch + _cellSize),
-                Mathf.Max(_cellSize, (shape.Height - 1) * pitch + _cellSize));
+            float cell = DiningTableLayout.DefaultFoodCellSize;
+            float pitch = cell + Gap;
+            return DishVisualLayout.FootprintSpan(dish?.Placement.Orientation, cell, pitch);
         }
 
         /// <summary>内容矩形算不出来时的兜底中心：面板世界矩形中心，而不是可能贴边的 Pivot 点。</summary>
         private Vector2 TemporaryAreaFallbackCenter()
         {
-            if (_temporaryArea == null)
+            if (TryGetRectTransformWorldBounds(
+                    _temporaryArea,
+                    out float left,
+                    out float right,
+                    out float bottom,
+                    out float top))
             {
-                return transform.position;
+                return new Vector2((left + right) * 0.5f, (bottom + top) * 0.5f);
             }
 
-            var corners = new Vector3[4];
-            _temporaryArea.GetWorldCorners(corners);
-            return new Vector2(
-                (Mathf.Min(corners[0].x, corners[1].x, corners[2].x, corners[3].x)
-                    + Mathf.Max(corners[0].x, corners[1].x, corners[2].x, corners[3].x)) * 0.5f,
-                (Mathf.Min(corners[0].y, corners[1].y, corners[2].y, corners[3].y)
-                    + Mathf.Max(corners[0].y, corners[1].y, corners[2].y, corners[3].y)) * 0.5f);
+            return transform.position;
         }
 
         private bool TryGetTemporaryAreaContentRect(out Rect rect)
         {
             rect = default;
-            if (_temporaryArea == null)
+            if (!TryGetRectTransformWorldBounds(
+                    _temporaryArea,
+                    out float minX,
+                    out float maxX,
+                    out float minY,
+                    out float maxY))
             {
                 return false;
             }
 
-            var corners = new Vector3[4];
-            _temporaryArea.GetWorldCorners(corners);
-            float minX = Mathf.Min(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
-            float maxX = Mathf.Max(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
-            float minY = Mathf.Min(corners[0].y, corners[1].y, corners[2].y, corners[3].y);
-            float maxY = Mathf.Max(corners[0].y, corners[1].y, corners[2].y, corners[3].y);
-
             RectTransform title = _temporaryArea.Find("Title") as RectTransform;
-            if (title != null)
+            if (title != null
+                && TryGetRectTransformWorldBounds(
+                    title,
+                    out _,
+                    out _,
+                    out float titleMinY,
+                    out float titleMaxY)
+                && titleMaxY > minY
+                && titleMinY < maxY)
             {
-                var titleCorners = new Vector3[4];
-                title.GetWorldCorners(titleCorners);
-                float titleMinY = Mathf.Min(
-                    titleCorners[0].y,
-                    titleCorners[1].y,
-                    titleCorners[2].y,
-                    titleCorners[3].y);
-                float titleMaxY = Mathf.Max(
-                    titleCorners[0].y,
-                    titleCorners[1].y,
-                    titleCorners[2].y,
-                    titleCorners[3].y);
-                // 标题允许摆在面板外（当前场景摆在面板下方），只有真正压住面板内部时才让出空间。
-                if (titleMaxY > minY && titleMinY < maxY)
+                // 标题允许摆在面板外；只有真正压住面板内部时才让出空间。
+                if (titleMinY + titleMaxY >= minY + maxY)
                 {
-                    if (titleMinY + titleMaxY >= minY + maxY)
-                    {
-                        maxY = Mathf.Max(minY, titleMinY);
-                    }
-                    else
-                    {
-                        minY = Mathf.Min(maxY, titleMaxY);
-                    }
+                    maxY = Mathf.Max(minY, titleMinY);
+                }
+                else
+                {
+                    minY = Mathf.Min(maxY, titleMaxY);
                 }
             }
 
@@ -2708,6 +2795,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 maxX - TemporaryAreaPadding,
                 maxY - TemporaryAreaPadding);
             return rect.width > 0.01f && rect.height > 0.01f;
+        }
+
+        private float TemporaryAreaWorldZ()
+        {
+            return _piecesRoot != null ? _piecesRoot.position.z : transform.position.z;
         }
 
         private Vector3 TemporaryAreaPieceRootPosition(
@@ -2963,6 +3055,30 @@ namespace GourmetProject.Game.Presentation.Battle
             _hudBoardArea = area;
         }
 
+        /// <summary>注入 BattleForm Overlay 暂存区框。棋子仍在世界层，仅用此矩形投影落位。</summary>
+        public void SetTemporaryArea(RectTransform area)
+        {
+            if (_temporaryArea == area)
+            {
+                RefreshTemporaryAreaPresentation();
+                return;
+            }
+
+            CancelTemporaryAreaFade();
+            _temporaryArea = area;
+            _temporaryAreaCanvasGroup = null;
+            RefreshTemporaryAreaPresentation();
+        }
+
+        public void RefreshTemporaryAreaPresentation()
+        {
+            RefreshTemporaryAreaVisibility(animated: false);
+            if (_temporaryArea != null && _temporaryArea.gameObject.activeInHierarchy)
+            {
+                LayoutTemporaryAreaPieces();
+            }
+        }
+
         internal bool TryComputeTableAreaPlacement(GpTable board, out BoardPlacement placement)
         {
             if (board != null && TryComputeTableAreaRect(out float left, out float right, out float bottom, out float top))
@@ -3006,21 +3122,189 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        public void AppendFoodSettlementLayoutTween(Sequence sequence, float duration)
+        {
+            if (sequence == null)
+            {
+                ApplySettlementLayoutImmediate();
+                return;
+            }
+
+            if (_foodSettlementLayoutActive || !TryCreateFoodSettlementBoardTween(out FoodSettlementBoardTween tween))
+            {
+                ApplySettlementLayoutImmediate();
+                return;
+            }
+
+            BattleTableLayoutArea area = ResolveTableLayoutArea();
+            KillFoodSettlementLayoutTween(complete: false);
+            duration = Mathf.Max(0.01f, duration > 0.01f ? duration : (_foodSettlementLayoutDuration > 0.01f ? _foodSettlementLayoutDuration : 0.64f));
+            bool appended = false;
+            if (area != null)
+            {
+                var rect = (RectTransform)area.transform;
+                sequence.Append(rect.DOAnchorPos(area.SettlementAnchoredPosition, duration).SetEase(Ease.OutCubic));
+                sequence.Join(rect.DOSizeDelta(area.SettlementSizeDelta, duration).SetEase(Ease.OutCubic));
+                appended = true;
+            }
+
+            if (_boardView != null)
+            {
+                if (appended)
+                {
+                    sequence.Join(_boardView.transform.DOMove(tween.Position, duration).SetEase(Ease.OutCubic));
+                    sequence.Join(_boardView.transform.DOScale(Vector3.one * tween.Scale, duration).SetEase(Ease.OutCubic));
+                }
+                else
+                {
+                    sequence.Append(_boardView.transform.DOMove(tween.Position, duration).SetEase(Ease.OutCubic));
+                    sequence.Join(_boardView.transform.DOScale(Vector3.one * tween.Scale, duration).SetEase(Ease.OutCubic));
+                }
+            }
+
+            sequence.OnComplete(() =>
+            {
+                _foodSettlementLayoutTween = null;
+                ApplyFoodSettlementBoardState(tween);
+                area?.ApplySettlementLayout();
+            });
+
+            _foodSettlementLayoutTween = sequence;
+            _foodSettlementLayoutActive = true;
+        }
+
+        public void RestoreFoodLayoutImmediate()
+        {
+            KillFoodSettlementLayoutTween(complete: false);
+            ResolveTableLayoutArea()?.ApplyRestLayout();
+            if (_foodLayoutRestCaptured && _boardView != null)
+            {
+                _boardView.transform.position = _foodLayoutRestBoardPosition;
+                _boardView.transform.localScale = _foodLayoutRestBoardScale;
+                _boardCenter = _foodLayoutRestBoardPosition;
+            }
+
+            if (_foodLayoutBuiltCellSize > 0f)
+            {
+                _cellSize = _foodLayoutBuiltCellSize;
+                _tableVisualScale = _foodLayoutRestVisualScale;
+            }
+
+            _foodSettlementLayoutActive = false;
+            _foodSettlementLayoutBusy = false;
+        }
+
+        public void ApplySettlementLayoutImmediate()
+        {
+            if (!TryCreateFoodSettlementBoardTween(out FoodSettlementBoardTween tween))
+            {
+                return;
+            }
+
+            KillFoodSettlementLayoutTween(complete: false);
+            ResolveTableLayoutArea()?.ApplySettlementLayout();
+            ApplyFoodSettlementBoardState(tween);
+        }
+
+        private void CaptureFoodLayoutRestFromBuiltTable()
+        {
+            _foodLayoutBuiltCellSize = _cellSize;
+            _foodLayoutRestVisualScale = _tableVisualScale;
+            _foodLayoutRestBoardPosition = _boardView != null ? _boardView.transform.position : _boardCenter;
+            _foodLayoutRestBoardScale = _boardView != null ? _boardView.transform.localScale : Vector3.one;
+            _foodLayoutRestCaptured = true;
+            _foodSettlementLayoutActive = false;
+        }
+
+        private bool TryCreateFoodSettlementBoardTween(out FoodSettlementBoardTween tween)
+        {
+            tween = FoodSettlementLayout.Identity(_cellSize);
+            BattleTableLayoutArea area = ResolveTableLayoutArea();
+            GpTable board = _session?.DiningTable;
+            if (area == null || !area.HasSettlementLayout || board == null || _cellSize <= 0f)
+            {
+                return false;
+            }
+
+            if (!area.TryGetLayoutWorldBounds(false, out float restLeft, out float restRight, out float restBottom, out float restTop)
+                || !area.TryGetLayoutWorldBounds(true, out float settlementLeft, out float settlementRight, out float settlementBottom, out float settlementTop))
+            {
+                return false;
+            }
+
+            tween = FoodSettlementLayout.ComputeBoardTween(
+                restLeft,
+                restRight,
+                restBottom,
+                restTop,
+                settlementLeft,
+                settlementRight,
+                settlementBottom,
+                settlementTop,
+                board,
+                _foodLayoutBuiltCellSize > 0f ? _foodLayoutBuiltCellSize : _cellSize);
+            return tween.Scale > 0f;
+        }
+
+        private void ApplyFoodSettlementBoardState(FoodSettlementBoardTween tween)
+        {
+            if (_boardView != null)
+            {
+                _boardView.transform.position = tween.Position;
+                _boardView.transform.localScale = Vector3.one * tween.Scale;
+            }
+
+            _boardCenter = tween.Position;
+            float builtCell = _foodLayoutBuiltCellSize > 0f ? _foodLayoutBuiltCellSize : _cellSize;
+            _tableVisualScale = DiningTableLayout.VisualScaleForCellSize(builtCell) * Mathf.Max(0.0001f, tween.Scale);
+            _foodSettlementLayoutActive = true;
+        }
+
+        private void KillFoodSettlementLayoutTween(bool complete)
+        {
+            if (_foodSettlementLayoutTween != null && _foodSettlementLayoutTween.IsActive())
+            {
+                _foodSettlementLayoutTween.Kill(complete);
+            }
+
+            _foodSettlementLayoutTween = null;
+        }
+
+        private BattleTableLayoutArea ResolveTableLayoutArea()
+        {
+            if (_tableLayoutArea == null && _sceneBoardArea != null)
+            {
+                _tableLayoutArea = _sceneBoardArea.GetComponent<BattleTableLayoutArea>();
+            }
+
+            return _tableLayoutArea;
+        }
+
         /// <summary>读取场景或 HUD 布局区域，得到餐桌可用区的世界矩形边界。</summary>
         private bool TryComputeTableAreaRect(out float left, out float right, out float bottom, out float top)
         {
-            left = right = bottom = top = 0f;
             RectTransform boardArea = _sceneBoardArea != null ? _sceneBoardArea : _hudBoardArea;
-            if (boardArea == null || _camera == null)
+            return TryGetRectTransformWorldBounds(boardArea, out left, out right, out bottom, out top);
+        }
+
+        private bool TryGetRectTransformWorldBounds(
+            RectTransform rect,
+            out float left,
+            out float right,
+            out float bottom,
+            out float top)
+        {
+            left = right = bottom = top = 0f;
+            if (rect == null)
             {
                 return false;
             }
 
             var corners = new Vector3[4];
-            boardArea.GetWorldCorners(corners);
-
-            Canvas canvas = boardArea.GetComponentInParent<Canvas>();
-            if (canvas == null)
+            rect.GetWorldCorners(corners);
+            Canvas canvas = rect.GetComponentInParent<Canvas>();
+            bool overlayOrCamera = canvas != null && canvas.renderMode != RenderMode.WorldSpace;
+            if (!overlayOrCamera)
             {
                 left = Mathf.Min(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
                 right = Mathf.Max(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
@@ -3029,13 +3313,22 @@ namespace GourmetProject.Game.Presentation.Battle
                 return right > left && top > bottom;
             }
 
+            Camera worldCamera = WorldCamera;
+            if (worldCamera == null)
+            {
+                return false;
+            }
+
             Camera uiCam = canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-            float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
-            float depth = -_camera.transform.position.z;
+            float minX = float.MaxValue;
+            float maxX = float.MinValue;
+            float minY = float.MaxValue;
+            float maxY = float.MinValue;
+            float depth = -worldCamera.transform.position.z;
             for (int i = 0; i < 4; i++)
             {
                 Vector2 screen = RectTransformUtility.WorldToScreenPoint(uiCam, corners[i]);
-                Vector3 world = _camera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, depth));
+                Vector3 world = worldCamera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, depth));
                 minX = Mathf.Min(minX, world.x);
                 maxX = Mathf.Max(maxX, world.x);
                 minY = Mathf.Min(minY, world.y);
@@ -3146,7 +3439,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 DishInstance dish = _session.TemporaryAreaDishes[i];
                 DishPieceView piece = Instantiate(_dishPiecePrefab, _piecesRoot);
                 piece.gameObject.name = $"TemporaryAreaDish_{dish.Id}_{dish.Def.Id}";
-                piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
+                BuildHudFood(piece, dish, _dishClicked);
                 piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
                 piece.SetMoveCallbacks(
                     BeginTemporaryAreaDishDrag,
@@ -3598,13 +3891,13 @@ namespace GourmetProject.Game.Presentation.Battle
         private void OnSettlementScope(SettlementScopeSignal signal)
         {
             EnsureScopeHighlights();
-            if (signal.IsEmpty || signal.Trace == null)
+            if (signal.IsEmpty || signal.Traces == null || signal.Traces.Count == 0)
             {
                 _scopeHighlights?.ClearSettlement();
                 return;
             }
 
-            _scopeHighlights?.ShowSettlement(_boardView, signal.Trace, _dishViewsById);
+            _scopeHighlights?.ShowSettlement(_boardView, signal.Traces, _dishViewsById);
         }
 
     }

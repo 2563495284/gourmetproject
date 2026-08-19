@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -20,6 +21,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly int MotionTimeId = Shader.PropertyToID("_MotionTime");
         private static readonly int UseGlobalTimeId = Shader.PropertyToID("_UseGlobalTime");
         private static readonly int SpriteUvRectId = Shader.PropertyToID("_SpriteUvRect");
+        private static readonly int ColorId = Shader.PropertyToID("_Color");
         private static readonly Dictionary<Sprite, Vector4> SpriteUvRectCache = new();
 
         public static bool HasVisibleFlavor(IReadOnlyList<string> flavorIds)
@@ -61,6 +63,40 @@ namespace GourmetProject.Game.Presentation.Battle
             propertyBlock.SetFloat(UseGlobalTimeId, useGlobalTime ? 1f : 0f);
             propertyBlock.SetVector(SpriteUvRectId, SpriteUvRect(renderer.sprite));
             renderer.SetPropertyBlock(propertyBlock);
+        }
+
+        public static void ApplyToGraphic(
+            Graphic graphic,
+            Material flavorMaterial,
+            Sprite sprite,
+            IReadOnlyList<string> flavorIds,
+            float seed,
+            float intensity = DefaultIntensity,
+            bool useGlobalTime = true)
+        {
+            if (graphic == null)
+            {
+                return;
+            }
+
+            int mask = FlavorVisualCatalog.BuildMask(flavorIds);
+            if (mask == 0 || flavorMaterial == null || SpriteRenderStyle.SpriteFlavorOrganicMaterial == null)
+            {
+                graphic.material = null;
+                return;
+            }
+
+            flavorMaterial.SetFloat(FlavorMaskId, mask);
+            flavorMaterial.SetFloat(FlavorCountId, FlavorVisualCatalog.CountBits(mask));
+            flavorMaterial.SetFloat(SeedId, seed);
+            flavorMaterial.SetFloat(IntensityId, Mathf.Clamp01(intensity));
+            flavorMaterial.SetFloat(AspectId, SpriteAspect(sprite));
+            flavorMaterial.SetFloat(AnimationEnabledId, 1f);
+            flavorMaterial.SetFloat(MotionTimeId, 0f);
+            flavorMaterial.SetFloat(UseGlobalTimeId, useGlobalTime ? 1f : 0f);
+            flavorMaterial.SetVector(SpriteUvRectId, SpriteUvRect(sprite));
+            flavorMaterial.SetColor(ColorId, Color.white);
+            graphic.material = flavorMaterial;
         }
 
         private static float SpriteAspect(Sprite sprite)

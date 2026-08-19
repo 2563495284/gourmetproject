@@ -64,6 +64,7 @@ namespace GourmetProject.Game.Run
         private int _bossDebuffRerollWeekIndex;
         private int _bossDebuffRerollIndex;
         private string _bossDebuffRerollNodeId = string.Empty;
+        private string _bossDebuffRerollExcludedId = string.Empty;
         private int _forcedBossDebuffWeekIndex;
         private string _forcedBossDebuffId = string.Empty;
         private int _bossPassiveArchetypePityWeekIndex;
@@ -1249,6 +1250,7 @@ namespace GourmetProject.Game.Run
             {
                 _bossDebuffRerollNodeId = string.Empty;
                 _bossDebuffRerollIndex = 0;
+                _bossDebuffRerollExcludedId = string.Empty;
             }
 
             return true;
@@ -1421,6 +1423,9 @@ namespace GourmetProject.Game.Run
 
         public string BossDebuffRerollNodeId =>
             _bossDebuffRerollWeekIndex == WeekIndex ? _bossDebuffRerollNodeId : string.Empty;
+
+        public string BossDebuffRerollExcludedId =>
+            _bossDebuffRerollWeekIndex == WeekIndex ? _bossDebuffRerollExcludedId : string.Empty;
 
         public string ForcedBossDebuffId =>
             _forcedBossDebuffWeekIndex == WeekIndex ? _forcedBossDebuffId : string.Empty;
@@ -1666,13 +1671,18 @@ namespace GourmetProject.Game.Run
                 return false;
             }
 
+            cfg.TimelineNode node = TimelineService.GetNode(this, nodeId);
+            cfg.BossDebuff current = node != null ? BossService.PreviewBossDebuff(this, node) : null;
+
             if (_bossDebuffRerollWeekIndex != WeekIndex)
             {
                 _bossDebuffRerollWeekIndex = WeekIndex;
                 _bossDebuffRerollIndex = 0;
+                _bossDebuffRerollExcludedId = string.Empty;
             }
 
             _bossDebuffRerollNodeId = nodeId;
+            _bossDebuffRerollExcludedId = current?.Id ?? string.Empty;
             _bossDebuffRerollIndex++;
             return true;
         }
@@ -1695,6 +1705,7 @@ namespace GourmetProject.Game.Run
             _runtimeTimelineNodeSerial = 0;
             _pendingExtraTimelineNodeIds.Clear();
             _bossDebuffRerollNodeId = string.Empty;
+            _bossDebuffRerollExcludedId = string.Empty;
             if (nodes != null)
             {
                 foreach (RuntimeTimelineNode node in nodes)
@@ -2402,6 +2413,7 @@ namespace GourmetProject.Game.Run
                 BossDebuffRerollWeekIndex = _bossDebuffRerollWeekIndex,
                 BossDebuffRerollIndex = _bossDebuffRerollIndex,
                 BossDebuffRerollNodeId = _bossDebuffRerollNodeId,
+                BossDebuffRerollExcludedId = _bossDebuffRerollExcludedId,
                 PendingExtraTimelineNodeIds = new List<string>(_pendingExtraTimelineNodeIds),
                 ForcedBossDebuffWeekIndex = _forcedBossDebuffWeekIndex,
                 ForcedBossDebuffId = _forcedBossDebuffId,
@@ -2767,6 +2779,7 @@ namespace GourmetProject.Game.Run
             run._bossPassiveArchetypePityWeekIndex = data.BossPassiveArchetypePityWeekIndex;
             run._bossPassiveArchetypeRewardCount = System.Math.Max(0, data.BossPassiveArchetypeRewardCount);
             run._bossPassiveArchetypePityArmed = data.BossPassiveArchetypePityArmed;
+            run._bossDebuffRerollExcludedId = data.BossDebuffRerollExcludedId ?? string.Empty;
             if (data.PendingExtraTimelineNodeIds != null)
             {
                 foreach (string nodeId in data.PendingExtraTimelineNodeIds)

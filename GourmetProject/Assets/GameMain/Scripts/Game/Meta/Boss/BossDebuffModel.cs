@@ -40,7 +40,10 @@ namespace GourmetProject.Game.Meta.BossDebuffs
             Definition = definition;
         }
 
-        /// <summary>在构建餐桌画布前调整最大宽高。</summary>
+        /// <summary>
+        /// 在构建餐桌画布前调整最大宽高。
+        /// 加行/加列/删行/删列类 Debuff 不要改这里：改包围盒会重居中初始碎片，玩家拼贴会对不上被丢掉。
+        /// </summary>
         public virtual void ModifyTableBounds(ref int maxWidth, ref int maxHeight)
         {
         }

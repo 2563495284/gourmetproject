@@ -137,6 +137,7 @@ namespace GourmetProject.Game.UI.Widgets
         private bool _boundFlavorIdsWereNull;
         private bool _hasBinding;
         private bool _requiresLiveRendering;
+        private bool _lockDisplayToDefaultFoodCell;
 
         public RenderTexture CurrentTexture => _renderTexture;
 
@@ -176,6 +177,19 @@ namespace GourmetProject.Game.UI.Widgets
             copy.Create();
             Graphics.Blit(_renderTexture, copy);
             return copy;
+        }
+
+        public void SetDisplayLockedToDefaultFoodCell(bool locked)
+        {
+            _lockDisplayToDefaultFoodCell = locked;
+            if (locked)
+            {
+                ApplyDefaultFoodCellDisplaySize();
+            }
+            else if (_aspectRatioFitter != null)
+            {
+                _aspectRatioFitter.enabled = true;
+            }
         }
 
         public void SetRaycastTarget(bool value)
@@ -885,18 +899,60 @@ namespace GourmetProject.Game.UI.Widgets
             Vector2Int renderedGridSize = new(
                 _renderTexture.width / _pixelsPerCell,
                 _renderTexture.height / _pixelsPerCell);
-            if (mode == DishIconPreviewMode.Card)
+            if (_lockDisplayToDefaultFoodCell)
+            {
+                ApplyDefaultFoodCellDisplaySize();
+            }
+            else if (mode == DishIconPreviewMode.Card)
             {
                 ApplyDisplaySize(renderedGridSize);
             }
 
-            if (_aspectRatioFitter != null)
+            if (_aspectRatioFitter != null && !_lockDisplayToDefaultFoodCell)
             {
+                _aspectRatioFitter.enabled = true;
                 _aspectRatioFitter.aspectMode =
                     AspectRatioFitter.AspectMode.FitInParent;
                 _aspectRatioFitter.aspectRatio =
                     (float)_renderTexture.width / _renderTexture.height;
             }
+        }
+
+        private void ApplyDefaultFoodCellDisplaySize()
+        {
+            EnsureRefs();
+            var self = transform as RectTransform;
+            if (self == null)
+            {
+                return;
+            }
+
+            _displaySizeTarget = self;
+            if (_aspectRatioFitter != null)
+            {
+                _aspectRatioFitter.enabled = false;
+            }
+
+            Vector2Int grid = DisplayedGridSize.x > 0 && DisplayedGridSize.y > 0
+                ? DisplayedGridSize
+                : Vector2Int.one;
+            Vector2 cell = DiningTableLayout.CanvasPixelsForWorldSize(
+                Vector2.one * DiningTableLayout.DefaultFoodCellSize,
+                Camera.main,
+                GetComponentInParent<Canvas>());
+            var parent = self.parent as RectTransform;
+            if (parent != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(parent);
+            }
+
+            Vector2 displaySize = DiningTableLayout.FitInside(
+                DiningTableLayout.DefaultFoodCanvasSize(grid, cell),
+                DiningTableLayout.RectSize(parent));
+            self.anchoredPosition = Vector2.zero;
+            self.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, displaySize.x);
+            self.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, displaySize.y);
+            LayoutRebuilder.MarkLayoutForRebuild(self);
         }
     }
 }

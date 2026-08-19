@@ -69,7 +69,7 @@ namespace GourmetProject.Game.Meta
                 IRandomStream debuffRng = run.Random.DomainStream(
                     SeedDomains.Boss,
                     BossService.BuildBossDebuffSeedKey(run, bossKey, context.SourceKey));
-                cfg.BossDebuff debuff = BossService.RollBossDebuff(run, debuffRng);
+                cfg.BossDebuff debuff = BossService.RollBossDebuff(run, debuffRng, sourceNodeId: context.SourceKey);
                 int bossRequired = RequiredScoreForFood(run, context, boss, debuff?.TargetScoreHiddenOffset ?? 0);
                 string battleKey = $"boss_{bossKey}_{debuff?.Id ?? "none"}";
                 return ActionOutcome.Battle(

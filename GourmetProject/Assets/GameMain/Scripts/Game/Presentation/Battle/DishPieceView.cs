@@ -10,6 +10,7 @@ using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
 using GourmetProject.Game.Visual;
 using TMPro;
+using UnityEngine.UI;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -258,6 +259,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public DishShape CurrentShape { get; private set; }
 
+        internal float CellSize => _cellSize;
+
+        internal float ActiveDragVisualScale =>
+            _dragPresentationActive ? Mathf.Max(0.0001f, _dragVisualScale) : 1f;
+
         internal DishValueBadgeView DishValueBadge =>
             _dishValueBadgePresenter != null ? _dishValueBadgePresenter.View : null;
 
@@ -394,6 +400,11 @@ namespace GourmetProject.Game.Presentation.Battle
         internal void PunchDishValueBadge(float scale, float duration)
         {
             _dishValueBadgePresenter?.Punch(scale, duration);
+        }
+
+        internal void SetDishValueBadgeVisible(bool visible)
+        {
+            _dishValueBadgePresenter?.SetVisible(visible);
         }
 
         public void UpdatePlacement(Placement placement)
@@ -803,6 +814,18 @@ namespace GourmetProject.Game.Presentation.Battle
             _settlementFocusColors.Clear();
         }
 
+        public void SetBodyRenderersEnabled(bool enabled)
+        {
+            EnsureRefs();
+            foreach (SpriteRenderer renderer in EnumerateBodyRenderers())
+            {
+                if (renderer != null)
+                {
+                    renderer.enabled = enabled;
+                }
+            }
+        }
+
         private IEnumerable<SpriteRenderer> EnumerateBodyRenderers()
         {
             if (_spriteRenderer == null)
@@ -1035,9 +1058,12 @@ namespace GourmetProject.Game.Presentation.Battle
             if (active)
             {
                 ApplyDragPresentation();
+                SetDishValueBadgeVisible(false);
                 return;
             }
 
+            SetDishValueBadgeVisible(true);
+            SetBodyRenderersEnabled(true);
             Transform target = VisualAnimationTarget();
             if (target != null)
             {
@@ -2165,6 +2191,18 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplyFlavorVisual();
             ApplyDebuffVisual();
             RefreshScopeTargetGlow();
+        }
+
+        internal void ApplyFlavorVisualToGraphic(Graphic graphic, Material flavorMaterial)
+        {
+            FlavorOrganicVisual.ApplyToGraphic(
+                graphic,
+                flavorMaterial,
+                _spriteRenderer != null ? _spriteRenderer.sprite : null,
+                Instance?.FlavorIds,
+                Instance != null ? Instance.Id : 0f,
+                _flavorVisualIntensity,
+                useGlobalTime: true);
         }
 
         /// <summary>

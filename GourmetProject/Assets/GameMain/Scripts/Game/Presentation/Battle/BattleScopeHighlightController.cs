@@ -95,12 +95,28 @@ namespace GourmetProject.Game.Presentation.Battle
             SkillExecutionTrace trace,
             IReadOnlyDictionary<int, DishPieceView> dishViews)
         {
+            ShowSettlement(
+                tableView,
+                trace != null ? new[] { trace } : null,
+                dishViews);
+        }
+
+        public void ShowSettlement(
+            DiningTableView tableView,
+            IReadOnlyList<SkillExecutionTrace> traces,
+            IReadOnlyDictionary<int, DishPieceView> dishViews)
+        {
             _activeTableView = tableView;
             _activeDishViews = dishViews;
             ClearChannel(BattleScopeHighlightChannel.Settlement);
-            if (trace != null)
+            if (traces == null)
             {
-                RenderTrace(BattleScopeHighlightChannel.Settlement, trace, 0, persistent: false);
+                return;
+            }
+
+            for (int i = 0; i < traces.Count; i++)
+            {
+                RenderTrace(BattleScopeHighlightChannel.Settlement, traces[i], i, persistent: false);
             }
         }
 

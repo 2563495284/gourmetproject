@@ -26,6 +26,10 @@ namespace GourmetProject.Game.Presentation.Battle
         public const float Gap = 0f;
         public const float MaxCellSize = 1.2f;
         public const float MinCellSize = 0.42f;
+        /// <summary>4×4 胃时的默认单格世界尺寸，也是出餐口/临时桌食物的单格大小。</summary>
+        public const float DefaultFoodCellSize = MaxCellSize;
+        /// <summary>无相机时的画布换算：16:9 参考视口全宽 19.2 ↔ 画布 1920。</summary>
+        public const float FallbackCanvasPixelsPerWorldUnit = 100f;
 
         // 回退视口半宽/半高（16:9 参考：orthographicSize 5.4）。
         public const float FallbackHalfW = 9.6f;
@@ -41,6 +45,119 @@ namespace GourmetProject.Game.Presentation.Battle
         public static float VisualScaleForCellSize(float cellSize)
         {
             return Mathf.Clamp01(cellSize / MaxCellSize);
+        }
+
+        public static Vector2Int FoodGridSize(int width, int height)
+        {
+            return new Vector2Int(Mathf.Max(1, width), Mathf.Max(1, height));
+        }
+
+        /// <summary>
+        /// 把世界尺寸换成当前 Canvas 的本地像素。正交相机按 Screen.height / 视口高度换算，
+        /// 再除以 Canvas.scaleFactor；无相机时回退到 100 像素/世界单位。
+        /// </summary>
+        public static Vector2 CanvasPixelsForWorldSize(
+            Vector2 worldSize,
+            Camera worldCamera,
+            Canvas canvas)
+        {
+            float pixelsPerWorld = FallbackCanvasPixelsPerWorldUnit;
+            if (worldCamera != null && worldCamera.orthographic && worldCamera.orthographicSize > 0.01f)
+            {
+                pixelsPerWorld = Screen.height / (worldCamera.orthographicSize * 2f);
+            }
+
+            float canvasScale = canvas != null && canvas.scaleFactor > 0.01f
+                ? canvas.scaleFactor
+                : 1f;
+            return worldSize * (pixelsPerWorld / canvasScale);
+        }
+
+        public static Vector2 DefaultFoodCanvasSize(Vector2Int grid, Vector2 defaultCellCanvasSize)
+        {
+            Vector2Int safeGrid = FoodGridSize(grid.x, grid.y);
+            return new Vector2(
+                defaultCellCanvasSize.x * safeGrid.x,
+                defaultCellCanvasSize.y * safeGrid.y);
+        }
+
+        /// <summary>按格封顶：整盘可以按 footprint 变大，但单格不超过 4×4 默认格。</summary>
+        public static Vector2 CapToDefaultFoodCanvasSize(
+            Vector2 canvasSize,
+            Vector2Int grid,
+            Vector2 defaultCellCanvasSize)
+        {
+            Vector2 maxSize = DefaultFoodCanvasSize(grid, defaultCellCanvasSize);
+            return FitInside(canvasSize, maxSize);
+        }
+
+        /// <summary>
+        /// 把抓取到的画布尺寸从源格子 / 拖拽放大，换算成餐桌落地时的实际大小。
+        /// </summary>
+        public static Vector2 CanvasSizeForTableFood(
+            Vector2 capturedCanvasSize,
+            float sourceCellSize,
+            float tableCellSize,
+            float visualScale = 1f)
+        {
+            float source = Mathf.Max(0.0001f, sourceCellSize)
+                * Mathf.Max(0.0001f, visualScale);
+            float table = Mathf.Max(0.0001f, tableCellSize);
+            return capturedCanvasSize * (table / source);
+        }
+
+        /// <summary>只缩小、不放大，把尺寸限制在父框内。</summary>
+        public static Vector2 FitInside(Vector2 size, Vector2 parentSize)
+        {
+            if (parentSize.x <= 0.01f || parentSize.y <= 0.01f)
+            {
+                return size;
+            }
+
+            float fit = Mathf.Min(
+                1f,
+                parentSize.x / Mathf.Max(0.0001f, size.x),
+                parentSize.y / Mathf.Max(0.0001f, size.y));
+            return size * Mathf.Max(0.0001f, fit);
+        }
+
+        public static Vector2 CapToDefaultFoodAndFitParent(
+            Vector2 canvasSize,
+            Vector2Int grid,
+            Vector2 defaultCellCanvasSize,
+            Vector2 parentSize)
+        {
+            return FitInside(
+                CapToDefaultFoodCanvasSize(canvasSize, grid, defaultCellCanvasSize),
+                parentSize);
+        }
+
+        public static Vector2 RectSize(RectTransform rect)
+        {
+            if (rect == null)
+            {
+                return Vector2.zero;
+            }
+
+            Vector2 size = rect.rect.size;
+            if (size.x > 0.01f && size.y > 0.01f)
+            {
+                return size;
+            }
+
+            RectTransform current = rect;
+            while (current != null)
+            {
+                Vector2 delta = current.sizeDelta;
+                if (delta.x > 0.01f && delta.y > 0.01f)
+                {
+                    return new Vector2(Mathf.Abs(delta.x), Mathf.Abs(delta.y));
+                }
+
+                current = current.parent as RectTransform;
+            }
+
+            return Vector2.zero;
         }
 
         /// <summary>按正交相机求视口半宽/半高，无有效相机时回退到 16:9 参考值。</summary>
@@ -130,7 +247,8 @@ namespace GourmetProject.Game.Presentation.Battle
             int boardWidth,
             int boardHeight,
             TableFragmentBuilder.PlacementBounds bounds,
-            float minCellSize)
+            float minCellSize,
+            float maxCellSize = MaxCellSize)
         {
             float availW = Mathf.Max(1f, boardRight - boardLeft);
             float availH = Mathf.Max(1f, boardTop - boardBottom);
@@ -140,8 +258,9 @@ namespace GourmetProject.Game.Presentation.Battle
             int maxY = bounds.MaxY;
             int boxW = Mathf.Max(1, maxX - minX + 1);
             int boxH = Mathf.Max(1, maxY - minY + 1);
-            float lowerBound = Mathf.Min(minCellSize, MaxCellSize);
-            float cellSize = Mathf.Clamp(Mathf.Min(availW / boxW, availH / boxH), lowerBound, MaxCellSize);
+            float upperBound = Mathf.Max(minCellSize, maxCellSize);
+            float lowerBound = Mathf.Min(minCellSize, upperBound);
+            float cellSize = Mathf.Clamp(Mathf.Min(availW / boxW, availH / boxH), lowerBound, upperBound);
 
             // mapper 仍按完整 Width×Height 排布；这里反推 Position，使胃包围盒的几何中心落在可用区中心。
             var areaCenter = new Vector3((boardLeft + boardRight) * 0.5f, (boardTop + boardBottom) * 0.5f, 0f);
