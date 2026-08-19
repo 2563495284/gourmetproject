@@ -110,7 +110,6 @@ namespace GourmetProject.Tests.EditMode
                 new[] { def },
                 new[] { own, copied },
                 Array.Empty<FlavorDef>(),
-                Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
             return new DishInstance(
                 1,
