@@ -169,16 +169,6 @@ namespace GourmetProject.Game.DevConsole.Commands
 
                 sb.AppendLine();
             }
-
-            sb.AppendLine("CELL_MATERIALS");
-            foreach (GridPos cell in board.ExistingCells())
-            {
-                IReadOnlyList<string> materials = board.MaterialsAt(cell);
-                if (materials.Count > 0)
-                {
-                    sb.Append(Cell(cell)).Append("=[").Append(string.Join(",", materials)).AppendLine("]");
-                }
-            }
         }
 
         private static void AppendDishIdentity(

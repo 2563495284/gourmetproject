@@ -78,11 +78,9 @@ namespace GourmetProject.Gameplay.Scoring
             IReadOnlyList<SkillTransferSideEffect> skillTransfers = null,
             IReadOnlyDictionary<int, BigDouble> permanentFlatDeltas = null,
             IReadOnlyDictionary<int, BigDouble> permanentMultDeltas = null,
-            int silverItemRollRequests = 0,
             IReadOnlyList<CopySkillRequest> copySkillRequests = null,
             IReadOnlyList<TemporaryCategorySideEffect> temporaryCategories = null,
-            IReadOnlyList<RecipeRemovalRequest> recipeRemovalRequests = null,
-            IReadOnlyList<SilverItemRollRequest> silverItemRolls = null)
+            IReadOnlyList<RecipeRemovalRequest> recipeRemovalRequests = null)
         {
             DishScores = dishScores;
             RawSum = rawSum;
@@ -95,43 +93,12 @@ namespace GourmetProject.Gameplay.Scoring
             SkillTransfers = skillTransfers ?? System.Array.Empty<SkillTransferSideEffect>();
             PermanentFlatDeltas = permanentFlatDeltas ?? EmptyBigDeltas;
             PermanentMultDeltas = permanentMultDeltas ?? EmptyBigDeltas;
-            SilverItemRolls = BuildSilverItemRolls(silverItemRolls, silverItemRollRequests);
-            SilverItemRollRequests = SilverItemRolls.Count;
             CopySkillRequests = copySkillRequests ?? System.Array.Empty<CopySkillRequest>();
             TemporaryCategories = temporaryCategories ?? System.Array.Empty<TemporaryCategorySideEffect>();
             RecipeRemovalRequests = recipeRemovalRequests ?? System.Array.Empty<RecipeRemovalRequest>();
         }
 
         private static readonly IReadOnlyDictionary<int, BigDouble> EmptyBigDeltas = new Dictionary<int, BigDouble>();
-
-        private static IReadOnlyList<SilverItemRollRequest> BuildSilverItemRolls(
-            IReadOnlyList<SilverItemRollRequest> configuredRolls,
-            int legacyRollCount)
-        {
-            if (configuredRolls != null)
-            {
-                if (configuredRolls.Count == 0)
-                {
-                    return System.Array.Empty<SilverItemRollRequest>();
-                }
-
-                return new List<SilverItemRollRequest>(configuredRolls);
-            }
-
-            int count = System.Math.Max(0, legacyRollCount);
-            if (count == 0)
-            {
-                return System.Array.Empty<SilverItemRollRequest>();
-            }
-
-            var rolls = new SilverItemRollRequest[count];
-            for (int i = 0; i < rolls.Length; i++)
-            {
-                rolls[i] = new SilverItemRollRequest(0.5f);
-            }
-
-            return rolls;
-        }
 
         /// <summary>逐菜结算明细（按结算顺序）。</summary>
         public IReadOnlyList<DishScore> DishScores { get; }
@@ -166,12 +133,6 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>永久倍率增量（实例 Id → 累乘倍数）。正式结算后写回实例。</summary>
         public IReadOnlyDictionary<int, BigDouble> PermanentMultDeltas { get; }
 
-        /// <summary>银材质按占据银格登记的独立消耗品判定次数。正式结算后由 Game 层逐条掷骰发放（预览不掷）。</summary>
-        public int SilverItemRollRequests { get; }
-
-        /// <summary>银材质登记的逐条掷骰请求；每条请求保留自己的概率、食物来源和材质来源。</summary>
-        public IReadOnlyList<SilverItemRollRequest> SilverItemRolls { get; }
-
         /// <summary>结算阶段登记的技能复制请求。正式结算后由 BattleSession 用随机流落地。</summary>
         public IReadOnlyList<CopySkillRequest> CopySkillRequests { get; }
 
@@ -185,28 +146,6 @@ namespace GourmetProject.Gameplay.Scoring
         public BigDouble Total => BigDouble.Round(
             (RawSum + FinalFlat) * FinalMultiplier,
             System.MidpointRounding.AwayFromZero);
-    }
-
-    /// <summary>银材质在计分阶段登记、由正式结算落地的一次获得消耗品判定。</summary>
-    public readonly struct SilverItemRollRequest
-    {
-        public SilverItemRollRequest(float probability, int dishInstanceId = 0, string materialId = null)
-        {
-            if (float.IsNaN(probability))
-            {
-                probability = 0.5f;
-            }
-
-            Probability = probability <= 0f ? 0f : probability >= 1f ? 1f : probability;
-            DishInstanceId = dishInstanceId;
-            MaterialId = materialId ?? string.Empty;
-        }
-
-        public float Probability { get; }
-
-        public int DishInstanceId { get; }
-
-        public string MaterialId { get; }
     }
 
     public readonly struct TemporaryCategorySideEffect

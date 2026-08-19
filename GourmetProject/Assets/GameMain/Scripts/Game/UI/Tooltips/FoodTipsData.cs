@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using BreakInfinity;
-using System.Linq;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
@@ -17,14 +16,12 @@ namespace GourmetProject.Game.UI.Tooltips
         public FoodTipsData(
             FoodSummaryTipsData summary,
             FoodScoreTipsData score,
-            IReadOnlyList<FoodMaterialTipsEntry> materials,
             IReadOnlyList<FoodInfoEntry> flavorDetails,
             IReadOnlyList<FoodInfoEntry> externalSkills,
             IReadOnlyList<FoodInfoEntry> specialTags)
         {
             Summary = summary ?? FoodSummaryTipsData.Empty;
             Score = score ?? FoodScoreTipsData.Empty;
-            Materials = materials ?? Array.Empty<FoodMaterialTipsEntry>();
             FlavorDetails = flavorDetails ?? Array.Empty<FoodInfoEntry>();
             ExternalSkills = externalSkills ?? Array.Empty<FoodInfoEntry>();
             SpecialTags = specialTags ?? Array.Empty<FoodInfoEntry>();
@@ -33,8 +30,6 @@ namespace GourmetProject.Game.UI.Tooltips
         public FoodSummaryTipsData Summary { get; }
 
         public FoodScoreTipsData Score { get; }
-
-        public IReadOnlyList<FoodMaterialTipsEntry> Materials { get; }
 
         public IReadOnlyList<FoodInfoEntry> FlavorDetails { get; }
 
@@ -100,25 +95,6 @@ namespace GourmetProject.Game.UI.Tooltips
 
         /// <summary>美味值：倍率 * 分数 后向上取整。</summary>
         public BigDouble Deliciousness => DishScore.CeilContribution(Score, Multiplier);
-    }
-
-    public sealed class FoodMaterialTipsEntry
-    {
-        public FoodMaterialTipsEntry(string id, string name, string desc, int cellCount)
-        {
-            Id = id ?? string.Empty;
-            Name = name ?? Id;
-            Desc = desc ?? string.Empty;
-            CellCount = Math.Max(1, cellCount);
-        }
-
-        public string Id { get; }
-
-        public string Name { get; }
-
-        public string Desc { get; }
-
-        public int CellCount { get; }
     }
 
     public sealed class FoodInfoEntry
@@ -190,7 +166,7 @@ namespace GourmetProject.Game.UI.Tooltips
         {
             if (dish == null)
             {
-                return new FoodTipsData(null, null, null, null, null, null);
+                return new FoodTipsData(null, null, null, null, null);
             }
 
             DishScore score = FindScore(scoreResult, dish.Id);
@@ -206,7 +182,7 @@ namespace GourmetProject.Game.UI.Tooltips
         {
             if (dish == null)
             {
-                return new FoodTipsData(null, null, null, null, null, null);
+                return new FoodTipsData(null, null, null, null, null);
             }
 
             int effectiveCountAs = Math.Max(
@@ -238,7 +214,6 @@ namespace GourmetProject.Game.UI.Tooltips
             return new FoodTipsData(
                 summary,
                 new FoodScoreTipsData(scoreValue, multiplier),
-                BuildMaterials(dish, table, db),
                 BuildFlavorDetails(dish, db),
                 BuildExternalSkills(dish, db, -1, -1, -1),
                 BuildSpecialTags(dish, db, -1, -1, -1));
@@ -258,7 +233,7 @@ namespace GourmetProject.Game.UI.Tooltips
         {
             if (dish == null)
             {
-                return new FoodTipsData(null, null, null, null, null, null);
+                return new FoodTipsData(null, null, null, null, null);
             }
 
             reveal ??= new FoodTipsReveal(
@@ -283,7 +258,6 @@ namespace GourmetProject.Game.UI.Tooltips
             return new FoodTipsData(
                 summary,
                 new FoodScoreTipsData(reveal.Score, reveal.Multiplier),
-                BuildMaterials(dish, table, db),
                 BuildFlavorDetails(dish, db),
                 BuildExternalSkills(
                     dish,
@@ -440,126 +414,6 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             return entries;
-        }
-
-        private sealed class MaterialAggregate
-        {
-            public int Count;
-            public int BoardOrder;
-        }
-
-        public static IReadOnlyList<FoodMaterialTipsEntry> BuildMaterialsForCells(
-            IReadOnlyList<GridPos> cells,
-            DiningTable table,
-            GameplayDatabase db)
-        {
-            if (table == null || db == null || cells == null)
-            {
-                return Array.Empty<FoodMaterialTipsEntry>();
-            }
-
-            var byMaterial = new Dictionary<string, MaterialAggregate>();
-            foreach (GridPos cell in cells)
-            {
-                int boardOrder = cell.Y * table.Width + cell.X;
-                foreach (string materialId in table.MaterialsAt(cell))
-                {
-                    if (string.IsNullOrEmpty(materialId))
-                    {
-                        continue;
-                    }
-
-                    if (!byMaterial.TryGetValue(materialId, out MaterialAggregate aggregate))
-                    {
-                        byMaterial[materialId] = new MaterialAggregate
-                        {
-                            Count = 1,
-                            BoardOrder = boardOrder
-                        };
-                    }
-                    else
-                    {
-                        aggregate.Count++;
-                        if (boardOrder < aggregate.BoardOrder)
-                        {
-                            aggregate.BoardOrder = boardOrder;
-                        }
-                    }
-                }
-            }
-
-            return BuildMaterialEntries(byMaterial, db);
-        }
-
-        public static IReadOnlyList<FoodMaterialTipsEntry> BuildMaterialsForFragment(
-            TableFragmentDef fragment,
-            GameplayDatabase db)
-        {
-            if (fragment == null || db == null || fragment.CellMaterials == null)
-            {
-                return Array.Empty<FoodMaterialTipsEntry>();
-            }
-
-            int width = 1;
-            if (fragment.ShapeRows != null)
-            {
-                foreach (string row in fragment.ShapeRows)
-                {
-                    width = Math.Max(width, row?.Length ?? 0);
-                }
-            }
-
-            var byMaterial = new Dictionary<string, MaterialAggregate>();
-            foreach (CellMaterial cellMaterial in fragment.CellMaterials)
-            {
-                string materialId = cellMaterial.MaterialId;
-                if (string.IsNullOrEmpty(materialId))
-                {
-                    continue;
-                }
-
-                int boardOrder = cellMaterial.Pos.Y * width + cellMaterial.Pos.X;
-                if (!byMaterial.TryGetValue(materialId, out MaterialAggregate aggregate))
-                {
-                    byMaterial[materialId] = new MaterialAggregate
-                    {
-                        Count = 1,
-                        BoardOrder = boardOrder,
-                    };
-                }
-                else
-                {
-                    aggregate.Count++;
-                    aggregate.BoardOrder = Math.Min(aggregate.BoardOrder, boardOrder);
-                }
-            }
-
-            return BuildMaterialEntries(byMaterial, db);
-        }
-
-        private static IReadOnlyList<FoodMaterialTipsEntry> BuildMaterialEntries(
-            IReadOnlyDictionary<string, MaterialAggregate> byMaterial,
-            GameplayDatabase db)
-        {
-            return byMaterial
-                .OrderBy(e => e.Value.BoardOrder)
-                .Select(e =>
-                {
-                    MaterialDef material = db.GetMaterial(e.Key);
-                    return material != null
-                        ? new FoodMaterialTipsEntry(material.Id, material.Name, material.Desc, e.Value.Count)
-                        : null;
-                })
-                .Where(e => e != null)
-                .ToArray();
-        }
-
-        private static IReadOnlyList<FoodMaterialTipsEntry> BuildMaterials(
-            DishInstance dish,
-            DiningTable table,
-            GameplayDatabase db)
-        {
-            return BuildMaterialsForCells(dish.OccupiedCells, table, db);
         }
 
         private static IReadOnlyList<FoodInfoEntry> BuildExternalSkills(

@@ -201,13 +201,6 @@ namespace GourmetProject.Tests.EditMode
                 "风味会改变食物的属性和结算效果，强化箱道具可以帮我们为食物附加风味。");
             AssertAllAnchors(flavor, TutorialAnchorId.AcquiredActiveItem);
 
-            TutorialSequenceDefinition material = Require(TutorialId.Material, 2);
-            AssertMessages(
-                material,
-                "老板，餐桌现在有材质啦！每个餐桌格只有 1 个材质哦。",
-                "放置在餐桌格上的食物会获得对应效果；强化箱道具可以帮我们为餐桌附加材质。");
-            AssertAllAnchors(material, TutorialAnchorId.AcquiredActiveItem);
-
             TutorialSequenceDefinition adjustment = Require(TutorialId.Adjustment, 1);
             AssertMessages(
                 adjustment,

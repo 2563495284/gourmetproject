@@ -1082,7 +1082,6 @@ namespace GourmetProject.Game.Presentation.Battle
             // 银材质行只是尚未掷骰的判定请求；命中后的具体消耗品由 Game 层发放后另行逐条展示。
             // TriggeredSweetTransferSource 只驱动多来源甜蜜传递的逐个交接演出，不是玩家结果。
             return line != null
-                && line.Kind != ScoreLineKind.SilverItemRoll
                 && line.Kind != ScoreLineKind.TriggeredSweetTransferSource;
         }
 
@@ -1103,7 +1102,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 ScoreLineKind.FinalMultiplier => "总分倍率",
                 ScoreLineKind.Gold => "金币",
                 ScoreLineKind.Layer => "蛋糕层数",
-                ScoreLineKind.SilverItemRoll => "银材质",
                 ScoreLineKind.CopySkill => "技能复制",
                 ScoreLineKind.TriggerSweetTransfer => "甜蜜传递",
                 ScoreLineKind.TriggeredSweetTransferSource => string.Empty,
@@ -1153,8 +1151,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     return Gold(signed);
                 case ScoreLineKind.Layer:
                     return signed;
-                case ScoreLineKind.SilverItemRoll:
-                    return "判定消耗品";
                 case ScoreLineKind.CopySkill:
                     return $"获得技能 ×{Count(line.Value)}";
                 case ScoreLineKind.TriggerSweetTransfer:

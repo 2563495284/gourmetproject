@@ -21,7 +21,7 @@ namespace GourmetProject.Game.Meta
     {
         TargetScore,
         Dish,
-        PassiveItem,
+        ItemLuck,
         Fragment,
         Gold,
     }
@@ -39,11 +39,6 @@ namespace GourmetProject.Game.Meta
         public static int DishHiddenScore(GameRun run, ActionExecutionContext context = null)
         {
             return EvaluateLinear(cfg.HiddenScorePurpose.Dish, run, HiddenOffset(run, context, HiddenScorePurpose.Dish));
-        }
-
-        public static int PassiveItemHiddenScore(GameRun run, ActionExecutionContext context = null)
-        {
-            return EvaluateLinear(cfg.HiddenScorePurpose.PassiveItem, run, HiddenOffset(run, context, HiddenScorePurpose.PassiveItem));
         }
 
         public static int FragmentHiddenScore(GameRun run, ActionExecutionContext context = null)

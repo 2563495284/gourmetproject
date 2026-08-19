@@ -37,9 +37,6 @@ namespace GourmetProject.Game.Run
         // 玩家在餐桌编辑页手动拼贴的碎片放置（id + 旋转 + 原点）；作为可复现重建胃形的权威数据。
         private readonly List<TableFragmentPlacement> _fragmentPlacements = new List<TableFragmentPlacement>();
 
-        // 玩家用「铺台小票」永久附加的格子材质（坐标 → 材质 id）；拼桌时叠加进餐桌材质表。
-        private readonly List<CellMaterialOverride> _cellMaterialOverrides = new List<CellMaterialOverride>();
-
         // 已购买待拼贴的碎片包内容（rolled 出的候选碎片 id + 已随机方向）；拼贴或跳过后清空。
         private readonly List<string> _pendingFragmentPack = new List<string>();
         private readonly List<int> _pendingFragmentPackRotations = new List<int>();
@@ -47,10 +44,6 @@ namespace GourmetProject.Game.Run
         private int _deleteDishCount;
         private int _currentShopDeleteDishCount;
         private int _currentShopFragmentPackPurchaseCount;
-
-        // 餐桌格开包时随机出的局部材质落点。候选阶段即确定，之后随已拼贴碎片保存。
-        private readonly Dictionary<string, List<CellMaterial>> _fragmentMaterialRolls =
-            new Dictionary<string, List<CellMaterial>>(System.StringComparer.Ordinal);
 
         // 整局累计已结算的食物 BaseId 次数（供技能「大局相同检测」，随存档保存）。
         private readonly Dictionary<string, int> _runSettledCounts = new Dictionary<string, int>();
@@ -74,6 +67,9 @@ namespace GourmetProject.Game.Run
         private string _bossDebuffRerollExcludedId = string.Empty;
         private int _forcedBossDebuffWeekIndex;
         private string _forcedBossDebuffId = string.Empty;
+        private int _bossPassiveArchetypePityWeekIndex;
+        private int _bossPassiveArchetypeRewardCount;
+        private bool _bossPassiveArchetypePityArmed;
 
         // —— 日常行动随机状态：每周类别/奖励计数、候选卡序号与行动数洗牌袋 ——
         private int _actionRandomStateWeek;
@@ -116,7 +112,7 @@ namespace GourmetProject.Game.Run
         // —— 事件运行状态（随存档保存）——
         private float _eventTargetScoreHiddenOffset;
         private float _eventDishHiddenOffset;
-        private float _eventPassiveItemHiddenOffset;
+        private float _eventItemLuckOffset;
         private float _eventFragmentHiddenOffset;
         private float _eventGoldHiddenOffset;
         private float _eventShopPricePct;
@@ -552,7 +548,7 @@ namespace GourmetProject.Game.Run
             {
                 HiddenScorePurpose.TargetScore => _eventTargetScoreHiddenOffset,
                 HiddenScorePurpose.Dish => _eventDishHiddenOffset,
-                HiddenScorePurpose.PassiveItem => _eventPassiveItemHiddenOffset,
+                HiddenScorePurpose.ItemLuck => _eventItemLuckOffset,
                 HiddenScorePurpose.Fragment => _eventFragmentHiddenOffset,
                 HiddenScorePurpose.Gold => _eventGoldHiddenOffset,
                 _ => 0f,
@@ -569,8 +565,8 @@ namespace GourmetProject.Game.Run
                 case HiddenScorePurpose.Dish:
                     _eventDishHiddenOffset += amount;
                     break;
-                case HiddenScorePurpose.PassiveItem:
-                    _eventPassiveItemHiddenOffset += amount;
+                case HiddenScorePurpose.ItemLuck:
+                    _eventItemLuckOffset += amount;
                     break;
                 case HiddenScorePurpose.Fragment:
                     _eventFragmentHiddenOffset += amount;
@@ -818,46 +814,6 @@ namespace GourmetProject.Game.Run
 
         public IReadOnlyList<string> TableFragmentIds => _stomachFragmentIds;
 
-        /// <summary>玩家用「铺台小票」设置的格子材质覆盖；每个坐标至多一个材质。</summary>
-        public IReadOnlyList<CellMaterialOverride> CellMaterialOverrides => _cellMaterialOverrides;
-
-        /// <summary>给某个餐桌格设置永久材质。新材质替换旧材质；空 id 或材质未变化时返回 false。</summary>
-        public bool SetCellMaterial(GridPos pos, string materialId)
-        {
-            if (string.IsNullOrEmpty(materialId))
-            {
-                return false;
-            }
-
-            int existingIndex = FindCellMaterialOverrideIndex(_cellMaterialOverrides, pos);
-            if (existingIndex >= 0)
-            {
-                if (string.Equals(
-                        _cellMaterialOverrides[existingIndex].MaterialId,
-                        materialId,
-                        System.StringComparison.Ordinal))
-                {
-                    return false;
-                }
-
-                _cellMaterialOverrides[existingIndex] = new CellMaterialOverride(pos, materialId);
-            }
-            else
-            {
-                _cellMaterialOverrides.Add(new CellMaterialOverride(pos, materialId));
-            }
-
-            NotifyContentAcquired(new RunContentAcquisition
-            {
-                Kind = RunContentAcquisitionKind.TableMaterial,
-                MaterialId = materialId,
-            });
-            return true;
-        }
-
-        /// <summary>兼容旧调用；材质语义已改为设置/替换，而不是叠加。</summary>
-        public bool AddCellMaterial(GridPos pos, string materialId) => SetCellMaterial(pos, materialId);
-
         /// <summary>玩家手动拼贴的碎片放置列表（餐桌编辑页产出，随存档保存）。</summary>
         public IReadOnlyList<TableFragmentPlacement> FragmentPlacements => _fragmentPlacements;
 
@@ -897,15 +853,7 @@ namespace GourmetProject.Game.Run
 
         public TableFragmentDef GetTableFragmentDef(string fragmentId)
         {
-            TableFragmentDef def = Database.GetFragment(fragmentId);
-            if (def == null)
-            {
-                return null;
-            }
-
-            return _fragmentMaterialRolls.TryGetValue(fragmentId, out List<CellMaterial> materials)
-                ? def.WithCellMaterials(materials)
-                : def;
+            return Database.GetFragment(fragmentId);
         }
 
         /// <summary>餐桌格总数（奖励自动附着 + 手动拼贴），供统计/预览展示。</summary>
@@ -1481,6 +1429,59 @@ namespace GourmetProject.Game.Run
 
         public string ForcedBossDebuffId =>
             _forcedBossDebuffWeekIndex == WeekIndex ? _forcedBossDebuffId : string.Empty;
+
+        public int BossPassiveArchetypeRewardCount
+        {
+            get
+            {
+                EnsureBossPassiveArchetypePityForCurrentWeek();
+                return _bossPassiveArchetypeRewardCount;
+            }
+        }
+
+        public bool BossPassiveArchetypePityArmed
+        {
+            get
+            {
+                EnsureBossPassiveArchetypePityForCurrentWeek();
+                return _bossPassiveArchetypePityArmed;
+            }
+        }
+
+        /// <summary>生成本周星级评鉴装饰品候选前，判断本次是否需要流派保底。</summary>
+        public bool BeginBossPassiveArchetypePity()
+        {
+            EnsureBossPassiveArchetypePityForCurrentWeek();
+            return _bossPassiveArchetypeRewardCount == 1 && _bossPassiveArchetypePityArmed;
+        }
+
+        /// <summary>候选生成完成后推进周内状态；第二次无论是否能执行保底都会消费保底。</summary>
+        public void CompleteBossPassiveArchetypePity(bool archetypeOffered)
+        {
+            EnsureBossPassiveArchetypePityForCurrentWeek();
+            if (_bossPassiveArchetypeRewardCount == 0)
+            {
+                _bossPassiveArchetypePityArmed = !archetypeOffered;
+            }
+            else
+            {
+                _bossPassiveArchetypePityArmed = false;
+            }
+
+            _bossPassiveArchetypeRewardCount++;
+        }
+
+        private void EnsureBossPassiveArchetypePityForCurrentWeek()
+        {
+            if (_bossPassiveArchetypePityWeekIndex == WeekIndex)
+            {
+                return;
+            }
+
+            _bossPassiveArchetypePityWeekIndex = WeekIndex;
+            _bossPassiveArchetypeRewardCount = 0;
+            _bossPassiveArchetypePityArmed = false;
+        }
 
         /// <summary>本周已执行的行动次数，用于 UI、随机流和隐藏分进度。</summary>
         public int ActionStepIndex { get; private set; }
@@ -2336,13 +2337,16 @@ namespace GourmetProject.Game.Run
                 NextBusinessRewardDoubleStacks = _nextBusinessRewardDoubleStacks,
                 LastDishChoiceArchetypeId = _lastDishChoiceArchetypeId,
                 DishChoiceArchetypeMissStreak = _dishChoiceArchetypeMissStreak,
+                BossPassiveArchetypePityWeekIndex = _bossPassiveArchetypePityWeekIndex,
+                BossPassiveArchetypeRewardCount = _bossPassiveArchetypeRewardCount,
+                BossPassiveArchetypePityArmed = _bossPassiveArchetypePityArmed,
                 ActionRerollCount = _actionRerollCount,
                 LoanDebt = _loanDebt,
                 MealBonusRemaining = _mealBonusRemaining,
                 ScoreToOneRemaining = _scoreToOneRemaining,
                 EventTargetScoreHiddenOffset = _eventTargetScoreHiddenOffset,
                 EventDishHiddenOffset = _eventDishHiddenOffset,
-                EventPassiveItemHiddenOffset = _eventPassiveItemHiddenOffset,
+                EventItemLuckOffset = _eventItemLuckOffset,
                 EventFragmentHiddenOffset = _eventFragmentHiddenOffset,
                 EventGoldHiddenOffset = _eventGoldHiddenOffset,
                 EventShopPricePct = _eventShopPricePct,
@@ -2366,8 +2370,6 @@ namespace GourmetProject.Game.Run
                 Recipe = ToRecipeSaveData(),
                 TableFragmentIds = new List<string>(_stomachFragmentIds),
                 FragmentPlacements = ToFragmentPlacementSaveData(),
-                FragmentMaterialRolls = ToFragmentMaterialRollSaveData(),
-                CellMaterialOverrides = ToCellMaterialSaveData(),
                 PendingFragmentPackIds = new List<string>(_pendingFragmentPack),
                 PendingFragmentPackRotations = new List<int>(_pendingFragmentPackRotations),
                 FragmentPackPurchaseCount = _fragmentPackPurchaseCount,
@@ -2491,7 +2493,7 @@ namespace GourmetProject.Game.Run
             run._scoreToOneRemaining = System.Math.Max(0, data.ScoreToOneRemaining);
             run._eventTargetScoreHiddenOffset = data.EventTargetScoreHiddenOffset;
             run._eventDishHiddenOffset = data.EventDishHiddenOffset;
-            run._eventPassiveItemHiddenOffset = data.EventPassiveItemHiddenOffset;
+            run._eventItemLuckOffset = data.EventItemLuckOffset;
             run._eventFragmentHiddenOffset = data.EventFragmentHiddenOffset;
             run._eventGoldHiddenOffset = data.EventGoldHiddenOffset;
             run._eventShopPricePct = data.EventShopPricePct;
@@ -2628,24 +2630,6 @@ namespace GourmetProject.Game.Run
 
                     run._fragmentPlacements.Add(new TableFragmentPlacement(
                         p.FragmentId, p.Rotation, new GridPos(p.OriginX, p.OriginY)));
-                }
-            }
-
-            RestoreFragmentMaterialRolls(run, data.FragmentMaterialRolls);
-
-            if (data.CellMaterialOverrides != null)
-            {
-                foreach (CellMaterialSaveData m in data.CellMaterialOverrides)
-                {
-                    if (m == null || string.IsNullOrEmpty(m.MaterialId))
-                    {
-                        continue;
-                    }
-
-                    SetCellMaterialOverride(
-                        run._cellMaterialOverrides,
-                        new GridPos(m.X, m.Y),
-                        m.MaterialId);
                 }
             }
 
@@ -2792,6 +2776,9 @@ namespace GourmetProject.Game.Run
             run._bossDebuffRerollWeekIndex = data.BossDebuffRerollWeekIndex;
             run._bossDebuffRerollIndex = data.BossDebuffRerollIndex;
             run._bossDebuffRerollNodeId = data.BossDebuffRerollNodeId ?? string.Empty;
+            run._bossPassiveArchetypePityWeekIndex = data.BossPassiveArchetypePityWeekIndex;
+            run._bossPassiveArchetypeRewardCount = System.Math.Max(0, data.BossPassiveArchetypeRewardCount);
+            run._bossPassiveArchetypePityArmed = data.BossPassiveArchetypePityArmed;
             run._bossDebuffRerollExcludedId = data.BossDebuffRerollExcludedId ?? string.Empty;
             if (data.PendingExtraTimelineNodeIds != null)
             {
@@ -3721,10 +3708,6 @@ namespace GourmetProject.Game.Run
             }
 
             _stomachFragmentIds.Add(fragmentId);
-            EnsureFragmentMaterialRoll(fragmentId, null);
-            if (_fragmentMaterialRolls.TryGetValue(fragmentId, out List<CellMaterial> acquiredMaterials)
-                && acquiredMaterials.Count > 0)
-                NotifyMaterialAcquired(fragmentId, acquiredMaterials[0].MaterialId);
             return true;
         }
 
@@ -3737,10 +3720,6 @@ namespace GourmetProject.Game.Run
             }
 
             _fragmentPlacements.Add(new TableFragmentPlacement(fragmentId, rotation, origin));
-            EnsureFragmentMaterialRoll(fragmentId, null);
-            if (_fragmentMaterialRolls.TryGetValue(fragmentId, out List<CellMaterial> placedMaterials)
-                && placedMaterials.Count > 0)
-                NotifyMaterialAcquired(fragmentId, placedMaterials[0].MaterialId);
             return true;
         }
 
@@ -3767,46 +3746,31 @@ namespace GourmetProject.Game.Run
             });
         }
 
-        private void NotifyMaterialAcquired(string fragmentId, string materialId)
-        {
-            NotifyContentAcquired(new RunContentAcquisition
-            {
-                Kind = RunContentAcquisitionKind.TableMaterial,
-                FragmentId = fragmentId ?? string.Empty,
-                MaterialId = materialId ?? string.Empty,
-            });
-        }
-
         private void NotifyContentAcquired(RunContentAcquisition acquisition) => ContentAcquired?.Invoke(acquisition);
 
         /// <summary>
-        /// 置入一份待拼贴碎片包。每个候选独立从逆时针 0°/90°/180°/270° 中抽取方向，
-        /// 内部转换为现有放置系统使用的顺时针旋转次数。
+        /// 置入一份待拼贴碎片包。未提供朝向时，从该碎片当前可拼上的顺时针朝向中均匀抽取。
         /// </summary>
         public void SetPendingFragmentPack(
             IEnumerable<string> fragmentIds,
-            IRandomStream materialRng = null,
             IRandomStream rotationRng = null)
         {
-            SetPendingFragmentPackInternal(fragmentIds, null, materialRng, rotationRng);
+            SetPendingFragmentPackInternal(fragmentIds, null, rotationRng);
         }
 
         /// <summary>置入方向已在候选抽取阶段确定的待拼贴碎片包。</summary>
         public void SetPendingFragmentPack(
             IEnumerable<string> fragmentIds,
-            IReadOnlyList<int> rotations,
-            IRandomStream materialRng = null)
+            IReadOnlyList<int> rotations)
         {
-            SetPendingFragmentPackInternal(fragmentIds, rotations, materialRng, null);
+            SetPendingFragmentPackInternal(fragmentIds, rotations, null);
         }
 
         private void SetPendingFragmentPackInternal(
             IEnumerable<string> fragmentIds,
             IReadOnlyList<int> rotations,
-            IRandomStream materialRng,
             IRandomStream rotationRng)
         {
-            ClearPendingFragmentMaterialRolls();
             _pendingFragmentPack.Clear();
             _pendingFragmentPackRotations.Clear();
             if (fragmentIds != null)
@@ -3825,11 +3789,10 @@ namespace GourmetProject.Game.Run
                         }
                         else
                         {
-                            int counterClockwiseQuarterTurns = directionRng?.Range(0, 4) ?? 0;
-                            _pendingFragmentPackRotations.Add((4 - counterClockwiseQuarterTurns) % 4);
+                            TableFragmentDef fragment = Database.GetFragment(id);
+                            _pendingFragmentPackRotations.Add(
+                                RollAttachableFragmentRotation(fragment, directionRng));
                         }
-
-                        EnsureFragmentMaterialRoll(id, materialRng);
                     }
 
                     index++;
@@ -3840,32 +3803,8 @@ namespace GourmetProject.Game.Run
         /// <summary>清空待拼贴的碎片包（拼贴完成或跳过后调用）。</summary>
         public void ClearPendingFragmentPack()
         {
-            ClearPendingFragmentMaterialRolls();
             _pendingFragmentPack.Clear();
             _pendingFragmentPackRotations.Clear();
-        }
-
-        private void EnsureFragmentMaterialRoll(string fragmentId, IRandomStream rng)
-        {
-            if (string.IsNullOrEmpty(fragmentId) || _fragmentMaterialRolls.ContainsKey(fragmentId))
-            {
-                return;
-            }
-
-            TableFragmentDef def = Database.GetFragment(fragmentId);
-            if (def == null)
-            {
-                return;
-            }
-
-            _fragmentMaterialRolls[fragmentId] = RollFragmentMaterials(def, rng ?? FragmentMaterialRollStream());
-        }
-
-        private IRandomStream FragmentMaterialRollStream()
-        {
-            return Random != null && Random.IsInitialized
-                ? Random.DomainStream(SeedDomains.Reward, "fragment_material_rolls")
-                : null;
         }
 
         private IRandomStream FragmentRotationRollStream()
@@ -3875,76 +3814,49 @@ namespace GourmetProject.Game.Run
                 : null;
         }
 
-        private static List<CellMaterial> RollFragmentMaterials(TableFragmentDef def, IRandomStream rng)
-        {
-            var materials = new List<CellMaterial>();
-            if (def == null || def.MaterialIds == null || def.MaterialIds.Count == 0)
-            {
-                return materials;
-            }
-
-            List<GridPos> cells = TableFragmentBuilder.FilledCells(def);
-            if (cells.Count == 0)
-            {
-                return materials;
-            }
-
-            rng?.Shuffle(cells);
-            int count = System.Math.Min(def.MaterialIds.Count, cells.Count);
-            for (int i = 0; i < count; i++)
-            {
-                string materialId = def.MaterialIds[i];
-                if (!string.IsNullOrEmpty(materialId))
-                {
-                    materials.Add(new CellMaterial(cells[i], materialId));
-                }
-            }
-
-            return materials;
-        }
-
-        private void ClearPendingFragmentMaterialRolls()
-        {
-            foreach (string fragmentId in _pendingFragmentPack)
-            {
-                if (!IsFragmentKeptInRun(fragmentId))
-                {
-                    _fragmentMaterialRolls.Remove(fragmentId);
-                }
-            }
-        }
-
-        private bool IsFragmentKeptInRun(string fragmentId)
-        {
-            if (string.IsNullOrEmpty(fragmentId) || _stomachFragmentIds.Contains(fragmentId))
-            {
-                return true;
-            }
-
-            for (int i = 0; i < _fragmentPlacements.Count; i++)
-            {
-                if (_fragmentPlacements[i].FragmentId == fragmentId)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
+        /// <summary>该碎片是否存在至少一个可拼入当前餐桌的朝向（按旋转后形状判定）。</summary>
         public bool CanAttachTableFragment(TableFragmentDef fragment)
+        {
+            return GetAttachableFragmentRotations(fragment).Count > 0;
+        }
+
+        /// <summary>当前餐桌上该碎片可拼入的顺时针朝向（0..3）。</summary>
+        public List<int> GetAttachableFragmentRotations(TableFragmentDef fragment)
         {
             if (fragment == null)
             {
-                return false;
+                return new List<int>();
             }
 
-            // 基于当前实际胃形判断；餐桌格奖励固定朝向，不允许旋转。
             GpTable board = BattleSessionFactory.BuildTablePreview(this);
             cfg.Character character = Tables.TbCharacter.GetOrDefault(CharacterId);
-            int maxW = character.MaxDiningTableWidth;
-            int maxH = character.MaxDiningTableHeight;
-            return TableFragmentBuilder.CanAttachAnywhereLocalBounds(board, fragment, maxW, maxH);
+            if (character == null)
+            {
+                return new List<int>();
+            }
+
+            return TableFragmentBuilder.CollectAttachableRotations(
+                board,
+                fragment,
+                character.MaxDiningTableWidth,
+                character.MaxDiningTableHeight);
+        }
+
+        /// <summary>从当前可拼上的朝向中均匀抽取一个顺时针旋转次数；无可拼朝向时返回 0。</summary>
+        public int RollAttachableFragmentRotation(TableFragmentDef fragment, IRandomStream rng)
+        {
+            List<int> attachable = GetAttachableFragmentRotations(fragment);
+            if (attachable.Count == 0)
+            {
+                return 0;
+            }
+
+            if (rng == null)
+            {
+                return attachable[0];
+            }
+
+            return attachable[rng.Range(0, attachable.Count)];
         }
 
         /// <summary>移除一份装饰品和消耗品（被动整条移除；主动移除其中一份实例）。供商店出售、事件移除等使用。</summary>
@@ -4096,127 +4008,6 @@ namespace GourmetProject.Game.Run
             }
 
             return list;
-        }
-
-        private List<TableFragmentMaterialRollSaveData> ToFragmentMaterialRollSaveData()
-        {
-            var list = new List<TableFragmentMaterialRollSaveData>(_fragmentMaterialRolls.Count);
-            foreach (KeyValuePair<string, List<CellMaterial>> pair in _fragmentMaterialRolls)
-            {
-                var save = new TableFragmentMaterialRollSaveData
-                {
-                    FragmentId = pair.Key,
-                    Materials = new List<CellMaterialSaveData>(),
-                };
-
-                foreach (CellMaterial material in pair.Value)
-                {
-                    save.Materials.Add(new CellMaterialSaveData
-                    {
-                        X = material.Pos.X,
-                        Y = material.Pos.Y,
-                        MaterialId = material.MaterialId,
-                    });
-                }
-
-                list.Add(save);
-            }
-
-            return list;
-        }
-
-        private static void RestoreFragmentMaterialRolls(
-            GameRun run,
-            List<TableFragmentMaterialRollSaveData> savedRolls)
-        {
-            if (run == null || savedRolls == null)
-            {
-                return;
-            }
-
-            foreach (TableFragmentMaterialRollSaveData saved in savedRolls)
-            {
-                if (saved == null || string.IsNullOrEmpty(saved.FragmentId))
-                {
-                    continue;
-                }
-
-                var materials = new List<CellMaterial>();
-                if (saved.Materials != null)
-                {
-                    foreach (CellMaterialSaveData material in saved.Materials)
-                    {
-                        if (material == null || string.IsNullOrEmpty(material.MaterialId))
-                        {
-                            continue;
-                        }
-
-                        materials.Add(new CellMaterial(new GridPos(material.X, material.Y), material.MaterialId));
-                    }
-                }
-
-                run._fragmentMaterialRolls[saved.FragmentId] = materials;
-            }
-        }
-
-        private List<CellMaterialSaveData> ToCellMaterialSaveData()
-        {
-            // 防御性压缩，确保即便未来迁移或反序列化绕过入口，存档仍保持每坐标一条、最后值获胜。
-            var normalized = new List<CellMaterialOverride>(_cellMaterialOverrides.Count);
-            foreach (CellMaterialOverride m in _cellMaterialOverrides)
-            {
-                if (string.IsNullOrEmpty(m.MaterialId))
-                {
-                    continue;
-                }
-
-                SetCellMaterialOverride(normalized, m.Pos, m.MaterialId);
-            }
-
-            var list = new List<CellMaterialSaveData>(normalized.Count);
-            foreach (CellMaterialOverride m in normalized)
-            {
-                list.Add(new CellMaterialSaveData
-                {
-                    X = m.Pos.X,
-                    Y = m.Pos.Y,
-                    MaterialId = m.MaterialId,
-                });
-            }
-
-            return list;
-        }
-
-        private static int FindCellMaterialOverrideIndex(
-            IReadOnlyList<CellMaterialOverride> overrides,
-            GridPos pos)
-        {
-            for (int i = 0; i < overrides.Count; i++)
-            {
-                if (overrides[i].Pos.Equals(pos))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        private static void SetCellMaterialOverride(
-            List<CellMaterialOverride> overrides,
-            GridPos pos,
-            string materialId)
-        {
-            int index = FindCellMaterialOverrideIndex(overrides, pos);
-            var replacement = new CellMaterialOverride(pos, materialId);
-            if (index >= 0)
-            {
-                overrides[index] = replacement;
-            }
-            else
-            {
-                overrides.Add(replacement);
-            }
         }
 
         private List<RuntimeTimelineNodeSaveData> ToRuntimeTimelineNodeSaveData()

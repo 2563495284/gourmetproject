@@ -9,7 +9,6 @@ namespace GourmetProject.Gameplay.Scoring
         Dish = 0,
         DishSkill = 1,
         DishFlavor = 2,
-        Material = 3,
         TableTag = 4,
         Relic = 5,
         FinalModifier = 6,
@@ -106,17 +105,6 @@ namespace GourmetProject.Gameplay.Scoring
                 effectDef?.Name,
                 dish != null ? dish.Id : 0,
                 dish?.Def?.Id);
-        }
-
-        public static ScoreSource Material(IEffectDef effectDef, DishInstance dish, GridPos cell)
-        {
-            return new ScoreSource(
-                ScoreSourceType.Material,
-                effectDef?.Id,
-                effectDef?.Name,
-                dish != null ? dish.Id : 0,
-                dish?.Def?.Id,
-                cell);
         }
 
         public static ScoreSource TableTag(string id, string name)

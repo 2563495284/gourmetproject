@@ -330,42 +330,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        /// <summary>银格判定命中后，按实际获得内容逐条播放反馈；同一食物多格命中也不会合并。</summary>
-        public async Awaitable PlaySilverItemGrantAsync(
-            SilverItemGrantPresentation grant,
-            CancellationToken cancellationToken)
-        {
-            ItemAcquireResult acquired = grant.Acquisition;
-            string effectText = acquired.HasItem
-                ? $"获得[term]{acquired.ItemName}[/term]"
-                : acquired.Outcome == ItemAcquireOutcome.ConvertedToGold
-                    ? $"获得[gold]金币 +{acquired.Gold}[/gold]"
-                    : "未获得消耗品";
-
-            Vector3 anchor = _boardView != null
-                ? _boardView.Mapper.Center + Vector3.up * (0.45f * _tableVisualScale)
-                : transform.position;
-            if (_dishViewsById.TryGetValue(
-                    grant.SourceDishInstanceId,
-                    out DishPieceView sourceView)
-                && sourceView != null)
-            {
-                anchor = sourceView.WorldBounds.center
-                    + Vector3.up * (sourceView.WorldBounds.extents.y + 0.34f * _tableVisualScale);
-            }
-
-            _sequencer?.PlayFloatingEffect(
-                _fxRoot != null ? _fxRoot : transform,
-                anchor,
-                "银材质",
-                effectText,
-                SettlementColorPalette.SilverReward,
-                rise: 0.52f,
-                duration: 0.82f,
-                visualScale: _tableVisualScale);
-            await Awaitable.WaitForSecondsAsync(0.82f, cancellationToken);
-        }
-
         /// <summary>
         /// 营业结算全部完成后播放食谱移除判定。命中时食物在餐桌上溶解，
         /// 未命中时保留食物并给出失败文字；两种结果都明确展示来源食物和概率。
@@ -919,30 +883,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _tableViewRendererBaseAlphas.Clear();
             CaptureTableViewRenderers();
             FadeTableViewTo(0f, duration, onComplete, clearOnComplete: false);
-        }
-
-        public bool PlayActiveItemCellMaterialApplied(GridPos pos, string materialId, Action onComplete)
-        {
-            if (_worldMode == WorldMode.TableView || _worldMode == WorldMode.TableCellTargeting)
-            {
-                return _boardEdit != null && _boardEdit.ApplyCellMaterialVisual(pos, materialId, onComplete);
-            }
-
-            GpTable table = ActiveCellTargetTable();
-            if (table == null || !table.Exists(pos))
-            {
-                return false;
-            }
-
-            if (_boardView != null && _boardView.TryGetCellView(pos, out DiningTableCellView cell) && cell != null)
-            {
-                cell.PlayMaterialTransform(() => _boardView?.Sync(), onComplete);
-                return true;
-            }
-
-            _boardView?.Sync();
-            onComplete?.Invoke();
-            return true;
         }
 
         public bool PlayActiveItemDishFlavorApplied(ActiveTarget target, Action onComplete)

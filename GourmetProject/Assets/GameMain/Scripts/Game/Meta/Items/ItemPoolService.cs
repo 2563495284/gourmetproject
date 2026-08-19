@@ -36,9 +36,8 @@ namespace GourmetProject.Game.Meta
             int count,
             MetaProgressSaveData progress = null)
         {
-            int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run?.LastActionContext);
-            int distanceFloor = System.Math.Max(1, tables.TbGameBase.HiddenScoreDistanceFloor);
-            return Roll(tables, run, kind, rng, count, hidden, distanceFloor, requiredTag: cfg.ItemSpecialTag.None, progress);
+            float luck = ItemLuckService.GetLuck(run, run?.LastActionContext);
+            return Roll(tables, run, kind, rng, count, luck, requiredTag: cfg.ItemSpecialTag.None, progress);
         }
 
         public static List<string> Roll(
@@ -47,8 +46,7 @@ namespace GourmetProject.Game.Meta
             cfg.ItemKind kind,
             IRandomStream rng,
             int count,
-            int hidden,
-            int distanceFloor,
+            float itemLuck,
             cfg.ItemSpecialTag requiredTag = cfg.ItemSpecialTag.None,
             MetaProgressSaveData progress = null)
         {
@@ -60,26 +58,29 @@ namespace GourmetProject.Game.Meta
 
             bool activeItem = kind == cfg.ItemKind.Active;
             progress ??= run.MetaProgress;
-            List<ItemDefinition> candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: !activeItem, requiredTag, progress);
-            if (candidates.Count == 0 && !activeItem)
+            List<ItemDefinition> candidates = BuildCandidates(tables, run, kind, requiredTag, progress);
+            if (!activeItem)
             {
-                candidates = BuildCandidates(tables, run, kind, hidden, strictHidden: false, requiredTag, progress);
+                bool negativeOnly = requiredTag == cfg.ItemSpecialTag.Negative;
+                foreach (ItemDefinition item in PassiveItemRandomService.Roll(
+                             tables,
+                             candidates,
+                             rng,
+                             count,
+                             itemLuck,
+                             withReplacement: false,
+                             bypassQualityRoll: negativeOnly))
+                {
+                    result.Add(item.Id);
+                }
+
+                return result;
             }
 
             for (int i = 0; i < count && candidates.Count > 0; i++)
             {
-                var weights = new List<float>(candidates.Count);
-                foreach (ItemDefinition item in candidates)
-                {
-                    weights.Add(GetWeight(item, hidden, distanceFloor, tables));
-                }
-
-                int index = rng.WeightedPickIndex(weights);
+                int index = PickByItemWeight(tables, candidates, rng);
                 result.Add(candidates[index].Id);
-                if (!activeItem)
-                {
-                    candidates.RemoveAt(index);
-                }
             }
 
             return result;
@@ -101,7 +102,7 @@ namespace GourmetProject.Game.Meta
         }
 
         /// <summary>
-        /// 事件专用的定向物品抽取。仍沿用正常解锁、唯一性、隐藏分和基础权重规则；
+        /// 事件专用的定向物品抽取。仍沿用正常解锁、唯一性、运气品质和基础权重规则；
         /// 消耗品可按指定 ID 或分类筛选，并按配置决定是否放回。
         /// </summary>
         public static List<ItemDefinition> RollFiltered(
@@ -123,8 +124,6 @@ namespace GourmetProject.Game.Meta
             }
 
             progress ??= run.MetaProgress;
-            int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
-            int distanceFloor = System.Math.Max(1, tables.TbGameBase.HiddenScoreDistanceFloor);
             List<ItemDefinition> candidates = BuildFilteredCandidates(
                 tables,
                 run,
@@ -132,32 +131,23 @@ namespace GourmetProject.Game.Meta
                 allowedIds,
                 activeCategory,
                 requireNegative,
-                hidden,
-                strictHidden: kind == cfg.ItemKind.Passive,
                 progress);
-            if (candidates.Count == 0 && kind == cfg.ItemKind.Passive)
+            if (kind == cfg.ItemKind.Passive)
             {
-                candidates = BuildFilteredCandidates(
+                bool negativeOnly = requireNegative == true;
+                return PassiveItemRandomService.Roll(
                     tables,
-                    run,
-                    kind,
-                    allowedIds,
-                    activeCategory,
-                    requireNegative,
-                    hidden,
-                    strictHidden: false,
-                    progress);
+                    candidates,
+                    rng,
+                    count,
+                    ItemLuckService.GetLuck(run, run.LastActionContext),
+                    withReplacement,
+                    bypassQualityRoll: negativeOnly);
             }
 
             for (int i = 0; i < count && candidates.Count > 0; i++)
             {
-                var weights = new List<float>(candidates.Count);
-                foreach (ItemDefinition item in candidates)
-                {
-                    weights.Add(GetWeight(item, hidden, distanceFloor, tables));
-                }
-
-                int index = rng.WeightedPickIndex(weights);
+                int index = PickByItemWeight(tables, candidates, rng);
                 result.Add(candidates[index]);
                 if (!withReplacement)
                 {
@@ -177,8 +167,6 @@ namespace GourmetProject.Game.Meta
             cfg.Tables tables,
             GameRun run,
             cfg.ItemKind kind,
-            int hidden,
-            bool strictHidden,
             cfg.ItemSpecialTag requiredTag,
             MetaProgressSaveData progress)
         {
@@ -195,7 +183,9 @@ namespace GourmetProject.Game.Meta
                     continue;
                 }
 
-                if (strictHidden && !CoversHidden(item, hidden))
+                if (kind == cfg.ItemKind.Passive
+                    && requiredTag == cfg.ItemSpecialTag.None
+                    && !PassiveItemRandomService.IsNormalQuality(tables, item.Quality))
                 {
                     continue;
                 }
@@ -213,8 +203,6 @@ namespace GourmetProject.Game.Meta
             IReadOnlyCollection<string> allowedIds,
             cfg.ActiveItemCategory? activeCategory,
             bool? requireNegative,
-            int hidden,
-            bool strictHidden,
             MetaProgressSaveData progress)
         {
             var candidates = new List<ItemDefinition>();
@@ -225,7 +213,9 @@ namespace GourmetProject.Game.Meta
                     || !ContainsId(allowedIds, item.Id)
                     || (activeCategory.HasValue && (!item.IsActive || item.ActiveItemCategory != activeCategory.Value))
                     || (requireNegative.HasValue && (!item.IsPassive || item.IsNegative != requireNegative.Value))
-                    || (strictHidden && !CoversHidden(item, hidden)))
+                    || (item.IsPassive
+                        && requireNegative != true
+                        && !PassiveItemRandomService.IsNormalQuality(tables, item.Quality)))
                 {
                     continue;
                 }
@@ -254,37 +244,20 @@ namespace GourmetProject.Game.Meta
             return false;
         }
 
-        private static float GetWeight(ItemDefinition item, int hidden, int distanceFloor, cfg.Tables tables)
+        private static int PickByItemWeight(
+            cfg.Tables tables,
+            IReadOnlyList<ItemDefinition> candidates,
+            IRandomStream rng)
         {
             tables ??= GameApp.Config.Tables;
             float defaultWeight = System.Math.Max(float.Epsilon, tables.TbGameBase.DefaultRandomWeight);
-            float baseWeight = item.BaseWeight > 0f ? item.BaseWeight : defaultWeight;
-            if (item.IsActive)
+            var weights = new List<float>(candidates.Count);
+            foreach (ItemDefinition item in candidates)
             {
-                return baseWeight;
+                weights.Add(item.BaseWeight > 0f ? item.BaseWeight : defaultWeight);
             }
 
-            return RewardPoolService.HiddenScoreWeight(baseWeight, HiddenMean(item), hidden, distanceFloor);
-        }
-
-        private static bool CoversHidden(ItemDefinition item, int hidden)
-        {
-            if (item.HiddenRange == null || (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0))
-            {
-                return true;
-            }
-
-            return hidden >= item.HiddenRange.Min && hidden <= item.HiddenRange.Max;
-        }
-
-        private static float HiddenMean(ItemDefinition item)
-        {
-            if (item.HiddenRange == null || (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0))
-            {
-                return 0f;
-            }
-
-            return (item.HiddenRange.Min + item.HiddenRange.Max) * 0.5f;
+            return candidates.Count == 1 ? 0 : rng.WeightedPickIndex(weights);
         }
     }
 }

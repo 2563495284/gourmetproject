@@ -414,6 +414,36 @@ namespace GourmetProject.Game.Meta
             return total;
         }
 
+        /// <summary>每次成功传递时，目标永久分数的累加值。</summary>
+        public float SweetTransferTargetFlat()
+        {
+            float total = 0f;
+            foreach (PassiveItemModel m in Models)
+            {
+                if (m.TryGetSweetTransferTargetFlat(out float v) && v > 0f)
+                {
+                    total += v;
+                }
+            }
+
+            return total;
+        }
+
+        /// <summary>每次成功传递时，来源永久分数的累加值。</summary>
+        public float SweetTransferSourceFlat()
+        {
+            float total = 0f;
+            foreach (PassiveItemModel m in Models)
+            {
+                if (m.TryGetSweetTransferSourceFlat(out float v) && v > 0f)
+                {
+                    total += v;
+                }
+            }
+
+            return total;
+        }
+
         public int SweetTransferExtraTargetCount()
             => System.Math.Max(0, SumInt(m => m.SweetTransferExtraTargetCount()));
 
@@ -443,6 +473,8 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>按用途聚合持有装饰品的隐藏分常驻修正。</summary>
         public float HiddenScoreOffset(HiddenScorePurpose purpose) => SumFloat(m => m.HiddenScoreOffset(purpose));
+
+        public float ItemLuckOffset() => HiddenScoreOffset(HiddenScorePurpose.ItemLuck);
 
         /// <summary>旧通用奖励隐藏分入口；保留为食物奖励隐藏分修正的兼容别名。</summary>
         public float HiddenScoreBonus() => HiddenScoreOffset(HiddenScorePurpose.Dish);

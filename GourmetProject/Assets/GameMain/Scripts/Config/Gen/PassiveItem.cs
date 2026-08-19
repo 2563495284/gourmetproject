@@ -25,13 +25,13 @@ public sealed partial class PassiveItem : Luban.BeanBase
         { if(!_buf["effectValue"].IsNumber) { throw new SerializationException(); }  EffectValue = _buf["effectValue"]; }
         { if(!_buf["effectParam"].IsString) { throw new SerializationException(); }  EffectParam = _buf["effectParam"]; }
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
-        { if(!_buf["hiddenRange"].IsObject) { throw new SerializationException(); }  HiddenRange = global::cfg.HiddenRange.DeserializeHiddenRange(_buf["hiddenRange"]);  }
         { if(!_buf["targetScoreHiddenOffset"].IsNumber) { throw new SerializationException(); }  TargetScoreHiddenOffset = _buf["targetScoreHiddenOffset"]; }
         { if(!_buf["dishHiddenOffset"].IsNumber) { throw new SerializationException(); }  DishHiddenOffset = _buf["dishHiddenOffset"]; }
-        { if(!_buf["passiveItemHiddenOffset"].IsNumber) { throw new SerializationException(); }  PassiveItemHiddenOffset = _buf["passiveItemHiddenOffset"]; }
+        { if(!_buf["itemLuckOffset"].IsNumber) { throw new SerializationException(); }  ItemLuckOffset = _buf["itemLuckOffset"]; }
         { if(!_buf["fragmentHiddenOffset"].IsNumber) { throw new SerializationException(); }  FragmentHiddenOffset = _buf["fragmentHiddenOffset"]; }
         { if(!_buf["termId"].IsString) { throw new SerializationException(); }  TermId = _buf["termId"]; }
         { if(!_buf["price"].IsNumber) { throw new SerializationException(); }  Price = _buf["price"]; }
+        { var __json0 = _buf["archetypeTags"]; if(!__json0.IsArray) { throw new SerializationException(); } ArchetypeTags = new System.Collections.Generic.List<ItemArchetypeTag>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { ItemArchetypeTag __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = (ItemArchetypeTag)__e0.AsInt; }  ArchetypeTags.Add(__v0); }   }
     }
 
     public static PassiveItem DeserializePassiveItem(JSONNode _buf)
@@ -72,10 +72,6 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// </summary>
     public readonly float BaseWeight;
     /// <summary>
-    /// 出现隐藏分区间(单元格:min,max)
-    /// </summary>
-    public readonly HiddenRange HiddenRange;
-    /// <summary>
     /// 目标美味值隐藏分修正
     /// </summary>
     public readonly int TargetScoreHiddenOffset;
@@ -84,9 +80,9 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// </summary>
     public readonly int DishHiddenOffset;
     /// <summary>
-    /// 装饰品隐藏分修正
+    /// 装饰品运气常驻修正
     /// </summary>
-    public readonly int PassiveItemHiddenOffset;
+    public readonly int ItemLuckOffset;
     /// <summary>
     /// 餐桌格隐藏分修正
     /// </summary>
@@ -99,13 +95,16 @@ public sealed partial class PassiveItem : Luban.BeanBase
     /// 商店基础价格
     /// </summary>
     public readonly int Price;
+    /// <summary>
+    /// 装饰品流派标签，多个用|分隔；空=无流派
+    /// </summary>
+    public readonly System.Collections.Generic.List<ItemArchetypeTag> ArchetypeTags;
    
     public const int __ID__ = -575857990;
     public override int GetTypeId() => __ID__;
 
     public  void ResolveRef(Tables tables)
     {
-        HiddenRange?.ResolveRef(tables);
     }
 
     public override string ToString()
@@ -119,13 +118,13 @@ public sealed partial class PassiveItem : Luban.BeanBase
         + "effectValue:" + EffectValue + ","
         + "effectParam:" + EffectParam + ","
         + "baseWeight:" + BaseWeight + ","
-        + "hiddenRange:" + HiddenRange + ","
         + "targetScoreHiddenOffset:" + TargetScoreHiddenOffset + ","
         + "dishHiddenOffset:" + DishHiddenOffset + ","
-        + "passiveItemHiddenOffset:" + PassiveItemHiddenOffset + ","
+        + "itemLuckOffset:" + ItemLuckOffset + ","
         + "fragmentHiddenOffset:" + FragmentHiddenOffset + ","
         + "termId:" + TermId + ","
         + "price:" + Price + ","
+        + "archetypeTags:" + Luban.StringUtil.CollectionToString(ArchetypeTags) + ","
         + "}";
     }
 }

@@ -78,5 +78,17 @@ namespace GourmetProject.Gameplay.Model
 
         /// <summary>食物数量与阈值比较满足时，所有食物倍率加区 +value（param: "lte:N" 或 "gte:N"）。</summary>
         CountThresholdFinalMult = 23,
+
+        /// <summary>结算结束时，每道食物加法区 +value×自身有效份数。</summary>
+        PerDishFlatTimesOwnCountAs = 24,
+
+        /// <summary>结算结束时，每道食物倍率加区 +value×自身有效份数。</summary>
+        PerDishMultFlatTimesOwnCountAs = 25,
+
+        /// <summary>结算开始时，随机 value 道食物临时视为 param 指定分类。</summary>
+        RandomDishesTemporaryCategory = 26,
+
+        /// <summary>每结算一道当时视为蛋糕的食物，欢乐蛋糕层数 +value。</summary>
+        CakeLayersPerCakeDish = 27,
     }
 }

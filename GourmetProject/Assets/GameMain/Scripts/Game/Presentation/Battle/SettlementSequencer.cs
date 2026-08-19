@@ -1653,7 +1653,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     return SettlementCueKind.FinalModifier;
                 case ScoreLineKind.Gold:
                 case ScoreLineKind.Layer:
-                case ScoreLineKind.SilverItemRoll:
                 case ScoreLineKind.CopySkill:
                 case ScoreLineKind.TriggerSweetTransfer:
                 case ScoreLineKind.TriggeredSweetTransferSource:
@@ -3570,14 +3569,6 @@ namespace GourmetProject.Game.Presentation.Battle
                         reveal: SettlementRevealSignal.CakeLayerReveal(RoundCount(line.Value)));
                     return true;
 
-                case ScoreLineKind.SilverItemRoll:
-                    cue = new SettlementCue(
-                        SettlementCueKind.SideEffect,
-                        "判定消耗品",
-                        sourceName: sourceName,
-                        showEffectLabel: false);
-                    return true;
-
                 case ScoreLineKind.CopySkill:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
@@ -3801,7 +3792,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
             return source.Type == ScoreSourceType.DishSkill
                 || source.Type == ScoreSourceType.DishFlavor
-                || source.Type == ScoreSourceType.Material
                 || source.Type == ScoreSourceType.TableTag
                 || source.Type == ScoreSourceType.Relic;
         }

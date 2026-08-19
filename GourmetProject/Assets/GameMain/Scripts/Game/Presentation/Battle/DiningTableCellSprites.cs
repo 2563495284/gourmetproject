@@ -33,25 +33,6 @@ namespace GourmetProject.Game.Presentation.Battle
             return sprites;
         }
 
-        public static DiningTableCellSprites LoadMaterial(
-            string materialId,
-            DiningTableCellSprites fallback)
-        {
-            if (string.IsNullOrEmpty(materialId))
-            {
-                return fallback;
-            }
-
-            DiningTableCellSprites sprites = Load(materialId);
-            if (sprites.IsValid)
-            {
-                return sprites;
-            }
-
-            ReportMissing(materialId, fallback: true);
-            return fallback;
-        }
-
         private static DiningTableCellSprites Load(string materialId)
         {
             string suffix = string.IsNullOrEmpty(materialId) ? string.Empty : $"_{materialId}";

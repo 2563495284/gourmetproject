@@ -33,23 +33,6 @@
     "slotRewardProbabilities": []
   },
   {
-    "id": "ev_table_carpenter",
-    "name": "木匠吉佩托",
-    "desc": "一位技艺精湛的木匠造访，询问你是否需要强化一下餐桌",
-    "eventTypes": [
-      0,
-      2
-    ],
-    "preconditions": "",
-    "weight": 1,
-    "repeatable": true,
-    "bgSprite": "Sprites/UI/Events/event_table_carpenter",
-    "resultText": "",
-    "slotEmptyProbability": 0,
-    "slotRewardSlotIds": [],
-    "slotRewardProbabilities": []
-  },
-  {
     "id": "ev_kitchen_god_statue",
     "name": "举报风波",
     "desc": "隔壁的餐厅，在网上发表污蔑的言论，希望以此获得竞争优势",

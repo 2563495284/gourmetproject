@@ -45,7 +45,7 @@ namespace GourmetProject.Game.Meta
                 }
 
                 IReadOnlyList<cfg.TimelineNode> nodes = item.EffectType == ItemEffectTypes.TimelineExecuteFuture
-                    ? TimelineService.GetFutureUntriggeredNodes(Run)
+                    ? TimelineService.GetCloneableNodes(Run)
                     : TimelineService.GetPastTriggeredNodes(Run);
                 var targets = new List<ActiveTarget>(nodes.Count);
                 foreach (cfg.TimelineNode node in nodes)
@@ -79,11 +79,7 @@ namespace GourmetProject.Game.Meta
                     return BattleUseContext.EnumerateRecipeDishes(Run);
                 case cfg.ItemTargetKind.DiningTableCell:
                     DiningTable preview = Run != null ? BattleSessionFactory.BuildTablePreview(Run) : null;
-                    return item.EffectType == ItemEffectTypes.AddMaterial
-                        ? BattleUseContext.EnumerateSettableMaterialCells(preview, item.EffectParam)
-                        : BattleUseContext.EnumerateTableCells(preview);
-                case cfg.ItemTargetKind.Material:
-                    return BattleUseContext.EnumerateMaterials(Run);
+                    return BattleUseContext.EnumerateTableCells(preview);
                 case cfg.ItemTargetKind.FlavorSlot:
                     return BattleUseContext.EnumerateFlavorSlots(Run);
                 default:
@@ -123,13 +119,6 @@ namespace GourmetProject.Game.Meta
         public bool ConvertDishCategory(ActiveTarget target, string category)
         {
             return false;
-        }
-
-        public bool AddMaterialToCell(ActiveTarget target, string materialId)
-        {
-            DiningTable preview = Run != null ? BattleSessionFactory.BuildTablePreview(Run) : null;
-            return BattleUseContext.CanSetCellMaterial(preview, target, materialId, out GridPos position)
-                && Run.SetCellMaterial(position, materialId);
         }
 
         public bool GenerateDish(ActiveTarget target, string dishId, string randomKey) => false;

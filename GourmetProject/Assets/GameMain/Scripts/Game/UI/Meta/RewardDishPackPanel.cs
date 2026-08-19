@@ -456,7 +456,6 @@ namespace GourmetProject.Game.UI.Meta
             return new FoodTipsData(
                 summary,
                 new FoodScoreTipsData(score, multiplier),
-                Array.Empty<FoodMaterialTipsEntry>(),
                 flavorDetails,
                 Array.Empty<FoodInfoEntry>(),
                 BuildRecipeSpecialTags(run, skillIds));

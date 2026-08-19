@@ -25,7 +25,7 @@ public sealed partial class RewardSlot : Luban.BeanBase
         { if(!_buf["weight"].IsNumber) { throw new SerializationException(); }  Weight = _buf["weight"]; }
         { if(!_buf["poolId"].IsString) { throw new SerializationException(); }  PoolId = _buf["poolId"]; }
         { var __json0 = _buf["dishHiddenOffset"]; if(!__json0.IsArray) { throw new SerializationException(); } DishHiddenOffset = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  DishHiddenOffset.Add(__v0); }   }
-        { var __json0 = _buf["passiveItemHiddenOffset"]; if(!__json0.IsArray) { throw new SerializationException(); } PassiveItemHiddenOffset = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  PassiveItemHiddenOffset.Add(__v0); }   }
+        { var __json0 = _buf["itemLuckOffset"]; if(!__json0.IsArray) { throw new SerializationException(); } ItemLuckOffset = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  ItemLuckOffset.Add(__v0); }   }
         { var __json0 = _buf["fragmentHiddenOffset"]; if(!__json0.IsArray) { throw new SerializationException(); } FragmentHiddenOffset = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  FragmentHiddenOffset.Add(__v0); }   }
         { var __json0 = _buf["goldHiddenOffset"]; if(!__json0.IsArray) { throw new SerializationException(); } GoldHiddenOffset = new System.Collections.Generic.List<int>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { int __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = __e0; }  GoldHiddenOffset.Add(__v0); }   }
         { if(!_buf["name"].IsString) { throw new SerializationException(); }  Name = _buf["name"]; }
@@ -70,9 +70,9 @@ public sealed partial class RewardSlot : Luban.BeanBase
     /// </summary>
     public readonly System.Collections.Generic.List<int> DishHiddenOffset;
     /// <summary>
-    /// 装饰品奖励隐藏分修正
+    /// 装饰品运气修正；index0=Normal，index1=Super。
     /// </summary>
-    public readonly System.Collections.Generic.List<int> PassiveItemHiddenOffset;
+    public readonly System.Collections.Generic.List<int> ItemLuckOffset;
     /// <summary>
     /// 餐桌格奖励隐藏分修正
     /// </summary>
@@ -108,7 +108,7 @@ public sealed partial class RewardSlot : Luban.BeanBase
         + "weight:" + Weight + ","
         + "poolId:" + PoolId + ","
         + "dishHiddenOffset:" + Luban.StringUtil.CollectionToString(DishHiddenOffset) + ","
-        + "passiveItemHiddenOffset:" + Luban.StringUtil.CollectionToString(PassiveItemHiddenOffset) + ","
+        + "itemLuckOffset:" + Luban.StringUtil.CollectionToString(ItemLuckOffset) + ","
         + "fragmentHiddenOffset:" + Luban.StringUtil.CollectionToString(FragmentHiddenOffset) + ","
         + "goldHiddenOffset:" + Luban.StringUtil.CollectionToString(GoldHiddenOffset) + ","
         + "name:" + Name + ","

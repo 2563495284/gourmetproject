@@ -54,18 +54,6 @@
     "roundTo": 1
   },
   {
-    "id": "hidden_passive_item",
-    "purpose": 2,
-    "weekList": [],
-    "linearBase": 10,
-    "weekCoeff": 10,
-    "dayCoeff": 1,
-    "expConstant": 0,
-    "expWeekCoeff": 0,
-    "expDayCoeff": 0,
-    "roundTo": 1
-  },
-  {
     "id": "hidden_fragment",
     "purpose": 3,
     "weekList": [],

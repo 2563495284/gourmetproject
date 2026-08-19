@@ -1427,7 +1427,7 @@ namespace GourmetProject.Game.Balance
                 .Select(state => ItemDefinition.Get(_run.Tables, state.ItemId, cfg.ItemKind.Active))
                 .Where(item => item != null
                     && IsPositiveBattleEffect(item.EffectType)
-                    && (item.EffectType == ItemEffectTypes.AddMaterial) == beforePlacement
+                    && !beforePlacement
                     && BattleActiveScoreHelp(item) > 0d)
                 .OrderByDescending(BattleActiveScoreHelp)
                 .ThenBy(item => item.Id, StringComparer.Ordinal)
@@ -1485,39 +1485,12 @@ namespace GourmetProject.Game.Balance
                     return 10000d + Math.Max(
                         0,
                         _database.GetDish(item.EffectParam)?.Deliciousness ?? 0);
-                case ItemEffectTypes.AddMaterial:
-                    return MaterialScoreHelp(item.EffectParam);
                 case ItemEffectTypes.AddFlavor:
                 case ItemEffectTypes.EnhanceFlavor:
                 case ItemEffectTypes.ConvertFlavor:
                     return FlavorScoreHelp(item.EffectParam);
                 default:
                     // GoldNow 等效果有长期价值，但不能把当前预览推过要求线。
-                    return 0d;
-            }
-        }
-
-        private double MaterialScoreHelp(string materialId)
-        {
-            MaterialDef material = _database.GetMaterial(materialId);
-            if (material == null)
-            {
-                return 0d;
-            }
-
-            switch (material.MaterialEffect)
-            {
-                case MaterialEffectType.AddMultFlat:
-                    return 10000d + Math.Max(0f, material.EffectValue) * 100d;
-                case MaterialEffectType.AddMultFlatPerCell:
-                    return 9500d + Math.Max(0f, material.EffectValue) * 100d;
-                case MaterialEffectType.AddMult:
-                    return 9000d + Math.Max(0f, material.EffectValue - 1f) * 100d;
-                case MaterialEffectType.AddFlat:
-                    return 8000d + Math.Max(0f, material.EffectValue);
-                case MaterialEffectType.PermanentAddFlat:
-                    return 7000d + Math.Max(0f, material.EffectValue);
-                default:
                     return 0d;
             }
         }
@@ -1651,17 +1624,6 @@ namespace GourmetProject.Game.Balance
                 return candidates ?? new List<ActiveTarget>();
             }
 
-            if (item.EffectType == ItemEffectTypes.AddMaterial)
-            {
-                // 多张铺台票不得反复覆盖左上角同一格；优先尚无材质的格，再保持稳定坐标。
-                return candidates
-                    .OrderBy(target => session.DiningTable.MaterialsAt(
-                        new GridPos(target.X, target.Y)).Count > 0 ? 1 : 0)
-                    .ThenBy(target => target.Y)
-                    .ThenBy(target => target.X)
-                    .ToList();
-            }
-
             if (item.TargetKind == cfg.ItemTargetKind.DiningTableDish)
             {
                 return candidates
@@ -1687,7 +1649,6 @@ namespace GourmetProject.Game.Balance
                 || effectType == ItemEffectTypes.AddFlavor
                 || effectType == ItemEffectTypes.EnhanceFlavor
                 || effectType == ItemEffectTypes.ConvertFlavor
-                || effectType == ItemEffectTypes.AddMaterial
                 || effectType == ItemEffectTypes.GenerateDish;
         }
 
@@ -1703,6 +1664,7 @@ namespace GourmetProject.Game.Balance
                 || effectType == ItemEffectTypes.TimelineAddInterestNode
                 || effectType == ItemEffectTypes.TimelineAddShopNode
                 || effectType == ItemEffectTypes.TimelineAddLotteryNode
+                || effectType == ItemEffectTypes.TimelineAddRestoreHeartNode
                 || effectType == ItemEffectTypes.TimelineDeleteNode;
         }
 

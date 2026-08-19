@@ -122,7 +122,6 @@ namespace GourmetProject.Gameplay.Battle
         private readonly List<RecipeScoreFlatDelta> _lastRecipeScoreFlatDeltas = new List<RecipeScoreFlatDelta>();
         private readonly List<RecipeScoreMultiplierDelta> _lastRecipeScoreMultiplierDeltas = new List<RecipeScoreMultiplierDelta>();
         private readonly List<RecipeRemovalOutcome> _lastRecipeRemovalOutcomes = new List<RecipeRemovalOutcome>();
-        private readonly List<int> _pendingActiveItemGrantSources = new List<int>();
         private readonly List<DishInstance> _temporaryAreaDishes = new List<DishInstance>();
         private readonly Dictionary<int, PendingDishPlacement> _pendingDishPlacements =
             new Dictionary<int, PendingDishPlacement>();
@@ -379,12 +378,6 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>本局待入账的金币增量（上菜 OnServe + 结算经济运营累积；由 Game 层写回 GameRun.Gold）。</summary>
         public float PendingGold { get; private set; }
 
-        /// <summary>本局待发放的消耗品数量（银格独立 1/5 判定命中数；由 Game 层在结算后发放）。</summary>
-        public int PendingActiveItemGrants => _pendingActiveItemGrantSources.Count;
-
-        /// <summary>每次银格命中对应的来源食物实例 Id，顺序与待发放消耗品一致。</summary>
-        public IReadOnlyList<int> PendingActiveItemGrantSources => _pendingActiveItemGrantSources;
-
         /// <summary>本次结算各 BaseId 的结算增量（供 Game 层累加进 GameRun 大局历史）。</summary>
         public IReadOnlyDictionary<string, int> LastSettledIncrements { get; private set; } = new Dictionary<string, int>();
 
@@ -596,6 +589,12 @@ namespace GourmetProject.Gameplay.Battle
 
         /// <summary>装饰品为每次甜蜜传递追加的目标数量。</summary>
         public int SweetTransferExtraTargetCount { get; set; }
+
+        /// <summary>每次传递给目标永久分数累加的数值。</summary>
+        public float SweetTransferTargetFlat { get; set; }
+
+        /// <summary>每成功传递一个目标，给来源永久分数累加的数值。</summary>
+        public float SweetTransferSourceFlat { get; set; }
 
         public void AddPendingGold(float amount)
         {
@@ -1810,21 +1809,14 @@ namespace GourmetProject.Gameplay.Battle
 
         private void ApplySideEffects(ScoreResult result)
         {
+            List<RecipeScoreFlatDelta> serveRecipeFlats = _lastRecipeScoreFlatDeltas.Count > 0
+                ? new List<RecipeScoreFlatDelta>(_lastRecipeScoreFlatDeltas)
+                : null;
             _lastRecipeScoreFlatDeltas.Clear();
             _lastRecipeScoreMultiplierDeltas.Clear();
 
             // 金币入账（结算侧效果）。
             PendingGold += result.GoldDelta;
-
-            // 银材质：每个银格登记一条带来源的独立判定请求；仅正式结算按请求概率掷骰。
-            _pendingActiveItemGrantSources.Clear();
-            foreach (SilverItemRollRequest request in result.SilverItemRolls)
-            {
-                if (_rng.NextBool(request.Probability))
-                {
-                    _pendingActiveItemGrantSources.Add(request.DishInstanceId);
-                }
-            }
 
             // 全局欢乐蛋糕层数：写回经营挑战级计数器（层数净增时叠加装饰品和消耗品加速）。
             SetHappyCakeLayers(HappyCakeLayers + result.HappyCakeLayerDelta + AccelFor(result.HappyCakeLayerDelta));
@@ -1923,6 +1915,11 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             LastSettledIncrements = increments;
+
+            if (serveRecipeFlats != null && serveRecipeFlats.Count > 0)
+            {
+                _lastRecipeScoreFlatDeltas.InsertRange(0, serveRecipeFlats);
+            }
         }
 
         /// <summary>甜蜜传递落地：对每个请求，用随机流在候选目标中均权取 Count 个（0=全部），把技能追加给它们并标注来源。</summary>
@@ -1992,6 +1989,8 @@ namespace GourmetProject.Gameplay.Battle
             {
                 target.AddPermanentMultBonus(SweetTransferTargetMultiplier);
             }
+
+            ApplySweetTransferTargetFlat(target);
         }
 
         private void ApplySweetTransferSourceMultiplier(DishInstance source)
@@ -2000,6 +1999,43 @@ namespace GourmetProject.Gameplay.Battle
             {
                 source.AddPermanentMultBonus(SweetTransferSourceMultiplier);
             }
+
+            ApplySweetTransferSourceFlat(source);
+        }
+
+        private void ApplySweetTransferTargetFlat(DishInstance target)
+        {
+            if (target == null || Math.Abs(SweetTransferTargetFlat) < 0.0001f)
+            {
+                return;
+            }
+
+            target.AddPermanentFlat(SweetTransferTargetFlat);
+            RecordRecipeFlatDelta(target, SweetTransferTargetFlat);
+        }
+
+        private void ApplySweetTransferSourceFlat(DishInstance source)
+        {
+            if (source == null || Math.Abs(SweetTransferSourceFlat) < 0.0001f)
+            {
+                return;
+            }
+
+            source.AddPermanentFlat(SweetTransferSourceFlat);
+            RecordRecipeFlatDelta(source, SweetTransferSourceFlat);
+        }
+
+        private void RecordRecipeFlatDelta(DishInstance inst, float amount)
+        {
+            if (inst == null || inst.SourceSlotIndex < 0 || inst.SourceDishIndex < 0)
+            {
+                return;
+            }
+
+            _lastRecipeScoreFlatDeltas.Add(new RecipeScoreFlatDelta(
+                inst.SourceSlotIndex,
+                inst.SourceDishIndex,
+                amount));
         }
 
         /// <summary>技能复制落地：对每个请求，用随机流从候选池挑选 Count 个不同技能加到目标实例。</summary>

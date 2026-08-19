@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 餐桌格库：也用作初始餐桌形状来源。materialIds 为该餐桌格可随机落位的材质列表；餐桌格不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
+/// 餐桌格库：也用作初始餐桌形状来源。餐桌格不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
 /// </summary>
 public partial class TbTableFragment
 {

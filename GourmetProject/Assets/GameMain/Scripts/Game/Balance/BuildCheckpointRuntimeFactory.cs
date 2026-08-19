@@ -90,8 +90,6 @@ namespace GourmetProject.Game.Balance
                 if (database.GetFragment(id) == null) errors.Add($"餐桌格不存在：{id}");
             foreach (BalanceFragmentPlacement p in checkpoint.FragmentPlacements)
                 if (database.GetFragment(p.FragmentId) == null) errors.Add($"餐桌格不存在：{p.FragmentId}");
-            foreach (BalanceCellMaterial m in checkpoint.CellMaterials)
-                if (database.GetMaterial(m.MaterialId) == null) errors.Add($"材质不存在：{m.MaterialId}");
             for (int i = 0; i < checkpoint.Dishes.Count; i++)
             {
                 BuildReplayStep step = checkpoint.Dishes[i];
@@ -138,8 +136,6 @@ namespace GourmetProject.Game.Balance
             }
             foreach (BalanceFragmentPlacement p in checkpoint.FragmentPlacements)
                 save.FragmentPlacements.Add(new TableFragmentPlacementSaveData { FragmentId = p.FragmentId, Rotation = p.Rotation, OriginX = p.X, OriginY = p.Y });
-            foreach (BalanceCellMaterial m in checkpoint.CellMaterials)
-                save.CellMaterialOverrides.Add(new CellMaterialSaveData { X = m.X, Y = m.Y, MaterialId = m.MaterialId });
             return save;
         }
 

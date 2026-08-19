@@ -77,7 +77,8 @@ namespace GourmetProject.Game.UI.Widgets
             }
 
             lines.Add($"【{def.Name}】{def.Desc}");
-            if (def.HasTerm && !termIds.Contains(def.TermId))
+            // 风味描述已从术语表并源（termId 与风味 id 相同）时，不再叠一张相同的术语卡。
+            if (def.HasTerm && def.TermId != def.Id && !termIds.Contains(def.TermId))
             {
                 termIds.Add(def.TermId);
             }

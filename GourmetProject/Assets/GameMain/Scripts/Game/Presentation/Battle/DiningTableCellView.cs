@@ -130,40 +130,6 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplySorting(BattleSorting.DiningTable, 0);
         }
 
-        public void PlayMaterialTransform(Action onSpriteSwitch, Action onComplete)
-        {
-            EnsureRefs();
-            KillTransformSequence(resetMaterial: false);
-            _transformOnComplete = onComplete;
-
-            if (SpriteRenderStyle.SpriteTransformMaterial == null)
-            {
-                Vector3 visualPunch = new Vector3(
-                    _visualBaseLocalScale.x * 0.08f,
-                    _visualBaseLocalScale.y * 0.08f,
-                    0f);
-                _transformSequence = DOTween.Sequence()
-                    .Append(_visualRoot.DOPunchScale(visualPunch, 0.24f, vibrato: 6, elasticity: 0.6f))
-                    .InsertCallback(0.12f, () => onSpriteSwitch?.Invoke())
-                    .OnComplete(() => CompleteTransform());
-                return;
-            }
-
-            _plateRenderer.SetPropertyBlock(null);
-            SpriteRenderStyle.ApplyTransformMaterial(_plateRenderer);
-            ApplyTransformEffect(0f);
-            _transformSequence = DOTween.Sequence()
-                .Append(DOTween.To(() => 0f, ApplyTransformEffect, 1f, 0.14f).SetEase(Ease.OutQuad))
-                .AppendCallback(() => onSpriteSwitch?.Invoke())
-                .Append(DOTween.To(() => 1f, ApplyTransformEffect, 0f, 0.2f).SetEase(Ease.InOutQuad))
-                .OnComplete(() =>
-                {
-                    RestoreUnlitMaterials();
-                    ApplyColors();
-                    CompleteTransform();
-                });
-        }
-
         public void SetHoverCallbacks(Action<DiningTableCellView> entered, Action<DiningTableCellView> exited)
         {
             _hoverEntered = entered;

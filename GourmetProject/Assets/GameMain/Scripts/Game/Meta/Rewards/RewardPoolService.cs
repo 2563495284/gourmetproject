@@ -15,6 +15,7 @@ namespace GourmetProject.Game.Meta
     {
         private const string Tag = "RewardPool";
         private const string FlavoredDishPoolId = "pool_flavored_dish";
+        private const string BossPassiveSlotId = "slot_boss_passive";
 
         public static List<RewardChoice> RollChoices(RewardContext context, cfg.RewardSlot slot)
         {
@@ -33,6 +34,9 @@ namespace GourmetProject.Game.Meta
                 : 0;
             bool pityArmed = pityEligible
                 && context.Run.BeginDishChoiceArchetypePity(pityArchetype.Id, pityMissThreshold);
+            bool bossPassivePityEligible = IsBossPassiveArchetypePityEligible(slot);
+            bool bossPassivePityArmed = bossPassivePityEligible
+                && context.Run.BeginBossPassiveArchetypePity();
 
             int count = Math.Max(1, slot.ChoiceCount);
             // 多选一「可选数量」增减（琳琅满目 / 选择困难 / 少选择）：仅作用于食物多选一。
@@ -70,6 +74,7 @@ namespace GourmetProject.Game.Meta
                     pityArchetype,
                     pityMissThreshold,
                     result);
+                CompleteBossPassiveArchetypePity(context, bossPassivePityEligible, result);
                 return result;
             }
 
@@ -79,12 +84,27 @@ namespace GourmetProject.Game.Meta
                     RollDishChoices(context, pool, hidden, count, result);
                     break;
                 case cfg.RewardKind.PassiveItemChoice:
-                    RollItemChoices(context, pool, cfg.ItemKind.Passive, slot.Kind, hidden, count, result);
+                    float itemLuck = ResolveItemLuckForSlot(context, slot);
+                    if (bossPassivePityArmed)
+                    {
+                        RollBossPassiveChoicesWithPity(context, pool, itemLuck, count, result);
+                    }
+                    else
+                    {
+                        RollItemChoices(
+                            context,
+                            pool,
+                            cfg.ItemKind.Passive,
+                            slot.Kind,
+                            itemLuck,
+                            count,
+                            result);
+                    }
                     break;
                 case cfg.RewardKind.ActiveItemGrant:
                 case cfg.RewardKind.ActiveItemStrengthen:
                 case cfg.RewardKind.ActiveItemAdjust:
-                    RollItemChoices(context, pool, cfg.ItemKind.Active, slot.Kind, hidden, count, result);
+                    RollItemChoices(context, pool, cfg.ItemKind.Active, slot.Kind, 0f, count, result);
                     break;
                 case cfg.RewardKind.FragmentChoice:
                     RollFragmentChoices(context, pool, hidden, count, result);
@@ -115,8 +135,52 @@ namespace GourmetProject.Game.Meta
                 pityArchetype,
                 pityMissThreshold,
                 result);
+            CompleteBossPassiveArchetypePity(context, bossPassivePityEligible, result);
 
             return result;
+        }
+
+        private static bool IsBossPassiveArchetypePityEligible(cfg.RewardSlot slot)
+        {
+            return slot.Kind == cfg.RewardKind.PassiveItemChoice
+                && string.Equals(slot.Id, BossPassiveSlotId, StringComparison.Ordinal);
+        }
+
+        private static void CompleteBossPassiveArchetypePity(
+            RewardContext context,
+            bool eligible,
+            IReadOnlyList<RewardChoice> result)
+        {
+            if (eligible)
+            {
+                context.Run.CompleteBossPassiveArchetypePity(
+                    ContainsArchetypePassive(context, result));
+            }
+        }
+
+        private static bool ContainsArchetypePassive(
+            RewardContext context,
+            IReadOnlyList<RewardChoice> choices)
+        {
+            for (int i = 0; i < choices.Count; i++)
+            {
+                RewardChoice choice = choices[i];
+                if (choice?.Kind == cfg.RewardKind.PassiveItemChoice
+                    && HasAnyArchetypeTag(ItemDefinition.Get(
+                        context.Tables,
+                        choice.Id,
+                        cfg.ItemKind.Passive)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasAnyArchetypeTag(ItemDefinition item)
+        {
+            return item?.ArchetypeTags != null && item.ArchetypeTags.Count > 0;
         }
 
         private static bool IsDishChoiceArchetypePityEligible(cfg.RewardSlot slot)
@@ -339,15 +403,25 @@ namespace GourmetProject.Game.Meta
             cfg.RewardPool pool,
             cfg.ItemKind kind,
             cfg.RewardKind rewardKind,
-            int hidden,
+            float itemLuck,
             int count,
             List<RewardChoice> result)
         {
             bool activeItem = kind == cfg.ItemKind.Active;
-            List<ItemDefinition> candidates = BuildItemCandidates(context, pool, kind, rewardKind, hidden, strictHidden: !activeItem);
-            if (candidates.Count == 0 && pool.AllowFallback)
+            List<ItemDefinition> candidates = BuildItemCandidates(context, pool, kind, rewardKind);
+            if (!activeItem)
             {
-                candidates = BuildItemCandidates(context, pool, kind, rewardKind, hidden, strictHidden: false);
+                foreach (ItemDefinition chosen in PassiveItemRandomService.Roll(
+                             context.Tables,
+                             candidates,
+                             context.Rng,
+                             count,
+                             itemLuck))
+                {
+                    result.Add(BuildItemChoice(kind, rewardKind, chosen));
+                }
+
+                return;
             }
 
             for (int i = 0; i < count && candidates.Count > 0; i++)
@@ -355,13 +429,65 @@ namespace GourmetProject.Game.Meta
                 var weights = new List<float>(candidates.Count);
                 foreach (ItemDefinition item in candidates)
                 {
-                    weights.Add(GetItemWeight(item, hidden, HiddenScoreDistanceFloor(context), context.Tables));
+                    weights.Add(GetItemWeight(item, context.Tables));
                 }
 
                 int index = PickWeightedOrUniform(context, weights, candidates.Count);
                 ItemDefinition chosen = candidates[index];
                 candidates.RemoveAt(index);
                 result.Add(BuildItemChoice(kind, rewardKind, chosen));
+            }
+        }
+
+        private static void RollBossPassiveChoicesWithPity(
+            RewardContext context,
+            cfg.RewardPool pool,
+            float itemLuck,
+            int count,
+            List<RewardChoice> result)
+        {
+            List<ItemDefinition> candidates = BuildItemCandidates(
+                context,
+                pool,
+                cfg.ItemKind.Passive,
+                cfg.RewardKind.PassiveItemChoice);
+            var archetypeCandidates = new List<ItemDefinition>();
+            foreach (ItemDefinition item in candidates)
+            {
+                if (HasAnyArchetypeTag(item))
+                {
+                    archetypeCandidates.Add(item);
+                }
+            }
+
+            List<ItemDefinition> guaranteed = PassiveItemRandomService.Roll(
+                context.Tables,
+                archetypeCandidates,
+                context.Rng,
+                1,
+                itemLuck);
+            if (guaranteed.Count > 0)
+            {
+                ItemDefinition chosen = guaranteed[0];
+                result.Add(BuildItemChoice(
+                    cfg.ItemKind.Passive,
+                    cfg.RewardKind.PassiveItemChoice,
+                    chosen));
+                candidates.RemoveAll(item => string.Equals(item.Id, chosen.Id, StringComparison.Ordinal));
+            }
+
+            int remainingCount = count - result.Count;
+            foreach (ItemDefinition chosen in PassiveItemRandomService.Roll(
+                         context.Tables,
+                         candidates,
+                         context.Rng,
+                         remainingCount,
+                         itemLuck))
+            {
+                result.Add(BuildItemChoice(
+                    cfg.ItemKind.Passive,
+                    cfg.RewardKind.PassiveItemChoice,
+                    chosen));
             }
         }
 
@@ -387,19 +513,26 @@ namespace GourmetProject.Game.Meta
                 candidates = BuildFragmentCandidates(context, hidden, strictHidden: false);
             }
 
-            for (int i = 0; i < count && candidates.Count > 0; i++)
+            for (int i = 0; i < count && candidates.Count > 0;)
             {
                 int index = PickHiddenWeighted(context, candidates, hidden, HiddenScoreDistanceFloor(context));
                 TableFragmentDef fragment = candidates[index];
                 candidates.RemoveAt(index);
-                int counterClockwiseQuarterTurns = context.Rng.Range(0, 4);
+                List<int> attachableRotations = context.Run.GetAttachableFragmentRotations(fragment);
+                if (attachableRotations.Count == 0)
+                {
+                    continue;
+                }
+
+                int rotation = attachableRotations[context.Rng.Range(0, attachableRotations.Count)];
                 result.Add(new RewardChoice(
                     cfg.RewardKind.FragmentChoice,
                     fragment.Id,
                     fragment.Id,
                     $"扩展餐桌",
                     HiddenScoreService.FragmentFallbackGold(context.Run, context.ActionContext),
-                    fragmentRotation: (4 - counterClockwiseQuarterTurns) % 4));
+                    fragmentRotation: rotation));
+                i++;
             }
         }
 
@@ -407,9 +540,7 @@ namespace GourmetProject.Game.Meta
             RewardContext context,
             cfg.RewardPool pool,
             cfg.ItemKind kind,
-            cfg.RewardKind rewardKind,
-            int hidden,
-            bool strictHidden)
+            cfg.RewardKind rewardKind)
         {
             var candidates = new List<ItemDefinition>();
             MetaProgressSaveData progress = context.Progress
@@ -424,12 +555,13 @@ namespace GourmetProject.Game.Meta
                     continue;
                 }
 
-                if (strictHidden && !ItemCoversHidden(item, hidden))
+                if (kind == cfg.ItemKind.Passive && item.IsNegative)
                 {
                     continue;
                 }
 
-                if (kind == cfg.ItemKind.Passive && item.IsNegative)
+                if (kind == cfg.ItemKind.Passive
+                    && !PassiveItemRandomService.IsNormalQuality(context.Tables, item.Quality))
                 {
                     continue;
                 }
@@ -450,6 +582,13 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
+            if (item.IsPassive
+                && pool.QualityFilters.Count > 0
+                && !pool.QualityFilters.Contains(item.Quality))
+            {
+                return false;
+            }
+
             if (rewardKind == cfg.RewardKind.ActiveItemStrengthen &&
                 (!item.IsActive || item.ActiveItemCategory != cfg.ActiveItemCategory.Strengthen))
             {
@@ -462,11 +601,6 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            if (!MatchesMaterialPoolTag(item, pool))
-            {
-                return false;
-            }
-
             return pool.Kind switch
             {
                 cfg.RewardPoolKind.ActiveItemStrengthen =>
@@ -475,38 +609,6 @@ namespace GourmetProject.Game.Meta
                     item.IsActive && item.ActiveItemCategory == cfg.ActiveItemCategory.Adjust,
                 _ => true,
             };
-        }
-
-        private static bool MatchesMaterialPoolTag(ItemDefinition item, cfg.RewardPool pool)
-        {
-            if (!item.IsActive || pool.SpecialTags == null || pool.SpecialTags.Count == 0)
-            {
-                return true;
-            }
-
-            bool hasMaterialFilter = false;
-            foreach (cfg.RewardPoolSpecialTag tag in pool.SpecialTags)
-            {
-                if (!IsMaterialPoolTag(tag))
-                {
-                    continue;
-                }
-
-                hasMaterialFilter = true;
-                if (item.HasPoolTag(tag.ToString()))
-                {
-                    return true;
-                }
-            }
-
-            return !hasMaterialFilter;
-        }
-
-        private static bool IsMaterialPoolTag(cfg.RewardPoolSpecialTag tag)
-        {
-            return tag == cfg.RewardPoolSpecialTag.LayWood ||
-                   tag == cfg.RewardPoolSpecialTag.LayStone ||
-                   tag == cfg.RewardPoolSpecialTag.LayMetal;
         }
 
         private static List<TableFragmentDef> BuildFragmentCandidates(RewardContext context, int hidden, bool strictHidden)
@@ -592,15 +694,9 @@ namespace GourmetProject.Game.Meta
             return total > 0f ? context.Rng.WeightedPickIndex(weights) : context.Rng.Range(0, count);
         }
 
-        private static float GetItemWeight(ItemDefinition item, int hidden, int distanceFloor, cfg.Tables tables)
+        private static float GetItemWeight(ItemDefinition item, cfg.Tables tables)
         {
-            float weight = item.BaseWeight > 0f ? item.BaseWeight : DefaultRandomWeight(tables);
-            if (item.IsPassive)
-            {
-                weight = HiddenScoreWeight(weight, HiddenMean(item), hidden, distanceFloor);
-            }
-
-            return weight;
+            return item.BaseWeight > 0f ? item.BaseWeight : DefaultRandomWeight(tables);
         }
 
         /// <summary>消耗品抽取完全不读取隐藏分或奖励槽隐藏分修正。</summary>
@@ -618,7 +714,6 @@ namespace GourmetProject.Game.Meta
                 case cfg.RewardKind.DishChoice:
                     return context.DishHiddenScore;
                 case cfg.RewardKind.PassiveItemChoice:
-                    return context.PassiveItemHiddenScore;
                 case cfg.RewardKind.ActiveItemGrant:
                 case cfg.RewardKind.ActiveItemStrengthen:
                 case cfg.RewardKind.ActiveItemAdjust:
@@ -636,7 +731,7 @@ namespace GourmetProject.Game.Meta
             return slot.Kind switch
             {
                 cfg.RewardKind.DishChoice => ListOffset(slot.DishHiddenOffset, tierIndex),
-                cfg.RewardKind.PassiveItemChoice => ListOffset(slot.PassiveItemHiddenOffset, tierIndex),
+                cfg.RewardKind.PassiveItemChoice => 0,
                 cfg.RewardKind.ActiveItemGrant => 0,
                 cfg.RewardKind.ActiveItemStrengthen => 0,
                 cfg.RewardKind.ActiveItemAdjust => 0,
@@ -662,24 +757,11 @@ namespace GourmetProject.Game.Meta
             return index < offsets.Count ? offsets[index] : offsets[0];
         }
 
-        private static bool ItemCoversHidden(ItemDefinition item, int hidden)
+        private static float ResolveItemLuckForSlot(RewardContext context, cfg.RewardSlot slot)
         {
-            if (item.HiddenRange == null || (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0))
-            {
-                return true;
-            }
-
-            return hidden >= item.HiddenRange.Min && hidden <= item.HiddenRange.Max;
-        }
-
-        private static float HiddenMean(ItemDefinition item)
-        {
-            if (item.HiddenRange == null || (item.HiddenRange.Min == 0 && item.HiddenRange.Max == 0))
-            {
-                return 0f;
-            }
-
-            return (item.HiddenRange.Min + item.HiddenRange.Max) * 0.5f;
+            int tierIndex = ResolveFoodTierIndex(context);
+            float slotOffset = slot == null ? 0f : ListOffset(slot.ItemLuckOffset, tierIndex);
+            return ItemLuckService.GetLuck(context.Run, context.ActionContext, slotOffset);
         }
 
         private static int RollGoldRewardAmount(RewardContext context, cfg.RewardSlot slot)

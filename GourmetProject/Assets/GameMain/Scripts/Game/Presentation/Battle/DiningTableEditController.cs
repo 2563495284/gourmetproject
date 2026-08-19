@@ -326,8 +326,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly Dictionary<int, Tween> _editTrayFailureTweens = new Dictionary<int, Tween>();
         private readonly List<Vector2Int> _editTrayFragmentSizes = new List<Vector2Int>();
         private readonly List<Vector2> _editTrayColumnCenters = new List<Vector2>();
-        private readonly Dictionary<string, DiningTableCellSprites> _editMaterialCellSprites =
-            new Dictionary<string, DiningTableCellSprites>();
         private DiningTableCellSprites _editCellSprites;
         private float _editTraySize;
         private Transform _editDragRoot;
@@ -509,32 +507,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _editRun = null;
             _state = TableInteractionState.None;
             _owner?.ClearTableMode();
-        }
-
-        public bool ApplyCellMaterialVisual(GridPos pos, string materialId, Action onComplete)
-        {
-            if (_editTable == null || string.IsNullOrEmpty(materialId) || !_editTable.Exists(pos))
-            {
-                return false;
-            }
-
-            IReadOnlyList<string> current = _editTable.MaterialsAt(pos);
-            bool alreadyApplied = current.Count > 0
-                && string.Equals(current[current.Count - 1], materialId, StringComparison.Ordinal);
-            if (!alreadyApplied && !_editTable.SetMaterialAt(pos, materialId))
-            {
-                return false;
-            }
-
-            if (_boardView != null && _boardView.TryGetCellView(pos, out DiningTableCellView cell) && cell != null)
-            {
-                cell.PlayMaterialTransform(() => _boardView?.Sync(), onComplete);
-                return true;
-            }
-
-            _boardView?.Sync();
-            onComplete?.Invoke();
-            return true;
         }
 
         /// <summary>退出菜桌编辑页：清理动态内容，恢复餐桌常规显示。外层负责隐藏世界与返回。</summary>
@@ -1397,7 +1369,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         -(c.Y - centerGridY) * _editTraySize,
                         0f);
                     Vector3 local = new Vector3(columnCenter.x, columnCenter.y, 0f) + groupRotation * offset;
-                    cell.Configure(c, local, _editTraySize, FragmentCellSprites(shown, c), null);
+                    cell.Configure(c, local, _editTraySize, _editCellSprites, null);
                     cell.transform.localRotation = groupRotation;
                     cell.SetColor(EditFragmentFillColor);
                     cell.SetSortingOrder(EditTraySortingOrder);
@@ -1515,7 +1487,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 var local = new Vector3((cellPos.X - avgX) * pitch, -(cellPos.Y - avgY) * pitch, 0f);
-                cell.Configure(cellPos, local, _cellSize, FragmentCellSprites(def, cellPos), null);
+                cell.Configure(cellPos, local, _cellSize, _editCellSprites, null);
                 cell.SetColor(EditFragmentFillColor);
                 cell.SetSorting(BattleSorting.Fx, EditDragSortingOrder);
                 _editDragCells.Add(cell);
@@ -1523,48 +1495,9 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private DiningTableCellSprites FragmentCellSprites(TableFragmentDef def, GridPos localPos)
-        {
-            string materialId = FragmentCellMaterialId(def, localPos);
-            if (string.IsNullOrEmpty(materialId))
-            {
-                return _editCellSprites;
-            }
-
-            if (_editMaterialCellSprites.TryGetValue(materialId, out DiningTableCellSprites cached))
-            {
-                return cached;
-            }
-
-            DiningTableCellSprites sprites =
-                DiningTableCellSpriteResources.LoadMaterial(materialId, _editCellSprites);
-            _editMaterialCellSprites[materialId] = sprites;
-            return sprites;
-        }
-
-        private static string FragmentCellMaterialId(TableFragmentDef def, GridPos localPos)
-        {
-            if (def == null || def.CellMaterials == null)
-            {
-                return null;
-            }
-
-            for (int i = def.CellMaterials.Count - 1; i >= 0; i--)
-            {
-                CellMaterial material = def.CellMaterials[i];
-                if (material.Pos.Equals(localPos))
-                {
-                    return material.MaterialId;
-                }
-            }
-
-            return null;
-        }
-
         private void LoadEditCellSprites()
         {
             _editCellSprites = DiningTableCellSpriteResources.LoadDefault();
-            _editMaterialCellSprites.Clear();
             if (!_editCellSprites.IsValid)
             {
                 throw new InvalidOperationException("编辑态默认餐桌格 Sprite 缺失。");
@@ -1894,7 +1827,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     absolute,
                     _boardView.Mapper.CellCenterLocal(absolute),
                     _cellSize,
-                    FragmentCellSprites(fragment, local),
+                    _editCellSprites,
                     null);
                 projection.name = "BoardEditProjection";
                 projection.SetInteractionEnabled(false);

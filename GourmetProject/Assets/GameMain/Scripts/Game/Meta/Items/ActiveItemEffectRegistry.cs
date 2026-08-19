@@ -125,11 +125,6 @@ namespace GourmetProject.Game.Meta
                     return ApplyToTargets(targets, t => ctx.ConvertDishCategory(t, item.EffectParam),
                         item, "已转换选中的分类。", "当前食物分类暂不支持运行时转换。");
 
-                // —— 铺台小票：给餐桌格永久附加材质（effectParam=材质 id）——
-                case ItemEffectTypes.AddMaterial:
-                    return ApplyToTargets(targets, t => ctx.AddMaterialToCell(t, item.EffectParam),
-                        item, "已为选中的格子附加材质。", "现在无法为选中的格子附加材质。");
-
                 case ItemEffectTypes.GenerateDish:
                     return ApplyToTargets(targets, t => ctx.GenerateDish(t, item.EffectParam, ctx.Run?.NextActiveUseKey()),
                         item, "已生成新的食物。", "现在无法生成新的食物。");
@@ -200,6 +195,7 @@ namespace GourmetProject.Game.Meta
                 case ItemEffectTypes.TimelineAddRewardNode:
                 case ItemEffectTypes.TimelineAddInterestNode:
                 case ItemEffectTypes.TimelineAddShopNode:
+                case ItemEffectTypes.TimelineAddRestoreHeartNode:
                     if (targets == null || targets.Count == 0)
                     {
                         return new ActiveItemUseResult(false, false, $"{item.Name}：请先选择日期。");

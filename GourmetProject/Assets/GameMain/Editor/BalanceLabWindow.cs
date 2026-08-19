@@ -337,8 +337,6 @@ namespace GourmetProject.EditorTools
             checkpoint.TableFragmentIds.AddRange(save.TableFragmentIds ?? new List<string>());
             foreach (TableFragmentPlacementSaveData p in save.FragmentPlacements)
                 checkpoint.FragmentPlacements.Add(new BalanceFragmentPlacement { FragmentId = p.FragmentId, Rotation = p.Rotation, X = p.OriginX, Y = p.OriginY });
-            foreach (CellMaterialSaveData m in save.CellMaterialOverrides)
-                checkpoint.CellMaterials.Add(new BalanceCellMaterial { X = m.X, Y = m.Y, MaterialId = m.MaterialId });
 
             BattleForm battle = Resources.FindObjectsOfTypeAll<BattleForm>().FirstOrDefault(v => v != null && v.gameObject.scene.IsValid() && v.Session != null);
             if (battle != null && battle.Session.DiningTable.DishCount > 0)

@@ -242,5 +242,25 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(lollipop.Desc, Does.Not.Contain("每有1个技能"));
         }
 
+        [Test]
+        public void FlavorDescriptions_ResolveFromTermTable()
+        {
+            Assert.That(_tables.TbFlavor.DataList, Is.Not.Empty);
+
+            foreach (cfg.Flavor flavor in _tables.TbFlavor.DataList)
+            {
+                Assert.That(flavor.Desc, Is.Empty, flavor.Id);
+                Assert.That(flavor.TermId, Is.EqualTo(flavor.Id), flavor.Id);
+
+                cfg.Term term = _tables.TbTerm.GetOrDefault(flavor.TermId);
+                Assert.That(term, Is.Not.Null, flavor.Id);
+
+                FlavorDef def = _database.GetFlavor(flavor.Id);
+                Assert.That(def, Is.Not.Null, flavor.Id);
+                Assert.That(def.TermId, Is.EqualTo(flavor.Id), flavor.Id);
+                Assert.That(def.Desc, Is.EqualTo(term.Desc), flavor.Id);
+            }
+        }
+
     }
 }

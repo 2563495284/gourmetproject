@@ -1081,7 +1081,7 @@ namespace GourmetProject.Game.UI.Battle
             IReadOnlyList<RecipeReadonlyDishEntry> afterEntries = BuildRecipeMutationEntries(result, before: false);
             BattleInspectionView restoreView = ActiveInspectionView;
             DiningTable restoreTable = restoreView == BattleInspectionView.Table
-                ? BuildTablePresentationSnapshot(null, before: false)
+                ? BuildTablePresentationSnapshot()
                 : null;
 
             bool completed = false;
@@ -1305,61 +1305,6 @@ namespace GourmetProject.Game.UI.Battle
             {
                 ClosePassiveFlavorMutationPage();
                 CompleteOnce();
-            });
-        }
-
-        public void ShowPassiveCellMutation(CellMutationResult result)
-        {
-            if (result == null || !result.HasChanges)
-            {
-                return;
-            }
-
-            DiningTable beforeTable = BuildTablePresentationSnapshot(result, before: true);
-            DiningTable afterTable = BuildTablePresentationSnapshot(result, before: false);
-            BattleInspectionView restoreView = ActiveInspectionView;
-            IReadOnlyList<RecipeReadonlyDishEntry> restoreRecipe = restoreView == BattleInspectionView.Recipe
-                ? BuildCurrentRecipeEntries()
-                : null;
-
-            bool cancelled = false;
-            EnqueuePassivePresentation(done =>
-            {
-                void ContinueOrFinish(Action next)
-                {
-                    if (cancelled)
-                    {
-                        done();
-                        return;
-                    }
-
-                    next();
-                }
-
-                _world = _world ?? BattleWorldController.Instance;
-                BindWorldHudAreas();
-                bool opened = _inspectionCoordinator?.ShowPassiveTable(
-                    beforeTable,
-                    () => ContinueOrFinish(() =>
-                        DelayPassivePresentation(1f, () => ContinueOrFinish(() =>
-                            PlayPassiveCellMutations(result, () => ContinueOrFinish(() =>
-                                WaitPassiveHold(() => ContinueOrFinish(() =>
-                                    RestorePassiveInspection(
-                                        restoreView,
-                                        restoreRecipe,
-                                        afterTable,
-                                        done)))))))),
-                    hideExitButton: true) == true;
-
-                if (!opened)
-                {
-                    RefreshPersistent();
-                    done();
-                }
-            }, () =>
-            {
-                cancelled = true;
-                _inspectionCoordinator?.ForceClose();
             });
         }
 
@@ -4160,33 +4105,6 @@ namespace GourmetProject.Game.UI.Battle
             onRestored?.Invoke();
         }
 
-        private void PlayPassiveCellMutations(CellMutationResult result, Action onComplete)
-        {
-            if (result == null || result.Entries.Count == 0 || _world == null)
-            {
-                onComplete?.Invoke();
-                return;
-            }
-
-            int remaining = result.Entries.Count;
-            void CompleteOne()
-            {
-                remaining--;
-                if (remaining == 0)
-                {
-                    onComplete?.Invoke();
-                }
-            }
-
-            foreach (CellMutationEntry entry in result.Entries)
-            {
-                if (!_world.PlayActiveItemCellMaterialApplied(entry.Pos, entry.MaterialId, CompleteOne))
-                {
-                    CompleteOne();
-                }
-            }
-        }
-
         private IReadOnlyList<RecipeReadonlyDishEntry> BuildCurrentRecipeEntries()
         {
             var entries = new List<RecipeReadonlyDishEntry>(_run?.RecipeEntries.Count ?? 0);
@@ -4298,7 +4216,7 @@ namespace GourmetProject.Game.UI.Battle
             return slot;
         }
 
-        private DiningTable BuildTablePresentationSnapshot(CellMutationResult result, bool before)
+        private DiningTable BuildTablePresentationSnapshot()
         {
             DiningTable source = _run?.BuildTablePreviewFromFragments();
             if (source == null)
@@ -4306,31 +4224,8 @@ namespace GourmetProject.Game.UI.Battle
                 return null;
             }
 
-            var overrides = new Dictionary<GridPos, IReadOnlyList<string>>();
-            if (result != null)
-            {
-                foreach (CellMutationEntry entry in result.Entries)
-                {
-                    overrides[entry.Pos] = before
-                        ? entry.BeforeMaterialIds
-                        : entry.AfterMaterialIds;
-                }
-            }
-
             List<GridPos> cells = source.ExistingCells();
-            var materials = new Dictionary<GridPos, IReadOnlyList<string>>();
-            foreach (GridPos cell in cells)
-            {
-                IReadOnlyList<string> values = overrides.TryGetValue(cell, out IReadOnlyList<string> replacement)
-                    ? replacement
-                    : source.MaterialsAt(cell);
-                if (values != null && values.Count > 0)
-                {
-                    materials[cell] = new List<string>(values);
-                }
-            }
-
-            var snapshot = new DiningTable(source.Width, source.Height, cells, materials);
+            var snapshot = new DiningTable(source.Width, source.Height, cells);
             foreach (GridPos cell in cells)
             {
                 if (source.IsDisabled(cell))
@@ -5291,91 +5186,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnCellHoverEntered(DiningTableCellView cell)
         {
-            if (cell == null || _tips == null)
-            {
-                return;
-            }
-
-            if (_current != GameplayView.Food
-                && _inspectionCoordinator?.IsTableVisible != true
-                && _fragmentEditCoordinator?.IsActive != true)
-            {
-                return;
-            }
-
-            BattleWorldController world = _world ?? BattleWorldController.Instance;
-            if (_fragmentEditCoordinator?.IsActive == true
-                && world != null
-                && world.IsTableEditDragging)
-            {
-                HideCellMaterialTips(cell);
-                return;
-            }
-
-            if (!TryGetCellTipsContext(out DiningTable table, out GameplayDatabase db))
-            {
-                HideCellMaterialTips(cell);
-                return;
-            }
-
-            if (table == null || !table.Exists(cell.Position) || table.DishAt(cell.Position) != null)
-            {
-                HideCellMaterialTips(cell);
-                return;
-            }
-
-            IReadOnlyList<FoodMaterialTipsEntry> materials = FoodTipsDataFactory.BuildMaterialsForCells(
-                new[] { cell.Position },
-                table,
-                db);
-            if (materials == null || materials.Count == 0)
-            {
-                HideCellMaterialTips(cell);
-                return;
-            }
-
-            FoodTipsView tips = _tips.Food;
-            if (tips == null)
-            {
-                return;
-            }
-
-            (_world ?? BattleWorldController.Instance)?.ClearDishScopeHighlights();
-            _hoveredDishPiece = null;
-            _hoveredCell = cell;
-            _foodTipsHoverOwner = FoodTipsHoverOwner.TableCell;
-            tips.BindMaterialsOnly(materials);
-            tips.Show();
-            tips.transform.SetAsLastSibling();
-            tips.PlaceAroundWorldBounds(cell.WorldBounds, Camera.main, GetComponentInParent<Canvas>());
-        }
-
-        private bool TryGetCellTipsContext(out DiningTable table, out GameplayDatabase db)
-        {
-            if (_current == GameplayView.Food && _session != null)
-            {
-                table = _session.DiningTable;
-                db = _session.Database;
-                return table != null && db != null;
-            }
-
-            if (_inspectionCoordinator?.IsTableVisible == true && _run != null)
-            {
-                table = (_world ?? BattleWorldController.Instance)?.ActiveTable;
-                db = _run.Database;
-                return table != null && db != null;
-            }
-
-            if (_fragmentEditCoordinator?.IsActive == true && _run != null)
-            {
-                table = (_world ?? BattleWorldController.Instance)?.ActiveTable;
-                db = _run.Database;
-                return table != null && db != null;
-            }
-
-            table = null;
-            db = null;
-            return false;
+            HideCellMaterialTips(cell);
         }
 
         private void OnCellHoverExited(DiningTableCellView cell)
@@ -5400,47 +5211,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnTableFragmentHoverEntered(TableFragmentHoverInfo info)
         {
-            TableFragmentDef fragment = info.Definition;
-            if (_fragmentEditCoordinator?.IsActive != true
-                || fragment == null
-                || _run?.Database == null
-                || _tips == null)
-            {
-                return;
-            }
-
-            BattleWorldController world = _world ?? BattleWorldController.Instance;
-            if (world != null && world.IsTableEditDragging)
-            {
-                return;
-            }
-
-            IReadOnlyList<FoodMaterialTipsEntry> materials =
-                FoodTipsDataFactory.BuildMaterialsForFragment(fragment, _run.Database);
-            if (materials == null || materials.Count == 0)
-            {
-                HideTableFragmentMaterialTips(info);
-                return;
-            }
-
-            FoodTipsView tips = _tips.Food;
-            if (tips == null)
-            {
-                return;
-            }
-
-            _hoveredDishPiece = null;
-            _hoveredCell = null;
-            _hoveredTableFragmentSession = info.SessionVersion;
-            _hoveredTableFragmentIndex = info.CandidateIndex;
-            _foodTipsHoverOwner = FoodTipsHoverOwner.TableFragment;
-            tips.BindMaterialsOnly(materials);
-            tips.Show();
-            tips.transform.SetAsLastSibling();
-            tips.PlaceAroundWorldBounds(
-                info.WorldBounds,
-                world != null ? world.WorldCamera : Camera.main,
-                GetComponentInParent<Canvas>());
+            HideTableFragmentMaterialTips(info);
         }
 
         private void OnTableFragmentHoverExited(TableFragmentHoverInfo info)
@@ -5666,44 +5437,9 @@ namespace GourmetProject.Game.UI.Battle
 
             }
 
-            // 所有需要“先演出、再写回”的判定结束后应用局外结算；银格命中的实际消耗品
-            // 此时已经从实时物品池发放，可按命中顺序逐条展示具体内容。
-            // 判定请求本身不显示，未命中也不显示；同一食物多格命中不会合并。
-            BattleRunSettlement appliedSettlement = null;
             if (_run != null && _session != null)
             {
-                appliedSettlement = BattleSettlementApplier.ApplyFinal(_run, _session);
-            }
-
-            if (appliedSettlement != null && appliedSettlement.SilverItemGrants.Count > 0)
-            {
-                foreach (SilverItemGrantPresentation grant in appliedSettlement.SilverItemGrants)
-                {
-                    try
-                    {
-                        if (_world != null)
-                        {
-                            await _world.PlaySilverItemGrantAsync(grant, destroyCancellationToken);
-                        }
-                        else
-                        {
-                            ItemAcquireResult acquired = grant.Acquisition;
-                            ShowActiveItemMessage(acquired.HasItem
-                                ? $"银材质：获得{acquired.ItemName}"
-                                : $"银材质：获得金币 +{acquired.Gold}");
-                            await Awaitable.WaitForSecondsAsync(0.82f, destroyCancellationToken);
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return;
-                    }
-
-                    if (_discardSettlementCallbacks || Active != this)
-                    {
-                        return;
-                    }
-                }
+                BattleSettlementApplier.ApplyFinal(_run, _session);
             }
 
             // 领奖期间允许隐藏奖励页查看本场结果，因此保留最终美味值；

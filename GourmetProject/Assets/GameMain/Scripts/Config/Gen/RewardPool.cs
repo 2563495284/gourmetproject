@@ -21,6 +21,7 @@ public sealed partial class RewardPool : Luban.BeanBase
         { if(!_buf["kind"].IsNumber) { throw new SerializationException(); }  Kind = (RewardPoolKind)_buf["kind"].AsInt; }
         { if(!_buf["allowFallback"].IsBoolean) { throw new SerializationException(); }  AllowFallback = _buf["allowFallback"]; }
         { var __json0 = _buf["specialTags"]; if(!__json0.IsArray) { throw new SerializationException(); } SpecialTags = new System.Collections.Generic.List<RewardPoolSpecialTag>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { RewardPoolSpecialTag __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = (RewardPoolSpecialTag)__e0.AsInt; }  SpecialTags.Add(__v0); }   }
+        { var __json0 = _buf["qualityFilters"]; if(!__json0.IsArray) { throw new SerializationException(); } QualityFilters = new System.Collections.Generic.List<ItemQuality>(__json0.Count); foreach(JSONNode __e0 in __json0.Children) { ItemQuality __v0;  { if(!__e0.IsNumber) { throw new SerializationException(); }  __v0 = (ItemQuality)__e0.AsInt; }  QualityFilters.Add(__v0); }   }
     }
 
     public static RewardPool DeserializeRewardPool(JSONNode _buf)
@@ -44,6 +45,10 @@ public sealed partial class RewardPool : Luban.BeanBase
     /// 奖励池特殊标签筛选
     /// </summary>
     public readonly System.Collections.Generic.List<RewardPoolSpecialTag> SpecialTags;
+    /// <summary>
+    /// 装饰品品质筛选；空=不限。
+    /// </summary>
+    public readonly System.Collections.Generic.List<ItemQuality> QualityFilters;
    
     public const int __ID__ = -610400245;
     public override int GetTypeId() => __ID__;
@@ -59,6 +64,7 @@ public sealed partial class RewardPool : Luban.BeanBase
         + "kind:" + Kind + ","
         + "allowFallback:" + AllowFallback + ","
         + "specialTags:" + Luban.StringUtil.CollectionToString(SpecialTags) + ","
+        + "qualityFilters:" + Luban.StringUtil.CollectionToString(QualityFilters) + ","
         + "}";
     }
 }

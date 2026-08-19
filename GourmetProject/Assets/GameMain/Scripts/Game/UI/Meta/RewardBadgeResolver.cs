@@ -1,9 +1,16 @@
 namespace GourmetProject.Game.UI.Meta
 {
-    /// <summary>行动卡与领奖页共享的 Food 奖励徽章命名规则。</summary>
+    /// <summary>
+    /// Food 奖励徽章命名：行动卡按普通/困难区分特定图标，领奖页始终用默认图标。
+    /// </summary>
     internal static class RewardBadgeResolver
     {
         internal const string BaseDishSpriteName = "reward_badge_base_dish";
+
+        internal static string DefaultSpriteNameFor(cfg.RewardKind rewardKind)
+        {
+            return SpriteNameFor(cfg.FoodActionKind.Normal, rewardKind);
+        }
 
         internal static string SpriteNameFor(
             cfg.FoodActionKind actionKind,

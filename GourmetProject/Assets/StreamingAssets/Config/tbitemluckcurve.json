@@ -1,0 +1,10 @@
+[
+  {
+    "id": "item_luck_default",
+    "baseValue": 0,
+    "perWeek": 10,
+    "perDay": 1,
+    "minLuck": -100,
+    "maxLuck": 100
+  }
+]

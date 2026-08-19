@@ -303,7 +303,6 @@ namespace GourmetProject.Tests.EditMode
                 new[] { first, second },
                 new[] { grantGold, removeSelf },
                 Array.Empty<FlavorDef>(),
-                Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
             var scoreSource = new ItemScoreEffectSource(new[]
             {

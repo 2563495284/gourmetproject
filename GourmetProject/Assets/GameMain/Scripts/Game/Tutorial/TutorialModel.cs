@@ -19,7 +19,6 @@ namespace GourmetProject.Game.Tutorial
         public const string TimelineNode = "tutorial.core.timeline_node";
         public const string CoreComplete = "tutorial.core.complete";
         public const string Flavor = "tutorial.hook.flavor";
-        public const string Material = "tutorial.hook.material";
         public const string Adjustment = "tutorial.hook.adjustment";
         public const string Boss = "tutorial.hook.boss";
         internal const string FirstFailureHeart = "tutorial.hook.first_failure_heart";
@@ -359,15 +358,6 @@ namespace GourmetProject.Game.Tutorial
                         TutorialAnchorId.AcquiredActiveItem),
                     C(
                         "风味会改变食物的属性和结算效果，强化箱道具可以帮我们为食物附加风味。",
-                        TutorialAnchorId.AcquiredActiveItem)),
-
-                [TutorialId.Material] = new TutorialSequenceDefinition(
-                    TutorialId.Material,
-                    C(
-                        "老板，餐桌现在有材质啦！每个餐桌格只有 1 个材质哦。",
-                        TutorialAnchorId.AcquiredActiveItem),
-                    C(
-                        "放置在餐桌格上的食物会获得对应效果；强化箱道具可以帮我们为餐桌附加材质。",
                         TutorialAnchorId.AcquiredActiveItem)),
 
                 [TutorialId.Adjustment] = new TutorialSequenceDefinition(

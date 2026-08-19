@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 奖励池筛选：specialTags 用 | 分隔；装饰品和消耗品不按品质权重筛选。
+/// 奖励池筛选：specialTags 与 qualityFilters 均为空时不限制。
 /// </summary>
 public partial class TbRewardPool
 {

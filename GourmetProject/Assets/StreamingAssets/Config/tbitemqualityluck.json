@@ -1,0 +1,22 @@
+[
+  {
+    "quality": 0,
+    "baseWeight": 63,
+    "luckGrowth": -0.035
+  },
+  {
+    "quality": 1,
+    "baseWeight": 25,
+    "luckGrowth": 0.013
+  },
+  {
+    "quality": 2,
+    "baseWeight": 10,
+    "luckGrowth": 0.0352
+  },
+  {
+    "quality": 3,
+    "baseWeight": 2,
+    "luckGrowth": 0.0775
+  }
+]

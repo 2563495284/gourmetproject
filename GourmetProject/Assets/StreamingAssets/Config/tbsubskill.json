@@ -15,7 +15,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{ascope}\n[strong]分数[/strong] [score]{0}[/score]",
+    "descTemplate": "{ascope}\n[strong]分数[/strong][score]{0}[/score]",
     "termId": ""
   },
   {
@@ -34,7 +34,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{ascope}\n[strong]倍率[/strong] [multadd]{0}[/multadd]",
+    "descTemplate": "{ascope}\n[strong]倍率[/strong][multadd]{0}[/multadd]",
     "termId": ""
   },
   {
@@ -53,7 +53,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{ascope}\n[strong]分数[/strong] [score]{0}[/score]",
+    "descTemplate": "{ascope}\n[strong]分数[/strong][score]{0}[/score]",
     "termId": ""
   },
   {
@@ -72,7 +72,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{ascope}\n[strong]倍率[/strong] [multadd]{0}[/multadd]",
+    "descTemplate": "{ascope}\n[strong]倍率[/strong][multadd]{0}[/multadd]",
     "termId": ""
   },
   {
@@ -91,7 +91,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{cscope}\n没有空格时，[strong]倍率[/strong] [multadd]{0}[/multadd]",
+    "descTemplate": "{cscope}\n没有空格时，[strong]倍率[/strong][multadd]{0}[/multadd]",
     "termId": ""
   },
   {
@@ -110,7 +110,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}技能\n[term]欢乐蛋糕[/term] {0} 层",
+    "descTemplate": "{cscope}每有1{unit}技能\n[term]欢乐蛋糕[/term]{0}层",
     "termId": "clb"
   },
   {
@@ -129,7 +129,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{cscope}\n每有 1 {unit}食物，[strong]倍率[/strong] [multadd]{0}[/multadd]",
+    "descTemplate": "{cscope}\n每有1{unit}食物，[strong]倍率[/strong][multadd]{0}[/multadd]",
     "termId": ""
   },
   {
@@ -148,7 +148,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{cscope}\n每有 1 {unit}技能，[strong]分数[/strong] [score]{0}[/score]",
+    "descTemplate": "{cscope}\n每有1{unit}技能，[strong]分数[/strong][score]{0}[/score]",
     "termId": ""
   },
   {
@@ -167,7 +167,7 @@
     ],
     "actionParam": [],
     "signed": false,
-    "descTemplate": "[term]甜蜜传递[/term] {count} 个食物",
+    "descTemplate": "[term]甜蜜传递[/term]{count}个食物",
     "termId": "term_sweet_transfer"
   },
   {
@@ -205,7 +205,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "[term]欢乐蛋糕[/term] {0} 层",
+    "descTemplate": "[term]欢乐蛋糕[/term]{0}层",
     "termId": "clb"
   },
   {
@@ -224,7 +224,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{cscope}每有 1 {unit}食物\n[term]欢乐蛋糕[/term] {0} 层",
+    "descTemplate": "{cscope}每有1{unit}食物\n[term]欢乐蛋糕[/term]{0}层",
     "termId": "clb"
   },
   {
@@ -281,7 +281,7 @@
     ],
     "actionParam": [],
     "signed": false,
-    "descTemplate": "[term]甜蜜传递[/term] {count} 个食物",
+    "descTemplate": "[term]甜蜜传递[/term]{count}个食物",
     "termId": "term_sweet_transfer"
   },
   {
@@ -300,7 +300,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{cscope}\n每有 1 {unit}食物，[strong]分数[/strong] [score]{0}[/score]",
+    "descTemplate": "{cscope}\n每有1{unit}食物，[strong]分数[/strong][score]{0}[/score]",
     "termId": ""
   },
   {
@@ -319,7 +319,7 @@
     ],
     "actionParam": [],
     "signed": false,
-    "descTemplate": "[term]甜蜜传递[/term] {count} 个食物",
+    "descTemplate": "[term]甜蜜传递[/term]{count}个食物",
     "termId": "term_sweet_transfer"
   },
   {
@@ -338,7 +338,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{cscope}\n每有 2 {unit}食物，[strong]倍率[/strong] [multadd]{0}[/multadd]",
+    "descTemplate": "{cscope}\n每有2{unit}食物，[strong]倍率[/strong][multadd]{0}[/multadd]",
     "termId": ""
   },
   {
@@ -376,7 +376,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "[term]欢乐蛋糕[/term] {0} 层",
+    "descTemplate": "[term]欢乐蛋糕[/term]{0}层",
     "termId": "clb"
   },
   {
@@ -433,7 +433,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{cscope}\n每有 1 {unit}食物，[strong]分数[/strong] [score]{0}[/score]",
+    "descTemplate": "{cscope}\n每有1{unit}食物，[strong]分数[/strong][score]{0}[/score]",
     "termId": ""
   },
   {
@@ -452,7 +452,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{ascope}\n[benefit]额外视为[/benefit] {value} 份食物",
+    "descTemplate": "{ascope}\n[benefit]额外视为[/benefit]{value}份食物",
     "termId": ""
   },
   {
@@ -490,7 +490,7 @@
     ],
     "actionParam": [],
     "signed": false,
-    "descTemplate": "[term]甜蜜传递[/term] {count} 个食物",
+    "descTemplate": "[term]甜蜜传递[/term]{count}个食物",
     "termId": "term_sweet_transfer"
   },
   {
@@ -568,7 +568,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "[term]欢乐蛋糕[/term] {0} 层",
+    "descTemplate": "[term]欢乐蛋糕[/term]{0}层",
     "termId": "clb"
   },
   {
@@ -587,7 +587,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "每有 1 个空格\n[term]欢乐蛋糕[/term] {0} 层",
+    "descTemplate": "每有1个空格\n[term]欢乐蛋糕[/term]{0}层",
     "termId": "clb"
   },
   {
@@ -606,7 +606,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{ascope}[strong]分数[/strong] [multadd]{0}[/multadd]",
+    "descTemplate": "{ascope}[strong]分数[/strong][score]{0}[/score]",
     "termId": ""
   },
   {
@@ -625,7 +625,7 @@
     ],
     "actionParam": [],
     "signed": false,
-    "descTemplate": "[term]甜蜜传递[/term]至 {count} 个食物",
+    "descTemplate": "[term]甜蜜传递[/term]{count}个食物",
     "termId": "term_sweet_transfer"
   },
   {
@@ -783,7 +783,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{cscope}每有 1 个[term]蛋糕[/term]\n[term]欢乐蛋糕[/term] {0} 层",
+    "descTemplate": "{cscope}每有 1 个[term]蛋糕[/term]\n[term]欢乐蛋糕[/term]{0}层",
     "termId": "clb"
   },
   {
@@ -884,7 +884,7 @@
     ],
     "actionParam": [],
     "signed": false,
-    "descTemplate": "[term]甜蜜传递[/term] {count} 个食物",
+    "descTemplate": "[term]甜蜜传递[/term]{count}个食物",
     "termId": "term_sweet_transfer"
   },
   {
@@ -903,7 +903,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "[term]欢乐蛋糕[/term] {0} 层",
+    "descTemplate": "[term]欢乐蛋糕[/term]{0}层",
     "termId": "clb"
   },
   {
@@ -985,7 +985,7 @@
       "random:int:20|60"
     ],
     "signed": true,
-    "descTemplate": "[term]欢乐蛋糕[/term] +20～80 层",
+    "descTemplate": "[term]欢乐蛋糕[/term]+20～80层",
     "termId": "clb"
   },
   {
@@ -1004,7 +1004,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "每个空格视为 2 份食物",
+    "descTemplate": "每个空格视为2份食物",
     "termId": ""
   },
   {
@@ -1084,7 +1084,7 @@
     ],
     "actionParam": [],
     "signed": false,
-    "descTemplate": "[term]甜蜜传递[/term]至 {count} 个食物",
+    "descTemplate": "[term]甜蜜传递[/term]{count}个食物",
     "termId": "term_sweet_transfer"
   },
   {
@@ -1204,7 +1204,7 @@
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "[term]欢乐蛋糕[/term] {0} 层",
+    "descTemplate": "[term]欢乐蛋糕[/term]{0}层",
     "termId": "clb"
   },
   {
@@ -1244,7 +1244,7 @@
     ],
     "actionParam": [],
     "signed": false,
-    "descTemplate": "{cscope}每有 1 {unit}技能\n[strong]倍率[/strong] [multmul]×{0}[/multmul]",
+    "descTemplate": "每有1{unit}技能\n[strong]倍率[/strong][multmul]×{0}[/multmul]",
     "termId": ""
   },
   {
@@ -1263,7 +1263,7 @@
     ],
     "actionParam": [],
     "signed": false,
-    "descTemplate": "[term]甜蜜传递[/term] {count} 个食物",
+    "descTemplate": "[term]甜蜜传递[/term]{count}个食物",
     "termId": "term_sweet_transfer"
   },
   {
@@ -1383,7 +1383,7 @@
     ],
     "actionParam": [],
     "signed": false,
-    "descTemplate": "[term]甜蜜传递[/term] {count} 个食物",
+    "descTemplate": "[term]甜蜜传递[/term]{count}个食物",
     "termId": "term_sweet_transfer"
   },
   {

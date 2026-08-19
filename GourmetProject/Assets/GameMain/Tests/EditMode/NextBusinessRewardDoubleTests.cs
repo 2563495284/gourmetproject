@@ -270,9 +270,9 @@ namespace GourmetProject.Tests.EditMode
 
             Assert.That(item.Name, Is.EqualTo("奖励翻倍单"));
             Assert.That(item.EffectType, Is.EqualTo(ItemEffectTypes.DoubleNextBusinessReward));
-            StringAssert.Contains("基础食物、基础金币、特定奖励", item.Desc);
-            StringAssert.Contains("重新随机并额外发放一份", item.Desc);
-            Assert.That(item.BaseWeight, Is.EqualTo(2f).Within(0.0001f));
+            StringAssert.Contains("下次营业", item.Desc);
+            StringAssert.Contains("随机奖励翻倍", item.Desc);
+            Assert.That(item.BaseWeight, Is.EqualTo(1f).Within(0.0001f));
         }
 
         [Test]
@@ -392,6 +392,73 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(offer.BonusGoldClaimed, Is.True);
                 Assert.That(offer.BaseGoldClaimed, Is.False,
                     "点击第二条金币不能顺带领取第一条。");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void RewardBadgeResolver_ClaimPageUsesDefaultBadgeInsteadOfSuperSpecific()
+        {
+            Assert.That(
+                RewardBadgeResolver.DefaultSpriteNameFor(cfg.RewardKind.PassiveItemChoice),
+                Is.EqualTo("reward_badge_passive_item"));
+            Assert.That(
+                RewardBadgeResolver.SpriteNameFor(cfg.FoodActionKind.Super, cfg.RewardKind.PassiveItemChoice),
+                Is.EqualTo("reward_badge_passive_item_4"));
+            Assert.That(
+                RewardBadgeResolver.DefaultSpriteNameFor(cfg.RewardKind.Gold),
+                Is.EqualTo("reward_badge_gold"));
+            Assert.That(
+                RewardBadgeResolver.SpriteNameFor(cfg.FoodActionKind.Super, cfg.RewardKind.Gold),
+                Is.EqualTo("reward_badge_gold_large"));
+        }
+
+        [Test]
+        public void RewardForm_SpecificPackUsesDefaultBadgeEvenForSuperFood()
+        {
+            GameRun run = CreateRun();
+            cfg.GameAction action = _tables.TbAction.Get("act_food_hard_passive");
+            run.SetLastActionContext(CreateDailyContext(action));
+
+            var choices = new[]
+            {
+                new RewardChoice(cfg.RewardKind.PassiveItemChoice, "item_gold_random", "随机金币", string.Empty),
+                new RewardChoice(cfg.RewardKind.PassiveItemChoice, "item_gold_meal_bonus", "餐后金币", string.Empty),
+                new RewardChoice(cfg.RewardKind.PassiveItemChoice, "item_gold_boss", "评鉴金币", string.Empty),
+            };
+            var offer = new RewardOffer(
+                0,
+                Array.Empty<RewardChoiceGroup>(),
+                new RewardChoiceGroup("特定奖励", choices, 1),
+                baseGoldClaimed: true);
+
+            GameObject root = new GameObject("RewardFormDefaultBadgeTest", typeof(RectTransform), typeof(RewardForm));
+            try
+            {
+                RewardForm form = root.GetComponent<RewardForm>();
+                RectTransform content = new GameObject("Content", typeof(RectTransform))
+                    .GetComponent<RectTransform>();
+                content.SetParent(root.transform, false);
+                RewardChoiceRowView template = CreateFoodRewardRowTemplate(content);
+
+                SetPrivateField(form, "_run", run);
+                SetPrivateField(form, "_offer", offer);
+                SetPrivateField(form, "_rewardListContent", content);
+                SetPrivateField(form, "_rewardRowTemplate", template);
+
+                InvokePrivate(form, "RebuildRewardRowsImmediate");
+                RewardChoiceRowView row = GetSpawnedRows(form).Single();
+                Image icon = row.transform.Find("IconFrame/Icon").GetComponent<Image>();
+                Sprite defaultBadge = Resources.Load<Sprite>("Sprites/UI/reward_badge_passive_item");
+                Sprite superBadge = Resources.Load<Sprite>("Sprites/UI/reward_badge_passive_item_4");
+
+                Assert.That(icon.enabled, Is.True);
+                Assert.That(defaultBadge, Is.Not.Null);
+                Assert.That(icon.sprite, Is.SameAs(defaultBadge));
+                Assert.That(icon.sprite, Is.Not.SameAs(superBadge));
             }
             finally
             {

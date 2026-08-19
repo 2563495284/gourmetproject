@@ -5,7 +5,7 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Gameplay.Data
 {
     /// <summary>
-    /// 玩法静态数据库：食物/技能/风味/格子标签/食谱定义的只读查询入口。
+    /// 玩法静态数据库：食物/技能/风味/食谱定义的只读查询入口。
     /// 由 Game 层从 Luban 表适配填充，玩法逻辑只读取，从而与配置实现解耦、可独立单测。
     /// </summary>
     public sealed class GameplayDatabase
@@ -13,7 +13,6 @@ namespace GourmetProject.Gameplay.Data
         private readonly Dictionary<string, DishDef> _dishes;
         private readonly Dictionary<string, SkillDef> _skills;
         private readonly Dictionary<string, FlavorDef> _flavors;
-        private readonly Dictionary<string, MaterialDef> _materials;
         private readonly Dictionary<string, RecipeDef> _recipes;
         private readonly Dictionary<string, TableFragmentDef> _fragments;
         private readonly List<CakeLayerBuffDef> _cakeLayerBuffs;
@@ -22,7 +21,6 @@ namespace GourmetProject.Gameplay.Data
             IEnumerable<DishDef> dishes,
             IEnumerable<SkillDef> skills,
             IEnumerable<FlavorDef> flavors,
-            IEnumerable<MaterialDef> materials,
             IEnumerable<RecipeDef> recipes,
             IEnumerable<TableFragmentDef> fragments = null,
             IEnumerable<CakeLayerBuffDef> cakeLayerBuffs = null)
@@ -30,7 +28,6 @@ namespace GourmetProject.Gameplay.Data
             _dishes = ToMap(dishes, d => d.Id, nameof(dishes));
             _skills = ToMap(skills, s => s.Id, nameof(skills));
             _flavors = ToMap(flavors, f => f.Id, nameof(flavors));
-            _materials = ToMap(materials, c => c.Id, nameof(materials));
             _recipes = ToMap(recipes, r => r.Id, nameof(recipes));
             _fragments = ToMap(fragments ?? System.Array.Empty<TableFragmentDef>(), f => f.Id, nameof(fragments));
 
@@ -51,8 +48,6 @@ namespace GourmetProject.Gameplay.Data
 
         public IReadOnlyCollection<FlavorDef> AllFlavors => _flavors.Values;
 
-        public IReadOnlyCollection<MaterialDef> AllMaterials => _materials.Values;
-
         public IReadOnlyCollection<TableFragmentDef> AllFragments => _fragments.Values;
 
         public DishDef GetDish(string id)
@@ -68,8 +63,6 @@ namespace GourmetProject.Gameplay.Data
             id = ContentIdAliases.NormalizeFlavorId(id);
             return id != null && _flavors.TryGetValue(id, out FlavorDef f) ? f : null;
         }
-
-        public MaterialDef GetMaterial(string id) => id != null && _materials.TryGetValue(id, out MaterialDef c) ? c : null;
 
         public RecipeDef GetRecipe(string id) => _recipes.TryGetValue(id, out RecipeDef r) ? r : null;
 

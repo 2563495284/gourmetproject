@@ -20,7 +20,6 @@ namespace GourmetProject.Game.UI.Tooltips
         private const float HideDuration = 0.08f;
 
         [SerializeField] private CanvasGroup _canvasGroup;
-        [SerializeField] private FoodMaterialTipsView _materialsView;
         [SerializeField] private FoodScoreTipsView _scoreView;
         [SerializeField] private FoodSummaryTipsView _summaryView;
         [SerializeField] private RectTransform _flavorDetailsRoot;
@@ -36,15 +35,6 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private float _targetGap = 18f;
         [SerializeField] private float _screenPadding = 16f;
         [SerializeField] private float _detailGap = 10f;
-
-        public FoodMaterialTipsView MaterialsView
-        {
-            get
-            {
-                ValidateReferences();
-                return _materialsView;
-            }
-        }
 
         public FoodScoreTipsView ScoreView
         {
@@ -76,9 +66,8 @@ namespace GourmetProject.Game.UI.Tooltips
                 return;
             }
 
-            data ??= new FoodTipsData(null, null, null, null, null, null);
+            data ??= new FoodTipsData(null, null, null, null, null);
 
-            _materialsView.Bind(data.Materials);
             _scoreView.Bind(data.Score);
             _summaryView.Bind(data.Summary);
             BuildFlavorDetails(data.FlavorDetails);
@@ -87,24 +76,6 @@ namespace GourmetProject.Game.UI.Tooltips
                 BuildSpecialTagsWithCountAs(data.SpecialTags, data.Summary.CountAs),
                 "SpecialTag");
             BuildInfoCards(_externalSkillsRoot, data.ExternalSkills, "ExternalSkill");
-        }
-
-        public void BindMaterialsOnly(IReadOnlyList<FoodMaterialTipsEntry> materials)
-        {
-            if (!ValidateReferences())
-            {
-                return;
-            }
-
-            _materialsView.Bind(materials);
-            _scoreView.Hide();
-            _summaryView.Hide();
-            FoodTipUiUtility.ClearChildren(_flavorDetailsRoot);
-            FoodTipUiUtility.ClearChildren(_specialTagsRoot);
-            FoodTipUiUtility.ClearChildren(_externalSkillsRoot);
-            _flavorDetailsRoot.gameObject.SetActive(false);
-            _specialTagsRoot.gameObject.SetActive(false);
-            _externalSkillsRoot.gameObject.SetActive(false);
         }
 
         public void Show()
@@ -189,9 +160,8 @@ namespace GourmetProject.Game.UI.Tooltips
             Rect targetRect = WorldBoundsToLocalRect(worldBounds, worldCamera, canvasRect, uiCamera);
             Canvas.ForceUpdateCanvases();
 
-            PlaceLeft(_materialsView.transform as RectTransform, targetRect, canvasRect.rect);
             PlaceAbove(_scoreView.transform as RectTransform, targetRect, canvasRect.rect);
-            SeparateScoreFromMaterials(canvasRect, targetRect);
+            SeparateScoreFromTarget(canvasRect, targetRect);
             PlaceSummaryGroup(targetRect, canvasRect);
             SeparateSummaryGroupFromPrimaryModules(canvasRect, targetRect);
         }
@@ -219,9 +189,8 @@ namespace GourmetProject.Game.UI.Tooltips
             Rect targetRect = RectTransformToLocalRect(target, canvasRect);
             Canvas.ForceUpdateCanvases();
 
-            PlaceLeft(_materialsView.transform as RectTransform, targetRect, canvasRect.rect);
             PlaceAbove(_scoreView.transform as RectTransform, targetRect, canvasRect.rect);
-            SeparateScoreFromMaterials(canvasRect, targetRect);
+            SeparateScoreFromTarget(canvasRect, targetRect);
             PlaceSummaryGroup(targetRect, canvasRect);
             SeparateSummaryGroupFromPrimaryModules(canvasRect, targetRect);
         }
@@ -272,7 +241,6 @@ namespace GourmetProject.Game.UI.Tooltips
         {
             bool valid = true;
             valid &= ReportMissing(_canvasGroup, nameof(_canvasGroup));
-            valid &= ReportMissing(_materialsView, nameof(_materialsView));
             valid &= ReportMissing(_scoreView, nameof(_scoreView));
             valid &= ReportMissing(_summaryView, nameof(_summaryView));
             valid &= ReportMissing(_flavorDetailsRoot, nameof(_flavorDetailsRoot));
@@ -563,7 +531,7 @@ namespace GourmetProject.Game.UI.Tooltips
             }
         }
 
-        private void SeparateScoreFromMaterials(RectTransform canvasRect, Rect targetRect)
+        private void SeparateScoreFromTarget(RectTransform canvasRect, Rect targetRect)
         {
             RectTransform scoreRect = _scoreView.transform as RectTransform;
             if (scoreRect == null || !scoreRect.gameObject.activeSelf)
@@ -571,11 +539,10 @@ namespace GourmetProject.Game.UI.Tooltips
                 return;
             }
 
-            var obstacles = new List<Rect>(2)
+            var obstacles = new List<Rect>(1)
             {
                 Expand(targetRect, _targetGap),
             };
-            AddVisibleObstacle(obstacles, _materialsView.transform as RectTransform, canvasRect);
             Vector2 offset = BestSeparationOffset(
                 RectTransformToLocalRect(scoreRect, canvasRect),
                 obstacles,
@@ -599,11 +566,10 @@ namespace GourmetProject.Game.UI.Tooltips
                 return;
             }
 
-            var obstacles = new List<Rect>(3)
+            var obstacles = new List<Rect>(2)
             {
                 Expand(targetRect, _targetGap),
             };
-            AddVisibleObstacle(obstacles, _materialsView.transform as RectTransform, canvasRect);
             AddVisibleObstacle(obstacles, _scoreView.transform as RectTransform, canvasRect);
             Vector2 bestOffset = BestSeparationOffset(
                 groupBounds,

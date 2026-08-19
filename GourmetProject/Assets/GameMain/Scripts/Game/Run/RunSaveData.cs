@@ -69,6 +69,15 @@ namespace GourmetProject.Game.Run
         /// <summary>当前流派连续未出现目标倾向食物的食物多选一次数。</summary>
         public int DishChoiceArchetypeMissStreak;
 
+        /// <summary>星级评鉴装饰品流派保底状态所属周。</summary>
+        public int BossPassiveArchetypePityWeekIndex;
+
+        /// <summary>本周已生成的星级评鉴装饰品候选次数。</summary>
+        public int BossPassiveArchetypeRewardCount;
+
+        /// <summary>本周第一次候选未出现流派装饰品，第二次需要执行保底。</summary>
+        public bool BossPassiveArchetypePityArmed;
+
         /// <summary>行动选择页剩余刷新次数。</summary>
         public int ActionRerollCount = -1;
 
@@ -87,8 +96,8 @@ namespace GourmetProject.Game.Run
         /// <summary>事件带来的食物奖励隐藏分偏移。</summary>
         public float EventDishHiddenOffset;
 
-        /// <summary>事件带来的装饰品奖励隐藏分偏移。</summary>
-        public float EventPassiveItemHiddenOffset;
+        /// <summary>事件带来的装饰品运气偏移。</summary>
+        public float EventItemLuckOffset;
 
         /// <summary>事件带来的餐桌格奖励隐藏分偏移。</summary>
         public float EventFragmentHiddenOffset;
@@ -147,12 +156,6 @@ namespace GourmetProject.Game.Run
 
         /// <summary>玩家在餐桌编辑页手动拼贴的碎片放置（id + 旋转 + 原点），用于可复现地重建胃形。</summary>
         public List<TableFragmentPlacementSaveData> FragmentPlacements = new List<TableFragmentPlacementSaveData>();
-
-        /// <summary>餐桌格开包时已随机好的局部材质落点；随候选/已拼贴碎片保存。</summary>
-        public List<TableFragmentMaterialRollSaveData> FragmentMaterialRolls = new List<TableFragmentMaterialRollSaveData>();
-
-        /// <summary>玩家用「铺台小票」设置的格子材质覆盖（每坐标至多一条）；旧档重复坐标按最后一条生效。</summary>
-        public List<CellMaterialSaveData> CellMaterialOverrides = new List<CellMaterialSaveData>();
 
         /// <summary>已购买但尚未拼贴的碎片包内容（rolled 出的候选碎片 id）；拼贴或跳过后清空。</summary>
         public List<string> PendingFragmentPackIds = new List<string>();
@@ -353,21 +356,6 @@ namespace GourmetProject.Game.Run
         public int Rotation;
         public int OriginX;
         public int OriginY;
-    }
-
-    [Serializable]
-    public sealed class CellMaterialSaveData
-    {
-        public int X;
-        public int Y;
-        public string MaterialId;
-    }
-
-    [Serializable]
-    public sealed class TableFragmentMaterialRollSaveData
-    {
-        public string FragmentId;
-        public List<CellMaterialSaveData> Materials = new List<CellMaterialSaveData>();
     }
 
     [Serializable]

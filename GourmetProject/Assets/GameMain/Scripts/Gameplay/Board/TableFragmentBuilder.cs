@@ -5,8 +5,8 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Gameplay.Board
 {
     /// <summary>
-    /// 由餐桌格定义构建餐桌（胃）。直接按字符行解析存在格、按局部 (x,y) 落位格标签，
-    /// 不走 DishShape 归一化，保证坐标与配置一一对应。本期只构建「初始胃」，扩胃留待后续。
+    /// 由餐桌格定义构建餐桌（胃）。直接按字符行解析存在格，
+    /// 不走 DishShape 归一化，保证坐标与配置一一对应。
     /// </summary>
     public static class TableFragmentBuilder
     {
@@ -73,26 +73,7 @@ namespace GourmetProject.Gameplay.Board
                 }
             }
 
-            Dictionary<GridPos, IReadOnlyList<string>> materials = null;
-            foreach (CellMaterial ct in fragment.CellMaterials)
-            {
-                if (string.IsNullOrEmpty(ct.MaterialId))
-                {
-                    continue;
-                }
-
-                var pos = new GridPos(origin.X + ct.Pos.X, origin.Y + ct.Pos.Y);
-                materials ??= new Dictionary<GridPos, IReadOnlyList<string>>();
-                if (!materials.TryGetValue(pos, out IReadOnlyList<string> list))
-                {
-                    list = new List<string>();
-                    materials[pos] = list;
-                }
-
-                ((List<string>)list).Add(ct.MaterialId);
-            }
-
-            return new DiningTable(maxWidth, maxHeight, existing, materials);
+            return new DiningTable(maxWidth, maxHeight, existing);
         }
 
         /// <summary>计算把碎片实际占格包围盒居中放进最大包围盒时的左上原点。</summary>
@@ -145,8 +126,7 @@ namespace GourmetProject.Gameplay.Board
             }
 
             var existing = new HashSet<GridPos>();
-            var materials = new Dictionary<GridPos, IReadOnlyList<string>>();
-            AddFragmentCells(initial, new GridPos(0, 0), maxWidth, maxHeight, existing, materials, clipToBounds: true);
+            AddFragmentCells(initial, new GridPos(0, 0), maxWidth, maxHeight, existing, clipToBounds: true);
 
             if (extraFragments != null)
             {
@@ -157,11 +137,11 @@ namespace GourmetProject.Gameplay.Board
                         continue;
                     }
 
-                    AddFragmentCells(fragment, origin, maxWidth, maxHeight, existing, materials, clipToBounds: false);
+                    AddFragmentCells(fragment, origin, maxWidth, maxHeight, existing, clipToBounds: false);
                 }
             }
 
-            return new DiningTable(maxWidth, maxHeight, existing, materials);
+            return new DiningTable(maxWidth, maxHeight, existing);
         }
 
         /// <summary>
@@ -201,8 +181,7 @@ namespace GourmetProject.Gameplay.Board
             }
 
             var existing = new HashSet<GridPos>();
-            var materials = new Dictionary<GridPos, IReadOnlyList<string>>();
-            AddFragmentCells(initial, initialOrigin, maxWidth, maxHeight, existing, materials, clipToBounds: true);
+            AddFragmentCells(initial, initialOrigin, maxWidth, maxHeight, existing, clipToBounds: true);
 
             if (autoFragments != null)
             {
@@ -213,7 +192,7 @@ namespace GourmetProject.Gameplay.Board
                         continue;
                     }
 
-                    AddFragmentCells(fragment, origin, maxWidth, maxHeight, existing, materials, clipToBounds: false);
+                    AddFragmentCells(fragment, origin, maxWidth, maxHeight, existing, clipToBounds: false);
                 }
             }
 
@@ -233,11 +212,11 @@ namespace GourmetProject.Gameplay.Board
                         continue;
                     }
 
-                    AddFragmentCells(rotated, placement.Origin, maxWidth, maxHeight, existing, materials, clipToBounds: false);
+                    AddFragmentCells(rotated, placement.Origin, maxWidth, maxHeight, existing, clipToBounds: false);
                 }
             }
 
-            return new DiningTable(maxWidth, maxHeight, existing, materials);
+            return new DiningTable(maxWidth, maxHeight, existing);
         }
 
         /// <summary>
@@ -265,8 +244,7 @@ namespace GourmetProject.Gameplay.Board
             }
 
             var existing = new HashSet<GridPos>();
-            var materials = new Dictionary<GridPos, IReadOnlyList<string>>();
-            AddFragmentCells(initial, initialOrigin, canvasWidth, canvasHeight, existing, materials, clipToBounds: true);
+            AddFragmentCells(initial, initialOrigin, canvasWidth, canvasHeight, existing, clipToBounds: true);
 
             if (autoFragments != null)
             {
@@ -277,7 +255,7 @@ namespace GourmetProject.Gameplay.Board
                         continue;
                     }
 
-                    AddFragmentCells(fragment, origin, canvasWidth, canvasHeight, existing, materials, clipToBounds: false);
+                    AddFragmentCells(fragment, origin, canvasWidth, canvasHeight, existing, clipToBounds: false);
                 }
             }
 
@@ -297,11 +275,11 @@ namespace GourmetProject.Gameplay.Board
                         continue;
                     }
 
-                    AddFragmentCells(rotated, placement.Origin, canvasWidth, canvasHeight, existing, materials, clipToBounds: false);
+                    AddFragmentCells(rotated, placement.Origin, canvasWidth, canvasHeight, existing, clipToBounds: false);
                 }
             }
 
-            return new DiningTable(canvasWidth, canvasHeight, existing, materials);
+            return new DiningTable(canvasWidth, canvasHeight, existing);
         }
 
         /// <summary>判断某碎片按 <paramref name="rotation"/> 旋转后能否放在以 <paramref name="origin"/> 为左上的位置（在界内、不重叠、且贴边相邻已有餐桌）。</summary>
@@ -450,7 +428,7 @@ namespace GourmetProject.Gameplay.Board
             }
 
             var existing = new HashSet<GridPos>();
-            AddFragmentCells(initial, new GridPos(0, 0), maxWidth, maxHeight, existing, null, clipToBounds: true);
+            AddFragmentCells(initial, new GridPos(0, 0), maxWidth, maxHeight, existing, clipToBounds: true);
             if (existingFragments != null)
             {
                 foreach (TableFragmentDef fragment in existingFragments)
@@ -460,7 +438,7 @@ namespace GourmetProject.Gameplay.Board
                         continue;
                     }
 
-                    AddFragmentCells(fragment, origin, maxWidth, maxHeight, existing, null, clipToBounds: false);
+                    AddFragmentCells(fragment, origin, maxWidth, maxHeight, existing, clipToBounds: false);
                 }
             }
 
@@ -478,13 +456,40 @@ namespace GourmetProject.Gameplay.Board
             return TryFindAttachmentLocal(existing, fragment, maxWidth, maxHeight, out _);
         }
 
+        /// <summary>
+        /// 枚举该碎片在当前餐桌上可拼入的顺时针朝向（0..3）。
+        /// 判定使用旋转后形状，不把未旋转定义当作唯一合法朝向。
+        /// </summary>
+        public static List<int> CollectAttachableRotations(
+            DiningTable board,
+            TableFragmentDef fragment,
+            int maxWidth,
+            int maxHeight)
+        {
+            var rotations = new List<int>(4);
+            if (board == null || fragment == null)
+            {
+                return rotations;
+            }
+
+            for (int rotation = 0; rotation < 4; rotation++)
+            {
+                TableFragmentDef rotated = rotation == 0 ? fragment : fragment.Rotated(rotation);
+                if (CanAttachAnywhereLocalBounds(board, rotated, maxWidth, maxHeight))
+                {
+                    rotations.Add(rotation);
+                }
+            }
+
+            return rotations;
+        }
+
         private static void AddFragmentCells(
             TableFragmentDef fragment,
             GridPos origin,
             int maxWidth,
             int maxHeight,
             HashSet<GridPos> existing,
-            Dictionary<GridPos, IReadOnlyList<string>> materials,
             bool clipToBounds)
         {
             foreach (GridPos local in FilledCells(fragment))
@@ -501,33 +506,6 @@ namespace GourmetProject.Gameplay.Board
                 }
 
                 existing.Add(pos);
-            }
-
-            if (materials == null)
-            {
-                return;
-            }
-
-            foreach (CellMaterial ct in fragment.CellMaterials)
-            {
-                if (string.IsNullOrEmpty(ct.MaterialId))
-                {
-                    continue;
-                }
-
-                GridPos pos = ct.Pos.Offset(origin.X, origin.Y);
-                if (!existing.Contains(pos))
-                {
-                    continue;
-                }
-
-                if (!materials.TryGetValue(pos, out IReadOnlyList<string> list))
-                {
-                    list = new List<string>();
-                    materials[pos] = list;
-                }
-
-                ((List<string>)list).Add(ct.MaterialId);
             }
         }
 

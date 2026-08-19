@@ -558,7 +558,6 @@ namespace GourmetProject.Game.UI.Meta
                     BuildShopFlavorNames(dish, db),
                     countAs: FoodTipsDataFactory.ResolveIntrinsicCountAs(dish, db)),
                 new FoodScoreTipsData(dish.Deliciousness, 1f),
-                Array.Empty<FoodMaterialTipsEntry>(),
                 BuildShopFlavorDetails(dish, db),
                 Array.Empty<FoodInfoEntry>(),
                 BuildShopSpecialTags(dish, db));

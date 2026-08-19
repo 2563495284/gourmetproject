@@ -142,14 +142,6 @@ namespace GourmetProject.Tests.EditMode
         {
             FlavorDef salty = Flavor("t_salty", FlavorEffectType.ExtraSettlementChance, 0.2f);
             FlavorDef sweet = Flavor("t_sweet", FlavorEffectType.AddFlat, 2f);
-            MaterialDef material = new MaterialDef(
-                "material",
-                "material",
-                string.Empty,
-                MaterialEffectType.AddFlat,
-                new[] { 3f },
-                Array.Empty<string>(),
-                string.Empty);
             SkillRuleDef rule = new SkillRuleDef(
                 "rule",
                 "skill",
@@ -168,18 +160,13 @@ namespace GourmetProject.Tests.EditMode
             SkillDef skill = new SkillDef("skill", "skill", string.Empty, Array.Empty<string>(), new[] { rule });
             DishInstance source = Dish(1, "source", 10, 0, new[] { "skill" }, new[] { "t_salty", "t_salty", "t_sweet" });
             DishInstance target = Dish(2, "target", 10, 1, Array.Empty<string>(), Array.Empty<string>());
-            var materials = new Dictionary<GridPos, IReadOnlyList<string>>
-            {
-                [new GridPos(0, 0)] = new[] { "material" },
-            };
-            var table = new DiningTable(2, 1, null, materials);
+            var table = new DiningTable(2, 1);
             table.Place(source);
             table.Place(target);
             GameplayDatabase db = Database(
                 new[] { source.Def, target.Def },
                 new[] { skill },
-                new[] { salty, sweet },
-                new[] { material });
+                new[] { salty, sweet });
             int rollCount = 0;
 
             ScoreResult result = new ScoreCalculator().Calculate(
@@ -191,11 +178,11 @@ namespace GourmetProject.Tests.EditMode
             DishScore targetScore = result.DishScores.Single(score => score.DishInstanceId == target.Id);
             Assert.That(rollCount, Is.EqualTo(2), "额外结算不得递归触发新的咸味掷骰");
             Assert.That(sourceScore.ExtraSettlementCount, Is.EqualTo(1));
-            Assert.That(sourceScore.ExtraSettlementContribution.ToDouble(), Is.EqualTo(20d).Within(0.0001d));
-            Assert.That(sourceScore.Contribution.ToDouble(), Is.EqualTo(40d).Within(0.0001d));
+            Assert.That(sourceScore.ExtraSettlementContribution.ToDouble(), Is.EqualTo(17d).Within(0.0001d));
+            Assert.That(sourceScore.Contribution.ToDouble(), Is.EqualTo(34d).Within(0.0001d));
             Assert.That(targetScore.Contribution.ToDouble(), Is.EqualTo(20d).Within(0.0001d),
                 "技能对其他食物的影响应在额外结算中再次执行");
-            Assert.That(result.Total.ToDouble(), Is.EqualTo(60d).Within(0.0001d));
+            Assert.That(result.Total.ToDouble(), Is.EqualTo(54d).Within(0.0001d));
             Assert.That(result.ScoreLines.Count(line => line.Kind == ScoreLineKind.ExtraSettlement), Is.EqualTo(1));
 
             List<ScoreLine> orderedLines = result.ScoreLines.ToList();
@@ -491,13 +478,11 @@ namespace GourmetProject.Tests.EditMode
         private static GameplayDatabase Database(
             IReadOnlyList<DishDef> dishes,
             IReadOnlyList<SkillDef> skills = null,
-            IReadOnlyList<FlavorDef> flavors = null,
-            IReadOnlyList<MaterialDef> materials = null)
+            IReadOnlyList<FlavorDef> flavors = null)
             => new GameplayDatabase(
                 dishes,
                 skills ?? Array.Empty<SkillDef>(),
                 flavors ?? Array.Empty<FlavorDef>(),
-                materials ?? Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
     }
 }

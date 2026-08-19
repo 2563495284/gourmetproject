@@ -579,7 +579,6 @@ namespace GourmetProject.Tests.EditMode
                 dishes,
                 Array.Empty<SkillDef>(),
                 Array.Empty<FlavorDef>(),
-                Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
         }
 
@@ -617,7 +616,7 @@ namespace GourmetProject.Tests.EditMode
                 ""weight"": 1,
                 ""poolId"": ""{poolId}"",
                 ""dishHiddenOffset"": [0, 0],
-                ""passiveItemHiddenOffset"": [0, 0],
+                ""itemLuckOffset"": [0, 0],
                 ""fragmentHiddenOffset"": [0, 0],
                 ""goldHiddenOffset"": [0, 0],
                 ""name"": ""pity_test"",

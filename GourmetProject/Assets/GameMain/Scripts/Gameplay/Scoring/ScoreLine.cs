@@ -14,7 +14,6 @@ namespace GourmetProject.Gameplay.Scoring
         Gold = 5,
         Layer = 6,
         DishMultiplierAdd = 8,
-        SilverItemRoll = 9,
         CopySkill = 10,
         TriggerSweetTransfer = 11,
         TriggeredSweetTransferSource = 12,

@@ -260,7 +260,7 @@ namespace GourmetProject.Game.Meta
             if (string.Equals(value, "Reward", StringComparison.OrdinalIgnoreCase))
             {
                 yield return HiddenScorePurpose.Dish;
-                yield return HiddenScorePurpose.PassiveItem;
+                yield return HiddenScorePurpose.ItemLuck;
                 yield return HiddenScorePurpose.Fragment;
                 yield return HiddenScorePurpose.Gold;
                 yield break;
@@ -270,7 +270,7 @@ namespace GourmetProject.Game.Meta
             {
                 yield return HiddenScorePurpose.TargetScore;
                 yield return HiddenScorePurpose.Dish;
-                yield return HiddenScorePurpose.PassiveItem;
+                yield return HiddenScorePurpose.ItemLuck;
                 yield return HiddenScorePurpose.Fragment;
                 yield return HiddenScorePurpose.Gold;
                 yield break;
@@ -510,7 +510,7 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>
         /// 直接获得一个随机负面装饰品，不生成通用奖励，也不进入 RewardForm。
-        /// 仍复用正常装饰品池的解锁、唯一性、隐藏分和权重规则；空池时直接折算金币。
+        /// 仍复用装饰品池的解锁、唯一性和单品权重规则；诅咒池不参与正常品质运气抽取。
         /// </summary>
         public static RandomizedItemResult GrantRandomNegativePassiveDirect(
             GameRun run,

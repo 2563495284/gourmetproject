@@ -2240,24 +2240,9 @@ namespace GourmetProject.Game.UI.Meta
             out bool suppressDishPreview)
         {
             suppressDishPreview = false;
-            cfg.Food sourceFood = ResolveFoodRewardSource();
-            if (sourceFood == null)
-            {
-                return LoadChoiceIcon(fallbackChoice);
-            }
-
-            string spriteName = string.Empty;
-            if (groupIndex < 0)
-            {
-                spriteName = RewardBadgeResolver.SpriteNameFor(
-                    sourceFood.ActionKind,
-                    sourceFood.RewardKind);
-            }
-            else if (IsBaseDishGroup(group, groupIndex))
-            {
-                spriteName = RewardBadgeResolver.BaseDishSpriteName;
-            }
-
+            string spriteName = IsBaseDishGroup(group, groupIndex)
+                ? RewardBadgeResolver.BaseDishSpriteName
+                : RewardBadgeResolver.DefaultSpriteNameFor(KindForGroupRow(group, fallbackChoice));
             Sprite icon = string.IsNullOrEmpty(spriteName)
                 ? null
                 : Resources.Load<Sprite>($"Sprites/UI/{spriteName}");
@@ -2270,31 +2255,16 @@ namespace GourmetProject.Game.UI.Meta
             return icon;
         }
 
-        private cfg.Food ResolveFoodRewardSource()
+        private static cfg.RewardKind KindForGroupRow(RewardChoiceGroup group, RewardChoice fallbackChoice)
         {
-            if (_genericMode || _run == null)
+            if (fallbackChoice != null)
             {
-                return null;
+                return fallbackChoice.Kind;
             }
 
-            ActionExecutionContext context = BattleForm.Active?.CurrentBattleActionContext;
-            if (context == null || context.Action == null)
-            {
-                context = _run.LastActionContext;
-            }
-
-            cfg.GameAction action = context?.Action;
-            if (action == null || action.Behavior != cfg.ActionBehavior.Food)
-            {
-                return null;
-            }
-
-            cfg.Food food = FoodService.Resolve(_run.Tables, action);
-            return food != null
-                && (food.ActionKind == cfg.FoodActionKind.Normal
-                    || food.ActionKind == cfg.FoodActionKind.Super)
-                ? food
-                : null;
+            return group?.Choices != null && group.Choices.Count > 0 && group.Choices[0] != null
+                ? group.Choices[0].Kind
+                : cfg.RewardKind.None;
         }
 
         private bool IsBaseDishGroup(RewardChoiceGroup group, int groupIndex)
