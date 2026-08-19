@@ -18,6 +18,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private BigDouble? _valueOverride;
         private bool _flying;
         private int _sortingOrderOffset;
+        private bool _visible = true;
 
         internal DishValueBadgeView View => _badge;
 
@@ -59,7 +60,14 @@ namespace GourmetProject.Game.Presentation.Battle
                     pitch,
                     badgeTopExtent);
             ApplySorting();
+            ApplyVisible();
             Refresh();
+        }
+
+        internal void SetVisible(bool visible)
+        {
+            _visible = visible;
+            ApplyVisible();
         }
 
         internal void SetDimmed(bool dimmed)
@@ -100,7 +108,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal void Punch(float scale, float duration)
         {
-            if (_badge == null)
+            if (_badge == null || !_visible)
             {
                 return;
             }
@@ -117,6 +125,14 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         private Vector3 ScaledBaseScale => _baseScale * _visualScale;
+
+        private void ApplyVisible()
+        {
+            if (_badge != null && _badge.gameObject.activeSelf != _visible)
+            {
+                _badge.gameObject.SetActive(_visible);
+            }
+        }
 
         private void ApplySorting()
         {

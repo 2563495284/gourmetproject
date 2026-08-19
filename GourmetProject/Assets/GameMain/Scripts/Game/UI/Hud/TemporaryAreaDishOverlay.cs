@@ -57,7 +57,7 @@ namespace GourmetProject.Game.UI.Hud
                 }
 
                 Image image = EnsureImage(shown);
-                ApplyVisual(image, visual);
+                ApplyVisual(image, visual, piece);
                 piece.ApplyFlavorVisualToGraphic(image, EnsureFlavorMaterial(shown));
                 image.gameObject.SetActive(true);
                 piece.SetBodyRenderersEnabled(false);
@@ -130,17 +130,29 @@ namespace GourmetProject.Game.UI.Hud
             _flavorMaterials.Clear();
         }
 
-        private void ApplyVisual(Image image, DishGrabVisualSnapshot visual)
+        private void ApplyVisual(Image image, DishGrabVisualSnapshot visual, DishPieceView piece)
         {
             RectTransform rect = image.rectTransform;
             Vector2 target = ScreenToLocal(visual.ScreenCenter);
             Vector2 half = visual.ScreenSize * 0.5f;
             Vector2 localMin = ScreenToLocal(visual.ScreenCenter - half);
             Vector2 localMax = ScreenToLocal(visual.ScreenCenter + half);
-            rect.sizeDelta = new Vector2(
-                Mathf.Max(8f, Mathf.Abs(localMax.x - localMin.x)),
-                Mathf.Max(8f, Mathf.Abs(localMax.y - localMin.y)));
-            rect.anchoredPosition = target;
+            Vector2Int grid = DiningTableLayout.FoodGridSize(
+                piece != null && piece.CurrentShape != null ? piece.CurrentShape.Width : 1,
+                piece != null && piece.CurrentShape != null ? piece.CurrentShape.Height : 1);
+            Vector2 cell = DiningTableLayout.CanvasPixelsForWorldSize(
+                Vector2.one * DiningTableLayout.DefaultFoodCellSize,
+                _world != null ? _world.WorldCamera : null,
+                _canvas);
+            Vector2 size = DiningTableLayout.CapToDefaultFoodAndFitParent(
+                new Vector2(
+                    Mathf.Max(8f, Mathf.Abs(localMax.x - localMin.x)),
+                    Mathf.Max(8f, Mathf.Abs(localMax.y - localMin.y))),
+                grid,
+                cell,
+                DiningTableLayout.RectSize(_root));
+            rect.sizeDelta = size;
+            rect.anchoredPosition = ClampInside(_root, target, size);
             rect.localRotation = Quaternion.Euler(0f, 0f, visual.ScreenRotationDegrees);
             rect.localScale = new Vector3(
                 visual.FlipX ? -1f : 1f,
@@ -202,6 +214,20 @@ namespace GourmetProject.Game.UI.Hud
                 : null;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(_root, screenPoint, uiCamera, out Vector2 local);
             return local;
+        }
+
+        private static Vector2 ClampInside(RectTransform parent, Vector2 center, Vector2 size)
+        {
+            if (parent == null)
+            {
+                return center;
+            }
+
+            Vector2 extents = parent.rect.size * 0.5f;
+            Vector2 half = size * 0.5f;
+            return new Vector2(
+                Mathf.Clamp(center.x, -extents.x + half.x, extents.x - half.x),
+                Mathf.Clamp(center.y, -extents.y + half.y, extents.y - half.y));
         }
     }
 }

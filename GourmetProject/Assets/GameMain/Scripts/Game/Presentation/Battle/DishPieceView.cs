@@ -397,6 +397,11 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishValueBadgePresenter?.Punch(scale, duration);
         }
 
+        internal void SetDishValueBadgeVisible(bool visible)
+        {
+            _dishValueBadgePresenter?.SetVisible(visible);
+        }
+
         public void UpdatePlacement(Placement placement)
         {
             if (Instance == null)
@@ -1048,9 +1053,11 @@ namespace GourmetProject.Game.Presentation.Battle
             if (active)
             {
                 ApplyDragPresentation();
+                SetDishValueBadgeVisible(false);
                 return;
             }
 
+            SetDishValueBadgeVisible(true);
             SetBodyRenderersEnabled(true);
             Transform target = VisualAnimationTarget();
             if (target != null)

@@ -125,12 +125,14 @@ namespace GourmetProject.Game.UI.Hud
                     : Vector4.zero);
                 if (waitingForDrag)
                 {
+                    _dishPreview.SetDisplayLockedToDefaultFoodCell(true);
                     _dishPreview.Bind(
                         DishPreviewRequest.FromInstance(prepared.Dish));
                     SetDishAlpha(1f);
                 }
                 else
                 {
+                    _dishPreview.SetDisplayLockedToDefaultFoodCell(false);
                     _dishPreview.Hide();
                 }
             }

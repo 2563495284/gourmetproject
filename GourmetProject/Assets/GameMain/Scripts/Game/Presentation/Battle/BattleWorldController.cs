@@ -982,6 +982,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     piece.SetFlying(true);
                     piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
                     _temporaryAreaFlyInPiece = piece;
+                    BuildHudFood(piece, temporaryDish, _dishClicked);
                     Vector3 slotCenter = new Vector3(
                         targetSlot.Center.x,
                         targetSlot.Center.y,
@@ -1035,6 +1036,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 piece.SetFlying(true);
                 piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
                 piece.SetClickEnabled(true);
+                BuildHudFood(piece, dish, _dishClicked);
 
                 int insertIndex = Mathf.Clamp(index, 0, _temporaryAreaPieces.Count);
                 _temporaryAreaPieces.Insert(insertIndex, piece);
@@ -2146,9 +2148,24 @@ namespace GourmetProject.Game.Presentation.Battle
 
             DishPieceView piece = Instantiate(_dishPiecePrefab, _piecesRoot);
             piece.gameObject.name = objectName;
-            piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, null);
+            BuildHudFood(piece, dish, null);
             piece.SetHoverCallbacks(null, null);
             return piece;
+        }
+
+        private void BuildHudFood(DishPieceView piece, DishInstance dish, Action<DishInstance> clicked)
+        {
+            if (piece == null || dish == null)
+            {
+                return;
+            }
+
+            piece.BuildPlaced(
+                dish,
+                _spriteProvider.Get(dish.Def),
+                DiningTableLayout.DefaultFoodCellSize,
+                DiningTableLayout.DefaultFoodCellSize + Gap,
+                clicked);
         }
 
         private void ClearOutletDragPreview()
@@ -2775,16 +2792,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private Vector2 TemporaryAreaFootprint(DishInstance dish)
         {
-            DishShape shape = dish?.Placement.Orientation;
-            if (shape == null)
-            {
-                return Vector2.one * Mathf.Max(_cellSize, 0.01f);
-            }
-
-            float pitch = _cellSize + Gap;
-            return new Vector2(
-                Mathf.Max(_cellSize, (shape.Width - 1) * pitch + _cellSize),
-                Mathf.Max(_cellSize, (shape.Height - 1) * pitch + _cellSize));
+            float cell = DiningTableLayout.DefaultFoodCellSize;
+            float pitch = cell + Gap;
+            return DishVisualLayout.FootprintSpan(dish?.Placement.Orientation, cell, pitch);
         }
 
         /// <summary>内容矩形算不出来时的兜底中心：面板世界矩形中心，而不是可能贴边的 Pivot 点。</summary>
@@ -3478,7 +3488,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 DishInstance dish = _session.TemporaryAreaDishes[i];
                 DishPieceView piece = Instantiate(_dishPiecePrefab, _piecesRoot);
                 piece.gameObject.name = $"TemporaryAreaDish_{dish.Id}_{dish.Def.Id}";
-                piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
+                BuildHudFood(piece, dish, _dishClicked);
                 piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
                 piece.SetMoveCallbacks(
                     BeginTemporaryAreaDishDrag,
