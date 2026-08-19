@@ -55,6 +55,7 @@ namespace GourmetProject.Gameplay.Scoring
         private int _nextExecutionGroupId;
         private int _currentExecutionGroupId;
         private int _extraSettlementDishId;
+        private int _extraSettlementLineInsertIndex = -1;
         private BigDouble _extraSettlementRestoreFlat;
         private BigDouble _extraSettlementRestoreMultiplier = BigDouble.One;
 
@@ -539,6 +540,7 @@ namespace GourmetProject.Gameplay.Scoring
             if (dish == null || !_accums.TryGetValue(dish.Id, out DishAccumulator accumulator))
             {
                 _extraSettlementDishId = 0;
+                _extraSettlementLineInsertIndex = -1;
                 return;
             }
 
@@ -554,7 +556,7 @@ namespace GourmetProject.Gameplay.Scoring
             _extraSettlementDishId = 0;
             if (CaptureDiagnostics)
             {
-                _lines.Add(new ScoreLine(
+                var line = new ScoreLine(
                     ScorePhase.AfterDish,
                     ScoreLineKind.ExtraSettlement,
                     ScoreSource.DishFlavor(saltyFlavor, dish),
@@ -565,8 +567,19 @@ namespace GourmetProject.Gameplay.Scoring
                     before,
                     accumulator.ExtraSettlementContribution,
                     $"咸味额外结算第 {accumulator.ExtraSettlementCount} 次 +{contribution}",
-                    executionGroupId: ++_nextExecutionGroupId));
+                    executionGroupId: ++_nextExecutionGroupId);
+                if (_extraSettlementLineInsertIndex >= 0
+                    && _extraSettlementLineInsertIndex <= _lines.Count)
+                {
+                    _lines.Insert(_extraSettlementLineInsertIndex, line);
+                }
+                else
+                {
+                    _lines.Add(line);
+                }
             }
+
+            _extraSettlementLineInsertIndex = -1;
         }
 
         public BigDouble CurrentFlatOf(DishInstance dish)
@@ -580,6 +593,7 @@ namespace GourmetProject.Gameplay.Scoring
             BigDouble multiplierBaseline)
         {
             _extraSettlementDishId = dish?.Id ?? 0;
+            _extraSettlementLineInsertIndex = CaptureDiagnostics ? _lines.Count : -1;
             if (dish == null || !_accums.TryGetValue(dish.Id, out DishAccumulator accumulator))
             {
                 return;

@@ -3,6 +3,7 @@ using BreakInfinity;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Gameplay.Battle;
+using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 using TMPro;
@@ -21,13 +22,13 @@ namespace GourmetProject.Tests.EditMode
         [TestCase(ScoreLineKind.Gold, 15d, "[gold]+15[/gold]")]
         [TestCase(ScoreLineKind.SilverItemRoll, 1d, "判定消耗品")]
         [TestCase(ScoreLineKind.ExtraSettlement, 20d, "[benefit]额外结算[/benefit]")]
-        [TestCase(ScoreLineKind.TriggerSweetTransfer, 1d, "发动[term]甜蜜传递[/term]")]
+        [TestCase(ScoreLineKind.TriggerSweetTransfer, 1d, "触发甜蜜传递")]
         [TestCase(ScoreLineKind.Layer, 3d, "+3")]
         [TestCase(ScoreLineKind.CountAs, 2d, "+2")]
         [TestCase(
             ScoreLineKind.SweetTransferBuffTriggered,
             1.8d,
-            "本行[strong]倍率[/strong] [multmul]×1.8[/multmul]")]
+            "[multmul]×1.8[/multmul]")]
         public void ResultText_UsesOnlyTheApprovedSemanticSegments(
             ScoreLineKind kind,
             double value,
@@ -38,6 +39,95 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 SettlementStageView.ResultText(line, BigDouble.Zero, new BigDouble(120)),
                 Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void ReceiveTransferFlatBuff_ShowsScoreInsteadOfRowMultiplier()
+        {
+            ScoreLine line = new ScoreLine(
+                ScorePhase.DishSkills,
+                ScoreLineKind.SweetTransferBuffTriggered,
+                ScoreSource.FinalModifier("sk_popping_candy", "跳跳糖"),
+                8,
+                "popping_candy",
+                null,
+                new BigDouble(120d),
+                BigDouble.Zero,
+                new BigDouble(120d),
+                "响应来源的甜蜜传递",
+                new SkillExecutionTrace(
+                    SkillExecutionKind.NativeSkill,
+                    8,
+                    "popping_candy",
+                    "跳跳糖",
+                    8,
+                    "popping_candy",
+                    "跳跳糖",
+                    "sk_popping_candy",
+                    "跳跳糖",
+                    "sk_popping_candy_1",
+                    0,
+                    SkillTrigger.OnSettle,
+                    SkillActionType.AddFlat,
+                    SkillConditionType.None,
+                    SkillScope.ColumnAndSelf,
+                    SkillScope.ColumnAndSelf,
+                    "跳跳糖"));
+
+            Assert.That(SettlementStageView.ResultHeader(line), Is.EqualTo("分数"));
+            Assert.That(
+                SettlementStageView.ResultText(line, BigDouble.Zero, new BigDouble(120)),
+                Is.EqualTo("[score]+120[/score]"));
+        }
+
+        [Test]
+        public void TransferMultBuff_ShowsMultiplierAddInsteadOfRowCopy()
+        {
+            ScoreLine line = new ScoreLine(
+                ScorePhase.DishSkills,
+                ScoreLineKind.SweetTransferBuffTriggered,
+                ScoreSource.FinalModifier("sk_gummy", "软糖"),
+                8,
+                "gummy",
+                null,
+                new BigDouble(0.8d),
+                BigDouble.Zero,
+                new BigDouble(0.8d),
+                "响应来源的甜蜜传递",
+                new SkillExecutionTrace(
+                    SkillExecutionKind.NativeSkill,
+                    8,
+                    "gummy",
+                    "软糖",
+                    8,
+                    "gummy",
+                    "软糖",
+                    "sk_gummy",
+                    "软糖",
+                    "sk_gummy_1",
+                    0,
+                    SkillTrigger.OnSettle,
+                    SkillActionType.AddMultFlat,
+                    SkillConditionType.None,
+                    SkillScope.ColumnAndSelf,
+                    SkillScope.ColumnAndSelf,
+                    "软糖"));
+
+            Assert.That(SettlementStageView.ResultHeader(line), Is.EqualTo("倍率"));
+            Assert.That(
+                SettlementStageView.ResultText(line, BigDouble.Zero, new BigDouble(120)),
+                Is.EqualTo("[multadd]+0.8[/multadd]"));
+        }
+
+        [Test]
+        public void TriggerSweetTransfer_KeepsAnnounceCopyWhenValueIsZero()
+        {
+            ScoreLine line = BuildLine(ScoreLineKind.TriggerSweetTransfer, 0d);
+
+            Assert.That(SettlementStageView.ResultHeader(line), Is.EqualTo("甜蜜传递"));
+            Assert.That(
+                SettlementStageView.ResultText(line, BigDouble.Zero, new BigDouble(120)),
+                Is.EqualTo("触发甜蜜传递"));
         }
 
         [Test]

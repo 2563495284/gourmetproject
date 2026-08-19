@@ -35,7 +35,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SpriteRenderer _spritePrefab;
 
         private GameObject _groupSpotlight;
-        private GameObject _groupLabel;
+        private readonly List<GameObject> _heldLabels = new();
         private SettlementEffectGroup _resultHitSoundGroup;
 
         public void Configure(
@@ -215,47 +215,67 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            var travelTasks = new List<Awaitable>(handoffs.Count);
+            var flights = new List<SweetTransferParticleView>(handoffs.Count);
             float executorScale = Mathf.Max(0.05f, executorDuration / 0.34f);
-            for (int i = 0; i < handoffs.Count; i++)
+            try
             {
-                SweetTransferHandoffVisual handoff = handoffs[i];
-                DishPieceView source = handoff.Source;
-                DishPieceView executor = handoff.Executor;
-                source?.SetSettlementFocus(1f);
-                executor?.SetSettlementFocus(1f);
-                if (executor != null)
+                for (int i = 0; i < handoffs.Count; i++)
                 {
-                    executor.BeginSweetTransferExecutorFeedback();
-                    _ = PlayFeedbackSafelyAsync(
-                        executor,
-                        SettlementDishFeedbackKind.SweetTransferExecutor,
-                        cancellationToken,
-                        durationScale: executorScale);
+                    SweetTransferHandoffVisual handoff = handoffs[i];
+                    DishPieceView source = handoff.Source;
+                    DishPieceView executor = handoff.Executor;
+                    source?.SetSettlementFocus(1f);
+                    executor?.SetSettlementFocus(1f);
+                    if (executor != null)
+                    {
+                        executor.BeginSweetTransferExecutorFeedback();
+                        _ = PlayFeedbackSafelyAsync(
+                            executor,
+                            SettlementDishFeedbackKind.SweetTransferExecutor,
+                            cancellationToken,
+                            durationScale: executorScale);
+                    }
+
+                    if (source == null
+                        || executor == null
+                        || handoff.Context.IsSelfTransfer)
+                    {
+                        source?.SetSettlementFocus(SweetTransferSourceBrightness);
+                        continue;
+                    }
+
+                    SweetTransferParticleView flight = SweetTransferParticleView.Begin(
+                        particlePrefab,
+                        _fxRoot,
+                        source.WorldBounds.center,
+                        executor.WorldBounds.center,
+                        travelDuration,
+                        visualScale: _visualScale);
+                    if (flight != null)
+                    {
+                        flights.Add(flight);
+                    }
+
+                    source.SetSettlementFocus(SweetTransferSourceBrightness);
                 }
 
-                if (source == null
-                    || executor == null
-                    || handoff.Context.IsSelfTransfer)
+                if (flights.Count > 0)
                 {
-                    source?.SetSettlementFocus(SweetTransferSourceBrightness);
-                    continue;
+                    await Awaitable.WaitForSecondsAsync(
+                        Mathf.Max(0.0001f, travelDuration),
+                        cancellationToken);
                 }
-
-                travelTasks.Add(SweetTransferParticleView.PlayAsync(
-                    particlePrefab,
-                    _fxRoot,
-                    source.WorldBounds.center,
-                    executor.WorldBounds.center,
-                    travelDuration,
-                    cancellationToken,
-                    visualScale: _visualScale));
-                source.SetSettlementFocus(SweetTransferSourceBrightness);
             }
-
-            for (int i = 0; i < travelTasks.Count; i++)
+            finally
             {
-                await travelTasks[i];
+                for (int i = 0; i < flights.Count; i++)
+                {
+                    SweetTransferParticleView flight = flights[i];
+                    if (flight != null)
+                    {
+                        Destroy(flight.gameObject);
+                    }
+                }
             }
         }
 
@@ -399,6 +419,72 @@ namespace GourmetProject.Game.Presentation.Battle
                 0f);
         }
 
+        private Vector3 ResultLabelAnchor(DishPieceView target)
+        {
+            if (target == null)
+            {
+                return _mapper.Center + Vector3.up * (0.20f * _visualScale);
+            }
+
+            return target.DishValueBadgeWorldPosition
+                + Vector3.down * (0.42f * _visualScale);
+        }
+
+        internal static bool IsLaunchResultLabel(ScoreLine line)
+        {
+            if (line == null)
+            {
+                return false;
+            }
+
+            return line.Kind == ScoreLineKind.TriggerSweetTransfer;
+        }
+
+        internal async Awaitable ShowSweetTransferLaunchAsync(
+            IReadOnlyList<DishPieceView> sources,
+            float duration,
+            CancellationToken cancellationToken,
+            bool holdUntilCleared = true)
+        {
+            if (sources == null || sources.Count == 0)
+            {
+                return;
+            }
+
+            Color theme = SettlementColorPalette.SweetTransfer;
+            var tasks = new List<Awaitable>(sources.Count);
+            for (int i = 0; i < sources.Count; i++)
+            {
+                DishPieceView source = sources[i];
+                if (source == null)
+                {
+                    continue;
+                }
+
+                source.SetSettlementFocus(1f);
+                Vector3 anchor = ResultLabelAnchor(source)
+                    + ResultLabelScatterOffset(
+                        _visualScale,
+                        UnityEngine.Random.Range(-1f, 1f),
+                        UnityEngine.Random.Range(0f, 1f));
+                tasks.Add(SpawnLabelAsync(
+                    anchor,
+                    "甜蜜传递",
+                    "触发甜蜜传递",
+                    theme,
+                    duration,
+                    cancellationToken,
+                    holdUntilCleared: holdUntilCleared,
+                    headerSemanticColor: theme,
+                    sortingOrder: WorldLabelSorting.NextOrder()));
+            }
+
+            for (int i = 0; i < tasks.Count; i++)
+            {
+                await tasks[i];
+            }
+        }
+
         internal async Awaitable ShowResultAsync(
             SettlementEffectGroup group,
             ScoreLine line,
@@ -409,7 +495,8 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementImpactTier impactTier,
             float audioPitch,
             bool playTargetFeedback,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool holdUntilCleared = false)
         {
             if (!ShouldShowResultLabel(line))
             {
@@ -431,14 +518,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
             }
 
-            Vector3 anchor = target != null
-                ? target.DishValueBadgeWorldPosition
-                    + Vector3.down * (0.42f * _visualScale)
-                : _mapper.Center + Vector3.up * (0.20f * _visualScale);
-            anchor += ResultLabelScatterOffset(
-                _visualScale,
-                UnityEngine.Random.Range(-1f, 1f),
-                UnityEngine.Random.Range(0f, 1f));
+            Vector3 anchor = ResultLabelAnchor(target)
+                + ResultLabelScatterOffset(
+                    _visualScale,
+                    UnityEngine.Random.Range(-1f, 1f),
+                    UnityEngine.Random.Range(0f, 1f));
             Awaitable impactTask = playTargetFeedback
                 ? PlayImpactRingAsync(target, theme, impactTier, cancellationToken)
                 : default;
@@ -449,6 +533,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 theme,
                 duration,
                 cancellationToken,
+                holdUntilCleared: holdUntilCleared,
                 headerSemanticColor: ResultHeaderSemanticColorFor(line, theme),
                 sortingOrder: WorldLabelSorting.NextOrder());
             if (playTargetFeedback)
@@ -816,7 +901,7 @@ namespace GourmetProject.Game.Presentation.Battle
             await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
             if (holdUntilCleared && root != null)
             {
-                _groupLabel = root;
+                _heldLabels.Add(root);
             }
 
             if (!holdUntilCleared && root != null)
@@ -842,10 +927,18 @@ namespace GourmetProject.Game.Presentation.Battle
                 _groupSpotlight = null;
             }
 
-            if (_groupLabel != null)
+            if (_heldLabels.Count > 0)
             {
-                Destroy(_groupLabel);
-                _groupLabel = null;
+                for (int i = 0; i < _heldLabels.Count; i++)
+                {
+                    GameObject held = _heldLabels[i];
+                    if (held != null)
+                    {
+                        Destroy(held);
+                    }
+                }
+
+                _heldLabels.Clear();
             }
         }
 
@@ -975,6 +1068,11 @@ namespace GourmetProject.Game.Presentation.Battle
                     or ScoreLineKind.FinalMultiplier => new Color32(178, 58, 72, 255),
                 ScoreLineKind.Gold => new Color32(154, 101, 0, 255),
                 ScoreLineKind.ExtraSettlement => new Color32(118, 86, 168, 255),
+                ScoreLineKind.SweetTransferBuffTriggered => line.Trace?.ActionType
+                    is SkillActionType.AddFlat
+                    or SkillActionType.PermanentAddFlat
+                        ? new Color32(40, 102, 156, 255)
+                        : fallback,
                 _ => fallback,
             };
         }
@@ -1010,7 +1108,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 ScoreLineKind.TriggerSweetTransfer => "甜蜜传递",
                 ScoreLineKind.TriggeredSweetTransferSource => string.Empty,
                 ScoreLineKind.SweetTransferBuffApplied => string.Empty,
-                ScoreLineKind.SweetTransferBuffTriggered => SweetTransferBuffName(line),
+                ScoreLineKind.SweetTransferBuffTriggered => SweetTransferBuffTriggeredHeader(line),
                 ScoreLineKind.SweetTransferFailed => "甜蜜传递",
                 ScoreLineKind.CountAs => "份数",
                 ScoreLineKind.EmptyCountAs => "份数",
@@ -1029,7 +1127,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (BigDouble.Abs(line.Value) <= 0.001f
                 && line.Kind != ScoreLineKind.FinalMultiplier
-                && line.Kind != ScoreLineKind.SweetTransferFailed)
+                && line.Kind != ScoreLineKind.SweetTransferFailed
+                && line.Kind != ScoreLineKind.TriggerSweetTransfer)
             {
                 return "无变化";
             }
@@ -1060,16 +1159,14 @@ namespace GourmetProject.Game.Presentation.Battle
                     return $"获得技能 ×{Count(line.Value)}";
                 case ScoreLineKind.TriggerSweetTransfer:
                     return line.Value > 1f
-                        ? $"发动{Term("甜蜜传递")} ×{Count(line.Value)}"
-                        : $"发动{Term("甜蜜传递")}";
+                        ? $"触发甜蜜传递 ×{Count(line.Value)}"
+                        : "触发甜蜜传递";
                 case ScoreLineKind.TriggeredSweetTransferSource:
                     return string.Empty;
                 case ScoreLineKind.SweetTransferBuffApplied:
                     return SweetTransferBuffName(line);
                 case ScoreLineKind.SweetTransferBuffTriggered:
-                    return line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
-                        ? $"额外目标 +{Count(line.Value)}"
-                        : $"本行{Strong("倍率")} {MultiplierMultiply($"×{FormatLineValue(line.Value)}")}";
+                    return SweetTransferBuffTriggeredText(line, signed);
                 case ScoreLineKind.SweetTransferFailed:
                     return "没有可传递目标";
                 case ScoreLineKind.CountAs:
@@ -1091,6 +1188,44 @@ namespace GourmetProject.Game.Presentation.Battle
             return string.IsNullOrWhiteSpace(ownerName)
                 ? "甜蜜Buff"
                 : $"{ownerName}Buff";
+        }
+
+        internal static string SweetTransferBuffTriggeredHeader(ScoreLine line)
+        {
+            if (line?.Trace?.ActionType == SkillActionType.TriggerSweetTransfer)
+            {
+                return SweetTransferBuffName(line);
+            }
+
+            if (IsLaunchResultLabel(line))
+            {
+                return "甜蜜传递";
+            }
+
+            return line?.Trace?.ActionType switch
+            {
+                SkillActionType.AddFlat or SkillActionType.PermanentAddFlat => "分数",
+                SkillActionType.AddMult
+                    or SkillActionType.AddMultFlat => "倍率",
+                _ => SweetTransferBuffName(line),
+            };
+        }
+
+        internal static string SweetTransferBuffTriggeredText(ScoreLine line, string signed)
+        {
+            if (line?.Trace?.ActionType == SkillActionType.TriggerSweetTransfer)
+            {
+                return $"额外目标 +{Count(line.Value)}";
+            }
+
+            return line?.Trace?.ActionType switch
+            {
+                SkillActionType.AddFlat or SkillActionType.PermanentAddFlat => Score(signed),
+                SkillActionType.AddMultFlat => MultiplierAdd(signed),
+                SkillActionType.AddMult =>
+                    MultiplierMultiply($"×{FormatLineValue(line.Value)}"),
+                _ => MultiplierMultiply($"×{FormatLineValue(line.Value)}"),
+            };
         }
 
         private static string TemporaryCategoryText(string message)

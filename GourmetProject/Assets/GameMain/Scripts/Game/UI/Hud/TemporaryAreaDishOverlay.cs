@@ -40,12 +40,13 @@ namespace GourmetProject.Game.UI.Hud
 
             _world.CopyTemporaryAreaOverlayPieces(_visiblePieces);
             DishPieceView dragging = _world.ActiveDragPiece;
+            DishPieceView flyingIn = _world.TemporaryAreaFlyInPiece;
             int shown = 0;
             _keepHidden.Clear();
             for (int i = 0; i < _visiblePieces.Count; i++)
             {
                 DishPieceView piece = _visiblePieces[i];
-                if (piece == null || piece == dragging)
+                if (piece == null || piece == dragging || piece == flyingIn)
                 {
                     continue;
                 }

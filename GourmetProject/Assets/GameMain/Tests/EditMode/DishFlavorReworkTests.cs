@@ -197,6 +197,21 @@ namespace GourmetProject.Tests.EditMode
                 "技能对其他食物的影响应在额外结算中再次执行");
             Assert.That(result.Total.ToDouble(), Is.EqualTo(60d).Within(0.0001d));
             Assert.That(result.ScoreLines.Count(line => line.Kind == ScoreLineKind.ExtraSettlement), Is.EqualTo(1));
+
+            List<ScoreLine> orderedLines = result.ScoreLines.ToList();
+            int firstSkillIndex = orderedLines.FindIndex(line =>
+                line.Source?.Type == ScoreSourceType.DishSkill
+                && line.DishInstanceId == target.Id);
+            int materialIndex = orderedLines.FindIndex(line =>
+                line.Source?.Type == ScoreSourceType.Material);
+            int extraSettlementIndex = orderedLines.FindIndex(line =>
+                line.Kind == ScoreLineKind.ExtraSettlement);
+            int repeatedSkillIndex = orderedLines.FindLastIndex(line =>
+                line.Source?.Type == ScoreSourceType.DishSkill
+                && line.DishInstanceId == target.Id);
+            Assert.That(firstSkillIndex, Is.LessThan(materialIndex), "主轮技能应先于材质结算");
+            Assert.That(materialIndex, Is.LessThan(extraSettlementIndex), "额外结算提示应在主轮材质之后");
+            Assert.That(extraSettlementIndex, Is.LessThan(repeatedSkillIndex), "额外结算提示应先于第二轮技能");
         }
 
         [Test]

@@ -204,6 +204,38 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(ScoreOf(result, holderA).FlatBonus.ToDouble(), Is.EqualTo(80d).Within(0.0001d));
             Assert.That(ScoreOf(result, holderB).FlatBonus.ToDouble(), Is.EqualTo(80d).Within(0.0001d));
             Assert.That(ScoreOf(result, source).FlatBonus.ToDouble(), Is.EqualTo(0d).Within(0.0001d));
+
+            SettlementPresentationPlan plan = SettlementPresentationPlan.Build(result);
+            int start = 0;
+            while (start < plan.Groups.Count
+                && !SettlementSequencer.IsSweetTransferRelatedGroup(plan.Groups[start]))
+            {
+                start++;
+            }
+
+            int length = SettlementSequencer.CountSweetTransferWaveLength(plan.Groups, start);
+            var announce = new List<ScoreLine>();
+            var settle = new List<ScoreLine>();
+            var response = new List<ScoreLine>();
+            SettlementSequencer.ClassifySweetTransferWaveLines(
+                plan.Groups,
+                start,
+                length,
+                announce,
+                settle,
+                response);
+            Assert.That(
+                settle.Any(line =>
+                    line.Trace?.Kind == SkillExecutionKind.SweetTransfer
+                    && (line.DishInstanceId == holderA.Id || line.DishInstanceId == holderB.Id)),
+                "被传食物的技能必须先作为传递结算播出");
+            Assert.That(
+                response.Any(line =>
+                    line.Kind == ScoreLineKind.SweetTransferBuffTriggered
+                    && line.DishInstanceId == owner.Id));
+            Assert.That(
+                response.All(line => !SettlementSequencer.IsSweetTransferExecutorResultLine(line)),
+                "跳跳糖不得和 B 接受传递的技能同一拍");
         }
 
         [Test]

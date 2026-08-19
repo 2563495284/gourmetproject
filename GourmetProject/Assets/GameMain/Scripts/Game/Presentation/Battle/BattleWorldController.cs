@@ -209,21 +209,19 @@ namespace GourmetProject.Game.Presentation.Battle
                     ? _movingPiece
                     : _temporaryAreaDragPiece;
 
+        /// <summary>麻风味旋转后正在飞入临时桌的世界棋子；Overlay 残影跟着它走，避免被实心框盖住。</summary>
+        internal DishPieceView TemporaryAreaFlyInPiece => _temporaryAreaFlyInPiece;
+
         internal void CopyTemporaryAreaOverlayPieces(List<DishPieceView> dest)
         {
             dest.Clear();
             for (int i = 0; i < _temporaryAreaPieces.Count; i++)
             {
                 DishPieceView piece = _temporaryAreaPieces[i];
-                if (piece != null)
+                if (piece != null && piece != _temporaryAreaFlyInPiece)
                 {
                     dest.Add(piece);
                 }
-            }
-
-            if (_temporaryAreaFlyInPiece != null && !dest.Contains(_temporaryAreaFlyInPiece))
-            {
-                dest.Add(_temporaryAreaFlyInPiece);
             }
         }
 
@@ -980,32 +978,55 @@ namespace GourmetProject.Game.Presentation.Battle
                         return;
                     }
 
-                    piece.SetFlying(true);
-                    piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
-                    _temporaryAreaFlyInPiece = piece;
-                    BuildHudFood(piece, temporaryDish, _dishClicked);
-                    Vector3 slotCenter = new Vector3(
-                        targetSlot.Center.x,
-                        targetSlot.Center.y,
-                        TemporaryAreaWorldZ());
-                    Vector3 targetPosition = TemporaryAreaPieceRootPosition(
-                        piece,
-                        slotCenter,
-                        targetSlot.Scale);
-                    DOTween.Sequence()
-                        .SetLink(piece.gameObject)
-                        .Append(piece.transform.DOMove(targetPosition, TemporaryAreaFlyDuration).SetEase(Ease.InOutCubic))
-                        .Join(piece.transform.DOScale(Vector3.one * targetSlot.Scale, TemporaryAreaFlyDuration).SetEase(Ease.InOutCubic))
-                        .OnComplete(() =>
-                        {
-                            CompleteTemporaryAreaArrival(piece, temporaryDish, index, onComplete);
-                        });
+                    BeginTemporaryAreaFlyIn(piece, temporaryDish, targetSlot, index, onComplete);
                 });
                 return true;
             }
 
             piece.PlayActiveItemFlavorTransform(onVisualSwitch: null, onComplete);
             return true;
+        }
+
+        private void BeginTemporaryAreaFlyIn(
+            DishPieceView piece,
+            DishInstance dish,
+            TemporaryAreaStackSlot targetSlot,
+            int index,
+            Action onComplete)
+        {
+            Vector3 startCenter = piece.WorldBounds.center;
+            float sourceCellSize = piece.CellSize;
+            float sourceScale = Mathf.Max(0.0001f, Mathf.Abs(piece.transform.localScale.x));
+            _temporaryAreaFlyInPiece = piece;
+            BuildHudFood(piece, dish, _dishClicked);
+            piece.SetFlying(true);
+            piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
+
+            float startScale = sourceScale * DiningTableLayout.ScaleToMatchSourceCell(
+                sourceCellSize,
+                DiningTableLayout.DefaultFoodCellSize);
+            piece.transform.DOKill();
+            piece.transform.localScale = Vector3.one * startScale;
+            piece.MoveVisualCenterToWorld(startCenter);
+
+            Vector3 slotCenter = new Vector3(
+                targetSlot.Center.x,
+                targetSlot.Center.y,
+                TemporaryAreaWorldZ());
+            Vector3 targetPosition = TemporaryAreaPieceRootPosition(
+                piece,
+                slotCenter,
+                targetSlot.Scale);
+            DOTween.Sequence()
+                .SetLink(piece.gameObject)
+                .Append(piece.transform.DOMove(targetPosition, TemporaryAreaFlyDuration).SetEase(Ease.InOutCubic))
+                .Join(piece.transform
+                    .DOScale(Vector3.one * targetSlot.Scale, TemporaryAreaFlyDuration)
+                    .SetEase(Ease.InOutCubic))
+                .OnComplete(() =>
+                {
+                    CompleteTemporaryAreaArrival(piece, dish, index, onComplete);
+                });
         }
 
         private void CompleteTemporaryAreaArrival(

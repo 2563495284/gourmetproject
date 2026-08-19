@@ -70,6 +70,27 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void ScaleToMatchSourceCell_KeepsSizeWhenCellsMatch()
+        {
+            Assert.That(
+                DiningTableLayout.ScaleToMatchSourceCell(
+                    DiningTableLayout.DefaultFoodCellSize,
+                    DiningTableLayout.DefaultFoodCellSize),
+                Is.EqualTo(1f).Within(0.0001f));
+        }
+
+        [Test]
+        public void ScaleToMatchSourceCell_ShrinksRebuiltFoodBackToTableCell()
+        {
+            float tableCell = DiningTableLayout.DefaultFoodCellSize * 0.5f;
+            Assert.That(
+                DiningTableLayout.ScaleToMatchSourceCell(
+                    tableCell,
+                    DiningTableLayout.DefaultFoodCellSize),
+                Is.EqualTo(0.5f).Within(0.0001f));
+        }
+
+        [Test]
         public void CanvasSizeForTableFood_RemovesDragVisualScale()
         {
             Vector2 captured = new Vector2(276f, 276f);

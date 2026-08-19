@@ -735,6 +735,38 @@ namespace GourmetProject.Game.Presentation.Battle
                 traces);
         }
 
+        internal static SettlementScopeSignal ScopeForScoreLines(IReadOnlyList<ScoreLine> lines)
+        {
+            var traces = new List<SkillExecutionTrace>();
+            if (lines == null)
+            {
+                return default;
+            }
+
+            var seen = new HashSet<string>();
+            for (int i = 0; i < lines.Count; i++)
+            {
+                SkillExecutionTrace trace = lines[i]?.Trace;
+                if (trace == null || !seen.Add(ScopeTraceKey(trace)))
+                {
+                    continue;
+                }
+
+                traces.Add(trace);
+            }
+
+            if (traces.Count == 0)
+            {
+                return default;
+            }
+
+            SkillExecutionTrace first = traces[0];
+            return SettlementScopeSignal.FromTraces(
+                first.OwnerDishInstanceId,
+                first.RuntimeSelfDishInstanceId,
+                traces);
+        }
+
         private static string ScopeTraceKey(SkillExecutionTrace trace)
         {
             IReadOnlyList<GridPos> cells = trace.ScopeRegionCells;
@@ -807,6 +839,215 @@ namespace GourmetProject.Game.Presentation.Battle
             return result;
         }
 
+        internal static bool IsSweetTransferLaunchLine(ScoreLine line)
+        {
+            return line != null && line.Kind == ScoreLineKind.TriggerSweetTransfer;
+        }
+
+        /// <summary>
+        /// 改变本次传递怎么飞的 Buff：棉花糖固定加目标、松露巧克力概率加目标。
+        /// 目标数必须在粒子起飞前兑现，但表现上要等「触发甜蜜传递」播完后逐条展示。
+        /// </summary>
+        internal static bool IsExtraTargetBuffLine(ScoreLine line)
+        {
+            return line != null
+                && line.Kind == ScoreLineKind.SweetTransferBuffTriggered
+                && line.Trace != null
+                && line.Trace.ActionType == SkillActionType.TriggerSweetTransfer;
+        }
+
+        internal static int ResultVisualDishInstanceId(ScoreLine line)
+        {
+            if (IsExtraTargetBuffLine(line)
+                && line.Trace.RuntimeSelfDishInstanceId > 0)
+            {
+                // Header 仍取 Buff 所有者；提示位置跟随本次真正触发甜蜜传递的食物。
+                return line.Trace.RuntimeSelfDishInstanceId;
+            }
+
+            return line?.DishInstanceId ?? 0;
+        }
+
+        internal static bool IsSweetTransferAnnounceLine(ScoreLine line)
+        {
+            return IsSweetTransferLaunchLine(line) || IsExtraTargetBuffLine(line);
+        }
+
+        internal static int CountSweetTransferAnnounceLines(
+            IReadOnlyList<SettlementEffectGroup> groups,
+            int startIndex,
+            int length)
+        {
+            List<ResultLineRef> lines = BuildWaveResultLineRefs(groups, startIndex, length);
+            int count = 0;
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (IsSweetTransferAnnounceLine(lines[i].Line))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        internal static List<int> CollectWaveNativeLaunchSourceIds(
+            IReadOnlyList<SettlementEffectGroup> groups,
+            int startIndex,
+            int length)
+        {
+            var result = new List<int>();
+            if (groups == null || length <= 0)
+            {
+                return result;
+            }
+
+            List<ResultLineRef> lines = BuildWaveResultLineRefs(groups, startIndex, length);
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (IsSweetTransferLaunchLine(lines[i].Line))
+                {
+                    return result;
+                }
+            }
+
+            var seen = new HashSet<int>();
+            List<SettlementSweetTransferPresentationContext> handoffs =
+                CollectWaveHandoffs(groups, startIndex, length);
+            for (int i = 0; i < handoffs.Count; i++)
+            {
+                int sourceId = handoffs[i].SourceDishInstanceId;
+                if (sourceId > 0 && seen.Add(sourceId))
+                {
+                    result.Add(sourceId);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 传递成功后的分数/倍率响应：跳跳糖在本列获得传递后加分，软糖在本列发动传递后加倍率。
+        /// 被传食物的技能结果先播完，再播这一条汇总，不能同一拍弹出。
+        /// </summary>
+        internal static bool IsSweetTransferResponseLine(ScoreLine line)
+        {
+            return line != null
+                && line.Kind == ScoreLineKind.SweetTransferBuffTriggered
+                && !IsExtraTargetBuffLine(line);
+        }
+
+        /// <summary>
+        /// 被传食物真正执行外来技能的明细。即使和跳跳糖写在同一执行组，也必须先作为传递结算播出。
+        /// </summary>
+        internal static bool IsSweetTransferExecutorResultLine(ScoreLine line)
+        {
+            return line?.Trace != null
+                && line.Trace.Kind == SkillExecutionKind.SweetTransfer
+                && line.Kind != ScoreLineKind.TriggeredSweetTransferSource;
+        }
+
+        internal static int CountSweetTransferResponseLines(
+            IReadOnlyList<SettlementEffectGroup> groups,
+            int startIndex,
+            int length)
+        {
+            List<ResultLineRef> lines = BuildWaveResultLineRefs(groups, startIndex, length);
+            int count = 0;
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (IsSweetTransferResponseLine(lines[i].Line))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static void PartitionWaveResultLines(
+            IReadOnlyList<ResultLineRef> lines,
+            List<ResultLineRef> announceLines,
+            List<ResultLineRef> settleLines,
+            List<ResultLineRef> responseLines)
+        {
+            announceLines.Clear();
+            settleLines.Clear();
+            responseLines.Clear();
+            if (lines == null)
+            {
+                return;
+            }
+
+            var responseGroups = new HashSet<SettlementEffectGroup>();
+            for (int i = 0; i < lines.Count; i++)
+            {
+                ResultLineRef lineRef = lines[i];
+                if (IsSweetTransferResponseLine(lineRef.Line))
+                {
+                    responseGroups.Add(lineRef.Group);
+                }
+            }
+
+            for (int i = 0; i < lines.Count; i++)
+            {
+                ResultLineRef lineRef = lines[i];
+                if (IsSweetTransferAnnounceLine(lineRef.Line))
+                {
+                    announceLines.Add(lineRef);
+                }
+                else if (IsSweetTransferExecutorResultLine(lineRef.Line))
+                {
+                    settleLines.Add(lineRef);
+                }
+                else if (IsSweetTransferResponseLine(lineRef.Line)
+                    || responseGroups.Contains(lineRef.Group))
+                {
+                    responseLines.Add(lineRef);
+                }
+                else
+                {
+                    settleLines.Add(lineRef);
+                }
+            }
+        }
+
+        internal static void ClassifySweetTransferWaveLines(
+            IReadOnlyList<SettlementEffectGroup> groups,
+            int startIndex,
+            int length,
+            List<ScoreLine> announceLines,
+            List<ScoreLine> settleLines,
+            List<ScoreLine> responseLines)
+        {
+            announceLines?.Clear();
+            settleLines?.Clear();
+            responseLines?.Clear();
+            List<ResultLineRef> waveLines = BuildWaveResultLineRefs(groups, startIndex, length);
+            var announceRefs = new List<ResultLineRef>();
+            var settleRefs = new List<ResultLineRef>();
+            var responseRefs = new List<ResultLineRef>();
+            PartitionWaveResultLines(waveLines, announceRefs, settleRefs, responseRefs);
+            CopyPartitionedLines(announceRefs, announceLines);
+            CopyPartitionedLines(settleRefs, settleLines);
+            CopyPartitionedLines(responseRefs, responseLines);
+        }
+
+        private static void CopyPartitionedLines(
+            IReadOnlyList<ResultLineRef> source,
+            List<ScoreLine> destination)
+        {
+            if (destination == null || source == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < source.Count; i++)
+            {
+                destination.Add(source[i].Line);
+            }
+        }
+
         private async Awaitable PlaySweetTransferWaveAsync(
             BattleSession session,
             SettlementPresentationPlan plan,
@@ -858,6 +1099,12 @@ namespace GourmetProject.Game.Presentation.Battle
                         BuildSweetTransferSteps(line, cue),
                         dishViews,
                         cancellationToken);
+                    if ((IsSweetTransferLaunchLine(line) || IsExtraTargetBuffLine(line))
+                        && line.DishInstanceId > 0)
+                    {
+                        sourceIds.Add(line.DishInstanceId);
+                    }
+
                     SettlementSweetTransferPresentationContext context =
                         SettlementSweetTransferPresentationContext.FromLine(line);
                     if (!context.IsValid)
@@ -926,9 +1173,104 @@ namespace GourmetProject.Game.Presentation.Battle
                 cameraFocus,
                 ScaleSettlementDuration(_sourceFocusDuration));
             _stage.ApplyWaveFocus(sourceIds, executorIds, targetIds);
-            await Awaitable.WaitForSecondsAsync(
-                ScaleSettlementDuration(_sweetTransferSourceDuration),
-                cancellationToken);
+
+            List<ResultLineRef> waveLines = BuildWaveResultLineRefs(groups, startIndex, waveLength);
+            var announceLines = new List<ResultLineRef>();
+            var settleLines = new List<ResultLineRef>();
+            var responseLines = new List<ResultLineRef>();
+            PartitionWaveResultLines(waveLines, announceLines, settleLines, responseLines);
+            var launchLines = new List<ResultLineRef>();
+            var extraTargetLines = new List<ResultLineRef>();
+            for (int i = 0; i < announceLines.Count; i++)
+            {
+                ResultLineRef lineRef = announceLines[i];
+                if (IsExtraTargetBuffLine(lineRef.Line))
+                {
+                    extraTargetLines.Add(lineRef);
+                }
+                else
+                {
+                    launchLines.Add(lineRef);
+                }
+            }
+
+            List<int> nativeLaunchIds = CollectWaveNativeLaunchSourceIds(groups, startIndex, waveLength);
+            var nativeLaunchViews = new List<DishPieceView>(nativeLaunchIds.Count);
+            for (int i = 0; i < nativeLaunchIds.Count; i++)
+            {
+                DishPieceView launchView = TryGetDishView(nativeLaunchIds[i], dishViews);
+                if (launchView != null)
+                {
+                    nativeLaunchViews.Add(launchView);
+                }
+            }
+
+            float announceDuration = ScaleSettlementDuration(_sourceFocusDuration);
+            var announceTasks = new List<Awaitable>();
+            if (launchLines.Count > 0)
+            {
+                announceTasks.Add(PlayResultLineBatchAsync(
+                    launchLines,
+                    Mathf.Max(1, targetIds.Count),
+                    session,
+                    playback,
+                    ledger,
+                    dishViews,
+                    fxRoot,
+                    renderScore,
+                    onReveal,
+                    onPassiveTriggered,
+                    onBeat,
+                    sweetTransferPlayback,
+                    skipTransferTravel: true,
+                    cancellationToken,
+                    resultDurationOverride: announceDuration));
+            }
+
+            if (nativeLaunchViews.Count > 0)
+            {
+                announceTasks.Add(_stage.ShowSweetTransferLaunchAsync(
+                    nativeLaunchViews,
+                    announceDuration,
+                    cancellationToken,
+                    holdUntilCleared: false));
+            }
+
+            if (announceTasks.Count == 0)
+            {
+                await Awaitable.WaitForSecondsAsync(
+                    ScaleSettlementDuration(_sweetTransferSourceDuration),
+                    cancellationToken);
+            }
+            else
+            {
+                for (int i = 0; i < announceTasks.Count; i++)
+                {
+                    await announceTasks[i];
+                }
+            }
+
+            // 额外目标 Buff 必须在目标选择后、粒子起飞前兑现，但不再和触发文本同一拍。
+            // 每条 Buff 单独播放，确保多个棉花糖/松露巧克力会逐条显示来源与增量。
+            for (int i = 0; i < extraTargetLines.Count; i++)
+            {
+                await PlayResultLineBatchAsync(
+                    new[] { extraTargetLines[i] },
+                    Mathf.Max(1, targetIds.Count),
+                    session,
+                    playback,
+                    ledger,
+                    dishViews,
+                    fxRoot,
+                    renderScore,
+                    onReveal,
+                    onPassiveTriggered,
+                    onBeat,
+                    sweetTransferPlayback,
+                    skipTransferTravel: true,
+                    cancellationToken,
+                    resultDurationOverride: announceDuration);
+            }
 
             if (handoffs.Count > 0)
             {
@@ -939,18 +1281,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     ScaleSettlementDuration(_sweetTransferExecutorDuration),
                     cancellationToken);
             }
-
-            EmitScope(onScope, ScopeForWave(groups, startIndex, waveLength));
-            EmitBeat(
-                onBeat,
-                SettlementBeatKind.ScopeShown,
-                firstGroup.SourceName,
-                firstGroup.ActorDishInstanceId,
-                playback);
-            await _stage.ShowScopeAsync(
-                targetIds,
-                ScaleSettlementDuration(_scopeRevealDuration),
-                cancellationToken);
 
             int waveTargetCount = Mathf.Max(1, targetIds.Count);
             SettlementImpactTier waveImpact = SettlementImpactTier.Base;
@@ -969,8 +1299,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 scoreFire?.Burst(waveImpact >= SettlementImpactTier.Chain ? 0.72f : 0.46f);
             }
 
-            await PlayResultLineBatchAsync(
-                BuildWaveResultLineRefs(groups, startIndex, waveLength),
+            await RevealScopeAndPlayResultsAsync(
+                settleLines,
+                firstGroup,
                 waveTargetCount,
                 session,
                 playback,
@@ -979,11 +1310,35 @@ namespace GourmetProject.Game.Presentation.Battle
                 fxRoot,
                 renderScore,
                 onReveal,
+                onScope,
                 onPassiveTriggered,
                 onBeat,
                 sweetTransferPlayback,
-                skipTransferTravel: true,
                 cancellationToken);
+
+            if (responseLines.Count > 0)
+            {
+                onScope?.Invoke(default);
+                await _stage.EndGroupAsync(
+                    ScaleSettlementDuration(_groupSettleDuration),
+                    cancellationToken);
+                await RevealScopeAndPlayResultsAsync(
+                    responseLines,
+                    firstGroup,
+                    waveTargetCount,
+                    session,
+                    playback,
+                    ledger,
+                    dishViews,
+                    fxRoot,
+                    renderScore,
+                    onReveal,
+                    onScope,
+                    onPassiveTriggered,
+                    onBeat,
+                    sweetTransferPlayback,
+                    cancellationToken);
+            }
 
             int lastGroupIndex = endIndex - 1;
             SettlementEffectGroup lastGroup = groups[lastGroupIndex];
@@ -1030,6 +1385,93 @@ namespace GourmetProject.Game.Presentation.Battle
             return 0;
         }
 
+        private async Awaitable RevealScopeAndPlayResultsAsync(
+            IReadOnlyList<ResultLineRef> lines,
+            SettlementEffectGroup beatGroup,
+            int targetCount,
+            BattleSession session,
+            SettlementPlaybackState playback,
+            SettlementRunningLedger ledger,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            Transform fxRoot,
+            Action<BigDouble> renderScore,
+            Action<SettlementRevealSignal> onReveal,
+            Action<SettlementScopeSignal> onScope,
+            Action<string> onPassiveTriggered,
+            Action<SettlementBeatSignal> onBeat,
+            SweetTransferPlaybackState sweetTransferPlayback,
+            CancellationToken cancellationToken)
+        {
+            if (lines == null || lines.Count == 0)
+            {
+                return;
+            }
+
+            var scoreLines = new List<ScoreLine>(lines.Count);
+            var dishIds = new HashSet<int>();
+            for (int i = 0; i < lines.Count; i++)
+            {
+                ScoreLine line = lines[i].Line;
+                if (line == null)
+                {
+                    continue;
+                }
+
+                scoreLines.Add(line);
+                if (line.DishInstanceId > 0)
+                {
+                    dishIds.Add(line.DishInstanceId);
+                }
+
+                IReadOnlyList<int> visualIds = line.Trace?.VisualTargetDishInstanceIds;
+                if (visualIds == null)
+                {
+                    continue;
+                }
+
+                for (int targetIndex = 0; targetIndex < visualIds.Count; targetIndex++)
+                {
+                    int visualId = visualIds[targetIndex];
+                    if (visualId > 0)
+                    {
+                        dishIds.Add(visualId);
+                    }
+                }
+            }
+
+            SettlementScopeSignal scope = ScopeForScoreLines(scoreLines);
+            if (!scope.IsEmpty)
+            {
+                EmitScope(onScope, scope);
+                EmitBeat(
+                    onBeat,
+                    SettlementBeatKind.ScopeShown,
+                    beatGroup.SourceName,
+                    beatGroup.ActorDishInstanceId,
+                    playback);
+                await _stage.ShowScopeAsync(
+                    dishIds,
+                    ScaleSettlementDuration(_scopeRevealDuration),
+                    cancellationToken);
+            }
+
+            await PlayResultLineBatchAsync(
+                lines,
+                targetCount,
+                session,
+                playback,
+                ledger,
+                dishViews,
+                fxRoot,
+                renderScore,
+                onReveal,
+                onPassiveTriggered,
+                onBeat,
+                sweetTransferPlayback,
+                skipTransferTravel: true,
+                cancellationToken);
+        }
+
         private async Awaitable PlayResultLineBatchAsync(
             IReadOnlyList<ResultLineRef> lines,
             int targetCount,
@@ -1044,15 +1486,29 @@ namespace GourmetProject.Game.Presentation.Battle
             Action<SettlementBeatSignal> onBeat,
             SweetTransferPlaybackState sweetTransferPlayback,
             bool skipTransferTravel,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool holdResultLabels = false,
+            float resultDurationOverride = -1f)
         {
             if (lines == null || lines.Count == 0)
             {
                 return;
             }
 
+            float resultDuration = resultDurationOverride > 0f
+                ? resultDurationOverride
+                : ScaleSettlementDuration(_resultBeatDuration);
             var resultTasks = new List<Awaitable>(lines.Count);
             Dictionary<int, int> primaryFeedbackLines = BuildPrimaryFeedbackLines(lines, targetCount);
+            bool showOnlyResponseSummaries = false;
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (IsSweetTransferResponseLine(lines[i].Line))
+                {
+                    showOnlyResponseSummaries = true;
+                    break;
+                }
+            }
 
             // 同一批次的计分明细仍按原顺序写入账本与发出事件，但所有结果动画
             // 在同一帧启动。这样保留正式因果顺序，同时恢复“一起触发”的节奏。
@@ -1092,17 +1548,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     ApplySweetTransferBuffMarkers(line, dishViews);
                 }
-                else if (line.Kind == ScoreLineKind.SweetTransferBuffTriggered)
+                else if (line.Kind == ScoreLineKind.SweetTransferBuffTriggered
+                    && !IsExtraTargetBuffLine(line)
+                    && !skipTransferTravel)
                 {
-                    Awaitable buffTask = PlaySweetTransferBuffTriggerAsync(line, dishViews, cancellationToken);
-                    if (skipTransferTravel)
-                    {
-                        resultTasks.Add(buffTask);
-                    }
-                    else
-                    {
-                        await buffTask;
-                    }
+                    await PlaySweetTransferBuffTriggerAsync(line, dishViews, cancellationToken);
                 }
                 else if (line.Kind == ScoreLineKind.SweetTransferFailed)
                 {
@@ -1130,7 +1580,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         line.DishInstanceId,
                         out int primaryIndex)
                     && primaryIndex == i;
-                dishViews.TryGetValue(line.DishInstanceId, out DishPieceView target);
+                dishViews.TryGetValue(ResultVisualDishInstanceId(line), out DishPieceView target);
                 if (target != null && ChangesDishValue(line.Kind))
                 {
                     target.SetDishValueBadge(contribution);
@@ -1154,17 +1604,22 @@ namespace GourmetProject.Game.Presentation.Battle
                     impactTier,
                     targetCount,
                     reachedTarget);
-                resultTasks.Add(_stage.ShowResultAsync(
-                    group,
-                    line,
-                    target,
-                    contribution,
-                    ledger.CurrentTotal,
-                    ScaleSettlementDuration(_resultBeatDuration),
-                    impactTier,
-                    Mathf.Lerp(0.96f, 1.18f, NormalizedProgress(playback)),
-                    playPrimaryFeedback,
-                    cancellationToken));
+                if (!showOnlyResponseSummaries || IsSweetTransferResponseLine(line))
+                {
+                    resultTasks.Add(_stage.ShowResultAsync(
+                        group,
+                        line,
+                        target,
+                        contribution,
+                        ledger.CurrentTotal,
+                        resultDuration,
+                        impactTier,
+                        Mathf.Lerp(0.96f, 1.18f, NormalizedProgress(playback)),
+                        playPrimaryFeedback,
+                        cancellationToken,
+                        holdUntilCleared: holdResultLabels && IsSweetTransferAnnounceLine(line)));
+                }
+
                 PromoteSettlementPace(playback, nextPhase);
             }
 
@@ -3136,8 +3591,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
                         line.Value > 1f
-                            ? $"发动{Semantic("term", "甜蜜传递")} ×{RoundCount(line.Value)}"
-                            : $"发动{Semantic("term", "甜蜜传递")}",
+                            ? $"发动甜蜜传递 ×{RoundCount(line.Value)}"
+                            : "发动甜蜜传递",
                         feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
                         triggerSweetTransferPhase: TriggerSweetTransferCuePhase.ActivatorStarted,
                         sourceName: sourceName);
@@ -3166,9 +3621,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.SweetTransferBuffTriggered:
                     cue = new SettlementCue(
                         SettlementCueKind.SideEffect,
-                        line.Trace?.ActionType == SkillActionType.TriggerSweetTransfer
-                            ? $"额外选择 +{RoundCount(line.Value)}"
-                            : $"本行{Strong("倍率")} {Semantic("multmul", $"×{FormatPlain(line.Value)}")}",
+                        SettlementStageView.ResultText(
+                            line,
+                            BigDouble.Zero,
+                            BigDouble.Zero),
                         feedbackKind: SettlementDishFeedbackKind.GenericSkillTriggered,
                         sourceName: sourceName);
                     return true;
