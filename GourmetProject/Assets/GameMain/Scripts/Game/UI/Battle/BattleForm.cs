@@ -148,7 +148,11 @@ namespace GourmetProject.Game.UI.Battle
         [Tooltip("美食战斗 HUD 里的暂存区框：世界棋子按此矩形投影落位。")]
         [SerializeField] private RectTransform _temporaryArea;
         [SerializeField] private RectTransform _bottomUi;
+        [Tooltip("BottomUI（含出餐口）下滑出屏时长（秒）。")]
         [SerializeField] private float _foodSettlementLayoutDuration = 0.32f;
+        [Tooltip("TableLayoutArea 放大、餐桌跟上的时长（秒）。")]
+        [SerializeField] private float _foodSettlementTableLayoutDuration = 0.64f;
+        [Tooltip("布局动画结束后、开始结算演出前的停顿（秒）。")]
         [SerializeField] private float _foodSettlementHoldDuration = 0.5f;
 
         private DishDragGhostOverlay _dragGhostOverlay;
@@ -2308,16 +2312,17 @@ namespace GourmetProject.Game.UI.Battle
         {
             EnsureBottomUi();
             KillBottomUiTween();
-            float duration = Mathf.Max(0.01f, _foodSettlementLayoutDuration > 0.01f ? _foodSettlementLayoutDuration : 0.32f);
+            float bottomDuration = Mathf.Max(0.01f, _foodSettlementLayoutDuration > 0.01f ? _foodSettlementLayoutDuration : 0.32f);
+            float tableDuration = Mathf.Max(0.01f, _foodSettlementTableLayoutDuration > 0.01f ? _foodSettlementTableLayoutDuration : 0.64f);
             Sequence sequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
             sequence.Pause();
-            Tween bottomTween = CreateBottomUiHideTween(duration);
+            Tween bottomTween = CreateBottomUiHideTween(bottomDuration);
             if (bottomTween != null)
             {
-                sequence.Join(bottomTween);
+                sequence.Append(bottomTween);
             }
 
-            _world?.JoinFoodSettlementLayoutTween(sequence, duration);
+            _world?.AppendFoodSettlementLayoutTween(sequence, tableDuration);
 
             if (sequence.Duration() <= 0f)
             {

@@ -65,7 +65,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private BattleDoodleController _doodle;
         [Tooltip("Battle 场景内可直接移动和缩放的餐桌布局区域；存在时优先于 HUD BoardArea。")]
         [SerializeField] private RectTransform _sceneBoardArea;
-        [SerializeField] private float _foodSettlementLayoutDuration = 0.32f;
+        [Tooltip("结算时 TableLayoutArea 放大时长（秒）。BattleForm 传入有效时长时以此为准。")]
+        [SerializeField] private float _foodSettlementLayoutDuration = 0.64f;
         [Tooltip("暂存区 HUD 框。由 BattleForm 注入 Overlay 矩形；世界棋子仍在 PiecesRoot。")]
         [SerializeField] private RectTransform _temporaryArea;
 
@@ -3181,7 +3182,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        public void JoinFoodSettlementLayoutTween(Sequence sequence, float duration)
+        public void AppendFoodSettlementLayoutTween(Sequence sequence, float duration)
         {
             if (sequence == null)
             {
@@ -3197,18 +3198,28 @@ namespace GourmetProject.Game.Presentation.Battle
 
             BattleTableLayoutArea area = ResolveTableLayoutArea();
             KillFoodSettlementLayoutTween(complete: false);
-            duration = Mathf.Max(0.01f, duration > 0.01f ? duration : (_foodSettlementLayoutDuration > 0.01f ? _foodSettlementLayoutDuration : 0.32f));
+            duration = Mathf.Max(0.01f, duration > 0.01f ? duration : (_foodSettlementLayoutDuration > 0.01f ? _foodSettlementLayoutDuration : 0.64f));
+            bool appended = false;
             if (area != null)
             {
                 var rect = (RectTransform)area.transform;
-                sequence.Join(rect.DOAnchorPos(area.SettlementAnchoredPosition, duration).SetEase(Ease.OutCubic));
+                sequence.Append(rect.DOAnchorPos(area.SettlementAnchoredPosition, duration).SetEase(Ease.OutCubic));
                 sequence.Join(rect.DOSizeDelta(area.SettlementSizeDelta, duration).SetEase(Ease.OutCubic));
+                appended = true;
             }
 
             if (_boardView != null)
             {
-                sequence.Join(_boardView.transform.DOMove(tween.Position, duration).SetEase(Ease.OutCubic));
-                sequence.Join(_boardView.transform.DOScale(Vector3.one * tween.Scale, duration).SetEase(Ease.OutCubic));
+                if (appended)
+                {
+                    sequence.Join(_boardView.transform.DOMove(tween.Position, duration).SetEase(Ease.OutCubic));
+                    sequence.Join(_boardView.transform.DOScale(Vector3.one * tween.Scale, duration).SetEase(Ease.OutCubic));
+                }
+                else
+                {
+                    sequence.Append(_boardView.transform.DOMove(tween.Position, duration).SetEase(Ease.OutCubic));
+                    sequence.Join(_boardView.transform.DOScale(Vector3.one * tween.Scale, duration).SetEase(Ease.OutCubic));
+                }
             }
 
             sequence.OnComplete(() =>

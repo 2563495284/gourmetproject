@@ -6081,6 +6081,7 @@ MonoBehaviour:
   _temporaryArea: {fileID: 1438539730758214071}
   _bottomUi: {fileID: 8353400902591911370}
   _foodSettlementLayoutDuration: 0.32
+  _foodSettlementTableLayoutDuration: 0.64
   _foodSettlementHoldDuration: 0.5
   _bossPresentation: {fileID: 4144857813097520945}
 --- !u!114 &8174460409889470152

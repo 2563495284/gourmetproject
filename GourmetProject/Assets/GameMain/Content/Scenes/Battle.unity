@@ -202,7 +202,7 @@ MonoBehaviour:
   _gizmoColor: {r: 0.2, g: 0.9, b: 0.75, a: 0.85}
   _settlementGizmoColor: {r: 1, g: 0.72, b: 0.2, a: 0.7}
   _settlementAnchoredPosition: {x: 0, y: 0.2}
-  _settlementSizeDelta: {x: 11.3, y: 8.4}
+  _settlementSizeDelta: {x: 11.3, y: 9.2}
 --- !u!1 &230226104
 GameObject:
   m_ObjectHideFlags: 0
@@ -351,7 +351,7 @@ MonoBehaviour:
   _scopeHighlights: {fileID: 420685138}
   _doodle: {fileID: 232143573}
   _sceneBoardArea: {fileID: 151614394}
-  _foodSettlementLayoutDuration: 0.32
+  _foodSettlementLayoutDuration: 0.64
   _temporaryArea: {fileID: 0}
   _boardCellPrefab: {fileID: 6341408356780686608, guid: 51f2e9c520382400dbab9879cf9e2308, type: 3}
   _dishPiecePrefab: {fileID: 8981609610198139403, guid: 6cfc41d91a00c45199a5910983b1608b, type: 3}

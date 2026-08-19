@@ -17,8 +17,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [Tooltip("结算时 TableLayoutArea 的锚点位置。默认向下扩进 BottomUI 腾出的空间。")]
         [SerializeField] private Vector2 _settlementAnchoredPosition = new Vector2(0f, 0.2f);
         [Tooltip("结算时 TableLayoutArea 的尺寸。默认加高、左右不动。")]
-        [SerializeField] private Vector2 _settlementSizeDelta = new Vector2(11.3f, 8.4f);
-        private const float DefaultSettlementExtraHeight = 1.2f;
+        [SerializeField] private Vector2 _settlementSizeDelta = new Vector2(11.3f, 9.2f);
+        private const float DefaultSettlementExtraHeight = 2f;
 
         private Vector2 _restAnchoredPosition;
         private Vector2 _restSizeDelta;
