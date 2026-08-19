@@ -26,15 +26,15 @@
     "condUnit": 0,
     "condMode": 2,
     "condParam": "",
-    "actionType": 9,
+    "actionType": 1,
     "actionScope": 21,
     "actionCount": 0,
     "actionValue": [
-      0.5
+      10
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{ascope}\n[strong]倍率[/strong][multadd]{0}[/multadd]",
+    "descTemplate": "{ascope}\n[strong]分数[/strong][score]{0}[/score]",
     "termId": ""
   },
   {
@@ -64,15 +64,15 @@
     "condUnit": 0,
     "condMode": 2,
     "condParam": "",
-    "actionType": 9,
+    "actionType": 1,
     "actionScope": 22,
     "actionCount": 0,
     "actionValue": [
-      0.5
+      10
     ],
     "actionParam": [],
     "signed": true,
-    "descTemplate": "{ascope}\n[strong]倍率[/strong][multadd]{0}[/multadd]",
+    "descTemplate": "{ascope}\n[strong]分数[/strong][score]{0}[/score]",
     "termId": ""
   },
   {
@@ -144,7 +144,7 @@
     "actionScope": 23,
     "actionCount": 0,
     "actionValue": [
-      10
+      6
     ],
     "actionParam": [],
     "signed": true,

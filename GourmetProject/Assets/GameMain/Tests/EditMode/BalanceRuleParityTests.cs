@@ -73,7 +73,7 @@ namespace GourmetProject.Tests.EditMode
 
             loop.OnBattleSettled(EmptyScore(), isWin: false, finalHappyCakeLayers: 0);
 
-            Assert.That(run.HeartsRemaining, Is.EqualTo(1));
+            Assert.That(run.HeartsRemaining, Is.EqualTo(2));
             Assert.That(run.HasItem("item_famous_knife"), Is.False);
             Assert.That(view.HeartBreak, Is.Null);
             Assert.That(view.NoticeCount, Is.EqualTo(1));

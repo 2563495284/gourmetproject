@@ -60,16 +60,87 @@
       position: sticky;
       top: 0;
       z-index: 10;
-      display: grid;
-      grid-template-columns: 1fr auto auto;
+      display: flex;
+      flex-direction: column;
       gap: 12px;
-      align-items: center;
       margin-bottom: 18px;
       padding: 12px;
       border: 1px solid var(--line);
       border-radius: 16px;
       background: color-mix(in srgb, var(--panel) 92%, transparent);
       backdrop-filter: blur(12px);
+    }
+
+    .toolbar-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .filter-rows {
+      display: grid;
+      gap: 8px;
+    }
+
+    .filter-rows[hidden] {
+      display: none;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .chip-row[hidden] {
+      display: none;
+    }
+
+    .chip-label {
+      min-width: 2.5em;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel-2);
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .chip .count {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .chip[aria-pressed="true"] {
+      border-color: var(--chip, var(--accent));
+      color: var(--chip, var(--accent));
+      background: color-mix(in srgb, var(--chip, var(--accent)) 14%, transparent);
+    }
+
+    .chip[aria-pressed="true"] .count {
+      color: inherit;
     }
 
     input,
@@ -81,6 +152,10 @@
       background: var(--panel-2);
       color: var(--text);
       font: inherit;
+    }
+
+    button.chip {
+      min-height: 32px;
     }
 
     input {
@@ -137,10 +212,30 @@
       border-color: color-mix(in srgb, var(--warning) 65%, var(--line));
     }
 
+    .card-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
     .card h2 {
       margin: 0;
       font-size: 20px;
       line-height: 1.25;
+    }
+
+    .quality-pill {
+      flex: 0 0 auto;
+      padding: 2px 8px;
+      border: 1px solid color-mix(in srgb, var(--chip) 55%, var(--line));
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--chip) 12%, transparent);
+      color: var(--chip);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
     }
 
     .food-stats {
@@ -315,7 +410,7 @@
     }
 
     @media (max-width: 720px) {
-      .toolbar {
+      .toolbar-row {
         grid-template-columns: 1fr;
       }
     }
@@ -327,12 +422,24 @@
     <p class="lead">读取 <code>Assets/StreamingAssets/Config</code>，把描述模板里的参数占位符回填后展示。</p>
 
     <section class="toolbar" aria-label="筛选工具">
-      <input id="search" type="search" placeholder="搜索名称、描述或 id" autocomplete="off">
-      <select id="mode">
-        <option value="dish">食物技能拼接（TbSkill）</option>
-        <option value="item">装饰品和消耗品描述（TbPassiveItem / TbActiveItem）</option>
-      </select>
-      <button id="toggleParams" type="button" aria-pressed="false">显示参数</button>
+      <div class="toolbar-row">
+        <input id="search" type="search" placeholder="搜索名称、描述或 id" autocomplete="off">
+        <select id="mode">
+          <option value="dish">食物技能拼接（TbSkill）</option>
+          <option value="item">装饰品和消耗品描述（TbPassiveItem / TbActiveItem）</option>
+        </select>
+        <button id="toggleParams" type="button" aria-pressed="false">显示参数</button>
+      </div>
+      <div id="itemFilters" class="filter-rows" hidden>
+        <div class="chip-row" aria-label="类型筛选">
+          <span class="chip-label">类型</span>
+          <div id="kindChips" class="chips"></div>
+        </div>
+        <div class="chip-row" aria-label="品质筛选">
+          <span class="chip-label">品质</span>
+          <div id="qualityChips" class="chips"></div>
+        </div>
+      </div>
     </section>
 
     <p id="status" class="status">正在加载配置...</p>
@@ -378,10 +485,28 @@
       "执行",
     ]));
 
+    const ITEM_KINDS = Object.freeze([
+      { value: "all", label: "全部" },
+      { value: "Passive", label: "装饰品" },
+      { value: "Active", label: "消耗品" },
+    ]);
+    const ITEM_QUALITIES = Object.freeze([
+      { value: 0, id: "Common", label: "普通", color: "#ebe1bd" },
+      { value: 1, id: "Uncommon", label: "罕见", color: "#80db75" },
+      { value: 2, id: "Rare", label: "稀有", color: "#599eff" },
+      { value: 3, id: "Epic", label: "史诗", color: "#bd6bff" },
+      { value: 4, id: "Legendary", label: "传奇", color: "#ffb738" },
+      { value: 5, id: "Negative", label: "诅咒", color: "#ff8278" },
+    ]);
+    const QUALITY_BY_VALUE = Object.freeze(Object.fromEntries(
+      ITEM_QUALITIES.map(quality => [quality.value, quality])));
+
     const state = {
       mode: "dish",
       query: "",
       showParams: false,
+      itemKind: "all",
+      qualities: new Set(),
       data: null,
     };
 
@@ -429,6 +554,9 @@
     const searchInput = document.getElementById("search");
     const modeSelect = document.getElementById("mode");
     const toggleParams = document.getElementById("toggleParams");
+    const itemFilters = document.getElementById("itemFilters");
+    const kindChips = document.getElementById("kindChips");
+    const qualityChips = document.getElementById("qualityChips");
     const statusEl = document.getElementById("status");
     const listEl = document.getElementById("list");
 
@@ -446,6 +574,36 @@
       state.showParams = !state.showParams;
       toggleParams.setAttribute("aria-pressed", String(state.showParams));
       toggleParams.textContent = state.showParams ? "隐藏参数" : "显示参数";
+      render();
+    });
+
+    kindChips.addEventListener("click", event => {
+      const button = event.target.closest("[data-kind]");
+      if (!button) {
+        return;
+      }
+
+      state.itemKind = button.dataset.kind;
+      render();
+    });
+
+    qualityChips.addEventListener("click", event => {
+      const button = event.target.closest("[data-quality]");
+      if (!button) {
+        return;
+      }
+
+      if (button.dataset.quality === "all") {
+        state.qualities.clear();
+      } else {
+        const quality = Number(button.dataset.quality);
+        if (state.qualities.has(quality)) {
+          state.qualities.delete(quality);
+        } else {
+          state.qualities.add(quality);
+        }
+      }
+
       render();
     });
 
@@ -499,8 +657,16 @@
       }
 
       const rows = state.mode === "item" ? buildItemRows() : buildDishRows();
-      const filtered = filterRows(rows);
+      const afterKind = applyItemKindFilter(rows);
+      const filtered = filterRows(afterKind);
       const issueCount = filtered.reduce((sum, row) => sum + (row.issues || []).length, 0);
+      const isItemMode = state.mode === "item";
+
+      itemFilters.hidden = !isItemMode;
+      if (isItemMode) {
+        renderKindChips(rows);
+        renderQualityChips(afterKind);
+      }
 
       statusEl.className = issueCount > 0 ? "status warning" : "status";
       statusEl.textContent = `共 ${rows.length} 条，当前显示 ${filtered.length} 条${issueCount > 0 ? `，发现 ${issueCount} 个问题` : "，占位符均已解析"}。`;
@@ -623,13 +789,22 @@
         const unresolved = findUnresolvedTokens(desc);
         const issues = unresolved.length > 0 ? [`未解析：${unresolved.join("、")}`] : [];
         issues.push(...findSemanticTagIssues(desc));
+        const quality = item.itemKind === "Passive" && Number.isInteger(Number(item.quality))
+          ? Number(item.quality)
+          : null;
+        const qualityInfo = quality == null ? null : QUALITY_BY_VALUE[quality];
         return {
           id: item.id,
           name: item.name || item.id,
           desc,
+          itemKind: item.itemKind || "",
+          quality,
+          qualityLabel: qualityInfo?.label || "",
+          qualityColor: qualityInfo?.color || "",
           meta: [
             `item:${item.id}`,
             `kind:${item.itemKind || ""}`,
+            ...(qualityInfo ? [`品质:${qualityInfo.label}`] : []),
             ...(state.showParams ? [
               `effect:${item.effectType || ""}`,
               `value:${formatPlain(item.effectValue || 0)}`,
@@ -643,7 +818,7 @@
             `effect: type=${item.effectType || "（空）"} value=${formatPlain(item.effectValue || 0)} param=${item.effectParam || "（空）"}`,
           ] : [],
         };
-      });
+      }).sort(compareItemRows);
     }
 
     function composeItemDesc(item) {
@@ -726,16 +901,31 @@
       return "份";
     }
 
-    function filterRows(rows) {
-      if (!state.query) {
+    function applyItemKindFilter(rows) {
+      if (state.mode !== "item" || state.itemKind === "all") {
         return rows;
       }
 
+      return rows.filter(row => row.itemKind === state.itemKind);
+    }
+
+    function filterRows(rows) {
       return rows.filter(row => {
+        if (state.mode === "item" && state.qualities.size > 0) {
+          if (row.quality == null || !state.qualities.has(row.quality)) {
+            return false;
+          }
+        }
+
+        if (!state.query) {
+          return true;
+        }
+
         const haystack = [
           row.id,
           row.name,
           row.desc,
+          row.qualityLabel,
           row.foodStats?.score,
           row.foodStats?.size,
           row.foodStats?.servings,
@@ -751,8 +941,66 @@
       });
     }
 
+    function compareItemRows(left, right) {
+      const leftQuality = left.quality == null ? 100 : left.quality;
+      const rightQuality = right.quality == null ? 100 : right.quality;
+      if (leftQuality !== rightQuality) {
+        return leftQuality - rightQuality;
+      }
+
+      return String(left.name || "").localeCompare(String(right.name || ""), "zh-CN");
+    }
+
+    function renderKindChips(rows) {
+      const counts = countBy(rows, row => row.itemKind);
+      kindChips.innerHTML = ITEM_KINDS.map(kind => {
+        const count = kind.value === "all" ? rows.length : (counts[kind.value] || 0);
+        const pressed = state.itemKind === kind.value;
+        return `<button type="button" class="chip" data-kind="${kind.value}" aria-pressed="${pressed}">${kind.label}<span class="count">${count}</span></button>`;
+      }).join("");
+    }
+
+    function renderQualityChips(rows) {
+      const qualityRow = qualityChips.closest(".chip-row");
+      const counts = countBy(rows, row => row.quality);
+      const visible = ITEM_QUALITIES.filter(quality =>
+        (counts[quality.value] || 0) > 0 || state.qualities.has(quality.value));
+      if (visible.length === 0 && state.qualities.size === 0) {
+        qualityRow.hidden = true;
+        qualityChips.innerHTML = "";
+        return;
+      }
+
+      qualityRow.hidden = false;
+      const allPressed = state.qualities.size === 0;
+      const allChip = `<button type="button" class="chip" data-quality="all" aria-pressed="${allPressed}">全部<span class="count">${rows.length}</span></button>`;
+      const qualityButtons = visible.map(quality => {
+        const count = counts[quality.value] || 0;
+        const pressed = state.qualities.has(quality.value);
+        return `<button type="button" class="chip" data-quality="${quality.value}" aria-pressed="${pressed}" style="--chip:${quality.color}">${quality.label}<span class="count">${count}</span></button>`;
+      }).join("");
+      qualityChips.innerHTML = allChip + qualityButtons;
+    }
+
+    function countBy(rows, keyFn) {
+      const counts = {};
+      for (const row of rows || []) {
+        const key = keyFn(row);
+        if (key == null || key === "") {
+          continue;
+        }
+
+        counts[key] = (counts[key] || 0) + 1;
+      }
+
+      return counts;
+    }
+
     function renderCard(row) {
       const foodStats = renderFoodStats(row.foodStats);
+      const qualityPill = row.qualityLabel
+        ? `<span class="quality-pill" style="--chip:${escapeHtml(row.qualityColor)}">${escapeHtml(row.qualityLabel)}</span>`
+        : "";
       const meta = (row.meta || []).map((text, index) => (
         `<span class="pill ${index === 0 ? "accent" : ""}">${escapeHtml(text)}</span>`
       )).join("");
@@ -765,10 +1013,16 @@
       const details = (row.details || []).map(text => (
         `<div class="detail">${escapeHtml(text)}</div>`
       )).join("");
+      const cardStyle = row.qualityColor
+        ? ` style="border-color:color-mix(in srgb, ${escapeHtml(row.qualityColor)} 48%, var(--line))"`
+        : "";
 
       return `
-        <article class="card ${(row.issues || []).length > 0 ? "has-issues" : ""}">
-          <h2>${escapeHtml(row.name)}</h2>
+        <article class="card ${(row.issues || []).length > 0 ? "has-issues" : ""}"${cardStyle}>
+          <div class="card-head">
+            <h2>${escapeHtml(row.name)}</h2>
+            ${qualityPill}
+          </div>
           ${foodStats}
           <p class="desc">${renderRichText(row.desc || "（无描述）")}</p>
           ${issues ? `<div class="issues">${issues}</div>` : ""}

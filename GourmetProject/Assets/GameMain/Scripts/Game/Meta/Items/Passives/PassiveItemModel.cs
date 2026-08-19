@@ -203,6 +203,9 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>是否为「不死」装饰品和消耗品（供保底与失败判定；本模型对应装饰品和消耗品会被消耗移除）。</summary>
         public virtual bool IsUndying() => false;
 
+        /// <summary>不死生效后要把红心恢复到的目标颗数（不超过上限）。默认 1。</summary>
+        public virtual int UndyingRestoreHearts() => 1;
+
         // ================= 上菜族 =================
 
         /// <summary>观星「每 N 次上菜后可预见」的周期（无则 0）。</summary>

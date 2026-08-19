@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Scoring;
@@ -44,12 +45,15 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
-    /// <summary>名刀·加护：不死。</summary>
+    /// <summary>名刀·加护：不死，生效后恢复到配置颗数的红心。</summary>
     [Preserve]
     [PassiveItemModel("item_famous_knife")]
     public sealed class UndyingModel : PassiveItemModel
     {
         public override bool IsUndying() => true;
+
+        public override int UndyingRestoreHearts()
+            => Math.Max(1, (int)Math.Round(Value, MidpointRounding.AwayFromZero));
     }
 
     [Preserve]

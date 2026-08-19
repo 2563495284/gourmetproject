@@ -359,10 +359,10 @@
   {
     "id": "item_famous_knife",
     "name": "名刀展示架",
-    "desc": "即将失败时\n恢复至1颗红心\n生效1次后失效",
+    "desc": "即将失败时\n恢复至2颗红心\n生效1次后失效",
     "quality": 2,
     "specialTags": 0,
-    "effectValue": 0,
+    "effectValue": 2,
     "effectParam": "",
     "baseWeight": 30,
     "targetScoreHiddenOffset": 0,

@@ -570,13 +570,13 @@ namespace GourmetProject.Game.Orchestration
             }
 
             int heartLoss = HeartLossPerFailedBattle;
-            if (_run.HeartsRemaining <= heartLoss && _run.TryConsumeUndying())
+            if (_run.HeartsRemaining <= heartLoss && _run.TryConsumeUndying(out int restoreToHearts))
             {
-                // 最后一颗心优先由名刀挡下：不失去红心，仍按“失败但存活”完整结算本场奖励。
-                // 兼容旧存档已经为 0 心的中断状态：名刀生效后显式保证至少 1 心。
-                if (_run.HeartsRemaining < 1)
+                // 最后一颗心优先由名刀挡下：不失去红心，并恢复到配置目标颗数，仍按“失败但存活”完整结算本场奖励。
+                int missingHearts = restoreToHearts - _run.HeartsRemaining;
+                if (missingHearts > 0)
                 {
-                    _run.RestoreHearts(1);
+                    _run.RestoreHearts(missingHearts);
                 }
 
                 TrackBattleSettled(
@@ -595,7 +595,7 @@ namespace GourmetProject.Game.Orchestration
                 string itemName = ItemDefinition.Get(_run.Tables, "item_famous_knife")?.Name ?? "名刀";
                 _view.ShowNotice(
                     itemName,
-                    $"[strong]分数[/strong]未达标，但{itemName}替你挡下了失败（[term]装饰品[/term]和[term]消耗品[/term]已消耗）。",
+                    $"[strong]分数[/strong]未达标，但{itemName}替你挡下了失败，红心恢复至{_run.HeartsRemaining}颗（[term]装饰品[/term]和[term]消耗品[/term]已消耗）。",
                     () =>
                     {
                         _view.OpenRewardForm(RewardFormOpenArgs.BattleReward());
