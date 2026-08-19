@@ -137,8 +137,6 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SpriteRenderer _scopeTargetGlow;
         [Tooltip("常驻美味值标签的独立表现器。")]
         [SerializeField] private DishPieceValueBadgePresenter _dishValueBadgePresenter;
-        [Tooltip("甜蜜传递 Buff 层数文字（prefab 预拼）。")]
-        [SerializeField] private TextMeshPro _sweetTransferBuffTextPrefab;
 
         [Header("落定反馈（仅作用于本体视觉枢轴，不影响格子锚点/碰撞盒）")]
         [SerializeField] private bool _useOccupiedCentroidPivot = true;
@@ -225,9 +223,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _sweetTransferSourceActive;
         private bool _sweetTransferExecutorActive;
         private bool _triggerSweetTransferActivatorActive;
-        private Transform _sweetTransferBuffMarkerRoot;
-        private int _gummyBuffLayers;
-        private int _marshmallowBuffLayers;
         private readonly Dictionary<SpriteRenderer, Color> _activeItemDimColors = new Dictionary<SpriteRenderer, Color>();
         private readonly Dictionary<SpriteRenderer, Color> _settlementFocusColors = new Dictionary<SpriteRenderer, Color>();
         private MaterialPropertyBlock _activeItemTransformBlock;
@@ -274,85 +269,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal void AddSweetTransferBuffMarker(SkillActionType actionType)
         {
-            if (actionType == SkillActionType.TriggerSweetTransfer)
-            {
-                _marshmallowBuffLayers++;
-            }
-            else
-            {
-                _gummyBuffLayers++;
-            }
-
-            RebuildSweetTransferBuffMarkers();
+            // Buff 仍由结算逻辑正常应用，但不再在食物上显示数值标记。
         }
 
         internal void ClearSweetTransferBuffMarkers()
         {
-            _gummyBuffLayers = 0;
-            _marshmallowBuffLayers = 0;
-            if (_sweetTransferBuffMarkerRoot != null)
-            {
-                Destroy(_sweetTransferBuffMarkerRoot.gameObject);
-                _sweetTransferBuffMarkerRoot = null;
-            }
-        }
-
-        private void RebuildSweetTransferBuffMarkers()
-        {
-            if (_sweetTransferBuffMarkerRoot != null)
-            {
-                Destroy(_sweetTransferBuffMarkerRoot.gameObject);
-            }
-
-            GameObject root = new("SweetTransferBuffMarkers");
-            root.transform.SetParent(transform, false);
-            Bounds bounds = WorldBounds;
-            Vector3 worldAnchor = new(
-                bounds.center.x,
-                bounds.max.y + Mathf.Max(0.16f, _cellSize * 0.13f),
-                transform.position.z - 0.03f);
-            root.transform.localPosition = transform.InverseTransformPoint(worldAnchor);
-            _sweetTransferBuffMarkerRoot = root.transform;
-
-            float x = _gummyBuffLayers > 0 && _marshmallowBuffLayers > 0 ? -0.28f : 0f;
-            if (_gummyBuffLayers > 0)
-            {
-                string suffix = _gummyBuffLayers > 1 ? $" ×{_gummyBuffLayers}" : string.Empty;
-                CreateSweetTransferBuffText(
-                    "GummyBuff",
-                    $"×1.5{suffix}",
-                    x,
-                    SettlementColorPalette.SweetTransfer);
-                x += 0.56f;
-            }
-
-            if (_marshmallowBuffLayers > 0)
-            {
-                string suffix = _marshmallowBuffLayers > 1 ? $" ×{_marshmallowBuffLayers}" : string.Empty;
-                CreateSweetTransferBuffText(
-                    "MarshmallowBuff",
-                    $"+2{suffix}",
-                    x,
-                    SettlementColorPalette.SweetTransfer);
-            }
-        }
-
-        private void CreateSweetTransferBuffText(string name, string text, float localX, Color color)
-        {
-            if (_sweetTransferBuffTextPrefab == null)
-            {
-                Debug.LogError($"{nameof(DishPieceView)} 缺少甜蜜传递 Buff 文字 prefab。", this);
-                return;
-            }
-
-            TextMeshPro mesh = Instantiate(_sweetTransferBuffTextPrefab, _sweetTransferBuffMarkerRoot);
-            mesh.name = name;
-            mesh.text = text;
-            mesh.ForceMeshUpdate(true, true);
-            mesh.transform.localPosition += Vector3.right * localX;
-            mesh.color = color;
-            mesh.outlineColor = SettlementColorPalette.WithAlpha(SettlementColorPalette.TextInk, 0.90f);
-            mesh.outlineWidth = 0.18f;
         }
 
         public void BuildPlaced(DishInstance instance, Sprite sprite, float cellSize, float pitch, Action<DishInstance> clicked)

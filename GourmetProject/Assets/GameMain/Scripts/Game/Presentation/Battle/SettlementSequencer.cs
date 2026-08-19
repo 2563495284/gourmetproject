@@ -868,6 +868,33 @@ namespace GourmetProject.Game.Presentation.Battle
             return line?.DishInstanceId ?? 0;
         }
 
+        /// <summary>
+        /// 甜蜜传递响应的数值实际作用于 Trace 中锁定的全部目标，因此结果提示也必须逐目标显示。
+        /// 其他结算行仍保持单目标提示。
+        /// </summary>
+        internal static IReadOnlyList<int> ResultVisualDishInstanceIds(ScoreLine line)
+        {
+            IReadOnlyList<int> visualIds = line?.Trace?.VisualTargetDishInstanceIds;
+            if (IsSweetTransferResponseLine(line) && visualIds != null && visualIds.Count > 0)
+            {
+                var result = new List<int>(visualIds.Count);
+                var seen = new HashSet<int>();
+                for (int i = 0; i < visualIds.Count; i++)
+                {
+                    int id = visualIds[i];
+                    if (id > 0 && seen.Add(id))
+                    {
+                        result.Add(id);
+                    }
+                }
+
+                return result;
+            }
+
+            int fallbackId = ResultVisualDishInstanceId(line);
+            return fallbackId > 0 ? new[] { fallbackId } : Array.Empty<int>();
+        }
+
         internal static bool IsSweetTransferAnnounceLine(ScoreLine line)
         {
             return IsSweetTransferLaunchLine(line) || IsExtraTargetBuffLine(line);
@@ -1580,7 +1607,11 @@ namespace GourmetProject.Game.Presentation.Battle
                         line.DishInstanceId,
                         out int primaryIndex)
                     && primaryIndex == i;
-                dishViews.TryGetValue(ResultVisualDishInstanceId(line), out DishPieceView target);
+                IReadOnlyList<int> resultVisualIds = ResultVisualDishInstanceIds(line);
+                DishPieceView target = resultVisualIds.Count > 0
+                    && dishViews.TryGetValue(resultVisualIds[0], out DishPieceView firstTarget)
+                        ? firstTarget
+                        : null;
                 if (target != null && ChangesDishValue(line.Kind))
                 {
                     target.SetDishValueBadge(contribution);
@@ -1606,18 +1637,42 @@ namespace GourmetProject.Game.Presentation.Battle
                     reachedTarget);
                 if (!showOnlyResponseSummaries || IsSweetTransferResponseLine(line))
                 {
-                    resultTasks.Add(_stage.ShowResultAsync(
-                        group,
-                        line,
-                        target,
-                        contribution,
-                        ledger.CurrentTotal,
-                        resultDuration,
-                        impactTier,
-                        Mathf.Lerp(0.96f, 1.18f, NormalizedProgress(playback)),
-                        playPrimaryFeedback,
-                        cancellationToken,
-                        holdUntilCleared: holdResultLabels && IsSweetTransferAnnounceLine(line)));
+                    float audioPitch = Mathf.Lerp(0.96f, 1.18f, NormalizedProgress(playback));
+                    bool holdUntilCleared = holdResultLabels && IsSweetTransferAnnounceLine(line);
+                    if (resultVisualIds.Count == 0)
+                    {
+                        resultTasks.Add(_stage.ShowResultAsync(
+                            group,
+                            line,
+                            null,
+                            contribution,
+                            ledger.CurrentTotal,
+                            resultDuration,
+                            impactTier,
+                            audioPitch,
+                            playPrimaryFeedback,
+                            cancellationToken,
+                            holdUntilCleared));
+                    }
+                    else
+                    {
+                        for (int targetIndex = 0; targetIndex < resultVisualIds.Count; targetIndex++)
+                        {
+                            dishViews.TryGetValue(resultVisualIds[targetIndex], out DishPieceView resultTarget);
+                            resultTasks.Add(_stage.ShowResultAsync(
+                                group,
+                                line,
+                                resultTarget,
+                                contribution,
+                                ledger.CurrentTotal,
+                                resultDuration,
+                                impactTier,
+                                audioPitch,
+                                playPrimaryFeedback,
+                                cancellationToken,
+                                holdUntilCleared));
+                        }
+                    }
                 }
 
                 PromoteSettlementPace(playback, nextPhase);
