@@ -8,16 +8,13 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150
+    "price": 150,
+    "archetypeTags": []
   },
   {
     "id": "item_gold_random",
@@ -28,16 +25,13 @@
     "effectValue": 0,
     "effectParam": "range:30,200",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_gold_meal_bonus",
@@ -48,16 +42,13 @@
     "effectValue": 15,
     "effectParam": "meals:10",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_gold_boss",
@@ -68,16 +59,13 @@
     "effectValue": 120,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_gold_percent",
@@ -88,16 +76,13 @@
     "effectValue": 0.2,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_trash_upgrade",
@@ -108,16 +93,13 @@
     "effectValue": 1,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 50
+    "price": 50,
+    "archetypeTags": []
   },
   {
     "id": "item_trash_expand",
@@ -128,16 +110,13 @@
     "effectValue": 1,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 50
+    "price": 50,
+    "archetypeTags": []
   },
   {
     "id": "item_trash_evolve",
@@ -148,16 +127,13 @@
     "effectValue": 2,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_trash_mutate",
@@ -168,16 +144,13 @@
     "effectValue": 2,
     "effectParam": "",
     "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 120
+    "price": 120,
+    "archetypeTags": []
   },
   {
     "id": "item_discount_food",
@@ -188,16 +161,13 @@
     "effectValue": 0.15,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_discount_fragment",
@@ -208,16 +178,13 @@
     "effectValue": 0.15,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_discount_active",
@@ -228,16 +195,13 @@
     "effectValue": 0.15,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_discount_adjust",
@@ -248,16 +212,13 @@
     "effectValue": 0.15,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_discount_passive",
@@ -268,16 +229,13 @@
     "effectValue": 0.15,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_discount_remove",
@@ -288,16 +246,13 @@
     "effectValue": 0.15,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_discount_food_festival",
@@ -308,16 +263,13 @@
     "effectValue": 0.25,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_discount_fragment_festival",
@@ -328,16 +280,13 @@
     "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_discount_active_festival",
@@ -348,16 +297,13 @@
     "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_discount_adjust_festival",
@@ -368,16 +314,13 @@
     "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_discount_passive_festival",
@@ -388,16 +331,13 @@
     "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_discount_remove_festival",
@@ -408,16 +348,13 @@
     "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_famous_knife",
@@ -428,16 +365,13 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150
+    "price": 150,
+    "archetypeTags": []
   },
   {
     "id": "item_heart_flat_all",
@@ -448,16 +382,13 @@
     "effectValue": 10,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_empty_heart_mult_all",
@@ -468,16 +399,13 @@
     "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_score_to_one",
@@ -488,16 +416,13 @@
     "effectValue": 0,
     "effectParam": "meals:2",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_req_normal_down",
@@ -508,16 +433,13 @@
     "effectValue": -0.25,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_req_super_down",
@@ -528,16 +450,13 @@
     "effectValue": -0.25,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_req_feast_down",
@@ -548,16 +467,13 @@
     "effectValue": -0.2,
     "effectParam": "",
     "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_count_le_mult",
@@ -568,36 +484,15 @@
     "effectValue": 0.5,
     "effectParam": "lte:15",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
-  },
-  {
-    "id": "item_count_ge_mult",
-    "name": "多层餐盘架",
-    "desc": "[context]结算开始[/context]\n若食物[strong]份数[/strong]≥25\n[context]所有[/context]食物[strong]倍率[/strong][multadd]+0.5[/multadd]",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 0.5,
-    "effectParam": "gte:25",
-    "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": [
+      1
+    ]
   },
   {
     "id": "item_perma_flat_all",
@@ -608,16 +503,13 @@
     "effectValue": 20,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_perma_flat_all_plus",
@@ -628,16 +520,13 @@
     "effectValue": 40,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_gold_on_shop",
@@ -648,16 +537,13 @@
     "effectValue": 15,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_extra_interest",
@@ -668,16 +554,13 @@
     "effectValue": 1,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_interest_cap",
@@ -688,16 +571,13 @@
     "effectValue": 100,
     "effectParam": "",
     "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_loan",
@@ -708,16 +588,13 @@
     "effectValue": 150,
     "effectParam": "act_loan_repay",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_timeline_random",
@@ -728,16 +605,13 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_extra_day",
@@ -748,16 +622,13 @@
     "effectValue": 8,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_every3_next_mult",
@@ -768,16 +639,13 @@
     "effectValue": 1,
     "effectParam": "every:3",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_first_+2",
@@ -788,16 +656,13 @@
     "effectValue": 3,
     "effectParam": "index:1",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_last_+2",
@@ -808,16 +673,13 @@
     "effectValue": 3,
     "effectParam": "index:-1",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_extra_active_slots",
@@ -828,16 +690,13 @@
     "effectValue": 2,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_extra_active_slots_max",
@@ -848,16 +707,13 @@
     "effectValue": 3,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_gold_on_active",
@@ -868,16 +724,13 @@
     "effectValue": 10,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_block_active",
@@ -888,16 +741,13 @@
     "effectValue": 400,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_flavor_enhance",
@@ -908,16 +758,13 @@
     "effectValue": 2,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_flavor_remove_gold",
@@ -928,16 +775,13 @@
     "effectValue": 100,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_flavor_remove_double",
@@ -948,16 +792,13 @@
     "effectValue": 2,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_flavor_double_slot",
@@ -968,36 +809,13 @@
     "effectValue": 1,
     "effectParam": "",
     "baseWeight": 10,
-    "hiddenRange": {
-      "min": 40,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 240
-  },
-  {
-    "id": "item_celltag_enhance",
-    "name": "拼花砖壁饰",
-    "desc": "为3个餐桌格\n强化随机材质",
-    "quality": 0,
-    "specialTags": 0,
-    "effectValue": 3,
-    "effectParam": "",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 40
+    "price": 240,
+    "archetypeTags": []
   },
   {
     "id": "item_lucky_guarantee",
@@ -1008,16 +826,13 @@
     "effectValue": 3,
     "effectParam": "",
     "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150
+    "price": 150,
+    "archetypeTags": []
   },
   {
     "id": "item_lucky_chance",
@@ -1028,16 +843,13 @@
     "effectValue": 0.4,
     "effectParam": "",
     "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150
+    "price": 150,
+    "archetypeTags": []
   },
   {
     "id": "item_more_events",
@@ -1048,16 +860,13 @@
     "effectValue": 0.4,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_more_super_actions",
@@ -1068,16 +877,13 @@
     "effectValue": 1,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_slot_win_chance",
@@ -1088,16 +894,13 @@
     "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_dish_hidden_bonus",
@@ -1108,16 +911,13 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 10,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_fragment_hidden_bonus",
@@ -1128,16 +928,13 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 10,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_passive_hidden_bonus",
@@ -1148,16 +945,13 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 10,
+    "itemLuckOffset": 6,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_gold_on_event",
@@ -1168,16 +962,13 @@
     "effectValue": 15,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_shop_restock",
@@ -1188,16 +979,13 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_shop_restock_active",
@@ -1208,16 +996,13 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 50
+    "price": 50,
+    "archetypeTags": []
   },
   {
     "id": "item_shop_restock_passive",
@@ -1228,16 +1013,13 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 50
+    "price": 50,
+    "archetypeTags": []
   },
   {
     "id": "item_choice_count_plus1",
@@ -1248,16 +1030,13 @@
     "effectValue": 1,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_extra_food_choice",
@@ -1268,16 +1047,13 @@
     "effectValue": 0,
     "effectParam": "every:4",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_extra_item_choice",
@@ -1288,16 +1064,13 @@
     "effectValue": 0,
     "effectParam": "every:3",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_copy_food",
@@ -1308,16 +1081,13 @@
     "effectValue": 3,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_discard_negative",
@@ -1328,36 +1098,30 @@
     "effectValue": 2,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_discard_negative_gold",
     "name": "旧餐具寄卖架",
-    "desc": "获得时\n移除所有诅咒[term]装饰品[/term]\n每移除一个获得[gold]40金币[/gold]",
+    "desc": "获得时\n移除所有诅咒[term]装饰品[/term]\n每移除1个获得[gold]40金币[/gold]",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 40,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_gold_meal_penalty",
@@ -1368,16 +1132,13 @@
     "effectValue": -0.2,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_shop_price_up",
@@ -1388,16 +1149,13 @@
     "effectValue": 0.2,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_no_remove",
@@ -1408,16 +1166,13 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_skip_node",
@@ -1428,16 +1183,13 @@
     "effectValue": 1,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_skip_reward_node",
@@ -1448,16 +1200,13 @@
     "effectValue": 1,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 50
+    "price": 50,
+    "archetypeTags": []
   },
   {
     "id": "item_choice_minus1",
@@ -1468,16 +1217,13 @@
     "effectValue": -1,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_req_normal_up",
@@ -1488,16 +1234,13 @@
     "effectValue": 0.2,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_req_super_up",
@@ -1508,16 +1251,13 @@
     "effectValue": 0.2,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_req_feast_up",
@@ -1528,16 +1268,13 @@
     "effectValue": 0.2,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_gold_week_clear",
@@ -1548,16 +1285,13 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_double_daily_cost_repeat_node",
@@ -1568,16 +1302,13 @@
     "effectValue": 1.5,
     "effectParam": "repeat:2",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 50
+    "price": 50,
+    "archetypeTags": []
   },
   {
     "id": "item_timeline_stop_chance",
@@ -1588,256 +1319,51 @@
     "effectValue": 0.3,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_count_as_all",
     "name": "九格拼盘",
-    "desc": "[context]结算开始[/context]\n[context]所有[/context]食物[benefit]额外被视为[/benefit]2份食物",
+    "desc": "[context]结算开始[/context]\n[context]所有[/context]食物[benefit]额外视为[/benefit]2份食物",
     "quality": 3,
     "specialTags": 0,
     "effectValue": 2,
     "effectParam": "",
     "baseWeight": 10,
-    "hiddenRange": {
-      "min": 40,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "term_food_count_as",
-    "price": 240
+    "price": 240,
+    "archetypeTags": [
+      1
+    ]
   },
   {
-    "id": "item_transfer_target_mult",
-    "name": "大号糖果盘",
-    "desc": "[term]甜蜜传递[/term]时\n每个被传递方[strong]倍率[/strong][multadd]+0.5[/multadd]",
-    "quality": 2,
-    "specialTags": 0,
-    "effectValue": 0.5,
-    "effectParam": "",
-    "baseWeight": 10,
-    "hiddenRange": {
-      "min": 40,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "term_sweet_transfer",
-    "price": 150
-  },
-  {
-    "id": "item_transfer_source_mult",
-    "name": "长嘴糖浆壶",
-    "desc": "[term]甜蜜传递[/term]时\n传递方每成功传递1个目标\n[strong]倍率[/strong][multadd]+0.5[/multadd]",
-    "quality": 2,
-    "specialTags": 0,
-    "effectValue": 0.5,
-    "effectParam": "",
-    "baseWeight": 10,
-    "hiddenRange": {
-      "min": 40,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "term_sweet_transfer",
-    "price": 150
-  },
-  {
-    "id": "item_skill_count_mult",
-    "name": "主厨刀架",
-    "desc": "[context]结算结束[/context]\n每个食物每有1个技能\n自身[strong]倍率[/strong][multadd]+1[/multadd]",
+    "id": "item_count_as_plus1",
+    "name": "加餐拼盘",
+    "desc": "[context]结算开始[/context]\n[context]所有[/context]食物[benefit]额外视为[/benefit]1份食物",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 1,
     "effectParam": "",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 150
-  },
-  {
-    "id": "item_gold_on_transfer",
-    "name": "黄铜传菜铃",
-    "desc": "累计[term]甜蜜传递[/term]10次后\n获得[gold]15金币[/gold]",
-    "quality": 0,
-    "specialTags": 0,
-    "effectValue": 15,
-    "effectParam": "count:10",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "term_sweet_transfer",
-    "price": 80
-  },
-  {
-    "id": "item_cake_retain",
-    "name": "玻璃蛋糕罩",
-    "desc": "保留10%的[term]蛋糕[/term]层数\n至下一场经营挑战",
-    "quality": 2,
-    "specialTags": 0,
-    "effectValue": 0.1,
-    "effectParam": "",
     "baseWeight": 10,
-    "hiddenRange": {
-      "min": 40,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
-    "termId": "clb",
-    "price": 240
-  },
-  {
-    "id": "item_cake_init_bonus",
-    "name": "厚底蛋糕托",
-    "desc": "[term]蛋糕[/term]层数\n初始额外获得10层",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 10,
-    "effectParam": "",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "clb",
-    "price": 80
-  },
-  {
-    "id": "item_cake_accel",
-    "name": "可叠蛋糕托",
-    "desc": "[term]蛋糕[/term]层数增加时\n额外加2层",
-    "quality": 2,
-    "specialTags": 0,
-    "effectValue": 2,
-    "effectParam": "",
-    "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "clb",
-    "price": 150
-  },
-  {
-    "id": "item_cake_to_gold",
-    "name": "蛋糕价签架",
-    "desc": "[term]蛋糕[/term]层数大于100层时\n获得[gold]10金币[/gold]",
-    "quality": 0,
-    "specialTags": 0,
-    "effectValue": 10,
-    "effectParam": "threshold:100",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "clb",
-    "price": 80
-  },
-  {
-    "id": "item_cake_req_minus",
-    "name": "迷你蛋糕模",
-    "desc": "[term]蛋糕[/term]效果需求的层数-20",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 20,
-    "effectParam": "",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "clb",
-    "price": 80
-  },
-  {
-    "id": "item_transfer_extra_targets",
-    "name": "两层糖果塔",
-    "desc": "[term]甜蜜传递[/term]时\n[benefit]额外选择[/benefit]2个目标",
-    "quality": 3,
-    "specialTags": 0,
-    "effectValue": 2,
-    "effectParam": "",
-    "baseWeight": 10,
-    "hiddenRange": {
-      "min": 40,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "term_sweet_transfer",
-    "price": 240
-  },
-  {
-    "id": "item_flavored_flat",
-    "name": "风味评分牌",
-    "desc": "[context]结算开始[/context]\n拥有风味的食物\n[strong]分数[/strong][score]+30[/score]",
-    "quality": 0,
-    "specialTags": 0,
-    "effectValue": 30,
-    "effectParam": "flavored",
-    "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 40
+    "termId": "term_food_count_as",
+    "price": 150,
+    "archetypeTags": [
+      1
+    ]
   },
   {
     "id": "item_flavored_count_as",
@@ -1848,236 +1374,374 @@
     "effectValue": 1,
     "effectParam": "flavored",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "term_food_count_as",
-    "price": 80
+    "price": 80,
+    "archetypeTags": [
+      1
+    ]
   },
   {
-    "id": "item_active_count_flat_all",
-    "name": "备品清单板",
-    "desc": "[context]结算开始[/context]\n每拥有1个[term]消耗品[/term]\n[context]所有[/context]食物[strong]分数[/strong][score]+10[/score]",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 10,
-    "effectParam": "basis:active-items",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 80
-  },
-  {
-    "id": "item_empty_active_slot_mult_all",
-    "name": "留白备品柜",
-    "desc": "[context]结算开始[/context]\n每拥有1个[term]消耗品[/term]空槽\n[context]所有[/context]食物[strong]倍率[/strong][multadd]+0.1[/multadd]",
-    "quality": 2,
-    "specialTags": 0,
-    "effectValue": 0.1,
-    "effectParam": "basis:empty-active-slots",
-    "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 150
-  },
-  {
-    "id": "item_edge_flat",
-    "name": "滚边桌布",
-    "desc": "[context]结算开始[/context]\n处于边缘的食物\n[strong]分数[/strong][score]+50[/score]",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 50,
-    "effectParam": "position:edge",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 80
-  },
-  {
-    "id": "item_non_edge_mult",
-    "name": "中央餐台模型",
-    "desc": "[context]结算开始[/context]\n处于非边缘的食物\n[strong]倍率[/strong][multadd]+0.5[/multadd]",
+    "id": "item_count_ge_mult",
+    "name": "多层餐盘架",
+    "desc": "[context]结算开始[/context]\n若食物[strong]总份数[/strong]≥25\n[context]所有[/context]食物[strong]倍率[/strong][multadd]+0.5[/multadd]",
     "quality": 1,
     "specialTags": 0,
     "effectValue": 0.5,
-    "effectParam": "position:non-edge",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
+    "effectParam": "gte:25",
+    "baseWeight": 30,
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": [
+      1
+    ]
   },
   {
-    "id": "item_gold_per5_flat_all",
-    "name": "镶币菜单框",
-    "desc": "[context]结算开始[/context]\n每有[gold]5金币[/gold]\n[context]所有[/context]食物[strong]分数[/strong][score]+1[/score]",
-    "quality": 2,
+    "id": "item_self_count_flat",
+    "name": "份数记分牌",
+    "desc": "[context]结算结束[/context]\n所有食物的[strong]分数[/strong][score]+5×N[/score]\n（N为食物自身的份数）",
+    "quality": 0,
+    "specialTags": 0,
+    "effectValue": 5,
+    "effectParam": "",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 80,
+    "archetypeTags": [
+      1
+    ]
+  },
+  {
+    "id": "item_self_count_mult",
+    "name": "份数倍率架",
+    "desc": "[context]结算结束[/context]\n所有食物的[strong]倍率[/strong][multadd]+0.2×N[/multadd]\n（N为食物自身的份数）",
+    "quality": 0,
+    "specialTags": 0,
+    "effectValue": 0.2,
+    "effectParam": "",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 80,
+    "archetypeTags": [
+      1
+    ]
+  },
+  {
+    "id": "item_edge_count_as",
+    "name": "沿边餐碟",
+    "desc": "[context]结算开始[/context]\n处于边缘的食物\n[benefit]额外视为[/benefit]1份食物",
+    "quality": 1,
     "specialTags": 0,
     "effectValue": 1,
-    "effectParam": "basis:gold;every:5",
-    "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
+    "effectParam": "position:edge",
+    "baseWeight": 100,
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 150
+    "termId": "term_food_count_as",
+    "price": 80,
+    "archetypeTags": [
+      1
+    ]
   },
   {
-    "id": "item_empty_cell_flat_all",
-    "name": "留白拼桌图",
-    "desc": "[context]结算开始[/context]\n每有1个空格\n[context]所有[/context]食物[strong]分数[/strong][score]+10[/score]",
+    "id": "item_transfer_target_mult",
+    "name": "大号糖果盘",
+    "desc": "[term]甜蜜传递[/term]时\n被传递方[strong]倍率[/strong][multadd]+0.4[/multadd]",
     "quality": 2,
     "specialTags": 0,
-    "effectValue": 10,
-    "effectParam": "basis:empty-cells",
-    "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
+    "effectValue": 0.4,
+    "effectParam": "",
+    "baseWeight": 10,
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 150
+    "termId": "term_sweet_transfer",
+    "price": 150,
+    "archetypeTags": [
+      0
+    ]
   },
   {
-    "id": "item_unused_discard_mult_all",
-    "name": "备用垃圾袋架",
-    "desc": "[context]结算开始[/context]\n每有1个未使用的[term]丢弃[/term]次数\n[context]所有[/context]食物[strong]倍率[/strong][multadd]+0.1[/multadd]",
+    "id": "item_transfer_source_mult",
+    "name": "长嘴糖浆壶",
+    "desc": "[term]甜蜜传递[/term]时\n传递方每成功传递1个目标\n[strong]倍率[/strong][multadd]+0.5[/multadd]",
+    "quality": 2,
+    "specialTags": 0,
+    "effectValue": 0.5,
+    "effectParam": "",
+    "baseWeight": 10,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "term_sweet_transfer",
+    "price": 150,
+    "archetypeTags": [
+      0
+    ]
+  },
+  {
+    "id": "item_skill_count_mult",
+    "name": "主厨刀架",
+    "desc": "[context]结算结束[/context]\n每个食物每有1个技能\n自身[strong]倍率[/strong][multadd]+0.5[/multadd]",
     "quality": 1,
+    "specialTags": 0,
+    "effectValue": 0.5,
+    "effectParam": "",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 150,
+    "archetypeTags": []
+  },
+  {
+    "id": "item_gold_on_transfer",
+    "name": "黄铜传菜铃",
+    "desc": "累计[term]甜蜜传递[/term]10次后\n获得[gold]15金币[/gold]",
+    "quality": 0,
+    "specialTags": 0,
+    "effectValue": 15,
+    "effectParam": "count:10",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "term_sweet_transfer",
+    "price": 80,
+    "archetypeTags": [
+      0
+    ]
+  },
+  {
+    "id": "item_transfer_extra_targets",
+    "name": "两层糖果塔",
+    "desc": "[term]甜蜜传递[/term]时\n[benefit]额外选择[/benefit]2个目标",
+    "quality": 3,
+    "specialTags": 0,
+    "effectValue": 2,
+    "effectParam": "",
+    "baseWeight": 10,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "term_sweet_transfer",
+    "price": 240,
+    "archetypeTags": [
+      0
+    ]
+  },
+  {
+    "id": "item_transfer_target_flat",
+    "name": "传糖果签",
+    "desc": "[term]甜蜜传递[/term]时\n被传递方[strong]分数[/strong]永久[score]+1[/score]",
+    "quality": 0,
+    "specialTags": 0,
+    "effectValue": 1,
+    "effectParam": "",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "term_sweet_transfer",
+    "price": 80,
+    "archetypeTags": [
+      0
+    ]
+  },
+  {
+    "id": "item_transfer_source_flat",
+    "name": "传菜糖罐",
+    "desc": "[term]甜蜜传递[/term]时\n传递方[strong]分数[/strong]永久[score]+2[/score]",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 2,
+    "effectParam": "",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "term_sweet_transfer",
+    "price": 80,
+    "archetypeTags": [
+      0
+    ]
+  },
+  {
+    "id": "item_cake_retain",
+    "name": "玻璃蛋糕罩",
+    "desc": "保留10%的[term]蛋糕[/term]层数\n至下一场经营挑战",
+    "quality": 2,
     "specialTags": 0,
     "effectValue": 0.1,
     "effectParam": "",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
+    "baseWeight": 10,
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 80
+    "termId": "clb",
+    "price": 240,
+    "archetypeTags": [
+      2
+    ]
   },
   {
-    "id": "item_unused_discard_flat_all",
-    "name": "磁吸垃圾夹",
-    "desc": "[context]结算开始[/context]\n每有1个未使用的[term]丢弃[/term]次数\n[context]所有[/context]食物[strong]分数[/strong][score]+10[/score]",
+    "id": "item_cake_init_bonus",
+    "name": "厚底蛋糕托",
+    "desc": "[term]蛋糕[/term]层数\n初始额外+10层",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 10,
+    "effectParam": "",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "clb",
+    "price": 80,
+    "archetypeTags": [
+      2
+    ]
+  },
+  {
+    "id": "item_cake_accel",
+    "name": "可叠蛋糕托",
+    "desc": "[term]蛋糕[/term]层数增加时\n额外+2层",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 2,
+    "effectParam": "",
+    "baseWeight": 30,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "clb",
+    "price": 150,
+    "archetypeTags": [
+      2
+    ]
+  },
+  {
+    "id": "item_cake_to_gold",
+    "name": "蛋糕价签架",
+    "desc": "[term]蛋糕[/term]层数大于100层时\n获得[gold]10金币[/gold]",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 10,
+    "effectParam": "threshold:100",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "clb",
+    "price": 80,
+    "archetypeTags": [
+      2
+    ]
+  },
+  {
+    "id": "item_cake_req_minus",
+    "name": "迷你蛋糕模",
+    "desc": "[term]蛋糕[/term]效果\n需要的层数-15",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 15,
     "effectParam": "",
-    "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 40
-  },
-  {
-    "id": "item_skip_reward_dish_luck",
-    "name": "空盘回执",
-    "desc": "[context]放弃奖励领取[/context]时\n获取食物的运气提升",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 10,
-    "effectParam": "purpose:Dish",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 80
+    "termId": "clb",
+    "price": 80,
+    "archetypeTags": [
+      2
+    ]
   },
   {
-    "id": "item_skip_reward_passive_luck",
-    "name": "空柜寄售牌",
-    "desc": "[context]放弃奖励领取[/context]时\n获取[term]装饰品[/term]的运气提升",
-    "quality": 1,
-    "specialTags": 0,
-    "effectValue": 10,
-    "effectParam": "purpose:PassiveItem",
-    "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
-    "targetScoreHiddenOffset": 0,
-    "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
-    "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 80
-  },
-  {
-    "id": "item_super_material_spread",
-    "name": "蜂巢桌垫",
-    "desc": "[context]火热营业结束[/context]\n随机1个餐桌格\n将材质复制到相邻1格",
+    "id": "item_cake_req_minus_30",
+    "name": "微型蛋糕模",
+    "desc": "[term]蛋糕[/term]效果\n需要的层数-30",
     "quality": 2,
     "specialTags": 0,
-    "effectValue": 1,
+    "effectValue": 30,
     "effectParam": "",
-    "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
+    "baseWeight": 10,
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
-    "termId": "",
-    "price": 150
+    "termId": "clb",
+    "price": 150,
+    "archetypeTags": [
+      2
+    ]
+  },
+  {
+    "id": "item_random_two_as_cake",
+    "name": "随机蛋糕签",
+    "desc": "[context]结算开始[/context]\n2个随机食物视为[term]蛋糕[/term]",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 2,
+    "effectParam": "category:cake",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "clb",
+    "price": 80,
+    "archetypeTags": [
+      2
+    ]
+  },
+  {
+    "id": "item_cake_on_settle",
+    "name": "切块蛋糕刀",
+    "desc": "结算[term]蛋糕[/term]食物时\n[term]蛋糕[/term]+3层",
+    "quality": 2,
+    "specialTags": 0,
+    "effectValue": 3,
+    "effectParam": "",
+    "baseWeight": 10,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "clb",
+    "price": 150,
+    "archetypeTags": [
+      2
+    ]
   },
   {
     "id": "item_count_as_cake",
@@ -2088,16 +1752,202 @@
     "effectValue": 0,
     "effectParam": "category:cake",
     "baseWeight": 10,
-    "hiddenRange": {
-      "min": 40,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "clb",
-    "price": 240
+    "price": 240,
+    "archetypeTags": [
+      2
+    ]
+  },
+  {
+    "id": "item_flavored_flat",
+    "name": "风味评分牌",
+    "desc": "[context]结算开始[/context]\n拥有风味的食物\n[strong]分数[/strong][score]+30[/score]",
+    "quality": 0,
+    "specialTags": 0,
+    "effectValue": 30,
+    "effectParam": "flavored",
+    "baseWeight": 300,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 40,
+    "archetypeTags": []
+  },
+  {
+    "id": "item_active_count_flat_all",
+    "name": "备品清单板",
+    "desc": "[context]结算开始[/context]\n每拥有1个[term]消耗品[/term]\n[context]所有[/context]食物[strong]分数[/strong][score]+10[/score]",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 10,
+    "effectParam": "basis:active-items",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 80,
+    "archetypeTags": []
+  },
+  {
+    "id": "item_empty_active_slot_mult_all",
+    "name": "留白备品柜",
+    "desc": "[context]结算开始[/context]\n每拥有1个[term]消耗品[/term]空槽\n[context]所有[/context]食物[strong]倍率[/strong][multadd]+0.1[/multadd]",
+    "quality": 2,
+    "specialTags": 0,
+    "effectValue": 0.1,
+    "effectParam": "basis:empty-active-slots",
+    "baseWeight": 30,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 150,
+    "archetypeTags": []
+  },
+  {
+    "id": "item_edge_flat",
+    "name": "滚边桌布",
+    "desc": "[context]结算开始[/context]\n处于边缘的食物\n[strong]分数[/strong][score]+50[/score]",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 50,
+    "effectParam": "position:edge",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 80,
+    "archetypeTags": []
+  },
+  {
+    "id": "item_non_edge_mult",
+    "name": "中央餐台模型",
+    "desc": "[context]结算开始[/context]\n处于非边缘的食物\n[strong]倍率[/strong][multadd]+0.5[/multadd]",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 0.5,
+    "effectParam": "position:non-edge",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 80,
+    "archetypeTags": []
+  },
+  {
+    "id": "item_gold_per5_flat_all",
+    "name": "镶币菜单框",
+    "desc": "[context]结算开始[/context]\n每有[gold]5金币[/gold]\n[context]所有[/context]食物[strong]分数[/strong][score]+1[/score]",
+    "quality": 2,
+    "specialTags": 0,
+    "effectValue": 1,
+    "effectParam": "basis:gold;every:5",
+    "baseWeight": 30,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 150,
+    "archetypeTags": []
+  },
+  {
+    "id": "item_empty_cell_flat_all",
+    "name": "留白拼桌图",
+    "desc": "[context]结算开始[/context]\n每有1个空格\n[context]所有[/context]食物[strong]分数[/strong][score]+10[/score]",
+    "quality": 2,
+    "specialTags": 0,
+    "effectValue": 10,
+    "effectParam": "basis:empty-cells",
+    "baseWeight": 30,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 150,
+    "archetypeTags": []
+  },
+  {
+    "id": "item_unused_discard_mult_all",
+    "name": "备用垃圾袋架",
+    "desc": "[context]结算开始[/context]\n每有1个未使用的[term]丢弃[/term]次数\n[context]所有[/context]食物[strong]倍率[/strong][multadd]+0.1[/multadd]",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 0.1,
+    "effectParam": "",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 80,
+    "archetypeTags": []
+  },
+  {
+    "id": "item_unused_discard_flat_all",
+    "name": "磁吸垃圾夹",
+    "desc": "[context]结算开始[/context]\n每有1个未使用的[term]丢弃[/term]次数\n[context]所有[/context]食物[strong]分数[/strong][score]+10[/score]",
+    "quality": 0,
+    "specialTags": 0,
+    "effectValue": 10,
+    "effectParam": "",
+    "baseWeight": 300,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 40,
+    "archetypeTags": []
+  },
+  {
+    "id": "item_skip_reward_dish_luck",
+    "name": "空盘回执",
+    "desc": "[context]放弃奖励领取[/context]时\n获取食物的运气提升",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 10,
+    "effectParam": "purpose:Dish",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 80,
+    "archetypeTags": []
+  },
+  {
+    "id": "item_skip_reward_passive_luck",
+    "name": "空柜寄售牌",
+    "desc": "[context]放弃奖励领取[/context]时\n获取[term]装饰品[/term]的运气提升",
+    "quality": 1,
+    "specialTags": 0,
+    "effectValue": 3,
+    "effectParam": "purpose:ItemLuck",
+    "baseWeight": 100,
+    "targetScoreHiddenOffset": 0,
+    "dishHiddenOffset": 0,
+    "itemLuckOffset": 0,
+    "fragmentHiddenOffset": 0,
+    "termId": "",
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_super_fragment_reward",
@@ -2108,56 +1958,47 @@
     "effectValue": 1,
     "effectParam": "fragment_choice_3",
     "baseWeight": 10,
-    "hiddenRange": {
-      "min": 40,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 240
+    "price": 240,
+    "archetypeTags": []
   },
   {
     "id": "item_settle_permanent_flat_all",
     "name": "老字号记分牌",
     "desc": "食物[context]结算[/context]时\n永久[strong]分数[/strong][score]+3[/score]",
-    "quality": 3,
+    "quality": 2,
     "specialTags": 0,
     "effectValue": 3,
     "effectParam": "",
     "baseWeight": 10,
-    "hiddenRange": {
-      "min": 40,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 240
+    "price": 240,
+    "archetypeTags": []
   },
   {
     "id": "item_same_base_mult_all",
     "name": "双份餐铃",
-    "desc": "同种食物[context]结算[/context]时\n[strong]倍率[/strong][multadd]+0.5[/multadd]",
+    "desc": "相同食物[context]结算[/context]时\n[strong]倍率[/strong][multadd]+0.5[/multadd]",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0.5,
     "effectParam": "key:baseId;min:2",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_remove_arrow_cookie_2",
@@ -2168,16 +2009,13 @@
     "effectValue": 2,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_remove_arrow_cookie_all",
@@ -2188,16 +2026,13 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 10,
-    "hiddenRange": {
-      "min": 40,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 240
+    "price": 240,
+    "archetypeTags": []
   },
   {
     "id": "item_randomize_recipe_dishes",
@@ -2208,36 +2043,30 @@
     "effectValue": 0,
     "effectParam": "",
     "baseWeight": 30,
-    "hiddenRange": {
-      "min": 30,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150
+    "price": 150,
+    "archetypeTags": []
   },
   {
     "id": "item_discard_dish_flat",
     "name": "退菜改良簿",
-    "desc": "[term]丢弃[/term]的食物[strong]分数[/strong]永久[score]+15[/score]",
+    "desc": "[term]丢弃[/term]的食物\n[strong]分数[/strong]永久[score]+15[/score]",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 15,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_heart_capacity",
@@ -2248,16 +2077,13 @@
     "effectValue": 1,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_heart_capacity_deluxe",
@@ -2268,16 +2094,13 @@
     "effectValue": 1,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_restore_heart",
@@ -2288,16 +2111,13 @@
     "effectValue": 1,
     "effectParam": "",
     "baseWeight": 300,
-    "hiddenRange": {
-      "min": 10,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40
+    "price": 40,
+    "archetypeTags": []
   },
   {
     "id": "item_restore_hearts",
@@ -2308,16 +2128,13 @@
     "effectValue": 2,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   },
   {
     "id": "item_slot_cost_discount",
@@ -2328,15 +2145,12 @@
     "effectValue": 0.25,
     "effectParam": "",
     "baseWeight": 100,
-    "hiddenRange": {
-      "min": 20,
-      "max": 80
-    },
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
-    "passiveItemHiddenOffset": 0,
+    "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80
+    "price": 80,
+    "archetypeTags": []
   }
 ]

@@ -13,9 +13,9 @@ namespace GourmetProject.Game.Meta
         Reward,
     }
 
-    /// <summary>
-    /// 消耗品选中的一个目标（跨情境抽象）。<see cref="TargetKind"/> 标记目标语义；
-    /// <see cref="Id"/> 视 targetKind 为菜/材质/风味等 id，<see cref="X"/>/<see cref="Y"/> 为餐桌或食谱坐标。
+        /// <summary>
+        /// 消耗品选中的一个目标（跨情境抽象）。<see cref="TargetKind"/> 标记目标语义；
+        /// <see cref="Id"/> 视 targetKind 为菜/风味等 id，<see cref="X"/>/<see cref="Y"/> 为餐桌或食谱坐标。
     /// </summary>
     public readonly struct ActiveTarget
     {
@@ -75,7 +75,7 @@ namespace GourmetProject.Game.Meta
         /// <summary>能力：给目标食物加「视为食物数」。不支持或目标无效返回 false。</summary>
         bool AddCountAs(ActiveTarget target, int amount);
 
-        // —— 调味小票 / 铺台小票：仅 Food 经营挑战中使用，并永久改 Run ——
+        // —— 调味小票：仅 Food 经营挑战中使用，并永久改 Run ——
 
         /// <summary>能力：给桌上目标食物附加风味，并永久写回其食谱来源。</summary>
         bool AddFlavorToDish(ActiveTarget target, string flavorId);
@@ -88,9 +88,6 @@ namespace GourmetProject.Game.Meta
 
         /// <summary>能力：转换目标食物分类。当前数据模型不一定支持，不能执行时返回 false。</summary>
         bool ConvertDishCategory(ActiveTarget target, string category);
-
-        /// <summary>能力：设置餐桌格的唯一永久材质（<paramref name="target"/>.X/Y=格坐标）。</summary>
-        bool AddMaterialToCell(ActiveTarget target, string materialId);
 
         /// <summary>能力：生成1 个食物。格目标用 X/Y 指定原点；无格目标由情境选择位置。</summary>
         bool GenerateDish(ActiveTarget target, string dishId, string randomKey);

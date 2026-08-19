@@ -6,37 +6,32 @@ namespace GourmetProject.Gameplay.Board
 {
     /// <summary>
     /// 局内餐桌（胃）。在最大 Width×Height 包围盒内，每格有三态：不存在(胃外)/存在且空/被占用。
-    /// 每个存在格还可携带强化标签（结算时附加给占据它的食物）。
     /// 不含随机与计分逻辑，便于独立单测。
     /// </summary>
     public sealed class DiningTable
     {
         public const int Empty = -1;
 
-        private static readonly IReadOnlyList<string> NoMaterials = Array.Empty<string>();
-
         private readonly int[] _cells;       // 占用该格的实例 Id，Empty 表示空。
         private readonly bool[] _exists;      // 该格是否属于胃。
         private readonly bool[] _disabled;    // 临时禁用格：存在但不可上菜。
-        private readonly List<string>[] _materials; // 该格携带的强化标签（可为 null，且最多一个）。
         private readonly List<DishInstance> _dishes = new List<DishInstance>();
         private int _existingCount;
 
-        /// <summary>构造一个全存在的矩形餐桌（无格标签）。</summary>
+        /// <summary>构造一个全存在的矩形餐桌。</summary>
         public DiningTable(int width, int height)
-            : this(width, height, null, null)
+            : this(width, height, null)
         {
         }
 
         /// <summary>
         /// 构造不规则餐桌。<paramref name="existingCells"/> 为 null 时所有格都存在（矩形）；
-        /// 否则仅列出的格存在。<paramref name="materials"/> 给指定格附加强化标签。
+        /// 否则仅列出的格存在。
         /// </summary>
         public DiningTable(
             int width,
             int height,
-            IEnumerable<GridPos> existingCells,
-            IReadOnlyDictionary<GridPos, IReadOnlyList<string>> materials)
+            IEnumerable<GridPos> existingCells)
         {
             if (width <= 0 || height <= 0)
             {
@@ -48,7 +43,6 @@ namespace GourmetProject.Gameplay.Board
             _cells = new int[width * height];
             _exists = new bool[width * height];
             _disabled = new bool[width * height];
-            _materials = new List<string>[width * height];
 
             for (int i = 0; i < _cells.Length; i++)
             {
@@ -78,32 +72,6 @@ namespace GourmetProject.Gameplay.Board
                     {
                         _exists[idx] = true;
                         _existingCount++;
-                    }
-                }
-            }
-
-            if (materials != null)
-            {
-                foreach (KeyValuePair<GridPos, IReadOnlyList<string>> kv in materials)
-                {
-                    if (!Exists(kv.Key) || kv.Value == null)
-                    {
-                        continue;
-                    }
-
-                    string materialId = string.Empty;
-                    foreach (string tagId in kv.Value)
-                    {
-                        if (!string.IsNullOrEmpty(tagId))
-                        {
-                            // 兼容旧数据中的重复记录：同一格最后一个有效材质获胜。
-                            materialId = tagId;
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(materialId))
-                    {
-                        _materials[Index(kv.Key)] = new List<string> { materialId };
                     }
                 }
             }
@@ -154,7 +122,6 @@ namespace GourmetProject.Gameplay.Board
             else
             {
                 _existingCount--;
-                _materials[idx] = null;
             }
         }
 
@@ -221,45 +188,6 @@ namespace GourmetProject.Gameplay.Board
 
         /// <summary>该格是否存在且未被占用。</summary>
         public bool IsEmpty(GridPos p) => Exists(p) && !_disabled[Index(p)] && _cells[Index(p)] == Empty;
-
-        /// <summary>该存在格携带的强化标签（无则空列表）。</summary>
-        public IReadOnlyList<string> MaterialsAt(GridPos p)
-        {
-            if (!Exists(p))
-            {
-                return NoMaterials;
-            }
-
-            List<string> tags = _materials[Index(p)];
-            return tags ?? NoMaterials;
-        }
-
-        /// <summary>
-        /// 设置存在格的唯一材质。新材质替换旧材质；格不存在、空 id 或材质未变化时返回 false。
-        /// </summary>
-        public bool SetMaterialAt(GridPos p, string materialId)
-        {
-            if (!Exists(p) || string.IsNullOrEmpty(materialId))
-            {
-                return false;
-            }
-
-            int idx = Index(p);
-            List<string> tags = _materials[idx];
-            string current = tags != null && tags.Count > 0 ? tags[tags.Count - 1] : string.Empty;
-            bool changed = !string.Equals(current, materialId, StringComparison.Ordinal);
-
-            // 即使输入曾被外部错误地污染为多个值，也顺手恢复 0/1 不变量。
-            if (tags == null || tags.Count != 1 || !string.Equals(tags[0], materialId, StringComparison.Ordinal))
-            {
-                _materials[idx] = new List<string> { materialId };
-            }
-
-            return changed;
-        }
-
-        /// <summary>兼容旧调用；材质语义已改为设置/替换，而不是叠加。</summary>
-        public bool AddMaterialAt(GridPos p, string materialId) => SetMaterialAt(p, materialId);
 
         public int OccupiedCellCount
         {

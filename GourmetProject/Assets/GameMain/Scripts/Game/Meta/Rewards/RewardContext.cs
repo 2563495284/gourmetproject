@@ -57,7 +57,7 @@ namespace GourmetProject.Game.Meta
 
         public int DishHiddenScore => Run == null ? 0 : HiddenScoreService.DishHiddenScore(Run, ActionContext);
 
-        public int PassiveItemHiddenScore => Run == null ? 0 : HiddenScoreService.PassiveItemHiddenScore(Run, ActionContext);
+        public float ItemLuck => Run == null ? 0f : ItemLuckService.GetLuck(Run, ActionContext);
 
         public int FragmentHiddenScore => Run == null ? 0 : HiddenScoreService.FragmentHiddenScore(Run, ActionContext);
     }

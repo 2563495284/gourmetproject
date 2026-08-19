@@ -47,7 +47,9 @@ namespace GourmetProject.Game.Meta
                 case cfg.ActionBehavior.Slot:
                     return ActionDisplayKind.Slot;
                 case cfg.ActionBehavior.Effect:
-                    return ActionDisplayKind.Negative;
+                    return action.EffectType == cfg.EffectType.RestoreHearts
+                        ? ActionDisplayKind.Event
+                        : ActionDisplayKind.Negative;
                 case cfg.ActionBehavior.Event:
                 default:
                     return ActionDisplayKind.Event;

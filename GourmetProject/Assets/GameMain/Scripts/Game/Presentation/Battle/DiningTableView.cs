@@ -28,8 +28,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private readonly Dictionary<GridPos, DiningTableCellView> _cells = new Dictionary<GridPos, DiningTableCellView>();
         private readonly Dictionary<int, BattleScopeRegionOutlineView> _scopeRegionOutlines = new Dictionary<int, BattleScopeRegionOutlineView>();
-        private readonly Dictionary<string, DiningTableCellSprites> _materialCellSprites =
-            new Dictionary<string, DiningTableCellSprites>();
         private readonly List<DiningTableCellView> _dragFeedbackCells = new List<DiningTableCellView>();
         private readonly HashSet<GridPos> _presentationHiddenCells = new HashSet<GridPos>();
         private readonly HashSet<GridPos> _presentationSuppressedDisabledCells = new HashSet<GridPos>();
@@ -60,7 +58,6 @@ namespace GourmetProject.Game.Presentation.Battle
 
             Mapper = new DiningTableCoordinateMapper(board.Width, board.Height, cellSize, gap, transform);
             _cellSize = cellSize;
-            _materialCellSprites.Clear();
             _cellSprites = DiningTableCellSpriteResources.LoadDefault();
             if (!_cellSprites.IsValid)
             {
@@ -200,40 +197,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private DiningTableCellSprites CellSpritesFor(GridPos pos)
         {
-            if (_board == null || !_board.Exists(pos))
-            {
-                return _cellSprites;
-            }
-
-            IReadOnlyList<string> materials = _board.MaterialsAt(pos);
-            for (int i = materials.Count - 1; i >= 0; i--)
-            {
-                DiningTableCellSprites sprites = LoadMaterialCellSprites(materials[i]);
-                if (sprites.IsValid)
-                {
-                    return sprites;
-                }
-            }
-
             return _cellSprites;
-        }
-
-        private DiningTableCellSprites LoadMaterialCellSprites(string materialId)
-        {
-            if (string.IsNullOrEmpty(materialId))
-            {
-                return default;
-            }
-
-            if (_materialCellSprites.TryGetValue(materialId, out DiningTableCellSprites cached))
-            {
-                return cached;
-            }
-
-            DiningTableCellSprites sprites =
-                DiningTableCellSpriteResources.LoadMaterial(materialId, _cellSprites);
-            _materialCellSprites[materialId] = sprites;
-            return sprites;
         }
 
         public bool TryGetCellView(GridPos pos, out DiningTableCellView view)

@@ -10,7 +10,7 @@
     "effectParam": "",
     "minCostDays": 0.6,
     "maxCostDays": 0.8,
-    "rewardTitle": "一些金币",
+    "rewardTitle": "金币",
     "rewardDesc": "用于商店采购"
   },
   {
@@ -25,7 +25,7 @@
     "minCostDays": 0.6,
     "maxCostDays": 0.8,
     "rewardTitle": "餐桌格",
-    "rewardDesc": "扩大餐桌大小"
+    "rewardDesc": "扩大餐桌\n容纳更多食物"
   },
   {
     "id": "act_food_passive",
@@ -39,7 +39,7 @@
     "minCostDays": 0.6,
     "maxCostDays": 0.8,
     "rewardTitle": "装饰品2选1",
-    "rewardDesc": "带来持续性的增益"
+    "rewardDesc": "多方面的增益"
   },
   {
     "id": "act_food_active_strengthen",
@@ -52,8 +52,8 @@
     "effectParam": "",
     "minCostDays": 0.6,
     "maxCostDays": 0.8,
-    "rewardTitle": "强化箱3选2",
-    "rewardDesc": "强化食物与餐桌格"
+    "rewardTitle": "风味罐3选2",
+    "rewardDesc": "为食物添加风味"
   },
   {
     "id": "act_food_active_adjust",
@@ -95,7 +95,7 @@
     "minCostDays": 0.7,
     "maxCostDays": 0.9,
     "rewardTitle": "大餐桌格",
-    "rewardDesc": "扩大餐桌大小"
+    "rewardDesc": "扩大餐桌\n容纳更多食物"
   },
   {
     "id": "act_food_hard_passive",
@@ -109,7 +109,7 @@
     "minCostDays": 0.7,
     "maxCostDays": 0.9,
     "rewardTitle": "装饰品4选1",
-    "rewardDesc": "带来持续性的增益"
+    "rewardDesc": "多方面的增益"
   },
   {
     "id": "act_food_hard_active_strengthen",
@@ -123,7 +123,7 @@
     "minCostDays": 0.7,
     "maxCostDays": 0.9,
     "rewardTitle": "强化箱5选2",
-    "rewardDesc": "强化食物与餐桌格"
+    "rewardDesc": "为食物添加风味"
   },
   {
     "id": "act_food_hard_active_adjust",
@@ -170,7 +170,7 @@
   {
     "id": "act_shop",
     "name": "商店采购",
-    "desc": "什么都有",
+    "desc": "买买买",
     "behavior": 4,
     "foodId": "",
     "effectType": 0,
@@ -245,6 +245,20 @@
     "foodId": "",
     "effectType": 24,
     "effectValue": 0,
+    "effectParam": "",
+    "minCostDays": 0,
+    "maxCostDays": 0,
+    "rewardTitle": "",
+    "rewardDesc": ""
+  },
+  {
+    "id": "act_restore_heart",
+    "name": "恢复红心",
+    "desc": "恢复1颗红心",
+    "behavior": 6,
+    "foodId": "",
+    "effectType": 37,
+    "effectValue": 1,
     "effectParam": "",
     "minCostDays": 0,
     "maxCostDays": 0,

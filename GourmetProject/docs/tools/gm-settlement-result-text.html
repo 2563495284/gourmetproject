@@ -800,7 +800,7 @@
       <div>
         <p class="eyebrow">Presentation Lab · Settlement</p>
         <h1>结算 ResultText 演出 GM</h1>
-        <p class="subtitle">覆盖当前玩家可见的结算文本与银材质实际奖励，并复刻 Unity 中的语义色、弹入、脉冲、上浮和末段淡出节奏。</p>
+        <p class="subtitle">覆盖当前玩家可见的结算文本，并复刻 Unity 中的语义色、弹入、脉冲、上浮和末段淡出节奏。</p>
       </div>
       <div class="source-note">基准：SettlementStageView.cs · SettlementPresentationPlan.cs</div>
     </header>
@@ -919,7 +919,6 @@
       MultiplyMultiplier: "#ff5a5f",
       Gold: "#f4b740",
       CakeLayer: "#ff8a3d",
-      SilverReward: "#a9c4d8",
       CopySkill: "#36e0f2",
       SweetTransfer: "#ff54b2",
       Failure: "#e06a84",
@@ -943,13 +942,12 @@
       { id: "permanent-flat", category: "score", name: "分数 · 永久", kind: "DishPermanentFlat", header: "分数", body: "永久+48", palette: "PermanentScore", note: "当次进入加法区，结算后写回食物实例；使用比普通分数略强的蓝色。" },
       { id: "multiply", category: "score", name: "倍率 · 乘法", kind: "DishMultiplier", header: "倍率", body: "×1.5", palette: "MultiplyMultiplier", note: "乘法倍率使用红色 MultiplyMultiplier。" },
       { id: "add-multiplier", category: "score", name: "倍率 · 加法", kind: "DishMultiplierAdd", header: "倍率", body: "+0.35", palette: "AddMultiplier", note: "加法倍率使用青绿色 AddMultiplier。" },
-      { id: "extra-settlement", category: "score", name: "咸味 · 额外结算", kind: "ExtraSettlement", header: "咸味", body: "额外结算", palette: "BaseScore", note: "实际会完整重跑该食物的技能、风味、材质及对其他食物的影响；账本仍记录本次贡献，但不再把贡献值误作效果正文。", duration: 900 },
+      { id: "extra-settlement", category: "score", name: "咸味 · 额外结算", kind: "ExtraSettlement", header: "咸味", body: "额外结算", palette: "BaseScore", note: "实际会完整重跑该食物的技能、风味及对其他食物的影响；账本仍记录本次贡献，但不再把贡献值误作效果正文。", duration: 900 },
       { id: "zero", category: "score", name: "分数 · 无变化", kind: "DishFlat", header: "分数", body: "无变化", palette: "BaseScore", note: "分数类零变化使用“分数 · 无变化”。" },
       { id: "zero-multiplier", category: "score", name: "倍率 · 无变化", kind: "DishMultiplierAdd", header: "倍率", body: "无变化", palette: "AddMultiplier", note: "倍率类零变化使用“倍率 · 无变化”。" },
 
       { id: "gold", category: "resource", name: "金币", kind: "Gold", header: "金币", body: "+16", palette: "Gold", note: "金币是对外副作用，不直接计入食物贡献。" },
       { id: "layer", category: "resource", name: "蛋糕层数", kind: "Layer", header: "蛋糕层数", body: "+2", palette: "CakeLayer", note: "欢乐蛋糕全局层数变化。" },
-      { id: "silver", category: "resource", name: "银材质 · 单次命中", kind: "SilverItemGrant", header: "银材质", body: "获得甜味箱", palette: "SilverReward", note: "每个被占据的银格独立进行一次 1/5 判定；只在命中并发放后显示具体消耗品，同一食物多次命中也逐条独立显示。" },
       { id: "copy", category: "resource", name: "技能复制", kind: "CopySkill", header: "技能复制", body: "获得技能 ×1", palette: "CopySkill", note: "复制技能使用高亮青色 CopySkill。" },
       { id: "count-as", category: "resource", name: "份数 · 食物", kind: "CountAs", header: "份数", body: "+2", palette: "CountAs", note: "只展示本次份数增量，不再拼接 After。" },
       { id: "empty-count-as", category: "resource", name: "份数 · 空格", kind: "EmptyCountAs", header: "份数", body: "+1", palette: "CountAs", note: "空格份数与食物份数统一成相同格式。" },

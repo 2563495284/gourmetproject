@@ -28,6 +28,7 @@ namespace GourmetProject.Game.Meta.Passives
 
     [Preserve]
     [PassiveItemModel("item_flavored_count_as")]
+    [PassiveItemModel("item_edge_count_as")]
     public sealed class FlavoredDishCountAsModel : ScoreSpecModel
     {
         public FlavoredDishCountAsModel() : base(ItemScoreEffectType.TagCountAsBonus)
@@ -174,38 +175,8 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_skip_reward_passive_luck")]
     public sealed class RewardAbandonPassiveLuckModel : RewardAbandonLuckModel
     {
-        public RewardAbandonPassiveLuckModel() : base(HiddenScorePurpose.PassiveItem)
+        public RewardAbandonPassiveLuckModel() : base(HiddenScorePurpose.ItemLuck)
         {
-        }
-    }
-
-    [Preserve]
-    [PassiveItemModel("item_super_material_spread")]
-    public sealed class SuperMaterialSpreadModel : PassiveItemModel
-    {
-        public override RewardOffer OnFoodBattleSettled(
-            ActionExecutionContext actionContext,
-            bool survived,
-            IRandomStream rng)
-        {
-            cfg.Food food = FoodService.Resolve(Run?.Tables, actionContext?.Action);
-            if (!survived || food?.ActionKind != cfg.FoodActionKind.Super || rng == null)
-            {
-                return null;
-            }
-
-            CellMutationResult result = PassiveRecipeMutationService.SpreadMaterialToAdjacentCell(
-                Run,
-                Def?.Name,
-                rng);
-            if (result.HasChanges)
-            {
-                result.SourceItemId = ItemId;
-                Flash();
-                PassiveMutationPresenter.ShowCells(Run, result);
-            }
-
-            return null;
         }
     }
 
@@ -214,6 +185,24 @@ namespace GourmetProject.Game.Meta.Passives
     public sealed class AllDishCountAsCakeModel : ScoreSpecModel
     {
         public AllDishCountAsCakeModel() : base(ItemScoreEffectType.AllDishTemporaryCategory)
+        {
+        }
+    }
+
+    [Preserve]
+    [PassiveItemModel("item_random_two_as_cake")]
+    public sealed class RandomDishesAsCakeModel : ScoreSpecModel
+    {
+        public RandomDishesAsCakeModel() : base(ItemScoreEffectType.RandomDishesTemporaryCategory)
+        {
+        }
+    }
+
+    [Preserve]
+    [PassiveItemModel("item_cake_on_settle")]
+    public sealed class CakeLayersPerCakeDishModel : ScoreSpecModel
+    {
+        public CakeLayersPerCakeDishModel() : base(ItemScoreEffectType.CakeLayersPerCakeDish)
         {
         }
     }

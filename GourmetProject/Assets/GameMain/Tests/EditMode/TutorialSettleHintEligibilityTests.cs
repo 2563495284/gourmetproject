@@ -185,7 +185,6 @@ namespace GourmetProject.Tests.EditMode
                 new[] { dish },
                 Array.Empty<SkillDef>(),
                 Array.Empty<FlavorDef>(),
-                Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
             return new BattleSession(
                 table,

@@ -131,7 +131,7 @@ namespace GourmetProject.Game.Meta
         private const string FragmentPackRewardSlotId = "fragment_choice_3";
 
         /// <summary>
-        /// 按隐藏分刷新一批商品。装饰品和消耗品（装饰品/消耗品）走 <paramref name="lootRng"/>，
+        /// 按进度刷新一批商品。装饰品和消耗品走 <paramref name="lootRng"/>，
         /// 食物/碎片走 <paramref name="rng"/>，两者隔离：调整装饰品和消耗品数量不会污染食物/碎片序列。
         /// </summary>
         public static List<ShopEntry> RollStock(cfg.Tables tables, GameRun run, IRandomStream rng, IRandomStream lootRng)
@@ -139,7 +139,6 @@ namespace GourmetProject.Game.Meta
             tables ??= GameApp.Config.Tables;
             var stock = new List<ShopEntry>();
             int dishHidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
-            int passiveHidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
             int fragmentHidden = HiddenScoreService.FragmentHiddenScore(run, run.LastActionContext);
             int passiveCount = ConfiguredSlotCount(tables.TbGameBase.ShopPassiveItemSaleSlotCount);
             int activeCount = ConfiguredSlotCount(tables.TbGameBase.ShopActiveItemSaleSlotCount);
@@ -149,7 +148,7 @@ namespace GourmetProject.Game.Meta
             int activeSlotIndex = 0;
             int dishSlotIndex = 0;
 
-            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, passiveCount, passiveHidden, distanceFloor))
+            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Passive, lootRng, passiveCount))
             {
                 ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Passive);
                 if (item != null)
@@ -166,7 +165,7 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, activeCount, passiveHidden, distanceFloor))
+            foreach (string itemId in ItemPoolService.Roll(tables, run, cfg.ItemKind.Active, lootRng, activeCount))
             {
                 ItemDefinition item = ItemDefinition.Get(tables, itemId, cfg.ItemKind.Active);
                 if (item != null)
@@ -233,15 +232,12 @@ namespace GourmetProject.Game.Meta
             {
                 case ShopEntryKind.PassiveItem:
                     {
-                        int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
                         foreach (string itemId in ItemPoolService.Roll(
                                      tables,
                                      run,
                                      cfg.ItemKind.Passive,
                                      lootRng,
-                                     ExistingStockedCount(existingStock, kind) + 1,
-                                     hidden,
-                                     HiddenScoreDistanceFloor(tables)))
+                                     ExistingStockedCount(existingStock, kind) + 1))
                         {
                             if (ContainsEntryId(existingStock, kind, itemId))
                             {
@@ -262,15 +258,12 @@ namespace GourmetProject.Game.Meta
                     }
                 case ShopEntryKind.ActiveItem:
                     {
-                        int hidden = HiddenScoreService.PassiveItemHiddenScore(run, run.LastActionContext);
                         foreach (string itemId in ItemPoolService.Roll(
                                      tables,
                                      run,
                                      cfg.ItemKind.Active,
                                      lootRng,
-                                     ExistingStockedCount(existingStock, kind) + 1,
-                                     hidden,
-                                     HiddenScoreDistanceFloor(tables)))
+                                     ExistingStockedCount(existingStock, kind) + 1))
                         {
                             if (ContainsEntryId(existingStock, kind, itemId))
                             {
@@ -748,7 +741,7 @@ namespace GourmetProject.Game.Meta
             return slot.ChoiceCount;
         }
 
-        /// <summary>筛选可拼入当前餐桌、且隐藏分覆盖的碎片候选（不消耗随机流）。</summary>
+        /// <summary>筛选可拼入当前餐桌（按旋转后形状）、且隐藏分覆盖的碎片候选（不消耗随机流）。</summary>
         private static List<cfg.TableFragment> BuildFragmentCandidates(cfg.Tables tables, GameRun run, int hidden)
         {
             var candidates = new List<cfg.TableFragment>();

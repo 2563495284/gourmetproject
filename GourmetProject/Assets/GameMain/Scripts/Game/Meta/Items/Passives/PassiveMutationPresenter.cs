@@ -18,19 +18,6 @@ namespace GourmetProject.Game.Meta.Passives
                 () => BattleForm.Active?.ShowPassiveRecipeMutation(result));
         }
 
-        public static void ShowCells(GameRun run, CellMutationResult result)
-        {
-            if (run == null
-                || result == null
-                || !result.HasChanges)
-            {
-                return;
-            }
-
-            run.Execution.Presentation.Present(
-                () => BattleForm.Active?.ShowPassiveCellMutation(result));
-        }
-
         public static void ShowTimeline(GameRun run, TimelineMutationResult result)
         {
             if (run == null

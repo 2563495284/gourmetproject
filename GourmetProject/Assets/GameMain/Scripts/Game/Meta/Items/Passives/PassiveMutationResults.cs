@@ -61,28 +61,6 @@ namespace GourmetProject.Game.Meta.Passives
         public BigDouble ScoreMultiplier { get; set; } = BigDouble.One;
     }
 
-    public sealed class CellMutationResult
-    {
-        public string SourceItemId { get; set; } = string.Empty;
-
-        public string Title { get; set; } = string.Empty;
-
-        public List<CellMutationEntry> Entries { get; } = new List<CellMutationEntry>();
-
-        public bool HasChanges => Entries.Count > 0;
-    }
-
-    public sealed class CellMutationEntry
-    {
-        public GridPos Pos { get; set; }
-
-        public string MaterialId { get; set; } = string.Empty;
-
-        public IReadOnlyList<string> BeforeMaterialIds { get; set; } = System.Array.Empty<string>();
-
-        public IReadOnlyList<string> AfterMaterialIds { get; set; } = System.Array.Empty<string>();
-    }
-
     public enum TimelineMutationCause
     {
         Unknown,

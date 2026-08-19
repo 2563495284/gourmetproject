@@ -3,19 +3,22 @@
     "id": "pool_dish",
     "kind": 0,
     "allowFallback": true,
-    "specialTags": []
+    "specialTags": [],
+    "qualityFilters": []
   },
   {
     "id": "pool_fragment",
     "kind": 3,
     "allowFallback": true,
-    "specialTags": []
+    "specialTags": [],
+    "qualityFilters": []
   },
   {
     "id": "pool_passive",
     "kind": 1,
     "allowFallback": true,
-    "specialTags": []
+    "specialTags": [],
+    "qualityFilters": []
   },
   {
     "id": "pool_passive_boss",
@@ -23,7 +26,8 @@
     "allowFallback": true,
     "specialTags": [
       0
-    ]
+    ],
+    "qualityFilters": []
   },
   {
     "id": "pool_active_strengthen",
@@ -31,54 +35,37 @@
     "allowFallback": true,
     "specialTags": [
       1
-    ]
+    ],
+    "qualityFilters": []
   },
   {
     "id": "pool_active_adjust",
     "kind": 5,
     "allowFallback": true,
-    "specialTags": []
+    "specialTags": [],
+    "qualityFilters": []
   },
   {
     "id": "pool_flavored_dish",
     "kind": 0,
     "allowFallback": true,
-    "specialTags": []
+    "specialTags": [],
+    "qualityFilters": []
   },
   {
     "id": "pool_legendary",
     "kind": 1,
     "allowFallback": true,
-    "specialTags": []
-  },
-  {
-    "id": "pool_lay_wood",
-    "kind": 2,
-    "allowFallback": true,
-    "specialTags": [
-      2
-    ]
-  },
-  {
-    "id": "pool_lay_stone",
-    "kind": 2,
-    "allowFallback": true,
-    "specialTags": [
+    "specialTags": [],
+    "qualityFilters": [
       3
-    ]
-  },
-  {
-    "id": "pool_lay_metal",
-    "kind": 2,
-    "allowFallback": true,
-    "specialTags": [
-      4
     ]
   },
   {
     "id": "pool_active",
     "kind": 2,
     "allowFallback": true,
-    "specialTags": []
+    "specialTags": [],
+    "qualityFilters": []
   }
 ]

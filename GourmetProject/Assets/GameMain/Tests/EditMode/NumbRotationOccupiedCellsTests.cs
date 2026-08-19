@@ -223,7 +223,6 @@ namespace GourmetProject.Tests.EditMode
                     dishes,
                     Array.Empty<SkillDef>(),
                     flavors,
-                    Array.Empty<MaterialDef>(),
                     Array.Empty<RecipeDef>()),
                 new Xoshiro256SS(1UL),
                 slots,

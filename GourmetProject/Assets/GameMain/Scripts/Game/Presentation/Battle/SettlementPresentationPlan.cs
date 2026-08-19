@@ -18,7 +18,6 @@ namespace GourmetProject.Game.Presentation.Battle
         public static readonly Color MultiplyMultiplier = new Color32(255, 90, 95, 255);
         public static readonly Color Gold = new Color32(244, 183, 64, 255);
         public static readonly Color CakeLayer = new Color32(255, 138, 61, 255);
-        public static readonly Color SilverReward = new Color32(169, 196, 216, 255);
         public static readonly Color CopySkill = new Color32(54, 224, 242, 255);
         public static readonly Color SweetTransfer = new Color32(255, 84, 178, 255);
         public static readonly Color Failure = new Color32(224, 106, 132, 255);
@@ -47,7 +46,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 ScoreLineKind.DishMultiplier or ScoreLineKind.FinalMultiplier => MultiplyMultiplier,
                 ScoreLineKind.Gold => Gold,
                 ScoreLineKind.Layer => CakeLayer,
-                ScoreLineKind.SilverItemRoll => SilverReward,
                 ScoreLineKind.CopySkill => CopySkill,
                 ScoreLineKind.TriggerSweetTransfer
                     or ScoreLineKind.TriggeredSweetTransferSource

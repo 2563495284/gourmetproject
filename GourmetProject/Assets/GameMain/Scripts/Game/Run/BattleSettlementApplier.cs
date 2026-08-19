@@ -1,10 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using GourmetProject.Core.Rng;
-using GourmetProject.Game.Meta;
 using GourmetProject.Gameplay.Battle;
-using GourmetProject.Gameplay.Scoring;
 
 namespace GourmetProject.Game.Run
 {
@@ -74,33 +71,6 @@ namespace GourmetProject.Game.Run
                 run.Gold = Math.Max(0, run.Gold + gold);
             }
 
-            int silverItems = Math.Max(0, session.PendingActiveItemGrants);
-            if (silverItems > 0)
-            {
-                string itemKey = $"silver_{run.WeekIndex}_{run.RunActionStepIndex}_{session.ServesUsed}";
-                IRandomStream itemRng = run.Random.DomainStream(SeedDomains.Item, itemKey);
-                for (int i = 0; i < silverItems; i++)
-                {
-                    ItemAcquireResult acquired = ItemPoolService.GrantRandom(
-                        run.Tables,
-                        run,
-                        cfg.ItemKind.Active,
-                        itemRng,
-                        20,
-                        run.MetaProgress);
-                    result.ActiveItemGrants++;
-                    result.SilverItemGrants.Add(new SilverItemGrantPresentation(
-                        i < session.PendingActiveItemGrantSources.Count
-                            ? session.PendingActiveItemGrantSources[i]
-                            : 0,
-                        acquired));
-                    if (acquired.Outcome == ItemAcquireOutcome.ConvertedToGold)
-                    {
-                        result.FallbackGold += acquired.Gold;
-                    }
-                }
-            }
-
             run.AddSettledCounts(session.LastSettledIncrements);
             result.GoldDelta = run.Gold - goldBeforeSettlement;
             result.Applied = true;
@@ -112,23 +82,6 @@ namespace GourmetProject.Game.Run
     {
         public bool Applied;
         public int GoldDelta;
-        public int FallbackGold;
-        public int ActiveItemGrants;
         public List<int> RemovedRecipeIndices { get; } = new List<int>();
-        public List<SilverItemGrantPresentation> SilverItemGrants { get; } = new List<SilverItemGrantPresentation>();
-    }
-
-    /// <summary>一次银格判定命中后的实际发放结果及其来源食物，用于逐条播放获得反馈。</summary>
-    public readonly struct SilverItemGrantPresentation
-    {
-        public SilverItemGrantPresentation(int sourceDishInstanceId, ItemAcquireResult acquisition)
-        {
-            SourceDishInstanceId = sourceDishInstanceId;
-            Acquisition = acquisition;
-        }
-
-        public int SourceDishInstanceId { get; }
-
-        public ItemAcquireResult Acquisition { get; }
     }
 }

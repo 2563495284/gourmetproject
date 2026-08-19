@@ -214,6 +214,10 @@ namespace GourmetProject.Game.Meta
             return null;
         }
 
+        /// <summary>节点复制单候选：当前时间轴上的全部节点，不论是否已执行。</summary>
+        public static List<cfg.TimelineNode> GetCloneableNodes(GameRun run)
+            => GetNodes(run);
+
         public static List<cfg.TimelineNode> GetFutureUntriggeredNodes(GameRun run)
         {
             var result = new List<cfg.TimelineNode>();

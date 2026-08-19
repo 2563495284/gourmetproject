@@ -33,10 +33,6 @@ namespace cfg
         /// </summary>
         DiningTableCell = 3,
         /// <summary>
-        /// 材质
-        /// </summary>
-        Material = 4,
-        /// <summary>
         /// 某道菜的风味槽
         /// </summary>
         FlavorSlot = 5,

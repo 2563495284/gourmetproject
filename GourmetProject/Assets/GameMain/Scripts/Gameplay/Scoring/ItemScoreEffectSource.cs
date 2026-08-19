@@ -67,12 +67,16 @@ namespace GourmetProject.Gameplay.Scoring
                     ItemScoreEffectType.TagMultFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.TagCountAsBonus => ScorePhase.BeforeAll,
                     ItemScoreEffectType.AllDishTemporaryCategory => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.RandomDishesTemporaryCategory => ScorePhase.BeforeAll,
                     ItemScoreEffectType.AllDishFlatPerUnusedDiscard => ScorePhase.BeforeAll,
                     ItemScoreEffectType.AllDishMultPerUnusedDiscard => ScorePhase.BeforeAll,
                     ItemScoreEffectType.AllDishFlatPerEmptyCell => ScorePhase.BeforeAll,
                     ItemScoreEffectType.SameBaseDishMultFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.CountThresholdFinalMult => ScorePhase.BeforeAll,
                     ItemScoreEffectType.PerDishPermanentFlat => ScorePhase.BeforeDish,
+                    ItemScoreEffectType.PerDishFlatTimesOwnCountAs => ScorePhase.AfterAllDishes,
+                    ItemScoreEffectType.PerDishMultFlatTimesOwnCountAs => ScorePhase.AfterAllDishes,
+                    ItemScoreEffectType.CakeLayersPerCakeDish => ScorePhase.AfterAllDishes,
                     _ => ScorePhase.AfterAllDishes,
                 };
 
@@ -80,8 +84,10 @@ namespace GourmetProject.Gameplay.Scoring
                 {
                     ItemScoreEffectType.TagCountAsBonus => -100,
                     ItemScoreEffectType.AllDishTemporaryCategory => -100,
+                    ItemScoreEffectType.RandomDishesTemporaryCategory => -100,
                     ItemScoreEffectType.CountThresholdAllDishMult => -50,
                     ItemScoreEffectType.CountThresholdFinalMult => -50,
+                    ItemScoreEffectType.CakeLayersPerCakeDish => -50,
                     _ => 0,
                 };
 
@@ -353,6 +359,79 @@ namespace GourmetProject.Gameplay.Scoring
                         if (serveIndex > n && (serveIndex - 1) % n == 0)
                         {
                             ctx.AddMultFlatTo(ordered[i], value);
+                        }
+                    }
+
+                    break;
+                }
+
+                case ItemScoreEffectType.PerDishFlatTimesOwnCountAs:
+                    foreach (DishInstance d in dishes)
+                    {
+                        float add = value * ctx.GetEffectiveCountAs(d);
+                        if (Math.Abs(add) > 0.0001f)
+                        {
+                            ctx.AddFlatTo(d, add);
+                        }
+                    }
+
+                    break;
+
+                case ItemScoreEffectType.PerDishMultFlatTimesOwnCountAs:
+                    foreach (DishInstance d in dishes)
+                    {
+                        float add = value * ctx.GetEffectiveCountAs(d);
+                        if (Math.Abs(add) > 0.0001f)
+                        {
+                            ctx.AddMultFlatTo(d, add);
+                        }
+                    }
+
+                    break;
+
+                case ItemScoreEffectType.RandomDishesTemporaryCategory:
+                {
+                    string category = ParseStringParam(_spec.Param, "category", _spec.Param);
+                    int pickCount = Math.Max(0, (int)Math.Round(value, MidpointRounding.AwayFromZero));
+                    if (string.IsNullOrEmpty(category) || pickCount <= 0)
+                    {
+                        break;
+                    }
+
+                    var candidates = new List<DishInstance>(dishes);
+                    int take = Math.Min(pickCount, candidates.Count);
+                    if (ctx.Snapshot.RandomIntegerSelector != null)
+                    {
+                        for (int i = 0; i < take; i++)
+                        {
+                            int swap = ctx.Snapshot.RandomIntegerSelector(i, candidates.Count - 1);
+                            DishInstance tmp = candidates[i];
+                            candidates[i] = candidates[swap];
+                            candidates[swap] = tmp;
+                        }
+                    }
+
+                    for (int i = 0; i < take; i++)
+                    {
+                        ctx.AddLiveCategory(candidates[i], category);
+                    }
+
+                    break;
+                }
+
+                case ItemScoreEffectType.CakeLayersPerCakeDish:
+                {
+                    int layers = (int)Math.Round(value, MidpointRounding.AwayFromZero);
+                    if (layers == 0)
+                    {
+                        break;
+                    }
+
+                    foreach (DishInstance d in dishes)
+                    {
+                        if (ctx.IsCategory(d, "cake"))
+                        {
+                            ctx.AddHappyCakeLayers(layers, mult: false);
                         }
                     }
 

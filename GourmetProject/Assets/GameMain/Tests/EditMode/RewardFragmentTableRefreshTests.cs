@@ -25,7 +25,6 @@ namespace GourmetProject.Tests.EditMode
                 Array.Empty<DishDef>(),
                 Array.Empty<SkillDef>(),
                 Array.Empty<FlavorDef>(),
-                Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
             var session = new BattleSession(
                 battleTable,

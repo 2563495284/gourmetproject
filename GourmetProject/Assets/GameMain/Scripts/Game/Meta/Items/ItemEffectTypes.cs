@@ -31,7 +31,6 @@ namespace GourmetProject.Game.Meta
         public const string AddScore = "AddScore";           // 给目标食物永久加分
         public const string AddCountAs = "AddCountAs";        // 给目标食物加「视为食物数」
         public const string AddFlavor = "AddFlavor";          // 给目标食物（食谱）永久附加风味（effectParam=风味id，调味小票）
-        public const string AddMaterial = "AddMaterial";      // 给目标格永久附加材质（effectParam=材质id，铺台小票）
         public const string EnhanceFlavor = "EnhanceFlavor";  // 强化目标食物风味
         public const string ConvertCategory = "ConvertCategory"; // 转换目标食物分类
         public const string ConvertFlavor = "ConvertFlavor";  // 转换目标食物风味
@@ -96,6 +95,7 @@ namespace GourmetProject.Game.Meta
         public const string TimelineAddInterestNode = "TimelineAddInterestNode";
         public const string TimelineAddShopNode = "TimelineAddShopNode";
         public const string TimelineAddLotteryNode = "TimelineAddLotteryNode";
+        public const string TimelineAddRestoreHeartNode = "TimelineAddRestoreHeartNode";
         public const string TimelineDeleteNode = "TimelineDeleteNode";
         public const string TimelineSkipNode = "TimelineSkipNode";
         public const string TimelineExecuteNext = "TimelineExecuteNext"; // 旧配置兼容
@@ -134,10 +134,6 @@ namespace GourmetProject.Game.Meta
         public const string FlavorDoubleSlot = "FlavorDoubleSlot";
         public const string FlavorContagion = "FlavorContagion";
 
-        // —— 标签族 ——
-        public const string CellTagEnhance = "CellTagEnhance";
-        public const string CellTagContagion = "CellTagContagion";
-
         // —— 事件/行动概率族 ——
         public const string LuckyEventGuarantee = "LuckyEventGuarantee";
         public const string LuckyEventChance = "LuckyEventChance";
@@ -160,7 +156,6 @@ namespace GourmetProject.Game.Meta
             AddScore,
             AddCountAs,
             AddFlavor,
-            AddMaterial,
             EnhanceFlavor,
             ConvertCategory,
             ConvertFlavor,
@@ -180,6 +175,7 @@ namespace GourmetProject.Game.Meta
             TimelineAddInterestNode,
             TimelineAddShopNode,
             TimelineAddLotteryNode,
+            TimelineAddRestoreHeartNode,
             TimelineDeleteNode,
         };
 

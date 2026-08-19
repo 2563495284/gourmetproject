@@ -58,6 +58,24 @@ namespace GourmetProject.Game.Meta.Passives
         }
     }
 
+    [Preserve]
+    [PassiveItemModel("item_self_count_flat")]
+    public sealed class SelfCountFlatModel : ScoreSpecModel
+    {
+        public SelfCountFlatModel() : base(ItemScoreEffectType.PerDishFlatTimesOwnCountAs)
+        {
+        }
+    }
+
+    [Preserve]
+    [PassiveItemModel("item_self_count_mult")]
+    public sealed class SelfCountMultModel : ScoreSpecModel
+    {
+        public SelfCountMultModel() : base(ItemScoreEffectType.PerDishMultFlatTimesOwnCountAs)
+        {
+        }
+    }
+
     /// <summary>首个正式上菜立即获得倍率 +N。</summary>
     [Preserve]
     [PassiveItemModel("item_first_+2")]
@@ -144,6 +162,7 @@ namespace GourmetProject.Game.Meta.Passives
     /// <summary>所有食物额外「视为食物数」。</summary>
     [Preserve]
     [PassiveItemModel("item_count_as_all")]
+    [PassiveItemModel("item_count_as_plus1")]
     public sealed class CountAsBonusAllModel : PassiveItemModel
     {
         public override int ExtraCountAsPerDish() => (int)Value;

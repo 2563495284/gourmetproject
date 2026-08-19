@@ -47,7 +47,6 @@ namespace GourmetProject.Game.Meta
                     // 永久改食谱：任意情境（含经营挑战）都可用。
                     return true;
                 case cfg.ItemTargetKind.DiningTableCell:
-                case cfg.ItemTargetKind.Material:
                 case cfg.ItemTargetKind.FlavorSlot:
                     // 需要「可编辑内容」的情境：奖励界面只做领取，不开放。
                     return ctx != ActiveUseContextKind.Reward;
@@ -127,12 +126,10 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
-        /// <summary>调味与铺台小票只能在尚未结算的 Food 经营挑战主界面使用。</summary>
+        /// <summary>调味小票只能在尚未结算的 Food 经营挑战主界面使用。</summary>
         public static bool RequiresFoodBattle(ItemDefinition item)
         {
-            return item != null
-                && (item.EffectType == ItemEffectTypes.AddFlavor
-                    || item.EffectType == ItemEffectTypes.AddMaterial);
+            return item != null && item.EffectType == ItemEffectTypes.AddFlavor;
         }
 
         /// <summary>排程小票效果（操作时间轴/Boss，局外/地图专用）。</summary>
@@ -150,6 +147,7 @@ namespace GourmetProject.Game.Meta
                 case ItemEffectTypes.TimelineAddInterestNode:
                 case ItemEffectTypes.TimelineAddShopNode:
                 case ItemEffectTypes.TimelineAddLotteryNode:
+                case ItemEffectTypes.TimelineAddRestoreHeartNode:
                 case ItemEffectTypes.TimelineDeleteNode:
                     return true;
                 default:
@@ -198,7 +196,8 @@ namespace GourmetProject.Game.Meta
             return effectType == ItemEffectTypes.TimelineAddRewardNode
                 || effectType == ItemEffectTypes.TimelineAddInterestNode
                 || effectType == ItemEffectTypes.TimelineAddShopNode
-                || effectType == ItemEffectTypes.TimelineAddLotteryNode;
+                || effectType == ItemEffectTypes.TimelineAddLotteryNode
+                || effectType == ItemEffectTypes.TimelineAddRestoreHeartNode;
         }
 
         public static bool IsTodoTimelineEffect(string effectType)

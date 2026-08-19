@@ -4,7 +4,6 @@ namespace GourmetProject.Game.Run
     {
         Item,
         DishFlavor,
-        TableMaterial,
     }
 
     /// <summary>奖励、商店与事件共用的真实获得内容通知。</summary>
@@ -18,6 +17,5 @@ namespace GourmetProject.Game.Run
         public string DishId { get; set; } = string.Empty;
         public string FlavorId { get; set; } = string.Empty;
         public string FragmentId { get; set; } = string.Empty;
-        public string MaterialId { get; set; } = string.Empty;
     }
 }

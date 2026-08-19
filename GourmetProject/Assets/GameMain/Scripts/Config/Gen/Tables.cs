@@ -31,7 +31,7 @@ public partial class Tables
     /// </summary>
     public TbCharacter TbCharacter {get; }
     /// <summary>
-    /// 餐桌格库：也用作初始餐桌形状来源。materialIds 为该餐桌格可随机落位的材质列表；餐桌格不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
+    /// 餐桌格库：也用作初始餐桌形状来源。餐桌格不旋转(1x2 与 2x1 视为两个碎片)。&#39;X&#39;=存在格。
     /// </summary>
     public TbTableFragment TbTableFragment {get; }
     /// <summary>
@@ -39,7 +39,7 @@ public partial class Tables
     /// </summary>
     public TbRecipe TbRecipe {get; }
     /// <summary>
-    /// 装饰品：永久常驻或获得时生效，装饰品池按隐藏分筛选。specialTags 用 | 分隔，空串=无。
+    /// 装饰品：永久常驻或获得时生效；随机先按运气抽品质，再按 baseWeight 抽单品。
     /// </summary>
     public TbPassiveItem TbPassiveItem {get; }
     /// <summary>
@@ -55,7 +55,7 @@ public partial class Tables
     /// </summary>
     public TbRewardSlot TbRewardSlot {get; }
     /// <summary>
-    /// 奖励池筛选：specialTags 用 | 分隔；装饰品和消耗品不按品质权重筛选。
+    /// 奖励池筛选：specialTags 与 qualityFilters 均为空时不限制。
     /// </summary>
     public TbRewardPool TbRewardPool {get; }
     /// <summary>
@@ -94,10 +94,6 @@ public partial class Tables
     /// 食物风味：单槽，后者替换前者。effectType/effectValue 定义简易结算效果。
     /// </summary>
     public TbFlavor TbFlavor {get; }
-    /// <summary>
-    /// 餐桌材质：挂在餐桌格上（TableFragment.materialIds 引用）。effectType/effectValue 定义结算效果。
-    /// </summary>
-    public TbMaterial TbMaterial {get; }
     /// <summary>
     /// 欢乐蛋糕层数分段buff：结算时读全局层数，layers≥threshold 的档累计应用到 category 分类所有食物。effectType 复用 SkillActionType。
     /// </summary>
@@ -142,6 +138,14 @@ public partial class Tables
     /// 食谱随机小组：仅配置组ID与组内带权放回随机池，食谱通过 groupIds 正向引用。
     /// </summary>
     public TbRecipeGroup TbRecipeGroup {get; }
+    /// <summary>
+    /// 装饰品运气随周数和天数增长的曲线。
+    /// </summary>
+    public TbItemLuckCurve TbItemLuckCurve {get; }
+    /// <summary>
+    /// 装饰品品质受运气影响的指数权重参数。
+    /// </summary>
+    public TbItemQualityLuck TbItemQualityLuck {get; }
 
     public Tables(System.Func<string, JSONNode> loader)
     {
@@ -165,7 +169,6 @@ public partial class Tables
         TbUnlockCondition = new TbUnlockCondition(loader("tbunlockcondition"));
         TbSkill = new TbSkill(loader("tbskill"));
         TbFlavor = new TbFlavor(loader("tbflavor"));
-        TbMaterial = new TbMaterial(loader("tbmaterial"));
         TbCakeLayerBuff = new TbCakeLayerBuff(loader("tbcakelayerbuff"));
         TbSubSkill = new TbSubSkill(loader("tbsubskill"));
         TbFood = new TbFood(loader("tbfood"));
@@ -177,6 +180,8 @@ public partial class Tables
         TbActionRewardRule = new TbActionRewardRule(loader("tbactionrewardrule"));
         TbGameBase = new TbGameBase(loader("tbgamebase"));
         TbRecipeGroup = new TbRecipeGroup(loader("tbrecipegroup"));
+        TbItemLuckCurve = new TbItemLuckCurve(loader("tbitemluckcurve"));
+        TbItemQualityLuck = new TbItemQualityLuck(loader("tbitemqualityluck"));
         ResolveRef();
     }
     
@@ -202,7 +207,6 @@ public partial class Tables
         TbUnlockCondition.ResolveRef(this);
         TbSkill.ResolveRef(this);
         TbFlavor.ResolveRef(this);
-        TbMaterial.ResolveRef(this);
         TbCakeLayerBuff.ResolveRef(this);
         TbSubSkill.ResolveRef(this);
         TbFood.ResolveRef(this);
@@ -214,6 +218,8 @@ public partial class Tables
         TbActionRewardRule.ResolveRef(this);
         TbGameBase.ResolveRef(this);
         TbRecipeGroup.ResolveRef(this);
+        TbItemLuckCurve.ResolveRef(this);
+        TbItemQualityLuck.ResolveRef(this);
     }
 }
 

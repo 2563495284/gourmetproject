@@ -81,13 +81,7 @@ namespace GourmetProject.Game.Adapter
             var flavors = new List<FlavorDef>(tables.TbFlavor.DataList.Count);
             foreach (cfg.Flavor f in tables.TbFlavor.DataList)
             {
-                flavors.Add(ToFlavorDef(f));
-            }
-
-            var materials = new List<MaterialDef>(tables.TbMaterial.DataList.Count);
-            foreach (cfg.Material c in tables.TbMaterial.DataList)
-            {
-                materials.Add(ToMaterialDef(c));
+                flavors.Add(ToFlavorDef(f, tables));
             }
 
             var recipes = new List<RecipeDef>(tables.TbRecipe.DataList.Count);
@@ -117,7 +111,7 @@ namespace GourmetProject.Game.Adapter
                     c.Desc));
             }
 
-            return new GameplayDatabase(dishes, skills, flavors, materials, recipes, fragments, cakeLayerBuffs);
+            return new GameplayDatabase(dishes, skills, flavors, recipes, fragments, cakeLayerBuffs);
         }
 
         private static List<TableFragmentDef> BuildFragments(cfg.Tables tables)
@@ -131,9 +125,7 @@ namespace GourmetProject.Game.Adapter
                     shapeRows,
                     f.HiddenRange.Min,
                     f.HiddenRange.Max,
-                    f.BaseWeight,
-                    new List<string>(f.MaterialIds),
-                    new List<CellMaterial>()));
+                    f.BaseWeight));
             }
 
             return fragments;
@@ -284,30 +276,27 @@ namespace GourmetProject.Game.Adapter
             return new SkillDef(s.Id, string.Empty, desc, termIds, rules, parts);
         }
 
-        private static FlavorDef ToFlavorDef(cfg.Flavor f)
+        private static FlavorDef ToFlavorDef(cfg.Flavor f, cfg.Tables tables)
         {
             var effectType = (FlavorEffectType)(int)f.EffectType;
+            string template = f.Desc;
+            if (string.IsNullOrEmpty(template) && !string.IsNullOrEmpty(f.TermId))
+            {
+                cfg.Term term = tables.TbTerm.GetOrDefault(f.TermId);
+                if (term != null)
+                {
+                    template = term.Desc;
+                }
+            }
+
             return new FlavorDef(
                 f.Id,
                 f.Name,
-                EffectDescFormatter.Format(f.Desc, f.EffectValue, signed: !effectType.IsMultiplier()),
+                EffectDescFormatter.Format(template, f.EffectValue, signed: !effectType.IsMultiplier()),
                 effectType,
                 f.EffectValue,
                 f.EffectParam,
                 f.TermId);
-        }
-
-        private static MaterialDef ToMaterialDef(cfg.Material c)
-        {
-            var effectType = (MaterialEffectType)(int)c.EffectType;
-            return new MaterialDef(
-                c.Id,
-                c.Name,
-                EffectDescFormatter.Format(c.Desc, c.EffectValue, signed: !effectType.IsMultiplier()),
-                effectType,
-                c.EffectValue,
-                c.EffectParam,
-                c.TermId);
         }
 
         private static RecipeDef ToRecipeDef(

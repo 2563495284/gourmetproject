@@ -218,7 +218,7 @@ namespace GourmetProject.Tests.EditMode
 
         private static DiningTable Table(params GridPos[] existing)
         {
-            return new DiningTable(8, 8, existing, null);
+            return new DiningTable(8, 8, existing);
         }
 
         private static TableFragmentDef Fragment(params string[] rows)
@@ -228,9 +228,7 @@ namespace GourmetProject.Tests.EditMode
                 rows,
                 0,
                 0,
-                1f,
-                null,
-                null);
+                1f);
         }
 
         private static TableFragmentPlacementEvaluation Evaluate(

@@ -59,41 +59,6 @@ MonoBehaviour:
     Event: 0
     Interest: 0
     Shop: 0
-  - ItemId: item_active_lay_cherry
-    Normal: 1
-    Event: 0
-    Interest: 0
-    Shop: 0
-  - ItemId: item_active_lay_emerald
-    Normal: 1
-    Event: 0
-    Interest: 0
-    Shop: 0
-  - ItemId: item_active_lay_gold
-    Normal: 1
-    Event: 0
-    Interest: 0
-    Shop: 0
-  - ItemId: item_active_lay_marble
-    Normal: 1
-    Event: 0
-    Interest: 0
-    Shop: 0
-  - ItemId: item_active_lay_obsidian
-    Normal: 1
-    Event: 0
-    Interest: 0
-    Shop: 0
-  - ItemId: item_active_lay_silver
-    Normal: 1
-    Event: 0
-    Interest: 0
-    Shop: 0
-  - ItemId: item_active_lay_walnut
-    Normal: 1
-    Event: 0
-    Interest: 0
-    Shop: 0
   - ItemId: item_active_reroll_action
     Normal: 1
     Event: 0
@@ -160,11 +125,6 @@ MonoBehaviour:
     Interest: 0
     Shop: 0
   - ItemId: item_cake_to_gold
-    Normal: 1
-    Event: 0
-    Interest: 0
-    Shop: 0
-  - ItemId: item_celltag_enhance
     Normal: 1
     Event: 0
     Interest: 0
@@ -650,11 +610,6 @@ MonoBehaviour:
     Interest: 0
     Shop: 0
   - ItemId: item_super_fragment_reward
-    Normal: 1
-    Event: 0
-    Interest: 0
-    Shop: 0
-  - ItemId: item_super_material_spread
     Normal: 1
     Event: 0
     Interest: 0

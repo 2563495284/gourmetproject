@@ -1,6 +1,6 @@
 namespace GourmetProject.Gameplay.Model
 {
-    /// <summary>风味效果类型。与 Luban 的 cfg.FlavorEffectType 一一对应；餐桌材质使用 MaterialEffectType。</summary>
+    /// <summary>风味效果类型。与 Luban 的 cfg.FlavorEffectType 一一对应。</summary>
     public enum FlavorEffectType
     {
         None = 0,
@@ -25,36 +25,6 @@ namespace GourmetProject.Gameplay.Model
 
         /// <summary>咸：每层独立按 EffectValue 概率令本菜额外完整结算一次。</summary>
         ExtraSettlementChance = 11,
-    }
-
-    /// <summary>
-    /// 餐桌材质效果类型。与 Luban 的 cfg.MaterialEffectType 一一对应。
-    /// 材质按「食物×材质」聚合结算（携带该食物占据本材质的格数 cellCount），在 Materials 阶段（技能结算后）触发。
-    /// </summary>
-    public enum MaterialEffectType
-    {
-        None = 0,
-
-        /// <summary>分数 +EffectValue（临时，樱桃木）。每食物每材质触发一次。</summary>
-        AddFlat = 1,
-
-        /// <summary>分数永久 +EffectValue（胡桃木）。</summary>
-        PermanentAddFlat = 2,
-
-        /// <summary>倍率 +EffectValue（临时，大理石）。</summary>
-        AddMultFlat = 3,
-
-        /// <summary>倍率 ×EffectValue（黑曜石）。</summary>
-        AddMult = 4,
-
-        /// <summary>本食物每占 1 格本材质，倍率 +EffectValue（翡翠）。</summary>
-        AddMultFlatPerCell = 5,
-
-        /// <summary>本食物占据 &gt;= 阈值(EffectParam) 格本材质时，获得 EffectValue 金币（金）。</summary>
-        GrantGoldIfCellCount = 6,
-
-        /// <summary>本食物每占据 1 格本材质，独立登记一次 1/5 获得消耗品的掷骰请求（银）。</summary>
-        GrantItemRollIfCellCount = 7,
     }
 
     /// <summary>
@@ -199,12 +169,4 @@ namespace GourmetProject.Gameplay.Model
         }
     }
 
-    public static class MaterialEffectTypeExtensions
-    {
-        /// <summary>倍率类效果（数值是乘数，描述用 ×，不补正负号）。仅黑曜石 AddMult。</summary>
-        public static bool IsMultiplier(this MaterialEffectType type)
-        {
-            return type == MaterialEffectType.AddMult;
-        }
-    }
 }

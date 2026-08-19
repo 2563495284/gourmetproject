@@ -420,15 +420,20 @@ namespace GourmetProject.Tests.EditMode
             GameRun run = CreateRun("survival-active-reserve");
             Assert.That(run.TryLoseHearts(1, out _, out int hearts), Is.True);
             Assert.That(hearts, Is.EqualTo(2));
-            AcquireActive(run, "item_active_lay_marble");
-            AcquireActive(run, "item_active_lay_obsidian");
-            AcquireActive(run, "item_active_lay_cherry");
+            AcquireActive(run, "item_active_season_salty");
+            AcquireActive(run, "item_active_season_bitter");
+            AcquireActive(run, "item_active_season_sweet");
             BattleSession session = BattleSessionFactory.Build(
                 run,
                 int.MaxValue,
                 string.Empty,
                 "survival-active-reserve-battle",
                 string.Empty);
+            AutoPlacementSolver.Solve(
+                session,
+                AutoPlayerLevel.Expert,
+                new AutoPlayerPolicy { PlacementNodeBudget = 20 },
+                policyRandom: null);
             HeadlessWeekLoopView view = CreateView(run, AutoPlayerLevel.Expert, 1354);
             var stage = new AutoRunStageTrace { Week = 1 };
             RandomSnapshot before = run.Random.Capture();
@@ -436,55 +441,45 @@ namespace GourmetProject.Tests.EditMode
             view.UseBattleActiveItems(
                 session,
                 stage,
-                beforePlacement: true,
+                beforePlacement: false,
                 requiredScore: int.MaxValue,
                 isBoss: false);
 
             Assert.That(stage.ActiveItemsUsed, Has.Count.EqualTo(2));
-            Assert.That(stage.ActiveItemsUsed, Does.Contain("item_active_lay_marble"));
-            Assert.That(stage.ActiveItemsUsed, Does.Contain("item_active_lay_obsidian"));
+            Assert.That(stage.ActiveItemsUsed, Does.Contain("item_active_season_salty"));
+            Assert.That(stage.ActiveItemsUsed, Does.Contain("item_active_season_bitter"));
             Assert.That(run.ActiveItemCount, Is.EqualTo(1));
-            Assert.That(run.HasItem("item_active_lay_cherry"), Is.True);
-            Assert.That(
-                session.DiningTable.ExistingCells()
-                    .Count(cell => session.DiningTable.MaterialsAt(cell).Count > 0),
-                Is.EqualTo(2),
-                "successive material items should improve distinct cells instead of overwriting one cell");
+            Assert.That(run.HasItem("item_active_season_sweet"), Is.True);
             AssertRandomSnapshotEqual(before, run.Random.Capture());
         }
 
         [Test]
-        public void BattleActivePolicy_FailedHighestRankedItemDoesNotCountOrBlockNextCandidate()
+        public void BattleActivePolicy_ItemsWithoutLegalTargetsAreNotConsumedAndDoNotBlockLaterPolicy()
         {
             GameRun run = CreateRun("survival-active-failed-candidate");
             Assert.That(run.TryLoseHearts(2, out _, out int hearts), Is.True);
             Assert.That(hearts, Is.EqualTo(1));
-            AcquireActive(run, "item_active_lay_marble");
-            AcquireActive(run, "item_active_lay_obsidian");
+            AcquireActive(run, "item_active_season_salty");
+            AcquireActive(run, "item_active_season_bitter");
             BattleSession session = BattleSessionFactory.Build(
                 run,
                 int.MaxValue,
                 string.Empty,
                 "survival-active-failed-candidate-battle",
                 string.Empty);
-            foreach (GridPos cell in session.DiningTable.ExistingCells())
-            {
-                Assert.That(session.DiningTable.SetMaterialAt(cell, "m_marble"), Is.True);
-            }
-
             HeadlessWeekLoopView view = CreateView(run, AutoPlayerLevel.Expert, 1355);
             var stage = new AutoRunStageTrace { Week = 1 };
 
             view.UseBattleActiveItems(
                 session,
                 stage,
-                beforePlacement: true,
+                beforePlacement: false,
                 requiredScore: int.MaxValue,
                 isBoss: false);
 
-            Assert.That(stage.ActiveItemsUsed, Is.EqualTo(new[] { "item_active_lay_obsidian" }));
-            Assert.That(run.HasItem("item_active_lay_marble"), Is.True);
-            Assert.That(run.HasItem("item_active_lay_obsidian"), Is.False);
+            Assert.That(stage.ActiveItemsUsed, Is.Empty);
+            Assert.That(run.HasItem("item_active_season_salty"), Is.True);
+            Assert.That(run.HasItem("item_active_season_bitter"), Is.True);
         }
 
         [Test]
@@ -492,14 +487,12 @@ namespace GourmetProject.Tests.EditMode
         {
             GameRun run = CreateRun("survival-active-score-order");
             HeadlessWeekLoopView view = CreateView(run, AutoPlayerLevel.Expert, 1356);
-            ItemDefinition marble = Active("item_active_lay_marble");
-            ItemDefinition gold = Active("item_active_lay_gold");
             ItemDefinition salty = Active("item_active_season_salty");
+            ItemDefinition sweet = Active("item_active_season_sweet");
             ItemDefinition fresh = Active("item_active_season_umami");
 
-            Assert.That(view.BattleActiveScoreHelp(marble), Is.GreaterThan(0d));
-            Assert.That(view.BattleActiveScoreHelp(gold), Is.Zero);
-            Assert.That(view.BattleActiveScoreHelp(salty), Is.GreaterThan(0d));
+            Assert.That(view.BattleActiveScoreHelp(salty), Is.GreaterThan(view.BattleActiveScoreHelp(sweet)));
+            Assert.That(view.BattleActiveScoreHelp(sweet), Is.GreaterThan(0d));
             Assert.That(view.BattleActiveScoreHelp(fresh), Is.Zero);
         }
 

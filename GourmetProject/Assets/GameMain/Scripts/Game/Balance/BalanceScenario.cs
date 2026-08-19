@@ -26,7 +26,6 @@ namespace GourmetProject.Game.Balance
         public List<BalanceItemEntry> Items = new List<BalanceItemEntry>();
         public List<string> TableFragmentIds = new List<string>();
         public List<BalanceFragmentPlacement> FragmentPlacements = new List<BalanceFragmentPlacement>();
-        public List<BalanceCellMaterial> CellMaterials = new List<BalanceCellMaterial>();
         public List<BuildReplayStep> Dishes = new List<BuildReplayStep>();
         public BalancePerturbation Perturbation = new BalancePerturbation();
     }
@@ -83,13 +82,5 @@ namespace GourmetProject.Game.Balance
         [Range(0, 3)] public int Rotation;
         public int X;
         public int Y;
-    }
-
-    [Serializable]
-    public sealed class BalanceCellMaterial
-    {
-        public int X;
-        public int Y;
-        public string MaterialId = string.Empty;
     }
 }

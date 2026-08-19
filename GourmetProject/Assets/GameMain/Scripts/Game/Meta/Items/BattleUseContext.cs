@@ -35,15 +35,11 @@ namespace GourmetProject.Game.Meta
                 case cfg.ItemTargetKind.RecipeDish:
                     return EnumerateRecipeDishes(Run);
                 case cfg.ItemTargetKind.DiningTableCell:
-                    return item.EffectType == ItemEffectTypes.AddMaterial
-                        ? EnumerateSettableMaterialCells(_session?.DiningTable, item.EffectParam)
-                        : EnumerateTableCells(_session?.DiningTable);
+                    return EnumerateTableCells(_session?.DiningTable);
                 case cfg.ItemTargetKind.DiningTableDish:
                     return item.EffectType == ItemEffectTypes.AddFlavor
                         ? EnumerateSourceBackedTableDishes(_session?.DiningTable, Run)
                         : EnumerateTableDishes(_session?.DiningTable);
-                case cfg.ItemTargetKind.Material:
-                    return EnumerateMaterials(Run);
                 case cfg.ItemTargetKind.FlavorSlot:
                     return EnumerateFlavorSlots(Run);
                 default:
@@ -111,7 +107,7 @@ namespace GourmetProject.Game.Meta
                 && _session.AddCountAsToDish(dishId, amount);
         }
 
-        // —— 调味/铺台：当前经营挑战立即同步，并写入本次 Run 内存；落盘仍由既有存档节点负责 ——
+        // —— 调味：当前经营挑战立即同步，并写入本次 Run 内存；落盘仍由既有存档节点负责 ——
 
         public bool AddFlavorToDish(ActiveTarget target, string flavorId)
         {
@@ -197,66 +193,6 @@ namespace GourmetProject.Game.Meta
         {
             // 当前 DishDef 分类是静态只读数据；分类转换需要引入运行时食物覆盖后才能可靠落地。
             return false;
-        }
-
-        public bool AddMaterialToCell(ActiveTarget target, string materialId)
-        {
-            if (_session == null
-                || _session.IsSettled
-                || Run == null
-                || target.TargetKind != cfg.ItemTargetKind.DiningTableCell
-                || string.IsNullOrEmpty(materialId))
-            {
-                return false;
-            }
-
-            var position = new GridPos(target.X, target.Y);
-            DiningTable table = _session.DiningTable;
-            if (!CanSetCellMaterial(table, target, materialId, out position)
-                || !Run.SetCellMaterial(position, materialId))
-            {
-                return false;
-            }
-
-            // 上面已完整预检，SetMaterialAt 在这里必定成功，避免 Run 成功而餐桌失败的部分写入。
-            return table.SetMaterialAt(position, materialId);
-        }
-
-        internal static bool CanSetCellMaterial(
-            DiningTable table,
-            ActiveTarget target,
-            string materialId,
-            out GridPos position)
-        {
-            position = new GridPos(target.X, target.Y);
-            if (table == null
-                || target.TargetKind != cfg.ItemTargetKind.DiningTableCell
-                || string.IsNullOrEmpty(materialId)
-                || !table.Exists(position))
-            {
-                return false;
-            }
-
-            IReadOnlyList<string> current = table.MaterialsAt(position);
-            return current.Count == 0
-                || !string.Equals(current[current.Count - 1], materialId, StringComparison.Ordinal);
-        }
-
-        internal static IReadOnlyList<ActiveTarget> EnumerateSettableMaterialCells(
-            DiningTable table,
-            string materialId)
-        {
-            IReadOnlyList<ActiveTarget> cells = EnumerateTableCells(table);
-            var targets = new List<ActiveTarget>(cells.Count);
-            foreach (ActiveTarget cell in cells)
-            {
-                if (CanSetCellMaterial(table, cell, materialId, out _))
-                {
-                    targets.Add(cell);
-                }
-            }
-
-            return targets;
         }
 
         public bool GenerateDish(ActiveTarget target, string dishId, string randomKey)
@@ -383,25 +319,6 @@ namespace GourmetProject.Game.Meta
                     origin.X,
                     origin.Y,
                     cfg.ItemTargetKind.DiningTableDish));
-            }
-
-            return targets;
-        }
-
-        internal static IReadOnlyList<ActiveTarget> EnumerateMaterials(GameRun run)
-        {
-            var targets = new List<ActiveTarget>();
-            if (run?.Database?.AllMaterials == null)
-            {
-                return targets;
-            }
-
-            foreach (var material in run.Database.AllMaterials)
-            {
-                if (material != null)
-                {
-                    targets.Add(new ActiveTarget(material.Id, targetKind: cfg.ItemTargetKind.Material));
-                }
             }
 
             return targets;

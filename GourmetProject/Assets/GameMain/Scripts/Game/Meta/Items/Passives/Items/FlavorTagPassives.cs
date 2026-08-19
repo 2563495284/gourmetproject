@@ -28,17 +28,6 @@ namespace GourmetProject.Game.Meta.Passives
             MarkIconUsed();
             PassiveMutationPresenter.ShowRecipe(Run, result);
         }
-
-        protected void FinishCells(CellMutationResult result)
-        {
-            if (result != null)
-            {
-                result.SourceItemId = ItemId;
-            }
-
-            MarkIconUsed();
-            PassiveMutationPresenter.ShowCells(Run, result);
-        }
     }
 
     [Preserve]
@@ -88,26 +77,6 @@ namespace GourmetProject.Game.Meta.Passives
         public override void OnAcquired()
         {
             FinishRecipe(PassiveRecipeMutationService.ContagionFlavor(Run, Def.Name, Rng()));
-        }
-    }
-
-    [Preserve]
-    [PassiveItemModel("item_celltag_enhance")]
-    public sealed class CellTagEnhanceModel : FlavorTagOnAcquireModel
-    {
-        public override void OnAcquired()
-        {
-            FinishCells(PassiveRecipeMutationService.AddRandomMaterials(Run, Def.Name, System.Math.Max(1, (int)Value), Rng()));
-        }
-    }
-
-    [Preserve]
-    [PassiveItemModel("item_celltag_contagion")]
-    public sealed class CellTagContagionModel : FlavorTagOnAcquireModel
-    {
-        public override void OnAcquired()
-        {
-            FinishCells(PassiveRecipeMutationService.ContagionMaterial(Run, Def.Name, Rng()));
         }
     }
 

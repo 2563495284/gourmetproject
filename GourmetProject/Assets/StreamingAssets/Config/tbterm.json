@@ -27,52 +27,17 @@
   {
     "id": "t_sour",
     "name": "酸",
-    "desc": "[context]结算开始[/context]时，若仍在食谱中\n场上食物[strong]倍率[/strong] [multadd]+0.5[/multadd]"
+    "desc": "[context]结算开始[/context]时，若仍在食谱中\n场上食物[strong]倍率[/strong][multadd]+0.5[/multadd]"
   },
   {
     "id": "t_salty",
     "name": "咸",
-    "desc": "有 20% 概率[benefit]额外结算[/benefit] 1 次"
+    "desc": "有20%概率[benefit]额外结算[/benefit]1次"
   },
   {
     "id": "clb",
     "name": "欢乐蛋糕",
     "desc": "根据[term]蛋糕[/term]层数\n对场上所有[term]蛋糕[/term]食物增益"
-  },
-  {
-    "id": "m_cherry",
-    "name": "樱桃木",
-    "desc": "[strong]分数[/strong] [score]+60[/score]"
-  },
-  {
-    "id": "m_walnut",
-    "name": "胡桃木",
-    "desc": "[strong]分数[/strong]永久 [score]+15[/score]"
-  },
-  {
-    "id": "m_marble",
-    "name": "大理石",
-    "desc": "[strong]倍率[/strong] [multadd]+2[/multadd]"
-  },
-  {
-    "id": "m_obsidian",
-    "name": "黑曜石",
-    "desc": "[strong]倍率[/strong] [multmul]×1.5[/multmul]"
-  },
-  {
-    "id": "m_emerald",
-    "name": "翡翠",
-    "desc": "每占 1 格翡翠\n[strong]倍率[/strong] [multadd]+0.8[/multadd]"
-  },
-  {
-    "id": "m_gold",
-    "name": "金",
-    "desc": "占据 1 格金餐桌时\n[gold]+6 金币[/gold]"
-  },
-  {
-    "id": "m_silver",
-    "name": "银",
-    "desc": "每占据 1 格银材质\n独立 1/5 概率获得[term]消耗品[/term]"
   },
   {
     "id": "term_food_count_as",

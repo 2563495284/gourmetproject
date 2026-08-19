@@ -278,9 +278,9 @@ namespace GourmetProject.Game.Meta.Passives
         {
         }
 
-        // ================= 隐藏分族 =================
+        // ================= 进度修正族（隐藏分 / 装饰品运气） =================
 
-        /// <summary>按用途提供隐藏分常驻修正（分发器累加）。</summary>
+        /// <summary>按用途提供进度常驻修正（分发器累加）。</summary>
         public virtual float HiddenScoreOffset(HiddenScorePurpose purpose) => Def?.HiddenScoreOffset(purpose) ?? 0f;
 
         /// <summary>旧通用奖励隐藏分入口；保留为食物奖励隐藏分修正的兼容别名。</summary>
@@ -324,6 +324,20 @@ namespace GourmetProject.Game.Meta.Passives
 
         /// <summary>每传递到一个目标时，来源永久倍率的累加值。</summary>
         public virtual bool TryGetSweetTransferSourceMultiplier(out float value)
+        {
+            value = 0f;
+            return false;
+        }
+
+        /// <summary>每传递到一个目标时，该目标永久分数的累加值。</summary>
+        public virtual bool TryGetSweetTransferTargetFlat(out float value)
+        {
+            value = 0f;
+            return false;
+        }
+
+        /// <summary>每传递到一个目标时，来源永久分数的累加值。</summary>
+        public virtual bool TryGetSweetTransferSourceFlat(out float value)
         {
             value = 0f;
             return false;

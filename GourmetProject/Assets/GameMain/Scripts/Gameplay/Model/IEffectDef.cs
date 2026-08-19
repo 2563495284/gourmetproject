@@ -3,8 +3,8 @@ using System.Collections.Generic;
 namespace GourmetProject.Gameplay.Model
 {
     /// <summary>
-    /// 携带结算展示数据的共享契约（风味 / 餐桌材质）。
-    /// 风味通过 FlavorEffectType 派发，材质通过 MaterialEffectType 派发；两者复用效果数值、参数与明细展示字段。
+    /// 携带结算展示数据的共享契约（风味）。
+    /// 风味通过 FlavorEffectType 派发，并复用效果数值、参数与明细展示字段。
     /// </summary>
     public interface IEffectDef
     {

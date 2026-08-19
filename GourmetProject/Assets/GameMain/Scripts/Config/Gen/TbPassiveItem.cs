@@ -14,7 +14,7 @@ using Luban.SimpleJSON;
 namespace cfg
 {
 /// <summary>
-/// 装饰品：永久常驻或获得时生效，装饰品池按隐藏分筛选。specialTags 用 | 分隔，空串=无。
+/// 装饰品：永久常驻或获得时生效；随机先按运气抽品质，再按 baseWeight 抽单品。
 /// </summary>
 public partial class TbPassiveItem
 {

@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Run;
-using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 
 namespace GourmetProject.Game.Meta.Passives
@@ -218,169 +217,6 @@ namespace GourmetProject.Game.Meta.Passives
             return targets;
         }
 
-        public static CellMutationResult AddRandomMaterials(GameRun run, string title, int count, IRandomStream rng)
-        {
-            var result = new CellMutationResult { Title = title };
-            List<GridPos> targets = EmptyMaterialCells(run);
-            List<string> materials = MaterialIds(run);
-            if (run == null || rng == null || targets.Count == 0 || materials.Count == 0 || count <= 0)
-            {
-                return result;
-            }
-
-            rng.Shuffle(targets);
-            for (int i = 0; i < count && i < targets.Count; i++)
-            {
-                GridPos pos = targets[i];
-                string materialId = materials[rng.Range(0, materials.Count)];
-                IReadOnlyList<string> before = MaterialSnapshot(run, pos);
-                if (run.SetCellMaterial(pos, materialId))
-                {
-                    result.Entries.Add(new CellMutationEntry
-                    {
-                        Pos = pos,
-                        MaterialId = materialId,
-                        BeforeMaterialIds = before,
-                        AfterMaterialIds = MaterialAfter(materialId),
-                    });
-                }
-            }
-
-            return result;
-        }
-
-        public static CellMutationResult ContagionMaterial(GameRun run, string title, IRandomStream rng)
-        {
-            var result = new CellMutationResult { Title = title };
-            if (run == null || rng == null)
-            {
-                return result;
-            }
-
-            DiningTable preview = run.BuildTablePreviewFromFragments();
-            var sources = new List<CellMutationEntry>();
-            foreach (GridPos cell in preview.ExistingCells())
-            {
-                IReadOnlyList<string> materials = preview.MaterialsAt(cell);
-                if (materials.Count > 0)
-                {
-                    sources.Add(new CellMutationEntry { Pos = cell, MaterialId = materials[rng.Range(0, materials.Count)] });
-                }
-            }
-
-            List<GridPos> targets = EmptyMaterialCells(run);
-            if (sources.Count == 0 || targets.Count == 0)
-            {
-                return result;
-            }
-
-            CellMutationEntry source = sources[rng.Range(0, sources.Count)];
-            rng.Shuffle(targets);
-            foreach (GridPos target in targets)
-            {
-                if (target.Equals(source.Pos))
-                {
-                    continue;
-                }
-
-                IReadOnlyList<string> before = MaterialSnapshot(run, target);
-                if (run.SetCellMaterial(target, source.MaterialId))
-                {
-                    result.Entries.Add(new CellMutationEntry
-                    {
-                        Pos = target,
-                        MaterialId = source.MaterialId,
-                        BeforeMaterialIds = before,
-                        AfterMaterialIds = MaterialAfter(source.MaterialId),
-                    });
-                    break;
-                }
-            }
-
-            return result;
-        }
-
-        public static CellMutationResult SpreadMaterialToAdjacentCell(
-            GameRun run,
-            string title,
-            IRandomStream rng)
-        {
-            var result = new CellMutationResult { Title = title };
-            if (run == null || rng == null)
-            {
-                return result;
-            }
-
-            DiningTable preview = run.BuildTablePreviewFromFragments();
-            var sources = new List<GridPos>();
-            foreach (GridPos cell in preview.ExistingCells())
-            {
-                if (preview.MaterialsAt(cell).Count > 0)
-                {
-                    sources.Add(cell);
-                }
-            }
-
-            if (sources.Count == 0)
-            {
-                return result;
-            }
-
-            rng.Shuffle(sources);
-            var directions = new[]
-            {
-                new GridPos(1, 0),
-                new GridPos(-1, 0),
-                new GridPos(0, 1),
-                new GridPos(0, -1),
-            };
-
-            foreach (GridPos source in sources)
-            {
-                IReadOnlyList<string> sourceMaterials = preview.MaterialsAt(source);
-                var candidates = new List<CellMutationEntry>();
-                foreach (GridPos direction in directions)
-                {
-                    var target = new GridPos(source.X + direction.X, source.Y + direction.Y);
-                    if (!preview.Exists(target))
-                    {
-                        continue;
-                    }
-
-                    IReadOnlyList<string> before = preview.MaterialsAt(target);
-                    foreach (string materialId in sourceMaterials)
-                    {
-                        if (!ContainsIgnoreCase(before, materialId))
-                        {
-                            candidates.Add(new CellMutationEntry
-                            {
-                                Pos = target,
-                                MaterialId = materialId,
-                                BeforeMaterialIds = new List<string>(before),
-                            });
-                        }
-                    }
-                }
-
-                if (candidates.Count == 0)
-                {
-                    continue;
-                }
-
-                CellMutationEntry selected = candidates[rng.Range(0, candidates.Count)];
-                if (!run.SetCellMaterial(selected.Pos, selected.MaterialId))
-                {
-                    continue;
-                }
-
-                selected.AfterMaterialIds = MaterialAfter(selected.MaterialId);
-                result.Entries.Add(selected);
-                break;
-            }
-
-            return result;
-        }
-
         public static RecipeMutationResult RemoveArrowCookies(GameRun run, string title, int maxCount)
         {
             var result = new RecipeMutationResult { Title = title };
@@ -498,24 +334,6 @@ namespace GourmetProject.Game.Meta.Passives
             return result;
         }
 
-        private static bool ContainsIgnoreCase(IReadOnlyList<string> values, string value)
-        {
-            if (values == null)
-            {
-                return false;
-            }
-
-            foreach (string candidate in values)
-            {
-                if (string.Equals(candidate, value, System.StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         private static List<RecipeDishSnapshot> SnapshotRecipe(GameRun run)
         {
             var snapshots = new List<RecipeDishSnapshot>();
@@ -530,21 +348,6 @@ namespace GourmetProject.Game.Meta.Passives
             }
 
             return snapshots;
-        }
-
-        private static IReadOnlyList<string> MaterialSnapshot(GameRun run, GridPos pos)
-        {
-            DiningTable preview = run?.BuildTablePreviewFromFragments();
-            return preview == null
-                ? System.Array.Empty<string>()
-                : new List<string>(preview.MaterialsAt(pos));
-        }
-
-        private static IReadOnlyList<string> MaterialAfter(string materialId)
-        {
-            return string.IsNullOrEmpty(materialId)
-                ? System.Array.Empty<string>()
-                : new[] { materialId };
         }
 
         private static RecipeMutationResult RemoveFlavor(
@@ -624,26 +427,6 @@ namespace GourmetProject.Game.Meta.Passives
             return targets;
         }
 
-        private static List<GridPos> EmptyMaterialCells(GameRun run)
-        {
-            var targets = new List<GridPos>();
-            if (run == null)
-            {
-                return targets;
-            }
-
-            DiningTable preview = run.BuildTablePreviewFromFragments();
-            foreach (GridPos cell in preview.ExistingCells())
-            {
-                if (preview.MaterialsAt(cell).Count == 0)
-                {
-                    targets.Add(cell);
-                }
-            }
-
-            return targets;
-        }
-
         private static List<string> FlavorIds(GameRun run)
         {
             var ids = new List<string>();
@@ -657,25 +440,6 @@ namespace GourmetProject.Game.Meta.Passives
                 if (flavor != null && !string.IsNullOrEmpty(flavor.Id))
                 {
                     ids.Add(flavor.Id);
-                }
-            }
-
-            return ids;
-        }
-
-        private static List<string> MaterialIds(GameRun run)
-        {
-            var ids = new List<string>();
-            if (run?.Database?.AllMaterials == null)
-            {
-                return ids;
-            }
-
-            foreach (MaterialDef material in run.Database.AllMaterials)
-            {
-                if (material != null && !string.IsNullOrEmpty(material.Id))
-                {
-                    ids.Add(material.Id);
                 }
             }
 

@@ -202,14 +202,11 @@ namespace GourmetProject.Game.Tutorial
         {
             if (acquisition == null) return string.Empty;
             if (acquisition.Kind == RunContentAcquisitionKind.DishFlavor) return TutorialId.Flavor;
-            if (acquisition.Kind == RunContentAcquisitionKind.TableMaterial) return TutorialId.Material;
             if (acquisition.Kind != RunContentAcquisitionKind.Item) return string.Empty;
             if (acquisition.ItemKind == cfg.ItemKind.Passive) return TutorialId.PassiveItem;
             if (string.Equals(acquisition.ItemEffectType, ItemEffectTypes.AddFlavor, StringComparison.Ordinal)
                 || string.Equals(acquisition.ItemEffectType, ItemEffectTypes.EnhanceFlavor, StringComparison.Ordinal))
                 return TutorialId.Flavor;
-            if (string.Equals(acquisition.ItemEffectType, ItemEffectTypes.AddMaterial, StringComparison.Ordinal))
-                return TutorialId.Material;
             if (acquisition.ActiveItemCategory == cfg.ActiveItemCategory.Adjust) return TutorialId.Adjustment;
             return string.Empty;
         }

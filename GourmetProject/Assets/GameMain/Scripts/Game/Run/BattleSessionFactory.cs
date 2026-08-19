@@ -102,6 +102,8 @@ namespace GourmetProject.Game.Run
 
             session.SweetTransferTargetMultiplier = itemRuntime.SweetTransferTargetMultiplier();
             session.SweetTransferSourceMultiplier = itemRuntime.SweetTransferSourceMultiplier();
+            session.SweetTransferTargetFlat = itemRuntime.SweetTransferTargetFlat();
+            session.SweetTransferSourceFlat = itemRuntime.SweetTransferSourceFlat();
             session.SweetTransferExtraTargetCount = itemRuntime.SweetTransferExtraTargetCount();
 
             bossDebuffModel?.ApplyToBattle(session);
@@ -171,6 +173,8 @@ namespace GourmetProject.Game.Run
             session.CakeLayerAccelBonus = itemRuntime.CakeAccelBonus();
             session.SweetTransferTargetMultiplier = itemRuntime.SweetTransferTargetMultiplier();
             session.SweetTransferSourceMultiplier = itemRuntime.SweetTransferSourceMultiplier();
+            session.SweetTransferTargetFlat = itemRuntime.SweetTransferTargetFlat();
+            session.SweetTransferSourceFlat = itemRuntime.SweetTransferSourceFlat();
             session.SweetTransferExtraTargetCount = itemRuntime.SweetTransferExtraTargetCount();
             session.ConfigureFoodDiscardLimit(itemRuntime.FoodDiscardCapacity());
             session.SeedHappyCakeLayers(System.Math.Max(0, initialHappyCakeLayers + itemRuntime.CakeInitialLayers()));
@@ -220,7 +224,6 @@ namespace GourmetProject.Game.Run
                 HashSet<GridPos> before = CaptureExistingCells(fallback);
                 bossDebuffModel?.ModifyBuiltTable(fallback, recipeEntryCount, rng);
                 CaptureBuiltTablePresentation(presentation, fallback, before);
-                ApplyCellMaterialOverrides(fallback, run);
                 return fallback;
             }
 
@@ -242,7 +245,6 @@ namespace GourmetProject.Game.Run
             HashSet<GridPos> existingBefore = CaptureExistingCells(board);
             bossDebuffModel?.ModifyBuiltTable(board, recipeEntryCount, rng);
             CaptureBuiltTablePresentation(presentation, board, existingBefore);
-            ApplyCellMaterialOverrides(board, run);
             return board;
         }
 
@@ -355,20 +357,6 @@ namespace GourmetProject.Game.Run
                 {
                     presentation.DisabledCells.Add(cell);
                 }
-            }
-        }
-
-        /// <summary>把玩家用「铺台小票」设置的格子材质覆盖进餐桌（经营挑战与预览一致）。</summary>
-        private static void ApplyCellMaterialOverrides(GpTable board, GameRun run)
-        {
-            if (board == null || run == null)
-            {
-                return;
-            }
-
-            foreach (CellMaterialOverride m in run.CellMaterialOverrides)
-            {
-                board.SetMaterialAt(m.Pos, m.MaterialId);
             }
         }
 

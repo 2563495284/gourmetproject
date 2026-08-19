@@ -15,6 +15,7 @@ namespace GourmetProject.Game.Meta.Passives
 
     [Preserve]
     [PassiveItemModel("item_cake_req_minus")]
+    [PassiveItemModel("item_cake_req_minus_30")]
     public sealed class CakeReqMinusModel : PassiveItemModel
     {
         public override int CakeThresholdReduction() => (int)Value;
@@ -155,6 +156,28 @@ namespace GourmetProject.Game.Meta.Passives
     public sealed class TransferSourceMultModel : SweetTransferCounterModel
     {
         public override bool TryGetSweetTransferSourceMultiplier(out float value)
+        {
+            value = Value;
+            return value > 0f;
+        }
+    }
+
+    [Preserve]
+    [PassiveItemModel("item_transfer_target_flat")]
+    public sealed class TransferTargetFlatModel : SweetTransferCounterModel
+    {
+        public override bool TryGetSweetTransferTargetFlat(out float value)
+        {
+            value = Value;
+            return value > 0f;
+        }
+    }
+
+    [Preserve]
+    [PassiveItemModel("item_transfer_source_flat")]
+    public sealed class TransferSourceFlatModel : SweetTransferCounterModel
+    {
+        public override bool TryGetSweetTransferSourceFlat(out float value)
         {
             value = Value;
             return value > 0f;

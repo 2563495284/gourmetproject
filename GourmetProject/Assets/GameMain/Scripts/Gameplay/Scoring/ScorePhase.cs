@@ -8,7 +8,6 @@ namespace GourmetProject.Gameplay.Scoring
         DishBase = 200,
         DishSkills = 300,
         DishFlavor = 350,
-        Materials = 400,
         AfterDish = 500,
         AfterAllDishes = 600,
         Final = 700,

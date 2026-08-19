@@ -17,6 +17,7 @@ namespace GourmetProject.Game.Meta
             Desc = passive.Desc;
             Quality = passive.Quality;
             SpecialTags = passive.SpecialTags;
+            ArchetypeTags = passive.ArchetypeTags;
             PoolTags = System.Array.Empty<string>();
             TermIds = SplitPipeList(passive.TermId);
             // 装饰品已按 itemId → PassiveItemModel 绑定，不再依赖 effectType；此处不读配置列（便于后续从表中移除）。
@@ -25,10 +26,9 @@ namespace GourmetProject.Game.Meta
             EffectParam = passive.EffectParam;
             BaseWeight = passive.BaseWeight;
             Price = passive.Price;
-            HiddenRange = passive.HiddenRange;
             TargetScoreHiddenOffset = passive.TargetScoreHiddenOffset;
             DishHiddenOffset = passive.DishHiddenOffset;
-            PassiveItemHiddenOffset = passive.PassiveItemHiddenOffset;
+            ItemLuckOffset = passive.ItemLuckOffset;
             FragmentHiddenOffset = passive.FragmentHiddenOffset;
             TargetKind = cfg.ItemTargetKind.None;
             TargetCount = 0;
@@ -44,6 +44,7 @@ namespace GourmetProject.Game.Meta
             Desc = active.Desc;
             Quality = cfg.ItemQuality.Common;
             SpecialTags = cfg.ItemSpecialTag.None;
+            ArchetypeTags = System.Array.Empty<cfg.ItemArchetypeTag>();
             PoolTags = SplitPipeList(active.SpecialTags);
             TermIds = SplitPipeList(active.TermId);
             EffectType = active.EffectType;
@@ -53,7 +54,7 @@ namespace GourmetProject.Game.Meta
             Price = active.Price;
             TargetScoreHiddenOffset = 0;
             DishHiddenOffset = 0;
-            PassiveItemHiddenOffset = 0;
+            ItemLuckOffset = 0;
             FragmentHiddenOffset = 0;
             TargetKind = active.TargetKind;
             TargetCount = active.TargetCount;
@@ -76,6 +77,9 @@ namespace GourmetProject.Game.Meta
 
         public cfg.ItemSpecialTag SpecialTags { get; }
 
+        /// <summary>装饰品显式配置的玩法流派标签；消耗品恒为空。</summary>
+        public IReadOnlyList<cfg.ItemArchetypeTag> ArchetypeTags { get; }
+
         /// <summary>消耗品参与奖励池筛选的标签（配置 specialTags 列，| 分隔）。</summary>
         public IReadOnlyList<string> PoolTags { get; }
 
@@ -92,13 +96,11 @@ namespace GourmetProject.Game.Meta
 
         public int Price { get; }
 
-        public cfg.HiddenRange HiddenRange { get; }
-
         public float TargetScoreHiddenOffset { get; }
 
         public float DishHiddenOffset { get; }
 
-        public float PassiveItemHiddenOffset { get; }
+        public float ItemLuckOffset { get; }
 
         public float FragmentHiddenOffset { get; }
 
@@ -115,6 +117,19 @@ namespace GourmetProject.Game.Meta
         public bool IsNegative => ItemTagFilter.IsNegative(SpecialTags);
 
         public bool HasSpecialTag(cfg.ItemSpecialTag tag) => ItemTagFilter.HasTag(SpecialTags, tag);
+
+        public bool HasArchetypeTag(cfg.ItemArchetypeTag tag)
+        {
+            foreach (cfg.ItemArchetypeTag archetypeTag in ArchetypeTags)
+            {
+                if (archetypeTag == tag)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         public bool HasPoolTag(string tag)
         {
@@ -142,8 +157,8 @@ namespace GourmetProject.Game.Meta
                     return TargetScoreHiddenOffset;
                 case HiddenScorePurpose.Dish:
                     return DishHiddenOffset;
-                case HiddenScorePurpose.PassiveItem:
-                    return PassiveItemHiddenOffset;
+                case HiddenScorePurpose.ItemLuck:
+                    return ItemLuckOffset;
                 case HiddenScorePurpose.Fragment:
                     return FragmentHiddenOffset;
                 default:

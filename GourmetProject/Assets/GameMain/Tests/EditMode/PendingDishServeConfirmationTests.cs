@@ -144,7 +144,6 @@ namespace GourmetProject.Tests.EditMode
                 dishes,
                 Array.Empty<SkillDef>(),
                 Array.Empty<FlavorDef>(),
-                Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
     }
 }

@@ -126,69 +126,6 @@
     "branchPageText": ""
   },
   {
-    "id": "opt_carpenter_wood",
-    "eventId": "ev_table_carpenter",
-    "parentId": "",
-    "text": "修改为石料",
-    "resultText": "木匠从卡车上搬下来两个石料箱",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      0
-    ],
-    "effectValues": [
-      0
-    ],
-    "effectParams": [
-      "-"
-    ],
-    "autoEnd": false,
-    "branchWeight": 0,
-    "branchPageText": ""
-  },
-  {
-    "id": "opt_carpenter_stone",
-    "eventId": "ev_table_carpenter",
-    "parentId": "",
-    "text": "修改为木料",
-    "resultText": "木匠从卡车上搬下来两个木料箱",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      0
-    ],
-    "effectValues": [
-      0
-    ],
-    "effectParams": [
-      "-"
-    ],
-    "autoEnd": false,
-    "branchWeight": 0,
-    "branchPageText": ""
-  },
-  {
-    "id": "opt_carpenter_metal",
-    "eventId": "ev_table_carpenter",
-    "parentId": "",
-    "text": "选择金属料",
-    "resultText": "木匠从卡车上搬下来两个金属料箱",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      0
-    ],
-    "effectValues": [
-      0
-    ],
-    "effectParams": [
-      "-"
-    ],
-    "autoEnd": false,
-    "branchWeight": 0,
-    "branchPageText": ""
-  },
-  {
     "id": "opt_statue_gold",
     "eventId": "ev_kitchen_god_statue",
     "parentId": "",
@@ -438,69 +375,6 @@
     "effectParams": [
       "-",
       "-"
-    ],
-    "autoEnd": true,
-    "branchWeight": 0,
-    "branchPageText": ""
-  },
-  {
-    "id": "opt_table_carpenter_choice",
-    "eventId": "ev_table_carpenter",
-    "parentId": "opt_carpenter_wood",
-    "text": "获得2个石料类强化箱",
-    "resultText": "从三种石料箱中放回随机获得 2 个。",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      34
-    ],
-    "effectValues": [
-      2
-    ],
-    "effectParams": [
-      "Ids:item_active_lay_marble,item_active_lay_obsidian,item_active_lay_emerald|Replace"
-    ],
-    "autoEnd": true,
-    "branchWeight": 0,
-    "branchPageText": ""
-  },
-  {
-    "id": "opt_table_carpenter_choice_2",
-    "eventId": "ev_table_carpenter",
-    "parentId": "opt_carpenter_stone",
-    "text": "获得2个木料类强化箱",
-    "resultText": "从两种木料箱中放回随机获得 2 个。",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      34
-    ],
-    "effectValues": [
-      2
-    ],
-    "effectParams": [
-      "Ids:item_active_lay_cherry,item_active_lay_walnut|Replace"
-    ],
-    "autoEnd": true,
-    "branchWeight": 0,
-    "branchPageText": ""
-  },
-  {
-    "id": "opt_table_carpenter_choice_3",
-    "eventId": "ev_table_carpenter",
-    "parentId": "opt_carpenter_metal",
-    "text": "获得2个金属料强化箱",
-    "resultText": "从两种金属箱中放回随机获得 2 个。",
-    "condition": "",
-    "conditionText": "",
-    "effectTypes": [
-      34
-    ],
-    "effectValues": [
-      2
-    ],
-    "effectParams": [
-      "Ids:item_active_lay_gold,item_active_lay_silver|Replace"
     ],
     "autoEnd": true,
     "branchWeight": 0,

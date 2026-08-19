@@ -25,9 +25,9 @@ namespace cfg
         /// </summary>
         Dish = 1,
         /// <summary>
-        /// 装饰品奖励隐藏分
+        /// 装饰品运气修正用途
         /// </summary>
-        PassiveItem = 2,
+        ItemLuck = 2,
         /// <summary>
         /// 餐桌格奖励隐藏分
         /// </summary>

@@ -157,7 +157,6 @@ namespace GourmetProject.Tests.EditMode
                 new[] { dishDef },
                 Array.Empty<SkillDef>(),
                 new[] { salty },
-                Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
             var calculator = new ScoreCalculator(
                 effectSources: new[] { new DiagnosticsParityEffectSource(dish) });
@@ -282,10 +281,9 @@ namespace GourmetProject.Tests.EditMode
                 new[] { dish, futureDish },
                 new[] { skill },
                 Array.Empty<FlavorDef>(),
-                Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
             var session = new BattleSession(
-                new DiningTable(3, 2, existing, materials: null),
+                new DiningTable(3, 2, existing),
                 db,
                 new TrackingRandomStream(1003UL, forcedWeightedIndex: 0),
                 new[] { new RecipeSlot("slot", new[] { dish.Id, futureDish.Id, futureDish.Id }) },
@@ -321,7 +319,6 @@ namespace GourmetProject.Tests.EditMode
                 new[] { arrowDish, futureDish },
                 new[] { arrowSkill },
                 Array.Empty<FlavorDef>(),
-                Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
             var session = new BattleSession(
                 new DiningTable(4, 1),
@@ -406,7 +403,6 @@ namespace GourmetProject.Tests.EditMode
                 new[] { weak, strong },
                 Array.Empty<SkillDef>(),
                 Array.Empty<FlavorDef>(),
-                Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
             var gameplayRandom = new TrackingRandomStream(1005UL, forcedWeightedIndex: 0);
             var session = new BattleSession(
@@ -512,7 +508,6 @@ namespace GourmetProject.Tests.EditMode
                 new[] { oneCell, twoCell, tooWide },
                 Array.Empty<SkillDef>(),
                 Array.Empty<FlavorDef>(),
-                Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
             var random = new TrackingRandomStream(110UL, forcedWeightedIndex: 1);
             var session = new BattleSession(
@@ -603,27 +598,13 @@ namespace GourmetProject.Tests.EditMode
         [Test]
         public void Expert_SelectsHighestExactPreparedPlacementPreview()
         {
-            const string materialId = "best-cell";
             DishDef dish = Dish("scored", 10);
-            var material = new MaterialDef(
-                materialId,
-                materialId,
-                string.Empty,
-                MaterialEffectType.AddFlat,
-                new[] { 100f },
-                Array.Empty<string>(),
-                string.Empty);
-            var cellMaterials = new Dictionary<GridPos, IReadOnlyList<string>>
-            {
-                [new GridPos(1, 0)] = new[] { materialId },
-            };
-            var table = new DiningTable(2, 1, existingCells: null, materials: cellMaterials);
+            var table = new DiningTable(2, 1);
             BattleSession session = Session(
                 table,
                 new Xoshiro256SS(106UL),
                 new[] { dish },
-                dish.Id,
-                new[] { material });
+                dish.Id);
 
             AutoPlacementResult result = AutoPlacementSolver.Solve(
                 session,
@@ -632,41 +613,26 @@ namespace GourmetProject.Tests.EditMode
                 policyRandom: null);
 
             PlacementDecisionTrace decision = result.Decisions.Single();
-            Assert.That(decision.OriginX, Is.EqualTo(1));
-            Assert.That(decision.PreviewScore.ToDouble(), Is.EqualTo(110d));
-            Assert.That(result.Score.ToDouble(), Is.EqualTo(110d));
+            Assert.That(decision.OriginX, Is.Zero);
+            Assert.That(decision.PreviewScore.ToDouble(), Is.EqualTo(10d));
+            Assert.That(result.Score.ToDouble(), Is.EqualTo(10d));
         }
 
         [Test]
         public void Expert_IsNotWorseThanNormalOnFixedScoredBoard()
         {
-            const string materialId = "expert-advantage-cell";
             DishDef dish = Dish("expert-advantage", 10);
-            var material = new MaterialDef(
-                materialId,
-                materialId,
-                string.Empty,
-                MaterialEffectType.AddFlat,
-                new[] { 100f },
-                Array.Empty<string>(),
-                string.Empty);
-            var cellMaterials = new Dictionary<GridPos, IReadOnlyList<string>>
-            {
-                [new GridPos(1, 0)] = new[] { materialId },
-            };
             var policy = new AutoPlayerPolicy { PlacementNodeBudget = 10 };
             BattleSession normalSession = Session(
-                new DiningTable(2, 1, existingCells: null, materials: cellMaterials),
+                new DiningTable(2, 1),
                 new Xoshiro256SS(206UL),
                 new[] { dish },
-                dish.Id,
-                new[] { material });
+                dish.Id);
             BattleSession expertSession = Session(
-                new DiningTable(2, 1, existingCells: null, materials: cellMaterials),
+                new DiningTable(2, 1),
                 new Xoshiro256SS(206UL),
                 new[] { dish },
-                dish.Id,
-                new[] { material });
+                dish.Id);
 
             AutoPlacementResult normal = AutoPlacementSolver.Solve(
                 normalSession,
@@ -838,7 +804,6 @@ namespace GourmetProject.Tests.EditMode
             IRandomStream gameplayRandom,
             IReadOnlyList<DishDef> dishes,
             string recipeDishId,
-            IReadOnlyList<MaterialDef> materials = null,
             IReadOnlyList<SkillDef> skills = null,
             IReadOnlyList<FlavorDef> flavors = null,
             ScoreCalculator calculator = null)
@@ -847,7 +812,6 @@ namespace GourmetProject.Tests.EditMode
                 dishes,
                 skills ?? Array.Empty<SkillDef>(),
                 flavors ?? Array.Empty<FlavorDef>(),
-                materials ?? Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
             return new BattleSession(
                 table,
@@ -902,7 +866,6 @@ namespace GourmetProject.Tests.EditMode
                 context.AddPermanentFlatTo(_dish, 3);
                 context.AddPermanentMultTo(_dish, 1.25);
                 context.GrantGold(7);
-                context.RequestSilverItemRoll(0.2f);
                 context.AddHappyCakeLayers(2, mult: false);
                 context.AddFinalFlat(5);
                 context.MultiplyFinalBy(1.1);
@@ -930,8 +893,6 @@ namespace GourmetProject.Tests.EditMode
                 .Select(pair => $"permanent-flat:{pair.Key}|{pair.Value}"));
             values.AddRange(result.PermanentMultDeltas.OrderBy(pair => pair.Key)
                 .Select(pair => $"permanent-mult:{pair.Key}|{pair.Value}"));
-            values.AddRange(result.SilverItemRolls.Select(request =>
-                $"silver:{request.Probability}|{request.DishInstanceId}|{request.MaterialId}"));
             values.AddRange(result.SkillTransfers.Select(request =>
                 $"transfer:{request.TargetInstanceId}|{request.SourceName}|{request.SourceInstanceId}|{request.Effects.Count}"));
             values.AddRange(result.CopySkillRequests.Select(request =>

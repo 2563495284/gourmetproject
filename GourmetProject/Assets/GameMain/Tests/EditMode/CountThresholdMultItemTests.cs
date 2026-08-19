@@ -90,7 +90,6 @@ namespace GourmetProject.Tests.EditMode
                     dishes.Select(dish => dish.Def).ToArray(),
                     Array.Empty<SkillDef>(),
                     Array.Empty<FlavorDef>(),
-                    Array.Empty<MaterialDef>(),
                     Array.Empty<RecipeDef>()));
         }
 

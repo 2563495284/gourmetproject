@@ -19,7 +19,6 @@ namespace GourmetProject.Tests.EditMode
         [TestCase(ScoreLineKind.FinalFlat, 20d, "总分 [score]+20[/score]  →  120")]
         [TestCase(ScoreLineKind.FinalMultiplier, 1.8d, "总分 [multmul]×1.8[/multmul]  →  120")]
         [TestCase(ScoreLineKind.Gold, 15d, "[gold]+15[/gold]")]
-        [TestCase(ScoreLineKind.SilverItemRoll, 1d, "判定消耗品")]
         [TestCase(ScoreLineKind.ExtraSettlement, 20d, "[benefit]额外结算[/benefit]")]
         [TestCase(ScoreLineKind.TriggerSweetTransfer, 1d, "发动[term]甜蜜传递[/term]")]
         [TestCase(ScoreLineKind.Layer, 3d, "+3")]
@@ -41,34 +40,13 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void SilverItemRoll_IsHiddenUntilTheActualRewardAndKeepsFallbackCopyPlain()
-        {
-            MethodInfo method = typeof(SettlementStageView).GetMethod(
-                "ResultHeader",
-                BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(method, Is.Not.Null);
-
-            Assert.That(
-                method.Invoke(null, new object[] { BuildLine(ScoreLineKind.SilverItemRoll, 1d) }),
-                Is.EqualTo("银材质"));
-            Assert.That(
-                SettlementStageView.ShouldShowResultLabel(
-                    BuildLine(ScoreLineKind.SilverItemRoll, 1d)),
-                Is.False);
-        }
-
-        [Test]
-        public void SilverAggregateWithoutScoreLines_DoesNotCreateSyntheticPresentation()
+        public void EmptyScoreResult_DoesNotCreateSyntheticPresentation()
         {
             var result = new ScoreResult(
                 System.Array.Empty<DishScore>(),
                 BigDouble.Zero,
                 BigDouble.Zero,
-                BigDouble.One,
-                silverItemRolls: new[]
-                {
-                    new SilverItemRollRequest(0.2f, dishInstanceId: 7, materialId: "m_silver"),
-                });
+                BigDouble.One);
 
             SettlementPresentationPlan plan = SettlementPresentationPlan.Build(result);
 

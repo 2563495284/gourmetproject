@@ -454,7 +454,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            bool dimPlacedDishes = _pendingItem.EffectType == ItemEffectTypes.AddMaterial;
+            bool dimPlacedDishes = false;
             world.BeginActiveItemWorldTargeting(dimPlacedDishes);
             CaptureAndHideCursor();
             CreateUiArrow();
@@ -600,12 +600,6 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            if (ShouldPlayCellMaterialApply(item, targets))
-            {
-                CompleteCellMaterialTargeting(ctx, item, targets, closeTableCellTarget: _tableCellTargeting);
-                return;
-            }
-
             CleanupTargeting();
             ApplyAndConsume(ctx, item, targets);
         }
@@ -657,59 +651,6 @@ namespace GourmetProject.Game.UI.Battle
 
                 _host.RefreshAfterActiveItem(
                     result.BoardChanged && !movedToTemporaryArea,
-                    result.ActionChoicesChanged);
-            }
-        }
-
-        private void CompleteCellMaterialTargeting(
-            IActiveUseContext ctx,
-            ItemDefinition item,
-            ActiveTarget[] targets,
-            bool closeTableCellTarget)
-        {
-            ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(ctx, item, targets);
-            _host.ShowActiveItemMessage(result.Message);
-            if (!result.Success)
-            {
-                CleanupTargeting();
-                if (closeTableCellTarget)
-                {
-                    _host.CloseActiveItemTableCellTarget();
-                }
-
-                _host.RefreshAfterActiveItem(boardChanged: false);
-                return;
-            }
-
-            if (_host.ActiveRun?.UseActiveItem(item.Id, ctx.ContextKind.ToString().ToLowerInvariant()) != true)
-            {
-                CleanupTargeting();
-                _host.ShowActiveItemMessage($"{item.Name}：装饰品和消耗品已失效。");
-                _host.RefreshAfterActiveItem(result.BoardChanged);
-                return;
-            }
-
-            CleanupTargeting();
-
-            ActiveTarget target = targets.Length > 0 ? targets[0] : default;
-            bool animationStarted = _host.ActiveWorld != null
-                && target.TargetKind == cfg.ItemTargetKind.DiningTableCell
-                && _host.ActiveWorld.PlayActiveItemCellMaterialApplied(new GridPos(target.X, target.Y), item.EffectParam, FinishTableCellTargeting);
-
-            if (!animationStarted)
-            {
-                FinishTableCellTargeting();
-            }
-
-            void FinishTableCellTargeting()
-            {
-                if (closeTableCellTarget)
-                {
-                    _host.CloseActiveItemTableCellTarget();
-                }
-
-                _host.RefreshAfterActiveItem(
-                    result.BoardChanged,
                     result.ActionChoicesChanged);
             }
         }
@@ -1069,8 +1010,6 @@ namespace GourmetProject.Game.UI.Battle
 
                     return target.Id;
                 }
-                case cfg.ItemTargetKind.Material:
-                    return run?.Database?.GetMaterial(target.Id)?.Name ?? target.Id;
                 case cfg.ItemTargetKind.FlavorSlot:
                 {
                     string flavor = string.IsNullOrEmpty(target.Id)
@@ -1097,9 +1036,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private static bool ShouldUseTableCellTargeting(ItemDefinition item)
         {
-            return item != null
-                && item.TargetKind == cfg.ItemTargetKind.DiningTableCell
-                && item.EffectType == ItemEffectTypes.AddMaterial;
+            return false;
         }
 
         private static bool ShouldUseTimelineAxisTargeting(ItemDefinition item)
@@ -1116,14 +1053,6 @@ namespace GourmetProject.Game.UI.Battle
         private bool IsTimelineAxisContextValid()
         {
             return _host.IsActionAxisVisible;
-        }
-
-        private static bool ShouldPlayCellMaterialApply(ItemDefinition item, IReadOnlyList<ActiveTarget> targets)
-        {
-            return ShouldUseTableCellTargeting(item)
-                && targets != null
-                && targets.Count > 0
-                && targets[0].TargetKind == cfg.ItemTargetKind.DiningTableCell;
         }
 
         private static bool ShouldPlayDishFlavorApply(ItemDefinition item, IReadOnlyList<ActiveTarget> targets)

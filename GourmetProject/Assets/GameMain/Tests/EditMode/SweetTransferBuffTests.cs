@@ -492,7 +492,6 @@ namespace GourmetProject.Tests.EditMode
                 dishes,
                 skills,
                 Array.Empty<FlavorDef>(),
-                Array.Empty<MaterialDef>(),
                 Array.Empty<RecipeDef>());
 
         private static DishScore ScoreOf(ScoreResult result, DishInstance dish)
