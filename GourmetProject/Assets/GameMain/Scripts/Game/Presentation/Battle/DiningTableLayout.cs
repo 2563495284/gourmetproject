@@ -91,6 +91,21 @@ namespace GourmetProject.Game.Presentation.Battle
             return FitInside(canvasSize, maxSize);
         }
 
+        /// <summary>
+        /// 把抓取到的画布尺寸从源格子 / 拖拽放大，换算成餐桌落地时的实际大小。
+        /// </summary>
+        public static Vector2 CanvasSizeForTableFood(
+            Vector2 capturedCanvasSize,
+            float sourceCellSize,
+            float tableCellSize,
+            float visualScale = 1f)
+        {
+            float source = Mathf.Max(0.0001f, sourceCellSize)
+                * Mathf.Max(0.0001f, visualScale);
+            float table = Mathf.Max(0.0001f, tableCellSize);
+            return capturedCanvasSize * (table / source);
+        }
+
         /// <summary>只缩小、不放大，把尺寸限制在父框内。</summary>
         public static Vector2 FitInside(Vector2 size, Vector2 parentSize)
         {

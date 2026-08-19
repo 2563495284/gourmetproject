@@ -259,6 +259,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public DishShape CurrentShape { get; private set; }
 
+        internal float CellSize => _cellSize;
+
+        internal float ActiveDragVisualScale =>
+            _dragPresentationActive ? Mathf.Max(0.0001f, _dragVisualScale) : 1f;
+
         internal DishValueBadgeView DishValueBadge =>
             _dishValueBadgePresenter != null ? _dishValueBadgePresenter.View : null;
 

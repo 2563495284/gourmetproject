@@ -81,19 +81,14 @@ namespace GourmetProject.Game.UI.Hud
             Vector2 half = visual.ScreenSize * 0.5f;
             Vector2 localMin = ScreenToLocal(visual.ScreenCenter - half);
             Vector2 localMax = ScreenToLocal(visual.ScreenCenter + half);
-            Vector2Int grid = DiningTableLayout.FoodGridSize(
-                piece.CurrentShape != null ? piece.CurrentShape.Width : 1,
-                piece.CurrentShape != null ? piece.CurrentShape.Height : 1);
-            Vector2 cell = DiningTableLayout.CanvasPixelsForWorldSize(
-                Vector2.one * DiningTableLayout.DefaultFoodCellSize,
-                _world != null ? _world.WorldCamera : null,
-                _canvas);
-            _imageRect.sizeDelta = DiningTableLayout.CapToDefaultFoodCanvasSize(
-                new Vector2(
-                    Mathf.Max(8f, Mathf.Abs(localMax.x - localMin.x)),
-                    Mathf.Max(8f, Mathf.Abs(localMax.y - localMin.y))),
-                grid,
-                cell);
+            Vector2 captured = new Vector2(
+                Mathf.Max(8f, Mathf.Abs(localMax.x - localMin.x)),
+                Mathf.Max(8f, Mathf.Abs(localMax.y - localMin.y)));
+            _imageRect.sizeDelta = DiningTableLayout.CanvasSizeForTableFood(
+                captured,
+                piece.CellSize,
+                _world != null ? _world.ActiveTargetCellSize : piece.CellSize,
+                piece.ActiveDragVisualScale);
             _imageRect.anchoredPosition = target;
             _imageRect.localRotation = Quaternion.Euler(0f, 0f, visual.ScreenRotationDegrees);
             _imageRect.localScale = new Vector3(

@@ -44,6 +44,46 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void CanvasSizeForTableFood_KeepsSizeWhenSourceMatchesTable()
+        {
+            Vector2 captured = new Vector2(240f, 240f);
+            Vector2 sized = DiningTableLayout.CanvasSizeForTableFood(
+                captured,
+                DiningTableLayout.DefaultFoodCellSize,
+                DiningTableLayout.DefaultFoodCellSize);
+
+            Assert.That(sized, Is.EqualTo(captured));
+        }
+
+        [Test]
+        public void CanvasSizeForTableFood_ScalesOutletCaptureDownToTableCell()
+        {
+            Vector2 captured = new Vector2(240f, 240f);
+            float tableCell = DiningTableLayout.DefaultFoodCellSize * 0.5f;
+            Vector2 sized = DiningTableLayout.CanvasSizeForTableFood(
+                captured,
+                DiningTableLayout.DefaultFoodCellSize,
+                tableCell);
+
+            Assert.That(sized.x, Is.EqualTo(120f).Within(0.01f));
+            Assert.That(sized.y, Is.EqualTo(120f).Within(0.01f));
+        }
+
+        [Test]
+        public void CanvasSizeForTableFood_RemovesDragVisualScale()
+        {
+            Vector2 captured = new Vector2(276f, 276f);
+            Vector2 sized = DiningTableLayout.CanvasSizeForTableFood(
+                captured,
+                DiningTableLayout.DefaultFoodCellSize,
+                DiningTableLayout.DefaultFoodCellSize,
+                1.15f);
+
+            Assert.That(sized.x, Is.EqualTo(240f).Within(0.01f));
+            Assert.That(sized.y, Is.EqualTo(240f).Within(0.01f));
+        }
+
+        [Test]
         public void CapToDefaultFoodCanvasSize_ShrinksOversizedOneByOne()
         {
             var cell = new Vector2(120f, 120f);

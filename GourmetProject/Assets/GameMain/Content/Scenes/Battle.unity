@@ -202,7 +202,7 @@ MonoBehaviour:
   _gizmoColor: {r: 0.2, g: 0.9, b: 0.75, a: 0.85}
   _settlementGizmoColor: {r: 1, g: 0.72, b: 0.2, a: 0.7}
   _settlementAnchoredPosition: {x: 0, y: 0.2}
-  _settlementSizeDelta: {x: 11.3, y: 10.5}
+  _settlementSizeDelta: {x: 11.3, y: 8.4}
 --- !u!1 &230226104
 GameObject:
   m_ObjectHideFlags: 0

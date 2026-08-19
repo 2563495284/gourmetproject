@@ -28,11 +28,9 @@ namespace GourmetProject.Game.UI.Battle.View
         [SerializeField] private Button _doodleDrawButton;
         [SerializeField] private Button _doodleEraseButton;
         [SerializeField] private Button _doodleClearButton;
-        [SerializeField] private Button _doodleToggleButton;
         [SerializeField] private Image _doodleDrawIcon;
         [SerializeField] private Image _doodleEraseIcon;
         [SerializeField] private Image _doodleClearIcon;
-        [SerializeField] private Image _doodleToggleIcon;
         [SerializeField] private Sprite _doodleDrawSprite;
         [SerializeField] private Sprite _doodleDrawGlowSprite;
         [SerializeField] private Sprite _doodleEraseSprite;
@@ -65,14 +63,12 @@ namespace GourmetProject.Game.UI.Battle.View
             UIButtonSoundFeedback.Install(_doodleDrawButton);
             UIButtonSoundFeedback.Install(_doodleEraseButton);
             UIButtonSoundFeedback.Install(_doodleClearButton);
-            UIButtonSoundFeedback.Install(_doodleToggleButton);
 
             Wire(_eatButton, onEat);
             Wire(_recipeInfoButton, onRecipeInspect);
             Wire(_doodleDrawButton, onDoodleDraw);
             Wire(_doodleEraseButton, onDoodleErase);
             Wire(_doodleClearButton, onDoodleClear);
-            Wire(_doodleToggleButton, onDoodleToggle);
             _hasRecipeInspectAction = onRecipeInspect != null;
         }
 
@@ -123,7 +119,6 @@ namespace GourmetProject.Game.UI.Battle.View
             SetInteractable(_doodleDrawButton, doodleReady);
             SetInteractable(_doodleEraseButton, doodleReady);
             SetInteractable(_doodleClearButton, doodleReady);
-            SetInteractable(_doodleToggleButton, doodleReady);
 
             if (world != null)
             {
@@ -153,11 +148,6 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _doodleClearIcon.sprite = _doodleClearSprite;
                 _doodleClearIcon.color = ClearColor;
-            }
-
-            if (_doodleToggleIcon != null)
-            {
-                _doodleToggleIcon.color = visible ? VisibleColor : HiddenColor;
             }
         }
 
