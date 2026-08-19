@@ -31,7 +31,11 @@ namespace GourmetProject.Game.Meta
             return null;
         }
 
-        public static cfg.BossDebuff RollBossDebuff(GameRun run, IRandomStream rng, bool mutateHistoryOnExhaustion = true)
+        public static cfg.BossDebuff RollBossDebuff(
+            GameRun run,
+            IRandomStream rng,
+            bool mutateHistoryOnExhaustion = true,
+            string sourceNodeId = null)
         {
             cfg.Tables tables = run?.Tables ?? GameApp.Config.Tables;
             BossDebuffModelRegistry.ValidateDefinitions(tables);
@@ -56,7 +60,10 @@ namespace GourmetProject.Game.Meta
                 return forced;
             }
 
-            List<cfg.BossDebuff> candidates = BuildUnrolledDebuffCandidates(run, available);
+            string excludedId = ResolveRerollExcludedDebuffId(run, sourceNodeId);
+            List<cfg.BossDebuff> candidates = ExcludeDebuff(
+                BuildUnrolledDebuffCandidates(run, available),
+                excludedId);
             if (candidates.Count == 0)
             {
                 if (mutateHistoryOnExhaustion)
@@ -64,6 +71,11 @@ namespace GourmetProject.Game.Meta
                     run.ResetBossDebuffRollHistory();
                 }
 
+                candidates = ExcludeDebuff(available, excludedId);
+            }
+
+            if (candidates.Count == 0)
+            {
                 candidates = new List<cfg.BossDebuff>(available);
             }
 
@@ -92,7 +104,7 @@ namespace GourmetProject.Game.Meta
             RngState state = rng.State;
             try
             {
-                return RollBossDebuff(run, rng, mutateHistoryOnExhaustion: false);
+                return RollBossDebuff(run, rng, mutateHistoryOnExhaustion: false, node.Id);
             }
             finally
             {
@@ -110,6 +122,45 @@ namespace GourmetProject.Game.Meta
             return rerollIndex > 0
                 ? $"{bossKey}_debuff_r{rerollIndex}"
                 : $"{bossKey}_debuff";
+        }
+
+        private static string ResolveRerollExcludedDebuffId(GameRun run, string sourceNodeId)
+        {
+            if (run == null
+                || string.IsNullOrEmpty(sourceNodeId)
+                || run.BossDebuffRerollIndex <= 0
+                || sourceNodeId != run.BossDebuffRerollNodeId)
+            {
+                return string.Empty;
+            }
+
+            return run.BossDebuffRerollExcludedId;
+        }
+
+        private static List<cfg.BossDebuff> ExcludeDebuff(
+            IReadOnlyList<cfg.BossDebuff> source,
+            string excludedId)
+        {
+            if (source == null || source.Count == 0)
+            {
+                return new List<cfg.BossDebuff>();
+            }
+
+            if (string.IsNullOrEmpty(excludedId))
+            {
+                return new List<cfg.BossDebuff>(source);
+            }
+
+            var filtered = new List<cfg.BossDebuff>(source.Count);
+            foreach (cfg.BossDebuff debuff in source)
+            {
+                if (debuff != null && debuff.Id != excludedId)
+                {
+                    filtered.Add(debuff);
+                }
+            }
+
+            return filtered;
         }
 
         private static cfg.BossDebuff ResolveForcedDebuff(GameRun run, IReadOnlyList<cfg.BossDebuff> available)

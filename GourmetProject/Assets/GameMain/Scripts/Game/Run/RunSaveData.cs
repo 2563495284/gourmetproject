@@ -267,6 +267,9 @@ namespace GourmetProject.Game.Run
         /// <summary>当前重掷序号只作用于该 星级评鉴节点。</summary>
         public string BossDebuffRerollNodeId;
 
+        /// <summary>本次重掷需从候选池排除的 Debuff id（即重掷前展示的当前 Debuff）。</summary>
+        public string BossDebuffRerollExcludedId;
+
         /// <summary>商店/事件结束后按 FIFO 额外执行的节点 id。</summary>
         public List<string> PendingExtraTimelineNodeIds = new List<string>();
 

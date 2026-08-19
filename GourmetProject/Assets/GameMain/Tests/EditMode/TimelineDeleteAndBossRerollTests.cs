@@ -146,8 +146,79 @@ namespace GourmetProject.Tests.EditMode
 
             cfg.BossDebuff after = BossService.PreviewBossDebuff(run, node);
             Assert.That(after, Is.Not.Null);
+            Assert.That(after.Id, Is.Not.EqualTo(before.Id));
+            Assert.That(run.BossDebuffRerollExcludedId, Is.EqualTo(before.Id));
             Assert.That(result.NewTipTitle, Is.EqualTo(after.Name));
             Assert.That(result.NewTipDesc, Is.EqualTo(after.Desc));
+        }
+
+        [Test]
+        public void ResetBossDebuff_ExcludesCurrentEvenWhenItIsLastUnrolled()
+        {
+            GameRun run = CreateRun("reroll-boss-exclude-last");
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[]
+                {
+                    new RuntimeTimelineNode("boss1", "test", 7, "act_boss"),
+                });
+            cfg.TimelineNode node = TimelineService.GetNearestUntriggeredBossNode(run);
+            Assert.That(node, Is.Not.Null);
+            cfg.BossDebuff before = BossService.PreviewBossDebuff(run, node);
+            Assert.That(before, Is.Not.Null);
+
+            foreach (cfg.BossDebuff debuff in _tables.TbBossDebuff.DataList)
+            {
+                if (debuff != null && debuff.Id != before.Id)
+                {
+                    run.MarkBossDebuffRolled(debuff.Id);
+                }
+            }
+
+            ItemDefinition item = ItemDefinition.Get(
+                _tables,
+                "item_active_reroll_last_boss_debuff",
+                cfg.ItemKind.Active);
+            var ctx = new ActionSelectUseContext(run, weekLoop: null);
+            ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(ctx, item, Array.Empty<ActiveTarget>());
+
+            Assert.That(result.Success, Is.True);
+            cfg.BossDebuff after = BossService.PreviewBossDebuff(run, node);
+            Assert.That(after, Is.Not.Null);
+            Assert.That(after.Id, Is.Not.EqualTo(before.Id));
+        }
+
+        [Test]
+        public void ResetBossDebuff_RepeatedUseAlwaysExcludesCurrent()
+        {
+            GameRun run = CreateRun("reroll-boss-repeat");
+            run.BeginTimeline(
+                "test",
+                7f,
+                new[]
+                {
+                    new RuntimeTimelineNode("boss1", "test", 7, "act_boss"),
+                });
+            cfg.TimelineNode node = TimelineService.GetNearestUntriggeredBossNode(run);
+            ItemDefinition item = ItemDefinition.Get(
+                _tables,
+                "item_active_reroll_last_boss_debuff",
+                cfg.ItemKind.Active);
+            var ctx = new ActionSelectUseContext(run, weekLoop: null);
+            cfg.BossDebuff current = BossService.PreviewBossDebuff(run, node);
+            Assert.That(current, Is.Not.Null);
+
+            for (int i = 0; i < 5; i++)
+            {
+                ActiveItemUseResult result = ActiveItemEffectRegistry.Apply(ctx, item, Array.Empty<ActiveTarget>());
+                Assert.That(result.Success, Is.True);
+                cfg.BossDebuff next = BossService.PreviewBossDebuff(run, node);
+                Assert.That(next, Is.Not.Null);
+                Assert.That(next.Id, Is.Not.EqualTo(current.Id));
+                Assert.That(run.BossDebuffRerollExcludedId, Is.EqualTo(current.Id));
+                current = next;
+            }
         }
 
         private GameRun CreateRun(string seed)

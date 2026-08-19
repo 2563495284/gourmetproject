@@ -130,7 +130,8 @@ namespace GourmetProject.Game.Presentation.Battle
             int boardWidth,
             int boardHeight,
             TableFragmentBuilder.PlacementBounds bounds,
-            float minCellSize)
+            float minCellSize,
+            float maxCellSize = MaxCellSize)
         {
             float availW = Mathf.Max(1f, boardRight - boardLeft);
             float availH = Mathf.Max(1f, boardTop - boardBottom);
@@ -140,8 +141,9 @@ namespace GourmetProject.Game.Presentation.Battle
             int maxY = bounds.MaxY;
             int boxW = Mathf.Max(1, maxX - minX + 1);
             int boxH = Mathf.Max(1, maxY - minY + 1);
-            float lowerBound = Mathf.Min(minCellSize, MaxCellSize);
-            float cellSize = Mathf.Clamp(Mathf.Min(availW / boxW, availH / boxH), lowerBound, MaxCellSize);
+            float upperBound = Mathf.Max(minCellSize, maxCellSize);
+            float lowerBound = Mathf.Min(minCellSize, upperBound);
+            float cellSize = Mathf.Clamp(Mathf.Min(availW / boxW, availH / boxH), lowerBound, upperBound);
 
             // mapper 仍按完整 Width×Height 排布；这里反推 Position，使胃包围盒的几何中心落在可用区中心。
             var areaCenter = new Vector3((boardLeft + boardRight) * 0.5f, (boardTop + boardBottom) * 0.5f, 0f);

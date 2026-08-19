@@ -65,6 +65,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private BattleDoodleController _doodle;
         [Tooltip("Battle 场景内可直接移动和缩放的餐桌布局区域；存在时优先于 HUD BoardArea。")]
         [SerializeField] private RectTransform _sceneBoardArea;
+        [SerializeField] private float _foodSettlementLayoutDuration = 0.32f;
         [Tooltip("暂存区 HUD 框。由 BattleForm 注入 Overlay 矩形；世界棋子仍在 PiecesRoot。")]
         [SerializeField] private RectTransform _temporaryArea;
 
@@ -114,6 +115,15 @@ namespace GourmetProject.Game.Presentation.Battle
         private GameRun _run;
         private BattleSession _session;
         private bool _settling;
+        private bool _foodSettlementLayoutBusy;
+        private bool _foodSettlementLayoutActive;
+        private float _foodLayoutBuiltCellSize;
+        private float _foodLayoutRestVisualScale = 1f;
+        private Vector3 _foodLayoutRestBoardPosition;
+        private Vector3 _foodLayoutRestBoardScale = Vector3.one;
+        private bool _foodLayoutRestCaptured;
+        private Tween _foodSettlementLayoutTween;
+        private BattleTableLayoutArea _tableLayoutArea;
         private DishPieceView _outletDragPiece;
         private Placement? _outletHoverPlacement;
         private DishPieceView _movingPiece;
@@ -182,6 +192,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public bool IsFoodInteractionBusy
             => _settling
+                || _foodSettlementLayoutBusy
                 || _activeItemTransitioning
                 || _bossPresentationBusy
                 || _outletDragPiece != null
@@ -229,6 +240,17 @@ namespace GourmetProject.Game.Presentation.Battle
         public void SetBossPresentationBusy(bool busy)
         {
             _bossPresentationBusy = busy;
+            SetPlacedPiecesClickEnabled(!busy);
+            if (busy)
+            {
+                CancelServeInteractions();
+                ClearDishScopeHighlights();
+            }
+        }
+
+        public void SetFoodSettlementLayoutBusy(bool busy)
+        {
+            _foodSettlementLayoutBusy = busy;
             SetPlacedPiecesClickEnabled(!busy);
             if (busy)
             {
@@ -791,6 +813,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EnsureTableEdit();
             EndTableView();
+            RestoreFoodLayoutImmediate();
 
             gameObject.SetActive(true);
             CancelPresentationTasks();
@@ -817,6 +840,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EnsureTableEdit();
             ResetTableViewFade();
+            RestoreFoodLayoutImmediate();
             if (_boardEdit.IsEditing)
             {
                 _boardEdit.EndTableEdit();
@@ -848,6 +872,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EnsureTableEdit();
             ResetTableViewFade();
+            RestoreFoodLayoutImmediate();
             if (_boardEdit.IsEditing)
             {
                 _boardEdit.EndTableEdit();
@@ -1054,6 +1079,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             CancelTemporaryAreaFade();
+            RestoreFoodLayoutImmediate();
             CancelPresentationTasks();
         }
 
@@ -1101,10 +1127,17 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearPendingRewardPresentation();
             _worldMode = WorldMode.Food;
             _settling = false;
+            _foodSettlementLayoutBusy = false;
             _activeItemTransitioning = false;
             _bossPresentationBusy = false;
+            RestoreFoodLayoutImmediate();
             ComputeViewport();
             BuildTable(session.DiningTable);
+            CaptureFoodLayoutRestFromBuiltTable();
+            if (session != null && session.IsSettled)
+            {
+                ApplySettlementLayoutImmediate();
+            }
             EnsureSequencer();
             // 装饰品和消耗品（装饰品/消耗品）与右下角食谱仍在屏幕空间 HUD；
             // 出菜口是 World Space Canvas，和餐桌、食物、上菜/结算演出、涂鸦一起由经营挑战世界承载。
@@ -1193,6 +1226,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public void SuspendWorld()
         {
             CancelPresentationTasks();
+            RestoreFoodLayoutImmediate();
             ResetTableViewFade();
             if (_boardEdit != null && _boardEdit.IsEditing)
             {
@@ -1201,6 +1235,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             EndTableView();
             _settling = false;
+            _foodSettlementLayoutBusy = false;
             _activeItemTransitioning = false;
             CancelServeInteractions();
             SetFoodWorldElementsVisible(false);
@@ -1262,7 +1297,9 @@ namespace GourmetProject.Game.Presentation.Battle
         public void ClearBattleTable()
         {
             CancelPresentationTasks();
+            RestoreFoodLayoutImmediate();
             _settling = false;
+            _foodSettlementLayoutBusy = false;
             CancelServeInteractions();
             if (_session != null)
             {
@@ -3132,6 +3169,154 @@ namespace GourmetProject.Game.Presentation.Battle
                 piecesRoot.localRotation = Quaternion.identity;
                 piecesRoot.localScale = Vector3.one;
             }
+        }
+
+        public void JoinFoodSettlementLayoutTween(Sequence sequence, float duration)
+        {
+            if (sequence == null)
+            {
+                ApplySettlementLayoutImmediate();
+                return;
+            }
+
+            if (_foodSettlementLayoutActive || !TryCreateFoodSettlementBoardTween(out FoodSettlementBoardTween tween))
+            {
+                ApplySettlementLayoutImmediate();
+                return;
+            }
+
+            BattleTableLayoutArea area = ResolveTableLayoutArea();
+            KillFoodSettlementLayoutTween(complete: false);
+            duration = Mathf.Max(0.01f, duration > 0.01f ? duration : (_foodSettlementLayoutDuration > 0.01f ? _foodSettlementLayoutDuration : 0.32f));
+            if (area != null)
+            {
+                var rect = (RectTransform)area.transform;
+                sequence.Join(rect.DOAnchorPos(area.SettlementAnchoredPosition, duration).SetEase(Ease.OutCubic));
+                sequence.Join(rect.DOSizeDelta(area.SettlementSizeDelta, duration).SetEase(Ease.OutCubic));
+            }
+
+            if (_boardView != null)
+            {
+                sequence.Join(_boardView.transform.DOMove(tween.Position, duration).SetEase(Ease.OutCubic));
+                sequence.Join(_boardView.transform.DOScale(Vector3.one * tween.Scale, duration).SetEase(Ease.OutCubic));
+            }
+
+            sequence.OnComplete(() =>
+            {
+                _foodSettlementLayoutTween = null;
+                ApplyFoodSettlementBoardState(tween);
+                area?.ApplySettlementLayout();
+            });
+
+            _foodSettlementLayoutTween = sequence;
+            _foodSettlementLayoutActive = true;
+        }
+
+        public void RestoreFoodLayoutImmediate()
+        {
+            KillFoodSettlementLayoutTween(complete: false);
+            ResolveTableLayoutArea()?.ApplyRestLayout();
+            if (_foodLayoutRestCaptured && _boardView != null)
+            {
+                _boardView.transform.position = _foodLayoutRestBoardPosition;
+                _boardView.transform.localScale = _foodLayoutRestBoardScale;
+                _boardCenter = _foodLayoutRestBoardPosition;
+            }
+
+            if (_foodLayoutBuiltCellSize > 0f)
+            {
+                _cellSize = _foodLayoutBuiltCellSize;
+                _tableVisualScale = _foodLayoutRestVisualScale;
+            }
+
+            _foodSettlementLayoutActive = false;
+            _foodSettlementLayoutBusy = false;
+        }
+
+        public void ApplySettlementLayoutImmediate()
+        {
+            if (!TryCreateFoodSettlementBoardTween(out FoodSettlementBoardTween tween))
+            {
+                return;
+            }
+
+            KillFoodSettlementLayoutTween(complete: false);
+            ResolveTableLayoutArea()?.ApplySettlementLayout();
+            ApplyFoodSettlementBoardState(tween);
+        }
+
+        private void CaptureFoodLayoutRestFromBuiltTable()
+        {
+            _foodLayoutBuiltCellSize = _cellSize;
+            _foodLayoutRestVisualScale = _tableVisualScale;
+            _foodLayoutRestBoardPosition = _boardView != null ? _boardView.transform.position : _boardCenter;
+            _foodLayoutRestBoardScale = _boardView != null ? _boardView.transform.localScale : Vector3.one;
+            _foodLayoutRestCaptured = true;
+            _foodSettlementLayoutActive = false;
+        }
+
+        private bool TryCreateFoodSettlementBoardTween(out FoodSettlementBoardTween tween)
+        {
+            tween = FoodSettlementLayout.Identity(_cellSize);
+            BattleTableLayoutArea area = ResolveTableLayoutArea();
+            GpTable board = _session?.DiningTable;
+            if (area == null || !area.HasSettlementLayout || board == null || _cellSize <= 0f)
+            {
+                return false;
+            }
+
+            if (!area.TryGetLayoutWorldBounds(false, out float restLeft, out float restRight, out float restBottom, out float restTop)
+                || !area.TryGetLayoutWorldBounds(true, out float settlementLeft, out float settlementRight, out float settlementBottom, out float settlementTop))
+            {
+                return false;
+            }
+
+            tween = FoodSettlementLayout.ComputeBoardTween(
+                restLeft,
+                restRight,
+                restBottom,
+                restTop,
+                settlementLeft,
+                settlementRight,
+                settlementBottom,
+                settlementTop,
+                board,
+                _foodLayoutBuiltCellSize > 0f ? _foodLayoutBuiltCellSize : _cellSize);
+            return tween.Scale > 0f;
+        }
+
+        private void ApplyFoodSettlementBoardState(FoodSettlementBoardTween tween)
+        {
+            if (_boardView != null)
+            {
+                _boardView.transform.position = tween.Position;
+                _boardView.transform.localScale = Vector3.one * tween.Scale;
+            }
+
+            _boardCenter = tween.Position;
+            float builtCell = _foodLayoutBuiltCellSize > 0f ? _foodLayoutBuiltCellSize : _cellSize;
+            _tableVisualScale = DiningTableLayout.VisualScaleForCellSize(builtCell) * Mathf.Max(0.0001f, tween.Scale);
+            _foodSettlementLayoutActive = true;
+        }
+
+        private void KillFoodSettlementLayoutTween(bool complete)
+        {
+            if (_foodSettlementLayoutTween != null && _foodSettlementLayoutTween.IsActive())
+            {
+                _foodSettlementLayoutTween.Kill(complete);
+            }
+
+            _foodSettlementLayoutTween = null;
+        }
+
+        private BattleTableLayoutArea ResolveTableLayoutArea()
+        {
+            if (_tableLayoutArea == null && _sceneBoardArea != null)
+            {
+                _tableLayoutArea = _sceneBoardArea.GetComponent<BattleTableLayoutArea>();
+            }
+
+            return _tableLayoutArea;
         }
 
         /// <summary>读取场景或 HUD 布局区域，得到餐桌可用区的世界矩形边界。</summary>
