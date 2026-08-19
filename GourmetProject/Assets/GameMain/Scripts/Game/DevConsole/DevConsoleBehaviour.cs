@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -8,8 +7,7 @@ namespace GourmetProject.Game.DevConsole
 {
     /// <summary>
     /// 开发者控制台的 IMGUI 悬浮层宿主：反引号键 ` 切换显隐，顶部输出日志 + 底部输入框，
-    /// 支持上下键翻历史、Tab 补全。仅在编辑器 / Development Build 下由
-    /// <see cref="Bootstrap"/> 自动创建常驻实例，正式包不含本类型。
+    /// 支持上下键翻历史、Tab 补全。由 <see cref="Bootstrap"/> 自动创建常驻实例。
     /// 输入切换走新版 Input System（<see cref="Keyboard"/>）；IMGUI 内的键处理走
     /// <see cref="Event.current"/>（与 <c>UnityEngine.Input</c> 无关，符合项目输入规则）。
     /// </summary>
@@ -355,4 +353,3 @@ namespace GourmetProject.Game.DevConsole
         }
     }
 }
-#endif

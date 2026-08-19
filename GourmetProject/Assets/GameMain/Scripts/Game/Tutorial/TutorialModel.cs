@@ -172,8 +172,8 @@ namespace GourmetProject.Game.Tutorial
         public static TutorialSequenceDefinition BuildResultHeart(bool isWin)
         {
             string message = isWin
-                ? "太棒了，老板！这次经营成功，❤️红心不会减少。红心代表餐厅还能承受失败的次数：日常营业、火热营业和星级评鉴失败都会损失1颗；红心归零，本局就会结束。"
-                : "别灰心，老板！这次没有达到目标，失败会让我们损失❤️红心。日常营业、火热营业和星级评鉴失败都会损失1颗；红心归零，本局就会结束。";
+                ? "太棒了，老板！这次经营成功，红心不会减少。红心代表餐厅还能承受失败的次数：日常营业、火热营业和星级评鉴失败都会损失1颗；红心归零，本局就会结束。"
+                : "别灰心，老板！这次没有达到目标，失败会让我们损失红心。日常营业、火热营业和星级评鉴失败都会损失1颗；红心归零，本局就会结束。";
             return new TutorialSequenceDefinition(
                 TutorialId.ResultHeart,
                 new TutorialStepDefinition(
@@ -192,7 +192,7 @@ namespace GourmetProject.Game.Tutorial
             return new TutorialSequenceDefinition(
                 TutorialId.FirstFailureHeart,
                 new TutorialStepDefinition(
-                    "别灰心，老板！这次没有达到目标，我们会损失❤️。",
+                    "别灰心，老板！这次没有达到目标，我们会损失1颗红心。",
                     TutorialMascotPose.Remind,
                     TutorialAdvanceMode.Continue,
                     signal: null,
@@ -201,7 +201,7 @@ namespace GourmetProject.Game.Tutorial
                     allowTargetInteraction: false,
                     TutorialAnchorId.Hearts),
                 new TutorialStepDefinition(
-                    "日常营业、火热营业和星级评鉴失败都会损失1颗。❤️归零，本局就会结束。",
+                    "日常营业、火热营业和星级评鉴失败都会损失1颗。红心归零，本局就会结束。",
                     TutorialMascotPose.Remind,
                     TutorialAdvanceMode.Continue,
                     signal: null,
