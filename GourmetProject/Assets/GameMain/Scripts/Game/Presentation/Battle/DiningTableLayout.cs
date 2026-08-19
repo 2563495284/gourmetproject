@@ -106,6 +106,15 @@ namespace GourmetProject.Game.Presentation.Battle
             return capturedCanvasSize * (table / source);
         }
 
+        /// <summary>
+        /// 把已按目标格重建的食物，缩回与源格相同的世界大小。
+        /// 麻风味飞入临时桌前先 Rebuild 成默认格，再用此比例保住桌上观感，随后 tween 到目标缩放。
+        /// </summary>
+        public static float ScaleToMatchSourceCell(float sourceCellSize, float destinationCellSize)
+        {
+            return Mathf.Max(0.0001f, sourceCellSize) / Mathf.Max(0.0001f, destinationCellSize);
+        }
+
         /// <summary>只缩小、不放大，把尺寸限制在父框内。</summary>
         public static Vector2 FitInside(Vector2 size, Vector2 parentSize)
         {

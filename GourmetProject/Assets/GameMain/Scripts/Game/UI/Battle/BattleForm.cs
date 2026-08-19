@@ -153,7 +153,7 @@ namespace GourmetProject.Game.UI.Battle
         [Tooltip("TableLayoutArea 放大、餐桌跟上的时长（秒）。")]
         [SerializeField] private float _foodSettlementTableLayoutDuration = 0.64f;
         [Tooltip("布局动画结束后、开始结算演出前的停顿（秒）。")]
-        [SerializeField] private float _foodSettlementHoldDuration = 0.5f;
+        [SerializeField] private float _foodSettlementHoldDuration = 0f;
 
         private DishDragGhostOverlay _dragGhostOverlay;
         private TemporaryAreaDishOverlay _temporaryAreaDishOverlay;

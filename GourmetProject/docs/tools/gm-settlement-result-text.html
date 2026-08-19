@@ -954,10 +954,10 @@
       { id: "temporary-category", category: "resource", name: "赋予 · 默认", kind: "TemporaryCategory", header: "赋予", body: "视为蛋糕", palette: "TemporaryCategory", note: "Message 为空时回退到“视为蛋糕”。" },
       { id: "temporary-category-message", category: "resource", name: "赋予 · 自定义", kind: "TemporaryCategory", header: "赋予", body: "视为甜品", palette: "TemporaryCategory", note: "自定义 Message 会去掉开头的“本场”。" },
 
-      { id: "trigger-transfer", category: "sweet", name: "发动甜蜜传递", kind: "TriggerSweetTransfer", header: "甜蜜传递", body: "发动甜蜜传递", palette: "SweetTransfer", note: "Value ≤ 1 时使用完整发动文案。" },
-      { id: "trigger-transfer-multi", category: "sweet", name: "发动甜蜜传递 · 多次", kind: "TriggerSweetTransfer", header: "甜蜜传递", body: "发动甜蜜传递 ×3", palette: "SweetTransfer", note: "同一条发动记录可携带多个来源目标；实际技能会按选中来源逐个完整执行。" },
+      { id: "trigger-transfer", category: "sweet", name: "触发甜蜜传递", kind: "TriggerSweetTransfer", header: "甜蜜传递", body: "触发甜蜜传递", palette: "SweetTransfer", note: "Value ≤ 1 时使用完整触发文案。" },
+      { id: "trigger-transfer-multi", category: "sweet", name: "触发甜蜜传递 · 多次", kind: "TriggerSweetTransfer", header: "甜蜜传递", body: "触发甜蜜传递 ×3", palette: "SweetTransfer", note: "同一条触发记录可携带多个来源目标；实际技能会按选中来源逐个完整执行。" },
       { id: "buff-applied", category: "sweet", name: "甜蜜 Buff 挂载", kind: "SweetTransferBuffApplied", header: "", body: "软糖Buff", palette: "SweetTransfer", note: "用 Buff 所属食物名命名；不显示额外标题。" },
-      { id: "buff-extra-target", category: "sweet", name: "软糖 Buff · 额外目标", kind: "SweetTransferBuffTriggered", header: "软糖Buff", body: "额外目标 +2", palette: "SweetTransfer", note: "Trace.ActionType 为 TriggerSweetTransfer 时展示实际增加的目标数。" },
+      { id: "buff-extra-target", category: "sweet", name: "棉花糖 Buff · 额外目标", kind: "SweetTransferBuffTriggered", header: "棉花糖Buff", body: "额外目标 +3", palette: "SweetTransfer", note: "触发甜蜜传递文本结束后，每个额外目标 Buff 按来源食物逐条展示，不合并。" },
       { id: "buff-row-mult", category: "sweet", name: "棉花糖 Buff · 本行倍率", kind: "SweetTransferBuffTriggered", header: "棉花糖Buff", body: "本行倍率 ×1.5", palette: "SweetTransfer", note: "其他 Buff 响应展示本次具体倍率效果。" },
       { id: "transfer-failed", category: "sweet", name: "甜蜜传递失败", kind: "SweetTransferFailed", header: "甜蜜传递", body: "没有可传递目标", palette: "Failure", note: "失败分支使用独立 Failure 色，并绕过零值“无变化”。" },
 

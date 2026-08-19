@@ -29,7 +29,7 @@ namespace GourmetProject.Game.UI.Hud
 
         private void LateUpdate()
         {
-            DishPieceView piece = _world != null ? _world.ActiveDragPiece : null;
+            DishPieceView piece = ResolveFollowedPiece();
             RestoreHiddenBodyIfChanged(piece);
             if (piece == null || _world == null || _world.WorldCamera == null)
             {
@@ -84,11 +84,14 @@ namespace GourmetProject.Game.UI.Hud
             Vector2 captured = new Vector2(
                 Mathf.Max(8f, Mathf.Abs(localMax.x - localMin.x)),
                 Mathf.Max(8f, Mathf.Abs(localMax.y - localMin.y)));
-            _imageRect.sizeDelta = DiningTableLayout.CanvasSizeForTableFood(
-                captured,
-                piece.CellSize,
-                _world != null ? _world.ActiveTargetCellSize : piece.CellSize,
-                piece.ActiveDragVisualScale);
+            bool followCapturedSize = piece == _world.TemporaryAreaFlyInPiece;
+            _imageRect.sizeDelta = followCapturedSize
+                ? captured
+                : DiningTableLayout.CanvasSizeForTableFood(
+                    captured,
+                    piece.CellSize,
+                    _world != null ? _world.ActiveTargetCellSize : piece.CellSize,
+                    piece.ActiveDragVisualScale);
             _imageRect.anchoredPosition = target;
             _imageRect.localRotation = Quaternion.Euler(0f, 0f, visual.ScreenRotationDegrees);
             _imageRect.localScale = new Vector3(
@@ -146,6 +149,18 @@ namespace GourmetProject.Game.UI.Hud
             {
                 _hiddenBodyPiece = null;
             }
+        }
+
+        private DishPieceView ResolveFollowedPiece()
+        {
+            if (_world == null)
+            {
+                return null;
+            }
+
+            return _world.ActiveDragPiece != null
+                ? _world.ActiveDragPiece
+                : _world.TemporaryAreaFlyInPiece;
         }
 
         private Vector2 ScreenToLocal(Vector2 screenPoint)

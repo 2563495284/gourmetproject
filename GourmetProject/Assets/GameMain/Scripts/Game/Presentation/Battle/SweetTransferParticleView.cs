@@ -31,22 +31,22 @@ namespace GourmetProject.Game.Presentation.Battle
             Color? colorOverride = null,
             float visualScale = 1f)
         {
-            if (prefab == null)
+            SweetTransferParticleView view = Begin(
+                prefab,
+                parent,
+                start,
+                end,
+                duration,
+                colorOverride,
+                visualScale);
+            if (view == null)
             {
                 return;
             }
 
-            SweetTransferParticleView view = Instantiate(prefab, parent);
             try
             {
-                if (colorOverride.HasValue)
-                {
-                    view._color = colorOverride.Value;
-                }
-
-                view._visualScale = Mathf.Max(0.0001f, visualScale);
-
-                await view.PlayInternalAsync(start, end, duration, cancellationToken);
+                await view.WaitAsync(cancellationToken);
             }
             finally
             {
@@ -55,6 +55,40 @@ namespace GourmetProject.Game.Presentation.Battle
                     Destroy(view.gameObject);
                 }
             }
+        }
+
+        /// <summary>
+        /// 同步创建并启动飞行。不要把起飞放进 async PlayAsync 再逐个 await：
+        /// Unity Awaitable 会把启动绑在第一次 await 上，看起来就像一颗飞完才飞下一颗。
+        /// </summary>
+        internal static SweetTransferParticleView Begin(
+            SweetTransferParticleView prefab,
+            Transform parent,
+            Vector3 start,
+            Vector3 end,
+            float duration,
+            Color? colorOverride = null,
+            float visualScale = 1f)
+        {
+            if (prefab == null)
+            {
+                return null;
+            }
+
+            SweetTransferParticleView view = Instantiate(prefab, parent);
+            if (colorOverride.HasValue)
+            {
+                view._color = colorOverride.Value;
+            }
+
+            view._visualScale = Mathf.Max(0.0001f, visualScale);
+            view.StartFlight(start, end, duration);
+            return view;
+        }
+
+        internal Awaitable WaitAsync(CancellationToken cancellationToken)
+        {
+            return PresentationTween.AwaitCompletionAsync(_tween, cancellationToken);
         }
 
         public static async Awaitable PlayFailureAsync(
@@ -137,11 +171,10 @@ namespace GourmetProject.Game.Presentation.Battle
             await PresentationTween.AwaitCompletionAsync(_tween, cancellationToken);
         }
 
-        private async Awaitable PlayInternalAsync(
+        private void StartFlight(
             Vector3 start,
             Vector3 end,
-            float duration,
-            CancellationToken cancellationToken)
+            float duration)
         {
             EnsureRenderer();
             if (_renderer == null)
@@ -242,8 +275,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 })
                 .SetEase(Ease.InOutSine)
                 .SetLink(gameObject);
-
-            await PresentationTween.AwaitCompletionAsync(_tween, cancellationToken);
         }
 
         private SpriteRenderer CreatePoint(string name, int sortingOrder, float relativeScale)
