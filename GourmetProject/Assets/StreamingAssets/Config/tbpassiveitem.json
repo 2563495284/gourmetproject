@@ -13,24 +13,24 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150,
+    "price": 200,
     "archetypeTags": []
   },
   {
     "id": "item_gold_random",
     "name": "陶瓷招财猫",
-    "desc": "获得[gold]30～200金币[/gold]",
+    "desc": "获得[gold]30～150金币[/gold]",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0,
-    "effectParam": "range:30,200",
+    "effectParam": "range:30,150",
     "baseWeight": 300,
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -47,16 +47,16 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
     "id": "item_gold_boss",
     "name": "金边奖杯",
-    "desc": "完成下次[context]星级评鉴[/context]\n额外[gold]+120金币[/gold]",
+    "desc": "完成下次[context]星级评鉴[/context]\n额外[gold]+100金币[/gold]",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 120,
+    "effectValue": 100,
     "effectParam": "",
     "baseWeight": 300,
     "targetScoreHiddenOffset": 0,
@@ -64,7 +64,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -81,7 +81,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -98,7 +98,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 50,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -115,7 +115,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 50,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -132,7 +132,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -149,7 +149,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 120,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -166,7 +166,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -183,7 +183,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -200,7 +200,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -217,7 +217,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -234,7 +234,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -251,7 +251,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -268,7 +268,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -285,7 +285,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -302,7 +302,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -319,7 +319,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -336,7 +336,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -353,7 +353,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -370,7 +370,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -387,7 +387,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -404,7 +404,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -421,7 +421,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -438,7 +438,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -455,7 +455,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -472,7 +472,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -489,7 +489,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": [
       1
     ]
@@ -508,7 +508,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -525,7 +525,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -542,7 +542,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -559,7 +559,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -576,7 +576,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -593,7 +593,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -610,7 +610,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -627,7 +627,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -644,7 +644,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -661,7 +661,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -678,7 +678,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -695,7 +695,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -712,7 +712,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -729,7 +729,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -746,7 +746,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -763,7 +763,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -780,7 +780,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -797,7 +797,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -814,7 +814,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 240,
+    "price": 360,
     "archetypeTags": []
   },
   {
@@ -831,7 +831,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -848,7 +848,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -865,7 +865,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -882,7 +882,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -899,7 +899,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -916,7 +916,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -933,7 +933,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 10,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -950,7 +950,7 @@
     "itemLuckOffset": 6,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -967,7 +967,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -984,7 +984,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1001,7 +1001,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 50,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1018,7 +1018,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 50,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1035,7 +1035,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -1052,7 +1052,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -1069,7 +1069,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -1086,7 +1086,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1103,7 +1103,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1120,7 +1120,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -1137,7 +1137,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1154,7 +1154,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1171,7 +1171,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1188,7 +1188,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1205,7 +1205,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 50,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1222,7 +1222,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1239,7 +1239,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1256,7 +1256,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1273,7 +1273,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1290,7 +1290,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1307,7 +1307,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 50,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -1324,7 +1324,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -1341,7 +1341,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "term_food_count_as",
-    "price": 240,
+    "price": 360,
     "archetypeTags": [
       1
     ]
@@ -1360,7 +1360,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "term_food_count_as",
-    "price": 150,
+    "price": 200,
     "archetypeTags": [
       1
     ]
@@ -1379,7 +1379,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "term_food_count_as",
-    "price": 80,
+    "price": 100,
     "archetypeTags": [
       1
     ]
@@ -1398,7 +1398,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": [
       1
     ]
@@ -1417,7 +1417,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 60,
     "archetypeTags": [
       1
     ]
@@ -1436,7 +1436,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 60,
     "archetypeTags": [
       1
     ]
@@ -1455,7 +1455,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "term_food_count_as",
-    "price": 80,
+    "price": 100,
     "archetypeTags": [
       1
     ]
@@ -1474,7 +1474,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "term_sweet_transfer",
-    "price": 150,
+    "price": 200,
     "archetypeTags": [
       0
     ]
@@ -1493,7 +1493,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "term_sweet_transfer",
-    "price": 150,
+    "price": 200,
     "archetypeTags": [
       0
     ]
@@ -1512,7 +1512,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -1529,7 +1529,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "term_sweet_transfer",
-    "price": 80,
+    "price": 60,
     "archetypeTags": [
       0
     ]
@@ -1548,7 +1548,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "term_sweet_transfer",
-    "price": 240,
+    "price": 360,
     "archetypeTags": [
       0
     ]
@@ -1567,7 +1567,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "term_sweet_transfer",
-    "price": 80,
+    "price": 60,
     "archetypeTags": [
       0
     ]
@@ -1586,7 +1586,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "term_sweet_transfer",
-    "price": 80,
+    "price": 100,
     "archetypeTags": [
       0
     ]
@@ -1605,7 +1605,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "clb",
-    "price": 240,
+    "price": 200,
     "archetypeTags": [
       2
     ]
@@ -1624,7 +1624,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "clb",
-    "price": 80,
+    "price": 100,
     "archetypeTags": [
       2
     ]
@@ -1643,7 +1643,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "clb",
-    "price": 150,
+    "price": 100,
     "archetypeTags": [
       2
     ]
@@ -1662,7 +1662,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "clb",
-    "price": 80,
+    "price": 60,
     "archetypeTags": [
       2
     ]
@@ -1681,7 +1681,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "clb",
-    "price": 80,
+    "price": 100,
     "archetypeTags": [
       2
     ]
@@ -1700,7 +1700,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "clb",
-    "price": 150,
+    "price": 200,
     "archetypeTags": [
       2
     ]
@@ -1719,7 +1719,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "clb",
-    "price": 80,
+    "price": 100,
     "archetypeTags": [
       2
     ]
@@ -1738,7 +1738,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "clb",
-    "price": 150,
+    "price": 200,
     "archetypeTags": [
       2
     ]
@@ -1757,7 +1757,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "clb",
-    "price": 240,
+    "price": 360,
     "archetypeTags": [
       2
     ]
@@ -1776,7 +1776,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1793,7 +1793,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -1810,7 +1810,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -1827,7 +1827,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -1844,7 +1844,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -1861,7 +1861,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -1878,7 +1878,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -1895,7 +1895,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -1912,7 +1912,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -1929,7 +1929,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -1946,7 +1946,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -1963,7 +1963,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 240,
+    "price": 360,
     "archetypeTags": []
   },
   {
@@ -1980,7 +1980,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 240,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -1997,7 +1997,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -2014,7 +2014,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -2031,7 +2031,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 240,
+    "price": 360,
     "archetypeTags": []
   },
   {
@@ -2048,7 +2048,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 150,
+    "price": 200,
     "archetypeTags": []
   },
   {
@@ -2065,7 +2065,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -2082,7 +2082,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -2099,7 +2099,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -2116,7 +2116,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 40,
+    "price": 60,
     "archetypeTags": []
   },
   {
@@ -2133,7 +2133,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   },
   {
@@ -2150,7 +2150,7 @@
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
     "termId": "",
-    "price": 80,
+    "price": 100,
     "archetypeTags": []
   }
 ]
