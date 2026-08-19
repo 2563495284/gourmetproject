@@ -14,7 +14,12 @@ namespace GourmetProject.Game.Presentation.Battle
         public TextMeshPro HeaderText => _headerText;
         public TextMeshPro BodyText => _bodyText;
 
-        public void Bind(string header, string body, Color theme, Color? headerSemanticColor = null)
+        public void Bind(
+            string header,
+            string body,
+            Color theme,
+            Color? headerSemanticColor = null,
+            int sortingOrder = -1)
         {
             _headerText.text = header ?? string.Empty;
             SemanticDescriptionFormatter.Set(_bodyText, body);
@@ -28,14 +33,15 @@ namespace GourmetProject.Game.Presentation.Battle
             _headerText.color = SettlementColorPalette.WithAlpha(headerColor, 1f);
             _bodyText.color = textColor;
 
+            int order = sortingOrder >= 0 ? sortingOrder : BattleSorting.OrderFloatingText;
             BattleSorting.Apply(
                 _headerText,
                 BattleSorting.Fx,
-                BattleSorting.OrderFloatingText + 2);
+                order + 2);
             BattleSorting.Apply(
                 _bodyText,
                 BattleSorting.Fx,
-                BattleSorting.OrderFloatingText + 3);
+                order + 3);
         }
     }
 }

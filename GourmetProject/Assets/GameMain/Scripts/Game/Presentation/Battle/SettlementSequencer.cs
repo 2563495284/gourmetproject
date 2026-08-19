@@ -278,75 +278,36 @@ namespace GourmetProject.Game.Presentation.Battle
                     await baseTasks[i];
                 }
 
-                for (int groupIndex = 0; groupIndex < plan.Groups.Count; groupIndex++)
+                for (int groupIndex = 0; groupIndex < plan.Groups.Count; )
                 {
                     await WaitWhilePlaybackPausedAsync(cancellationToken);
+                    int waveLength = CountSweetTransferWaveLength(plan.Groups, groupIndex);
+                    if (waveLength > 0)
+                    {
+                        await PlaySweetTransferWaveAsync(
+                            session,
+                            plan,
+                            playback,
+                            ledger,
+                            dishViews,
+                            mapper,
+                            fxRoot,
+                            scoreFire,
+                            renderScore,
+                            onReveal,
+                            onScope,
+                            onPassiveTriggered,
+                            onBeat,
+                            baselineSnapshot,
+                            sweetTransferPlayback,
+                            groupIndex,
+                            waveLength,
+                            cancellationToken);
+                        groupIndex += waveLength;
+                        continue;
+                    }
+
                     SettlementEffectGroup group = plan.Groups[groupIndex];
-                    SettlementSweetTransferPresentationContext handoffContext =
-                        SettlementSweetTransferPresentationContext.FromGroup(group);
-                    SweetTransferVisualContext groupSweetContext = handoffContext.IsValid
-                        ? new SweetTransferVisualContext(
-                            handoffContext.SourceDishInstanceId,
-                            handoffContext.ExecutorDishInstanceId,
-                            playSourceIntro: false)
-                        : ResolveSweetTransferVisualContext(BuildFirstSweetTransferSteps(group));
-                    SynchronizeSweetTransferSource(
-                        sweetTransferPlayback,
-                        groupSweetContext,
-                        dishViews,
-                        allowBeginOrSwitch: true);
-
-                    bool playSweetTransferHandoff = handoffContext.RequiresHandoffAfter(
-                        sweetTransferPlayback.PresentationKey);
-                    if (handoffContext.IsValid)
-                    {
-                        SynchronizeSweetTransferExecutor(
-                            sweetTransferPlayback,
-                            handoffContext.ExecutorDishInstanceId,
-                            dishViews,
-                            allowBeginOrSwitch: true);
-                        if (playSweetTransferHandoff)
-                        {
-                            sweetTransferPlayback.PresentationKey = handoffContext.Key;
-                            DishPieceView sourceView = TryGetDishView(
-                                handoffContext.SourceDishInstanceId,
-                                dishViews);
-                            DishPieceView executorView = TryGetDishView(
-                                handoffContext.ExecutorDishInstanceId,
-                                dishViews);
-                            int transferredDelta = CountNewTransferredSkills(
-                                handoffContext,
-                                executorView,
-                                baselineSnapshot);
-                            if (transferredDelta > 0)
-                            {
-                                onReveal?.Invoke(SettlementRevealSignal.TransferredReveal(
-                                    handoffContext.ExecutorDishInstanceId,
-                                    transferredDelta));
-                            }
-                            await _stage.PlaySweetTransferHandoffAsync(
-                                handoffContext,
-                                sourceView,
-                                executorView,
-                                _sweetTransferParticlePrefab,
-                                ScaleSettlementDuration(_sweetTransferSourceDuration),
-                                ScaleSettlementDuration(_sweetTransferTravelDuration),
-                                ScaleSettlementDuration(_sweetTransferExecutorDuration),
-                                cancellationToken);
-                            sweetTransferPlayback.ReceiverDishInstanceId =
-                                handoffContext.ExecutorDishInstanceId;
-                        }
-                    }
-                    else
-                    {
-                        SynchronizeSweetTransferExecutor(
-                            sweetTransferPlayback,
-                            0,
-                            dishViews,
-                            allowBeginOrSwitch: true);
-                        sweetTransferPlayback.PresentationKey = default;
-                    }
-
                     EmitBeat(
                         onBeat,
                         SettlementBeatKind.SourceStarted,
@@ -360,8 +321,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     await _stage.FocusSourceAsync(
                         group,
                         ScaleSettlementDuration(_sourceFocusDuration),
-                        cancellationToken,
-                        actorAlreadyIntroduced: playSweetTransferHandoff);
+                        cancellationToken);
 
                     SettlementScopeSignal scope = ScopeFor(group);
                     EmitScope(onScope, scope);
@@ -390,124 +350,21 @@ namespace GourmetProject.Game.Presentation.Battle
                     List<List<int>> resultLineBatches = BuildResultLineBatches(group);
                     for (int batchIndex = 0; batchIndex < resultLineBatches.Count; batchIndex++)
                     {
-                        List<int> resultLineIndices = resultLineBatches[batchIndex];
-                        var resultTasks = new List<Awaitable>(resultLineIndices.Count);
-                        var resultStackCounts = new Dictionary<int, int>();
-                        var resultStackIndices = new Dictionary<int, int>();
-                        for (int i = 0; i < resultLineIndices.Count; i++)
-                        {
-                            int targetId = group.Lines[resultLineIndices[i]].DishInstanceId;
-                            resultStackCounts.TryGetValue(targetId, out int count);
-                            resultStackCounts[targetId] = count + 1;
-                        }
-
-                        Dictionary<int, int> primaryFeedbackLines = BuildPrimaryFeedbackLines(
-                            group,
-                            resultLineIndices,
-                            groupTargetCount);
-
-                        // 同一批次的计分明细仍按原顺序写入账本与发出事件，但所有结果动画
-                        // 在同一帧启动。这样保留正式因果顺序，同时恢复“一起触发”的节奏。
-                        for (int i = 0; i < resultLineIndices.Count; i++)
-                        {
-                            int lineIndex = resultLineIndices[i];
-                            await WaitWhilePlaybackPausedAsync(cancellationToken);
-                            ScoreLine line = group.Lines[lineIndex];
-                            AdvanceSettlementCue(playback, CueKindFor(line));
-                            SettlementCue cue = null;
-                            if (TryBuildCue(line, out SettlementCue builtCue))
-                            {
-                                cue = builtCue;
-                                AttachPassiveSource(line, cue);
-                                EmitPassiveTriggered(onPassiveTriggered, cue);
-                                EmitReveal(onReveal, cue);
-                            }
-
-                            IReadOnlyList<SettlementPlaybackStep> sweetSteps = BuildSweetTransferSteps(line, cue);
-                            BeginTriggerSweetTransferStateIfNeeded(
-                                sweetTransferPlayback,
-                                sweetSteps,
-                                dishViews,
-                                cancellationToken);
-                            await UpdateSweetTransferVisualsAsync(
-                                sweetTransferPlayback,
-                                ResolveSweetTransferVisualContext(sweetSteps),
-                                dishViews,
-                                fxRoot,
-                                cancellationToken);
-
-                            if (line.Kind == ScoreLineKind.SweetTransferBuffApplied)
-                            {
-                                ApplySweetTransferBuffMarkers(line, dishViews);
-                            }
-                            else if (line.Kind == ScoreLineKind.SweetTransferBuffTriggered)
-                            {
-                                await PlaySweetTransferBuffTriggerAsync(line, dishViews, cancellationToken);
-                            }
-                            else if (line.Kind == ScoreLineKind.SweetTransferFailed)
-                            {
-                                await PlaySweetTransferFailureAsync(line, dishViews, cancellationToken);
-                            }
-
-                            BigDouble beforeTotal = ledger.CurrentTotal;
-                            BigDouble contribution = ledger.Apply(line);
-                            SettlementImpactTier impactTier = ImpactFor(line, groupTargetCount);
-                            SettlementPacePhase nextPhase = ResolvePacePhase(
-                                ledger.CurrentTotal,
-                                session?.RequiredScore ?? 0,
-                                _currentPacePhase);
-                            bool reachedTarget = _currentPacePhase < SettlementPacePhase.TargetReached
-                                && nextPhase >= SettlementPacePhase.TargetReached;
-                            bool playPrimaryFeedback = primaryFeedbackLines.TryGetValue(
-                                    line.DishInstanceId,
-                                    out int primaryLine)
-                                && primaryLine == lineIndex;
-                            dishViews.TryGetValue(line.DishInstanceId, out DishPieceView target);
-                            if (target != null && ChangesDishValue(line.Kind))
-                            {
-                                target.SetDishValueBadge(contribution);
-                                if (playPrimaryFeedback)
-                                {
-                                    target.PunchDishValueBadge(
-                                        DishValuePunchScale,
-                                        ScaleSettlementDuration(DishValuePunchDuration));
-                                }
-                            }
-
-                            renderScore?.Invoke(ledger.CurrentTotal);
-                            EmitScoreBeat(
-                                onBeat,
-                                group.SourceName,
-                                line.DishInstanceId,
-                                playback,
-                                line.Kind,
-                                beforeTotal,
-                                ledger.CurrentTotal,
-                                impactTier,
-                                groupTargetCount,
-                                reachedTarget);
-                            resultStackIndices.TryGetValue(line.DishInstanceId, out int stackIndex);
-                            resultStackIndices[line.DishInstanceId] = stackIndex + 1;
-                            resultTasks.Add(_stage.ShowResultAsync(
-                                group,
-                                line,
-                                target,
-                                contribution,
-                                ledger.CurrentTotal,
-                                ScaleSettlementDuration(_resultBeatDuration),
-                                stackIndex,
-                                resultStackCounts[line.DishInstanceId],
-                                impactTier,
-                                Mathf.Lerp(0.96f, 1.18f, NormalizedProgress(playback)),
-                                playPrimaryFeedback,
-                                cancellationToken));
-                            PromoteSettlementPace(playback, nextPhase);
-                        }
-
-                        for (int resultIndex = 0; resultIndex < resultTasks.Count; resultIndex++)
-                        {
-                            await resultTasks[resultIndex];
-                        }
+                        await PlayResultLineBatchAsync(
+                            BuildResultLineRefs(group, resultLineBatches[batchIndex]),
+                            groupTargetCount,
+                            session,
+                            playback,
+                            ledger,
+                            dishViews,
+                            fxRoot,
+                            renderScore,
+                            onReveal,
+                            onPassiveTriggered,
+                            onBeat,
+                            sweetTransferPlayback,
+                            skipTransferTravel: false,
+                            cancellationToken);
                     }
 
                     if (group.Lines.Count > 0)
@@ -531,6 +388,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         group.SourceName,
                         group.ActorDishInstanceId,
                         playback);
+                    groupIndex++;
                 }
 
                 await WaitWhilePlaybackPausedAsync(cancellationToken);
@@ -727,18 +585,593 @@ namespace GourmetProject.Game.Presentation.Battle
                     : null;
         }
 
-        private static IReadOnlyList<SettlementPlaybackStep> BuildFirstSweetTransferSteps(
-            SettlementEffectGroup group)
+        internal static bool IsSweetTransferRelatedGroup(SettlementEffectGroup group)
         {
-            if (group == null || group.Lines.Count == 0)
+            if (group == null)
             {
-                return Array.Empty<SettlementPlaybackStep>();
+                return false;
             }
 
-            ScoreLine firstLine = group.Lines[0];
-            return TryBuildCue(firstLine, out SettlementCue cue)
-                ? BuildSweetTransferSteps(firstLine, cue)
-                : Array.Empty<SettlementPlaybackStep>();
+            if (group.Trace?.Kind == SkillExecutionKind.SweetTransfer)
+            {
+                return true;
+            }
+
+            for (int i = 0; i < group.Lines.Count; i++)
+            {
+                switch (group.Lines[i].Kind)
+                {
+                    case ScoreLineKind.TriggerSweetTransfer:
+                    case ScoreLineKind.TriggeredSweetTransferSource:
+                    case ScoreLineKind.SweetTransferBuffTriggered:
+                    case ScoreLineKind.SweetTransferFailed:
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal static int CountSweetTransferWaveLength(
+            IReadOnlyList<SettlementEffectGroup> groups,
+            int startIndex)
+        {
+            if (groups == null || startIndex < 0 || startIndex >= groups.Count)
+            {
+                return 0;
+            }
+
+            if (!IsSweetTransferRelatedGroup(groups[startIndex]))
+            {
+                return 0;
+            }
+
+            int count = 1;
+            for (int i = startIndex + 1; i < groups.Count; i++)
+            {
+                if (!IsSweetTransferRelatedGroup(groups[i]))
+                {
+                    break;
+                }
+
+                count++;
+            }
+
+            return count;
+        }
+
+        internal static List<SettlementSweetTransferPresentationContext> CollectWaveHandoffs(
+            IReadOnlyList<SettlementEffectGroup> groups,
+            int startIndex,
+            int length)
+        {
+            var result = new List<SettlementSweetTransferPresentationContext>();
+            if (groups == null || length <= 0)
+            {
+                return result;
+            }
+
+            var seen = new HashSet<SettlementSweetTransferPresentationKey>();
+            int end = Mathf.Min(groups.Count, startIndex + length);
+            for (int groupIndex = Mathf.Max(0, startIndex); groupIndex < end; groupIndex++)
+            {
+                SettlementEffectGroup group = groups[groupIndex];
+                if (group == null)
+                {
+                    continue;
+                }
+
+                for (int lineIndex = 0; lineIndex < group.Lines.Count; lineIndex++)
+                {
+                    SettlementSweetTransferPresentationContext context =
+                        SettlementSweetTransferPresentationContext.FromLine(group.Lines[lineIndex]);
+                    if (!context.IsValid || !seen.Add(context.Key))
+                    {
+                        continue;
+                    }
+
+                    result.Add(context);
+                }
+            }
+
+            return result;
+        }
+
+        internal static List<SkillExecutionTrace> CollectWaveScopeTraces(
+            IReadOnlyList<SettlementEffectGroup> groups,
+            int startIndex,
+            int length)
+        {
+            var result = new List<SkillExecutionTrace>();
+            if (groups == null || length <= 0)
+            {
+                return result;
+            }
+
+            var seen = new HashSet<string>();
+            int end = Mathf.Min(groups.Count, startIndex + length);
+            for (int groupIndex = Mathf.Max(0, startIndex); groupIndex < end; groupIndex++)
+            {
+                SettlementEffectGroup group = groups[groupIndex];
+                if (group == null)
+                {
+                    continue;
+                }
+
+                for (int lineIndex = 0; lineIndex < group.Lines.Count; lineIndex++)
+                {
+                    SkillExecutionTrace trace = group.Lines[lineIndex]?.Trace;
+                    if (trace == null || !seen.Add(ScopeTraceKey(trace)))
+                    {
+                        continue;
+                    }
+
+                    result.Add(trace);
+                }
+            }
+
+            return result;
+        }
+
+        internal static SettlementScopeSignal ScopeForWave(
+            IReadOnlyList<SettlementEffectGroup> groups,
+            int startIndex,
+            int length)
+        {
+            IReadOnlyList<SkillExecutionTrace> traces = CollectWaveScopeTraces(groups, startIndex, length);
+            if (traces.Count == 0)
+            {
+                return groups != null
+                    && startIndex >= 0
+                    && startIndex < groups.Count
+                        ? ScopeFor(groups[startIndex])
+                        : default;
+            }
+
+            SkillExecutionTrace first = traces[0];
+            return SettlementScopeSignal.FromTraces(
+                first.OwnerDishInstanceId,
+                first.RuntimeSelfDishInstanceId,
+                traces);
+        }
+
+        private static string ScopeTraceKey(SkillExecutionTrace trace)
+        {
+            IReadOnlyList<GridPos> cells = trace.ScopeRegionCells;
+            if (cells == null || cells.Count == 0)
+            {
+                return string.Join(
+                    "|",
+                    trace.RuntimeSelfDishInstanceId,
+                    trace.SkillId,
+                    trace.RuleId,
+                    (int)trace.ActionScope);
+            }
+
+            var parts = new string[cells.Count + 2];
+            parts[0] = trace.RuntimeSelfDishInstanceId.ToString();
+            parts[1] = ((int)trace.ActionScope).ToString();
+            for (int i = 0; i < cells.Count; i++)
+            {
+                GridPos cell = cells[i];
+                parts[i + 2] = $"{cell.X},{cell.Y}";
+            }
+
+            return string.Join("|", parts);
+        }
+
+        private static List<ResultLineRef> BuildResultLineRefs(
+            SettlementEffectGroup group,
+            IReadOnlyList<int> lineIndices)
+        {
+            var result = new List<ResultLineRef>();
+            if (group == null || lineIndices == null)
+            {
+                return result;
+            }
+
+            for (int i = 0; i < lineIndices.Count; i++)
+            {
+                result.Add(new ResultLineRef(group, lineIndices[i]));
+            }
+
+            return result;
+        }
+
+        private static List<ResultLineRef> BuildWaveResultLineRefs(
+            IReadOnlyList<SettlementEffectGroup> groups,
+            int startIndex,
+            int length)
+        {
+            var result = new List<ResultLineRef>();
+            if (groups == null || length <= 0)
+            {
+                return result;
+            }
+
+            int end = Mathf.Min(groups.Count, startIndex + length);
+            for (int groupIndex = Mathf.Max(0, startIndex); groupIndex < end; groupIndex++)
+            {
+                SettlementEffectGroup group = groups[groupIndex];
+                if (group == null)
+                {
+                    continue;
+                }
+
+                for (int lineIndex = 0; lineIndex < group.Lines.Count; lineIndex++)
+                {
+                    result.Add(new ResultLineRef(group, lineIndex));
+                }
+            }
+
+            return result;
+        }
+
+        private async Awaitable PlaySweetTransferWaveAsync(
+            BattleSession session,
+            SettlementPresentationPlan plan,
+            SettlementPlaybackState playback,
+            SettlementRunningLedger ledger,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            DiningTableCoordinateMapper mapper,
+            Transform fxRoot,
+            SettlementScoreFireView scoreFire,
+            Action<BigDouble> renderScore,
+            Action<SettlementRevealSignal> onReveal,
+            Action<SettlementScopeSignal> onScope,
+            Action<string> onPassiveTriggered,
+            Action<SettlementBeatSignal> onBeat,
+            SettlementBaselineSnapshot baselineSnapshot,
+            SweetTransferPlaybackState sweetTransferPlayback,
+            int startIndex,
+            int waveLength,
+            CancellationToken cancellationToken)
+        {
+            IReadOnlyList<SettlementEffectGroup> groups = plan.Groups;
+            SettlementEffectGroup firstGroup = groups[startIndex];
+            var sourceIds = new HashSet<int>();
+            var executorIds = new HashSet<int>();
+            var targetIds = new HashSet<int>();
+            int endIndex = startIndex + waveLength;
+            for (int groupIndex = startIndex; groupIndex < endIndex; groupIndex++)
+            {
+                SettlementEffectGroup group = groups[groupIndex];
+                if (group == null)
+                {
+                    continue;
+                }
+
+                foreach (int targetId in group.TargetDishIds)
+                {
+                    if (targetId > 0)
+                    {
+                        targetIds.Add(targetId);
+                    }
+                }
+
+                for (int lineIndex = 0; lineIndex < group.Lines.Count; lineIndex++)
+                {
+                    ScoreLine line = group.Lines[lineIndex];
+                    TryBuildCue(line, out SettlementCue cue);
+                    BeginTriggerSweetTransferStateIfNeeded(
+                        sweetTransferPlayback,
+                        BuildSweetTransferSteps(line, cue),
+                        dishViews,
+                        cancellationToken);
+                    SettlementSweetTransferPresentationContext context =
+                        SettlementSweetTransferPresentationContext.FromLine(line);
+                    if (!context.IsValid)
+                    {
+                        continue;
+                    }
+
+                    sourceIds.Add(context.SourceDishInstanceId);
+                    executorIds.Add(context.ExecutorDishInstanceId);
+                    DishPieceView sourceView = TryGetDishView(context.SourceDishInstanceId, dishViews);
+                    sourceView?.BeginSweetTransferSourceFeedback();
+                    DishPieceView executorView = TryGetDishView(context.ExecutorDishInstanceId, dishViews);
+                    executorView?.BeginSweetTransferExecutorFeedback();
+                }
+            }
+
+            List<SettlementSweetTransferPresentationContext> handoffContexts =
+                CollectWaveHandoffs(groups, startIndex, waveLength);
+            var handoffs = new List<SettlementStageView.SweetTransferHandoffVisual>(handoffContexts.Count);
+            for (int i = 0; i < handoffContexts.Count; i++)
+            {
+                SettlementSweetTransferPresentationContext context = handoffContexts[i];
+                DishPieceView sourceView = TryGetDishView(context.SourceDishInstanceId, dishViews);
+                DishPieceView executorView = TryGetDishView(context.ExecutorDishInstanceId, dishViews);
+                int transferredDelta = CountNewTransferredSkills(
+                    context,
+                    executorView,
+                    baselineSnapshot);
+                if (transferredDelta > 0)
+                {
+                    onReveal?.Invoke(SettlementRevealSignal.TransferredReveal(
+                        context.ExecutorDishInstanceId,
+                        transferredDelta));
+                }
+
+                handoffs.Add(new SettlementStageView.SweetTransferHandoffVisual(
+                    context,
+                    sourceView,
+                    executorView));
+                sweetTransferPlayback.PresentationKey = context.Key;
+                sweetTransferPlayback.ReceiverDishInstanceId = context.ExecutorDishInstanceId;
+                sweetTransferPlayback.ExecutorDishInstanceId = context.ExecutorDishInstanceId;
+            }
+
+            EmitBeat(
+                onBeat,
+                SettlementBeatKind.SourceStarted,
+                firstGroup.SourceName,
+                firstGroup.ActorDishInstanceId,
+                playback);
+            int uniqueActorCount = sourceIds.Count + executorIds.Count;
+            Vector3 cameraFocus = mapper.Center;
+            if (uniqueActorCount == 1)
+            {
+                int actorId = sourceIds.Count == 1
+                    ? FirstId(sourceIds)
+                    : FirstId(executorIds);
+                DishPieceView cameraActor = TryGetDishView(actorId, dishViews);
+                if (cameraActor != null)
+                {
+                    cameraFocus = cameraActor.WorldBounds.center;
+                }
+            }
+
+            _cameraFeedback.FocusSource(
+                cameraFocus,
+                ScaleSettlementDuration(_sourceFocusDuration));
+            _stage.ApplyWaveFocus(sourceIds, executorIds, targetIds);
+            await Awaitable.WaitForSecondsAsync(
+                ScaleSettlementDuration(_sweetTransferSourceDuration),
+                cancellationToken);
+
+            if (handoffs.Count > 0)
+            {
+                await _stage.PlaySweetTransferHandoffsAsync(
+                    handoffs,
+                    _sweetTransferParticlePrefab,
+                    ScaleSettlementDuration(_sweetTransferTravelDuration),
+                    ScaleSettlementDuration(_sweetTransferExecutorDuration),
+                    cancellationToken);
+            }
+
+            EmitScope(onScope, ScopeForWave(groups, startIndex, waveLength));
+            EmitBeat(
+                onBeat,
+                SettlementBeatKind.ScopeShown,
+                firstGroup.SourceName,
+                firstGroup.ActorDishInstanceId,
+                playback);
+            await _stage.ShowScopeAsync(
+                targetIds,
+                ScaleSettlementDuration(_scopeRevealDuration),
+                cancellationToken);
+
+            int waveTargetCount = Mathf.Max(1, targetIds.Count);
+            SettlementImpactTier waveImpact = SettlementImpactTier.Base;
+            for (int groupIndex = startIndex; groupIndex < endIndex; groupIndex++)
+            {
+                SettlementImpactTier groupImpact = StrongestImpact(groups[groupIndex], waveTargetCount);
+                if (groupImpact > waveImpact)
+                {
+                    waveImpact = groupImpact;
+                }
+            }
+
+            _cameraFeedback.PlayImpact(waveImpact, waveTargetCount);
+            if (waveImpact >= SettlementImpactTier.Strong)
+            {
+                scoreFire?.Burst(waveImpact >= SettlementImpactTier.Chain ? 0.72f : 0.46f);
+            }
+
+            await PlayResultLineBatchAsync(
+                BuildWaveResultLineRefs(groups, startIndex, waveLength),
+                waveTargetCount,
+                session,
+                playback,
+                ledger,
+                dishViews,
+                fxRoot,
+                renderScore,
+                onReveal,
+                onPassiveTriggered,
+                onBeat,
+                sweetTransferPlayback,
+                skipTransferTravel: true,
+                cancellationToken);
+
+            int lastGroupIndex = endIndex - 1;
+            SettlementEffectGroup lastGroup = groups[lastGroupIndex];
+            foreach (int sourceId in sourceIds)
+            {
+                EndSweetTransferSourceFeedback(sourceId, dishViews);
+            }
+
+            foreach (int executorId in executorIds)
+            {
+                EndSweetTransferExecutorFeedback(executorId, dishViews);
+            }
+
+            sweetTransferPlayback.SourceDishInstanceId = 0;
+            sweetTransferPlayback.ExecutorDishInstanceId = 0;
+            sweetTransferPlayback.ReceiverDishInstanceId = 0;
+            sweetTransferPlayback.PresentationKey = default;
+            CompleteSweetTransferStateIfNeeded(
+                sweetTransferPlayback,
+                BuildNextSweetTransferSteps(plan, lastGroupIndex, Mathf.Max(0, lastGroup.Lines.Count - 1)),
+                BuildNextSweetTransferPresentationContext(plan, lastGroupIndex, Mathf.Max(0, lastGroup.Lines.Count - 1)),
+                dishViews);
+
+            onScope?.Invoke(default);
+            _cameraFeedback.ReturnHome(ScaleSettlementDuration(_groupSettleDuration + 0.08f));
+            await _stage.EndGroupAsync(
+                ScaleSettlementDuration(_groupSettleDuration),
+                cancellationToken);
+            EmitBeat(
+                onBeat,
+                SettlementBeatKind.GroupCompleted,
+                firstGroup.SourceName,
+                firstGroup.ActorDishInstanceId,
+                playback);
+        }
+
+        private static int FirstId(HashSet<int> ids)
+        {
+            foreach (int id in ids)
+            {
+                return id;
+            }
+
+            return 0;
+        }
+
+        private async Awaitable PlayResultLineBatchAsync(
+            IReadOnlyList<ResultLineRef> lines,
+            int targetCount,
+            BattleSession session,
+            SettlementPlaybackState playback,
+            SettlementRunningLedger ledger,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            Transform fxRoot,
+            Action<BigDouble> renderScore,
+            Action<SettlementRevealSignal> onReveal,
+            Action<string> onPassiveTriggered,
+            Action<SettlementBeatSignal> onBeat,
+            SweetTransferPlaybackState sweetTransferPlayback,
+            bool skipTransferTravel,
+            CancellationToken cancellationToken)
+        {
+            if (lines == null || lines.Count == 0)
+            {
+                return;
+            }
+
+            var resultTasks = new List<Awaitable>(lines.Count);
+            Dictionary<int, int> primaryFeedbackLines = BuildPrimaryFeedbackLines(lines, targetCount);
+
+            // 同一批次的计分明细仍按原顺序写入账本与发出事件，但所有结果动画
+            // 在同一帧启动。这样保留正式因果顺序，同时恢复“一起触发”的节奏。
+            for (int i = 0; i < lines.Count; i++)
+            {
+                ResultLineRef lineRef = lines[i];
+                SettlementEffectGroup group = lineRef.Group;
+                ScoreLine line = lineRef.Line;
+                await WaitWhilePlaybackPausedAsync(cancellationToken);
+                AdvanceSettlementCue(playback, CueKindFor(line));
+                SettlementCue cue = null;
+                if (TryBuildCue(line, out SettlementCue builtCue))
+                {
+                    cue = builtCue;
+                    AttachPassiveSource(line, cue);
+                    EmitPassiveTriggered(onPassiveTriggered, cue);
+                    EmitReveal(onReveal, cue);
+                }
+
+                IReadOnlyList<SettlementPlaybackStep> sweetSteps = BuildSweetTransferSteps(line, cue);
+                BeginTriggerSweetTransferStateIfNeeded(
+                    sweetTransferPlayback,
+                    sweetSteps,
+                    dishViews,
+                    cancellationToken);
+                if (!skipTransferTravel)
+                {
+                    await UpdateSweetTransferVisualsAsync(
+                        sweetTransferPlayback,
+                        ResolveSweetTransferVisualContext(sweetSteps),
+                        dishViews,
+                        fxRoot,
+                        cancellationToken);
+                }
+
+                if (line.Kind == ScoreLineKind.SweetTransferBuffApplied)
+                {
+                    ApplySweetTransferBuffMarkers(line, dishViews);
+                }
+                else if (line.Kind == ScoreLineKind.SweetTransferBuffTriggered)
+                {
+                    Awaitable buffTask = PlaySweetTransferBuffTriggerAsync(line, dishViews, cancellationToken);
+                    if (skipTransferTravel)
+                    {
+                        resultTasks.Add(buffTask);
+                    }
+                    else
+                    {
+                        await buffTask;
+                    }
+                }
+                else if (line.Kind == ScoreLineKind.SweetTransferFailed)
+                {
+                    Awaitable failureTask = PlaySweetTransferFailureAsync(line, dishViews, cancellationToken);
+                    if (skipTransferTravel)
+                    {
+                        resultTasks.Add(failureTask);
+                    }
+                    else
+                    {
+                        await failureTask;
+                    }
+                }
+
+                BigDouble beforeTotal = ledger.CurrentTotal;
+                BigDouble contribution = ledger.Apply(line);
+                SettlementImpactTier impactTier = ImpactFor(line, targetCount);
+                SettlementPacePhase nextPhase = ResolvePacePhase(
+                    ledger.CurrentTotal,
+                    session?.RequiredScore ?? 0,
+                    _currentPacePhase);
+                bool reachedTarget = _currentPacePhase < SettlementPacePhase.TargetReached
+                    && nextPhase >= SettlementPacePhase.TargetReached;
+                bool playPrimaryFeedback = primaryFeedbackLines.TryGetValue(
+                        line.DishInstanceId,
+                        out int primaryIndex)
+                    && primaryIndex == i;
+                dishViews.TryGetValue(line.DishInstanceId, out DishPieceView target);
+                if (target != null && ChangesDishValue(line.Kind))
+                {
+                    target.SetDishValueBadge(contribution);
+                    if (playPrimaryFeedback)
+                    {
+                        target.PunchDishValueBadge(
+                            DishValuePunchScale,
+                            ScaleSettlementDuration(DishValuePunchDuration));
+                    }
+                }
+
+                renderScore?.Invoke(ledger.CurrentTotal);
+                EmitScoreBeat(
+                    onBeat,
+                    group.SourceName,
+                    line.DishInstanceId,
+                    playback,
+                    line.Kind,
+                    beforeTotal,
+                    ledger.CurrentTotal,
+                    impactTier,
+                    targetCount,
+                    reachedTarget);
+                resultTasks.Add(_stage.ShowResultAsync(
+                    group,
+                    line,
+                    target,
+                    contribution,
+                    ledger.CurrentTotal,
+                    ScaleSettlementDuration(_resultBeatDuration),
+                    impactTier,
+                    Mathf.Lerp(0.96f, 1.18f, NormalizedProgress(playback)),
+                    playPrimaryFeedback,
+                    cancellationToken));
+                PromoteSettlementPace(playback, nextPhase);
+            }
+
+            for (int resultIndex = 0; resultIndex < resultTasks.Count; resultIndex++)
+            {
+                await resultTasks[resultIndex];
+            }
         }
 
         private static bool ChangesDishValue(ScoreLineKind kind)
@@ -947,20 +1380,18 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         private static Dictionary<int, int> BuildPrimaryFeedbackLines(
-            SettlementEffectGroup group,
-            IReadOnlyList<int> lineIndices,
+            IReadOnlyList<ResultLineRef> lines,
             int targetCount)
         {
             var result = new Dictionary<int, int>();
-            if (group == null || lineIndices == null)
+            if (lines == null)
             {
                 return result;
             }
 
-            for (int i = 0; i < lineIndices.Count; i++)
+            for (int i = 0; i < lines.Count; i++)
             {
-                int lineIndex = lineIndices[i];
-                ScoreLine line = group.Lines[lineIndex];
+                ScoreLine line = lines[i].Line;
                 int targetId = line.DishInstanceId;
                 if (targetId <= 0)
                 {
@@ -968,9 +1399,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 if (!result.TryGetValue(targetId, out int current)
-                    || ImpactFor(line, targetCount) > ImpactFor(group.Lines[current], targetCount))
+                    || ImpactFor(line, targetCount) > ImpactFor(lines[current].Line, targetCount))
                 {
-                    result[targetId] = lineIndex;
+                    result[targetId] = i;
                 }
             }
 
@@ -3040,6 +3471,21 @@ namespace GourmetProject.Game.Presentation.Battle
             public int ReceiverDishInstanceId { get; }
 
             public bool PlaySourceIntro { get; }
+        }
+
+        private readonly struct ResultLineRef
+        {
+            public ResultLineRef(SettlementEffectGroup group, int lineIndex)
+            {
+                Group = group;
+                LineIndex = lineIndex;
+            }
+
+            public SettlementEffectGroup Group { get; }
+
+            public int LineIndex { get; }
+
+            public ScoreLine Line => Group.Lines[LineIndex];
         }
 
         private sealed class SweetTransferPlaybackState

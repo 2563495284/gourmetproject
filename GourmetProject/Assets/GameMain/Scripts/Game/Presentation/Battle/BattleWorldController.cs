@@ -3951,13 +3951,13 @@ namespace GourmetProject.Game.Presentation.Battle
         private void OnSettlementScope(SettlementScopeSignal signal)
         {
             EnsureScopeHighlights();
-            if (signal.IsEmpty || signal.Trace == null)
+            if (signal.IsEmpty || signal.Traces == null || signal.Traces.Count == 0)
             {
                 _scopeHighlights?.ClearSettlement();
                 return;
             }
 
-            _scopeHighlights?.ShowSettlement(_boardView, signal.Trace, _dishViewsById);
+            _scopeHighlights?.ShowSettlement(_boardView, signal.Traces, _dishViewsById);
         }
 
     }
