@@ -338,14 +338,16 @@ namespace GourmetProject.Game.Run
 
         /// <summary>
         /// 尝试消耗一件「不死」装饰品和消耗品（名刀·加护）：持有时移除一件并返回 true，
-        /// 供结算失败判定改为「不失败」。无则返回 false。
+        /// 同时写出恢复目标红心数。无则返回 false。
         /// </summary>
-        public bool TryConsumeUndying()
+        public bool TryConsumeUndying(out int restoreToHearts)
         {
+            restoreToHearts = 1;
             foreach (RunItemState state in _items)
             {
                 if (state.Model != null && state.Model.IsUndying())
                 {
+                    restoreToHearts = System.Math.Max(1, state.Model.UndyingRestoreHearts());
                     state.Model.Flash();
                     RemoveItem(state.ItemId);
                     return true;

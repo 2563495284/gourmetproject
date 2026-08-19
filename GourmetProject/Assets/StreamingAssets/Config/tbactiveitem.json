@@ -11,7 +11,7 @@
     "targetKind": 1,
     "targetCount": 1,
     "termId": "t_sweet",
-    "price": 50,
+    "price": 65,
     "category": 0
   },
   {
@@ -26,7 +26,7 @@
     "targetKind": 1,
     "targetCount": 1,
     "termId": "t_bitter",
-    "price": 50,
+    "price": 65,
     "category": 0
   },
   {
@@ -41,7 +41,7 @@
     "targetKind": 1,
     "targetCount": 1,
     "termId": "t_fresh",
-    "price": 50,
+    "price": 65,
     "category": 0
   },
   {
@@ -56,7 +56,7 @@
     "targetKind": 1,
     "targetCount": 1,
     "termId": "t_numb",
-    "price": 50,
+    "price": 65,
     "category": 0
   },
   {
@@ -71,7 +71,7 @@
     "targetKind": 1,
     "targetCount": 1,
     "termId": "t_sour",
-    "price": 50,
+    "price": 65,
     "category": 0
   },
   {
@@ -86,7 +86,7 @@
     "targetKind": 1,
     "targetCount": 1,
     "termId": "t_salty",
-    "price": 50,
+    "price": 65,
     "category": 0
   },
   {
@@ -101,7 +101,7 @@
     "targetKind": 6,
     "targetCount": 0,
     "termId": "",
-    "price": 50,
+    "price": 65,
     "category": 1
   },
   {
@@ -116,7 +116,7 @@
     "targetKind": 6,
     "targetCount": 0,
     "termId": "",
-    "price": 50,
+    "price": 65,
     "category": 1
   },
   {
@@ -131,7 +131,7 @@
     "targetKind": 6,
     "targetCount": 0,
     "termId": "",
-    "price": 50,
+    "price": 65,
     "category": 1
   },
   {
@@ -146,7 +146,7 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 50,
+    "price": 65,
     "category": 1
   },
   {
@@ -161,7 +161,7 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 50,
+    "price": 65,
     "category": 1
   },
   {
@@ -176,7 +176,7 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 50,
+    "price": 65,
     "category": 1
   },
   {
@@ -191,7 +191,7 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 50,
+    "price": 65,
     "category": 1
   },
   {
@@ -206,7 +206,7 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 50,
+    "price": 65,
     "category": 1
   },
   {
@@ -221,7 +221,7 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 50,
+    "price": 65,
     "category": 1
   },
   {
@@ -236,7 +236,7 @@
     "targetKind": 6,
     "targetCount": 1,
     "termId": "",
-    "price": 50,
+    "price": 65,
     "category": 1
   }
 ]
