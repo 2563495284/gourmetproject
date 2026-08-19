@@ -13,12 +13,12 @@ using TMPro;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 常驻壳右栏装饰品和消耗品组件：装饰品滚动网格（2 列）+ 消耗品叠放区（每份实例占一格）。
+    /// 常驻壳右栏装饰品和消耗品组件：装饰品滚动网格（3 列）+ 消耗品叠放区（每份实例占一格）。
     /// 经营挑战中满足 targetKind 可用性的消耗品可点击使用，否则点击看信息；hover 显示装饰品和消耗品 Tip。
     /// </summary>
     public sealed class BattleItemsColumn : MonoBehaviour
     {
-        private const int PassiveSlotColumns = 2;
+        private const int PassiveSlotColumns = 3;
         private const float PassiveSlotPadding = 2f;
         private const float PassiveSlotSpacing = 4f;
         private const float PassiveScrollEpsilon = 0.5f;
@@ -508,8 +508,21 @@ namespace GourmetProject.Game.UI.Battle.View
                 return Vector2.one;
             }
 
-            Vector2 size = templateRect.rect.size;
-            return new Vector2(Mathf.Max(1f, size.x), Mathf.Max(1f, size.y));
+            Vector2 templateSize = templateRect.rect.size;
+            float contentWidth = _passiveItemsContent != null ? _passiveItemsContent.rect.width : 0f;
+            if (contentWidth <= 0f || templateSize.x <= 0f)
+            {
+                return new Vector2(Mathf.Max(1f, templateSize.x), Mathf.Max(1f, templateSize.y));
+            }
+
+            float availableWidth = contentWidth
+                - PassiveSlotPadding * 2f
+                - PassiveSlotSpacing * (PassiveSlotColumns - 1);
+            float fittedWidth = Mathf.Max(1f, availableWidth / PassiveSlotColumns);
+            float scale = Mathf.Min(1f, fittedWidth / templateSize.x);
+            return new Vector2(
+                Mathf.Max(1f, templateSize.x * scale),
+                Mathf.Max(1f, templateSize.y * scale));
         }
 
         private float CalculatePassiveContentHeight(int rows, float slotHeight)
@@ -780,6 +793,7 @@ namespace GourmetProject.Game.UI.Battle.View
             rect.anchorMin = new Vector2(0f, 1f);
             rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0f, 1f);
+            rect.sizeDelta = slotSize;
             rect.anchoredPosition = PassiveSlotAnchoredPosition(index, slotSize);
             rect.localScale = Vector3.one;
         }
