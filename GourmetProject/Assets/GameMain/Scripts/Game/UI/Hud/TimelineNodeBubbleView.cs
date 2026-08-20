@@ -1,67 +1,68 @@
 using System;
 using DG.Tweening;
-using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
 using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Hud
 {
-    /// <summary>时间轴节点的 Prefab 视图：图标、程序化尾巴与选择态描边。</summary>
-    [RequireComponent(typeof(RectTransform), typeof(CanvasGroup), typeof(TimelineAxisPointerTarget))]
+    /// <summary>
+    /// 池化节点气泡。所有结构由 Prefab 预制，代码只切换状态、驱动 Tween 和更新尾巴。
+    /// </summary>
+    [RequireComponent(typeof(RectTransform), typeof(CanvasGroup))]
     public sealed class TimelineNodeBubbleView : MonoBehaviour
     {
-        private static readonly Color NormalFill = new Color(1f, 0.94f, 0.80f, 0.98f);
-        private static readonly Color CompletedFill = new Color(0.72f, 0.70f, 0.65f, 0.78f);
-        private static readonly Color PreviewFill = new Color(0.74f, 1f, 0.92f, 0.78f);
-        private static readonly Color NegativeFill = new Color(1f, 0.78f, 0.74f, 0.96f);
-        private static readonly Color WarningColor = new Color(0.92f, 0.20f, 0.18f, 1f);
-        private static readonly Color TargetColor = new Color(0.02f, 0.82f, 0.66f, 1f);
-        private static readonly Color NormalOutline = new Color(0.29f, 0.17f, 0.08f, 0.72f);
-        private static readonly Color CompletedOutline = new Color(0.30f, 0.29f, 0.27f, 0.58f);
-        private static readonly Color BossOutline = new Color(1f, 0.63f, 0.08f, 0.95f);
-        private static readonly Color PreviewOutline = new Color(0.02f, 0.82f, 0.66f, 0.95f);
-        private static readonly Color NormalIcon = Color.white;
-        private static readonly Color CompletedIcon = new Color(0.56f, 0.56f, 0.56f, 0.82f);
-        private static readonly Color ExecutingGlowMin = new Color(1f, 0.62f, 0.08f, 0.34f);
-        private static readonly Color ExecutingGlowMax = new Color(1f, 0.84f, 0.32f, 0.82f);
-        private const float CompletedScale = 0.82f;
+        private const float CompletedScale = 0.84f;
 
-        [Header("Prefab 引用")]
         [SerializeField] private RectTransform _rect;
         [SerializeField] private Graphic _hitArea;
-        [SerializeField] private Image _tail;
-        [SerializeField] private TimelineNodeTailGraphic _tailGraphic;
+        [SerializeField] private TimelineNodeTailGraphic _tail;
+        [SerializeField] private Image _shell;
+        [SerializeField] private Image _stateRing;
         [SerializeField] private Image _icon;
-        [SerializeField] private Outline _outline;
         [SerializeField] private CanvasGroup _canvasGroup;
-        [SerializeField] private TimelineAxisPointerTarget _pointer;
+        [SerializeField] private TMP_Text _skipStamp;
 
+        private TimelineAxisTheme _theme;
         private RectTransform _dayAnchor;
         private Vector3 _authoredScale = Vector3.one;
         private Vector3 _boundScale = Vector3.one;
-        private Color _tailColor = NormalFill;
-        private Color _boundOutlineColor = NormalOutline;
-        private Vector2 _boundOutlineDistance = new Vector2(1f, -1f);
+        private Color _tailColor = Color.white;
         private float _boundAlpha = 1f;
-        private bool _pulse;
         private bool _executing;
+        private bool _preview;
         private bool _removing;
-        private Outline _executingGlow;
         private Tween _layoutTween;
         private Tween _visibilityTween;
-        private TMP_Text _skipStamp;
+        private Tween _stateTween;
 
         public RectTransform Rect => _rect != null ? _rect : transform as RectTransform;
-
         public bool IsAnimating => (_layoutTween?.IsActive() ?? false)
             || (_visibilityTween?.IsActive() ?? false);
 
-        private void Awake()
+        public void Initialize(TimelineAxisTheme theme)
         {
             EnsureRefs();
+            _theme = theme;
             _authoredScale = Rect.localScale;
             _boundScale = _authoredScale;
+            if (theme != null)
+            {
+                if (_shell != null)
+                {
+                    _shell.sprite = theme.NodeBubble;
+                }
+
+                if (_stateRing != null)
+                {
+                    _stateRing.sprite = theme.NodeBubble;
+                }
+            }
+
+            if (_skipStamp != null)
+            {
+                _skipStamp.gameObject.SetActive(false);
+            }
         }
 
         public void Bind(
@@ -73,34 +74,44 @@ namespace GourmetProject.Game.UI.Hud
             bool negative = false)
         {
             EnsureRefs();
-            _icon.sprite = icon;
-            _icon.enabled = icon != null;
-            _icon.color = completed && !preview ? CompletedIcon : NormalIcon;
-
-            _tailColor = preview
-                ? PreviewFill
-                : (completed ? CompletedFill : (negative ? NegativeFill : NormalFill));
-            _boundAlpha = completed && !preview ? 0.74f : 1f;
-            _boundScale = _authoredScale * (completed && !preview ? CompletedScale : 1f);
+            TimelineAxisPalette palette = _theme?.Palette ?? new TimelineAxisPalette();
+            _preview = preview;
             _executing = executing && !completed && !preview;
+            _removing = false;
+            _boundAlpha = completed && !preview ? 0.72f : 1f;
+            _boundScale = _authoredScale * (completed && !preview ? CompletedScale : 1f);
+            _tailColor = preview
+                ? palette.Preview
+                : (negative ? new Color(palette.Danger.r, palette.Danger.g, palette.Danger.b, 0.78f) : palette.Cream);
+
+            if (_icon != null)
+            {
+                _icon.sprite = icon;
+                _icon.enabled = icon != null;
+                _icon.color = completed && !preview
+                    ? new Color(0.55f, 0.55f, 0.52f, 0.82f)
+                    : Color.white;
+            }
+
+            if (_shell != null)
+            {
+                _shell.color = _tailColor;
+            }
+
+            if (_stateRing != null)
+            {
+                _stateRing.enabled = preview || executing || boss || negative;
+                _stateRing.color = preview
+                    ? palette.Preview
+                    : (negative ? palette.Danger : (executing ? palette.ExecutingGlow : palette.Apricot));
+            }
+
             _canvasGroup.alpha = _boundAlpha;
             _canvasGroup.blocksRaycasts = !preview;
-            _hitArea.raycastTarget = !preview;
-            _outline.enabled = true;
-            _boundOutlineColor = preview
-                ? PreviewOutline
-                : (boss
-                    ? BossOutline
-                    : (completed ? CompletedOutline : (negative ? WarningColor : NormalOutline)));
-            _boundOutlineDistance =
-                preview || boss ? new Vector2(2f, -2f) : new Vector2(1f, -1f);
-            _outline.effectColor = _boundOutlineColor;
-            _outline.effectDistance = _boundOutlineDistance;
-            _executingGlow.enabled = _executing;
-            if (_executing)
+            _canvasGroup.interactable = !preview;
+            if (_hitArea != null)
             {
-                _executingGlow.effectColor = ExecutingGlowMax;
-                _executingGlow.effectDistance = new Vector2(4f, -4f);
+                _hitArea.raycastTarget = !preview;
             }
 
             if (!_removing)
@@ -108,24 +119,13 @@ namespace GourmetProject.Game.UI.Hud
                 Rect.localScale = _boundScale;
             }
 
-            RefreshTail();
-        }
+            if (_skipStamp != null)
+            {
+                _skipStamp.gameObject.SetActive(false);
+            }
 
-        /// <summary>兼容旧调用；新布局由 TimelineDayNodeGroupView 接管。</summary>
-        public void Bind(
-            Sprite icon,
-            bool completed,
-            bool boss,
-            bool preview,
-            float x,
-            int stackIndex)
-        {
-            Bind(icon, completed, executing: false, boss, preview, negative: false);
-            float axisX = Mathf.Clamp01(x);
-            Rect.anchorMin = new Vector2(axisX, 0.48f);
-            Rect.anchorMax = new Vector2(axisX, 0.48f);
-            Rect.pivot = new Vector2(0.5f, 0f);
-            Rect.anchoredPosition = new Vector2(0f, 20f + stackIndex * 43f);
+            RefreshStateTween();
+            RefreshTail();
         }
 
         public void SetLayout(
@@ -141,7 +141,6 @@ namespace GourmetProject.Game.UI.Hud
             Rect.anchorMin = new Vector2(0.5f, 0f);
             Rect.anchorMax = new Vector2(0.5f, 0f);
             Rect.pivot = new Vector2(0.5f, 0f);
-
             _layoutTween?.Kill();
             if (!animate || !gameObject.activeInHierarchy)
             {
@@ -152,8 +151,8 @@ namespace GourmetProject.Game.UI.Hud
             }
 
             Vector2 startPosition = Rect.anchoredPosition;
-            float startAngle = NormalizeAngle(Rect.localEulerAngles.z);
-            float targetAngle = Mathf.DeltaAngle(startAngle, angle) + startAngle;
+            float startAngle = Mathf.DeltaAngle(0f, Rect.localEulerAngles.z);
+            float targetAngle = startAngle + Mathf.DeltaAngle(startAngle, angle);
             float progress = 0f;
             _layoutTween = DOTween.To(
                     () => progress,
@@ -163,22 +162,17 @@ namespace GourmetProject.Game.UI.Hud
                         Vector2 next = Vector2.LerpUnclamped(startPosition, position, value);
                         if (arc)
                         {
-                            next.y += Mathf.Sin(value * Mathf.PI) * 30f;
-                            float landing = value > 0.78f
-                                ? Mathf.Sin((value - 0.78f) / 0.22f * Mathf.PI) * 0.07f
-                                : 0f;
-                            Rect.localScale = _boundScale * (1f + landing);
+                            next.y += Mathf.Sin(value * Mathf.PI) * 28f;
                         }
 
                         Rect.anchoredPosition = next;
                         Rect.localRotation = Quaternion.Euler(
-                            0f,
-                            0f,
-                            Mathf.LerpUnclamped(startAngle, targetAngle, value));
+                            0f, 0f, Mathf.LerpUnclamped(startAngle, targetAngle, value));
                         RefreshTail();
                     },
                     1f,
-                    (arc ? 0.34f : 0.20f) / Mathf.Max(0.05f, speed))
+                    (arc ? 0.34f : (_theme?.Motion.LayoutDuration ?? 0.20f))
+                    / Mathf.Max(0.05f, speed))
                 .SetEase(arc ? Ease.InOutSine : Ease.OutCubic)
                 .SetUpdate(true)
                 .SetTarget(Rect)
@@ -191,60 +185,26 @@ namespace GourmetProject.Game.UI.Hud
             _visibilityTween?.Kill();
             _removing = false;
             _canvasGroup.alpha = 0f;
-            Rect.localScale = _boundScale * 0.75f;
-            float progress = 0f;
-            _visibilityTween = DOTween.To(
-                    () => progress,
-                    value =>
-                    {
-                        progress = value;
-                        _canvasGroup.alpha = value;
-                        Rect.localScale = Vector3.LerpUnclamped(
-                            _boundScale * 0.75f,
-                            _boundScale,
-                            value);
-                    },
-                    1f,
-                    0.16f / Mathf.Max(0.05f, speed))
-                .SetEase(Ease.OutBack)
-                .SetUpdate(true)
-                .SetTarget(_canvasGroup);
+            Rect.localScale = _boundScale * 0.72f;
+            Sequence sequence = DOTween.Sequence().SetUpdate(true).SetTarget(_canvasGroup);
+            sequence.Join(_canvasGroup.DOFade(_boundAlpha,
+                (_theme?.Motion.EnterDuration ?? 0.16f) / Mathf.Max(0.05f, speed)));
+            sequence.Join(Rect.DOScale(_boundScale,
+                    (_theme?.Motion.EnterDuration ?? 0.16f) / Mathf.Max(0.05f, speed))
+                .SetEase(Ease.OutBack));
+            _visibilityTween = sequence;
         }
 
-        public void PlayChange(
-            Action onComplete = null,
-            float speed = 1f,
-            Action onMidpoint = null)
+        public void PlayChange(Action onComplete = null, float speed = 1f, Action onMidpoint = null)
         {
             EnsureRefs();
             _visibilityTween?.Kill();
-            Rect.localScale = _boundScale;
-            Sequence sequence = DOTween.Sequence()
-                .SetUpdate(true)
-                .SetTarget(_canvasGroup);
-            float durationScale = 1f / Mathf.Max(0.05f, speed);
-            sequence.Append(Rect.DOScaleX(Mathf.Max(0.04f, _boundScale.x * 0.06f), 0.10f * durationScale)
-                .SetEase(Ease.InCubic));
-            sequence.AppendCallback(() =>
-            {
-                onMidpoint?.Invoke();
-                Rect.localScale = new Vector3(
-                    Mathf.Max(0.04f, _boundScale.x * 0.06f),
-                    _boundScale.y,
-                    _boundScale.z);
-                _outline.enabled = true;
-                _outline.effectColor = NormalOutline;
-                _outline.effectDistance = new Vector2(5f, -5f);
-            });
-            sequence.Append(Rect.DOScale(_boundScale * 1.08f, 0.12f * durationScale).SetEase(Ease.OutBack));
-            sequence.Append(Rect.DOScale(_boundScale, 0.08f * durationScale).SetEase(Ease.OutCubic));
-            sequence.OnComplete(() =>
-            {
-                Rect.localScale = _boundScale;
-                _outline.effectColor = _boundOutlineColor;
-                _outline.effectDistance = _boundOutlineDistance;
-                onComplete?.Invoke();
-            });
+            float half = (_theme?.Motion.ChangeHalfDuration ?? 0.10f) / Mathf.Max(0.05f, speed);
+            Sequence sequence = DOTween.Sequence().SetUpdate(true).SetTarget(_canvasGroup);
+            sequence.Append(Rect.DOScaleX(Mathf.Max(0.04f, _boundScale.x * 0.06f), half).SetEase(Ease.InCubic));
+            sequence.AppendCallback(() => onMidpoint?.Invoke());
+            sequence.Append(Rect.DOScale(_boundScale, half).SetEase(Ease.OutBack));
+            sequence.OnComplete(() => onComplete?.Invoke());
             _visibilityTween = sequence;
         }
 
@@ -252,221 +212,95 @@ namespace GourmetProject.Game.UI.Hud
         {
             EnsureRefs();
             _visibilityTween?.Kill();
-            _removing = false;
-            _executingGlow.enabled = true;
-            _executingGlow.effectColor = ExecutingGlowMax;
-            _executingGlow.effectDistance = new Vector2(5f, -5f);
-            Sequence sequence = DOTween.Sequence()
-                .SetUpdate(true)
-                .SetTarget(_canvasGroup);
-            float durationScale = 1f / Mathf.Max(0.05f, speed);
-            sequence.Join(Rect.DOPunchAnchorPos(new Vector2(0f, 8f), 0.36f * durationScale, 6, 0.50f));
-            sequence.Join(Rect.DOPunchScale(_boundScale * 0.12f, 0.36f * durationScale, 6, 0.55f));
-            sequence.Append(DOTween.To(
-                () => 0f,
-                value =>
-                {
-                    float pulse = Mathf.Sin(value * Mathf.PI * 2f) * 0.5f + 0.5f;
-                    float distance = Mathf.Lerp(3f, 6f, pulse);
-                    _executingGlow.effectDistance = new Vector2(distance, -distance);
-                },
-                2f,
-                0.22f * durationScale));
+            if (_stateRing != null)
+            {
+                _stateRing.enabled = true;
+                _stateRing.color = (_theme?.Palette ?? new TimelineAxisPalette()).ExecutingGlow;
+            }
+
+            Sequence sequence = DOTween.Sequence().SetUpdate(true).SetTarget(_canvasGroup);
+            float duration = 0.34f / Mathf.Max(0.05f, speed);
+            sequence.Join(Rect.DOPunchAnchorPos(new Vector2(0f, 8f), duration, 6, 0.5f));
+            sequence.Join(Rect.DOPunchScale(_boundScale * 0.12f, duration, 6, 0.55f));
             sequence.OnComplete(() => onComplete?.Invoke());
             _visibilityTween = sequence;
         }
 
-        /// <summary>时间游标经过节点日期时播放一次短促高亮，不改变节点的执行/完成状态。</summary>
         public void PlayAdvancePulse(float speed = 1f)
         {
-            EnsureRefs();
             if (_removing)
             {
                 return;
             }
 
             _visibilityTween?.Kill();
-            _executingGlow.enabled = true;
-            _executingGlow.effectColor = ExecutingGlowMax;
-            _executingGlow.effectDistance = new Vector2(5f, -5f);
-            float durationScale = 1f / Mathf.Max(0.05f, speed);
-            Sequence sequence = DOTween.Sequence()
+            _visibilityTween = Rect.DOPunchScale(
+                    _boundScale * 0.16f,
+                    (_theme?.Motion.PulseDuration ?? 0.30f) / Mathf.Max(0.05f, speed),
+                    5,
+                    0.55f)
                 .SetUpdate(true)
-                .SetTarget(_canvasGroup);
-            sequence.Join(Rect.DOPunchScale(
-                _boundScale * 0.18f,
-                0.30f * durationScale,
-                5,
-                0.55f));
-            sequence.Join(_canvasGroup.DOFade(1f, 0.08f * durationScale));
-            sequence.AppendInterval(0.06f * durationScale);
-            sequence.OnComplete(() =>
-            {
-                Rect.localScale = _boundScale;
-                _canvasGroup.alpha = _boundAlpha;
-                _outline.effectColor = _boundOutlineColor;
-                _outline.effectDistance = _boundOutlineDistance;
-                _executingGlow.enabled = _executing;
-            });
-            _visibilityTween = sequence;
+                .SetTarget(_canvasGroup)
+                .OnComplete(() => Rect.localScale = _boundScale);
         }
 
         public void PlayTriggerComplete(Action onComplete, float speed = 1f)
         {
-            EnsureRefs();
             _visibilityTween?.Kill();
-            Sequence sequence = DOTween.Sequence()
-                .SetUpdate(true)
-                .SetTarget(_canvasGroup);
-            float durationScale = 1f / Mathf.Max(0.05f, speed);
-            sequence.Append(Rect.DOScale(_boundScale * 1.08f, 0.10f * durationScale).SetEase(Ease.OutCubic));
-            sequence.Append(Rect.DOScale(_boundScale, 0.16f * durationScale).SetEase(Ease.OutBack));
-            sequence.Join(_canvasGroup.DOFade(_boundAlpha, 0.16f * durationScale));
-            sequence.OnComplete(() =>
-            {
-                _executingGlow.enabled = _executing;
-                onComplete?.Invoke();
-            });
+            Sequence sequence = DOTween.Sequence().SetUpdate(true).SetTarget(_canvasGroup);
+            sequence.Append(Rect.DOScale(_boundScale * 1.08f, 0.10f / Mathf.Max(0.05f, speed)));
+            sequence.Append(Rect.DOScale(_boundScale, 0.16f / Mathf.Max(0.05f, speed)).SetEase(Ease.OutBack));
+            sequence.OnComplete(() => onComplete?.Invoke());
             _visibilityTween = sequence;
         }
 
         public void PlayRemove(Action onComplete, float speed = 1f)
         {
-            EnsureRefs();
-            BeginSemanticExit();
-            _outline.enabled = true;
-            _outline.effectColor = WarningColor;
-            _outline.effectDistance = new Vector2(3f, -3f);
-            Sequence sequence = DOTween.Sequence()
-                .SetUpdate(true)
-                .SetTarget(_canvasGroup);
-            float durationScale = 1f / Mathf.Max(0.05f, speed);
-            sequence.Append(Rect.DOShakeAnchorPos(0.18f * durationScale, new Vector2(7f, 0f), 14, 70f, false, true));
-            sequence.Append(Rect.DOAnchorPosY(Rect.anchoredPosition.y - 24f, 0.18f * durationScale).SetEase(Ease.InCubic));
-            sequence.Join(Rect.DOScale(_boundScale * 0.68f, 0.18f * durationScale));
-            sequence.Join(_canvasGroup.DOFade(0f, 0.18f * durationScale));
+            BeginExit();
+            Sequence sequence = DOTween.Sequence().SetUpdate(true).SetTarget(_canvasGroup);
+            float duration = (_theme?.Motion.ExitDuration ?? 0.18f) / Mathf.Max(0.05f, speed);
+            sequence.Append(Rect.DOShakeAnchorPos(duration, new Vector2(6f, 0f), 12, 60f, false, true));
+            sequence.Append(Rect.DOAnchorPosY(Rect.anchoredPosition.y - 22f, duration).SetEase(Ease.InCubic));
+            sequence.Join(Rect.DOScale(_boundScale * 0.66f, duration));
+            sequence.Join(_canvasGroup.DOFade(0f, duration));
             sequence.OnComplete(() => onComplete?.Invoke());
             _visibilityTween = sequence;
         }
 
         public void PlaySkip(Action onComplete, float speed = 1f)
         {
-            EnsureRefs();
-            BeginSemanticExit();
-            EnsureSkipStamp();
-            _icon.color = new Color(0.64f, 0.60f, 0.49f, 0.82f);
-            _outline.enabled = true;
-            _outline.effectColor = new Color(0.58f, 0.47f, 0.24f, 0.95f);
-            _skipStamp.rectTransform.localScale = Vector3.one * 1.8f;
-            _skipStamp.alpha = 0f;
-            Sequence sequence = DOTween.Sequence()
-                .SetUpdate(true)
-                .SetTarget(_canvasGroup);
-            float durationScale = 1f / Mathf.Max(0.05f, speed);
-            sequence.Append(_skipStamp.DOFade(1f, 0.06f * durationScale));
-            sequence.Join(_skipStamp.rectTransform.DOScale(0.92f, 0.12f * durationScale).SetEase(Ease.OutBack));
-            sequence.AppendInterval(0.12f * durationScale);
-            sequence.Append(Rect.DOAnchorPosY(Rect.anchoredPosition.y + 26f, 0.20f * durationScale).SetEase(Ease.InCubic));
-            sequence.Join(Rect.DOLocalRotate(new Vector3(0f, 0f, 10f), 0.20f * durationScale));
-            sequence.Join(_canvasGroup.DOFade(0f, 0.20f * durationScale));
+            BeginExit();
+            if (_skipStamp != null)
+            {
+                _skipStamp.gameObject.SetActive(true);
+                _skipStamp.alpha = 0f;
+                _skipStamp.color = (_theme?.Palette ?? new TimelineAxisPalette()).Ink;
+            }
+
+            Sequence sequence = DOTween.Sequence().SetUpdate(true).SetTarget(_canvasGroup);
+            float scale = 1f / Mathf.Max(0.05f, speed);
+            if (_skipStamp != null)
+            {
+                _skipStamp.rectTransform.localScale = Vector3.one * 1.45f;
+                sequence.Append(_skipStamp.DOFade(1f, 0.07f * scale));
+                sequence.Join(_skipStamp.rectTransform.DOScale(0.94f, 0.13f * scale).SetEase(Ease.OutBack));
+            }
+
+            sequence.AppendInterval(0.10f * scale);
+            sequence.Append(Rect.DOAnchorPosY(Rect.anchoredPosition.y + 24f, 0.20f * scale).SetEase(Ease.InCubic));
+            sequence.Join(_canvasGroup.DOFade(0f, 0.20f * scale));
             sequence.OnComplete(() => onComplete?.Invoke());
             _visibilityTween = sequence;
         }
 
-        public void CompletePresentation()
-        {
-            EnsureRefs();
-            _layoutTween?.Kill(complete: false);
-            _visibilityTween?.Kill(complete: false);
-            _layoutTween = null;
-            _visibilityTween = null;
-            _removing = false;
-            _pulse = false;
-            _canvasGroup.alpha = _boundAlpha;
-            _canvasGroup.blocksRaycasts = true;
-            Rect.localScale = _boundScale;
-            Rect.localRotation = Quaternion.identity;
-            _outline.enabled = true;
-            _outline.effectColor = _boundOutlineColor;
-            _outline.effectDistance = _boundOutlineDistance;
-            _executingGlow.enabled = _executing;
-            if (_skipStamp != null)
-            {
-                Destroy(_skipStamp.gameObject);
-                _skipStamp = null;
-            }
-        }
-
-        private void BeginSemanticExit()
-        {
-            _layoutTween?.Kill();
-            _visibilityTween?.Kill();
-            _pulse = false;
-            _removing = true;
-            _canvasGroup.blocksRaycasts = false;
-            _hitArea.raycastTarget = false;
-        }
-
-        private void EnsureSkipStamp()
-        {
-            if (_skipStamp != null)
-            {
-                return;
-            }
-
-            var go = new GameObject(
-                "SkipStamp",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(TextMeshProUGUI));
-            RectTransform rect = go.GetComponent<RectTransform>();
-            rect.SetParent(Rect, false);
-            rect.anchorMin = new Vector2(0.5f, 0.5f);
-            rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(72f, 30f);
-            rect.anchoredPosition = new Vector2(0f, 3f);
-            rect.localRotation = Quaternion.Euler(0f, 0f, -10f);
-            _skipStamp = go.GetComponent<TMP_Text>();
-            _skipStamp.text = "跳过";
-            _skipStamp.font = TMP_Settings.defaultFontAsset;
-            _skipStamp.fontSize = 20f;
-            _skipStamp.fontStyle = FontStyles.Bold;
-            _skipStamp.alignment = TextAlignmentOptions.Center;
-            _skipStamp.color = new Color(0.43f, 0.32f, 0.14f, 1f);
-            _skipStamp.raycastTarget = false;
-            go.transform.SetAsLastSibling();
-        }
-
         public void PlayExit(Action onComplete)
         {
-            EnsureRefs();
-            _layoutTween?.Kill();
-            _visibilityTween?.Kill();
-            _pulse = false;
-            _removing = true;
-            _canvasGroup.blocksRaycasts = false;
-            _hitArea.raycastTarget = false;
-            float startAlpha = _canvasGroup.alpha;
-            Vector3 startScale = Rect.localScale;
-            float progress = 0f;
-            _visibilityTween = DOTween.To(
-                    () => progress,
-                    value =>
-                    {
-                        progress = value;
-                        _canvasGroup.alpha = Mathf.Lerp(startAlpha, 0f, value);
-                        Rect.localScale = Vector3.LerpUnclamped(
-                            startScale,
-                            _boundScale * 0.65f,
-                            value);
-                    },
-                    1f,
-                    0.12f)
-                .SetEase(Ease.InCubic)
-                .SetUpdate(true)
-                .SetTarget(_canvasGroup)
-                .OnComplete(() => onComplete?.Invoke());
+            BeginExit();
+            Sequence sequence = DOTween.Sequence().SetUpdate(true).SetTarget(_canvasGroup);
+            sequence.Join(_canvasGroup.DOFade(0f, 0.12f));
+            sequence.Join(Rect.DOScale(_boundScale * 0.65f, 0.12f).SetEase(Ease.InCubic));
+            sequence.OnComplete(() => onComplete?.Invoke());
+            _visibilityTween = sequence;
         }
 
         public void SetRaycastEnabled(bool enabled)
@@ -474,165 +308,160 @@ namespace GourmetProject.Game.UI.Hud
             EnsureRefs();
             _canvasGroup.blocksRaycasts = enabled;
             _canvasGroup.interactable = enabled;
-            _hitArea.raycastTarget = enabled;
-        }
-
-        public void BindPointer(Action entered, Action exited, Action clicked)
-        {
-            EnsureRefs();
-            _pointer.Bind(
-                entered,
-                exited,
-                data =>
-                {
-                    if (data.button == PointerEventData.InputButton.Left)
-                    {
-                        clicked?.Invoke();
-                    }
-                });
+            if (_hitArea != null)
+            {
+                _hitArea.raycastTarget = enabled;
+            }
         }
 
         public void SetNodeTargetState(bool eligible, bool emphasized, bool destructive)
         {
             EnsureRefs();
-            if (!eligible)
+            TimelineAxisPalette palette = _theme?.Palette ?? new TimelineAxisPalette();
+            if (_stateRing != null)
             {
-                _pulse = false;
-                _canvasGroup.alpha = 0.32f;
-                _outline.enabled = false;
-                if (!_removing)
-                {
-                    Rect.localScale = _boundScale;
-                }
-
-                return;
+                _stateRing.enabled = eligible || _executing || _preview;
+                _stateRing.color = destructive ? palette.Danger : palette.Preview;
+                _stateRing.rectTransform.localScale = emphasized ? Vector3.one * 1.10f : Vector3.one;
             }
 
-            _canvasGroup.alpha = 1f;
-            _pulse = emphasized;
-            _outline.enabled = true;
-            Color color = destructive ? WarningColor : TargetColor;
-            _outline.effectColor = emphasized
-                ? color
-                : new Color(color.r, color.g, color.b, 0.68f);
-            _outline.effectDistance = emphasized ? new Vector2(3f, -3f) : new Vector2(1f, -1f);
+            if (eligible && emphasized)
+            {
+                StartStatePulse();
+            }
+            else
+            {
+                RefreshStateTween();
+            }
         }
 
         public void ClearNodeTargetState()
         {
             EnsureRefs();
-            _pulse = false;
+            if (_stateRing != null)
+            {
+                _stateRing.rectTransform.localScale = Vector3.one;
+                _stateRing.enabled = _executing || _preview;
+                _stateRing.color = _preview
+                    ? (_theme?.Palette.Preview ?? Color.green)
+                    : (_theme?.Palette.ExecutingGlow ?? Color.yellow);
+            }
+
+            RefreshStateTween();
+        }
+
+        public void CompletePresentation()
+        {
+            EnsureRefs();
+            _layoutTween?.Kill(false);
+            _visibilityTween?.Kill(false);
+            _layoutTween = null;
+            _visibilityTween = null;
+            _removing = false;
+            Rect.localScale = _boundScale;
+            Rect.localRotation = Quaternion.identity;
             _canvasGroup.alpha = _boundAlpha;
-            _outline.enabled = true;
-            _outline.effectColor = _boundOutlineColor;
-            _outline.effectDistance = _boundOutlineDistance;
-            if (!_removing)
+            _canvasGroup.blocksRaycasts = !_preview;
+            if (_skipStamp != null)
             {
-                Rect.localScale = _boundScale;
-            }
-        }
-
-        private void Update()
-        {
-            if (_removing)
-            {
-                return;
+                _skipStamp.gameObject.SetActive(false);
             }
 
-            if (_pulse)
-            {
-                float scale = 1f + Mathf.Sin(Time.unscaledTime * 7f) * 0.035f;
-                Rect.localScale = _boundScale * scale;
-            }
-
-            if (_executing && _executingGlow != null)
-            {
-                float pulse = Mathf.Sin(Time.unscaledTime * 5f) * 0.5f + 0.5f;
-                _executingGlow.effectColor =
-                    Color.LerpUnclamped(ExecutingGlowMin, ExecutingGlowMax, pulse);
-                float distance = Mathf.LerpUnclamped(3f, 5f, pulse);
-                _executingGlow.effectDistance = new Vector2(distance, -distance);
-            }
-        }
-
-        private void LateUpdate()
-        {
+            RefreshStateTween();
             RefreshTail();
         }
 
-        private void OnDestroy()
+        public void ResetForPool()
         {
-            _layoutTween?.Kill();
-            _visibilityTween?.Kill();
+            _layoutTween?.Kill(false);
+            _visibilityTween?.Kill(false);
+            _stateTween?.Kill(false);
+            _layoutTween = null;
+            _visibilityTween = null;
+            _stateTween = null;
+            _dayAnchor = null;
+            _executing = false;
+            _preview = false;
+            _removing = false;
+            _canvasGroup.alpha = 1f;
+            _canvasGroup.blocksRaycasts = false;
+            _canvasGroup.interactable = false;
+            Rect.localScale = _authoredScale;
+            Rect.localRotation = Quaternion.identity;
+            if (_stateRing != null)
+            {
+                _stateRing.enabled = false;
+                _stateRing.rectTransform.localScale = Vector3.one;
+            }
+
+            if (_skipStamp != null)
+            {
+                _skipStamp.gameObject.SetActive(false);
+            }
         }
 
-        private void RefreshTail()
+        public void RefreshTail()
         {
-            if (_tailGraphic == null || _dayAnchor == null)
+            if (_tail == null || _dayAnchor == null)
             {
                 return;
             }
 
-            Vector3 worldTarget = _dayAnchor.TransformPoint(Vector3.zero);
-            Vector2 localTarget = _tailGraphic.rectTransform.InverseTransformPoint(worldTarget);
-            _tailGraphic.SetTip(localTarget, _tailColor);
+            Vector3 world = _dayAnchor.TransformPoint(Vector3.zero);
+            // Tail 是独立的全尺寸子 RectTransform。尖端必须换算到 Tail 自己的
+            // 局部坐标，否则会多出半个气泡高度的偏移并完全藏进 Shell 后面。
+            Vector3 local = _tail.rectTransform.InverseTransformPoint(world);
+            _tail.SetTip(new Vector2(local.x, local.y), _tailColor);
+        }
+
+        private void BeginExit()
+        {
+            _layoutTween?.Kill();
+            _visibilityTween?.Kill();
+            _stateTween?.Kill();
+            _removing = true;
+            SetRaycastEnabled(false);
+        }
+
+        private void RefreshStateTween()
+        {
+            _stateTween?.Kill(false);
+            _stateTween = null;
+            if (_executing && !_removing)
+            {
+                StartStatePulse();
+            }
+        }
+
+        private void StartStatePulse()
+        {
+            if (_stateRing == null || !gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            _stateTween?.Kill(false);
+            _stateRing.rectTransform.localScale = Vector3.one;
+            _stateTween = _stateRing.rectTransform
+                .DOScale(1.10f, 0.46f)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetUpdate(true)
+                .SetTarget(_stateRing);
         }
 
         private void EnsureRefs()
         {
             _rect ??= transform as RectTransform;
             _canvasGroup ??= GetComponent<CanvasGroup>();
-            _pointer ??= GetComponent<TimelineAxisPointerTarget>();
             _hitArea ??= GetComponent<Graphic>();
-            if (_icon != null && _outline != null && _executingGlow == null)
-            {
-                Outline[] outlines = _icon.GetComponents<Outline>();
-                foreach (Outline outline in outlines)
-                {
-                    if (outline != _outline)
-                    {
-                        _executingGlow = outline;
-                        break;
-                    }
-                }
-
-                if (_executingGlow == null)
-                {
-                    _executingGlow = _icon.gameObject.AddComponent<Outline>();
-                }
-
-                _executingGlow.enabled = false;
-            }
-
-            if (_tail != null)
-            {
-                _tail.enabled = false;
-                if (_tailGraphic == null)
-                {
-                    _tailGraphic = _tail.GetComponent<TimelineNodeTailGraphic>();
-                    if (_tailGraphic == null)
-                    {
-                        _tailGraphic = _tail.gameObject.AddComponent<TimelineNodeTailGraphic>();
-                    }
-                }
-            }
-
-            if (_tailGraphic != null)
-            {
-                RectTransform tailRect = _tailGraphic.rectTransform;
-                tailRect.anchorMin = Vector2.zero;
-                tailRect.anchorMax = Vector2.one;
-                tailRect.pivot = new Vector2(0.5f, 0.5f);
-                tailRect.offsetMin = Vector2.zero;
-                tailRect.offsetMax = Vector2.zero;
-                tailRect.localRotation = Quaternion.identity;
-                _tailGraphic.raycastTarget = false;
-            }
         }
 
-        private static float NormalizeAngle(float angle)
+        private void OnDestroy()
         {
-            return angle > 180f ? angle - 360f : angle;
+            _layoutTween?.Kill(false);
+            _visibilityTween?.Kill(false);
+            _stateTween?.Kill(false);
         }
     }
 }

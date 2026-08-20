@@ -28,6 +28,8 @@ namespace GourmetProject.Game.UI.Hud
 
         public ActionDisplayKind Kind { get; set; } = ActionDisplayKind.Event;
 
+        public string IconKey { get; set; } = string.Empty;
+
         public bool Completed { get; set; }
 
         public bool Executing { get; set; }
@@ -40,9 +42,69 @@ namespace GourmetProject.Game.UI.Hud
                 Day = Day,
                 ActionId = ActionId,
                 Kind = Kind,
+                IconKey = IconKey,
                 Completed = Completed,
                 Executing = Executing,
             };
+        }
+    }
+
+    /// <summary>一次演出所需的不可变 Cue 序列及结束时必须收敛到的权威状态。</summary>
+    public sealed class TimelineAxisPresentationPlan
+    {
+        private readonly TimelinePresentationCue[] _cues;
+        private readonly IReadOnlyList<TimelinePresentationCue> _readOnlyCues;
+        private readonly TimelineAxisViewState _finalState;
+
+        public IReadOnlyList<TimelinePresentationCue> Cues => _readOnlyCues;
+        public TimelineAxisViewState FinalState => _finalState.Clone();
+        public bool IsEmpty => _cues.Length == 0;
+
+        public TimelineAxisPresentationPlan(
+            IEnumerable<TimelinePresentationCue> cues,
+            TimelineAxisViewState finalState)
+        {
+            var copy = new List<TimelinePresentationCue>();
+            if (cues != null)
+            {
+                foreach (TimelinePresentationCue cue in cues)
+                {
+                    if (cue != null)
+                    {
+                        copy.Add(cue);
+                    }
+                }
+            }
+
+            _cues = copy.ToArray();
+            _readOnlyCues = Array.AsReadOnly(_cues);
+            _finalState = finalState?.Clone() ?? ResolveFinalState(_cues);
+        }
+
+        public static TimelineAxisPresentationPlan Empty(TimelineAxisViewState finalState)
+        {
+            return new TimelineAxisPresentationPlan(Array.Empty<TimelinePresentationCue>(), finalState);
+        }
+
+        public static TimelineAxisPresentationPlan Single(TimelinePresentationCue cue)
+        {
+            return new TimelineAxisPresentationPlan(
+                cue == null ? Array.Empty<TimelinePresentationCue>() : new[] { cue },
+                cue?.TargetState);
+        }
+
+        private static TimelineAxisViewState ResolveFinalState(
+            IReadOnlyList<TimelinePresentationCue> cues)
+        {
+            for (int i = (cues?.Count ?? 0) - 1; i >= 0; i--)
+            {
+                if (cues[i]?.TargetState != null)
+                {
+                    return cues[i].TargetState.Clone();
+                }
+            }
+
+            return new TimelineAxisViewState();
         }
     }
 
@@ -86,15 +148,15 @@ namespace GourmetProject.Game.UI.Hud
 
     public sealed class TimelinePresentationCue
     {
-        public TimelinePresentationCueKind Kind { get; set; }
+        public TimelinePresentationCueKind Kind { get; private set; }
 
-        public string NodeId { get; set; } = string.Empty;
+        public string NodeId { get; private set; } = string.Empty;
 
-        public float FromDay { get; set; }
+        public float FromDay { get; private set; }
 
-        public float ToDay { get; set; }
+        public float ToDay { get; private set; }
 
-        public TimelineAxisViewState TargetState { get; set; }
+        public TimelineAxisViewState TargetState { get; private set; }
 
         public static TimelinePresentationCue Node(
             TimelinePresentationCueKind kind,
@@ -105,7 +167,7 @@ namespace GourmetProject.Game.UI.Hud
             {
                 Kind = kind,
                 NodeId = nodeId ?? string.Empty,
-                TargetState = targetState,
+                TargetState = targetState?.Clone(),
             };
         }
 
@@ -121,14 +183,28 @@ namespace GourmetProject.Game.UI.Hud
                 NodeId = arrivingNodeId ?? string.Empty,
                 FromDay = fromDay,
                 ToDay = toDay,
-                TargetState = targetState,
+                TargetState = targetState?.Clone(),
+            };
+        }
+
+        public static TimelinePresentationCue Resize(
+            float fromLength,
+            float toLength,
+            TimelineAxisViewState targetState)
+        {
+            return new TimelinePresentationCue
+            {
+                Kind = TimelinePresentationCueKind.Resize,
+                FromDay = fromLength,
+                ToDay = toLength,
+                TargetState = targetState?.Clone(),
             };
         }
     }
 
     public static class TimelineAxisPresentationPlanner
     {
-        public static IReadOnlyList<TimelinePresentationCue> BuildMutation(
+        public static TimelineAxisPresentationPlan BuildMutation(
             TimelineAxisViewState before,
             TimelineAxisViewState after,
             bool skipped,
@@ -142,13 +218,10 @@ namespace GourmetProject.Game.UI.Hud
             {
                 working.LengthDays = after.LengthDays;
                 working.CurrentDay = Math.Min(working.CurrentDay, working.LengthDays);
-                cues.Add(new TimelinePresentationCue
-                {
-                    Kind = TimelinePresentationCueKind.Resize,
-                    FromDay = before.LengthDays,
-                    ToDay = after.LengthDays,
-                    TargetState = working.Clone(),
-                });
+                cues.Add(TimelinePresentationCue.Resize(
+                    before.LengthDays,
+                    after.LengthDays,
+                    working));
             }
 
             var beforeById = Index(before.Nodes);
@@ -216,13 +289,7 @@ namespace GourmetProject.Game.UI.Hud
                 }
             }
 
-            if (cues.Count > 0)
-            {
-                // 非结构字段（完成态、执行态与显示进度）也必须最终收敛到权威快照。
-                cues[cues.Count - 1].TargetState = after.Clone();
-            }
-
-            return cues;
+            return new TimelineAxisPresentationPlan(cues, after);
         }
 
         public static IReadOnlyList<TimelineAxisNodeState> DueStops(

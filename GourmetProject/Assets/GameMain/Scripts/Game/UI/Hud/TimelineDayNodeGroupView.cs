@@ -24,8 +24,6 @@ namespace GourmetProject.Game.UI.Hud
             public TimelineNodeFanPose Pose;
         }
 
-        private const string PreviewId = "__preview__";
-
         [Header("Prefab 引用")]
         [SerializeField] private RectTransform _rect;
         [SerializeField] private Graphic _hitArea;
@@ -47,6 +45,7 @@ namespace GourmetProject.Game.UI.Hud
         private bool _destructiveTarget;
         private string _hoveredId;
         private Action<string> _onTarget;
+        private Action<TimelineNodeBubbleView> _releaseBubble;
         private Tween _axisTween;
 
         public int Day { get; private set; }
@@ -59,10 +58,14 @@ namespace GourmetProject.Game.UI.Hud
         }
 
         /// <summary>绑定日期与轴向位置；RectTransform 的锚点纵向位置、尺寸与命中区样式由 Prefab 授权。</summary>
-        public void Initialize(int day, float axisX)
+        public void Initialize(
+            int day,
+            float axisX,
+            Action<TimelineNodeBubbleView> releaseBubble = null)
         {
             EnsureRefs();
             Day = day;
+            _releaseBubble = releaseBubble;
             gameObject.name = $"DayNodeGroup_{day}";
             if (_hitArea != null)
             {
@@ -199,25 +202,19 @@ namespace GourmetProject.Game.UI.Hud
             {
                 if (animate && bubble.gameObject.activeInHierarchy)
                 {
-                    Action destroy = () =>
+                    Action release = () => ReleaseBubble(bubble);
+                    if (id == TimelineAxisSelectionController.PreviewId)
                     {
-                        if (bubble != null)
-                        {
-                            Destroy(bubble.gameObject);
-                        }
-                    };
-                    if (id == PreviewId)
-                    {
-                        bubble.PlayExit(destroy);
+                        bubble.PlayExit(release);
                     }
                     else
                     {
-                        bubble.PlayRemove(destroy);
+                        bubble.PlayRemove(release);
                     }
                 }
                 else
                 {
-                    Destroy(bubble.gameObject);
+                    ReleaseBubble(bubble);
                 }
             }
 
@@ -226,13 +223,13 @@ namespace GourmetProject.Game.UI.Hud
 
         public void RemovePreview(bool animate)
         {
-            Remove(PreviewId, animate);
+            Remove(TimelineAxisSelectionController.PreviewId, animate);
         }
 
         public void AddPreview(TimelineNodeBubbleView bubble)
         {
             RemovePreview(animate: false);
-            Add(PreviewId, bubble, preview: true, animate: true);
+            Add(TimelineAxisSelectionController.PreviewId, bubble, preview: true, animate: true);
         }
 
         public bool PromotePreview(string nodeId, out TimelineNodeBubbleView bubble)
@@ -456,6 +453,39 @@ namespace GourmetProject.Game.UI.Hud
         private void OnDestroy()
         {
             _axisTween?.Kill();
+        }
+
+        public void ResetForPool()
+        {
+            _axisTween?.Kill(false);
+            _axisTween = null;
+            EndNodeTargetMode();
+            for (int i = _entries.Count - 1; i >= 0; i--)
+            {
+                ReleaseBubble(_entries[i].Bubble);
+            }
+
+            _entries.Clear();
+            _releaseBubble = null;
+            Day = 0;
+        }
+
+        private void ReleaseBubble(TimelineNodeBubbleView bubble)
+        {
+            if (bubble == null)
+            {
+                return;
+            }
+
+            if (_releaseBubble != null)
+            {
+                _releaseBubble(bubble);
+            }
+            else
+            {
+                bubble.ResetForPool();
+                bubble.gameObject.SetActive(false);
+            }
         }
 
         private void EnsureRefs()

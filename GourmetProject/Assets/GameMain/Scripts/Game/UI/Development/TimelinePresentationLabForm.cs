@@ -17,7 +17,7 @@ namespace GourmetProject.Game.UI.Development
         private static readonly Color Ink = new Color(0.25f, 0.12f, 0.045f, 1f);
         private static readonly Color ButtonFill = new Color(0.86f, 0.64f, 0.27f, 1f);
 
-        private ActionAxisBar _axis;
+        private TimelineAxisView _axis;
         private TimelineAxisViewState _state;
         private TMP_Text _status;
         private TMP_Text _speedLabel;
@@ -73,7 +73,7 @@ namespace GourmetProject.Game.UI.Development
             Image axisBackdrop = axisHost.gameObject.AddComponent<Image>();
             axisBackdrop.color = new Color(1f, 0.97f, 0.83f, 0.72f);
             axisBackdrop.raycastTarget = false;
-            ActionAxisBar prefab = Resources.Load<ActionAxisBar>("Prefabs/UI/Hud/TimelineAxisView");
+            TimelineAxisView prefab = Resources.Load<TimelineAxisView>("Prefabs/UI/Hud/TimelineAxisView");
             if (prefab != null)
             {
                 _axis = Instantiate(prefab, axisHost, false);
@@ -120,6 +120,9 @@ namespace GourmetProject.Game.UI.Development
             Button speed = CreateButton("Speed", controls, "倍速1×", CycleSpeed);
             _speedLabel = speed.GetComponentInChildren<TMP_Text>();
             CreateButton("Complete", controls, "立即完成", () => _axis?.CompletePresentation());
+            CreateButton("SelectAdd", controls, "选择加日期", BeginAddSelection);
+            CreateButton("SelectDelete", controls, "选择删除", BeginDeleteSelection);
+            CreateButton("SelectExecute", controls, "选择执行", BeginExecuteSelection);
         }
 
         private void ResetLab()
@@ -132,11 +135,17 @@ namespace GourmetProject.Game.UI.Development
                 CurrentDay = 0f,
             };
             _state.Nodes.Add(Node("lab_shop", 1, "act_shop", ActionDisplayKind.Shop));
+            TimelineAxisNodeState completed = Node("lab_completed", 2, "act_reward", ActionDisplayKind.Reward);
+            completed.Completed = true;
+            _state.Nodes.Add(completed);
             _state.Nodes.Add(Node("lab_interest_a", 3, "act_interest", ActionDisplayKind.Interest));
-            _state.Nodes.Add(Node("lab_interest_b", 3, "act_reward", ActionDisplayKind.Reward));
+            TimelineAxisNodeState executing = Node("lab_interest_b", 3, "act_reward", ActionDisplayKind.Reward);
+            executing.Executing = true;
+            _state.Nodes.Add(executing);
+            _state.Nodes.Add(Node("lab_negative", 3, "act_negative", ActionDisplayKind.Negative));
             _state.Nodes.Add(Node("lab_event", 5, "act_event", ActionDisplayKind.Event));
             _state.Nodes.Add(Node("lab_boss", 7, "act_boss", ActionDisplayKind.Boss));
-            _axis?.BindState(_state, animate: false);
+            _axis?.Render(_state, animate: false);
             SetStatus("独立演示数据已重置；不会修改当前对局或存档。", null);
         }
 
@@ -330,13 +339,13 @@ namespace GourmetProject.Game.UI.Development
             TimelineAxisViewState before = _state.Clone();
             TimelineAxisViewState after = _state.Clone();
             mutation(after);
-            IReadOnlyList<TimelinePresentationCue> cues = TimelineAxisPresentationPlanner.BuildMutation(
+            TimelineAxisPresentationPlan plan = TimelineAxisPresentationPlanner.BuildMutation(
                 before,
                 after,
                 skipped,
                 targetNodeId);
             _state = after;
-            PlayCues(cues, label, onComplete);
+            PlayPlan(plan, label, onComplete);
         }
 
         private void RunAll()
@@ -354,18 +363,65 @@ namespace GourmetProject.Game.UI.Development
         {
             if (_axis == null || cues == null || cues.Count == 0)
             {
-                _axis?.BindState(_state, animate: false);
+                _axis?.Render(_state, animate: false);
                 SetStatus(label, onComplete);
                 return;
             }
 
-            for (int i = 0; i < cues.Count; i++)
+            _axis.Play(
+                new TimelineAxisPresentationPlan(cues, _state),
+                () => SetStatus(label, onComplete),
+                _speed);
+        }
+
+        private void PlayPlan(
+            TimelineAxisPresentationPlan plan,
+            string label,
+            Action onComplete = null)
+        {
+            if (_axis == null || plan == null || plan.IsEmpty)
             {
-                _axis.PlayCue(
-                    cues[i],
-                    i == cues.Count - 1 ? () => SetStatus(label, onComplete) : null,
-                    _speed);
+                _axis?.Render(_state, false);
+                SetStatus(label, onComplete);
+                return;
             }
+
+            _axis.Play(plan, () => SetStatus(label, onComplete), _speed);
+        }
+
+        private void BeginAddSelection()
+        {
+            TimelineAxisNodeState preview = Node(
+                TimelineAxisSelectionController.PreviewId,
+                0,
+                "lab_preview",
+                ActionDisplayKind.Reward);
+            _axis?.BeginSelection(TimelineAxisSelectionRequest.AddDay(
+                preview,
+                new[] { 1, 4, 6 },
+                day => SetStatus($"选择了第{day}天（点击节点旁日期刻度）", null),
+                () => SetStatus("已取消加日期选择", null)));
+            SetStatus("加日期选择态：悬停 1/4/6 日刻度可看预览", null);
+        }
+
+        private void BeginDeleteSelection()
+        {
+            _axis?.BeginSelection(TimelineAxisSelectionRequest.Nodes(
+                TimelineAxisSelectionMode.DeleteNode,
+                new[] { "lab_shop", "lab_event" },
+                id => SetStatus($"选择删除 {id}", null),
+                () => SetStatus("已取消删除选择", null)));
+            SetStatus("删除节点选择态", null);
+        }
+
+        private void BeginExecuteSelection()
+        {
+            _axis?.BeginSelection(TimelineAxisSelectionRequest.Nodes(
+                TimelineAxisSelectionMode.ExecuteNode,
+                new[] { "lab_interest_a", "lab_boss" },
+                id => SetStatus($"选择执行 {id}", null),
+                () => SetStatus("已取消执行选择", null)));
+            SetStatus("执行节点选择态", null);
         }
 
         private void SetStatus(string label, Action onComplete)
@@ -409,6 +465,7 @@ namespace GourmetProject.Game.UI.Development
                 Day = day,
                 ActionId = actionId,
                 Kind = kind,
+                IconKey = TimelineAxisIconKeys.ForKind(kind),
             };
         }
 
