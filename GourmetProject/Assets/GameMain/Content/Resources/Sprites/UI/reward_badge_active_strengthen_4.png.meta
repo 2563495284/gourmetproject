@@ -103,10 +103,10 @@ TextureImporter:
       name: reward_badge_active_strengthen_4_0
       rect:
         serializedVersion: 2
-        x: 17
-        y: 30
-        width: 495
-        height: 467
+        x: 64
+        y: 17
+        width: 441
+        height: 482
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
