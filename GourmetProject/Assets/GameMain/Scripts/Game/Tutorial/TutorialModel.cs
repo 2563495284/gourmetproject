@@ -436,6 +436,10 @@ namespace GourmetProject.Game.Tutorial
 
     public static class TutorialActionScheduleOverride
     {
+        private const string FirstActionGroup = "tutorial_first";
+        private const string SecondActionGroup = "tutorial_second";
+        private const float TargetScoreMultiplier = 0.5f;
+
         public static bool TryBuildChoices(GameRun run, out List<ActionChoice> choices)
         {
             choices = null;
@@ -471,7 +475,7 @@ namespace GourmetProject.Game.Tutorial
 
             if (run.RunActionStepIndex == 0 && run.CurrentDay <= TimelineMath.Epsilon)
             {
-                choices = Build(tables, run, "tutorial_first", ("act_food_gold", 1f));
+                choices = Build(tables, run, FirstActionGroup, ("act_food_gold", 1f));
                 return choices.Count == 1;
             }
 
@@ -483,7 +487,7 @@ namespace GourmetProject.Game.Tutorial
                 choices = Build(
                     tables,
                     run,
-                    "tutorial_second",
+                    SecondActionGroup,
                     ("act_food_fragment", 1f),
                     ("act_food_passive", 1f),
                     ("act_food_hard_gold", 1.2f));
@@ -491,6 +495,34 @@ namespace GourmetProject.Game.Tutorial
             }
 
             return false;
+        }
+
+        public static int ModifyTargetScore(
+            GameRun run,
+            ActionExecutionContext context,
+            int targetScore)
+        {
+            return ModifyTargetScore(
+                run != null && run.IsTutorialRun,
+                context?.ActionGroupId,
+                targetScore);
+        }
+
+        internal static int ModifyTargetScore(
+            bool isTutorialRun,
+            string actionGroupId,
+            int targetScore)
+        {
+            if (!isTutorialRun
+                || (actionGroupId != FirstActionGroup && actionGroupId != SecondActionGroup))
+            {
+                return targetScore;
+            }
+
+            int modified = (int)Math.Round(
+                targetScore * TargetScoreMultiplier,
+                MidpointRounding.AwayFromZero);
+            return Math.Max(1, modified);
         }
 
         private static List<ActionChoice> Build(

@@ -3,6 +3,7 @@ using System.Globalization;
 using GourmetProject.Core.Rng;
 using GourmetProject.Runtime;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.Tutorial;
 
 namespace GourmetProject.Game.Meta
 {
@@ -115,9 +116,10 @@ namespace GourmetProject.Game.Meta
             int target = food != null
                 ? itemRuntime.ModifyRequiredScore(hiddenCurveTarget, food.ActionKind)
                 : hiddenCurveTarget;
-            return run != null && food != null && food.ActionKind == cfg.FoodActionKind.Feast
+            target = run != null && food != null && food.ActionKind == cfg.FoodActionKind.Feast
                 ? run.ModifyBossTargetScore(target)
                 : target;
+            return TutorialActionScheduleOverride.ModifyTargetScore(run, context, target);
         }
     }
 
