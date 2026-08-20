@@ -89,8 +89,46 @@ namespace GourmetProject.Core.Save
 
         public bool TryLoad<T>(string slot, out T data)
         {
-            data = default;
             string path = PathOf(slot);
+            if (TryLoadFile(path, slot, out data, out string primaryError))
+            {
+                return true;
+            }
+
+            string backupPath = path + ".bak";
+            if (TryLoadFile(backupPath, slot, out data, out string backupError))
+            {
+                Log.Warning(
+                    $"Save slot '{slot}' primary file could not be loaded ({primaryError}); "
+                    + "recovered from backup.",
+                    Tag);
+                if (!TryRestorePrimaryFromBackup(path, backupPath, out string restoreError))
+                {
+                    Log.Warning(
+                        $"Save slot '{slot}' was loaded from backup, but restoring the primary file failed: "
+                        + restoreError,
+                        Tag);
+                }
+
+                return true;
+            }
+
+            data = default;
+            if (!string.IsNullOrEmpty(primaryError))
+            {
+                string message = string.IsNullOrEmpty(backupError)
+                    ? $"Save slot '{slot}' could not be loaded: {primaryError}."
+                    : $"Save slot '{slot}' could not be loaded: primary={primaryError}; backup={backupError}.";
+                Log.Error(message, Tag);
+            }
+
+            return false;
+        }
+
+        private bool TryLoadFile<T>(string path, string slot, out T data, out string error)
+        {
+            data = default;
+            error = null;
             if (!File.Exists(path))
             {
                 return false;
@@ -111,20 +149,57 @@ namespace GourmetProject.Core.Save
                     string actual = Checksum.ComputeHex(Encoding.UTF8.GetBytes(canonicalData), _options.ChecksumSalt);
                     if (!string.Equals(stored, actual, StringComparison.Ordinal))
                     {
-                        Log.Error($"Save slot '{slot}' failed checksum (stored={stored}, actual={actual}). Treated as corrupted.", Tag);
+                        error = $"checksum failed (stored={stored}, actual={actual})";
                         return false;
                     }
                 }
 
                 dataToken = ApplyMigrations(slot, dataToken, version);
-
                 data = dataToken.ToObject<T>(Newtonsoft.Json.JsonSerializer.Create(_settings));
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Error($"Failed to load save slot '{slot}': {ex.Message}", Tag);
+                error = ex.Message;
                 return false;
+            }
+        }
+
+        private static bool TryRestorePrimaryFromBackup(string path, string backupPath, out string error)
+        {
+            string restorePath = path + ".restore";
+            error = null;
+            try
+            {
+                SafeDelete(restorePath);
+                File.Copy(backupPath, restorePath, true);
+                if (File.Exists(path))
+                {
+                    try
+                    {
+                        File.Replace(restorePath, path, null);
+                    }
+                    catch (Exception)
+                    {
+                        SafeDelete(path);
+                        File.Move(restorePath, path);
+                    }
+                }
+                else
+                {
+                    File.Move(restorePath, path);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+            finally
+            {
+                SafeDelete(restorePath);
             }
         }
 

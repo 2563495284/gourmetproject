@@ -545,6 +545,7 @@
       <Asset Guid="c472616754b0f4d668ce1a0e702d7d1e" ResourceName="sprites/backgrounds" />
       <Asset Guid="c484f4f5873f64d1e89aab026134fb36" ResourceName="sprites/dishes" />
       <Asset Guid="c48e773c95a244fa29b86f48cdbf4468" ResourceName="sprites/ui" />
+      <Asset Guid="c4f1c36a2e844a9aa3de5776a6b5be61" ResourceName="sprites/ui" />
       <Asset Guid="c55a9aeb1061ae2a0d0c1a861daa9522" ResourceName="sprites/dishes" />
       <Asset Guid="c594f415994a44330b548e7da4a1d01c" ResourceName="sprites/items" />
       <Asset Guid="c5b23e8811aa14052a0ec5e234d569d6" ResourceName="prefabs/ui" />

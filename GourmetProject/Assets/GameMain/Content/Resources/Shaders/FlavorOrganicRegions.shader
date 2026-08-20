@@ -276,8 +276,14 @@ Shader "GourmetProject/FlavorOrganicRegions"
 
             half4 Frag(Varyings input) : SV_Target
             {
-                half4 tex = (SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv) + _TextureSampleAdd) * input.color;
-                if (_FlavorCount < 0.5 || tex.a <= 0.001) return tex;
+                // 风味色、暗边和亮芯都在原始贴图颜色上完成合成，最后再统一乘
+                // SpriteRenderer.color。这样结算亮度不会只压暗底图、却留下全亮风味层。
+                half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv) + _TextureSampleAdd;
+                half alpha = tex.a * input.color.a;
+                if (_FlavorCount < 0.5 || alpha <= 0.001)
+                {
+                    return half4(tex.rgb * input.color.rgb, alpha);
+                }
 
                 float2 uvSpan = max(_SpriteUvRect.zw - _SpriteUvRect.xy, float2(0.0001, 0.0001));
                 float2 spriteUv = saturate((input.uv - _SpriteUvRect.xy) / uvSpan);
@@ -315,7 +321,7 @@ Shader "GourmetProject/FlavorOrganicRegions"
                 rgb = lerp(rgb, patternDark, (half)(patternEdge * 0.28 * _Intensity));
                 rgb = lerp(rgb, patternLight, (half)(patternCore * 0.38 * _Intensity));
                 rgb += tint * (half)(liquidRidge * 0.075 * _Intensity);
-                return half4(rgb, tex.a);
+                return half4(rgb * input.color.rgb, alpha);
             }
             ENDHLSL
         }

@@ -4610,6 +4610,9 @@ namespace GourmetProject.Game.UI.Battle
 
             // 出菜和顺序提示都在 Boss 全屏输入锁释放后进行；提示只是视觉引导，玩家可立即操作。
             openingWorld.EnsureNextDishPrepared(0, allowDuringBossPresentation: true);
+            // EnsureNextDishPrepared 只刷新世界表现；延迟出菜时必须同步重绑 HUD 出菜口。
+            // 即使数据层已先一步准备好食物，也要执行，避免出菜口残留 NoDishCanServe。
+            RefreshAll();
             try
             {
                 await openingWorld.PlaySettlementOrderHintAsync(
