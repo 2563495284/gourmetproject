@@ -165,7 +165,15 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_count_as_plus1")]
     public sealed class CountAsBonusAllModel : PassiveItemModel
     {
-        public override int ExtraCountAsPerDish() => (int)Value;
+        public override System.Collections.Generic.IEnumerable<ItemScoreSpec> BuildScoreSpecs()
+        {
+            yield return new ItemScoreSpec(
+                ItemScoreEffectType.CountAsBonusAll,
+                Value,
+                Param,
+                ItemId,
+                Def?.Name ?? ItemId);
+        }
     }
 
     /// <summary>暖心壁灯：按本场结算开始时仍拥有的红心数，为每道食物增加加法分。</summary>

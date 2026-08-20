@@ -73,21 +73,5 @@ namespace GourmetProject.Game.Adapter
             }
         }
 
-        /// <summary>本次结算每个食物的「视为食物数」额外加成（装饰品和消耗品 CountAsBonusAll 汇总）。</summary>
-        public static int ExtraCountAsPerDish(GameRun run)
-        {
-            if (run == null)
-            {
-                return 0;
-            }
-
-            int total = 0;
-            foreach (PassiveItemModel model in run.PassiveModels)
-            {
-                total += model.ExtraCountAsPerDish();
-            }
-
-            return total;
-        }
     }
 }

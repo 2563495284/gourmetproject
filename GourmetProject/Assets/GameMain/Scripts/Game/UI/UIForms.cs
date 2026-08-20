@@ -34,6 +34,7 @@ namespace GourmetProject.Game.UI
         public const string ConfirmDialog = "Assets/GameMain/Content/Prefabs/UI/Common/ConfirmDialogForm.prefab";
         public const string CartoonSceneTransition = "Assets/GameMain/Content/Prefabs/UI/Common/CartoonSceneTransitionForm.prefab";
         public const string OpeningComic = "Assets/GameMain/Content/Prefabs/UI/Menu/OpeningComicForm.prefab";
+        public const string Toast = "Assets/GameMain/Content/Prefabs/UI/Common/ToastForm.prefab";
 
         // 玩法界面。
         public const string Battle = "Assets/GameMain/Content/Prefabs/UI/Battle/BattleForm.prefab";

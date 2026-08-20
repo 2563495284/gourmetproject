@@ -2,6 +2,7 @@ using System.Collections;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.UI.Hud;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -9,6 +10,47 @@ namespace GourmetProject.Tests.PlayMode
 {
     public sealed class TimelineAxisViewPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator Render_FormatsCurrentDayWithOneDecimalPlace()
+        {
+            TimelineAxisView prefab = Resources.Load<TimelineAxisView>("Prefabs/UI/Hud/TimelineAxisView");
+            Assert.That(prefab, Is.Not.Null);
+            TimelineAxisView view = Object.Instantiate(prefab);
+            try
+            {
+                TMP_Text currentDayText = null;
+                foreach (TMP_Text text in view.GetComponentsInChildren<TMP_Text>(true))
+                {
+                    if (text.name == "CurrentDay")
+                    {
+                        currentDayText = text;
+                        break;
+                    }
+                }
+
+                Assert.That(currentDayText, Is.Not.Null);
+                var cases = new[]
+                {
+                    (Day: 0.9f, Expected: "第0.9天"),
+                    (Day: 1f, Expected: "第1.0天"),
+                    (Day: 1.2f, Expected: "第1.2天"),
+                };
+                foreach ((float day, string expected) in cases)
+                {
+                    TimelineAxisViewState state = State();
+                    state.CurrentDay = day;
+                    view.Render(state);
+                    Assert.That(currentDayText.text, Is.EqualTo(expected));
+                }
+            }
+            finally
+            {
+                Object.Destroy(view.gameObject);
+            }
+
+            yield return null;
+        }
+
         [UnityTest]
         public IEnumerator RenderPresentationAndSelections_ConvergeWithoutDuplicateCallbacks()
         {

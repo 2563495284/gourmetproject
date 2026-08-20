@@ -78,7 +78,6 @@ namespace GourmetProject.Game.Run
             var calculator = new ScoreCalculator(effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
             var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore, calculator, runSettledCounts: run.RunSettledCounts);
             session.AttachBossDebuffPresentation(presentation);
-            session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
             session.PassiveItemCount = run.PassiveItemStates.Count();
             var itemRuntime = new ItemRuntime(run);
             cfg.GameBase gameBase = run.Tables.TbGameBase.Data;
@@ -167,7 +166,6 @@ namespace GourmetProject.Game.Run
                 calculator,
                 run.RunSettledCounts);
             var itemRuntime = new ItemRuntime(run);
-            session.ExtraCountAsPerDish = ItemScoreEffectAdapter.ExtraCountAsPerDish(run);
             session.PassiveItemCount = run.PassiveItemStates.Count();
             session.CakeLayerThresholdReduction = itemRuntime.CakeThresholdReduction();
             session.CakeLayerAccelBonus = itemRuntime.CakeAccelBonus();
