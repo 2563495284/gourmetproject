@@ -455,7 +455,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 SettlementDishFeedbackKind.GenericSkillTriggered,
                 cancellationToken,
                 // 飞行基准已放慢为 0.68s；命中反馈维持原速度，不随飞行一起翻倍。
-                durationScale: Mathf.Max(0.05f, duration / 0.68f));
+                durationScale: Mathf.Max(0.05f, duration / 0.34f));
         }
 
         internal async Awaitable PlaySweetTransferFailureAsync(
