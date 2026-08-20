@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using DG.Tweening;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Model;
@@ -20,6 +22,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly Color VoidPlaceholderColor = new Color(0.85f, 0.85f, 0.85f, 0.22f);
         private const int DragFeedbackSortingOrder = -80;
         private const int TransientRegionOutlineLayer = 999;
+        private const float SettlementOrderPreferredStagger = 0.075f;
+        private const float SettlementOrderMaximumStartSpan = 1.35f;
+        private const float SettlementOrderPulseDuration = 0.24f;
 
         private bool _voidAsPlaceholder;
 
@@ -181,6 +186,84 @@ namespace GourmetProject.Game.Presentation.Battle
             _presentationSuppressedDisabledCells.Clear();
             _presentationNormalRemovedCells.Clear();
             Sync();
+        }
+
+        /// <summary>
+        /// 用最终餐桌状态播放基础结算顺序。不存在格和 Boss 禁用格不会进入提示；反转规则下
+        /// 整体倒序，因此演出始终和本场基础棋盘顺序一致。
+        /// </summary>
+        public async Awaitable PlaySettlementOrderHintAsync(
+            bool reverseOrder,
+            CancellationToken cancellationToken)
+        {
+            List<GridPos> positions = BuildSettlementOrderHintCells(_board, reverseOrder);
+            var views = new List<DiningTableCellView>(positions.Count);
+            foreach (GridPos position in positions)
+            {
+                if (_cells.TryGetValue(position, out DiningTableCellView view) && view != null)
+                {
+                    views.Add(view);
+                }
+            }
+
+            if (views.Count == 0)
+            {
+                return;
+            }
+
+            float stagger = views.Count > 1
+                ? Mathf.Min(
+                    SettlementOrderPreferredStagger,
+                    SettlementOrderMaximumStartSpan / (views.Count - 1))
+                : 0f;
+            for (int i = 0; i < views.Count; i++)
+            {
+                views[i].PlaySettlementOrderHintPulse(i * stagger);
+            }
+
+            float totalDuration = (views.Count - 1) * stagger + SettlementOrderPulseDuration;
+            Tween timer = DOVirtual.DelayedCall(totalDuration, () => { })
+                .SetUpdate(true)
+                .SetLink(gameObject);
+            try
+            {
+                await PresentationTween.AwaitCompletionAsync(timer, cancellationToken);
+            }
+            finally
+            {
+                foreach (DiningTableCellView view in views)
+                {
+                    view?.CancelSettlementOrderHintPulse();
+                }
+            }
+        }
+
+        internal static List<GridPos> BuildSettlementOrderHintCells(GpTable board, bool reverseOrder)
+        {
+            var ordered = new List<GridPos>();
+            if (board == null)
+            {
+                return ordered;
+            }
+
+            for (int y = 0; y < board.Height; y++)
+            {
+                for (int x = 0; x < board.Width; x++)
+                {
+                    var position = new GridPos(x, y);
+                    if (board.Exists(position) && !board.IsDisabled(position))
+                    {
+                        ordered.Add(position);
+                    }
+                }
+            }
+
+            if (reverseOrder)
+            {
+                ordered.Reverse();
+            }
+
+            return ordered;
         }
 
         public bool TryGetCellWorldPosition(GridPos pos, out Vector3 worldPosition)

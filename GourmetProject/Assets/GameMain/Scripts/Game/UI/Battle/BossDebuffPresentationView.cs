@@ -39,6 +39,7 @@ namespace GourmetProject.Game.UI.Battle
         private CancellationTokenSource _animationCts;
         private readonly System.Random _cosmeticRandom = new System.Random();
         private bool _isBound;
+        private int _playbackVersion;
 
         public bool IsPlaying { get; private set; }
 
@@ -70,6 +71,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             EnsureBuilt();
             CancelCurrent();
+            int playbackVersion = ++_playbackVersion;
             _animationCts = CancellationTokenSource.CreateLinkedTokenSource(
                 externalToken,
                 destroyCancellationToken);
@@ -90,14 +92,19 @@ namespace GourmetProject.Game.UI.Battle
             }
             finally
             {
-                IsPlaying = false;
-                if (_blocker != null)
+                if (_playbackVersion == playbackVersion)
                 {
-                    _blocker.interactable = false;
-                    _blocker.blocksRaycasts = false;
-                }
+                    IsPlaying = false;
+                    if (_blocker != null)
+                    {
+                        _blocker.interactable = false;
+                        _blocker.blocksRaycasts = false;
+                    }
 
-                HideVisuals();
+                    HideVisuals();
+                    _animationCts?.Dispose();
+                    _animationCts = null;
+                }
             }
         }
 
@@ -299,6 +306,7 @@ namespace GourmetProject.Game.UI.Battle
 
         public void CancelCurrent()
         {
+            _playbackVersion++;
             if (_animationCts != null)
             {
                 _animationCts.Cancel();

@@ -16,6 +16,11 @@ namespace GourmetProject.Game.Presentation.Battle
     public sealed class DiningTableCellView : MonoBehaviour
     {
         private const int RowSortingStride = 2;
+        private const float SettlementOrderPulseDuration = 0.24f;
+        private const float SettlementOrderPulseRiseDuration = 0.09f;
+        private const float SettlementOrderPulseBrightness = 0.55f;
+        private const float SettlementOrderPulseScale = 1.06f;
+        private static readonly Color SettlementOrderPulseTint = new Color(1f, 0.72f, 0.28f, 1f);
         private static readonly int BrightnessId = Shader.PropertyToID("_Brightness");
         private static readonly int BoingId = Shader.PropertyToID("_Boing");
         private static readonly int EdgeClampPointId = Shader.PropertyToID("_EdgeClampPoint");
@@ -166,6 +171,82 @@ namespace GourmetProject.Game.Presentation.Battle
             SetRendererDebuffed(_plateRenderer, debuffed);
         }
 
+        /// <summary>
+        /// 经营挑战入场时的单格结算顺序提示。延迟只控制接力节拍；亮度、轻微形变和缩放在
+        /// 完成、取消或对象禁用时都会恢复，避免把临时材质状态带进正常交互。
+        /// </summary>
+        internal void PlaySettlementOrderHintPulse(float delaySeconds)
+        {
+            EnsureRefs();
+            KillTransformSequence(resetMaterial: true);
+
+            Vector3 baseScale = _visualBaseLocalScale;
+            Color baseRendererColor = _plateRenderer.color;
+            Color peakRendererColor = new Color(
+                SettlementOrderPulseTint.r,
+                SettlementOrderPulseTint.g,
+                SettlementOrderPulseTint.b,
+                baseRendererColor.a);
+            if (SpriteRenderStyle.SpriteTransformMaterial == null)
+            {
+                _transformSequence = DOTween.Sequence()
+                    .SetDelay(Mathf.Max(0f, delaySeconds))
+                    .SetUpdate(true)
+                    .SetLink(gameObject)
+                    .Append(_visualRoot.DOScale(baseScale * SettlementOrderPulseScale, SettlementOrderPulseRiseDuration)
+                        .SetEase(Ease.OutCubic))
+                    .Join(_plateRenderer.DOColor(peakRendererColor, SettlementOrderPulseRiseDuration)
+                        .SetEase(Ease.OutCubic))
+                    .Append(_visualRoot.DOScale(
+                            baseScale,
+                            SettlementOrderPulseDuration - SettlementOrderPulseRiseDuration)
+                        .SetEase(Ease.InOutSine))
+                    .Join(_plateRenderer.DOColor(
+                            baseRendererColor,
+                            SettlementOrderPulseDuration - SettlementOrderPulseRiseDuration)
+                        .SetEase(Ease.InOutSine));
+                BindTransformSequenceCleanup(_transformSequence);
+                return;
+            }
+
+            SpriteRenderStyle.ApplyTransformMaterial(_plateRenderer);
+            ApplyTransformEffect(0f);
+            _transformSequence = DOTween.Sequence()
+                .SetDelay(Mathf.Max(0f, delaySeconds))
+                .SetUpdate(true)
+                .SetLink(gameObject)
+                .Append(DOTween.To(
+                        () => 0f,
+                        ApplyTransformEffect,
+                        SettlementOrderPulseBrightness,
+                        SettlementOrderPulseRiseDuration)
+                    .SetEase(Ease.OutCubic))
+                .Join(_visualRoot.DOScale(baseScale * SettlementOrderPulseScale, SettlementOrderPulseRiseDuration)
+                    .SetEase(Ease.OutCubic))
+                .Join(_plateRenderer.DOColor(peakRendererColor, SettlementOrderPulseRiseDuration)
+                    .SetEase(Ease.OutCubic))
+                .Append(DOTween.To(
+                        () => SettlementOrderPulseBrightness,
+                        ApplyTransformEffect,
+                        0f,
+                        SettlementOrderPulseDuration - SettlementOrderPulseRiseDuration)
+                    .SetEase(Ease.InOutSine))
+                .Join(_visualRoot.DOScale(
+                        baseScale,
+                        SettlementOrderPulseDuration - SettlementOrderPulseRiseDuration)
+                    .SetEase(Ease.InOutSine))
+                .Join(_plateRenderer.DOColor(
+                        baseRendererColor,
+                        SettlementOrderPulseDuration - SettlementOrderPulseRiseDuration)
+                    .SetEase(Ease.InOutSine));
+            BindTransformSequenceCleanup(_transformSequence);
+        }
+
+        internal void CancelSettlementOrderHintPulse()
+        {
+            KillTransformSequence(resetMaterial: true);
+        }
+
         /// <summary>调整层内基准序号；方形桌面仍会叠加逻辑行深度。</summary>
         public void SetSortingOrder(int order)
         {
@@ -240,9 +321,27 @@ namespace GourmetProject.Game.Presentation.Battle
                 && _plateRenderer.sharedMaterial == SpriteRenderStyle.SpriteTransformMaterial;
         }
 
-        private void CompleteTransform()
+        private void BindTransformSequenceCleanup(Sequence sequence)
         {
+            sequence.OnComplete(() => CompleteTransform(sequence));
+            sequence.OnKill(() => CompleteTransform(sequence));
+        }
+
+        private void CompleteTransform(Sequence sequence)
+        {
+            if (_transformSequence != sequence)
+            {
+                return;
+            }
+
             _transformSequence = null;
+            if (_visualScaleCaptured)
+            {
+                _visualRoot.localScale = _visualBaseLocalScale;
+            }
+
+            RestoreUnlitMaterials();
+            ApplyColors();
             Action callback = _transformOnComplete;
             _transformOnComplete = null;
             callback?.Invoke();
@@ -252,8 +351,9 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             if (_transformSequence != null)
             {
-                _transformSequence.Kill();
+                Sequence sequence = _transformSequence;
                 _transformSequence = null;
+                sequence.Kill();
             }
 
             if (_visualScaleCaptured)
@@ -267,7 +367,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 ApplyColors();
             }
 
-            CompleteTransform();
+            Action callback = _transformOnComplete;
+            _transformOnComplete = null;
+            callback?.Invoke();
         }
 
         private void RestoreUnlitMaterials()

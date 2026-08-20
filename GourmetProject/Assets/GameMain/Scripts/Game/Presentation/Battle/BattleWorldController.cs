@@ -268,6 +268,16 @@ namespace GourmetProject.Game.Presentation.Battle
         public void FinishBossPresentation()
             => _boardView?.FinishBossPresentation();
 
+        public async Awaitable PlaySettlementOrderHintAsync(
+            bool reverseOrder,
+            CancellationToken cancellationToken)
+        {
+            if (_boardView != null)
+            {
+                await _boardView.PlaySettlementOrderHintAsync(reverseOrder, cancellationToken);
+            }
+        }
+
         public void RevealBossAddedCell(GridPos pos)
             => _boardView?.RevealAddedCell(pos);
 
