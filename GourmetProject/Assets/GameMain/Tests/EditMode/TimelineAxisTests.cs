@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.UI.Hud;
@@ -199,6 +200,67 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void NodeBubbleSprite_HasCenteredBoundsAndAntialiasedAlpha()
+        {
+            string projectRoot = Directory.GetParent(Application.dataPath).FullName;
+            string absolutePath = Path.Combine(
+                projectRoot,
+                SpriteRoot + "timeline_node_bubble_fresh.png");
+            Sprite imported = AssetDatabase.LoadAssetAtPath<Sprite>(
+                SpriteRoot + "timeline_node_bubble_fresh.png");
+            Assert.That(imported, Is.Not.Null);
+            byte[] bytes = File.ReadAllBytes(absolutePath);
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                Assert.That(ImageConversion.LoadImage(texture, bytes, false), Is.True);
+                Assert.That(texture.width, Is.EqualTo(texture.height));
+                Assert.That(imported.rect.width, Is.EqualTo(texture.width));
+                Assert.That(imported.rect.height, Is.EqualTo(texture.height));
+                Assert.That(imported.pivot.x, Is.EqualTo(texture.width * 0.5f).Within(0.5f));
+                Assert.That(imported.pivot.y, Is.EqualTo(texture.height * 0.5f).Within(0.5f));
+
+                Color32[] pixels = texture.GetPixels32();
+                int minX = texture.width;
+                int minY = texture.height;
+                int maxX = -1;
+                int maxY = -1;
+                bool hasFractionalAlpha = false;
+                for (int y = 0; y < texture.height; y++)
+                {
+                    for (int x = 0; x < texture.width; x++)
+                    {
+                        byte alpha = pixels[y * texture.width + x].a;
+                        if (alpha == 0)
+                        {
+                            continue;
+                        }
+
+                        minX = Mathf.Min(minX, x);
+                        minY = Mathf.Min(minY, y);
+                        maxX = Mathf.Max(maxX, x);
+                        maxY = Mathf.Max(maxY, y);
+                        hasFractionalAlpha |= alpha < byte.MaxValue;
+                    }
+                }
+
+                Assert.That(maxX, Is.GreaterThan(minX));
+                int left = minX;
+                int right = texture.width - 1 - maxX;
+                int bottom = minY;
+                int top = texture.height - 1 - maxY;
+                Assert.That(left, Is.EqualTo(right).Within(1), "节点壳水平留白必须居中。");
+                Assert.That(bottom, Is.EqualTo(top).Within(1), "节点壳垂直留白必须居中。");
+                Assert.That(left, Is.GreaterThan(0), "节点壳不能贴到画布边缘。");
+                Assert.That(hasFractionalAlpha, Is.True, "节点壳轮廓需要抗锯齿 Alpha。");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
         public void FreshPrefab_SlicedChromeUsesDisplayScale_AndTailHasVisibleOutline()
         {
             GameObject main = AssetDatabase.LoadAssetAtPath<GameObject>(
@@ -225,6 +287,27 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(serializedTail.FindProperty("_baseWidth").floatValue, Is.GreaterThanOrEqualTo(16f));
             Assert.That(serializedTail.FindProperty("_outlineWidth").floatValue, Is.GreaterThanOrEqualTo(2f));
             Assert.That(serializedTail.FindProperty("_outlineColor").colorValue.a, Is.GreaterThan(0.99f));
+        }
+
+        [Test]
+        public void DayPointTick_IsVerticallyCenteredOnTrackBackground()
+        {
+            GameObject main = AssetDatabase.LoadAssetAtPath<GameObject>(
+                PrefabRoot + "TimelineAxisView.prefab");
+            RectTransform track = main.transform
+                .Find("AxisContent/Track")
+                .GetComponent<RectTransform>();
+            GameObject dayPoint = AssetDatabase.LoadAssetAtPath<GameObject>(
+                PrefabRoot + "TimelineDayPointView.prefab");
+            RectTransform pointRect = dayPoint.GetComponent<RectTransform>();
+            RectTransform tick = dayPoint.transform.Find("Tick").GetComponent<RectTransform>();
+
+            Assert.That(pointRect.anchorMin.y, Is.EqualTo(track.anchorMin.y).Within(0.0001f));
+            Assert.That(pointRect.anchorMax.y, Is.EqualTo(track.anchorMax.y).Within(0.0001f));
+            Assert.That(pointRect.anchoredPosition.y, Is.Zero.Within(0.0001f));
+            Assert.That(tick.anchorMin.y, Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(tick.anchorMax.y, Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(tick.anchoredPosition.y, Is.Zero.Within(0.0001f));
         }
 
         private static TimelineAxisViewState State(float length, params TimelineAxisNodeState[] nodes)

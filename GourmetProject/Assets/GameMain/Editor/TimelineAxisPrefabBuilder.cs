@@ -10,6 +10,7 @@ namespace GourmetProject.Editor
 {
     internal static class TimelineAxisPrefabBuilder
     {
+        private const float TrackAnchorY = 0.36f;
         private const string SpriteRoot = "Assets/GameMain/Content/Resources/Sprites/UI/TimelineFresh/";
         private const string PrefabRoot = "Assets/GameMain/Content/Resources/Prefabs/UI/Hud/";
         private const string ThemePath = SpriteRoot + "TimelineAxisTheme.asset";
@@ -125,6 +126,9 @@ namespace GourmetProject.Editor
                 ClearChildren(root.transform);
                 RectTransform rect = root.GetComponent<RectTransform>();
                 rect.sizeDelta = new Vector2(46f, 58f);
+                rect.anchorMin = rect.anchorMax = new Vector2(0f, TrackAnchorY);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.anchoredPosition = Vector2.zero;
                 Image hit = Ensure<Image>(root);
                 hit.sprite = null;
                 hit.color = new Color(1f, 1f, 1f, 0.001f);
@@ -134,7 +138,7 @@ namespace GourmetProject.Editor
 
                 Image tick = CreateImage("Tick", rect, theme.Tick);
                 RectTransform tickRect = tick.rectTransform;
-                Anchor(tickRect, new Vector2(0.5f, 0.44f), new Vector2(18f, 18f));
+                Anchor(tickRect, new Vector2(0.5f, 0.5f), new Vector2(18f, 18f));
                 tick.preserveAspect = true;
                 tick.raycastTarget = false;
                 TMP_Text label = CreateText("DayLabel", rect, "1", 16f);
@@ -191,6 +195,11 @@ namespace GourmetProject.Editor
                 TimelineNodeTailGraphic tail = tailObject.AddComponent<TimelineNodeTailGraphic>();
                 Stretch(tail.rectTransform);
                 tail.raycastTarget = false;
+                var serializedTail = new SerializedObject(tail);
+                serializedTail.FindProperty("_baseWidth").floatValue = 16f;
+                serializedTail.FindProperty("_outlineWidth").floatValue = 2f;
+                serializedTail.FindProperty("_outlineColor").colorValue = theme.Palette.Ink;
+                serializedTail.ApplyModifiedPropertiesWithoutUndo();
 
                 Image stateRing = CreateImage("StateRing", rect, theme.NodeBubble);
                 Anchor(stateRing.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(68f, 68f));
@@ -241,8 +250,8 @@ namespace GourmetProject.Editor
                 content.offsetMax = new Vector2(-56f, -18f);
 
                 RectTransform trackRoot = CreateUi("Track", content).GetComponent<RectTransform>();
-                trackRoot.anchorMin = new Vector2(0f, 0.36f);
-                trackRoot.anchorMax = new Vector2(1f, 0.36f);
+                trackRoot.anchorMin = new Vector2(0f, TrackAnchorY);
+                trackRoot.anchorMax = new Vector2(1f, TrackAnchorY);
                 trackRoot.pivot = new Vector2(0.5f, 0.5f);
                 trackRoot.sizeDelta = new Vector2(0f, 12f);
                 trackRoot.anchoredPosition = Vector2.zero;
@@ -264,7 +273,7 @@ namespace GourmetProject.Editor
                 Stretch(cursorLayer);
 
                 RectTransform cursor = CreateUi("Cursor", cursorLayer).GetComponent<RectTransform>();
-                cursor.anchorMin = cursor.anchorMax = new Vector2(0f, 0.36f);
+                cursor.anchorMin = cursor.anchorMax = new Vector2(0f, TrackAnchorY);
                 cursor.pivot = new Vector2(0.5f, 0.5f);
                 cursor.sizeDelta = new Vector2(112f, 82f);
                 cursor.anchoredPosition = new Vector2(0f, -2f);

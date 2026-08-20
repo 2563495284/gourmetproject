@@ -80,3 +80,17 @@ Composition: round cream paper token with a simple sage green rim and dark ink-b
 Color palette: cream #FFF4D6, sage #8BBF7A, deep sage #4E765A, apricot #F3A35C, ink brown #5B3926
 Constraints: genuinely transparent background, isolated single object, no text, no letters or numbers, no icon inside, no ornament, no logo, no watermark, no shadow, readable at 60 by 60 pixels
 ```
+
+### Centering and edge-cleanup edit
+
+```text
+Use case: precise-object-edit
+Asset type: Unity uGUI node-bubble sprite with true transparency
+Input image: Image 1 is the edit target and must remain visually the same asset
+Primary request: clean and rebuild only the outside silhouette edge, remove every stray/background/checkerboard pixel, crop the transparent margins evenly, and place the circular token at the exact canvas center
+Composition: one circular token, perfectly centered horizontally and vertically, equal transparent padding on all four sides (about 5% of canvas width), circular content must not touch the canvas edge
+Edge quality: smooth high-resolution anti-aliased alpha edge with soft 1–2 pixel fractional-alpha coverage; no jagged staircase edge, no white fringe, no dark halo, no matte contamination
+Preserve exactly: cream center, sage green rim, dark brown irregular hand-drawn outline, original proportions, original low-detail children's picture-book gouache style, empty icon center
+Background: genuinely transparent RGBA outside the token, not a checkerboard and not white
+Constraints: no text, no icon, no tail, no shadow, no extra decoration, no logo, no watermark; do not redesign the token; do not change palette
+```

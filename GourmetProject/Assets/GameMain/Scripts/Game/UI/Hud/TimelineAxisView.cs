@@ -26,7 +26,6 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private TimelineAxisTheme _theme;
 
         [Header("Fixed layers")]
-        [SerializeField] private Image _background;
         [SerializeField] private RectTransform _axisContent;
         [SerializeField] private Image _track;
         [SerializeField] private Image _progress;
@@ -264,7 +263,6 @@ namespace GourmetProject.Game.UI.Hud
                 return;
             }
 
-            SetImage(_background, _theme.Panel, Image.Type.Sliced, _theme.Palette.Cream);
             SetImage(_track, _theme.Track, Image.Type.Sliced, Color.white);
             SetImage(_progress, _theme.Progress, Image.Type.Sliced, Color.white);
 
