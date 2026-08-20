@@ -129,6 +129,7 @@ namespace GourmetProject.Game.Procedure
             MoveGroupToFront(UIForms.GroupTooltip);
             MoveGroupToFront(UIForms.GroupTutorial);
             MoveTransitionGroupToFront();
+            ToastService.Prewarm();
         }
 
         private static void StretchGroupHelper(string groupName)

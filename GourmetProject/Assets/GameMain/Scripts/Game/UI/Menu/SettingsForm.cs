@@ -186,6 +186,7 @@ namespace GourmetProject.Game.UI.Menu
 
             GameApp.Settings.ApplyAll();
             GameApp.Settings.Save();
+            ToastService.Show("应用成功", ToastKind.Success);
         }
 
         private void OnBackClicked()
