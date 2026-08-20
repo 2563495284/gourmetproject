@@ -1620,7 +1620,7 @@ MonoBehaviour:
     m_Left: 20
     m_Right: 20
     m_Top: 18
-    m_Bottom: 10
+    m_Bottom: 20
   m_ChildAlignment: 4
   m_Spacing: 0
   m_ChildForceExpandWidth: 0
@@ -1934,7 +1934,7 @@ MonoBehaviour:
     m_Left: 20
     m_Right: 20
     m_Top: 18
-    m_Bottom: 10
+    m_Bottom: 20
   m_ChildAlignment: 4
   m_Spacing: 0
   m_ChildForceExpandWidth: 0
