@@ -211,26 +211,26 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_super_fragment_reward")]
     public sealed class SuperFragmentRewardModel : PassiveItemModel
     {
-        public override string FoodBattleSettlementRewardTitle => Def?.Name ?? "额外餐桌格";
-
-        public override RewardOffer OnFoodBattleSettled(
+        public override RewardOffer ModifyBattleRewardOffer(
+            RewardOffer offer,
             ActionExecutionContext actionContext,
-            bool survived,
             IRandomStream rng)
         {
             cfg.Food food = FoodService.Resolve(Run?.Tables, actionContext?.Action);
-            if (!survived || food?.ActionKind != cfg.FoodActionKind.Super || rng == null)
+            if (offer == null || food?.ActionKind != cfg.FoodActionKind.Super || rng == null)
             {
-                return null;
+                return offer;
             }
 
-            RewardOffer offer = RewardGranter.BuildConfigOffer(
+            RewardChoiceGroup fragmentGroup = RewardGranter.BuildConfigChoiceGroup(
                 Run,
                 rng,
                 string.IsNullOrEmpty(Param) ? "fragment_choice_3" : Param,
+                Def?.Name ?? "额外餐桌格",
                 actionContext);
-            if (offer != null)
+            if (fragmentGroup != null && fragmentGroup.HasChoices)
             {
+                offer.AddFixedGroup(fragmentGroup);
                 Flash();
             }
 
