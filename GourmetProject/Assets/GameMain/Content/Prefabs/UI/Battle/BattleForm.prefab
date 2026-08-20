@@ -6057,7 +6057,7 @@ MonoBehaviour:
   _inspectionLayer: {fileID: 910000000000000004}
   _fragmentEditLayer: {fileID: 920000000000000004}
   _infoColumn: {fileID: 8908260162901051242}
-  _actionAxisBar: {fileID: 3254410160342449077}
+  _timelineAxis: {fileID: 3254410160342449077}
   _tips: {fileID: 8174460409889470152}
   _actionSelectionPanel: {fileID: 364573485979498198}
   _deck: {fileID: 8087920037263753580}
@@ -24256,9 +24256,33 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4830340434781916516, guid: 1341cdff394484ca4b96f89e517dc374, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830340434781916516, guid: 1341cdff394484ca4b96f89e517dc374, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830340434781916516, guid: 1341cdff394484ca4b96f89e517dc374, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830340434781916516, guid: 1341cdff394484ca4b96f89e517dc374, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -4.82
+      objectReference: {fileID: 0}
+    - target: {fileID: 4830340434781916516, guid: 1341cdff394484ca4b96f89e517dc374, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5148453684714683625, guid: 1341cdff394484ca4b96f89e517dc374, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7316893375425294682, guid: 1341cdff394484ca4b96f89e517dc374, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -23.02
       objectReference: {fileID: 0}
     - target: {fileID: 7984092439974003858, guid: 1341cdff394484ca4b96f89e517dc374, type: 3}
       propertyPath: m_IsActive
@@ -24289,7 +24313,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9548a0f3d66504b5db0d0da53ad3c0fb, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Hud.ActionAxisBar
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Hud.TimelineAxisView
 --- !u!1001 &3684944669099050385
 PrefabInstance:
   m_ObjectHideFlags: 0

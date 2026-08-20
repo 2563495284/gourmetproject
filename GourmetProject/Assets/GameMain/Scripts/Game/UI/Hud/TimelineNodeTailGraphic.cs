@@ -8,7 +8,9 @@ namespace GourmetProject.Game.UI.Hud
     /// </summary>
     public sealed class TimelineNodeTailGraphic : MaskableGraphic
     {
-        [SerializeField, Min(1f)] private float _baseWidth = 11f;
+        [SerializeField, Min(1f)] private float _baseWidth = 16f;
+        [SerializeField, Min(0f)] private float _outlineWidth = 2f;
+        [SerializeField] private Color _outlineColor = new Color32(91, 57, 38, 255);
 
         private Vector2 _tip;
 
@@ -32,17 +34,43 @@ namespace GourmetProject.Game.UI.Hud
             Rect rect = rectTransform.rect;
             float half = Mathf.Max(0.5f, _baseWidth * 0.5f);
             float baseY = rect.yMin + 1f;
-            Color32 vertexColor = color;
+            float outline = Mathf.Clamp(_outlineWidth, 0f, half - 0.5f);
+
+            if (outline <= 0.01f)
+            {
+                AddTriangle(vh, half, baseY, _tip, color);
+                return;
+            }
+
+            AddTriangle(vh, half, baseY, _tip, _outlineColor);
+            Vector2 direction = new Vector2(0f, baseY) - _tip;
+            Vector2 innerTip = _tip + direction.normalized * outline;
+            AddTriangle(
+                vh,
+                half - outline,
+                baseY + outline,
+                innerTip,
+                color);
+        }
+
+        private static void AddTriangle(
+            VertexHelper vh,
+            float halfWidth,
+            float baseY,
+            Vector2 tip,
+            Color32 value)
+        {
+            int start = vh.currentVertCount;
 
             var vertex = UIVertex.simpleVert;
-            vertex.color = vertexColor;
-            vertex.position = new Vector3(-half, baseY);
+            vertex.color = value;
+            vertex.position = new Vector3(-halfWidth, baseY);
             vh.AddVert(vertex);
-            vertex.position = new Vector3(half, baseY);
+            vertex.position = new Vector3(halfWidth, baseY);
             vh.AddVert(vertex);
-            vertex.position = _tip;
+            vertex.position = tip;
             vh.AddVert(vertex);
-            vh.AddTriangle(0, 1, 2);
+            vh.AddTriangle(start, start + 1, start + 2);
         }
     }
 }

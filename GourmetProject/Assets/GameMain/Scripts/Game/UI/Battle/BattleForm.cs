@@ -98,7 +98,8 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private BattleInfoColumn _infoColumn;
 
         [Header("Action Axis")]
-        [SerializeField] private ActionAxisBar _actionAxisBar;
+        [FormerlySerializedAs("_actionAxisBar")]
+        [SerializeField] private TimelineAxisView _timelineAxis;
 
         [Header("Hover Tips")]
         [SerializeField] private BattleTipRegistry _tips;
@@ -242,8 +243,8 @@ namespace GourmetProject.Game.UI.Battle
         internal GameplayView CurrentView => _current;
         internal bool InBattle => _inBattle;
         internal bool IsActionAxisVisible =>
-            _actionAxisBar != null
-            && _actionAxisBar.gameObject.activeInHierarchy
+            _timelineAxis != null
+            && _timelineAxis.gameObject.activeInHierarchy
             && (_actionAxisGroup == null || _actionAxisGroup.alpha > 0f);
         internal bool IsDailyActionSelectionActive =>
             _current == GameplayView.ActionSelect && _currentTimelineNodeCard == null;
@@ -294,10 +295,10 @@ namespace GourmetProject.Game.UI.Battle
             _bossPresentation.EnsureBuilt();
 
             _axisBinder = new TimelineAxisBinder(
-                _actionAxisBar,
+                _timelineAxis,
                 () => _tips != null ? _tips.Timeline : null);
             _timelineAxisFocus = new TimelineAxisFocusPresenter(
-                _actionAxisBar != null ? _actionAxisBar.transform as RectTransform : null,
+                _timelineAxis != null ? _timelineAxis.transform as RectTransform : null,
                 ResolveActionAxisGroup());
             _deck?.SetRewardTip(() => _tips != null ? _tips.Item : null);
             _pageRouter = new GameplayPageRouter(this);
@@ -377,7 +378,7 @@ namespace GourmetProject.Game.UI.Battle
             _rewardPeekOnly = false;
             _axisBinder?.EndAdvanceSequence();
             _timelineAxisFocus?.Cancel();
-            _actionAxisBar?.CancelPresentation();
+            _timelineAxis?.CancelPresentation();
             _deck?.KillAllTweens();
             ClearWorldHoverCallbacks();
             HideAllTips();
@@ -1386,8 +1387,8 @@ namespace GourmetProject.Game.UI.Battle
 
             Transform coverTransform = _centerTransitionCover.transform;
             Transform coverParent = coverTransform.parent;
-            Transform axisRoot = DirectChildUnder(coverParent, _actionAxisBar != null
-                ? _actionAxisBar.transform
+            Transform axisRoot = DirectChildUnder(coverParent, _timelineAxis != null
+                ? _timelineAxis.transform
                 : null);
             coverTransform.SetAsLastSibling();
             if (axisRoot != null)
@@ -1527,7 +1528,7 @@ namespace GourmetProject.Game.UI.Battle
         ShopForm IGameplayPageRouterHost.ShopPanel => _shopPanel;
         RecipeReadonlyBookView IGameplayPageRouterHost.RecipeReadonlyBookView => _recipeReadonlyBookView;
         EventPagePanel IGameplayPageRouterHost.EventPagePanel => _eventPagePanel;
-        bool IGameplayPageRouterHost.ActionAxisVisible => _actionAxisBar != null && _actionAxisBar.gameObject.activeSelf;
+        bool IGameplayPageRouterHost.ActionAxisVisible => _timelineAxis != null && _timelineAxis.gameObject.activeSelf;
         void IGameplayPageRouterHost.OnLeavingPage(GameplayView current, GameplayView next)
         {
             CancelPassivePresentations();
@@ -1669,7 +1670,7 @@ namespace GourmetProject.Game.UI.Battle
         GameplayView IBattleInspectionHost.CurrentView => _current;
         BattleWorldController IBattleInspectionHost.World => _world ?? BattleWorldController.Instance;
         IBattleInspectionLayer IBattleInspectionHost.InspectionLayer => _inspectionLayer;
-        bool IBattleInspectionHost.ActionAxisVisible => _actionAxisBar != null && _actionAxisBar.gameObject.activeSelf;
+        bool IBattleInspectionHost.ActionAxisVisible => _timelineAxis != null && _timelineAxis.gameObject.activeSelf;
         void IBattleInspectionHost.SetActionAxisVisible(bool visible) => SetActionAxisVisible(visible);
         void IBattleInspectionHost.BeginInspectionSource() => BeginInspectionSource();
         void IBattleInspectionHost.RestoreInspectionSource(GameplayView sourceView) => RestoreInspectionSource(sourceView);
@@ -2216,17 +2217,17 @@ namespace GourmetProject.Game.UI.Battle
 
         private void SetActionAxisVisible(bool visible)
         {
-            if (_actionAxisBar != null)
+            if (_timelineAxis != null)
             {
-                _actionAxisBar.gameObject.SetActive(visible);
+                _timelineAxis.gameObject.SetActive(visible);
             }
         }
 
         private CanvasGroup ResolveActionAxisGroup()
         {
-            if (_actionAxisGroup == null && _actionAxisBar != null)
+            if (_actionAxisGroup == null && _timelineAxis != null)
             {
-                _actionAxisGroup = _actionAxisBar.GetComponent<CanvasGroup>();
+                _actionAxisGroup = _timelineAxis.GetComponent<CanvasGroup>();
             }
 
             return _actionAxisGroup;
@@ -3932,7 +3933,7 @@ namespace GourmetProject.Game.UI.Battle
             _passivePresentationDelay?.Kill();
             _passivePresentationDelay = null;
             _infoColumn?.CancelWeekIndexChange(complete: false);
-            _actionAxisBar?.CancelPresentation();
+            _timelineAxis?.CancelPresentation();
             _passivePresentations.CancelAll();
         }
 
@@ -4012,7 +4013,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            bool restoreAxisVisible = _actionAxisBar != null && _actionAxisBar.gameObject.activeSelf;
+            bool restoreAxisVisible = _timelineAxis != null && _timelineAxis.gameObject.activeSelf;
             EnqueuePassivePresentation(done =>
             {
                 if (result.BeforeWeekIndex != result.AfterWeekIndex)
@@ -4066,7 +4067,7 @@ namespace GourmetProject.Game.UI.Battle
                 }
             }, () =>
             {
-                _actionAxisBar?.CancelPresentation();
+                _timelineAxis?.CancelPresentation();
                 _infoColumn?.CancelWeekIndexChange(complete: false);
                 onCancelled?.Invoke();
             });
@@ -5481,7 +5482,7 @@ namespace GourmetProject.Game.UI.Battle
                 _inspectionLayer?.RecipeView != null ? _inspectionLayer.RecipeView.transform as RectTransform : null);
             TutorialAnchorRegistry.Register(TutorialAnchorId.FoodInfo, _infoColumn != null ? _infoColumn.transform as RectTransform : null);
             TutorialAnchorRegistry.Register(TutorialAnchorId.BossRule, _infoColumn?.BossRuleRect);
-            TutorialAnchorRegistry.Register(TutorialAnchorId.ActionAxis, _actionAxisBar != null ? _actionAxisBar.transform as RectTransform : null);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.ActionAxis, _timelineAxis != null ? _timelineAxis.transform as RectTransform : null);
             TutorialAnchorRegistry.Register(TutorialAnchorId.Table, _boardArea);
             TutorialAnchorRegistry.Register(TutorialAnchorId.ServingOutlet, _servingOutlet != null ? _servingOutlet.transform as RectTransform : null);
             TutorialAnchorRegistry.Register(TutorialAnchorId.Discard, _foodDiscardBin != null ? _foodDiscardBin.transform as RectTransform : null);

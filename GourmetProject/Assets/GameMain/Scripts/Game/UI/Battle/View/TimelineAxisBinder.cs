@@ -10,17 +10,17 @@ using UnityEngine;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 顶部时间轴（<see cref="ActionAxisBar"/>）的构建 + 每个时间线节点的 hover Tip 装配。
+    /// 顶部时间轴状态绑定 + 每个时间线节点的 hover Tip 装配。
     /// Tip 视图实例由外层惰性创建后通过 getter 注入，Boss 预览用独立 RNG 快照避免污染随机流。
     /// </summary>
     internal sealed class TimelineAxisBinder
     {
-        private readonly ActionAxisBar _axis;
+        private readonly TimelineAxisView _axis;
         private readonly Func<TimelineNodeTipView> _timelineTip;
         private float? _presentationDay;
 
         public TimelineAxisBinder(
-            ActionAxisBar axis,
+            TimelineAxisView axis,
             Func<TimelineNodeTipView> timelineTip)
         {
             _axis = axis;
@@ -29,11 +29,17 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public void Rebuild(GameRun run, string executingNodeId = null)
         {
-            _axis?.Build(
+            if (_axis == null)
+            {
+                return;
+            }
+
+            _axis.SetNodeDecorator((state, go) =>
+                ConfigureNodeTip(run, TimelineService.GetNode(run, state.Id), go));
+            _axis.Render(TimelineAxisStateFactory.Create(
                 run,
-                (node, go) => ConfigureNodeTip(run, node, go),
-                executingNodeId,
-                _presentationDay);
+                currentDay: _presentationDay,
+                executingNodeId: executingNodeId));
         }
 
         public void BeginAdvanceSequence(float fromDay)
@@ -53,12 +59,20 @@ namespace GourmetProject.Game.UI.Battle.View
             string executingNodeId,
             bool animate)
         {
-            _axis?.BuildPresentation(
-                run,
-                nodes,
-                lengthDays,
-                (node, go) => ConfigureNodeTip(run, node, go),
-                executingNodeId,
+            if (_axis == null)
+            {
+                return;
+            }
+
+            _axis.SetNodeDecorator((state, go) =>
+                ConfigureNodeTip(run, TimelineService.GetNode(run, state.Id), go));
+            _axis.Render(
+                TimelineAxisStateFactory.Create(
+                    run,
+                    nodes,
+                    lengthDays,
+                    run?.CurrentDay,
+                    executingNodeId),
                 animate);
         }
 
@@ -69,11 +83,11 @@ namespace GourmetProject.Game.UI.Battle.View
             float? currentDay = null,
             string executingNodeId = null)
         {
-            return ActionAxisBar.CreateState(
+            return TimelineAxisStateFactory.Create(
                 run,
                 nodes,
-                lengthDays ?? run?.TimelineLengthDays ?? 1f,
-                currentDay ?? run?.CurrentDay ?? 0f,
+                lengthDays,
+                currentDay,
                 executingNodeId);
         }
 
@@ -89,8 +103,9 @@ namespace GourmetProject.Game.UI.Battle.View
                 run,
                 currentDay: toDay,
                 executingNodeId: arrivingNodeId);
-            _axis?.PlayCue(
-                TimelinePresentationCue.Advance(fromDay, toDay, arrivingNodeId, target),
+            _axis?.Play(
+                TimelineAxisPresentationPlan.Single(
+                    TimelinePresentationCue.Advance(fromDay, toDay, arrivingNodeId, target)),
                 onComplete);
             if (_axis == null)
             {
@@ -108,7 +123,10 @@ namespace GourmetProject.Game.UI.Battle.View
                 run,
                 currentDay: _presentationDay,
                 executingNodeId: kind == TimelinePresentationCueKind.TriggerStart ? nodeId : null);
-            _axis?.PlayCue(TimelinePresentationCue.Node(kind, nodeId, target), onComplete);
+            _axis?.Play(
+                TimelineAxisPresentationPlan.Single(
+                    TimelinePresentationCue.Node(kind, nodeId, target)),
+                onComplete);
             if (_axis == null)
             {
                 onComplete?.Invoke();
@@ -139,23 +157,22 @@ namespace GourmetProject.Game.UI.Battle.View
                 result.AfterLengthDays,
                 _presentationDay ?? run?.CurrentDay,
                 executingNodeId);
-            _axis.BindState(before, run, (node, go) => ConfigureNodeTip(run, node, go), animate: false);
-            IReadOnlyList<TimelinePresentationCue> cues = TimelineAxisPresentationPlanner.BuildMutation(
+            _axis.SetNodeDecorator((state, go) =>
+                ConfigureNodeTip(run, TimelineService.GetNode(run, state.Id), go));
+            _axis.Render(before, animate: false);
+            TimelineAxisPresentationPlan plan = TimelineAxisPresentationPlanner.BuildMutation(
                 before,
                 after,
                 result.Cause == TimelineMutationCause.Skip,
                 result.TargetNodeId);
-            if (cues.Count == 0)
+            if (plan.IsEmpty)
             {
-                _axis.BindState(after, run, (node, go) => ConfigureNodeTip(run, node, go), animate: false);
+                _axis.Render(after, animate: false);
                 onComplete?.Invoke();
                 return;
             }
 
-            for (int i = 0; i < cues.Count; i++)
-            {
-                _axis.PlayCue(cues[i], i == cues.Count - 1 ? onComplete : null);
-            }
+            _axis.Play(plan, onComplete);
         }
 
         public void CompletePresentation()
@@ -185,38 +202,40 @@ namespace GourmetProject.Game.UI.Battle.View
                     days.Add(target.X);
                 }
 
-                return _axis.BeginAddDaySelection(
+                TimelineAxisNodeState preview = TimelineAxisStateFactory.CreatePreviewNode(
                     run,
-                    item.EffectParam,
+                    item.EffectParam);
+                return _axis.BeginSelection(TimelineAxisSelectionRequest.AddDay(
+                    preview,
                     days,
                     day => onConfirm(new ActiveTarget(
                         day.ToString(),
                         day,
                         targetKind: cfg.ItemTargetKind.Global)),
-                    onCancel);
+                    onCancel));
             }
 
             if (item.EffectType == ItemEffectTypes.TimelineDeleteNode)
             {
-                return _axis.BeginDeleteNodeSelection(
-                    run,
+                return _axis.BeginSelection(TimelineAxisSelectionRequest.Nodes(
+                    TimelineAxisSelectionMode.DeleteNode,
                     TargetIds(targets),
                     nodeId => onConfirm(new ActiveTarget(
                         nodeId,
                         targetKind: cfg.ItemTargetKind.Global)),
-                    onCancel);
+                    onCancel));
             }
 
             if (item.EffectType == ItemEffectTypes.TimelineExecuteFuture
                 || item.EffectType == ItemEffectTypes.TimelineExecutePast)
             {
-                return _axis.BeginExecuteNodeSelection(
-                    run,
+                return _axis.BeginSelection(TimelineAxisSelectionRequest.Nodes(
+                    TimelineAxisSelectionMode.ExecuteNode,
                     TargetIds(targets),
                     nodeId => onConfirm(new ActiveTarget(
                         nodeId,
                         targetKind: cfg.ItemTargetKind.Global)),
-                    onCancel);
+                    onCancel));
             }
 
             return false;
@@ -275,7 +294,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public bool CommitActiveItemAddPreview(string nodeId)
         {
-            return _axis != null && _axis.CommitAddDayPreview(nodeId);
+            return _axis != null && _axis.PromotePreview(nodeId);
         }
 
         public void CancelActiveItemTargeting()

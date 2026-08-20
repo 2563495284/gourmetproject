@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc7619c23ac53468daf4c5cc9e80c55f, type: 3}
+  m_Name: TimelineAxisTheme
+  m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Hud.TimelineAxisTheme
+  _panel: {fileID: 21300000, guid: 2f342419f19bb4d4bbc3b2a857f61ed6, type: 3}
+  _track: {fileID: 21300000, guid: 254ad3a5fab66494eaf127b80697ae47, type: 3}
+  _progress: {fileID: 21300000, guid: 38da8bdb6029d4f4aa36d68963eb84d5, type: 3}
+  _tick: {fileID: 21300000, guid: 1bdb52c2be0fa4d69980a47ec8a90644, type: 3}
+  _cursor: {fileID: 21300000, guid: 64b58749d625a44a1b40e9e24161dc91, type: 3}
+  _dayBadge: {fileID: 21300000, guid: 5ae4e2d569bac4eb3827bf04920a551c, type: 3}
+  _nodeBubble: {fileID: 21300000, guid: b17eac574774c451787b4a0256a7527a, type: 3}
+  _shop: {fileID: -301693539505010683, guid: 5035cc02892a84b298e3e07bf6e89fe1, type: 3}
+  _interest: {fileID: -368961291865462981, guid: 70943e5c6b5ec41279e4f5e1a1958c66, type: 3}
+  _boss: {fileID: -894558083634107281, guid: 08d8f77b0cee54c8f81e0e24aa8b3b7f, type: 3}
+  _event: {fileID: -8146783246870417221, guid: aa5d676f1015443a19f442ccd44b7559, type: 3}
+  _reward: {fileID: 4544165035937701156, guid: 2fbfc4690fbf74c52923e4f67fd51acf, type: 3}
+  _slot: {fileID: -6223748211427554869, guid: b5fc0f6766869482c8903aa9c3f92fe5, type: 3}
+  _negative: {fileID: -4532144880468886551, guid: e59ed1979d60e4d838a6055485c3c738, type: 3}
+  _bossIcons:
+  - DebuffId: indulgent
+    Sprite: {fileID: -8031515360844102624, guid: 407d959a46e7a4f558fa4a8109923ef4, type: 3}
+  - DebuffId: binge
+    Sprite: {fileID: 4588285045333180866, guid: 3a8d2a3f6dcd244ae8e8c528666faf24, type: 3}
+  - DebuffId: kids_meal
+    Sprite: {fileID: -9195861560114885304, guid: 3b34109ae0f974e2997b22ba79f0e37c, type: 3}
+  - DebuffId: weight_loss
+    Sprite: {fileID: 3742676597627752834, guid: 6b71b46cf2a12472090fb5c69f8bb0b8, type: 3}
+  - DebuffId: gluttony
+    Sprite: {fileID: 3311141513414507362, guid: 7597952eb25254c24a1f5cd09e9f1365, type: 3}
+  - DebuffId: omakase
+    Sprite: {fileID: 185951294188038401, guid: ae253cca2931a47e3b27593eb0ab66c5, type: 3}
+  - DebuffId: light_meal
+    Sprite: {fileID: -2058970918214960457, guid: 7c64129a4834243258359a3588f19cea, type: 3}
+  - DebuffId: vegan_meal
+    Sprite: {fileID: -988759311905844093, guid: 5d85522b9367e41669028f8661701efb, type: 3}
+  - DebuffId: dine_and_dash
+    Sprite: {fileID: 475365786517920267, guid: 7e5e74d2c0b364d6ca93bb5c74936fe1, type: 3}
+  - DebuffId: fine_dining
+    Sprite: {fileID: -2313827815160093924, guid: ca005285105164d2d8289a310f36af6d, type: 3}
+  - DebuffId: vegetarian
+    Sprite: {fileID: -2727672711397972538, guid: 70551ed974dee4902bfe6ac6eb0c87c6, type: 3}
+  - DebuffId: carb_meal
+    Sprite: {fileID: -8971057671448006224, guid: 9202867abe6554e43bd78ec647be8c42, type: 3}
+  - DebuffId: dark_cuisine
+    Sprite: {fileID: 1256818308312623696, guid: f4068a92a5f5c487eabc08ba29f8aa09, type: 3}
+  - DebuffId: late_night
+    Sprite: {fileID: -79940811387211372, guid: 608b3e06ee4604b51b921d0735c695ec, type: 3}
+  - DebuffId: appetizer
+    Sprite: {fileID: 7574695101706682975, guid: f8b914aba19a34e8bae352738d7720a4, type: 3}
+  - DebuffId: tasting
+    Sprite: {fileID: 2781899256696964301, guid: 5758208d2f64447939d733452067b31c, type: 3}
+  - DebuffId: buffet
+    Sprite: {fileID: 7844393136775605671, guid: 5bf00b03e0ffa4b7197187d519e0163b, type: 3}
+  _palette:
+    Cream: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
+    Sage: {r: 0.54509807, g: 0.7490196, b: 0.47843137, a: 1}
+    DeepSage: {r: 0.30588236, g: 0.4627451, b: 0.3529412, a: 1}
+    Apricot: {r: 0.9529412, g: 0.6392157, b: 0.36078432, a: 1}
+    Ink: {r: 0.35686275, g: 0.22352941, b: 0.14901961, a: 1}
+    Danger: {r: 0.9098039, g: 0.43529412, b: 0.38039216, a: 1}
+    Preview: {r: 0.5568628, g: 0.84705883, b: 0.7137255, a: 1}
+    Completed: {r: 0.6509804, g: 0.6666667, b: 0.6, a: 0.8235294}
+    Future: {r: 0.35686275, g: 0.22352941, b: 0.14901961, a: 0.3529412}
+    ExecutingGlow: {r: 1, g: 0.7607843, b: 0.36078432, a: 0.8627451}
+  _motion:
+    LayoutDuration: 0.2
+    EnterDuration: 0.16
+    ExitDuration: 0.18
+    ChangeHalfDuration: 0.1
+    AdvanceBaseDuration: 0.76
+    AdvancePerDayDuration: 0.36
+    AdvanceMaximumDuration: 2.2
+    PulseDuration: 0.3
+    ResizeDuration: 0.38
