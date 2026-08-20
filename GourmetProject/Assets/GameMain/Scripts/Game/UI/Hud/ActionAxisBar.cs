@@ -45,6 +45,14 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Sprite _rewardNodeSprite;
         [SerializeField] private Sprite _slotNodeSprite;
         [SerializeField] private Sprite _negativeNodeSprite;
+        [SerializeField] private BossDebuffNodeSprite[] _bossDebuffNodeSprites;
+
+        [Serializable]
+        private sealed class BossDebuffNodeSprite
+        {
+            public string DebuffId;
+            public Sprite Sprite;
+        }
 
         private readonly Dictionary<int, TimelineDayPointView> _dayPoints =
             new Dictionary<int, TimelineDayPointView>();
@@ -57,6 +65,8 @@ namespace GourmetProject.Game.UI.Hud
             new Dictionary<string, TimelineNodeBubbleView>();
         private readonly Dictionary<string, int> _nodeDays = new Dictionary<string, int>();
         private readonly Dictionary<string, string> _nodeActionIds = new Dictionary<string, string>();
+        private readonly Dictionary<string, Sprite> _bossSpriteCache =
+            new Dictionary<string, Sprite>(StringComparer.Ordinal);
         private readonly HashSet<int> _validAddDays = new HashSet<int>();
         private readonly HashSet<string> _targetableNodeIds = new HashSet<string>();
         private readonly Queue<PresentationWork> _presentationQueue = new Queue<PresentationWork>();
@@ -799,7 +809,7 @@ namespace GourmetProject.Game.UI.Hud
             cfg.GameAction action = _run?.Tables?.TbAction?.GetOrDefault(_previewActionId);
             ActionDisplayKind kind = ActionDisplay.KindOf(_run?.Tables, action);
             bubble.Bind(
-                NodeSprite(kind),
+                NodeSprite(kind, nodeId),
                 completed: false,
                 executing: false,
                 kind == ActionDisplayKind.Boss,
@@ -1002,7 +1012,7 @@ namespace GourmetProject.Game.UI.Hud
                 _nodeActionIds.TryGetValue(node.Id, out string previousActionId);
                 ActionDisplayKind kind = node.Kind;
                 bubble.Bind(
-                    NodeSprite(kind),
+                    NodeSprite(kind, node.Id),
                     node.Completed,
                     node.Executing,
                     kind == ActionDisplayKind.Boss,
@@ -1396,8 +1406,17 @@ namespace GourmetProject.Game.UI.Hud
             _hoveredPreviewDay = -1;
         }
 
-        private Sprite NodeSprite(ActionDisplayKind kind)
+        private Sprite NodeSprite(ActionDisplayKind kind, string nodeId = null)
         {
+            if (kind == ActionDisplayKind.Boss)
+            {
+                Sprite bossSprite = ResolveBossNodeSprite(nodeId);
+                if (bossSprite != null)
+                {
+                    return bossSprite;
+                }
+            }
+
             Sprite configured = kind switch
             {
                 ActionDisplayKind.Boss => _bossNodeSprite,
@@ -1416,9 +1435,73 @@ namespace GourmetProject.Game.UI.Hud
             }
 
             string resourceName = NodeSpriteResourceName(kind);
-            return string.IsNullOrEmpty(resourceName)
-                ? null
-                : Resources.Load<Sprite>($"Sprites/UI/{resourceName}");
+            return LoadUiSprite(resourceName);
+        }
+
+        private Sprite ResolveBossNodeSprite(string nodeId)
+        {
+            if (_run == null || string.IsNullOrEmpty(nodeId))
+            {
+                return _bossNodeSprite;
+            }
+
+            cfg.TimelineNode node = TimelineService.GetNode(_run, nodeId);
+            cfg.BossDebuff debuff = node != null ? BossService.PreviewBossDebuff(_run, node) : null;
+            string debuffId = debuff?.Id;
+            Sprite mapped = FindMappedBossSprite(debuffId);
+            if (mapped != null)
+            {
+                return mapped;
+            }
+
+            string resourceName = BossNodeSpriteResourceName(debuffId);
+            if (_bossSpriteCache.TryGetValue(resourceName, out Sprite cached))
+            {
+                return cached != null ? cached : _bossNodeSprite;
+            }
+
+            Sprite loaded = LoadUiSprite(resourceName);
+            _bossSpriteCache[resourceName] = loaded;
+            return loaded != null ? loaded : _bossNodeSprite;
+        }
+
+        private Sprite FindMappedBossSprite(string debuffId)
+        {
+            if (string.IsNullOrEmpty(debuffId) || _bossDebuffNodeSprites == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < _bossDebuffNodeSprites.Length; i++)
+            {
+                BossDebuffNodeSprite entry = _bossDebuffNodeSprites[i];
+                if (entry != null
+                    && entry.Sprite != null
+                    && string.Equals(entry.DebuffId, debuffId, StringComparison.Ordinal))
+                {
+                    return entry.Sprite;
+                }
+            }
+
+            return null;
+        }
+
+        private static Sprite LoadUiSprite(string resourceName)
+        {
+            if (string.IsNullOrEmpty(resourceName))
+            {
+                return null;
+            }
+
+            string path = $"Sprites/UI/{resourceName}";
+            Sprite sprite = Resources.Load<Sprite>(path);
+            if (sprite != null)
+            {
+                return sprite;
+            }
+
+            Sprite[] slices = Resources.LoadAll<Sprite>(path);
+            return slices != null && slices.Length > 0 ? slices[0] : null;
         }
 
         internal static string NodeSpriteResourceName(ActionDisplayKind kind)
@@ -1434,6 +1517,20 @@ namespace GourmetProject.Game.UI.Hud
                 ActionDisplayKind.Event => "icon_axis_event",
                 _ => string.Empty,
             };
+        }
+
+        internal static string BossNodeSpriteResourceName(string debuffId)
+        {
+            if (string.IsNullOrEmpty(debuffId))
+            {
+                return "icon_axis_boss";
+            }
+
+            const string prefix = "debuff_";
+            string key = debuffId.StartsWith(prefix, StringComparison.Ordinal)
+                ? debuffId.Substring(prefix.Length)
+                : debuffId;
+            return "icon_axis_boss_" + key;
         }
 
         private void OnDisable()

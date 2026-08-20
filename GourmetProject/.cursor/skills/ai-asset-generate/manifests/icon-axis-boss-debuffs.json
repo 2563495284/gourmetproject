@@ -1,0 +1,112 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "referenceImages": [
+    "Assets/GameMain/Content/Resources/Sprites/UI/icon_axis_shop.png",
+    "Assets/GameMain/Content/Resources/Sprites/UI/icon_axis_event.png",
+    "Assets/GameMain/Content/Resources/Sprites/UI/icon_axis_boss.png"
+  ],
+  "stylePrefix": "Warm children's picture-book gouache matching GourmetProject timeline tokens, as a 30-pixel timeline token. Large color masses only, 2 or 3 solid tones per object, matte paint, slightly irregular dark-brown contour. Hand-drawn, very concise. No text, no letters, no numbers, no logo, no watermark.",
+  "typeDefaults": {
+    "ui": {
+      "outputDir": "Art/GeneratedUiIcons/boss-axis",
+      "outputFormat": "png",
+      "quality": "high",
+      "requestSize": "1024x1024",
+      "targetSize": "256x256",
+      "targetMode": "resize",
+      "postprocess": "magenta-alpha",
+      "background": "opaque"
+    }
+  },
+  "typePromptPrefixes": {
+    "ui": "Image 1-3 are style masters only: same circular cream disc filling the square canvas, one thin dark-brown rim, same paint thickness. Do not copy their stall, cloche, or chicken subjects. One huge centered food object. Hard rule: no tiny color patches, no dots, no specks, no garnish, no steam, no letters. Every painted region must stay clear at 30 pixels. Outside the circle is only perfectly flat solid #FF00FF magenta. No face, no eyes, no mouth, no character, no typography. NOT a cake unless the prompt says steamed bun."
+  },
+  "assets": [
+    {
+      "name": "icon_axis_boss_indulgent",
+      "type": "ui",
+      "prompt": "放纵餐 token: one EXTRA-WIDE oval roast platter overflowing left and right, one large roast only. Wide silhouette, not a round plate, not a chicken drumstick"
+    },
+    {
+      "name": "icon_axis_boss_binge",
+      "type": "ui",
+      "prompt": "暴食餐 token: one TALL stack of three thick pancakes piled high. Vertical tower silhouette, not a wide platter"
+    },
+    {
+      "name": "icon_axis_boss_kids_meal",
+      "type": "ui",
+      "prompt": "儿童餐 token: one small rectangular bento lunch box with two large compartments only, one rice mass and one green vegetable mass. Box silhouette, not a round plate"
+    },
+    {
+      "name": "icon_axis_boss_weight_loss",
+      "type": "ui",
+      "prompt": "减脂餐 token: one round salad bowl filled by one huge lettuce mass. Leafy bowl silhouette, not meat"
+    },
+    {
+      "name": "icon_axis_boss_gluttony",
+      "type": "ui",
+      "prompt": "贪食餐 token: TWO identical round dumplings sitting side by side, same size. Twin circles, not one dumpling"
+    },
+    {
+      "name": "icon_axis_boss_omakase",
+      "type": "ui",
+      "prompt": "omakase token: one wooden sushi boat holding TWO large nigiri only. Boat silhouette, not a round plate, no tiny sushi row"
+    },
+    {
+      "name": "icon_axis_boss_light_meal",
+      "type": "ui",
+      "prompt": "清淡餐 token: one round soup bowl of pale clear broth only. Simple bowl, no garnish, no noodles"
+    },
+    {
+      "name": "icon_axis_boss_vegan_meal",
+      "type": "ui",
+      "prompt": "斋饭 token: one celadon Chinese bowl of white tofu block and dark greens. Bowl of vegetarian food, not a plate"
+    },
+    {
+      "name": "icon_axis_boss_dine_and_dash",
+      "type": "ui",
+      "prompt": "霸王餐 token: one EMPTY cool-grey ceramic plate with nothing on it, only the plate rim. Empty plate, not food, not a cloche"
+    },
+    {
+      "name": "icon_axis_boss_fine_dining",
+      "type": "ui",
+      "prompt": "高级料理 token: one tall stacked gourmet tower of brown meat and sauce on a tiny plate. Tall plated stack, NOT a silver cloche, not a chicken drumstick"
+    },
+    {
+      "name": "icon_axis_boss_vegetarian",
+      "type": "ui",
+      "prompt": "素食 token: one large broccoli floret standing upright like a tree. Vegetable silhouette, no plate"
+    },
+    {
+      "name": "icon_axis_boss_carb_meal",
+      "type": "ui",
+      "prompt": "碳水餐 token: ONE large white steamed bun 馒头, round fluffy bun with a smooth top. Must be a steamed bun, NOT a cake, NOT matcha"
+    },
+    {
+      "name": "icon_axis_boss_dark_cuisine",
+      "type": "ui",
+      "prompt": "黑暗料理 token: one nest of BLACK squid-ink noodles. Dark tangled nest silhouette, not a cake, not brown meat"
+    },
+    {
+      "name": "icon_axis_boss_late_night",
+      "type": "ui",
+      "prompt": "夜宵 token: one large grilled meat skewer diagonal across the disc. Stick silhouette, not a plate"
+    },
+    {
+      "name": "icon_axis_boss_appetizer",
+      "type": "ui",
+      "prompt": "开胃菜 token: one cocktail cup holding ONE large shrimp. Cup silhouette, not a plate, not a bowl"
+    },
+    {
+      "name": "icon_axis_boss_tasting",
+      "type": "ui",
+      "prompt": "试吃 token: one large wooden tasting spoon with one dollop of brown sauce. Spoon silhouette, not a plate"
+    },
+    {
+      "name": "icon_axis_boss_buffet",
+      "type": "ui",
+      "prompt": "自助餐 token: one round lazy-susan tray divided into THREE large equal food mounds, green yellow brown. Round divided tray, not many tiny dishes"
+    }
+  ]
+}
