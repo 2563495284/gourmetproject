@@ -224,9 +224,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             string resourcePath = NormalizeResourcePath(spritePath);
-            Sprite sprite = string.IsNullOrWhiteSpace(resourcePath)
-                ? null
-                : Resources.Load<Sprite>(resourcePath);
+            Sprite sprite = LoadEventSprite(resourcePath);
             _illustrationImage.sprite = sprite;
             _illustrationImage.gameObject.SetActive(sprite != null);
 
@@ -234,6 +232,23 @@ namespace GourmetProject.Game.UI.Meta
             {
                 Debug.LogWarning($"事件插画加载失败：{resourcePath}");
             }
+        }
+
+        private static Sprite LoadEventSprite(string resourcePath)
+        {
+            if (string.IsNullOrWhiteSpace(resourcePath))
+            {
+                return null;
+            }
+
+            Sprite sprite = Resources.Load<Sprite>(resourcePath);
+            if (sprite != null)
+            {
+                return sprite;
+            }
+
+            Sprite[] sprites = Resources.LoadAll<Sprite>(resourcePath);
+            return sprites != null && sprites.Length > 0 ? sprites[0] : null;
         }
 
         private static string NormalizeResourcePath(string spritePath)

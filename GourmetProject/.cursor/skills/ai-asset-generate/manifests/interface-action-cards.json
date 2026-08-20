@@ -84,28 +84,49 @@
       "type": "ui",
       "requestSize": "1024x1024",
       "targetSize": "256x256",
-      "prompt": "Small action-axis icon for shop: simple market stall awning and plate silhouette, thick black outline, flat cream-orange colors, no text"
+      "prompt": "Circular timeline-node badge for shop: tiny market stall with striped awning and a plate of food, perfect circle with thick black rim, magenta outside"
     },
     {
       "name": "icon_axis_interest",
       "type": "ui",
       "requestSize": "1024x1024",
       "targetSize": "256x256",
-      "prompt": "Small action-axis icon for interest coins: coin pouch with two round gold coins, thick black outline, flat cream-orange colors, no text, no numbers"
+      "prompt": "Circular timeline-node badge for interest coins: coin pouch with two round gold coins, perfect circle with thick black rim, no numbers, magenta outside"
     },
     {
       "name": "icon_axis_boss",
       "type": "ui",
       "requestSize": "1024x1024",
       "targetSize": "256x256",
-      "prompt": "Small action-axis icon for boss feast: dramatic spiky feast platter with chili heat marks, thick black outline, flat cream-orange colors, no face, no eyes, no text"
+      "prompt": "Circular timeline-node badge for boss feast: dramatic spiky feast platter with chili heat marks, perfect circle with thick black rim, no face, magenta outside"
     },
     {
       "name": "icon_axis_event",
       "type": "ui",
       "requestSize": "1024x1024",
       "targetSize": "256x256",
-      "prompt": "Small action-axis icon for event: one covered serving cloche with a single clear question-mark-shaped curl of steam rising above the lid, thick black outline, flat cream-orange colors, no letters, no numbers, no logo, no watermark"
+      "prompt": "Circular timeline-node badge for event: one covered serving cloche on a small plate, perfect circle with thick black rim, no letters, magenta outside"
+    },
+    {
+      "name": "icon_axis_reward",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "256x256",
+      "prompt": "Circular timeline-node badge for lucky reward: wrapped kitchen gift box with orange ribbon shapes, perfect circle with thick black rim, magenta outside"
+    },
+    {
+      "name": "icon_axis_slot",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "256x256",
+      "prompt": "Circular timeline-node badge for lottery: compact gumball capsule machine, perfect circle with thick black rim, no digits, magenta outside"
+    },
+    {
+      "name": "icon_axis_negative",
+      "type": "ui",
+      "requestSize": "1024x1024",
+      "targetSize": "256x256",
+      "prompt": "Circular timeline-node badge for negative event: overcooked smoky pan with spilled sauce, perfect circle with thick black rim, magenta outside"
     }
   ]
 }
