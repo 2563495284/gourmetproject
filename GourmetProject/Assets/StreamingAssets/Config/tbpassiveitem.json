@@ -19,11 +19,11 @@
   {
     "id": "item_gold_random",
     "name": "陶瓷招财猫",
-    "desc": "获得[gold]30～150金币[/gold]",
+    "desc": "获得[gold]40～120金币[/gold]",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0,
-    "effectParam": "range:30,150",
+    "effectParam": "range:40,120",
     "baseWeight": 300,
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
