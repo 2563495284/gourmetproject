@@ -667,7 +667,9 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 state.Value = deliciousness;
                 state.HasValue = true;
-                state.View.SetValue(DishValueDisplay.Format(deliciousness));
+                state.View.SetValue(
+                    DishValueDisplay.Format(deliciousness),
+                    forceMeshUpdate: true);
                 layoutChanged = true;
             }
 

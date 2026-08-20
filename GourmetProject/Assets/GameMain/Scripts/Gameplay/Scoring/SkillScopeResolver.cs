@@ -127,6 +127,14 @@ namespace GourmetProject.Gameplay.Scoring
             out IReadOnlyList<GridPos> scopeRegionCells,
             out SkillScopeRegionKind scopeRegionKind)
         {
+            if (rule != null
+                && (rule.ActionScope == SkillScope.Category || HasCategoryTargetFilter(rule)))
+            {
+                scopeRegionCells = System.Array.Empty<GridPos>();
+                scopeRegionKind = SkillScopeRegionKind.None;
+                return;
+            }
+
             bool hasSpatialCondition = SkillConditionEvaluator.UsesSpatialScope(rule)
                                        && conditionCells != null
                                        && conditionCells.Count > 0;
@@ -161,19 +169,30 @@ namespace GourmetProject.Gameplay.Scoring
             scopeRegionKind = SkillScopeRegionKind.None;
         }
 
-        /// <summary>该行为是否有值得绘制的棋盘边界；全局目标仅保留目标食物反馈。</summary>
+        /// <summary>
+        /// 该行为是否有值得绘制的棋盘边界；全局目标不画边界，分类目标因通常散落在
+        /// 棋盘各处（例如蛋糕卷随机选择两个蛋糕）也不画不连续的占格边界。
+        /// </summary>
         public static bool CanRenderActionRegion(SkillRuleDef rule)
         {
             if (rule == null
                 || rule.ActionType == SkillActionType.None
-                || rule.ActionType == SkillActionType.TransferSkills)
+                || rule.ActionType == SkillActionType.TransferSkills
+                || HasCategoryTargetFilter(rule))
             {
                 return false;
             }
 
             return rule.ActionScope != SkillScope.All
                 && rule.ActionScope != SkillScope.Other
+                && rule.ActionScope != SkillScope.Category
                 && rule.ActionScope != SkillScope.CakeBuff;
+        }
+
+        /// <summary>行为参数是否把实际目标筛成某个食物分类；赋予临时分类不属于目标筛选。</summary>
+        public static bool HasCategoryTargetFilter(SkillRuleDef rule)
+        {
+            return !string.IsNullOrEmpty(TargetFilterCategory(rule));
         }
 
         /// <summary>检测一条规则是否误配了两个不同且都可绘制的空间范围。</summary>

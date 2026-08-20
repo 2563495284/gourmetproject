@@ -32,7 +32,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float FinalScorePopupDuration = 1.1f;
         private const float FinalScorePopupHold = 0.28f;
         private const float BatchedCueHold = 0.24f;
-        private const float SweetTransferParticleDuration = 0.34f;
+        private const float SweetTransferParticleDuration = 0.68f;
+        private const float SweetTransferFailureDuration = 0.34f;
+        private const float MinimumDishBoundaryDuration = 0.08f;
         private const string InitialDishBaseBatchKey = "initial:dish-bases";
 
         [Header("结算常驻三阶段速度")]
@@ -46,15 +48,19 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SettlementStageView _settlementStagePrefab;
 
         [Header("餐桌舞台节拍（统一速度下的秒数）")]
-        [SerializeField] private float _baseDishDuration = 0.38f;
         [SerializeField] private float _sourceFocusDuration = 0.38f;
         [SerializeField] private float _scopeRevealDuration = 0.24f;
         [SerializeField] private float _resultBeatDuration = 0.52f;
         [SerializeField] private float _groupSettleDuration = 0.10f;
         [SerializeField] private float _finaleDuration = 0.95f;
         [SerializeField] private float _sweetTransferSourceDuration = 0.22f;
-        [SerializeField] private float _sweetTransferTravelDuration = 0.38f;
+        [SerializeField] private float _sweetTransferTravelDuration = 0.76f;
         [SerializeField] private float _sweetTransferExecutorDuration = 0.30f;
+
+        [Header("食物章节节拍（统一速度下的秒数）")]
+        [SerializeField, Min(0f)] private float _minimumDishChapterDuration = 0.18f;
+        [SerializeField, Min(0f)] private float _dishChapterEndDuration = 0.12f;
+        [SerializeField, Min(0f)] private float _intraDishGroupSettleDuration = 0.03f;
 
         [Header("结算标签布局")]
         [Tooltip("结算效果标签相对常驻美味值的垂直偏移，负值表示显示在下方。")]
@@ -77,6 +83,22 @@ namespace GourmetProject.Game.Presentation.Battle
         public bool IsPlaybackPaused => _externalPlaybackPaused
             || _debugScorePaused
             ;
+
+        public float PendingDishBrightness => _stage != null
+            ? _stage.PendingDishBrightness
+            : _settlementStagePrefab != null
+                ? _settlementStagePrefab.PendingDishBrightness
+                : SettlementStageView.DefaultPendingDishBrightness;
+
+        private void Awake()
+        {
+            // 结算舞台首次 Instantiate 会触发 prefab、TMP 与材质依赖初始化。
+            // 提前到战斗场景启动阶段完成，避免玩家点击结算的首帧承担这段同步成本。
+            if (_settlementStagePrefab != null)
+            {
+                EnsureStage();
+            }
+        }
 
         /// <summary>暂停当前结算演出并保存进入暂停前的世界时间倍率。重复调用不会重复保存。</summary>
         public bool PausePlayback()
@@ -239,15 +261,76 @@ namespace GourmetProject.Game.Presentation.Battle
                         session?.RequiredScore ?? 0,
                         _currentPacePhase));
 
-                for (int groupIndex = 0; groupIndex < plan.Groups.Count; )
+                await PlayEffectGroupsAsync(
+                    plan.PreludeGroups,
+                    preserveDishChapterFocus: false,
+                    session,
+                    playback,
+                    ledger,
+                    dishViews,
+                    mapper,
+                    fxRoot,
+                    scoreFire,
+                    renderScore,
+                    onReveal,
+                    onScope,
+                    onPassiveTriggered,
+                    onBeat,
+                    baselineSnapshot,
+                    sweetTransferPlayback,
+                    cancellationToken);
+
+                for (int chapterIndex = 0; chapterIndex < plan.DishChapters.Count; chapterIndex++)
                 {
                     await WaitWhilePlaybackPausedAsync(cancellationToken);
-                    int waveLength = CountSweetTransferWaveLength(plan.Groups, groupIndex);
-                    if (waveLength > 0)
+                    SettlementDishChapter chapter = plan.DishChapters[chapterIndex];
+                    int dishInstanceId = chapter.DishInstanceId;
+                    dishViews.TryGetValue(dishInstanceId, out DishPieceView chapterView);
+                    string dishName = chapterView?.Instance?.Def?.Name ?? chapter.DishId;
+                    float chapterRevealDuration = ScaleDishBoundaryDuration(_minimumDishChapterDuration);
+                    _stage.BeginDishChapter(
+                        dishInstanceId,
+                        chapterRevealDuration,
+                        cancellationToken);
+                    chapterView?.PunchDishValueBadge(
+                        DishValuePunchScale,
+                        ScaleSettlementDuration(DishValuePunchDuration));
+                    EmitBeat(
+                        onBeat,
+                        SettlementBeatKind.DishStarted,
+                        dishName,
+                        dishInstanceId,
+                        playback);
+                    // 有技能时仍由第一组沿用原有来源聚焦；无技能菜才由章节本身聚焦。
+                    // 第一份有技能的食物例外：先给非镜头的章节提亮与徽章起势留出完整时间，
+                    // 再进入技能演出，消除餐桌入场结束后直接硬切第一技能的突兀感。
+                    if (chapter.Groups.Count == 0)
                     {
-                        await PlaySweetTransferWaveAsync(
+                        _cameraFeedback.FocusSource(
+                            chapterView != null ? chapterView.WorldBounds.center : mapper.Center,
+                            chapterRevealDuration);
+                    }
+
+                    float chapterEndDuration = ScaleDishBoundaryDuration(_dishChapterEndDuration);
+                    if (chapter.Groups.Count == 0)
+                    {
+                        float preCompletionHold = Mathf.Max(0f, chapterRevealDuration - chapterEndDuration);
+                        if (preCompletionHold > 0f)
+                        {
+                            await Awaitable.WaitForSecondsAsync(preCompletionHold, cancellationToken);
+                        }
+                    }
+                    else
+                    {
+                        if (chapterIndex == 0)
+                        {
+                            await Awaitable.WaitForSecondsAsync(chapterRevealDuration, cancellationToken);
+                        }
+
+                        await PlayEffectGroupsAsync(
+                            chapter.Groups,
+                            preserveDishChapterFocus: true,
                             session,
-                            plan,
                             playback,
                             ledger,
                             dishViews,
@@ -261,96 +344,49 @@ namespace GourmetProject.Game.Presentation.Battle
                             onBeat,
                             baselineSnapshot,
                             sweetTransferPlayback,
-                            groupIndex,
-                            waveLength,
-                            cancellationToken);
-                        groupIndex += waveLength;
-                        continue;
-                    }
-
-                    SettlementEffectGroup group = plan.Groups[groupIndex];
-                    EmitBeat(
-                        onBeat,
-                        SettlementBeatKind.SourceStarted,
-                        group.SourceName,
-                        group.ActorDishInstanceId,
-                        playback);
-                    DishPieceView cameraActor = TryGetDishView(group.ActorDishInstanceId, dishViews);
-                    _cameraFeedback.FocusSource(
-                        cameraActor != null ? cameraActor.WorldBounds.center : mapper.Center,
-                        ScaleSettlementDuration(_sourceFocusDuration));
-                    await _stage.FocusSourceAsync(
-                        group,
-                        ScaleSettlementDuration(_sourceFocusDuration),
-                        cancellationToken);
-
-                    SettlementScopeSignal scope = ScopeFor(group);
-                    EmitScope(onScope, scope);
-                    EmitBeat(
-                        onBeat,
-                        SettlementBeatKind.ScopeShown,
-                        group.SourceName,
-                        group.ActorDishInstanceId,
-                        playback);
-                    await _stage.ShowScopeAsync(
-                        group,
-                        ScaleSettlementDuration(_scopeRevealDuration),
-                        cancellationToken);
-
-                    int groupTargetCount = CountDistinctTargets(group, dishViews);
-                    SettlementImpactTier groupImpact = StrongestImpact(group, groupTargetCount);
-                    _cameraFeedback.PlayImpact(groupImpact, groupTargetCount);
-                    if (groupImpact >= SettlementImpactTier.Strong)
-                    {
-                        scoreFire?.Burst(groupImpact >= SettlementImpactTier.Chain ? 0.72f : 0.46f);
-                    }
-
-                    // 普通技能组保持一次性并发；蛋糕层数会按加分、加倍率、乘倍率的真实顺序
-                    // 分成连续批次。每一批里的多个蛋糕仍在同一帧启动，避免同一蛋糕的三种
-                    // 反馈互相取消，也不会把多个蛋糕退化成逐个播放。
-                    List<List<int>> resultLineBatches = BuildResultLineBatches(group);
-                    for (int batchIndex = 0; batchIndex < resultLineBatches.Count; batchIndex++)
-                    {
-                        await PlayResultLineBatchAsync(
-                            BuildResultLineRefs(group, resultLineBatches[batchIndex]),
-                            groupTargetCount,
-                            session,
-                            playback,
-                            ledger,
-                            dishViews,
-                            fxRoot,
-                            renderScore,
-                            onReveal,
-                            onPassiveTriggered,
-                            onBeat,
-                            sweetTransferPlayback,
-                            skipTransferTravel: false,
                             cancellationToken);
                     }
 
-                    if (group.Lines.Count > 0)
-                    {
-                        int lastLineIndex = group.Lines.Count - 1;
-                        CompleteSweetTransferStateIfNeeded(
-                            sweetTransferPlayback,
-                            BuildNextSweetTransferSteps(plan, groupIndex, lastLineIndex),
-                            BuildNextSweetTransferPresentationContext(plan, groupIndex, lastLineIndex),
-                            dishViews);
-                    }
-
+                    chapterView?.PunchDishValueBadge(
+                        DishValuePunchScale,
+                        chapterEndDuration);
                     onScope?.Invoke(default);
-                    _cameraFeedback.ReturnHome(ScaleSettlementDuration(_groupSettleDuration + 0.08f));
-                    await _stage.EndGroupAsync(
-                        ScaleSettlementDuration(_groupSettleDuration),
+                    // 相邻食物之间直接从当前构图平滑过渡到下一份；只在最后一份
+                    // 食物完成时回到桌面全景，避免每菜一次“回中—再推出”的锯齿运动。
+                    if (chapterIndex + 1 >= plan.DishChapters.Count)
+                    {
+                        _cameraFeedback.ReturnHome(chapterEndDuration);
+                    }
+                    await _stage.EndDishChapterAsync(
+                        dishInstanceId,
+                        chapterEndDuration,
                         cancellationToken);
                     EmitBeat(
                         onBeat,
-                        SettlementBeatKind.GroupCompleted,
-                        group.SourceName,
-                        group.ActorDishInstanceId,
+                        SettlementBeatKind.DishCompleted,
+                        dishName,
+                        dishInstanceId,
                         playback);
-                    groupIndex++;
                 }
+
+                await PlayEffectGroupsAsync(
+                    plan.EpilogueGroups,
+                    preserveDishChapterFocus: false,
+                    session,
+                    playback,
+                    ledger,
+                    dishViews,
+                    mapper,
+                    fxRoot,
+                    scoreFire,
+                    renderScore,
+                    onReveal,
+                    onScope,
+                    onPassiveTriggered,
+                    onBeat,
+                    baselineSnapshot,
+                    sweetTransferPlayback,
+                    cancellationToken);
 
                 await WaitWhilePlaybackPausedAsync(cancellationToken);
                 ClearSweetTransferVisuals(sweetTransferPlayback, dishViews);
@@ -464,6 +500,23 @@ namespace GourmetProject.Game.Presentation.Battle
             SkillExecutionTrace trace = group.Trace;
             if (trace != null)
             {
+                // 分类技能的边框必须跟随本组实际产生结果的食物。即便某条旧 trace
+                // 没带回随机选择后的目标，也用结算行汇总出的真实目标补齐。
+                if ((trace.ActionScope == SkillScope.Category || trace.HasCategoryTargetFilter)
+                    && group.TargetDishIds.Count > 0)
+                {
+                    var targetIds = new List<int>(group.TargetDishIds.Count);
+                    foreach (int targetId in group.TargetDishIds)
+                    {
+                        if (targetId > 0)
+                        {
+                            targetIds.Add(targetId);
+                        }
+                    }
+
+                    trace = trace.WithVisualTargets(targetIds, trace.VisualTargetCells);
+                }
+
                 return new SettlementScopeSignal(
                     trace.OwnerDishInstanceId,
                     trace.RuntimeSelfDishInstanceId,
@@ -474,6 +527,162 @@ namespace GourmetProject.Game.Presentation.Battle
                 group.ActorDishInstanceId,
                 group.ActorDishInstanceId,
                 null);
+        }
+
+        private async Awaitable PlayEffectGroupsAsync(
+            IReadOnlyList<SettlementEffectGroup> groups,
+            bool preserveDishChapterFocus,
+            BattleSession session,
+            SettlementPlaybackState playback,
+            SettlementRunningLedger ledger,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            DiningTableCoordinateMapper mapper,
+            Transform fxRoot,
+            SettlementScoreFireView scoreFire,
+            Action<BigDouble> renderScore,
+            Action<SettlementRevealSignal> onReveal,
+            Action<SettlementScopeSignal> onScope,
+            Action<string> onPassiveTriggered,
+            Action<SettlementBeatSignal> onBeat,
+            SettlementBaselineSnapshot baselineSnapshot,
+            SweetTransferPlaybackState sweetTransferPlayback,
+            CancellationToken cancellationToken)
+        {
+            if (groups == null || groups.Count == 0)
+            {
+                return;
+            }
+
+            for (int groupIndex = 0; groupIndex < groups.Count; )
+            {
+                await WaitWhilePlaybackPausedAsync(cancellationToken);
+                int waveLength = CountSweetTransferWaveLength(groups, groupIndex);
+                if (waveLength > 0)
+                {
+                    bool isLastWave = groupIndex + waveLength >= groups.Count;
+                    await PlaySweetTransferWaveAsync(
+                        session,
+                        groups,
+                        playback,
+                        ledger,
+                        dishViews,
+                        mapper,
+                        fxRoot,
+                        scoreFire,
+                        renderScore,
+                        onReveal,
+                        onScope,
+                        onPassiveTriggered,
+                        onBeat,
+                        baselineSnapshot,
+                        sweetTransferPlayback,
+                        groupIndex,
+                        waveLength,
+                        preserveDishChapterFocus,
+                        isLastWave,
+                        cancellationToken);
+                    groupIndex += waveLength;
+                    continue;
+                }
+
+                SettlementEffectGroup group = groups[groupIndex];
+                EmitBeat(
+                    onBeat,
+                    SettlementBeatKind.SourceStarted,
+                    group.SourceName,
+                    group.ActorDishInstanceId,
+                    playback);
+                DishPieceView cameraActor = TryGetDishView(group.ActorDishInstanceId, dishViews);
+                _cameraFeedback.FocusSource(
+                    cameraActor != null ? cameraActor.WorldBounds.center : mapper.Center,
+                    ScaleSettlementDuration(_sourceFocusDuration));
+                await _stage.FocusSourceAsync(
+                    group,
+                    ScaleSettlementDuration(_sourceFocusDuration),
+                    cancellationToken);
+
+                SettlementScopeSignal scope = ScopeFor(group);
+                EmitScope(onScope, scope);
+                EmitBeat(
+                    onBeat,
+                    SettlementBeatKind.ScopeShown,
+                    group.SourceName,
+                    group.ActorDishInstanceId,
+                    playback);
+                await _stage.ShowScopeAsync(
+                    group,
+                    ScaleSettlementDuration(_scopeRevealDuration),
+                    cancellationToken);
+
+                int groupTargetCount = CountDistinctTargets(group, dishViews);
+                SettlementImpactTier groupImpact = StrongestImpact(group, groupTargetCount);
+                // 普通技能组保持一次性并发；蛋糕层数会按加分、加倍率、乘倍率的真实顺序
+                // 分成连续批次。每一批里的多个蛋糕仍在同一帧启动，避免同一蛋糕的三种
+                // 反馈互相取消，也不会把多个蛋糕退化成逐个播放。
+                List<List<int>> resultLineBatches = BuildResultLineBatches(group);
+                bool repeatImpactPerBatch = ShouldRepeatImpactPerResultBatch(
+                    group,
+                    resultLineBatches.Count);
+                if (!repeatImpactPerBatch)
+                {
+                    PlayImpactFeedback(groupImpact, groupTargetCount, scoreFire);
+                }
+
+                for (int batchIndex = 0; batchIndex < resultLineBatches.Count; batchIndex++)
+                {
+                    if (repeatImpactPerBatch)
+                    {
+                        PlayImpactFeedback(groupImpact, groupTargetCount, scoreFire);
+                    }
+
+                    await PlayResultLineBatchAsync(
+                        BuildResultLineRefs(group, resultLineBatches[batchIndex]),
+                        groupTargetCount,
+                        session,
+                        playback,
+                        ledger,
+                        dishViews,
+                        fxRoot,
+                        renderScore,
+                        onReveal,
+                        onPassiveTriggered,
+                        onBeat,
+                        sweetTransferPlayback,
+                        skipTransferTravel: false,
+                        cancellationToken);
+                }
+
+                if (group.Lines.Count > 0)
+                {
+                    int lastLineIndex = group.Lines.Count - 1;
+                    CompleteSweetTransferStateIfNeeded(
+                        sweetTransferPlayback,
+                        BuildNextSweetTransferSteps(groups, groupIndex, lastLineIndex),
+                        BuildNextSweetTransferPresentationContext(groups, groupIndex, lastLineIndex),
+                        dishViews);
+                }
+
+                onScope?.Invoke(default);
+                bool isLastGroup = groupIndex + 1 >= groups.Count;
+                float settleDuration = preserveDishChapterFocus
+                    ? isLastGroup ? 0f : _intraDishGroupSettleDuration
+                    : _groupSettleDuration;
+                if (!preserveDishChapterFocus)
+                {
+                    _cameraFeedback.ReturnHome(ScaleSettlementDuration(_groupSettleDuration + 0.08f));
+                }
+
+                await _stage.EndGroupAsync(
+                    ScaleSettlementDuration(settleDuration),
+                    cancellationToken);
+                EmitBeat(
+                    onBeat,
+                    SettlementBeatKind.GroupCompleted,
+                    group.SourceName,
+                    group.ActorDishInstanceId,
+                    playback);
+                groupIndex++;
+            }
         }
 
         private static IReadOnlyList<SettlementPlaybackStep> BuildSweetTransferSteps(
@@ -495,16 +704,16 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         private static IReadOnlyList<SettlementPlaybackStep> BuildNextSweetTransferSteps(
-            SettlementPresentationPlan plan,
+            IReadOnlyList<SettlementEffectGroup> groups,
             int groupIndex,
             int lineIndex)
         {
-            if (plan == null || groupIndex < 0 || groupIndex >= plan.Groups.Count)
+            if (groups == null || groupIndex < 0 || groupIndex >= groups.Count)
             {
                 return Array.Empty<SettlementPlaybackStep>();
             }
 
-            ScoreLine nextLine = NextScoreLine(plan, groupIndex, lineIndex);
+            ScoreLine nextLine = NextScoreLine(groups, groupIndex, lineIndex);
 
             return nextLine != null && TryBuildCue(nextLine, out SettlementCue nextCue)
                 ? BuildSweetTransferSteps(nextLine, nextCue)
@@ -512,33 +721,33 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         private static SettlementSweetTransferPresentationContext BuildNextSweetTransferPresentationContext(
-            SettlementPresentationPlan plan,
+            IReadOnlyList<SettlementEffectGroup> groups,
             int groupIndex,
             int lineIndex)
         {
             return SettlementSweetTransferPresentationContext.FromLine(
-                NextScoreLine(plan, groupIndex, lineIndex));
+                NextScoreLine(groups, groupIndex, lineIndex));
         }
 
         private static ScoreLine NextScoreLine(
-            SettlementPresentationPlan plan,
+            IReadOnlyList<SettlementEffectGroup> groups,
             int groupIndex,
             int lineIndex)
         {
-            if (plan == null || groupIndex < 0 || groupIndex >= plan.Groups.Count)
+            if (groups == null || groupIndex < 0 || groupIndex >= groups.Count)
             {
                 return null;
             }
 
-            SettlementEffectGroup group = plan.Groups[groupIndex];
+            SettlementEffectGroup group = groups[groupIndex];
             if (lineIndex + 1 < group.Lines.Count)
             {
                 return group.Lines[lineIndex + 1];
             }
 
-            return groupIndex + 1 < plan.Groups.Count
-                && plan.Groups[groupIndex + 1].Lines.Count > 0
-                    ? plan.Groups[groupIndex + 1].Lines[0]
+            return groupIndex + 1 < groups.Count
+                && groups[groupIndex + 1].Lines.Count > 0
+                    ? groups[groupIndex + 1].Lines[0]
                     : null;
         }
 
@@ -1034,7 +1243,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private async Awaitable PlaySweetTransferWaveAsync(
             BattleSession session,
-            SettlementPresentationPlan plan,
+            IReadOnlyList<SettlementEffectGroup> groups,
             SettlementPlaybackState playback,
             SettlementRunningLedger ledger,
             IReadOnlyDictionary<int, DishPieceView> dishViews,
@@ -1050,9 +1259,10 @@ namespace GourmetProject.Game.Presentation.Battle
             SweetTransferPlaybackState sweetTransferPlayback,
             int startIndex,
             int waveLength,
+            bool preserveDishChapterFocus,
+            bool isLastWave,
             CancellationToken cancellationToken)
         {
-            IReadOnlyList<SettlementEffectGroup> groups = plan.Groups;
             SettlementEffectGroup firstGroup = groups[startIndex];
             var sourceIds = new HashSet<int>();
             var executorIds = new HashSet<int>();
@@ -1304,7 +1514,10 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 onScope?.Invoke(default);
                 await _stage.EndGroupAsync(
-                    ScaleSettlementDuration(_groupSettleDuration),
+                    ScaleSettlementDuration(
+                        preserveDishChapterFocus
+                            ? _intraDishGroupSettleDuration
+                            : _groupSettleDuration),
                     cancellationToken);
                 await RevealScopeAndPlayResultsAsync(
                     responseLines,
@@ -1342,14 +1555,21 @@ namespace GourmetProject.Game.Presentation.Battle
             sweetTransferPlayback.PresentationKey = default;
             CompleteSweetTransferStateIfNeeded(
                 sweetTransferPlayback,
-                BuildNextSweetTransferSteps(plan, lastGroupIndex, Mathf.Max(0, lastGroup.Lines.Count - 1)),
-                BuildNextSweetTransferPresentationContext(plan, lastGroupIndex, Mathf.Max(0, lastGroup.Lines.Count - 1)),
+                BuildNextSweetTransferSteps(groups, lastGroupIndex, Mathf.Max(0, lastGroup.Lines.Count - 1)),
+                BuildNextSweetTransferPresentationContext(groups, lastGroupIndex, Mathf.Max(0, lastGroup.Lines.Count - 1)),
                 dishViews);
 
             onScope?.Invoke(default);
-            _cameraFeedback.ReturnHome(ScaleSettlementDuration(_groupSettleDuration + 0.08f));
+            float settleDuration = preserveDishChapterFocus
+                ? isLastWave ? 0f : _intraDishGroupSettleDuration
+                : _groupSettleDuration;
+            if (!preserveDishChapterFocus)
+            {
+                _cameraFeedback.ReturnHome(ScaleSettlementDuration(_groupSettleDuration + 0.08f));
+            }
+
             await _stage.EndGroupAsync(
-                ScaleSettlementDuration(_groupSettleDuration),
+                ScaleSettlementDuration(settleDuration),
                 cancellationToken);
             EmitBeat(
                 onBeat,
@@ -1817,6 +2037,23 @@ namespace GourmetProject.Game.Presentation.Battle
             return strongest;
         }
 
+        private void PlayImpactFeedback(
+            SettlementImpactTier impact,
+            int targetCount,
+            SettlementScoreFireView scoreFire)
+        {
+            _cameraFeedback.PlayImpact(impact, targetCount);
+            if (impact >= SettlementImpactTier.Strong)
+            {
+                scoreFire?.Burst(impact >= SettlementImpactTier.Chain ? 0.72f : 0.46f);
+            }
+        }
+
+        internal static bool ShouldRepeatImpactPerResultBatch(
+            SettlementEffectGroup group,
+            int batchCount) =>
+            batchCount > 1 && IsCakeLayerBuffGroup(group);
+
         internal static List<List<int>> BuildResultLineBatches(SettlementEffectGroup group)
         {
             var batches = new List<List<int>>();
@@ -1825,8 +2062,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return batches;
             }
 
-            bool splitCakeLayerResults = group.Source?.Type == ScoreSourceType.TableTag
-                && string.Equals(group.Source.Id, "cake_layer_buff", StringComparison.Ordinal);
+            bool splitCakeLayerResults = IsCakeLayerBuffGroup(group);
             List<int> current = null;
             ScoreLineKind currentKind = default;
             for (int i = 0; i < group.Lines.Count; i++)
@@ -1844,6 +2080,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
             return batches;
         }
+
+        private static bool IsCakeLayerBuffGroup(SettlementEffectGroup group) =>
+            group?.Source?.Type == ScoreSourceType.TableTag
+            && string.Equals(group.Source.Id, "cake_layer_buff", StringComparison.Ordinal);
 
         private static Dictionary<int, int> BuildPrimaryFeedbackLines(
             IReadOnlyList<ResultLineRef> lines,
@@ -2313,7 +2553,7 @@ namespace GourmetProject.Game.Presentation.Battle
             await _stage.PlaySweetTransferFailureAsync(
                 source,
                 _sweetTransferParticlePrefab,
-                ScaleSettlementDuration(SweetTransferParticleDuration),
+                ScaleSettlementDuration(SweetTransferFailureDuration),
                 cancellationToken);
         }
 
@@ -2698,6 +2938,13 @@ namespace GourmetProject.Game.Presentation.Battle
             return Mathf.Max(0.0001f, duration / Mathf.Max(0.0001f, _currentSettlementSpeed));
         }
 
+        private float ScaleDishBoundaryDuration(float duration)
+        {
+            return Mathf.Max(
+                MinimumDishBoundaryDuration,
+                duration / Mathf.Max(0.0001f, _currentSettlementSpeed));
+        }
+
         private void BeginSettlementPace()
         {
             _currentPacePhase = SettlementPacePhase.BelowTarget;
@@ -2808,6 +3055,12 @@ namespace GourmetProject.Game.Presentation.Battle
             return speed * (doubleSpeed ? 2f : 1f);
         }
 
+        internal static float CameraFocusTweenDuration(float presentationDuration) =>
+            Mathf.Clamp(presentationDuration * 0.82f, 0.16f, 0.28f);
+
+        internal static float CameraHomeTweenDuration(float presentationDuration) =>
+            Mathf.Clamp(presentationDuration, 0.16f, 0.24f);
+
         internal static float CameraFollowFactorFor(SettlementPacePhase phase)
         {
             return phase switch
@@ -2842,9 +3095,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 _ => 0f,
             };
         }
-
-        internal static float CameraTransitionShakeStrengthFor(SettlementPacePhase phase) =>
-            phase == SettlementPacePhase.DoubleTarget ? 0.085f : 0f;
 
         internal static float CameraFinaleShakeStrengthFor(SettlementPacePhase phase) =>
             phase == SettlementPacePhase.DoubleTarget ? 0.08f : 0f;
@@ -4203,49 +4453,31 @@ namespace GourmetProject.Game.Presentation.Battle
                     return;
                 }
 
-                _motion?.Kill();
-                float strength = CameraTransitionShakeStrengthFor(phase);
                 float punchScale = CameraTransitionPunchScaleFor(phase);
-                if (strength <= 0f && Mathf.Approximately(punchScale, 1f))
+                if (Mathf.Approximately(punchScale, 1f))
                 {
                     return;
                 }
 
-                float transitionDuration = Scaled(0.16f);
+                _motion?.Kill();
+                float transitionDuration = CameraHomeTweenDuration(Scaled(0.16f));
                 float punchSize = _focusOrthographicSize * punchScale;
-                Sequence sequence = DOTween.Sequence();
-                Tween punchTween = DOVirtual.Float(
-                        _camera.orthographicSize,
-                        punchSize,
-                        transitionDuration * 0.55f,
-                        SetOrthographicSize)
-                    .SetEase(Ease.OutQuad);
-                if (strength > 0f)
-                {
-                    sequence.Append(_camera.transform.DOShakePosition(
-                        transitionDuration,
-                        strength,
-                        vibrato: 12,
-                        randomness: 30f,
-                        snapping: false,
-                        fadeOut: true));
-                    sequence.Join(punchTween);
-                }
-                else
-                {
-                    sequence.Append(punchTween);
-                }
-
-                sequence
+                Sequence sequence = DOTween.Sequence()
                     .Append(DOVirtual.Float(
                             _camera.orthographicSize,
+                            punchSize,
+                            transitionDuration * 0.55f,
+                            SetOrthographicSize)
+                        .SetEase(Ease.InOutSine))
+                    .Append(DOVirtual.Float(
+                            punchSize,
                             _focusOrthographicSize,
                             transitionDuration * 0.45f,
                             SetOrthographicSize)
-                        .SetEase(Ease.OutBack))
-                    .Append(_camera.transform.DOMove(
+                        .SetEase(Ease.InOutSine))
+                    .Insert(0f, _camera.transform.DOMove(
                         _focusPosition,
-                        Scaled(0.045f)).SetEase(Ease.OutQuad))
+                        transitionDuration).SetEase(Ease.InOutSine))
                     .SetLink(_camera.gameObject);
                 _motion = sequence.OnComplete(() => _motion = null);
             }
@@ -4259,13 +4491,20 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 Vector3 towardSource = Vector3.ClampMagnitude(worldPosition - _tableCenter, 1.6f);
                 towardSource.z = 0f;
-                _focusPosition = _basePosition + towardSource * CameraFollowFactorFor(_phase);
-                _focusOrthographicSize = _baseOrthographicSize * CameraFocusScaleFor(_phase);
+                Vector3 focusPosition = _basePosition + towardSource * CameraFollowFactorFor(_phase);
+                float focusOrthographicSize = _baseOrthographicSize * CameraFocusScaleFor(_phase);
+                if (IsSameFramingTarget(focusPosition, focusOrthographicSize))
+                {
+                    return;
+                }
+
+                _focusPosition = focusPosition;
+                _focusOrthographicSize = focusOrthographicSize;
                 TweenTo(
                     _focusPosition,
                     _focusOrthographicSize,
-                    Mathf.Clamp(duration * 0.72f, 0.04f, 0.24f),
-                    Ease.OutCubic);
+                    CameraFocusTweenDuration(duration),
+                    Ease.InOutSine);
             }
 
             public void PlayImpact(SettlementImpactTier tier, int targetCount)
@@ -4281,36 +4520,37 @@ namespace GourmetProject.Game.Presentation.Battle
                     return;
                 }
 
-                if (targetCount > 1)
+                float scaledStrength = targetCount > 1
+                    ? Mathf.Min(0.12f, strength * 1.18f)
+                    : strength;
+                _motion?.Kill();
+                float normalizedStrength = Mathf.InverseLerp(0.02f, 0.12f, scaledStrength);
+                float pulseFactor = Mathf.Lerp(0.994f, 0.982f, normalizedStrength);
+                if (tier >= SettlementImpactTier.Chain)
                 {
-                    strength = Mathf.Min(0.12f, strength * 1.18f);
+                    pulseFactor = Mathf.Min(pulseFactor, 0.986f);
                 }
 
-                _motion?.Kill();
-                float pulseSize = _focusOrthographicSize * (tier >= SettlementImpactTier.Chain ? 0.982f : 0.990f);
+                float pulseSize = _focusOrthographicSize * pulseFactor;
+                float pulseInDuration = Mathf.Clamp(Scaled(0.08f), 0.06f, 0.10f);
+                float pulseOutDuration = Mathf.Clamp(Scaled(0.11f), 0.09f, 0.14f);
+                float impactDuration = pulseInDuration + pulseOutDuration;
                 Sequence sequence = DOTween.Sequence()
                     .Append(DOVirtual.Float(
                             _camera.orthographicSize,
                             pulseSize,
-                            Scaled(0.07f),
+                            pulseInDuration,
                             value => SetOrthographicSize(value))
-                        .SetEase(Ease.OutQuad))
-                    .Join(_camera.transform.DOShakePosition(
-                        Scaled(0.14f),
-                        strength,
-                        vibrato: tier >= SettlementImpactTier.Chain ? 12 : 8,
-                        randomness: 38f,
-                        snapping: false,
-                        fadeOut: true))
+                        .SetEase(Ease.InOutSine))
                     .Append(DOVirtual.Float(
                             pulseSize,
                             _focusOrthographicSize,
-                            Scaled(0.08f),
+                            pulseOutDuration,
                             value => SetOrthographicSize(value))
-                        .SetEase(Ease.OutCubic))
-                    .Append(_camera.transform.DOMove(
+                        .SetEase(Ease.InOutSine))
+                    .Insert(0f, _camera.transform.DOMove(
                         _focusPosition,
-                        Scaled(0.05f)).SetEase(Ease.OutQuad))
+                        impactDuration).SetEase(Ease.InOutSine))
                     .SetLink(_camera.gameObject);
                 _motion = sequence.OnComplete(() => _motion = null);
             }
@@ -4322,13 +4562,18 @@ namespace GourmetProject.Game.Presentation.Battle
                     return;
                 }
 
+                if (IsSameFramingTarget(_basePosition, _phaseHomeOrthographicSize))
+                {
+                    return;
+                }
+
                 _focusPosition = _basePosition;
                 _focusOrthographicSize = _phaseHomeOrthographicSize;
                 TweenTo(
                     _basePosition,
                     _phaseHomeOrthographicSize,
-                    Mathf.Clamp(duration, 0.04f, 0.20f),
-                    Ease.OutCubic);
+                    CameraHomeTweenDuration(duration),
+                    Ease.InOutSine);
             }
 
             public void PlayFinale(float duration)
@@ -4409,6 +4654,24 @@ namespace GourmetProject.Game.Presentation.Battle
                         .SetEase(ease))
                     .SetLink(_camera.gameObject);
                 _motion = sequence.OnComplete(() => _motion = null);
+            }
+
+            private bool IsSameFramingTarget(Vector3 position, float orthographicSize)
+            {
+                bool sameDesiredTarget = (_focusPosition - position).sqrMagnitude <= 0.0004f
+                    && Mathf.Abs(_focusOrthographicSize - orthographicSize) <= 0.0005f;
+                if (!sameDesiredTarget)
+                {
+                    return false;
+                }
+
+                if (_motion != null)
+                {
+                    return true;
+                }
+
+                return (_camera.transform.position - position).sqrMagnitude <= 0.0004f
+                    && Mathf.Abs(_camera.orthographicSize - orthographicSize) <= 0.0005f;
             }
 
             private void SetOrthographicSize(float value)

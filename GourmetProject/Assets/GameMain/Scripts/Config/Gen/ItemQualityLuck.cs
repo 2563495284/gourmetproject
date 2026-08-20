@@ -20,6 +20,9 @@ public sealed partial class ItemQualityLuck : Luban.BeanBase
         { if(!_buf["quality"].IsNumber) { throw new SerializationException(); }  Quality = (ItemQuality)_buf["quality"].AsInt; }
         { if(!_buf["baseWeight"].IsNumber) { throw new SerializationException(); }  BaseWeight = _buf["baseWeight"]; }
         { if(!_buf["luckGrowth"].IsNumber) { throw new SerializationException(); }  LuckGrowth = _buf["luckGrowth"]; }
+        { if(!_buf["constant"].IsNumber) { throw new SerializationException(); }  Constant = _buf["constant"]; }
+        { if(!_buf["minWeight"].IsNumber) { throw new SerializationException(); }  MinWeight = _buf["minWeight"]; }
+        { if(!_buf["maxWeight"].IsNumber) { throw new SerializationException(); }  MaxWeight = _buf["maxWeight"]; }
     }
 
     public static ItemQualityLuck DeserializeItemQualityLuck(JSONNode _buf)
@@ -39,6 +42,18 @@ public sealed partial class ItemQualityLuck : Luban.BeanBase
     /// 品质权重随运气变化的指数成长系数。
     /// </summary>
     public readonly float LuckGrowth;
+    /// <summary>
+    /// 品质权重的常数项。
+    /// </summary>
+    public readonly float Constant;
+    /// <summary>
+    /// 该品质权重下限。
+    /// </summary>
+    public readonly float MinWeight;
+    /// <summary>
+    /// 该品质权重上限。
+    /// </summary>
+    public readonly float MaxWeight;
    
     public const int __ID__ = -1704082403;
     public override int GetTypeId() => __ID__;
@@ -53,6 +68,9 @@ public sealed partial class ItemQualityLuck : Luban.BeanBase
         + "quality:" + Quality + ","
         + "baseWeight:" + BaseWeight + ","
         + "luckGrowth:" + LuckGrowth + ","
+        + "constant:" + Constant + ","
+        + "minWeight:" + MinWeight + ","
+        + "maxWeight:" + MaxWeight + ","
         + "}";
     }
 }

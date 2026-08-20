@@ -10,6 +10,10 @@ namespace GourmetProject.Game.Presentation.Battle
     /// <summary>统一管理技能 scope 高亮：hover 常驻与上菜短闪互不覆盖。</summary>
     public sealed class BattleScopeHighlightController : MonoBehaviour
     {
+        private const int CategoryTargetLayerBase = 128;
+        private const int CategoryTargetLayersPerTrace = 64;
+        private const int CategoryTargetTraceSlots = 12;
+
         private static readonly Color[] DefaultPalette =
         {
             new Color(0.22f, 0.74f, 1f, 0.86f),
@@ -154,6 +158,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
+            // cat:xxx 会把目标筛成散落在任意位置的分类食物（例如蛋糕卷随机两个蛋糕）。
+            // 不画会把多个目标连起来的棋盘范围，但每个实际目标仍各自显示食物外轮廓。
+            bool suppressCategoryRegion = trace.ActionScope == SkillScope.Category
+                || trace.HasCategoryTargetFilter;
+
             float cellWidth = channel == BattleScopeHighlightChannel.Settlement
                 ? _settlementCellWidth
                 : persistent ? _persistentCellWidth : _flashCellWidth;
@@ -162,7 +171,22 @@ namespace GourmetProject.Game.Presentation.Battle
             Color targetColor = channel == BattleScopeHighlightChannel.Settlement
                 ? SettlementThemeColor(trace)
                 : PaletteColor(visualIndex * 2);
+            Color regionColor = trace.Kind == SkillExecutionKind.SweetTransfer
+                ? SettlementColorPalette.WithAlpha(SettlementColorPalette.SweetTransfer, 0.98f)
+                : ScopeColor;
             Material material = MaterialFor(trace);
+
+            if (suppressCategoryRegion)
+            {
+                RenderCategoryTargetOutlines(
+                    channel,
+                    trace,
+                    CategoryTargetOutlineColor(trace),
+                    cellWidth,
+                    material,
+                    index);
+                return;
+            }
 
             if (trace.ScopeRegionCells.Count > 0)
             {
@@ -170,12 +194,59 @@ namespace GourmetProject.Game.Presentation.Battle
                     trace.ScopeRegionCells,
                     channel,
                     2 + baseLayer * 2,
-                    ScopeColor,
+                    regionColor,
                     cellWidth,
                     material);
             }
 
             RenderTargetDishes(channel, trace, targetColor, visualIndex);
+        }
+
+        /// <summary>
+        /// 分类目标按食物实例分别创建占格轮廓。即使两个目标相邻，也因使用不同 layer
+        /// 而保持为两条独立边界，不会被范围 mask 合并成一整块。
+        /// </summary>
+        private void RenderCategoryTargetOutlines(
+            BattleScopeHighlightChannel channel,
+            SkillExecutionTrace trace,
+            Color color,
+            float cellWidth,
+            Material material,
+            int traceIndex)
+        {
+            if (_activeTableView == null
+                || _activeDishViews == null
+                || trace?.VisualTargetDishInstanceIds == null)
+            {
+                return;
+            }
+
+            int traceSlot = Mathf.Abs(traceIndex) % CategoryTargetTraceSlots;
+            int targetIndex = 0;
+            var seen = new HashSet<int>();
+            foreach (int dishId in trace.VisualTargetDishInstanceIds)
+            {
+                if (dishId <= 0
+                    || !seen.Add(dishId)
+                    || !_activeDishViews.TryGetValue(dishId, out DishPieceView piece)
+                    || piece?.Instance?.OccupiedCells == null)
+                {
+                    continue;
+                }
+
+                int targetSlot = Mathf.Min(targetIndex, CategoryTargetLayersPerTrace - 1);
+                int layer = CategoryTargetLayerBase
+                    + traceSlot * CategoryTargetLayersPerTrace
+                    + targetSlot;
+                _activeTableView.SetScopeRegionHighlight(
+                    piece.Instance.OccupiedCells,
+                    channel,
+                    layer,
+                    color,
+                    cellWidth,
+                    material);
+                targetIndex++;
+            }
         }
 
         private bool CanRenderTrace(SkillExecutionTrace trace)
@@ -272,6 +343,19 @@ namespace GourmetProject.Game.Presentation.Battle
                 SkillExecutionKind.CopiedSkill =>
                     SettlementColorPalette.WithAlpha(SettlementColorPalette.CopiedSkillSource, 0.96f),
                 _ => SettlementColorPalette.WithAlpha(SettlementColorPalette.NativeSource, 0.96f),
+            };
+        }
+
+        /// <summary>分类目标使用固定来源色：原生技能为蛋糕黄，甜蜜传递为甜蜜粉。</summary>
+        private static Color CategoryTargetOutlineColor(SkillExecutionTrace trace)
+        {
+            return trace?.Kind switch
+            {
+                SkillExecutionKind.SweetTransfer =>
+                    SettlementColorPalette.WithAlpha(SettlementColorPalette.SweetTransfer, 0.98f),
+                SkillExecutionKind.CopiedSkill =>
+                    SettlementColorPalette.WithAlpha(SettlementColorPalette.CopySkill, 0.98f),
+                _ => SettlementColorPalette.WithAlpha(SettlementColorPalette.NativeSource, 0.98f),
             };
         }
 

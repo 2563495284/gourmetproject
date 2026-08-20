@@ -47,7 +47,8 @@ namespace GourmetProject.Gameplay.Scoring
             IReadOnlyList<GridPos> actionScopeCells = null,
             IReadOnlyList<GridPos> scopeRegionCells = null,
             SkillScopeRegionKind scopeRegionKind = SkillScopeRegionKind.None,
-            int visualIndex = -1)
+            int visualIndex = -1,
+            bool hasCategoryTargetFilter = false)
         {
             Kind = kind;
             OwnerDishInstanceId = ownerDishInstanceId;
@@ -73,6 +74,7 @@ namespace GourmetProject.Gameplay.Scoring
             ScopeRegionCells = scopeRegionCells ?? EmptyCells;
             ScopeRegionKind = scopeRegionKind;
             VisualIndex = visualIndex;
+            HasCategoryTargetFilter = hasCategoryTargetFilter;
         }
 
         public SkillExecutionKind Kind { get; }
@@ -124,6 +126,9 @@ namespace GourmetProject.Gameplay.Scoring
 
         public int VisualIndex { get; }
 
+        /// <summary>实际目标是否由 cat:xxx 分类参数筛选；此类散点目标不显示合并棋盘边界。</summary>
+        public bool HasCategoryTargetFilter { get; }
+
         public SkillExecutionTrace WithVisualIndex(int visualIndex)
         {
             return new SkillExecutionTrace(
@@ -150,7 +155,8 @@ namespace GourmetProject.Gameplay.Scoring
                 ActionScopeCells,
                 ScopeRegionCells,
                 ScopeRegionKind,
-                visualIndex);
+                visualIndex,
+                HasCategoryTargetFilter);
         }
 
         public SkillExecutionTrace WithVisualTargets(
@@ -181,7 +187,8 @@ namespace GourmetProject.Gameplay.Scoring
                 ActionScopeCells,
                 ScopeRegionCells,
                 ScopeRegionKind,
-                VisualIndex);
+                VisualIndex,
+                HasCategoryTargetFilter);
         }
 
         public SkillExecutionTrace WithRuntimeContext(
@@ -214,7 +221,8 @@ namespace GourmetProject.Gameplay.Scoring
                 ActionScopeCells,
                 ScopeRegionCells,
                 ScopeRegionKind,
-                VisualIndex);
+                VisualIndex,
+                HasCategoryTargetFilter);
         }
 
         public static SkillExecutionTrace Create(
@@ -257,7 +265,8 @@ namespace GourmetProject.Gameplay.Scoring
                 visual.ConditionCells,
                 visual.ActionScopeCells,
                 visual.ScopeRegionCells,
-                visual.ScopeRegionKind);
+                visual.ScopeRegionKind,
+                hasCategoryTargetFilter: SkillScopeResolver.HasCategoryTargetFilter(rule));
         }
 
         public static SkillExecutionTrace CreateWithOwnerFallback(
@@ -302,7 +311,8 @@ namespace GourmetProject.Gameplay.Scoring
                 trace.ActionScopeCells,
                 trace.ScopeRegionCells,
                 trace.ScopeRegionKind,
-                trace.VisualIndex);
+                trace.VisualIndex,
+                trace.HasCategoryTargetFilter);
         }
     }
 }

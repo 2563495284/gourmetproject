@@ -19,6 +19,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _flying;
         private int _sortingOrderOffset;
         private bool _visible = true;
+        private bool _chapterFocused;
 
         internal DishValueBadgeView View => _badge;
 
@@ -30,6 +31,8 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _instance = instance;
             _valueOverride = null;
+            _chapterFocused = false;
+            _badge?.SetChapterFocused(false);
         }
 
         internal void UpdateLayout(DishShape shape, float cellSize, float pitch)
@@ -49,7 +52,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _visualScale = DiningTableLayout.VisualScaleForCellSize(cellSize);
             _badge.transform.DOKill(false);
-            _badge.transform.localScale = ScaledBaseScale;
+            _badge.transform.localScale = PresentedBaseScale;
+            _badge.SetChapterFocused(_chapterFocused);
 
             float badgeTopExtent = _badge.TopExtent
                 * Mathf.Abs(_badge.transform.localScale.y);
@@ -115,7 +119,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             Transform badgeTransform = _badge.transform;
             badgeTransform.DOKill(false);
-            badgeTransform.localScale = ScaledBaseScale;
+            badgeTransform.localScale = PresentedBaseScale;
             badgeTransform.DOPunchScale(
                     Vector3.one * (scale * _visualScale),
                     duration,
@@ -124,7 +128,31 @@ namespace GourmetProject.Game.Presentation.Battle
                 .SetLink(_badge.gameObject);
         }
 
+        internal void SetChapterFocused(bool focused, float duration)
+        {
+            _chapterFocused = focused;
+            if (_badge == null)
+            {
+                return;
+            }
+
+            _badge.SetChapterFocused(focused);
+            Transform badgeTransform = _badge.transform;
+            badgeTransform.DOKill(false);
+            if (duration <= 0.0001f)
+            {
+                badgeTransform.localScale = PresentedBaseScale;
+                return;
+            }
+
+            badgeTransform.DOScale(PresentedBaseScale, duration)
+                .SetEase(focused ? Ease.OutBack : Ease.OutCubic)
+                .SetLink(_badge.gameObject);
+        }
+
         private Vector3 ScaledBaseScale => _baseScale * _visualScale;
+
+        private Vector3 PresentedBaseScale => ScaledBaseScale * (_chapterFocused ? 1.12f : 1f);
 
         private void ApplyVisible()
         {

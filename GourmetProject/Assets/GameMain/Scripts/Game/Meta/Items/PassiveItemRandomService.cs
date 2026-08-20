@@ -20,13 +20,21 @@ namespace GourmetProject.Game.Meta
         {
             tables ??= GameApp.Config.Tables;
             cfg.ItemQualityLuck config = tables?.TbItemQualityLuck?.GetOrDefault(quality);
-            if (config == null || config.BaseWeight <= 0f)
+            return QualityWeight(config, ItemLuckService.ClampLuck(tables, luck));
+        }
+
+        public static double QualityWeight(cfg.ItemQualityLuck config, float luck)
+        {
+            if (config == null)
             {
                 return 0d;
             }
 
-            float clampedLuck = ItemLuckService.ClampLuck(tables, luck);
-            return config.BaseWeight * Math.Exp(clampedLuck * config.LuckGrowth);
+            double raw = config.Constant + config.BaseWeight * Math.Exp(luck * config.LuckGrowth);
+            float min = Math.Min(config.MinWeight, config.MaxWeight);
+            float max = Math.Max(config.MinWeight, config.MaxWeight);
+            double weight = Math.Max(min, Math.Min(max, raw));
+            return weight > 0d ? weight : 0d;
         }
 
         public static List<ItemDefinition> Roll(
