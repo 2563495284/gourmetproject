@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using GourmetProject.Game.UI;
 using GourmetProject.Runtime;
 
@@ -11,7 +10,7 @@ namespace GourmetProject.Game.DevConsole.Commands
 
         public override string Args => string.Empty;
 
-        public override string Description => "打开多风味 Sprite 三方案实验室（仅 Editor / Development Build）。";
+        public override string Description => "打开多风味 Sprite 三方案实验室。";
 
         public override CmdResult Execute(string[] args)
         {
@@ -25,4 +24,3 @@ namespace GourmetProject.Game.DevConsole.Commands
         }
     }
 }
-#endif

@@ -34,6 +34,9 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SettlementStageLabelView _finaleLabelPrefab;
         [SerializeField] private SpriteRenderer _spritePrefab;
 
+        [Header("聚焦过渡")]
+        [SerializeField, Min(0f)] private float _dishFocusFadeDuration = 0.12f;
+
         private GameObject _groupSpotlight;
         private readonly List<GameObject> _heldLabels = new();
         private SettlementEffectGroup _resultHitSoundGroup;
@@ -577,7 +580,10 @@ namespace GourmetProject.Game.Presentation.Battle
             float duration,
             CancellationToken cancellationToken)
         {
-            EndGroupImmediate();
+            // 最终亮相直接解除上一组的聚焦状态，避免先全体压暗、再逐个恢复造成闪暗。
+            ClearFocus();
+            DestroyGroupSpotlight();
+            ClearExpiredTransients();
             GameApp.Audio.PlaySettlementHit(2, 1.18f);
             if (_dishViews != null)
             {
@@ -683,7 +689,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     : targetDishIds != null && targetDishIds.Contains(entry.Key)
                         ? ScopeDishBrightness
                         : DimmedDishBrightness;
-                view.SetSettlementFocus(brightness);
+                view.SetSettlementFocus(brightness, _dishFocusFadeDuration);
             }
         }
 
@@ -709,7 +715,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             foreach (DishPieceView view in _dishViews.Values)
             {
-                view?.SetSettlementFocus(DimmedDishBrightness);
+                view?.SetSettlementFocus(DimmedDishBrightness, _dishFocusFadeDuration);
             }
         }
 

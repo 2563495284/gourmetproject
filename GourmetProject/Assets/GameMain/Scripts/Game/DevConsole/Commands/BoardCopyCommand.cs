@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -297,4 +296,3 @@ namespace GourmetProject.Game.DevConsole.Commands
                + value.Exponent.ToString(CultureInfo.InvariantCulture);
     }
 }
-#endif

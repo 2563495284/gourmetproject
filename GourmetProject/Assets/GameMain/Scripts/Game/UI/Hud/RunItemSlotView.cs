@@ -20,15 +20,19 @@ namespace GourmetProject.Game.UI.Hud
         private static readonly int PulseId = Shader.PropertyToID("_Pulse");
         private static readonly int IsUsedId = Shader.PropertyToID("_IsUsed");
         private static readonly int IsWaxId = Shader.PropertyToID("_IsWax");
+        private static readonly int SeedId = Shader.PropertyToID("_Seed");
         private const string PassiveIconShaderName = "GourmetProject/PassiveItemIcon";
+        private const string NegativeCloudShaderName = "GourmetProject/NegativePassiveCloud";
         private const float PassivePulseDuration = 0.55f;
         [SerializeField] private Image _icon;
+        [SerializeField] private Image _negativeAura;
         [SerializeField] private Button _button;
         [SerializeField] private TipHoverTrigger _tipTrigger;
 
         [SerializeField] private TMP_Text _info;
 
         private Material _iconEffectMaterial;
+        private Material _negativeCloudMaterial;
         private Tween _pulseTween;
         private PassiveItemModel _boundPassiveModel;
         private string _fallbackInfoText = string.Empty;
@@ -106,6 +110,8 @@ namespace GourmetProject.Game.UI.Hud
                 _icon.sprite = icon;
                 ConfigureIconMaterial(usePassiveShader && icon != null, state?.Model);
             }
+
+            ConfigureNegativeAura(usePassiveShader && icon != null ? state?.Model : null);
 
             if (_button != null)
             {
@@ -193,6 +199,13 @@ namespace GourmetProject.Game.UI.Hud
                 Destroy(_iconEffectMaterial);
                 _iconEffectMaterial = null;
             }
+
+            if (_negativeCloudMaterial != null)
+            {
+                Destroy(_negativeCloudMaterial);
+                _negativeCloudMaterial = null;
+            }
+
         }
 
         private static Color EmptySlotColor => new Color(0.92f, 0.90f, 0.84f, 1f);
@@ -209,6 +222,12 @@ namespace GourmetProject.Game.UI.Hud
             {
                 Transform icon = transform.Find("Image/Icon");
                 _icon = icon != null ? icon.GetComponent<Image>() : null;
+            }
+
+            if (_negativeAura == null)
+            {
+                Transform aura = transform.Find("Image/NegativeAura");
+                _negativeAura = aura != null ? aura.GetComponent<Image>() : null;
             }
 
             if (_tipTrigger == null)
@@ -264,6 +283,51 @@ namespace GourmetProject.Game.UI.Hud
             _icon.material = material;
         }
 
+        private void ConfigureNegativeAura(PassiveItemModel model)
+        {
+            if (_negativeAura == null)
+            {
+                return;
+            }
+
+            bool isNegative = model?.Def?.IsNegative == true;
+            _negativeAura.enabled = isNegative;
+            _negativeAura.raycastTarget = false;
+            _negativeAura.maskable = false;
+            if (!isNegative)
+            {
+                _negativeAura.material = null;
+                return;
+            }
+
+            Material material = EnsureNegativeCloudMaterial();
+            if (material == null)
+            {
+                _negativeAura.enabled = false;
+                return;
+            }
+
+            material.SetFloat(SeedId, StableSeed(model.ItemId));
+            _negativeAura.material = material;
+        }
+
+        private static float StableSeed(string value)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u;
+                if (!string.IsNullOrEmpty(value))
+                {
+                    for (int i = 0; i < value.Length; i++)
+                    {
+                        hash = (hash ^ value[i]) * 16777619u;
+                    }
+                }
+
+                return (hash & 0xFFFFu) / 65535f * 1000f;
+            }
+        }
+
         private Material EnsureIconEffectMaterial()
         {
             if (_iconEffectMaterial != null)
@@ -283,6 +347,27 @@ namespace GourmetProject.Game.UI.Hud
                 hideFlags = HideFlags.DontSave,
             };
             return _iconEffectMaterial;
+        }
+
+        private Material EnsureNegativeCloudMaterial()
+        {
+            if (_negativeCloudMaterial != null)
+            {
+                return _negativeCloudMaterial;
+            }
+
+            Shader shader = Shader.Find(NegativeCloudShaderName);
+            if (shader == null)
+            {
+                return null;
+            }
+
+            _negativeCloudMaterial = new Material(shader)
+            {
+                name = $"{name}_NegativePassiveCloud",
+                hideFlags = HideFlags.DontSave,
+            };
+            return _negativeCloudMaterial;
         }
 
         private void BindPassiveModel(PassiveItemModel model)

@@ -47,6 +47,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const int PassiveSlotCapacity = 10;
         private const int PassiveSlotColumns = 2;
         private const float ServeTriggerCueDuration = 0.88f;
+        private const float SettlementLayoutDishBrightness = 0.72f;
         private const string TastingDebuffId = "debuff_tasting";
         // 回退视口半宽/半高（16:9 参考：orthographicSize 5.4）。
         private const float FallbackHalfW = 9.6f;
@@ -255,6 +256,10 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 CancelServeInteractions();
                 ClearDishScopeHighlights();
+            }
+            else if (!_settling)
+            {
+                ClearSettlementLayoutDishFocus();
             }
         }
 
@@ -3180,7 +3185,18 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     sequence.Append(_boardView.transform.DOMove(tween.Position, duration).SetEase(Ease.OutCubic));
                     sequence.Join(_boardView.transform.DOScale(Vector3.one * tween.Scale, duration).SetEase(Ease.OutCubic));
+                    appended = true;
                 }
+            }
+
+            if (appended)
+            {
+                sequence.Join(DOVirtual.Float(
+                        1f,
+                        SettlementLayoutDishBrightness,
+                        duration,
+                        SetSettlementLayoutDishFocus)
+                    .SetEase(Ease.OutCubic));
             }
 
             sequence.OnComplete(() =>
@@ -3197,6 +3213,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public void RestoreFoodLayoutImmediate()
         {
             KillFoodSettlementLayoutTween(complete: false);
+            ClearSettlementLayoutDishFocus();
             ResolveTableLayoutArea()?.ApplyRestLayout();
             if (_foodLayoutRestCaptured && _boardView != null)
             {
@@ -3283,12 +3300,35 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void KillFoodSettlementLayoutTween(bool complete)
         {
+            bool interrupted = !complete
+                && _foodSettlementLayoutTween != null
+                && _foodSettlementLayoutTween.IsActive();
             if (_foodSettlementLayoutTween != null && _foodSettlementLayoutTween.IsActive())
             {
                 _foodSettlementLayoutTween.Kill(complete);
             }
 
             _foodSettlementLayoutTween = null;
+            if (interrupted)
+            {
+                ClearSettlementLayoutDishFocus();
+            }
+        }
+
+        private void SetSettlementLayoutDishFocus(float brightness)
+        {
+            foreach (DishPieceView view in _dishViewsById.Values)
+            {
+                view?.SetSettlementFocus(brightness);
+            }
+        }
+
+        private void ClearSettlementLayoutDishFocus()
+        {
+            foreach (DishPieceView view in _dishViewsById.Values)
+            {
+                view?.ClearSettlementFocus();
+            }
         }
 
         private BattleTableLayoutArea ResolveTableLayoutArea()

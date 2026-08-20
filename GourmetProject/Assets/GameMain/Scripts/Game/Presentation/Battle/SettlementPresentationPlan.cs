@@ -320,7 +320,8 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             get
             {
-                int count = BaseBeats.Count + 1;
+                // 基础分在结算开始时直接写入 BattleInfo，不再占用表现节拍。
+                int count = 1;
                 for (int i = 0; i < Groups.Count; i++)
                 {
                     count += Groups[i].Lines.Count;

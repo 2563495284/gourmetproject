@@ -11,9 +11,7 @@ using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
 using UnityEngine;
 using UnityEngine.Serialization;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using UnityEngine.InputSystem;
-#endif
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -71,17 +69,13 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _externalPlaybackPaused;
         private bool _playbackHasSavedTimeScale;
         private float _playbackSavedTimeScale = 1f;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        [SerializeField, Tooltip("开发版结算调试：Space 暂停/继续时的当前状态。")]
+        [SerializeField, Tooltip("结算演出：Space 暂停/继续时的当前状态。")]
         private bool _debugScorePaused;
         private bool _debugScoreControlsActive;
         private GUIStyle _debugScoreOverlayStyle;
-#endif
 
         public bool IsPlaybackPaused => _externalPlaybackPaused
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
             || _debugScorePaused
-#endif
             ;
 
         /// <summary>暂停当前结算演出并保存进入暂停前的世界时间倍率。重复调用不会重复保存。</summary>
@@ -211,13 +205,11 @@ namespace GourmetProject.Game.Presentation.Battle
             var sweetTransferPlayback = new SweetTransferPlaybackState();
             bool completed = false;
             ResetPlaybackPauseState();
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
             using CancellationTokenSource debugScorePauseCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _debugScorePaused = false;
             _debugScoreControlsActive = true;
             ApplyPlaybackPauseState();
             _ = MonitorDebugScorePauseAsync(debugScorePauseCts.Token);
-#endif
             BeginSettlementPace();
             scoreFire?.Show();
             scoreFire?.SetPhase(_currentPacePhase, _currentSettlementSpeed);
@@ -229,54 +221,23 @@ namespace GourmetProject.Game.Presentation.Battle
                 playTransition: false);
             try
             {
-                var baseTasks = new List<Awaitable>(plan.BaseBeats.Count);
+                // 基础分属于结算初始值：一次性写入 BattleInfo，并静默初始化菜品数值。
+                // 不为每个菜品播放跳字、缩放、音效或结算节拍。
                 for (int i = 0; i < plan.BaseBeats.Count; i++)
                 {
-                    await WaitWhilePlaybackPausedAsync(cancellationToken);
                     SettlementBaseBeat beat = plan.BaseBeats[i];
-                    AdvanceSettlementCue(playback, SettlementCueKind.DishContribution);
-                    BigDouble beforeTotal = ledger.CurrentTotal;
                     BigDouble contribution = ledger.ApplyBase(beat.DishInstanceId, beat.BaseValue);
                     dishViews.TryGetValue(beat.DishInstanceId, out DishPieceView view);
-                    if (view != null)
-                    {
-                        view.SetDishValueBadge(contribution);
-                        view.PunchDishValueBadge(DishValuePunchScale, ScaleSettlementDuration(DishValuePunchDuration));
-                    }
+                    view?.SetDishValueBadge(contribution);
+                }
 
-                    renderScore?.Invoke(ledger.CurrentTotal);
-                    SettlementPacePhase nextPhase = ResolvePacePhase(
+                renderScore?.Invoke(ledger.CurrentTotal);
+                SetSettlementPaceWithoutFeedback(
+                    playback,
+                    ResolvePacePhase(
                         ledger.CurrentTotal,
                         session?.RequiredScore ?? 0,
-                        _currentPacePhase);
-                    bool reachedTarget = _currentPacePhase < SettlementPacePhase.TargetReached
-                        && nextPhase >= SettlementPacePhase.TargetReached;
-
-                    EmitScoreBeat(
-                        onBeat,
-                        view?.Instance?.Def?.Name ?? beat.DishId,
-                        beat.DishInstanceId,
-                        playback,
-                        ScoreLineKind.DishBase,
-                        beforeTotal,
-                        ledger.CurrentTotal,
-                        SettlementImpactTier.Base,
-                        1,
-                        reachedTarget);
-                    baseTasks.Add(_stage.PlayBaseAsync(
-                        view,
-                        view?.Instance?.Def?.Name ?? beat.DishId,
-                        contribution,
-                        ScaleSettlementDuration(_baseDishDuration),
-                        cancellationToken));
-                    PromoteSettlementPace(playback, nextPhase);
-                }
-
-                // 账本按正式顺序更新，但所有基础贡献动画均已在同一帧启动。
-                for (int i = 0; i < baseTasks.Count; i++)
-                {
-                    await baseTasks[i];
-                }
+                        _currentPacePhase));
 
                 for (int groupIndex = 0; groupIndex < plan.Groups.Count; )
                 {
@@ -430,10 +391,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 ClearSweetTransferBuffMarkers(dishViews);
                 onScope?.Invoke(default);
                 _stage?.ClearImmediate();
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 debugScorePauseCts.Cancel();
                 ClearDebugScorePauseState();
-#endif
                 ResetPlaybackPauseState();
                 RestoreSettlementPace();
                 _cameraFeedback?.RestoreImmediate();
@@ -445,7 +404,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
         private void OnGUI()
         {
             if (!_debugScoreControlsActive)
@@ -464,7 +422,6 @@ namespace GourmetProject.Game.Presentation.Battle
             GUI.Label(new Rect(16f, 16f, 360f, 30f), text, GetDebugScoreOverlayStyle());
             GUI.color = previousColor;
         }
-#endif
 
         private void OnDisable()
         {
@@ -2791,6 +2748,24 @@ namespace GourmetProject.Game.Presentation.Battle
                 playTransition: true);
         }
 
+        private void SetSettlementPaceWithoutFeedback(
+            SettlementPlaybackState playback,
+            SettlementPacePhase phase)
+        {
+            if (playback == null)
+            {
+                return;
+            }
+
+            _currentPacePhase = phase;
+            _currentSettlementSpeed = ConfiguredSpeedForPhase(phase);
+            playback.ScoreFire?.SetPhase(phase, _currentSettlementSpeed);
+            _cameraFeedback?.SetPhase(
+                phase,
+                _currentSettlementSpeed,
+                playTransition: false);
+        }
+
         private float ConfiguredSpeedForPhase(SettlementPacePhase phase)
         {
             float phaseSpeed = phase switch
@@ -3122,14 +3097,10 @@ namespace GourmetProject.Game.Presentation.Battle
         internal void ForceRestorePlaybackTimeScale()
         {
             _externalPlaybackPaused = false;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
             _debugScorePaused = false;
             _debugScoreControlsActive = false;
-#endif
             ApplyPlaybackPauseState();
         }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 
         private async Awaitable MonitorDebugScorePauseAsync(CancellationToken cancellationToken)
         {
@@ -3189,7 +3160,6 @@ namespace GourmetProject.Game.Presentation.Battle
             };
             return _debugScoreOverlayStyle;
         }
-#endif
 
         private static SettlementPlaybackPlan BuildSettlementPlaybackPlan(
             ScoreResult result,

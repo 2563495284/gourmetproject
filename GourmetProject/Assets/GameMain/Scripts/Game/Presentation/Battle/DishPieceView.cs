@@ -225,6 +225,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _triggerSweetTransferActivatorActive;
         private readonly Dictionary<SpriteRenderer, Color> _activeItemDimColors = new Dictionary<SpriteRenderer, Color>();
         private readonly Dictionary<SpriteRenderer, Color> _settlementFocusColors = new Dictionary<SpriteRenderer, Color>();
+        private Tween _settlementFocusTween;
+        private float _settlementFocusBrightness = 1f;
         private MaterialPropertyBlock _activeItemTransformBlock;
         private bool _debuffVisualSuppressed;
 
@@ -692,6 +694,11 @@ namespace GourmetProject.Game.Presentation.Battle
         /// </summary>
         public void SetSettlementFocus(float brightness)
         {
+            SetSettlementFocus(brightness, 0f);
+        }
+
+        public void SetSettlementFocus(float brightness, float duration)
+        {
             EnsureRefs();
             if (_spriteRenderer == null)
             {
@@ -704,9 +711,32 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     _settlementFocusColors[renderer] = renderer.color;
                 }
+
+                _settlementFocusBrightness = 1f;
             }
 
-            float factor = Mathf.Clamp01(brightness);
+            float targetBrightness = Mathf.Clamp01(brightness);
+            _settlementFocusTween?.Kill();
+            _settlementFocusTween = null;
+            if (duration <= 0.0001f)
+            {
+                ApplySettlementFocusBrightness(targetBrightness);
+                return;
+            }
+
+            _settlementFocusTween = DOVirtual.Float(
+                    _settlementFocusBrightness,
+                    targetBrightness,
+                    duration,
+                    ApplySettlementFocusBrightness)
+                .SetEase(Ease.OutQuad)
+                .SetLink(gameObject)
+                .OnComplete(() => _settlementFocusTween = null);
+        }
+
+        private void ApplySettlementFocusBrightness(float brightness)
+        {
+            _settlementFocusBrightness = Mathf.Clamp01(brightness);
             foreach (KeyValuePair<SpriteRenderer, Color> entry in _settlementFocusColors)
             {
                 if (entry.Key == null)
@@ -715,15 +745,17 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 Color color = entry.Value;
-                color.r *= factor;
-                color.g *= factor;
-                color.b *= factor;
+                color.r *= _settlementFocusBrightness;
+                color.g *= _settlementFocusBrightness;
+                color.b *= _settlementFocusBrightness;
                 entry.Key.color = color;
             }
         }
 
         public void ClearSettlementFocus()
         {
+            _settlementFocusTween?.Kill();
+            _settlementFocusTween = null;
             foreach (KeyValuePair<SpriteRenderer, Color> entry in _settlementFocusColors)
             {
                 if (entry.Key != null)
@@ -733,6 +765,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _settlementFocusColors.Clear();
+            _settlementFocusBrightness = 1f;
         }
 
         public void SetBodyRenderersEnabled(bool enabled)
