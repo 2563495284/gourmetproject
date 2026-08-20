@@ -27,6 +27,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         [SerializeField] private TMP_Text _weekText;
         [SerializeField] private TMP_Text _goldText;
+        [SerializeField] private TMP_Text _goldDeltaTemplate;
         [SerializeField] private RectTransform _heartContainer;
         [SerializeField] private Image _heartItemPrefab;
         [SerializeField] private Sprite _heartActiveSprite;
@@ -72,6 +73,13 @@ namespace GourmetProject.Game.UI.Battle.View
         private bool _pendingReachedTarget;
         private float _pendingSettlementSpeed = 1f;
         private Vector2 _settlementDeltaBasePosition;
+        private Tween _goldRollTween;
+        private Tween _goldPulseTween;
+        private int _goldPresentationValue;
+        private int _goldPresentationTarget;
+        private bool _goldPresentationInitialized;
+        private Vector3 _goldTextBaseScale = Vector3.one;
+        private int _activeGoldDeltaCount;
 
         public SettlementScoreFireView ScoreFire => _scoreFire;
         public RectTransform ViewRecipeButtonRect =>
@@ -120,6 +128,25 @@ namespace GourmetProject.Game.UI.Battle.View
             EnsureSettlementDeltaText();
             _scoreFire?.BindToScore(_scoreCurrentText != null ? _scoreCurrentText.rectTransform : null);
             ResetBossStatPresentation();
+            if (_goldText != null)
+            {
+                _goldTextBaseScale = _goldText.rectTransform.localScale;
+            }
+
+            _goldDeltaTemplate = _goldDeltaTemplate != null
+                ? _goldDeltaTemplate
+                : transform.Find("GoldDeltaTemplate")?.GetComponent<TMP_Text>();
+            if (_goldDeltaTemplate != null)
+            {
+                if (_goldText != null)
+                {
+                    _goldDeltaTemplate.font = _goldText.font;
+                    _goldDeltaTemplate.fontSharedMaterial = _goldText.fontSharedMaterial;
+                    _goldDeltaTemplate.alignment = TextAlignmentOptions.Center;
+                }
+
+                _goldDeltaTemplate.gameObject.SetActive(false);
+            }
         }
 
         private void EnsureTutorialScoreRects()
@@ -142,9 +169,168 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void OnDisable()
         {
+            CompleteGoldPresentation();
             CancelWeekIndexChange(complete: true);
             EndSettlementScorePresentation();
             ResetBossStatPresentation();
+        }
+
+        internal static int ResolveDisplayedGold(int runGold, float pendingGold, bool includePending)
+        {
+            int pending = includePending
+                ? (int)Math.Round(pendingGold, MidpointRounding.AwayFromZero)
+                : 0;
+            return Mathf.Max(0, runGold + pending);
+        }
+
+        internal void PresentGoldChange(int before, int after)
+        {
+            if (_goldText == null || before == after)
+            {
+                return;
+            }
+
+            if (!_goldPresentationInitialized)
+            {
+                SetGoldImmediate(before);
+            }
+
+            _goldRollTween?.Kill(false);
+            _goldPresentationTarget = after;
+            int rollFrom = _goldPresentationValue;
+            _goldRollTween = DOVirtual.Float(rollFrom, after, 0.45f, value =>
+                {
+                    _goldPresentationValue = (int)Math.Round(value, MidpointRounding.AwayFromZero);
+                    _goldText.text = _goldPresentationValue.ToString();
+                })
+                .SetEase(Ease.OutCubic)
+                .SetUpdate(true)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    _goldPresentationValue = _goldPresentationTarget;
+                    _goldText.text = _goldPresentationTarget.ToString();
+                    _goldRollTween = null;
+                });
+
+            _goldPulseTween?.Kill(false);
+            _goldText.rectTransform.localScale = _goldTextBaseScale;
+            _goldPulseTween = _goldText.rectTransform
+                .DOPunchScale(Vector3.one * 0.12f, 0.34f, 7, 0.65f)
+                .SetUpdate(true)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    if (_goldText != null)
+                    {
+                        _goldText.rectTransform.localScale = _goldTextBaseScale;
+                    }
+
+                    _goldPulseTween = null;
+                });
+
+            SpawnGoldDelta(after - before);
+        }
+
+        internal void PresentGoldTarget(int after)
+        {
+            int before = _goldPresentationInitialized ? _goldPresentationTarget : after;
+            PresentGoldChange(before, after);
+        }
+
+        private void SyncGold(int value)
+        {
+            if (!_goldPresentationInitialized)
+            {
+                SetGoldImmediate(value);
+                return;
+            }
+
+            if (_goldRollTween != null && _goldRollTween.IsActive() && value == _goldPresentationTarget)
+            {
+                return;
+            }
+
+            if (value != _goldPresentationTarget)
+            {
+                SetGoldImmediate(value);
+            }
+        }
+
+        private void SetGoldImmediate(int value)
+        {
+            _goldRollTween?.Kill(false);
+            _goldRollTween = null;
+            _goldPresentationInitialized = true;
+            _goldPresentationValue = value;
+            _goldPresentationTarget = value;
+            if (_goldText != null)
+            {
+                _goldText.text = value.ToString();
+            }
+        }
+
+        private void CompleteGoldPresentation()
+        {
+            _goldRollTween?.Kill(false);
+            _goldRollTween = null;
+            _goldPulseTween?.Kill(false);
+            _goldPulseTween = null;
+            if (_goldText != null)
+            {
+                _goldText.text = _goldPresentationTarget.ToString();
+                _goldText.rectTransform.localScale = _goldTextBaseScale;
+            }
+
+            _goldPresentationValue = _goldPresentationTarget;
+        }
+
+        private void SpawnGoldDelta(int delta)
+        {
+            if (_goldDeltaTemplate == null || delta == 0)
+            {
+                return;
+            }
+
+            TMP_Text label = Instantiate(
+                _goldDeltaTemplate,
+                _goldDeltaTemplate.rectTransform.parent,
+                worldPositionStays: false);
+            label.name = "GoldDelta";
+            label.text = delta > 0 ? $"+{delta}" : delta.ToString();
+            label.color = delta > 0
+                ? new Color32(87, 182, 95, 255)
+                : new Color32(217, 87, 79, 255);
+            label.gameObject.SetActive(true);
+
+            RectTransform rect = label.rectTransform;
+            Vector2 start = _goldDeltaTemplate.rectTransform.anchoredPosition
+                + new Vector2((_activeGoldDeltaCount % 3) * 8f, 0f);
+            rect.anchoredPosition = start;
+            rect.localScale = Vector3.one * 0.78f;
+            _activeGoldDeltaCount++;
+
+            CanvasGroup group = label.GetComponent<CanvasGroup>();
+            if (group == null)
+            {
+                group = label.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            group.alpha = 1f;
+            DOTween.Sequence()
+                .SetUpdate(true)
+                .SetLink(label.gameObject)
+                .Append(rect.DOScale(1.08f, 0.12f).SetEase(Ease.OutBack))
+                .Join(rect.DOAnchorPosY(start.y + 40f, 0.78f).SetEase(Ease.OutCubic))
+                .Insert(0.44f, group.DOFade(0f, 0.34f))
+                .OnComplete(() =>
+                {
+                    _activeGoldDeltaCount = Mathf.Max(0, _activeGoldDeltaCount - 1);
+                    if (label != null)
+                    {
+                        Destroy(label.gameObject);
+                    }
+                });
         }
 
         internal void CancelWeekIndexChange(bool complete)
@@ -540,18 +726,14 @@ namespace GourmetProject.Game.UI.Battle.View
                     : $"{run.WeekIndex}/{run.TotalWeeks}周";
             }
 
-            if (_goldText != null)
-            {
-                int displayedGold = inspection == BattleInspectionView.None
-                    && current == GameplayView.Food
-                    && session != null
-                    && !session.IsSettled
-                    ? Mathf.Max(0, run.Gold + (int)Math.Round(
-                        session.PendingGold,
-                        MidpointRounding.AwayFromZero))
-                    : run.Gold;
-                _goldText.text = displayedGold.ToString();
-            }
+            bool includePendingGold = inspection == BattleInspectionView.None
+                && current == GameplayView.Food
+                && session != null
+                && !session.IsSettled;
+            SyncGold(ResolveDisplayedGold(
+                run.Gold,
+                session != null ? session.PendingGold : 0f,
+                includePendingGold));
 
             RefreshHearts(run.HeartsRemaining, run.HeartCapacity);
 

@@ -363,6 +363,7 @@ namespace GourmetProject.Game.UI.Battle
                 _run.GoldChanged -= OnGoldChanged;
                 _run.ContentAcquired -= OnContentAcquired;
             }
+            SetSession(null);
             StopBattleMusic(0.15f);
             CancelBossPresentation();
             ResetBossBattlePresentation();
@@ -419,7 +420,7 @@ namespace GourmetProject.Game.UI.Battle
         public void BeginWeek()
         {
             UnsubscribeCakeLayerChanges();
-            _session = null;
+            SetSession(null);
             ResetFoodDiscardCapacityTracking();
             _loop?.BeginWeek();
         }
@@ -635,11 +636,11 @@ namespace GourmetProject.Game.UI.Battle
                 animate: false);
 
             UnsubscribeCakeLayerChanges();
-            _session = _run.BuildBattleSession(
+            SetSession(_run.BuildBattleSession(
                 _activeBattleRawRequiredScore,
                 _activeBattleModifier,
                 _activeBattleKey,
-                _activeBossDebuffId);
+                _activeBossDebuffId));
             BeginFoodDiscardCapacityTracking();
             _pendingSettlementCakeLayers = null;
             _session.DiningTable.Clear();
@@ -4386,7 +4387,7 @@ namespace GourmetProject.Game.UI.Battle
                 animate: _activeBattleIsBoss && _currentBossDebuff != null);
             SetMessage(string.Empty);
             UnsubscribeCakeLayerChanges();
-            _session = _run.BuildBattleSession(requiredScore, modifier, key, _activeBossDebuffId);
+            SetSession(_run.BuildBattleSession(requiredScore, modifier, key, _activeBossDebuffId));
             string analyticsBossId = _activeBattleIsBoss
                 ? FoodService.ResolveBoss(_run, actionContext?.Action)?.Id ?? string.Empty
                 : string.Empty;
@@ -5642,6 +5643,51 @@ namespace GourmetProject.Game.UI.Battle
             if (after > before)
             {
                 GameApp.Audio.PlayRandomCoin();
+            }
+
+            float pendingGold = _session != null ? _session.PendingGold : 0f;
+            bool includePending = IsPendingGoldVisible();
+            int displayedAfter = BattleInfoColumn.ResolveDisplayedGold(after, pendingGold, includePending);
+            _infoColumn?.PresentGoldTarget(displayedAfter);
+            RefreshPersistent(refreshItems: false);
+        }
+
+        private void OnPendingGoldChanged(float before, float after)
+        {
+            if (_run == null || !IsPendingGoldVisible())
+            {
+                return;
+            }
+
+            int displayedAfter = BattleInfoColumn.ResolveDisplayedGold(_run.Gold, after, includePending: true);
+            _infoColumn?.PresentGoldTarget(displayedAfter);
+            RefreshPersistent(refreshItems: false);
+        }
+
+        private bool IsPendingGoldVisible()
+        {
+            return ActiveInspectionView == BattleInspectionView.None
+                && _current == GameplayView.Food
+                && _session != null
+                && !_session.IsSettled;
+        }
+
+        private void SetSession(BattleSession session)
+        {
+            if (ReferenceEquals(_session, session))
+            {
+                return;
+            }
+
+            if (_session != null)
+            {
+                _session.PendingGoldChanged -= OnPendingGoldChanged;
+            }
+
+            _session = session;
+            if (_session != null)
+            {
+                _session.PendingGoldChanged += OnPendingGoldChanged;
             }
         }
 

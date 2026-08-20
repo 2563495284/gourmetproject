@@ -375,8 +375,27 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>结算结果（未结算时为 null）。</summary>
         public ScoreResult LastResult { get; private set; }
 
+        private float _pendingGold;
+
+        /// <summary>待入账金币发生变化时通知表现层；参数依次为变化前、变化后。</summary>
+        public event Action<float, float> PendingGoldChanged;
+
         /// <summary>本局待入账的金币增量（上菜 OnServe + 结算经济运营累积；由 Game 层写回 GameRun.Gold）。</summary>
-        public float PendingGold { get; private set; }
+        public float PendingGold
+        {
+            get => _pendingGold;
+            private set
+            {
+                if (Math.Abs(_pendingGold - value) < 0.0001f)
+                {
+                    return;
+                }
+
+                float before = _pendingGold;
+                _pendingGold = value;
+                PendingGoldChanged?.Invoke(before, _pendingGold);
+            }
+        }
 
         /// <summary>本次结算各 BaseId 的结算增量（供 Game 层累加进 GameRun 大局历史）。</summary>
         public IReadOnlyDictionary<string, int> LastSettledIncrements { get; private set; } = new Dictionary<string, int>();
