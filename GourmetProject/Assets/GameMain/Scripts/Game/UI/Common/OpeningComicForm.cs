@@ -234,6 +234,20 @@ namespace GourmetProject.Game.UI.Common
 
             try
             {
+                // 最终格已经由玩家确认，先同步落盘，再开始任何 UI 加载/等待。
+                // 否则后续流程若关闭本界面并取消 token，完成标记会被跳过，
+                // 本局结束再次进入菜单时就会重复播放。
+                try
+                {
+                    GameSaveData saveData = GameSavePersistence.Load();
+                    OpeningComicProgress.MarkCompleted(saveData.GuideProgress);
+                    GameSavePersistence.Save(saveData);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("[OpeningComicForm] Failed to persist completion: {0}", ex);
+                }
+
                 if (!GameApp.UI.HasUIForm(UIForms.MainMenu) && !GameApp.UI.IsLoadingUIForm(UIForms.MainMenu))
                 {
                     int serialId = GameApp.UI.OpenUIForm(UIForms.MainMenu, UIForms.GroupDefault);
@@ -254,17 +268,6 @@ namespace GourmetProject.Game.UI.Common
                 {
                     RestoreFinalPanelAfterOpenFailure();
                     return;
-                }
-
-                try
-                {
-                    GameSaveData saveData = GameSavePersistence.Load();
-                    OpeningComicProgress.MarkCompleted(saveData.GuideProgress);
-                    GameSavePersistence.Save(saveData);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("[OpeningComicForm] Failed to persist completion: {0}", ex);
                 }
 
                 _formCanvasGroup.blocksRaycasts = false;

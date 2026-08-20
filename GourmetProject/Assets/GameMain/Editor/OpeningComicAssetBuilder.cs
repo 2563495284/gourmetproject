@@ -2,7 +2,7 @@
 using System;
 using System.IO;
 using GourmetProject.Core.Save;
-using GourmetProject.Game.Meta;
+using GourmetProject.Game.Save;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Runtime;
 using TMPro;
@@ -59,9 +59,9 @@ namespace GourmetProject.Game.Editor
                 save = new JsonSaveService(Path.Combine(Application.persistentDataPath, "saves"), options);
             }
 
-            MetaProgressSaveData progress = MetaProgressPersistence.Load(save);
-            progress.OpeningComicCompletedVersion = 0;
-            MetaProgressPersistence.Save(save, progress);
+            GameSaveData data = GameSavePersistence.Load(save);
+            data.GuideProgress.OpeningComicCompletedVersion = 0;
+            GameSavePersistence.Save(save, data);
             Debug.Log("Opening comic seen flag reset. The comic will play on the next menu entry.");
         }
 
