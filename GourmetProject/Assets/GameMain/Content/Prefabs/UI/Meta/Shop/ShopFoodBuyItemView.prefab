@@ -106,7 +106,7 @@ MonoBehaviour:
   _dishPrefab: {fileID: 8981609610198139403, guid: 6cfc41d91a00c45199a5910983b1608b, type: 3}
   _badgePrefab: {fileID: 7481417833520339617, guid: 9ff8bbea9b3da4ac7ba3eda713852b62, type: 3}
   _pixelsPerCell: 128
-  _keepBottomAligned: 1
+  _keepBottomAligned: 0
   _prefabThreeByThreeSize: {x: 0, y: 0}
 --- !u!1 &3717989824151474258
 GameObject:
