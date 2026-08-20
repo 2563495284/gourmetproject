@@ -9,7 +9,8 @@
         "GourmetProject.Runtime",
         "BreakInfinity",
         "DOTween.Modules",
-        "UnityGameFramework.Runtime"
+        "UnityGameFramework.Runtime",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

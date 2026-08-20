@@ -50,6 +50,11 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(inputCatcher.color.a, Is.Zero.Within(0.001f));
             Assert.That(inputGroup.blocksRaycasts, Is.False);
 
+            RectTransform content = overlayPrefab.transform.Find("CenterViewport/Content") as RectTransform;
+            Assert.That(content, Is.Not.Null);
+            Assert.That(content.localScale.x, Is.EqualTo(0.5f).Within(0.001f));
+            Assert.That(content.localScale.y, Is.EqualTo(0.5f).Within(0.001f));
+
             foreach (TMP_Text text in overlayPrefab.GetComponentsInChildren<TMP_Text>(true))
             {
                 Assert.That(text.text, Does.Not.Contain("Boss").IgnoreCase, text.name);

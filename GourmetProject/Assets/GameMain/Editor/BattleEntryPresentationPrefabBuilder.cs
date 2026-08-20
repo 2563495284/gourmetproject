@@ -24,6 +24,7 @@ namespace GourmetProject.Editor
             "Assets/GameMain/Content/Resources/Sprites/UI/FengKuangCanTing/Panels/score_title.png";
         private const string TimelineThemePath =
             "Assets/GameMain/Content/Resources/Sprites/UI/TimelineFresh/TimelineAxisTheme.asset";
+        private const float ContentVisualScale = 0.5f;
 
         private static readonly Color Ink = new Color32(91, 57, 38, 255);
         private static readonly Color Danger = new Color32(194, 72, 65, 255);
@@ -75,6 +76,7 @@ namespace GourmetProject.Editor
             GameObject content = CreateUi("Content", viewport.transform);
             RectTransform contentRect = content.GetComponent<RectTransform>();
             Anchor(contentRect, new Vector2(0.5f, 0.5f), new Vector2(1120f, 860f), Vector2.zero);
+            contentRect.localScale = Vector3.one * ContentVisualScale;
             CanvasGroup contentGroup = content.AddComponent<CanvasGroup>();
             contentGroup.alpha = 0f;
             contentGroup.interactable = false;
