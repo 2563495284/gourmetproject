@@ -42,6 +42,9 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Sprite _interestNodeSprite;
         [SerializeField] private Sprite _bossNodeSprite;
         [SerializeField] private Sprite _eventNodeSprite;
+        [SerializeField] private Sprite _rewardNodeSprite;
+        [SerializeField] private Sprite _slotNodeSprite;
+        [SerializeField] private Sprite _negativeNodeSprite;
 
         private readonly Dictionary<int, TimelineDayPointView> _dayPoints =
             new Dictionary<int, TimelineDayPointView>();
@@ -1400,10 +1403,10 @@ namespace GourmetProject.Game.UI.Hud
                 ActionDisplayKind.Boss => _bossNodeSprite,
                 ActionDisplayKind.Interest => _interestNodeSprite,
                 ActionDisplayKind.Shop => _shopNodeSprite,
-                ActionDisplayKind.Event
-                    or ActionDisplayKind.Reward
-                    or ActionDisplayKind.Negative
-                    or ActionDisplayKind.Slot => _eventNodeSprite,
+                ActionDisplayKind.Reward => _rewardNodeSprite,
+                ActionDisplayKind.Slot => _slotNodeSprite,
+                ActionDisplayKind.Negative => _negativeNodeSprite,
+                ActionDisplayKind.Event => _eventNodeSprite,
                 _ => null,
             };
 
@@ -1425,10 +1428,10 @@ namespace GourmetProject.Game.UI.Hud
                 ActionDisplayKind.Boss => "icon_axis_boss",
                 ActionDisplayKind.Interest => "icon_axis_interest",
                 ActionDisplayKind.Shop => "icon_axis_shop",
-                ActionDisplayKind.Event
-                    or ActionDisplayKind.Reward
-                    or ActionDisplayKind.Negative
-                    or ActionDisplayKind.Slot => "icon_axis_event",
+                ActionDisplayKind.Reward => "icon_axis_reward",
+                ActionDisplayKind.Slot => "icon_axis_slot",
+                ActionDisplayKind.Negative => "icon_axis_negative",
+                ActionDisplayKind.Event => "icon_axis_event",
                 _ => string.Empty,
             };
         }

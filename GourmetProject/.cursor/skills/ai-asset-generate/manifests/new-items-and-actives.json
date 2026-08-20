@@ -1,0 +1,95 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "90s American cable TV cartoon style, thick clean black ink outlines, flat cel animation colors, hand-drawn 2D animation look, polished Unity game item icon quality, playful restaurant roguelike prop icon, centered composition, single readable object or compact prop bundle, no characters, no face, no eyes, no mouth, no limbs, no mascot treatment, no readable text, no letters, no numbers, no logo, no watermark, no UI frame, no card border, no circular badge background, avoid hot pink, avoid magenta, avoid purple objects",
+  "typeDefaults": {
+    "item": {
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/Items",
+      "postprocess": "magenta-alpha",
+      "background": "opaque",
+      "quality": "high"
+    }
+  },
+  "typePromptPrefixes": {
+    "item": "Item icon rule: isolated game item sprite on a perfectly flat solid #FF00FF chroma key background. The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation. Do not use #FF00FF, hot pink, magenta, or purple anywhere in the item. Keep the entire object fully inside the canvas with generous transparent-safe padding. No cast shadow, no contact shadow, no table, no grid lines, no checkerboard."
+  },
+  "assets": [
+    {
+      "name": "count_as_plus1",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a smaller gold-rimmed dessert tasting platter with four distinct mini sweets in separate compartments, extra serving platter restaurant decoration icon, compact readable prop, no letters or numbers"
+    },
+    {
+      "name": "self_count_flat",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a wooden tabletop scoreboard with blank wooden tiles stacked in rows like portion counters, restaurant portion score plaque decoration, no writing, no letters, no numbers"
+    },
+    {
+      "name": "self_count_mult",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a three-tier metal plate stand holding empty cream plates that get larger toward the top, restaurant multiplier serving rack decoration, no food faces, no letters, no numbers"
+    },
+    {
+      "name": "edge_count_as",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a ring of small cream side dishes arranged along the rim of a round wooden serving board, edge-of-table plates decoration, generous padding, no letters, no numbers"
+    },
+    {
+      "name": "transfer_target_flat",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a candy skewer stick piercing a wrapped hard candy and a chocolate cube, sweet-transfer candy pick decoration, bright wrapper twists, no letters, no numbers"
+    },
+    {
+      "name": "transfer_source_flat",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a glass sugar pourer jar with a metal spout lid, filled with colorful hard candies, restaurant candy serving jar decoration, no letters, no numbers"
+    },
+    {
+      "name": "cake_req_minus_30",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "an extra-tiny fluted cake mold next to an even smaller two-layer mini cake with cream and one strawberry, tinier than a cupcake mold, cake decoration icon, no letters, no numbers"
+    },
+    {
+      "name": "random_two_as_cake",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "two blank wooden cake lottery sticks in a tiny ceramic cup beside a small cake slice, random cake-pick decoration, no writing on the sticks, no letters, no numbers"
+    },
+    {
+      "name": "cake_on_settle",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "a cake knife resting on a sliced layered cake showing cream and sponge cross-section, one clean wedge cut out, restaurant cake-cutting decoration, no letters, no numbers"
+    },
+    {
+      "name": "active_add_restore_heart_node",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "timeline add restore-heart node active item icon matching other timeline tickets: a pale cyan notched coupon ticket with perforated stub, a small red first-aid heart charm and a white plus sign pinning a new glowing route node onto a dotted route line, blank paper with no writing, no letters, no numbers"
+    },
+    {
+      "name": "active_execute_future_node",
+      "type": "item",
+      "requestSize": "1024x1024",
+      "targetSize": "512x512",
+      "prompt": "timeline copy-node active item icon: a pale cyan notched coupon ticket, two identical round route-node discs side by side as if duplicated, a small copy stamp and overlapping duplicate silhouettes, NOT a forward skip arrow, blank paper with no writing, no letters, no numbers"
+    }
+  ]
+}

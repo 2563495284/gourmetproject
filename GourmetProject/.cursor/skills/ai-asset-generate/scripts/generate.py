@@ -145,12 +145,56 @@ def read_inline_image(part: dict) -> tuple[bytes, str] | None:
     return base64.b64decode(image_data), mime_type
 
 
-def request_gemini_image(api_key: str, base_url: str, model: str, prompt: str, timeout: int) -> list[tuple[bytes, str]]:
+def mime_for_path(path: Path) -> str:
+    suffix = path.suffix.lower()
+    if suffix in {".jpg", ".jpeg"}:
+        return "image/jpeg"
+    if suffix == ".webp":
+        return "image/webp"
+    return "image/png"
+
+
+def reference_image_parts(paths: list[Path] | None) -> list[dict]:
+    parts: list[dict] = []
+    for path in paths or []:
+        parts.append(
+            {
+                "inline_data": {
+                    "mime_type": mime_for_path(path),
+                    "data": base64.b64encode(path.read_bytes()).decode("ascii"),
+                }
+            }
+        )
+    return parts
+
+
+def resolve_reference_images(values: list[str] | None) -> list[Path]:
+    paths: list[Path] = []
+    for value in values or []:
+        path = Path(value)
+        if not path.is_absolute():
+            path = PROJECT_ROOT / path
+        if not path.exists():
+            raise RuntimeError(f"Reference image not found: {path}")
+        paths.append(path)
+    return paths
+
+
+def request_gemini_image(
+    api_key: str,
+    base_url: str,
+    model: str,
+    prompt: str,
+    timeout: int,
+    reference_images: list[Path] | None = None,
+) -> list[tuple[bytes, str]]:
+    parts = reference_image_parts(reference_images)
+    parts.append({"text": prompt})
     payload = {
         "contents": [
             {
                 "role": "user",
-                "parts": [{"text": prompt}],
+                "parts": parts,
             }
         ],
         "generationConfig": {
@@ -293,8 +337,11 @@ def generate(
     retries: int,
     background: str,
     output_format: str,
+    reference_images: list[Path] | None = None,
 ) -> list[tuple[bytes, str]]:
     print(f"  Generating {n} image(s) with {provider}/{model} at {request_size} (quality={quality}, timeout={timeout}s)...")
+    if reference_images:
+        print(f"  References: {', '.join(path.name for path in reference_images)}")
     print(f"  Prompt: {prompt[:120]}{'...' if len(prompt) > 120 else ''}")
 
     images: list[tuple[bytes, str]] = []
@@ -309,7 +356,9 @@ def generate(
                         api_key, base_url, model, prompt, request_size, quality, background, output_format, timeout
                     )
                 else:
-                    generated = request_gemini_image(api_key, base_url, model, prompt, timeout)
+                    generated = request_gemini_image(
+                        api_key, base_url, model, prompt, timeout, reference_images
+                    )
                 elapsed = time.time() - t0
                 for raw, mime_type in generated:
                     images.append((raw, mime_type))
@@ -595,6 +644,7 @@ def main():
     parser.add_argument("--manifest", help="Path to JSON manifest for batch generation")
     parser.add_argument("--only", nargs="*", default=[], help="Generate only these manifest asset names")
     parser.add_argument("--style-prefix", help="Global style prefix prepended to every prompt")
+    parser.add_argument("--reference", nargs="*", default=[], help="Optional local reference images for Gemini")
     parser.add_argument("--transparent", action="store_true",
                         help="Add transparent background hint to prompt")
     parser.add_argument("--provider", default=os.environ.get("IMAGE_PROVIDER", "auto"),
@@ -651,6 +701,7 @@ def main():
             manifest_model = manifest.get("model", model)
             type_defaults = manifest.get("typeDefaults", {})
             type_prompt_prefixes = manifest.get("typePromptPrefixes", {})
+            manifest_references = manifest.get("referenceImages", args.reference)
             entries = expand_entries(selected_entries(manifest.get("assets", []), set(args.only)))
 
             if not entries:
@@ -685,6 +736,9 @@ def main():
 
                 full_prompt = build_prompt(prompt, asset_type, style_prefix, transparent, prompt_size)
                 output_dir = output_dir_for(asset_type, entry.get("animationName", name), entry.get("outputDir") or args.output_dir)
+                reference_images = resolve_reference_images(
+                    entry.get("referenceImages") or manifest_references
+                )
 
                 print(f"\n[{name}] ({asset_type})")
                 if args.dry_run:
@@ -707,6 +761,7 @@ def main():
                         args.retries,
                         background,
                         output_format,
+                        reference_images,
                     )
                     saved = save_images(images, output_dir, name, target_size, postprocess, target_mode, entry.get("shapeRows"))
                     total += len(saved)
@@ -754,6 +809,7 @@ def main():
             args.retries,
             background,
             args.output_format,
+            resolve_reference_images(args.reference),
         )
         save_images(images, output_dir, args.name, target_size, args.postprocess, target_mode)
     except RuntimeError as error:

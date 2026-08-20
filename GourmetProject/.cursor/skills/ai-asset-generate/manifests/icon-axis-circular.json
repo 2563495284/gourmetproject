@@ -1,0 +1,69 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "referenceImages": [
+    "Art/FoodVisualSamples/storybook_full/final/matcha_cake.png"
+  ],
+  "stylePrefix": "Warm children's picture-book gouache matching GourmetProject food sprites, as a 30-pixel timeline token. Large color masses only, 2 or 3 solid tones per object, matte paint, slightly irregular dark-brown contour. Hand-drawn, appetizing, very concise. No text, no letters, no numbers, no logo, no watermark.",
+  "typeDefaults": {
+    "ui": {
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/UI",
+      "outputFormat": "png",
+      "quality": "high",
+      "requestSize": "1024x1024",
+      "targetSize": "256x256",
+      "targetMode": "resize",
+      "postprocess": "magenta-alpha",
+      "background": "opaque"
+    }
+  },
+  "typePromptPrefixes": {
+    "ui": "Image 1 is the official matcha-cake paint master. Keep only its warm gouache colors and dark-brown contour. Do not copy its pores or garnish specks. Circular cream disc filling the square canvas, one thin dark-brown rim, one huge centered subject. Hard rule: no tiny color patches. No dots, no specks, no garnish, no candy sprinkles, no steam curls, no inner fold lines, no letters. Every painted region must be large enough to stay clear at 30 pixels; if a mark would be smaller than one-fifth of the disc, omit it. Outside the circle is only perfectly flat solid #FF00FF magenta. Do not use #FF00FF inside. No face, no eyes, no mouth, no character, no typography."
+  },
+  "assets": [
+    {
+      "name": "icon_axis_shop",
+      "type": "ui",
+      "prompt": "shop token: one large stall block and a two-stripe awning only. No cake, no plate, no tiny food"
+    },
+    {
+      "name": "icon_axis_interest",
+      "type": "ui",
+      "referenceImages": [
+        "Art/GeneratedUiIcons/backup-before-large-mass/icon_axis_interest.png"
+      ],
+      "prompt": "Keep this coin pouch and gold coin. Flatten into two solid greens and one solid gold disc. No cake, no brush speckles, no digits"
+    },
+    {
+      "name": "icon_axis_boss",
+      "type": "ui",
+      "prompt": "boss feast token: one large roast drumstick filling most of a simple round plate. No specks, no sauce drops"
+    },
+    {
+      "name": "icon_axis_event",
+      "type": "ui",
+      "prompt": "event token: one LARGE silver cloche filling most of the disc, simple round plate. No scallops, no tiny highlight dots, not a bun"
+    },
+    {
+      "name": "icon_axis_reward",
+      "type": "ui",
+      "prompt": "lucky reward token: one large cubic gift box and one simple two-loop bow. No inner fold lines, no sparkles, must stay a present box, perfect circle disc"
+    },
+    {
+      "name": "icon_axis_slot",
+      "type": "ui",
+      "referenceImages": [
+        "Art/GeneratedUiIcons/backup-before-large-mass/icon_axis_slot.png"
+      ],
+      "prompt": "Keep this red gumball machine. Globe filled by two large candy balls only. No tiny balls, no letters, no G, no digits"
+    },
+    {
+      "name": "icon_axis_negative",
+      "type": "ui",
+      "referenceImages": [
+        "Art/GeneratedUiIcons/backup-before-large-mass/icon_axis_negative.png"
+      ],
+      "prompt": "negative token: keep this frying pan, enlarge the burnt patch into one big brown mass. No steam, no cake, not matcha cake"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.1-flash-image-preview",
+  "stylePrefix": "warm cozy hand-painted 2D game event illustration, polished casual restaurant sim art, soft cel shading, thick clean outlines, inviting golden interior lighting, painterly texture, full-bleed 1536x1024 landscape, no logo, no watermark, no readable text, no letters, no numbers, no UI buttons",
+  "typeDefaults": {
+    "ui": {
+      "outputDir": "Assets/GameMain/Content/Resources/Sprites/UI/Events",
+      "outputFormat": "png",
+      "quality": "high",
+      "requestSize": "1536x1024",
+      "targetSize": "1536x1024",
+      "targetMode": "resize",
+      "background": "opaque",
+      "postprocess": "none"
+    }
+  },
+  "typePromptPrefixes": {
+    "ui": "Event illustration layout rule: the painted scene occupies only the upper 40 percent of the canvas. The lower 60 percent MUST be a large empty cream parchment rectangle with subtle paper grain, completely blank, reserved for game UI text. Soft dark vignette frame around the whole image. Do not put characters, food, or props into the lower parchment area."
+  },
+  "assets": [
+    {
+      "name": "event_last_supper",
+      "type": "ui",
+      "prompt": "A long wooden banquet table in a restaurant back room at dusk. Twelve empty chef place settings with plates, wine cups, and cutlery around the table. One central wine cup is being lifted. The mood is tense: knocked-over salt, pointing shadows, a secret recipe scroll half-hidden under a napkin. No close-up faces dominating the frame; keep chefs as small background figures if needed. Warm candlelight, cream and burgundy colors."
+    },
+    {
+      "name": "event_twin_peaks_diner",
+      "type": "ui",
+      "prompt": "Rainy night American diner interior. A black coffee pot steaming on the counter, one last slice of cherry pie under a glass dome, red vinyl stools, neon diner glow through wet window glass. In the corner, a mysterious wooden log wrapped in red cloth sits on a booth seat like a cryptic prop, not a mascot face. Moody teal and cherry-red palette, no readable neon lettering."
+    },
+    {
+      "name": "event_chuka_ichiban_trial",
+      "type": "ui",
+      "prompt": "A Chinese restaurant kitchen at closing time. One last stove burner still blazing with golden fire. A huge steamer basket, a wok of golden fried rice catching the light, and a bowl of mapo tofu nearby. Warm steam and heroic golden glow from the last flame. Empty dining hall in the background. No readable shop signs. Appetizing, dramatic, cozy."
+    },
+    {
+      "name": "event_midnight_tasting",
+      "type": "ui",
+      "prompt": "Late-night Japanese diner counter. A kind chef in a white headscarf presents a plate of bright red octopus-shaped sausages. A steaming bowl of instant ramen sits on the wooden counter. Night city lights and a crescent moon through the window. Cozy, nostalgic, warm amber interior versus cool night blue outside."
+    },
+    {
+      "name": "event_ancestral_recipe_page",
+      "type": "ui",
+      "prompt": "A bright western restaurant table. A waiter in vest and bowtie pours a pitcher of water onto a huge garden salad, and the greens magically sprout larger as the water hits them, cherry tomatoes bouncing. A curious diner watches. Fresh, comedic, leafy green and cream palette."
+    },
+    {
+      "name": "event_kitchen_god_statue",
+      "type": "ui",
+      "prompt": "A bakery interior crisis. A worried baker looks at a smartphone showing angry red marks. Through the shop window, a rival waitress in black and white giggles at her own phone. Cake display case, brass scale, muffins under a glass dome. Theme is online rumor and restaurant rivalry, not a kitchen god statue."
+    },
+    {
+      "name": "event_crossroad_sign",
+      "type": "ui",
+      "prompt": "A cooking challenge counter. A steaming brown pot of mushroom stew with three distinct mushrooms rising from it: a plain white cap, a red cap with white spots, and a green cap with white spots. A proud chef presents the pot. No road sign, no crossroads. Earthy browns, reds, and forest greens."
+    },
+    {
+      "name": "event_new_event",
+      "type": "ui",
+      "prompt": "An exclusive members-only restaurant private room. A waiter presents hamburger steak with brown sauce. Already on the table: a glass of welcome wine and a plate of colorful vegetable sticks with dip. Deep red curtains, intimate golden lighting, upscale but cozy. No readable menus."
+    }
+  ]
+}
