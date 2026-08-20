@@ -963,7 +963,7 @@ namespace GourmetProject.Game.UI.Hud
             if (_currentDayText != null)
             {
                 _currentDayText.text =
-                    $"第{Mathf.Max(0f, day).ToString("0.#", CultureInfo.InvariantCulture)}天";
+                    $"第{Mathf.Max(0f, day).ToString("0.0", CultureInfo.InvariantCulture)}天";
             }
         }
 
