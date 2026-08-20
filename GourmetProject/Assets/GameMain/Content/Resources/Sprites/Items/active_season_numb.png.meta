@@ -115,10 +115,10 @@ TextureImporter:
       name: active_season_numb_0
       rect:
         serializedVersion: 2
-        x: 158
-        y: 111
-        width: 203
-        height: 294
+        x: 76
+        y: 28
+        width: 361
+        height: 444
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

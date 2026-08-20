@@ -103,10 +103,10 @@ TextureImporter:
       name: active_season_sour_0
       rect:
         serializedVersion: 2
-        x: 103
-        y: 88
-        width: 307
-        height: 339
+        x: 79
+        y: 20
+        width: 371
+        height: 462
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

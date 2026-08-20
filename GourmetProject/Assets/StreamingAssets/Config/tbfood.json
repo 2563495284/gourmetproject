@@ -51,7 +51,7 @@
     "actionKind": 1,
     "rewardKind": 1,
     "rewardPackageId": "reward_food_hard_gold",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.3
   },
   {
     "id": "food_hard_fragment",
@@ -60,7 +60,7 @@
     "actionKind": 1,
     "rewardKind": 5,
     "rewardPackageId": "reward_food_hard_fragment",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.3
   },
   {
     "id": "food_hard_passive",
@@ -69,7 +69,7 @@
     "actionKind": 1,
     "rewardKind": 3,
     "rewardPackageId": "reward_food_hard_passive",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.3
   },
   {
     "id": "food_hard_active_strengthen",
@@ -78,7 +78,7 @@
     "actionKind": 1,
     "rewardKind": 6,
     "rewardPackageId": "reward_food_hard_active_strengthen",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.3
   },
   {
     "id": "food_hard_active_ajust",
@@ -87,7 +87,7 @@
     "actionKind": 1,
     "rewardKind": 7,
     "rewardPackageId": "reward_food_hard_active_adjust",
-    "targetScoreHiddenOffset": 0.5
+    "targetScoreHiddenOffset": 0.3
   },
   {
     "id": "food_boss",
