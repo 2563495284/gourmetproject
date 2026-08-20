@@ -19,11 +19,11 @@
   {
     "id": "item_gold_random",
     "name": "陶瓷招财猫",
-    "desc": "获得[gold]30～150金币[/gold]",
+    "desc": "获得[gold]40～120金币[/gold]",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 0,
-    "effectParam": "range:30,150",
+    "effectParam": "range:40,120",
     "baseWeight": 300,
     "targetScoreHiddenOffset": 0,
     "dishHiddenOffset": 0,
@@ -769,7 +769,7 @@
   {
     "id": "item_flavor_remove_gold",
     "name": "复古台秤",
-    "desc": "移除1个食物的风味\n获得[gold]100金币[/gold]",
+    "desc": "随机移除1个食物的风味\n获得[gold]100金币[/gold]",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 100,
@@ -786,7 +786,7 @@
   {
     "id": "item_flavor_remove_double",
     "name": "小石磨",
-    "desc": "移除1个食物的风味\n其[strong]分数[/strong]翻倍",
+    "desc": "随机移除1个食物的风味\n其[strong]分数[/strong]翻倍",
     "quality": 0,
     "specialTags": 0,
     "effectValue": 2,
