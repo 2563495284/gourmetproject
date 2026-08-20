@@ -83,6 +83,8 @@ namespace GourmetProject.Game.UI.Battle
         [Tooltip("独立的中部世界遮罩；范围与 Center 一致，不包含左右常驻栏。")]
         [SerializeField] private CanvasGroup _centerTransitionCover;
         [SerializeField] private GameplayTransitionSettings _pageTransitionSettings = new GameplayTransitionSettings();
+        [Tooltip("遮黑期间展示最终目标美味值与星级评鉴规则的全屏输入覆盖层。")]
+        [SerializeField] private BattleEntryPresentationView _battleEntryPresentation;
 
         [Header("DiningTable Area (餐桌锁定区)")]
         [Tooltip("HUD 里的空区矩形：世界餐桌将 fit 并居中锁定在该屏幕区域内。")]
@@ -293,6 +295,12 @@ namespace GourmetProject.Game.UI.Battle
                     "BattleForm requires the nested BossDebuffPresentationOverlay prefab reference.");
             }
             _bossPresentation.EnsureBuilt();
+            if (_battleEntryPresentation == null)
+            {
+                throw new MissingReferenceException(
+                    "BattleForm requires the nested BattleEntryPresentationOverlay prefab reference.");
+            }
+            _battleEntryPresentation.EnsureBuilt();
 
             _axisBinder = new TimelineAxisBinder(
                 _timelineAxis,
@@ -374,6 +382,8 @@ namespace GourmetProject.Game.UI.Battle
             _settlementReveal = null;
             _loop = null;
             _switchRequestId++;
+            _pageRouter?.CancelTransition();
+            _battleEntryPresentation?.ResetImmediate();
             CancelPassivePresentations();
             _activeItemUse?.Dispose();
             _rewardPeekOnly = false;
@@ -1326,7 +1336,12 @@ namespace GourmetProject.Game.UI.Battle
         /// 切到某一中部态：只对中部内容区 <see cref="_center"/> 做 DOTween 渐隐渐显，常驻壳（左/右/时间轴）不动。
         /// 内容交换（隐藏旧面板 + 启用新面板 + 重建）集中在淡出完成后的 <see cref="GameplayViewStateMachine.Apply"/> 里执行。
         /// </summary>
-        private void SwitchTo(GameplayView next, Action buildCenter = null, Action onShown = null)
+        private void SwitchTo(
+            GameplayView next,
+            Action buildCenter = null,
+            Action onShown = null,
+            Func<Tween> coveredPresentation = null,
+            Action<Action> bindCoveredSkip = null)
         {
             int requestId = ++_switchRequestId;
             _passivePresentations.WhenIdle(() =>
@@ -1336,11 +1351,16 @@ namespace GourmetProject.Game.UI.Battle
                     return;
                 }
 
-                _pageRouter?.SwitchTo(next, buildCenter, () =>
-                {
-                    SyncPageStateFromRouter();
-                    onShown?.Invoke();
-                });
+                _pageRouter?.SwitchTo(
+                    next,
+                    buildCenter,
+                    () =>
+                    {
+                        SyncPageStateFromRouter();
+                        onShown?.Invoke();
+                    },
+                    coveredPresentation,
+                    bindCoveredSkip);
                 SyncPageStateFromRouter();
             });
         }
@@ -4374,6 +4394,8 @@ namespace GourmetProject.Game.UI.Battle
             string bossDebuffId,
             ActionExecutionContext actionContext)
         {
+            _pageRouter?.CancelTransition();
+            _battleEntryPresentation?.ResetImmediate();
             CancelBossPresentation();
             HideResultPanel();
             _infoColumn?.SetBattleScoreOverride(null);
@@ -4384,13 +4406,13 @@ namespace GourmetProject.Game.UI.Battle
             _activeBattleKey = key ?? string.Empty;
             _activeBattleIsBoss = IsBossFoodAction(actionContext);
             _currentBossDebuff = _activeBattleIsBoss ? ResolveBossDebuff(_activeBossDebuffId) : null;
-            _infoColumn?.SetBossBattlePresentation(
-                _currentBossDebuff,
-                _activeBattleIsBoss,
-                animate: _activeBattleIsBoss && _currentBossDebuff != null);
+            _infoColumn?.SetBossBattlePresentation(null, false, animate: false);
             SetMessage(string.Empty);
             UnsubscribeCakeLayerChanges();
             SetSession(_run.BuildBattleSession(requiredScore, modifier, key, _activeBossDebuffId));
+            _battleEntryPresentation.Prepare(
+                _session.RequiredScore,
+                _activeBattleIsBoss ? _currentBossDebuff : null);
             string analyticsBossId = _activeBattleIsBoss
                 ? FoodService.ResolveBoss(_run, actionContext?.Action)?.Id ?? string.Empty
                 : string.Empty;
@@ -4419,6 +4441,7 @@ namespace GourmetProject.Game.UI.Battle
             _world = BattleWorldController.Instance;
             if (_world == null)
             {
+                _battleEntryPresentation.ResetImmediate();
                 Log.Error("BattleForm: battle scene controller not found (scene not loaded?).", Tag);
                 return;
             }
@@ -4464,6 +4487,10 @@ namespace GourmetProject.Game.UI.Battle
                 },
                 () =>
                 {
+                    _infoColumn?.SetBossBattlePresentation(
+                        _currentBossDebuff,
+                        _activeBattleIsBoss,
+                        animate: _activeBattleIsBoss && _currentBossDebuff != null);
                     if (runOpeningPresentation)
                     {
                         _ = PlayBossOpeningPresentationAsync(bossPlan);
@@ -4472,7 +4499,9 @@ namespace GourmetProject.Game.UI.Battle
                     {
                         PlayBattleTutorialIfNeeded();
                     }
-                });
+                },
+                _battleEntryPresentation.BuildPresentationTween,
+                _battleEntryPresentation.BindSkipHandler);
         }
 
         private void OnHappyCakeLayersChanged(int before, int after)

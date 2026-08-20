@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using DG.Tweening;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.Run;
@@ -80,10 +81,16 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         private Tween _transitionTween;
         private Action _pendingSwitchTo;
+        private CancellationTokenSource _transitionCancellation;
 
         GameRun IBattleViewHost.Run => _host.Run;
 
-        public void SwitchTo(GameplayView next, Action buildCenter = null, Action onShown = null)
+        public void SwitchTo(
+            GameplayView next,
+            Action buildCenter = null,
+            Action onShown = null,
+            Func<Tween> coveredPresentation = null,
+            Action<Action> bindCoveredSkip = null)
         {
             if (_host.Run == null)
             {
@@ -92,7 +99,12 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
             if (IsTransitioning)
             {
-                _pendingSwitchTo = () => SwitchTo(next, buildCenter, onShown);
+                _pendingSwitchTo = () => SwitchTo(
+                    next,
+                    buildCenter,
+                    onShown,
+                    coveredPresentation,
+                    bindCoveredSkip);
                 return;
             }
 
@@ -119,6 +131,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
             };
             Action done = () =>
             {
+                _transitionCancellation?.Dispose();
+                _transitionCancellation = null;
                 _transitionTween = null;
                 onShown?.Invoke();
                 Action pending = _pendingSwitchTo;
@@ -126,20 +140,29 @@ namespace GourmetProject.Game.UI.Battle.Pages
                 pending?.Invoke();
             };
 
-            _transitionTween = requiresCover
-                ? UITransition.CoverSwap(
+            if (requiresCover)
+            {
+                _transitionCancellation = new CancellationTokenSource();
+                _transitionTween = UITransition.CoverSwap(
                     _host.CenterTransitionCover,
                     swap,
                     settings.CoverDuration,
                     settings.CoveredHoldDuration,
                     settings.RevealDuration,
-                    done)
-                : UITransition.FadeSwapStable(
+                    coveredPresentation,
+                    bindCoveredSkip,
+                    _transitionCancellation.Token,
+                    done);
+            }
+            else
+            {
+                _transitionTween = UITransition.FadeSwapStable(
                     _host.Center,
                     swap,
                     settings.CenterFadeOut,
                     settings.CenterFadeIn,
                     done);
+            }
         }
 
         /// <summary>
@@ -203,8 +226,13 @@ namespace GourmetProject.Game.UI.Battle.Pages
             }
         }
 
-        private void CancelTransition()
+        public void CancelTransition()
         {
+            _pendingSwitchTo = null;
+            CancellationTokenSource cancellation = _transitionCancellation;
+            _transitionCancellation = null;
+            cancellation?.Cancel();
+            cancellation?.Dispose();
             if (_transitionTween != null && _transitionTween.IsActive())
             {
                 _transitionTween.Kill(complete: false);

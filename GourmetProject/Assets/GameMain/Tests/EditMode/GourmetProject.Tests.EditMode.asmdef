@@ -8,6 +8,7 @@
         "GourmetProject.Core",
         "GourmetProject.Runtime",
         "BreakInfinity",
+        "DOTween.Modules",
         "UnityGameFramework.Runtime",
         "Luban.Runtime",
         "Unity.TextMeshPro"
@@ -18,7 +19,9 @@
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
-    "precompiledReferences": [],
+    "precompiledReferences": [
+        "DOTween.dll"
+    ],
     "autoReferenced": false,
     "defineConstraints": [],
     "versionDefines": [],

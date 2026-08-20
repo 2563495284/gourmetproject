@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using DG.Tweening;
 using UnityEngine;
 
@@ -179,21 +180,96 @@ namespace GourmetProject.Game.UI.Common
             float revealDuration,
             Action onDone = null)
         {
+            return CoverSwap(
+                cover,
+                swap,
+                coverDuration,
+                coveredHoldDuration,
+                revealDuration,
+                null,
+                null,
+                CancellationToken.None,
+                onDone);
+        }
+
+        /// <summary>
+        /// 在遮罩完全覆盖并完成页面交换后，可选地播放一段 covered presentation。
+        /// bindCoveredSkip 会收到“定位到揭幕起点”的一次性跳过回调；传入 null 表示演出已结束或取消。
+        /// </summary>
+        internal static Tween CoverSwap(
+            CanvasGroup cover,
+            Action swap,
+            float coverDuration,
+            float coveredHoldDuration,
+            float revealDuration,
+            Func<Tween> coveredPresentation,
+            Action<Action> bindCoveredSkip,
+            CancellationToken cancellationToken,
+            Action onDone)
+        {
             if (cover == null)
             {
+                bindCoveredSkip?.Invoke(null);
                 swap?.Invoke();
                 onDone?.Invoke();
                 return null;
             }
 
             bool finished = false;
+            bool skipRequested = false;
+            bool restored = false;
+            CancellationTokenRegistration cancellationRegistration = default;
+            Tween presentation = coveredPresentation?.Invoke();
             DOTween.Kill(cover, complete: false);
             cover.gameObject.SetActive(true);
             cover.alpha = 0f;
             cover.interactable = false;
-            cover.blocksRaycasts = true;
+            // 既有 CoverSwap 仍会同步拦截输入；带入场演出的路径则延迟到序列首帧，
+            // 避免创建后同帧取消时留下尚未清理的输入遮罩。
+            cover.blocksRaycasts = presentation == null;
 
-            Sequence seq = DOTween.Sequence().SetTarget(cover).SetUpdate(true);
+            Sequence seq = null;
+            Action restore = () =>
+            {
+                if (restored)
+                {
+                    return;
+                }
+
+                restored = true;
+                bindCoveredSkip?.Invoke(null);
+                if (cover != null)
+                {
+                    cover.alpha = 0f;
+                    cover.interactable = false;
+                    cover.blocksRaycasts = false;
+                }
+            };
+            Action cancelIfRequested = () =>
+            {
+                if (!cancellationToken.IsCancellationRequested || finished)
+                {
+                    return;
+                }
+
+                restore();
+                seq.Kill(complete: false);
+            };
+
+            seq = DOTween.Sequence().SetTarget(cover).SetUpdate(true);
+            if (presentation != null)
+            {
+                seq.AppendCallback(() =>
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        cancelIfRequested();
+                        return;
+                    }
+
+                    cover.blocksRaycasts = true;
+                });
+            }
             if (coverDuration > 0f)
             {
                 seq.Append(FadeTween(cover, 1f, coverDuration).SetEase(Ease.InOutSine));
@@ -205,6 +281,12 @@ namespace GourmetProject.Game.UI.Common
 
             seq.AppendCallback(() =>
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    cancelIfRequested();
+                    return;
+                }
+
                 swap?.Invoke();
                 Canvas.ForceUpdateCanvases();
             });
@@ -212,6 +294,35 @@ namespace GourmetProject.Game.UI.Common
             if (coveredHoldDuration > 0f)
             {
                 seq.AppendInterval(coveredHoldDuration);
+            }
+
+            Action skipToReveal = null;
+            if (presentation != null)
+            {
+                seq.AppendCallback(() =>
+                {
+                    if (!cancellationToken.IsCancellationRequested)
+                    {
+                        bindCoveredSkip?.Invoke(skipToReveal);
+                    }
+                });
+                seq.Append(presentation);
+            }
+
+            float revealStart = seq.Duration();
+            if (presentation != null && bindCoveredSkip != null)
+            {
+                skipToReveal = () =>
+                {
+                    if (skipRequested || finished || !seq.IsActive())
+                    {
+                        return;
+                    }
+
+                    skipRequested = true;
+                    bindCoveredSkip(null);
+                    seq.Goto(revealStart, andPlay: true);
+                };
             }
 
             if (revealDuration > 0f)
@@ -223,25 +334,36 @@ namespace GourmetProject.Game.UI.Common
                 cover.alpha = 0f;
             }
 
-            Action restore = () =>
-            {
-                cover.alpha = 0f;
-                cover.interactable = false;
-                cover.blocksRaycasts = false;
-            };
-
             seq.OnComplete(() =>
             {
+                bool wasCancelled = cancellationToken.IsCancellationRequested;
                 finished = true;
+                cancellationRegistration.Dispose();
                 restore();
-                onDone?.Invoke();
+                if (!wasCancelled)
+                {
+                    onDone?.Invoke();
+                }
             });
             seq.OnKill(() =>
             {
                 if (!finished)
                 {
+                    finished = true;
                     restore();
                 }
+            });
+            cancellationRegistration = cancellationToken.Register(() =>
+            {
+                if (finished)
+                {
+                    return;
+                }
+
+                // Cancel 发生在 Sequence 首帧前时 DOTween.Kill 暂时不会生效，
+                // 但同步恢复状态后，首回调还会根据 token 再次 Kill，且不会执行 swap。
+                restore();
+                seq.Kill(complete: false);
             });
             return seq;
         }
