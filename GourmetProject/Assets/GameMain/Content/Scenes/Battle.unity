@@ -324,8 +324,7 @@ MonoBehaviour:
   _groupSettleDuration: 0.1
   _finaleDuration: 0.95
   _sweetTransferSourceDuration: 0.22
-  _sweetTransferTravelDuration: 0.76
-  _sweetTransferExecutorDuration: 0.3
+  _sweetTransferTravelDuration: 0.38
   _minimumDishChapterDuration: 0.18
   _dishChapterEndDuration: 0.12
   _intraDishGroupSettleDuration: 0.03

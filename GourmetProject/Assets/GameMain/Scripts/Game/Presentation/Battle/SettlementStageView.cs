@@ -308,7 +308,6 @@ namespace GourmetProject.Game.Presentation.Battle
             IReadOnlyList<SweetTransferHandoffVisual> handoffs,
             SweetTransferParticleView particlePrefab,
             float travelDuration,
-            float executorDuration,
             CancellationToken cancellationToken)
         {
             EndGroupImmediate();
@@ -318,7 +317,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             var flights = new List<SweetTransferParticleView>(handoffs.Count);
-            float executorScale = Mathf.Max(0.05f, executorDuration / 0.34f);
             try
             {
                 for (int i = 0; i < handoffs.Count; i++)
@@ -330,12 +328,9 @@ namespace GourmetProject.Game.Presentation.Battle
                     executor?.SetSettlementFocus(1f);
                     if (executor != null)
                     {
+                        // 起飞阶段只保留接收者的持续高亮状态。接收者的缩放/旋转反馈
+                        // 由粒子抵达后的结果节拍播放，避免目标在粒子刚起飞时先抖一下。
                         executor.BeginSweetTransferExecutorFeedback();
-                        _ = PlayFeedbackSafelyAsync(
-                            executor,
-                            SettlementDishFeedbackKind.SweetTransferExecutor,
-                            cancellationToken,
-                            durationScale: executorScale);
                     }
 
                     if (source == null
@@ -454,8 +449,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 buffOwner,
                 SettlementDishFeedbackKind.GenericSkillTriggered,
                 cancellationToken,
-                // 飞行基准已放慢为 0.68s；命中反馈维持原速度，不随飞行一起翻倍。
-                durationScale: Mathf.Max(0.05f, duration / 0.68f));
+                // 命中反馈使用原始 0.34s 基准，不随结算速度配置额外拉伸。
+                durationScale: Mathf.Max(0.05f, duration / 0.34f));
         }
 
         internal async Awaitable PlaySweetTransferFailureAsync(

@@ -32,7 +32,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float FinalScorePopupDuration = 1.1f;
         private const float FinalScorePopupHold = 0.28f;
         private const float BatchedCueHold = 0.24f;
-        private const float SweetTransferParticleDuration = 0.68f;
+        private const float SweetTransferParticleDuration = 0.34f;
         private const float SweetTransferFailureDuration = 0.34f;
         private const float MinimumDishBoundaryDuration = 0.08f;
         private const string InitialDishBaseBatchKey = "initial:dish-bases";
@@ -54,8 +54,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _groupSettleDuration = 0.10f;
         [SerializeField] private float _finaleDuration = 0.95f;
         [SerializeField] private float _sweetTransferSourceDuration = 0.22f;
-        [SerializeField] private float _sweetTransferTravelDuration = 0.76f;
-        [SerializeField] private float _sweetTransferExecutorDuration = 0.30f;
+        [SerializeField] private float _sweetTransferTravelDuration = 0.38f;
 
         [Header("食物章节节拍（统一速度下的秒数）")]
         [SerializeField, Min(0f)] private float _minimumDishChapterDuration = 0.18f;
@@ -1472,7 +1471,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     handoffs,
                     _sweetTransferParticlePrefab,
                     ScaleSettlementDuration(_sweetTransferTravelDuration),
-                    ScaleSettlementDuration(_sweetTransferExecutorDuration),
                     cancellationToken);
             }
 
