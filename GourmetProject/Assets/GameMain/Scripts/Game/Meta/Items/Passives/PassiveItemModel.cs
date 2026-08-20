@@ -349,9 +349,6 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>每次甜蜜传递额外选择的目标数。</summary>
         public virtual int SweetTransferExtraTargetCount() => 0;
 
-        /// <summary>本次结算每个食物额外「视为食物数」加成（分发器累加）。</summary>
-        public virtual int ExtraCountAsPerDish() => 0;
-
         /// <summary>贡献逐菜/条件/顺序类结算规格（替代 ItemScoreEffectAdapter 的 effectType 映射）。</summary>
         public virtual IEnumerable<ItemScoreSpec> BuildScoreSpecs()
         {

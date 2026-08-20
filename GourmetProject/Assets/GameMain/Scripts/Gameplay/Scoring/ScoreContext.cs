@@ -114,7 +114,20 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            _liveCountAs[dish.Id] = Math.Max(1, GetEffectiveCountAs(dish) + delta);
+            int before = GetEffectiveCountAs(dish);
+            int after = Math.Max(1, before + delta);
+            _liveCountAs[dish.Id] = after;
+            int appliedDelta = after - before;
+            if (CaptureDiagnostics && appliedDelta != 0)
+            {
+                AddLine(
+                    EnsureAccumulator(dish),
+                    ScoreLineKind.CountAs,
+                    appliedDelta,
+                    before,
+                    after,
+                    $"份数 {(appliedDelta >= 0 ? "+" : string.Empty)}{appliedDelta}");
+            }
         }
 
         /// <summary>AddCountAs 在规则实际执行到时修改 live 值，只影响后续规则。</summary>
@@ -152,19 +165,7 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
-                int before = GetEffectiveCountAs(target);
                 AddLiveCountAs(target, delta);
-                int after = GetEffectiveCountAs(target);
-                if (CaptureDiagnostics)
-                {
-                    AddLine(
-                        EnsureAccumulator(target),
-                        ScoreLineKind.CountAs,
-                        after - before,
-                        before,
-                        after,
-                        $"份数 {(after - before >= 0 ? "+" : string.Empty)}{after - before}");
-                }
             }
         }
 

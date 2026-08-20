@@ -62,6 +62,7 @@ namespace GourmetProject.Gameplay.Scoring
                     ItemScoreEffectType.NthServeMultFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.AllDishFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.AllDishMultFlat => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.CountAsBonusAll => ScorePhase.BeforeAll,
                     ItemScoreEffectType.CountThresholdAllDishMult => ScorePhase.BeforeAll,
                     ItemScoreEffectType.TagBonus => ScorePhase.BeforeAll,
                     ItemScoreEffectType.TagMultFlat => ScorePhase.BeforeAll,
@@ -82,6 +83,7 @@ namespace GourmetProject.Gameplay.Scoring
 
                 int priority = spec.Type switch
                 {
+                    ItemScoreEffectType.CountAsBonusAll => -100,
                     ItemScoreEffectType.TagCountAsBonus => -100,
                     ItemScoreEffectType.AllDishTemporaryCategory => -100,
                     ItemScoreEffectType.RandomDishesTemporaryCategory => -100,
@@ -166,6 +168,17 @@ namespace GourmetProject.Gameplay.Scoring
                     }
 
                     break;
+
+                case ItemScoreEffectType.CountAsBonusAll:
+                {
+                    int countAs = (int)Math.Round(value, MidpointRounding.AwayFromZero);
+                    foreach (DishInstance d in dishes)
+                    {
+                        ctx.AddLiveCountAs(d, countAs);
+                    }
+
+                    break;
+                }
 
                 case ItemScoreEffectType.TagCountAsBonus:
                 {
