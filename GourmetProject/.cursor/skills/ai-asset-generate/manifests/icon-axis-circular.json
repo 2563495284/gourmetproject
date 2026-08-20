@@ -61,9 +61,10 @@
       "name": "icon_axis_negative",
       "type": "ui",
       "referenceImages": [
-        "Art/GeneratedUiIcons/backup-before-large-mass/icon_axis_negative.png"
+        "Assets/GameMain/Content/Resources/Sprites/UI/icon_axis_event.png",
+        "Assets/GameMain/Content/Resources/Sprites/UI/icon_axis_shop.png"
       ],
-      "prompt": "negative token: keep this frying pan, enlarge the burnt patch into one big brown mass. No steam, no cake, not matcha cake"
+      "prompt": "negative curse token: one full round cool-grey ceramic plate with ONE thick dark-brown lightning crack from top to bottom. No pizza wedge, no frying pan, no cake, no cloche, no food, no letters"
     }
   ]
 }
