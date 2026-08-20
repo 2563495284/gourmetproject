@@ -174,15 +174,21 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             Vector2 target = ScreenToLocal(dishVisual.ScreenCenter);
-            ConfigureHand(_grabHandSprite, target, pivotY: 0.18f, minimumHeight: 680f);
-            Vector2 above = HandOffscreenPosition(target.x);
-
             Vector2 halfScreenSize = dishVisual.ScreenSize * 0.5f;
             Vector2 localMin = ScreenToLocal(dishVisual.ScreenCenter - halfScreenSize);
             Vector2 localMax = ScreenToLocal(dishVisual.ScreenCenter + halfScreenSize);
             _grabbedDish.sizeDelta = new Vector2(
                 Mathf.Max(80f, Mathf.Abs(localMax.x - localMin.x)),
                 Mathf.Max(80f, Mathf.Abs(localMax.y - localMin.y)));
+            float handWidth = Mathf.Clamp(_grabbedDish.sizeDelta.x * 1.15f, 280f, 320f);
+            ConfigureHand(
+                _grabHandSprite,
+                target,
+                pivotY: 0.18f,
+                minimumHeight: 680f,
+                preferredWidth: handWidth);
+            Vector2 above = HandOffscreenPosition(target.x);
+
             _grabbedDish.anchoredPosition = target;
             _grabbedDish.localRotation = Quaternion.Euler(0f, 0f, dishVisual.ScreenRotationDegrees);
             _grabbedDish.localScale = new Vector3(
@@ -192,12 +198,12 @@ namespace GourmetProject.Game.UI.Battle
             _grabbedDishImage.sprite = dishVisual.Sprite;
             _grabbedDishImage.color = dishVisual.Color;
             _grabbedDishGroup.alpha = 1f;
-            _grabbedDish.SetAsLastSibling();
 
             _hand.anchoredPosition = above;
             _hand.localRotation = Quaternion.identity;
             _handGroup.alpha = 1f;
             _hand.SetAsLastSibling();
+            _grabbedDish.SetAsLastSibling();
             onVisualTakenOver?.Invoke();
 
             Sequence sequence = DOTween.Sequence()
@@ -314,11 +320,17 @@ namespace GourmetProject.Game.UI.Battle
             Sprite sprite,
             Vector2 target,
             float pivotY,
-            float minimumHeight)
+            float minimumHeight,
+            float preferredWidth = 0f)
         {
             Canvas.ForceUpdateCanvases();
             _handImage.sprite = sprite;
             _handImage.color = Color.white;
+            bool stretchArmOnly = preferredWidth > 0f && sprite != null && sprite.border.sqrMagnitude > 0f;
+            _handImage.type = stretchArmOnly ? Image.Type.Sliced : Image.Type.Simple;
+            _handImage.pixelsPerUnitMultiplier = stretchArmOnly
+                ? sprite.rect.width / Mathf.Max(1f, preferredWidth)
+                : 1f;
             _hand.pivot = new Vector2(0.5f, Mathf.Clamp01(pivotY));
             float heightAbovePivot = Mathf.Max(0.05f, 1f - _hand.pivot.y);
             float requiredHeight = (_overlay.rect.yMax - target.y + 80f) / heightAbovePivot;
@@ -326,7 +338,8 @@ namespace GourmetProject.Game.UI.Battle
             float aspect = sprite != null && sprite.rect.height > 0f
                 ? sprite.rect.width / sprite.rect.height
                 : 0.5f;
-            _hand.sizeDelta = new Vector2(height * aspect, height);
+            float width = preferredWidth > 0f ? preferredWidth : height * aspect;
+            _hand.sizeDelta = new Vector2(width, height);
             _hand.localScale = Vector3.one;
         }
 
