@@ -109,3 +109,9 @@ MonoBehaviour:
   _minimumArcHeight: 0.22
   _arcHeightPerUnit: 0.14
   _color: {r: 1, g: 0.24, b: 0.68, a: 1}
+  _afterimageCount: 24
+  _afterimageSpacing: 0.019
+  _afterimageHeadAlpha: 0.48
+  _afterimageTailScale: 0.32
+  _arrivalDotCount: 10
+  _arrivalRadius: 0.36

@@ -229,19 +229,24 @@ Shader "GourmetProject/SpriteOutline"
                     float flowMask = flowBand * flowEnabled;
                     float flowWhiten = flowBand * saturate(_GridFlowIntensity * 1.15);
 
+                    // 宽斜纹沿对角线持续流动。用软层保留底色、硬层拉开明暗，
+                    // 比旧版 0.82~1.08 的轻微 alpha 波动更容易在结算节拍中辨认。
                     float stripeWave = 0.5 + 0.5 * sin(
                         ((sourceUv.x - sourceUv.y) * _GridStripeDensity
                         + _Time.y * _GridStripeSpeed) * 6.2831853);
-                    float stripe = smoothstep(0.30, 0.82, stripeWave);
+                    float stripeSoft = smoothstep(0.16, 0.84, stripeWave);
+                    float stripeCore = smoothstep(0.42, 0.68, stripeWave);
+                    float stripeStrength = saturate(_GridFlowIntensity);
                     half fillAlpha = (half)saturate(
                         sourceMask
                         * _FillAlpha
-                        * lerp(0.82, 1.08, stripe)
+                        * lerp(0.52, 1.34, stripeSoft)
                         * reveal);
                     half coreAlpha = (half)saturate(
                         core
                         * _OutlineColor.a
                         * lerp(0.86, 1.0, flowMask)
+                        * lerp(0.76, 1.0, stripeSoft)
                         * reveal);
                     half glowAlpha = (half)saturate(
                         softGlow
@@ -251,7 +256,14 @@ Shader "GourmetProject/SpriteOutline"
                         * reveal);
                     half edgeAlpha = max(coreAlpha, glowAlpha);
                     half alpha = (half)(max(fillAlpha, edgeAlpha) * saturate(_GridVisibility));
-                    half3 fillRgb = (half3)(_OutlineColor.rgb * lerp(0.56, 0.78, stripe));
+                    half3 fillBaseRgb = (half3)(
+                        _OutlineColor.rgb
+                        * lerp(0.38, 0.82, stripeSoft));
+                    half3 fillStripeRgb = (half3)lerp(
+                        fillBaseRgb,
+                        half3(1.0, 1.0, 1.0),
+                        stripeCore * stripeStrength * 0.24);
+                    half3 fillRgb = fillStripeRgb;
                     half3 outlineRgb = (half3)(
                         _OutlineColor.rgb
                         * _GlowIntensity
@@ -262,6 +274,11 @@ Shader "GourmetProject/SpriteOutline"
                         half3(1.0, 1.0, 1.0)
                         * max(1.0, _GlowIntensity)
                         * wave);
+                    // 条纹不仅作用于填充，也沿边框本体移动；食物图片遮住内部填充时
+                    // 仍能从轮廓亮斑读出清晰的流动方向。
+                    flowWhiten = max(
+                        flowWhiten,
+                        stripeCore * stripeStrength * 0.42);
                     outlineRgb = lerp(outlineRgb, flowHighlightRgb, flowWhiten);
                     half edgeBlend = alpha > 0.0001 ? saturate(edgeAlpha / alpha) : 0;
                     half3 rgb = lerp(fillRgb, outlineRgb, edgeBlend);

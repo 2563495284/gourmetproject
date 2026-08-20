@@ -16,10 +16,12 @@ namespace GourmetProject.Game.Presentation.Battle
         private string _sortingLayer = BattleSorting.Fx;
         private int _sortingOrder = BattleSorting.OrderFloatingText;
         private bool _dimmed;
-        private Color _backgroundColorBeforeDim;
-        private Color _valueBackingColorBeforeDim;
-        private Color _iconColorBeforeDim;
-        private Color _textColorBeforeDim;
+        private bool _chapterFocused;
+        private bool _presentationBaseColorsCaptured;
+        private Color _backgroundPresentationBaseColor;
+        private Color _valueBackingPresentationBaseColor;
+        private Color _iconPresentationBaseColor;
+        private Color _textPresentationBaseColor;
 
         internal float CurrentAlpha => _valueText != null
             ? _valueText.color.a
@@ -37,17 +39,19 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        public void SetValue(string text)
+        public void SetValue(string text, bool forceMeshUpdate = false)
         {
             if (_valueText != null)
             {
                 _valueText.text = text;
-                // 食物候选图标会在同一帧内改值并立即 Camera.Render 到 RenderTexture。
-                // TMP 默认延迟到后续渲染阶段重建网格，会让共享预览 Rig 拍到上一张卡的数字。
-                _valueText.ForceMeshUpdate(true, true);
+                if (forceMeshUpdate)
+                {
+                    // 食物候选图标会在同一帧内改值并立即 Camera.Render 到 RenderTexture。
+                    // 普通世界徽章不走这里，避免结算开场批量改值时同步重建全部 TMP 网格。
+                    _valueText.ForceMeshUpdate(true, true);
+                    ApplySortingOrder();
+                }
             }
-
-            ApplySortingOrder();
         }
 
         public void ConfigureSorting(string sortingLayer, int sortingOrder)
@@ -65,62 +69,67 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _dimmed = dimmed;
-            if (dimmed)
+            ApplyPresentationColors();
+        }
+
+        public void SetChapterFocused(bool focused)
+        {
+            if (_chapterFocused == focused)
             {
-                if (_background != null)
-                {
-                    _backgroundColorBeforeDim = _background.color;
-                    _background.color = WithAlphaMultiplier(
-                        _backgroundColorBeforeDim,
-                        0.5f);
-                }
-
-                if (_icon != null)
-                {
-                    _iconColorBeforeDim = _icon.color;
-                    _icon.color = WithAlphaMultiplier(
-                        _iconColorBeforeDim,
-                        0.5f);
-                }
-
-                if (_valueBacking != null)
-                {
-                    _valueBackingColorBeforeDim = _valueBacking.color;
-                    _valueBacking.color = WithAlphaMultiplier(
-                        _valueBackingColorBeforeDim,
-                        0.5f);
-                }
-
-                if (_valueText != null)
-                {
-                    _textColorBeforeDim = _valueText.color;
-                    _valueText.color = WithAlphaMultiplier(
-                        _textColorBeforeDim,
-                        0.5f);
-                }
-
                 return;
             }
 
-            if (_background != null)
-            {
-                _background.color = _backgroundColorBeforeDim;
-            }
+            _chapterFocused = focused;
+            ApplyPresentationColors();
+        }
 
-            if (_icon != null)
-            {
-                _icon.color = _iconColorBeforeDim;
-            }
-
-            if (_valueBacking != null)
-            {
-                _valueBacking.color = _valueBackingColorBeforeDim;
-            }
-
+        private void ApplyPresentationColors()
+        {
+            CapturePresentationBaseColors();
+            Color gold = SettlementColorPalette.BaseScore;
+            ApplyRendererColor(_background, ChapterTint(_backgroundPresentationBaseColor, gold, 0.30f));
+            ApplyRendererColor(_valueBacking, ChapterTint(_valueBackingPresentationBaseColor, gold, 0.65f));
+            ApplyRendererColor(_icon, ChapterTint(_iconPresentationBaseColor, gold, 0.45f));
             if (_valueText != null)
             {
-                _valueText.color = _textColorBeforeDim;
+                Color color = ChapterTint(_textPresentationBaseColor, gold, 0.20f);
+                _valueText.color = _dimmed ? WithAlphaMultiplier(color, 0.5f) : color;
             }
+        }
+
+        private void CapturePresentationBaseColors()
+        {
+            if (_presentationBaseColorsCaptured)
+            {
+                return;
+            }
+
+            _presentationBaseColorsCaptured = true;
+            _backgroundPresentationBaseColor = _background != null ? _background.color : Color.white;
+            _valueBackingPresentationBaseColor = _valueBacking != null ? _valueBacking.color : Color.white;
+            _iconPresentationBaseColor = _icon != null ? _icon.color : Color.white;
+            _textPresentationBaseColor = _valueText != null ? _valueText.color : Color.white;
+        }
+
+        private void ApplyRendererColor(SpriteRenderer renderer, Color color)
+        {
+            if (renderer != null)
+            {
+                renderer.color = _dimmed ? WithAlphaMultiplier(color, 0.5f) : color;
+            }
+        }
+
+        private Color ChapterTint(Color baseColor, Color tint, float amount)
+        {
+            if (!_chapterFocused)
+            {
+                return baseColor;
+            }
+
+            float alpha = baseColor.a;
+            Color color = Color.Lerp(baseColor, tint, amount);
+            color.a = alpha;
+            return color;
         }
 
         private void ApplySortingOrder()
@@ -160,6 +169,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDisable()
         {
+            SetChapterFocused(false);
             SetDimmed(false);
         }
     }

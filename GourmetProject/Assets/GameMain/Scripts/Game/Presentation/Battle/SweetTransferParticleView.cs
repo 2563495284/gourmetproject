@@ -13,12 +13,16 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private float _minimumArcHeight = 0.22f;
         [SerializeField] private float _arcHeightPerUnit = 0.14f;
         [SerializeField] private Color _color = new(1f, 0.24f, 0.68f, 1f);
-        [SerializeField] private int _trailPointCount = 6;
+        [Header("Afterimage Trail")]
+        [SerializeField] private int _afterimageCount = 24;
+        [SerializeField] private float _afterimageSpacing = 0.019f;
+        [SerializeField, Range(0f, 1f)] private float _afterimageHeadAlpha = 0.48f;
+        [SerializeField, Range(0.05f, 1f)] private float _afterimageTailScale = 0.32f;
         [SerializeField] private int _arrivalDotCount = 10;
-        [SerializeField] private float _trailSpacing = 0.075f;
         [SerializeField] private float _arrivalRadius = 0.36f;
 
         private Tween _tween;
+        private Transform _afterimageRoot;
         private float _visualScale = 1f;
 
         public static async Awaitable PlayAsync(
@@ -187,10 +191,11 @@ namespace GourmetProject.Game.Presentation.Battle
             SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
             BattleSorting.Apply(_renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText - 1);
 
-            var trailPoints = new List<SpriteRenderer>();
-            for (int i = 0; i < Mathf.Max(0, _trailPointCount); i++)
+            CreateAfterimageRoot();
+            var afterimages = new List<SpriteRenderer>();
+            for (int i = 0; i < Mathf.Max(0, _afterimageCount); i++)
             {
-                trailPoints.Add(CreatePoint($"Trail_{i}", BattleSorting.OrderFloatingText - 2, 0.72f));
+                afterimages.Add(CreateAfterimage($"Afterimage_{i}"));
             }
 
             var arrivalDots = new List<SpriteRenderer>();
@@ -230,27 +235,43 @@ namespace GourmetProject.Game.Presentation.Battle
                     color.a *= Mathf.Min(fadeIn, fadeOut);
                     _renderer.color = color;
 
-                    for (int i = 0; i < trailPoints.Count; i++)
+                    float safeAfterimageSpacing = Mathf.Max(0.005f, _afterimageSpacing);
+                    for (int i = 0; i < afterimages.Count; i++)
                     {
-                        SpriteRenderer trail = trailPoints[i];
-                        if (trail == null)
+                        SpriteRenderer afterimage = afterimages[i];
+                        if (afterimage == null)
                         {
                             continue;
                         }
 
-                        float delay = (i + 1) * Mathf.Max(0.01f, _trailSpacing);
+                        float delay = (i + 1) * safeAfterimageSpacing;
                         float pointT = travel - delay;
-                        if (pointT <= 0f || t >= 0.90f)
+                        if (pointT <= 0f || t >= 0.95f)
                         {
-                            trail.color = Color.clear;
+                            afterimage.color = Color.clear;
                             continue;
                         }
 
-                        trail.transform.position = Bezier(start, control, end, Mathf.Clamp01(pointT));
-                        float trailFade = 1f - (i + 1f) / (trailPoints.Count + 1f);
-                        Color trailColor = _color;
-                        trailColor.a *= 0.68f * trailFade * Mathf.Clamp01((0.90f - t) / 0.10f);
-                        trail.color = trailColor;
+                        float age = (i + 1f) / (afterimages.Count + 1f);
+                        afterimage.transform.position = Bezier(start, control, end, pointT);
+
+                        // 每个副本保持它所代表的“过去一帧”的尺寸，再随年龄逐渐缩小、变淡。
+                        // 这会读成粒子本体的残影，而不是一条连接起终点的实体色带。
+                        float echoPulse = Mathf.Sin(pointT * Mathf.PI);
+                        float echoSize = size * Mathf.Lerp(0.55f, 1.22f, echoPulse);
+                        float ageScale = Mathf.Lerp(1f, _afterimageTailScale, age);
+                        afterimage.transform.localScale = Vector3.one * (echoSize * ageScale);
+
+                        float spawnFade = Mathf.Clamp01(pointT / (safeAfterimageSpacing * 1.5f));
+                        float arrivalFade = Mathf.Clamp01((0.95f - t) / 0.12f);
+                        float ageFade = Mathf.Pow(1f - age, 0.9f);
+                        Color afterimageColor = Color.Lerp(_color, Color.white, (1f - age) * 0.16f);
+                        afterimageColor.a = _color.a
+                            * _afterimageHeadAlpha
+                            * ageFade
+                            * spawnFade
+                            * arrivalFade;
+                        afterimage.color = afterimageColor;
                     }
 
                     float arrival = Mathf.Clamp01((t - 0.70f) / 0.30f);
@@ -275,6 +296,25 @@ namespace GourmetProject.Game.Presentation.Battle
                 })
                 .SetEase(Ease.InOutSine)
                 .SetLink(gameObject);
+        }
+
+        private void CreateAfterimageRoot()
+        {
+            GameObject root = new("SweetTransferAfterimages");
+            root.transform.SetParent(transform.parent, false);
+            _afterimageRoot = root.transform;
+        }
+
+        private SpriteRenderer CreateAfterimage(string name)
+        {
+            GameObject echo = new(name);
+            echo.transform.SetParent(_afterimageRoot, false);
+            SpriteRenderer renderer = echo.AddComponent<SpriteRenderer>();
+            renderer.sprite = BattleShadow.SoftShadowSprite;
+            renderer.color = Color.clear;
+            SpriteRenderStyle.ApplyUnlitMaterial(renderer);
+            BattleSorting.Apply(renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText - 2);
+            return renderer;
         }
 
         private SpriteRenderer CreatePoint(string name, int sortingOrder, float relativeScale)
@@ -316,6 +356,20 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _tween?.Kill();
             _tween = null;
+
+            if (_afterimageRoot != null)
+            {
+                GameObject root = _afterimageRoot.gameObject;
+                _afterimageRoot = null;
+                if (Application.isPlaying)
+                {
+                    Destroy(root);
+                }
+                else
+                {
+                    DestroyImmediate(root);
+                }
+            }
         }
     }
 }

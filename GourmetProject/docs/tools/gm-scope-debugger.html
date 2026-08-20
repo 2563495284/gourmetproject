@@ -202,6 +202,10 @@
       box-shadow: 0 0 9px rgba(53,210,160,.75);
       pointer-events: none;
     }
+    .cell.target-hit.category-target::after {
+      border-color: #ffb82e;
+      box-shadow: 0 0 9px rgba(255,184,46,.78);
+    }
     .mock { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; font-weight: 900; font-size: 11px; color: #fff; box-shadow: 0 2px 7px rgba(32,54,78,.2); }
     .mock.normal { background: #7489a0; }
     .mock.cake { background: #a36ee1; }
@@ -576,7 +580,8 @@
     function canRenderActionRegion(rule) {
       return !!rule
         && ![0,5].includes(rule.actionType)
-        && ![4,15,16].includes(rule.actionScope);
+        && !targetFilterCategory(rule)
+        && ![4,10,15,16].includes(rule.actionScope);
     }
 
     function resolveRule(rule, food = selectedFood(), origin = state.origin, size = state.boardSize) {
@@ -585,13 +590,16 @@
       const condition = visualCellsForScope(rule, rule.condScope, false, food, origin, size);
       const spatialCondition = usesSpatialScope(rule) && condition.length > 0;
       const renderAction = canRenderActionRegion(rule) && action.length > 0;
+      const categoryScatter = rule.actionScope === 10 || !!targetFilterCategory(rule);
       let kind = "None", region = [], reason = "";
-      if (spatialCondition && renderAction && sameCells(condition, action)) {
+      if (categoryScatter) {
+        reason = "分类目标不画合并范围；每个实际命中的食物分别绘制自身占格轮廓。";
+      } else if (spatialCondition && renderAction && sameCells(condition, action)) {
         kind = "Unified"; region = action; reason = "空间条件与作用范围完全相同，合并为一个范围。";
       } else if (renderAction) {
         kind = "Action"; region = action; reason = spatialCondition ? "条件与作用范围不同；运行时只选择优先级更高的作用范围。" : "显示可绘制的作用范围。";
       } else if (spatialCondition) {
-        kind = "Condition"; region = condition; reason = [4,15,16].includes(rule.actionScope) ? "全局作用范围不画棋盘边界，回退显示空间条件范围。" : "只有空间条件可绘制，显示条件范围。";
+        kind = "Condition"; region = condition; reason = [4,10,15,16].includes(rule.actionScope) ? "该作用范围不画棋盘边界，回退显示空间条件范围。" : "只有空间条件可绘制，显示条件范围。";
       } else {
         kind = "None";
         if (rule.condScope === 4 && rule.condType !== 0 && [4,15,16].includes(rule.actionScope)) reason = "全局统计条件与全局作用均不画棋盘边界。";
@@ -601,7 +609,7 @@
         else if (rule.actionType === 5) reason = "甜蜜传递仅显示目标反馈，不画棋盘边界。";
         else reason = "当前规则没有可绘制的棋盘范围。";
       }
-      const conflict = spatialCondition && renderAction && !sameCells(condition, action);
+      const conflict = !categoryScatter && spatialCondition && renderAction && !sameCells(condition, action);
       return {kind, region, action, condition, targets:actionTargetDishes(rule, food, origin, size), reason, conflict};
     }
 
@@ -634,6 +642,7 @@
       const food = selectedFood();
       const rule = selectedRule();
       const result = resolveRule(rule);
+      const categoryScatter = rule && (rule.actionScope === 10 || !!targetFilterCategory(rule));
       const scopeKeys = new Set(displayCells(result).map(cell => keyOf(cell.x,cell.y)));
       const selfKeys = new Set(sourceCells().map(cell => keyOf(cell.x,cell.y)));
       const targetKeys = new Set(cellsForDishes(result.targets).map(cell => keyOf(cell.x,cell.y)));
@@ -641,7 +650,7 @@
       board.innerHTML = allCells().map(cell => {
         const key = keyOf(cell.x,cell.y);
         const type = state.mocks.get(key);
-        const classes = ["cell", scopeKeys.has(key) ? "in-scope" : "", selfKeys.has(key) ? "source" : "", targetKeys.has(key) ? "target-hit" : ""].filter(Boolean).join(" ");
+        const classes = ["cell", scopeKeys.has(key) ? "in-scope" : "", selfKeys.has(key) ? "source" : "", targetKeys.has(key) ? "target-hit" : "", categoryScatter && targetKeys.has(key) ? "category-target" : ""].filter(Boolean).join(" ");
         const inner = selfKeys.has(key) ? `<span class="source-mark">🍰</span>` : type ? `<span class="mock ${type}">${type === "cake" ? "蛋糕" : type === "transfer" ? "传递" : "普通"}</span>` : "";
         return `<button class="${classes}" data-x="${cell.x}" data-y="${cell.y}" aria-label="格子 ${cell.x},${cell.y}">${inner}<span class="coord">${cell.x},${cell.y}</span></button>`;
       }).join("");

@@ -36,20 +36,20 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SpriteRenderer _renderer;
         [SerializeField] private Material _outlineMaterial;
         [SerializeField, Range(0f, 64f)] private float _pulseFrequency = 18f;
-        [SerializeField, Range(0f, 64f)] private float _stripeDensity = 18f;
+        [SerializeField, Range(0f, 64f)] private float _stripeDensity = 9f;
         [SerializeField] private ScopeChannelStyle _persistentStyle = new ScopeChannelStyle
         {
             OutlinePixels = 6f,
             OutlineAlpha = 0.88f,
-            FillAlpha = 0.10f,
+            FillAlpha = 0.14f,
             GlowPixels = 15f,
             GlowAlpha = 0.32f,
             GlowIntensity = 1.22f,
             PulseSpeed = 0.25f,
             PulseAmplitude = 0.025f,
-            FlowSpeed = 0.32f,
-            FlowWidth = 0.18f,
-            FlowIntensity = 0.36f,
+            FlowSpeed = 0.55f,
+            FlowWidth = 0.24f,
+            FlowIntensity = 0.52f,
             RevealDuration = 0f,
             FadeOutDuration = 0f,
         };
@@ -57,15 +57,15 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             OutlinePixels = 6f,
             OutlineAlpha = 0.90f,
-            FillAlpha = 0.10f,
+            FillAlpha = 0.16f,
             GlowPixels = 15f,
             GlowAlpha = 0.32f,
             GlowIntensity = 1.22f,
             PulseSpeed = 1.6f,
             PulseAmplitude = 0.08f,
-            FlowSpeed = 2.2f,
-            FlowWidth = 0.27f,
-            FlowIntensity = 0.52f,
+            FlowSpeed = 2.4f,
+            FlowWidth = 0.30f,
+            FlowIntensity = 0.70f,
             RevealDuration = 0.10f,
             FadeOutDuration = 0.10f,
         };
@@ -73,15 +73,15 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             OutlinePixels = 7f,
             OutlineAlpha = 0.95f,
-            FillAlpha = 0.12f,
+            FillAlpha = 0.18f,
             GlowPixels = 17f,
             GlowAlpha = 0.40f,
             GlowIntensity = 1.36f,
             PulseSpeed = 0.7f,
             PulseAmplitude = 0.06f,
-            FlowSpeed = 0.85f,
-            FlowWidth = 0.23f,
-            FlowIntensity = 0.60f,
+            FlowSpeed = 1.15f,
+            FlowWidth = 0.28f,
+            FlowIntensity = 0.82f,
             RevealDuration = 0.16f,
             FadeOutDuration = 0.14f,
         };
@@ -169,7 +169,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _propertyBlock.SetFloat(GridFlowWidthId, profile.FlowWidth);
             _propertyBlock.SetFloat(GridFlowIntensityId, profile.FlowIntensity);
             _propertyBlock.SetFloat(GridStripeDensityId, _stripeDensity);
-            _propertyBlock.SetFloat(GridStripeSpeedId, profile.FlowSpeed * 0.65f);
+            _propertyBlock.SetFloat(GridStripeSpeedId, profile.FlowSpeed * 1.10f);
             _propertyBlock.SetFloat(GridRevealStartId, Time.time);
             _propertyBlock.SetFloat(GridRevealDurationId, profile.RevealDuration);
             _propertyBlock.SetFloat(UvInflateId, 1f);

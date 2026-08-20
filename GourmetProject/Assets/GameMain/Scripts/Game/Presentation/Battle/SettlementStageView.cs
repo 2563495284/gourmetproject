@@ -19,11 +19,10 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class SettlementStageView : MonoBehaviour
     {
-        private const float DimmedDishBrightness = 0.72f;
-        private const float ScopeDishBrightness = 0.86f;
-        private const float SweetTransferSourceBrightness = 0.82f;
+        internal const float DefaultPendingDishBrightness = 0.28f;
 
         private readonly List<GameObject> _transients = new();
+        private readonly HashSet<int> _completedDishInstanceIds = new();
         private IReadOnlyDictionary<int, DishPieceView> _dishViews;
         private DiningTableCoordinateMapper _mapper;
         private Transform _fxRoot;
@@ -34,12 +33,23 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private SettlementStageLabelView _finaleLabelPrefab;
         [SerializeField] private SpriteRenderer _spritePrefab;
 
+        [Header("食物亮度层级")]
+        [SerializeField, Range(0f, 1f)] private float _completedDishBrightness = 0.52f;
+        [SerializeField, Range(0f, 1f)] private float _pendingDishBrightness = DefaultPendingDishBrightness;
+        [SerializeField, Range(0f, 1f)] private float _scopeDishBrightness = 0.92f;
+        [SerializeField, Range(0f, 1f)] private float _sweetTransferSourceBrightness = 0.97f;
+
         [Header("聚焦过渡")]
         [SerializeField, Min(0f)] private float _dishFocusFadeDuration = 0.12f;
 
         private GameObject _groupSpotlight;
+        private GameObject _chapterSpotlight;
+        private Tween _chapterSpotlightTween;
+        private int _chapterDishInstanceId;
         private readonly List<GameObject> _heldLabels = new();
         private SettlementEffectGroup _resultHitSoundGroup;
+
+        internal float PendingDishBrightness => _pendingDishBrightness;
 
         public void Configure(
             IReadOnlyDictionary<int, DishPieceView> dishViews,
@@ -47,11 +57,16 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform fxRoot,
             float visualScale = 1f)
         {
-            ClearImmediate();
+            // 餐桌入场已经通过 DishPieceView 的结算亮度通道渐暗到“未结算”。
+            // 同一张餐桌交接给舞台时保留这层亮度，避免 Configure 先恢复全亮、
+            // 随后第一章节又重新压暗造成一次肉眼可见的闪断。
+            bool isSameDishCollection = ReferenceEquals(_dishViews, dishViews);
+            ResetPresentationImmediate(clearDishFocus: !isSameDishCollection);
             _dishViews = dishViews;
             _mapper = mapper;
             _fxRoot = fxRoot != null ? fxRoot : transform;
             _visualScale = Mathf.Max(0.0001f, visualScale);
+            ApplySettlementProgressFocus(0f);
         }
 
         internal void PlayTransientEffect(
@@ -132,6 +147,88 @@ namespace GourmetProject.Game.Presentation.Battle
             await Awaitable.WaitForSecondsAsync(Mathf.Max(0.0001f, duration), cancellationToken);
         }
 
+        internal void BeginDishChapter(
+            int dishInstanceId,
+            float revealDuration,
+            CancellationToken cancellationToken)
+        {
+            DestroyGroupSpotlight();
+            DestroyChapterSpotlight();
+            _completedDishInstanceIds.Remove(dishInstanceId);
+            _chapterDishInstanceId = dishInstanceId;
+            ApplyChapterFocus(Mathf.Min(_dishFocusFadeDuration, revealDuration));
+
+            DishPieceView view = TryGetDish(dishInstanceId);
+            if (view == null)
+            {
+                return;
+            }
+
+            view.SetDishValueBadgeChapterFocused(true, revealDuration);
+            SpawnChapterSpotlight(view, revealDuration);
+            _ = PlayChapterStartAccentSafelyAsync(view, revealDuration, cancellationToken);
+            _ = PlayFeedbackSafelyAsync(
+                view,
+                SettlementDishFeedbackKind.DishChapterStarted,
+                cancellationToken,
+                durationScale: Mathf.Max(0.05f, revealDuration / 0.18f));
+        }
+
+        internal async Awaitable EndDishChapterAsync(
+            int dishInstanceId,
+            float duration,
+            CancellationToken cancellationToken)
+        {
+            DestroyGroupSpotlight();
+            if (dishInstanceId > 0)
+            {
+                _chapterDishInstanceId = dishInstanceId;
+            }
+
+            ApplyChapterFocus();
+            DishPieceView view = TryGetDish(_chapterDishInstanceId);
+            Awaitable completionRingTask = default;
+            bool hasCompletionRing = false;
+            if (view != null)
+            {
+                view.SetSettlementFocus(1f, _dishFocusFadeDuration);
+                _ = PlayFeedbackSafelyAsync(
+                    view,
+                    SettlementDishFeedbackKind.DishChapterCompleted,
+                    cancellationToken,
+                    durationScale: Mathf.Max(0.05f, duration / 0.14f));
+                completionRingTask = PlayImpactRingAsync(
+                    view,
+                    SettlementColorPalette.BaseScore,
+                    SettlementImpactTier.Chain,
+                    cancellationToken,
+                    durationOverride: duration);
+                hasCompletionRing = true;
+            }
+
+            int completingDishId = _chapterDishInstanceId;
+            await Awaitable.WaitForSecondsAsync(Mathf.Max(0.0001f, duration), cancellationToken);
+            if (hasCompletionRing)
+            {
+                await completionRingTask;
+            }
+
+            if (_chapterDishInstanceId != completingDishId)
+            {
+                return;
+            }
+
+            view?.SetDishValueBadgeChapterFocused(false, Mathf.Min(0.10f, duration));
+            if (completingDishId > 0)
+            {
+                _completedDishInstanceIds.Add(completingDishId);
+            }
+
+            _chapterDishInstanceId = 0;
+            DestroyChapterSpotlight();
+            ApplySettlementProgressFocus();
+        }
+
         internal async Awaitable FocusSourceAsync(
             SettlementEffectGroup group,
             float duration,
@@ -149,7 +246,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 && group.Trace.OwnerDishInstanceId > 0
                 && group.Trace.OwnerDishInstanceId != group.ActorDishInstanceId)
             {
-                TryGetDish(group.Trace.OwnerDishInstanceId)?.SetSettlementFocus(SweetTransferSourceBrightness);
+                TryGetDish(group.Trace.OwnerDishInstanceId)?.SetSettlementFocus(
+                    group.Trace.OwnerDishInstanceId == _chapterDishInstanceId
+                        ? 1f
+                        : _sweetTransferSourceBrightness);
             }
 
             Color theme = ThemeFor(group.Trace, group.Source);
@@ -212,7 +312,6 @@ namespace GourmetProject.Game.Presentation.Battle
             CancellationToken cancellationToken)
         {
             EndGroupImmediate();
-            DimAllDishes();
             if (handoffs == null || handoffs.Count == 0)
             {
                 return;
@@ -243,7 +342,10 @@ namespace GourmetProject.Game.Presentation.Battle
                         || executor == null
                         || handoff.Context.IsSelfTransfer)
                     {
-                        source?.SetSettlementFocus(SweetTransferSourceBrightness);
+                        source?.SetSettlementFocus(
+                            handoff.Context.SourceDishInstanceId == _chapterDishInstanceId
+                                ? 1f
+                                : _sweetTransferSourceBrightness);
                         continue;
                     }
 
@@ -259,7 +361,10 @@ namespace GourmetProject.Game.Presentation.Battle
                         flights.Add(flight);
                     }
 
-                    source.SetSettlementFocus(SweetTransferSourceBrightness);
+                    source.SetSettlementFocus(
+                        handoff.Context.SourceDishInstanceId == _chapterDishInstanceId
+                            ? 1f
+                            : _sweetTransferSourceBrightness);
                 }
 
                 if (flights.Count > 0)
@@ -300,7 +405,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     continue;
                 }
 
-                float brightness = DimmedDishBrightness;
+                float brightness = ProgressBrightness(entry.Key);
                 if (sourceDishIds != null && sourceDishIds.Contains(entry.Key))
                 {
                     brightness = 1f;
@@ -311,7 +416,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
                 else if (targetDishIds != null && targetDishIds.Contains(entry.Key))
                 {
-                    brightness = ScopeDishBrightness;
+                    brightness = _scopeDishBrightness;
+                }
+
+                if (entry.Key == _chapterDishInstanceId)
+                {
+                    brightness = 1f;
                 }
 
                 view.SetSettlementFocus(brightness);
@@ -344,7 +454,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 buffOwner,
                 SettlementDishFeedbackKind.GenericSkillTriggered,
                 cancellationToken,
-                durationScale: Mathf.Max(0.05f, duration / 0.34f));
+                // 飞行基准已放慢为 0.68s；命中反馈维持原速度，不随飞行一起翻倍。
+                durationScale: Mathf.Max(0.05f, duration / 0.68f));
         }
 
         internal async Awaitable PlaySweetTransferFailureAsync(
@@ -406,7 +517,10 @@ namespace GourmetProject.Game.Presentation.Battle
             for (int i = 0; i < shakenTargets.Count; i++)
             {
                 DishPieceView target = shakenTargets[i];
-                target.SetSettlementFocus(ScopeDishBrightness);
+                target.SetSettlementFocus(
+                    target.Instance != null && target.Instance.Id == _chapterDishInstanceId
+                        ? 1f
+                        : _scopeDishBrightness);
                 target.PlayScopeAffectedShake(Mathf.Max(0.05f, duration / 0.40f));
             }
 
@@ -569,7 +683,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public async Awaitable EndGroupAsync(float duration, CancellationToken cancellationToken)
         {
-            DimAllDishes();
+            RestoreChapterFocusOrProgress();
             DestroyGroupSpotlight();
             await Awaitable.WaitForSecondsAsync(Mathf.Max(0.0001f, duration), cancellationToken);
             ClearExpiredTransients();
@@ -581,6 +695,8 @@ namespace GourmetProject.Game.Presentation.Battle
             CancellationToken cancellationToken)
         {
             // 最终亮相直接解除上一组的聚焦状态，避免先全体压暗、再逐个恢复造成闪暗。
+            _chapterDishInstanceId = 0;
+            DestroyChapterSpotlight();
             ClearFocus();
             DestroyGroupSpotlight();
             ClearExpiredTransients();
@@ -594,6 +710,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         continue;
                     }
 
+                    view.SetDishValueBadgeChapterFocused(false, 0f);
                     view.ClearSettlementFocus();
                     _ = PlayFeedbackSafelyAsync(
                         view,
@@ -655,8 +772,28 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void ClearImmediate()
         {
-            ClearFocus();
+            ResetPresentationImmediate(clearDishFocus: true);
+        }
+
+        private void ResetPresentationImmediate(bool clearDishFocus)
+        {
+            _chapterDishInstanceId = 0;
+            _completedDishInstanceIds.Clear();
+            if (_dishViews != null)
+            {
+                foreach (DishPieceView view in _dishViews.Values)
+                {
+                    view?.SetDishValueBadgeChapterFocused(false, 0f);
+                }
+            }
+
+            if (clearDishFocus)
+            {
+                ClearFocus();
+            }
+
             DestroyGroupSpotlight();
+            DestroyChapterSpotlight();
             for (int i = 0; i < _transients.Count; i++)
             {
                 GameObject transient = _transients[i];
@@ -684,13 +821,49 @@ namespace GourmetProject.Game.Presentation.Battle
                     continue;
                 }
 
-                float brightness = entry.Key == actorDishInstanceId
+                bool primary = entry.Key == actorDishInstanceId
+                    || entry.Key == _chapterDishInstanceId;
+                float brightness = primary
                     ? 1f
                     : targetDishIds != null && targetDishIds.Contains(entry.Key)
-                        ? ScopeDishBrightness
-                        : DimmedDishBrightness;
+                        ? _scopeDishBrightness
+                        : ProgressBrightness(entry.Key);
                 view.SetSettlementFocus(brightness, _dishFocusFadeDuration);
             }
+        }
+
+        private void ApplyChapterFocus(float? fadeDuration = null)
+        {
+            if (_dishViews == null)
+            {
+                return;
+            }
+
+            foreach (KeyValuePair<int, DishPieceView> entry in _dishViews)
+            {
+                DishPieceView view = entry.Value;
+                if (view == null)
+                {
+                    continue;
+                }
+
+                view.SetSettlementFocus(
+                    entry.Key == _chapterDishInstanceId
+                        ? 1f
+                        : ProgressBrightness(entry.Key),
+                    fadeDuration ?? _dishFocusFadeDuration);
+            }
+        }
+
+        private void RestoreChapterFocusOrProgress()
+        {
+            if (_chapterDishInstanceId > 0)
+            {
+                ApplyChapterFocus();
+                return;
+            }
+
+            ApplySettlementProgressFocus();
         }
 
         private void ClearFocus()
@@ -706,24 +879,135 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private void DimAllDishes()
+        private void ApplySettlementProgressFocus(float? fadeDuration = null)
         {
             if (_dishViews == null)
             {
                 return;
             }
 
-            foreach (DishPieceView view in _dishViews.Values)
+            foreach (KeyValuePair<int, DishPieceView> entry in _dishViews)
             {
-                view?.SetSettlementFocus(DimmedDishBrightness, _dishFocusFadeDuration);
+                entry.Value?.SetSettlementFocus(
+                    ProgressBrightness(entry.Key),
+                    fadeDuration ?? _dishFocusFadeDuration);
             }
+        }
+
+        private float ProgressBrightness(int dishInstanceId)
+        {
+            return _completedDishInstanceIds.Contains(dishInstanceId)
+                ? _completedDishBrightness
+                : _pendingDishBrightness;
         }
 
         private void EndGroupImmediate()
         {
-            DimAllDishes();
+            RestoreChapterFocusOrProgress();
             DestroyGroupSpotlight();
             ClearExpiredTransients();
+        }
+
+        private void SpawnChapterSpotlight(DishPieceView view, float revealDuration)
+        {
+            if (view == null)
+            {
+                return;
+            }
+
+            Bounds bounds = view.WorldBounds;
+            _chapterSpotlight = CreateSprite(
+                "SettlementDishChapterSpotlight",
+                bounds.center,
+                WithAlpha(SettlementColorPalette.BaseScore, 0f),
+                -8);
+            if (_chapterSpotlight == null)
+            {
+                return;
+            }
+
+            Vector2 size = new(
+                Mathf.Max(1.5f * _visualScale, bounds.size.x * 1.82f),
+                Mathf.Max(1.5f * _visualScale, bounds.size.y * 1.82f));
+            Vector3 settledScale = new(size.x, size.y, 1f);
+            Vector3 revealScale = Vector3.Scale(settledScale, new Vector3(0.56f, 0.56f, 1f));
+            Vector3 overshootScale = Vector3.Scale(settledScale, new Vector3(1.12f, 1.12f, 1f));
+            SpriteRenderer renderer = _chapterSpotlight.GetComponent<SpriteRenderer>();
+            GameObject spotlight = _chapterSpotlight;
+            spotlight.transform.localScale = revealScale;
+
+            _chapterSpotlightTween?.Kill();
+            float animationDuration = Mathf.Clamp(revealDuration, 0.08f, 0.16f);
+            _chapterSpotlightTween = DOVirtual.Float(0f, 1f, animationDuration, progress =>
+                {
+                    if (spotlight == null || renderer == null)
+                    {
+                        return;
+                    }
+
+                    float reveal = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(progress / 0.68f));
+                    float settle = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((progress - 0.68f) / 0.32f));
+                    spotlight.transform.localScale = progress < 0.68f
+                        ? Vector3.LerpUnclamped(revealScale, overshootScale, reveal)
+                        : Vector3.LerpUnclamped(overshootScale, settledScale, settle);
+                    float alpha = progress < 0.68f
+                        ? Mathf.Lerp(0f, 0.38f, reveal)
+                        : Mathf.Lerp(0.38f, 0.24f, settle);
+                    renderer.color = WithAlpha(SettlementColorPalette.BaseScore, alpha);
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(spotlight)
+                .OnComplete(() => StartChapterSpotlightBreath(spotlight, renderer, settledScale));
+        }
+
+        private void StartChapterSpotlightBreath(
+            GameObject spotlight,
+            SpriteRenderer renderer,
+            Vector3 settledScale)
+        {
+            if (spotlight == null || renderer == null || spotlight != _chapterSpotlight)
+            {
+                return;
+            }
+
+            _chapterSpotlightTween = DOVirtual.Float(0f, 1f, 0.42f, progress =>
+                {
+                    if (spotlight == null || renderer == null)
+                    {
+                        return;
+                    }
+
+                    spotlight.transform.localScale = Vector3.LerpUnclamped(
+                        settledScale,
+                        Vector3.Scale(settledScale, new Vector3(1.055f, 1.055f, 1f)),
+                        progress);
+                    renderer.color = WithAlpha(
+                        SettlementColorPalette.BaseScore,
+                        Mathf.Lerp(0.20f, 0.29f, progress));
+                })
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetLink(spotlight);
+        }
+
+        private async Awaitable PlayChapterStartAccentSafelyAsync(
+            DishPieceView view,
+            float duration,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                await PlayImpactRingAsync(
+                    view,
+                    SettlementColorPalette.BaseScore,
+                    SettlementImpactTier.Strong,
+                    cancellationToken,
+                    durationOverride: Mathf.Max(0.08f, duration));
+            }
+            catch (OperationCanceledException)
+            {
+                // 中断结算时，章节入场强调与舞台一起清理。
+            }
         }
 
         private void SpawnSpotlight(Bounds bounds, Vector3 fallback, Color theme)
@@ -766,7 +1050,8 @@ namespace GourmetProject.Game.Presentation.Battle
             DishPieceView target,
             Color theme,
             SettlementImpactTier tier,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            float durationOverride = -1f)
         {
             if (target == null || tier < SettlementImpactTier.Normal)
             {
@@ -792,7 +1077,9 @@ namespace GourmetProject.Game.Presentation.Battle
             SpriteRenderer secondaryRenderer = secondary != null
                 ? secondary.GetComponent<SpriteRenderer>()
                 : null;
-            float duration = Mathf.Lerp(0.18f, 0.32f, strength);
+            float duration = durationOverride > 0f
+                ? durationOverride
+                : Mathf.Lerp(0.18f, 0.32f, strength);
             float endScale = Mathf.Lerp(1.45f, 2.65f, strength) * _visualScale;
             primary.transform.localScale = Vector3.one * (0.28f * _visualScale);
             if (secondary != null)
@@ -946,6 +1233,19 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 _heldLabels.Clear();
             }
+        }
+
+        private void DestroyChapterSpotlight()
+        {
+            _chapterSpotlightTween?.Kill();
+            _chapterSpotlightTween = null;
+            if (_chapterSpotlight == null)
+            {
+                return;
+            }
+
+            Destroy(_chapterSpotlight);
+            _chapterSpotlight = null;
         }
 
         private void ClearExpiredTransients()

@@ -47,7 +47,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private const int PassiveSlotCapacity = 10;
         private const int PassiveSlotColumns = 2;
         private const float ServeTriggerCueDuration = 0.88f;
-        private const float SettlementLayoutDishBrightness = 0.72f;
         private const string TastingDebuffId = "debuff_tasting";
         // 回退视口半宽/半高（16:9 参考：orthographicSize 5.4）。
         private const float FallbackHalfW = 9.6f;
@@ -905,9 +904,11 @@ namespace GourmetProject.Game.Presentation.Battle
             if (temporaryDish != null)
             {
                 _activeItemTransitioning = true;
+                piece.SetDishValueBadgeVisible(false);
                 piece.SetClickEnabled(false);
                 piece.SetMoveCallbacks(null, null, null);
                 RefreshTemporaryAreaVisibility(animated: true);
+                EnsureTemporaryAreaLayoutReady();
                 int index = TemporaryAreaDishIndex(dishId);
                 TemporaryAreaStackSlot[] targetSlots = CalculateTemporaryAreaSlots();
                 LayoutTemporaryAreaPieces(animated: true, slotsOverride: targetSlots);
@@ -1004,6 +1005,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
                 piece.SetClickEnabled(true);
                 BuildHudFood(piece, dish, _dishClicked);
+                piece.SetDishValueBadgeVisible(true);
 
                 int insertIndex = Mathf.Clamp(index, 0, _temporaryAreaPieces.Count);
                 _temporaryAreaPieces.Insert(insertIndex, piece);
@@ -1403,6 +1405,21 @@ namespace GourmetProject.Game.Presentation.Battle
                 && _session != null
                 && _session.TemporaryAreaDishes.Count > 0;
             SetTemporaryAreaVisible(shouldShow, animated);
+        }
+
+        /// <summary>
+        /// 临时桌首次启用时，UGUI 会把布局计算延迟到帧末；飞入目标必须先读取本帧的最终矩形，
+        /// 否则会先按兜底缩放飞行，落地刷新后再突然缩小。
+        /// </summary>
+        private void EnsureTemporaryAreaLayoutReady()
+        {
+            if (_temporaryArea == null || !_temporaryArea.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_temporaryArea);
         }
 
         private void SetTemporaryAreaVisible(bool visible, bool animated)
@@ -3191,9 +3208,12 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (appended)
             {
+                float pendingDishBrightness = _sequencer != null
+                    ? _sequencer.PendingDishBrightness
+                    : SettlementStageView.DefaultPendingDishBrightness;
                 sequence.Join(DOVirtual.Float(
                         1f,
-                        SettlementLayoutDishBrightness,
+                        pendingDishBrightness,
                         duration,
                         SetSettlementLayoutDishFocus)
                     .SetEase(Ease.OutCubic));

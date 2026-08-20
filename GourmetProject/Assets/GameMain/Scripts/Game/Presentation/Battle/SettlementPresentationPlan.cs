@@ -229,6 +229,8 @@ namespace GourmetProject.Game.Presentation.Battle
         ResultApplied = 2,
         GroupCompleted = 3,
         FinaleConfirmed = 4,
+        DishStarted = 5,
+        DishCompleted = 6,
     }
 
     /// <summary>结算反馈的视觉强度。只描述表现层级，不参与任何计分。</summary>
@@ -314,7 +316,9 @@ namespace GourmetProject.Game.Presentation.Battle
     internal sealed class SettlementPresentationPlan
     {
         public List<SettlementBaseBeat> BaseBeats { get; } = new();
-        public List<SettlementEffectGroup> Groups { get; } = new();
+        public List<SettlementEffectGroup> PreludeGroups { get; } = new();
+        public List<SettlementDishChapter> DishChapters { get; } = new();
+        public List<SettlementEffectGroup> EpilogueGroups { get; } = new();
 
         public int ResultBeatCount
         {
@@ -322,13 +326,31 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 // 基础分在结算开始时直接写入 BattleInfo，不再占用表现节拍。
                 int count = 1;
-                for (int i = 0; i < Groups.Count; i++)
+                count += CountResultLines(PreludeGroups);
+                count += CountResultLines(EpilogueGroups);
+                for (int i = 0; i < DishChapters.Count; i++)
                 {
-                    count += Groups[i].Lines.Count;
+                    count += CountResultLines(DishChapters[i].Groups);
                 }
 
                 return Mathf.Max(1, count);
             }
+        }
+
+        private static int CountResultLines(IReadOnlyList<SettlementEffectGroup> groups)
+        {
+            int count = 0;
+            if (groups == null)
+            {
+                return count;
+            }
+
+            for (int i = 0; i < groups.Count; i++)
+            {
+                count += groups[i]?.Lines.Count ?? 0;
+            }
+
+            return count;
         }
 
         public static SettlementPresentationPlan Build(ScoreResult result)
@@ -398,7 +420,48 @@ namespace GourmetProject.Game.Presentation.Battle
                     line.After));
             }
 
-            for (int i = 0; i < result.ScoreLines.Count; i++)
+            var chaptersByDishId = new Dictionary<int, SettlementDishChapter>();
+            for (int i = 0; i < plan.BaseBeats.Count; i++)
+            {
+                SettlementBaseBeat beat = plan.BaseBeats[i];
+                if (beat == null || chaptersByDishId.ContainsKey(beat.DishInstanceId))
+                {
+                    continue;
+                }
+
+                var chapter = new SettlementDishChapter(beat);
+                chaptersByDishId.Add(beat.DishInstanceId, chapter);
+                plan.DishChapters.Add(chapter);
+            }
+
+            int lineCount = result.ScoreLines.Count;
+            var previousBaseDishIds = new int[lineCount];
+            var nextBaseDishIds = new int[lineCount];
+            int currentBaseDishId = 0;
+            for (int i = 0; i < lineCount; i++)
+            {
+                ScoreLine line = result.ScoreLines[i];
+                if (line != null && line.Kind == ScoreLineKind.DishBase)
+                {
+                    currentBaseDishId = line.DishInstanceId;
+                }
+
+                previousBaseDishIds[i] = currentBaseDishId;
+            }
+
+            int nextBaseDishId = 0;
+            for (int i = lineCount - 1; i >= 0; i--)
+            {
+                ScoreLine line = result.ScoreLines[i];
+                if (line != null && line.Kind == ScoreLineKind.DishBase)
+                {
+                    nextBaseDishId = line.DishInstanceId;
+                }
+
+                nextBaseDishIds[i] = nextBaseDishId;
+            }
+
+            for (int i = 0; i < lineCount; i++)
             {
                 ScoreLine line = result.ScoreLines[i];
                 if (line == null || line.Kind == ScoreLineKind.DishBase)
@@ -406,22 +469,93 @@ namespace GourmetProject.Game.Presentation.Battle
                     continue;
                 }
 
-                SettlementEffectGroup current = plan.Groups.Count > 0
-                    ? plan.Groups[plan.Groups.Count - 1]
-                    : null;
-                if (current == null || !current.CanAppend(line))
+                if (line.Phase == ScorePhase.BeforeAll)
                 {
-                    current = new SettlementEffectGroup(line);
-                    plan.Groups.Add(current);
+                    AppendLine(plan.PreludeGroups, line);
+                    continue;
+                }
+
+                if (line.Phase >= ScorePhase.AfterAllDishes)
+                {
+                    AppendLine(plan.EpilogueGroups, line);
+                    continue;
+                }
+
+                int chapterDishId = line.Phase == ScorePhase.BeforeDish
+                    ? ResolveSemanticChapterDishId(line, chaptersByDishId)
+                    : previousBaseDishIds[i];
+                if (line.Phase == ScorePhase.BeforeDish && chapterDishId <= 0)
+                {
+                    chapterDishId = nextBaseDishIds[i];
+                }
+
+                if (chapterDishId <= 0 || !chaptersByDishId.ContainsKey(chapterDishId))
+                {
+                    chapterDishId = ResolveSemanticChapterDishId(line, chaptersByDishId);
+                }
+
+                if (chapterDishId > 0
+                    && chaptersByDishId.TryGetValue(chapterDishId, out SettlementDishChapter chapter))
+                {
+                    AppendLine(chapter.Groups, line);
+                }
+                else if (line.Phase < ScorePhase.DishBase)
+                {
+                    AppendLine(plan.PreludeGroups, line);
                 }
                 else
                 {
-                    current.Append(line);
+                    AppendLine(plan.EpilogueGroups, line);
                 }
             }
 
             AddAggregateFallbacks(plan, result);
             return plan;
+        }
+
+        private static int ResolveSemanticChapterDishId(
+            ScoreLine line,
+            IReadOnlyDictionary<int, SettlementDishChapter> chaptersByDishId)
+        {
+            if (line == null || chaptersByDishId == null)
+            {
+                return 0;
+            }
+
+            int runtimeSelfId = line.Trace?.RuntimeSelfDishInstanceId ?? 0;
+            if (runtimeSelfId > 0 && chaptersByDishId.ContainsKey(runtimeSelfId))
+            {
+                return runtimeSelfId;
+            }
+
+            int sourceDishId = line.Source?.DishInstanceId ?? 0;
+            if (sourceDishId > 0 && chaptersByDishId.ContainsKey(sourceDishId))
+            {
+                return sourceDishId;
+            }
+
+            return line.DishInstanceId > 0 && chaptersByDishId.ContainsKey(line.DishInstanceId)
+                ? line.DishInstanceId
+                : 0;
+        }
+
+        private static void AppendLine(List<SettlementEffectGroup> groups, ScoreLine line)
+        {
+            if (groups == null || line == null)
+            {
+                return;
+            }
+
+            SettlementEffectGroup current = groups.Count > 0
+                ? groups[groups.Count - 1]
+                : null;
+            if (current == null || !current.CanAppend(line))
+            {
+                groups.Add(new SettlementEffectGroup(line));
+                return;
+            }
+
+            current.Append(line);
         }
 
         private static void AddAggregateFallbacks(SettlementPresentationPlan plan, ScoreResult result)
@@ -510,7 +644,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private static void AppendSynthetic(SettlementPresentationPlan plan, ScoreLine line)
         {
-            plan.Groups.Add(new SettlementEffectGroup(line));
+            AppendLine(plan.EpilogueGroups, line);
         }
 
         private static string FormatSigned(BigDouble value)
@@ -540,6 +674,19 @@ namespace GourmetProject.Game.Presentation.Battle
         public string DishId { get; }
         public ScoreLine Line { get; }
         public BigDouble BaseValue { get; }
+    }
+
+    internal sealed class SettlementDishChapter
+    {
+        public SettlementDishChapter(SettlementBaseBeat baseBeat)
+        {
+            BaseBeat = baseBeat;
+        }
+
+        public SettlementBaseBeat BaseBeat { get; }
+        public int DishInstanceId => BaseBeat?.DishInstanceId ?? 0;
+        public string DishId => BaseBeat?.DishId ?? string.Empty;
+        public List<SettlementEffectGroup> Groups { get; } = new();
     }
 
     internal sealed class SettlementEffectGroup

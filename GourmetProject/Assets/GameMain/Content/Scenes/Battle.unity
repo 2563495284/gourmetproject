@@ -318,15 +318,17 @@ MonoBehaviour:
   _settlementEffectLabelPrefab: {fileID: 53574951656091332, guid: a4fd950c8e27e41338ddf6a6eee5f53e, type: 3}
   _sweetTransferParticlePrefab: {fileID: 2557560503732837231, guid: 6e93469c519004ab588908d00ea6b741, type: 3}
   _settlementStagePrefab: {fileID: 4312125254003264828, guid: 21208ee30db944af698612d45e9bd826, type: 3}
-  _baseDishDuration: 0.38
   _sourceFocusDuration: 0.38
   _scopeRevealDuration: 0.24
   _resultBeatDuration: 0.52
   _groupSettleDuration: 0.1
   _finaleDuration: 0.95
   _sweetTransferSourceDuration: 0.22
-  _sweetTransferTravelDuration: 0.38
+  _sweetTransferTravelDuration: 0.76
   _sweetTransferExecutorDuration: 0.3
+  _minimumDishChapterDuration: 0.18
+  _dishChapterEndDuration: 0.12
+  _intraDishGroupSettleDuration: 0.03
   _dishFloatingVerticalOffset: -0.45
   _debugScorePaused: 0
 --- !u!114 &420685135

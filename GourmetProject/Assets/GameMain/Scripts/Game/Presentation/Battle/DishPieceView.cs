@@ -36,6 +36,8 @@ namespace GourmetProject.Game.Presentation.Battle
         PermanentFlatBonus = 17,
         CountAsChanged = 18,
         TemporaryCategoryApplied = 19,
+        DishChapterStarted = 20,
+        DishChapterCompleted = 21,
     }
 
     public readonly struct DishGrabVisualSnapshot
@@ -323,6 +325,11 @@ namespace GourmetProject.Game.Presentation.Battle
         internal void PunchDishValueBadge(float scale, float duration)
         {
             _dishValueBadgePresenter?.Punch(scale, duration);
+        }
+
+        internal void SetDishValueBadgeChapterFocused(bool focused, float duration)
+        {
+            _dishValueBadgePresenter?.SetChapterFocused(focused, duration);
         }
 
         internal void SetDishValueBadgeVisible(bool visible)
@@ -1456,6 +1463,41 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             switch (kind)
             {
+                case SettlementDishFeedbackKind.DishChapterStarted:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.18f,
+                        anticipationScale: 0.95f,
+                        peakScale: new Vector2(1.14f, 1.14f),
+                        liftInCells: 0.04f,
+                        sideInCells: 0f,
+                        rotationDegrees: 0f,
+                        rotationCycles: 0f,
+                        pulseCount: 1f,
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.BaseScore, 0.92f),
+                        glowWidth: 0.09f,
+                        glowInflate: 1.07f,
+                        glowFillAlpha: 0.045f,
+                        glowPulseSpeed: 6f,
+                        glowPulseAmplitude: 0.14f,
+                        anticipationFraction: 0.18f);
+
+                case SettlementDishFeedbackKind.DishChapterCompleted:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.14f,
+                        anticipationScale: 1f,
+                        peakScale: new Vector2(1.10f, 1.10f),
+                        liftInCells: 0.01f,
+                        sideInCells: 0f,
+                        rotationDegrees: 0f,
+                        rotationCycles: 0f,
+                        pulseCount: 1f,
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.BaseScore, 0.98f),
+                        glowWidth: 0.11f,
+                        glowInflate: 1.085f,
+                        glowFillAlpha: 0.035f,
+                        glowPulseSpeed: 8f,
+                        glowPulseAmplitude: 0.18f);
+
                 case SettlementDishFeedbackKind.DishBase:
                     return new SettlementFeedbackProfile(
                         duration: 0.14f,

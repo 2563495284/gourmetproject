@@ -152,7 +152,7 @@ namespace GourmetProject.Game.UI.Battle
         [SerializeField] private float _foodSettlementLayoutDuration = 0.32f;
         [Tooltip("TableLayoutArea 放大、餐桌跟上的时长（秒）。")]
         [SerializeField] private float _foodSettlementTableLayoutDuration = 0.64f;
-        [Tooltip("布局动画结束后、开始结算演出前的停顿（秒）。")]
+        [Tooltip("布局动画结束后、开始结算演出前的额外静止停顿（秒）；0 表示不空停，由第一份食物的章节起势承接。")]
         [SerializeField] private float _foodSettlementHoldDuration = 0f;
 
         private DishDragGhostOverlay _dragGhostOverlay;
@@ -2275,8 +2275,11 @@ namespace GourmetProject.Game.UI.Battle
                 _world?.ApplySettlementLayoutImmediate();
             }
 
-            float holdDuration = _foodSettlementHoldDuration > 0.01f ? _foodSettlementHoldDuration : 0.5f;
-            sequence.AppendInterval(holdDuration);
+            float holdDuration = Mathf.Max(0f, _foodSettlementHoldDuration);
+            if (holdDuration > 0.0001f)
+            {
+                sequence.AppendInterval(holdDuration);
+            }
 
             if (sequence.Duration() <= 0f)
             {
