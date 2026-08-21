@@ -101,14 +101,14 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  _backgroundColor: {r: 0.075, g: 0.09, b: 0.095, a: 1}
-  _gridColor: {r: 0.34, g: 0.39, b: 0.4, a: 0.82}
+  _backgroundColor: {r: 0.95686275, g: 0.92156863, b: 0.8666667, a: 1}
+  _gridColor: {r: 0.39607844, g: 0.45882353, b: 0.4, a: 0.72156864}
   _cellSize: 88
-  _padding: 24
-  _lineWidth: 2
-  _cellSprite: {fileID: 0}
+  _padding: 20
+  _lineWidth: 1.5
+  _cellSprite: {fileID: 21300000, guid: 2e64db7e003c24c788c2f1f4dfa0c353, type: 3}
   _cellColor: {r: 1, g: 1, b: 1, a: 1}
-  _cellInset: 2
+  _cellInset: 3
 --- !u!1 &3026309972228553401
 GameObject:
   m_ObjectHideFlags: 0
@@ -203,16 +203,16 @@ MonoBehaviour:
   _scrollRect: {fileID: 4658881047195407422}
   _gridGraphic: {fileID: 179362151684325645}
   _warehouseColumns: 12
-  _warehouseTrailingRows: 10
+  _warehouseTrailingRows: 1
   _warehouseCellSize: 88
-  _warehousePadding: 24
-  _itemInset: 6
-  _gridLineWidth: 2
-  _surfaceColor: {r: 0.96, g: 0.945, b: 0.91, a: 1}
-  _gridColor: {r: 0.34, g: 0.39, b: 0.4, a: 0.82}
+  _warehousePadding: 20
+  _itemInset: 8
+  _gridLineWidth: 1.5
+  _surfaceColor: {r: 0.95686275, g: 0.92156863, b: 0.8666667, a: 1}
+  _gridColor: {r: 0.39607844, g: 0.45882353, b: 0.4, a: 0.72156864}
   _cellSprite: {fileID: 21300000, guid: 2e64db7e003c24c788c2f1f4dfa0c353, type: 3}
   _cellColor: {r: 1, g: 1, b: 1, a: 1}
-  _cellInset: 2
+  _cellInset: 3
 --- !u!114 &4658881047195407422
 MonoBehaviour:
   m_ObjectHideFlags: 0

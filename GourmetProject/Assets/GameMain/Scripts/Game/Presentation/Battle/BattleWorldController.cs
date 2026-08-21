@@ -3132,11 +3132,21 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        internal bool TryComputeTableAreaPlacement(GpTable board, out BoardPlacement placement)
+        internal bool TryComputeTableAreaPlacement(
+            GpTable board,
+            out BoardPlacement placement,
+            IEnumerable<GridPos> additionalVisibleCells = null)
         {
             if (board != null && TryComputeTableAreaRect(out float left, out float right, out float bottom, out float top))
             {
-                placement = DiningTableLayout.ComputeInRect(left, right, bottom, top, board, BoardAreaMinCellSize);
+                placement = DiningTableLayout.ComputeInRect(
+                    left,
+                    right,
+                    bottom,
+                    top,
+                    board,
+                    BoardAreaMinCellSize,
+                    additionalVisibleCells);
                 return true;
             }
 
@@ -3147,9 +3157,18 @@ namespace GourmetProject.Game.Presentation.Battle
         private void BuildTable(GpTable board)
         {
             // 餐桌按胃包围盒适配到场景 TableLayoutArea；场景未配置时回退到 HUD/视口区域。
-            BoardPlacement placement = TryComputeTableAreaPlacement(board, out BoardPlacement boardAreaPlacement)
+            IEnumerable<GridPos> persistentRemovedCells = PersistentBossRemovedCells();
+            BoardPlacement placement = TryComputeTableAreaPlacement(
+                    board,
+                    out BoardPlacement boardAreaPlacement,
+                    persistentRemovedCells)
                 ? boardAreaPlacement
-                : DiningTableLayout.Compute(_halfW, _halfH, board, FoodTableBottomMargin);
+                : DiningTableLayout.Compute(
+                    _halfW,
+                    _halfH,
+                    board,
+                    FoodTableBottomMargin,
+                    persistentRemovedCells);
             _cellSize = placement.CellSize;
             _tableVisualScale = DiningTableLayout.VisualScaleForCellSize(
                 _cellSize);
@@ -3310,9 +3329,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 settlementBottom,
                 settlementTop,
                 board,
-                _foodLayoutBuiltCellSize > 0f ? _foodLayoutBuiltCellSize : _cellSize);
+                _foodLayoutBuiltCellSize > 0f ? _foodLayoutBuiltCellSize : _cellSize,
+                PersistentBossRemovedCells());
             return tween.Scale > 0f;
         }
+
+        private IEnumerable<GridPos> PersistentBossRemovedCells()
+            => _session?.BossDebuffPresentation?.RemovedCells;
 
         private void ApplyFoodSettlementBoardState(FoodSettlementBoardTween tween)
         {

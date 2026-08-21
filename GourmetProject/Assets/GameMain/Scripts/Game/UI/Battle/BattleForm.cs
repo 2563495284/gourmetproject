@@ -5404,6 +5404,9 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            world?.ClearDoodle();
+            TutorialRuntime.Publish(TutorialSignal.SettleClicked);
+
             // if (_session.DiningTable.DishCount == 0)
             // {
             //     SetMessage("餐桌还是空的，先上几个食物吧。");

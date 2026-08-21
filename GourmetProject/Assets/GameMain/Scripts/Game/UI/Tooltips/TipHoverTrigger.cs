@@ -374,29 +374,57 @@ namespace GourmetProject.Game.UI.Tooltips
 
             Vector2 best = candidates[0];
             float bestScore = float.MaxValue;
-            int bestIndex = 0;
-            for (int i = 0; i < candidates.Length; i++)
+            bool bestPlacedLeft = false;
+            ITooltipPlacementAware placementAware = ActiveTip as ITooltipPlacementAware;
+            if (placementAware == null)
             {
-                Vector2 clamped = ClampCenter(candidates[i], tipSize, parentRect);
-                float overflow = OverflowArea(candidates[i], tipSize, parentRect);
-                float overlap = OverlapArea(clamped, tipSize, targetRect);
-                float drift = (clamped - candidates[i]).sqrMagnitude;
-                float score = overlap * 1000000f + overflow * 100000f + drift;
-                if (score < bestScore)
+                // Keep ordinary action/timeline tips on their original main-rect algorithm.
+                for (int i = 0; i < candidates.Length; i++)
                 {
-                    best = clamped;
-                    bestScore = score;
-                    bestIndex = i;
+                    Vector2 clamped = ClampCenter(candidates[i], tipSize, parentRect);
+                    float overflow = OverflowArea(candidates[i], tipSize, parentRect);
+                    float overlap = OverlapArea(clamped, tipSize, targetRect);
+                    float drift = (clamped - candidates[i]).sqrMagnitude;
+                    float score = overlap * 1000000f + overflow * 100000f + drift;
+                    if (score < bestScore)
+                    {
+                        best = clamped;
+                        bestScore = score;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < candidates.Length; i++)
+                {
+                    bool placedLeft = !_preferVerticalPlacement && i == 1;
+                    placementAware.OnPlacedAroundTarget(placedLeft);
+                    _tipRect.anchoredPosition = candidates[i];
+                    Canvas.ForceUpdateCanvases();
+                    LayoutRebuilder.ForceRebuildLayoutImmediate(_tipRect);
+
+                    // Item tips can add term cards outside the main RectTransform. Measure the
+                    // complete visible hierarchy for every direction; measuring only the main
+                    // card makes a right-side candidate look valid and then merely pushes the
+                    // whole group left when its term cards overflow the Canvas.
+                    Rect visibleRect = VisualRect(parent, _tipRect);
+                    Vector2 clampOffset = VisibleBoundsOffset(visibleRect, parentRect);
+                    Rect clampedRect = OffsetRect(visibleRect, clampOffset);
+                    float overflow = OverflowAmount(visibleRect, parentRect);
+                    float overlap = OverlapArea(clampedRect, targetRect);
+                    float drift = clampOffset.sqrMagnitude;
+                    float score = overlap * 1000000f + overflow * 100000f + drift;
+                    if (score < bestScore)
+                    {
+                        best = candidates[i] + clampOffset;
+                        bestScore = score;
+                        bestPlacedLeft = placedLeft;
+                    }
                 }
             }
 
             _tipRect.anchoredPosition = best;
-            if (ActiveTip is ITooltipPlacementAware placementAware)
-            {
-                bool placedLeft = !_preferVerticalPlacement
-                    && (bestIndex == 1 || best.x < targetRect.center.x);
-                placementAware.OnPlacedAroundTarget(placedLeft);
-            }
+            placementAware?.OnPlacedAroundTarget(bestPlacedLeft);
 
             // Item tips can lay term cards outside the main tip rect. Their final side is only
             // known after OnPlacedAroundTarget, so clamp the complete visible hierarchy now;
@@ -409,6 +437,11 @@ namespace GourmetProject.Game.UI.Tooltips
         private void ClampVisibleTipToBounds(RectTransform parent, Rect bounds)
         {
             Rect visibleRect = VisualRect(parent, _tipRect);
+            _tipRect.anchoredPosition += VisibleBoundsOffset(visibleRect, bounds);
+        }
+
+        private Vector2 VisibleBoundsOffset(Rect visibleRect, Rect bounds)
+        {
             float minX = bounds.xMin + _screenPadding;
             float maxX = bounds.xMax - _screenPadding;
             float minY = bounds.yMin + _screenPadding;
@@ -441,7 +474,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 offset.y = minY - visibleRect.yMin;
             }
 
-            _tipRect.anchoredPosition += offset;
+            return offset;
         }
 
         private Vector2 TipSize()
@@ -564,7 +597,7 @@ namespace GourmetProject.Game.UI.Tooltips
             return left + right + bottom + top;
         }
 
-        private float OverlapArea(Vector2 center, Vector2 size, Rect target)
+        private static float OverlapArea(Vector2 center, Vector2 size, Rect target)
         {
             float halfW = size.x * 0.5f;
             float halfH = size.y * 0.5f;
@@ -574,6 +607,28 @@ namespace GourmetProject.Game.UI.Tooltips
             float maxY = center.y + halfH;
             float overlapW = Mathf.Max(0f, Mathf.Min(maxX, target.xMax) - Mathf.Max(minX, target.xMin));
             float overlapH = Mathf.Max(0f, Mathf.Min(maxY, target.yMax) - Mathf.Max(minY, target.yMin));
+            return overlapW * overlapH;
+        }
+
+        private static Rect OffsetRect(Rect rect, Vector2 offset)
+        {
+            rect.position += offset;
+            return rect;
+        }
+
+        private float OverflowAmount(Rect rect, Rect bounds)
+        {
+            float left = Mathf.Max(0f, bounds.xMin + _screenPadding - rect.xMin);
+            float right = Mathf.Max(0f, rect.xMax - (bounds.xMax - _screenPadding));
+            float bottom = Mathf.Max(0f, bounds.yMin + _screenPadding - rect.yMin);
+            float top = Mathf.Max(0f, rect.yMax - (bounds.yMax - _screenPadding));
+            return left + right + bottom + top;
+        }
+
+        private static float OverlapArea(Rect rect, Rect target)
+        {
+            float overlapW = Mathf.Max(0f, Mathf.Min(rect.xMax, target.xMax) - Mathf.Max(rect.xMin, target.xMin));
+            float overlapH = Mathf.Max(0f, Mathf.Min(rect.yMax, target.yMax) - Mathf.Max(rect.yMin, target.yMin));
             return overlapW * overlapH;
         }
     }

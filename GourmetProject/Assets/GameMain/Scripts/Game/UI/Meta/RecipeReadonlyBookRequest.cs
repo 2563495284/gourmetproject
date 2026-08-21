@@ -9,6 +9,7 @@ namespace GourmetProject.Game.UI.Meta
     internal enum RecipeReadonlyBookMode
     {
         ReadonlyBook,
+        ReadonlyDishPool,
         ShopDeleteDish,
         ActiveItemTarget,
         EventDeleteDish,
@@ -90,6 +91,20 @@ namespace GourmetProject.Game.UI.Meta
                 onChanged,
                 null,
                 null,
+                0,
+                null);
+        }
+
+        public static RecipeReadonlyBookRequest ReadonlyDishPool(string title)
+        {
+            return new RecipeReadonlyBookRequest(
+                RecipeReadonlyBookMode.ReadonlyDishPool,
+                null,
+                null,
+                null,
+                null,
+                null,
+                title,
                 0,
                 null);
         }

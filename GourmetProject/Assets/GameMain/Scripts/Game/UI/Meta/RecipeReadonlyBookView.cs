@@ -23,6 +23,12 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     public sealed partial class RecipeReadonlyBookView : MonoBehaviour
     {
+        private static readonly Vector2 BookChromeReferenceSize =
+            new(1286.4f, 714.6667f);
+
+        [Header("Chrome")]
+        [SerializeField] private RectTransform _bookChrome;
+
         [Header("Header")]
         [SerializeField] private TMP_Text _titleText;
 
@@ -44,7 +50,7 @@ namespace GourmetProject.Game.UI.Meta
         private Func<FoodTipsView> _getFoodTips;
         private RecipeEditDishView _hoveredTipDish;
         private RecipeWarehouseView _warehouse;
-        private RecipeReadonlyBookStateMachine _stateMachine;
+        private RecipeReadonlyBookSession _session;
         private int _readonlyEntriesBookIndex = -1;
         private IReadOnlyList<RecipeReadonlyDishEntry> _readonlyEntries;
         private IReadOnlyList<RecipeBookSlot> _readonlySlots;
@@ -54,13 +60,64 @@ namespace GourmetProject.Game.UI.Meta
         private void Awake()
         {
             EnsureWired();
+            UpdateBookChromeScale();
+        }
+
+        private void OnEnable()
+        {
+            Canvas.willRenderCanvases -= UpdateBookChromeScale;
+            Canvas.willRenderCanvases += UpdateBookChromeScale;
+            UpdateBookChromeScale();
+        }
+
+        private void OnRectTransformDimensionsChange()
+        {
+            UpdateBookChromeScale();
+        }
+
+        internal void UpdateBookChromeScale()
+        {
+            if (_bookChrome == null)
+            {
+                return;
+            }
+
+            Vector2 availableSize = ((RectTransform)transform).rect.size;
+            if (availableSize.x <= 0f || availableSize.y <= 0f)
+            {
+                return;
+            }
+
+            float scale = Mathf.Clamp01(Mathf.Min(
+                availableSize.x / BookChromeReferenceSize.x,
+                availableSize.y / BookChromeReferenceSize.y));
+            _bookChrome.sizeDelta = BookChromeReferenceSize;
+            _bookChrome.localScale = new Vector3(scale, scale, 1f);
         }
 
         private void OnDisable()
         {
-            _stateMachine?.Clear();
+            Canvas.willRenderCanvases -= UpdateBookChromeScale;
             HideRecipeDishTips();
-            ClearWarehouse();
+            ReleaseWarehouseContent();
+            _session = null;
+            _run = null;
+            _database = null;
+            _onExit = null;
+            _onChanged = null;
+            _getFoodTips = null;
+            _readonlyEntries = null;
+            _readonlySlots = null;
+            _readonlyEntriesBookIndex = -1;
+            _liveMutationPlaying = false;
+        }
+
+        private void OnDestroy()
+        {
+            if (_wired && _backButton != null)
+            {
+                _backButton.onClick.RemoveListener(OnBackButtonClicked);
+            }
         }
 
         /// <summary>商店删除食物：点击食物后通过通用确认弹窗二次确认。</summary>
@@ -131,7 +188,9 @@ namespace GourmetProject.Game.UI.Meta
 
             _readonlyEntries = entries;
             _readonlySlots = BuildReadonlySlots(entries);
-            _stateMachine.Switch(new ReadonlyDishPoolState(title));
+            _session = new RecipeReadonlyBookSession(
+                RecipeReadonlyBookRequest.ReadonlyDishPool(title));
+            RenderSession(false);
         }
 
         /// <summary>
@@ -193,44 +252,16 @@ namespace GourmetProject.Game.UI.Meta
                     ? request.ReadonlyEntries
                     : null;
             _readonlySlots = BuildReadonlySlots(_readonlyEntries);
-
-            switch (request.Mode)
-            {
-                case RecipeReadonlyBookMode.ReadonlyBook:
-                    _stateMachine.Switch(
-                        new ReadonlyRecipeBookState(
-                            request.BookIndex,
-                            request.HideExitButton));
-                    break;
-                case RecipeReadonlyBookMode.ShopDeleteDish:
-                    _stateMachine.Switch(
-                        new ShopDeleteDishState(request.OnExit));
-                    break;
-                case RecipeReadonlyBookMode.ActiveItemTarget:
-                    _stateMachine.Switch(
-                        new ActiveRecipeDishSelectState(
-                            request.Item,
-                            request.OnCancel,
-                            request.OnTargetConfirmed));
-                    break;
-                case RecipeReadonlyBookMode.EventDeleteDish:
-                    _stateMachine.Switch(
-                        new EventRecipeDishDeleteState(
-                            request.Title,
-                            request.OnCancel,
-                            target => request.OnTargetConfirmed?.Invoke(
-                                target,
-                                null)));
-                    break;
-            }
+            _session = new RecipeReadonlyBookSession(request);
+            RenderSession(false);
         }
 
         /// <summary>供外部（如金币变化）请求刷新当前工作区状态。</summary>
         public void Refresh()
         {
-            if (_run != null && isActiveAndEnabled)
+            if (_run != null && _session != null && isActiveAndEnabled)
             {
-                _stateMachine?.Refresh();
+                RenderSession(true);
             }
         }
 
@@ -379,7 +410,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             _readonlyEntries = entries;
             _readonlySlots = BuildReadonlySlots(entries);
-            RebuildWarehouseForCurrentState();
+            RenderSession(true);
         }
 
         private void EnsureWired()
@@ -390,10 +421,15 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _wired = true;
-            _stateMachine ??= new RecipeReadonlyBookStateMachine(this);
+            if (_bookChrome == null)
+            {
+                _bookChrome = transform.Find("BookChrome") as RectTransform;
+            }
+
             if (_titleText == null)
             {
-                Transform title = transform.Find("Title");
+                Transform title = transform.Find("BookChrome/TitleTab/Title")
+                    ?? transform.Find("TitleTab/Title");
                 _titleText = title != null
                     ? title.GetComponent<TMP_Text>()
                     : null;
@@ -401,114 +437,95 @@ namespace GourmetProject.Game.UI.Meta
 
             if (_backButton != null)
             {
-                _backButton.onClick.RemoveAllListeners();
-                _backButton.onClick.AddListener(
-                    () => _stateMachine?.OnExitClicked());
+                _backButton.onClick.AddListener(OnBackButtonClicked);
             }
         }
 
-        private void RebuildWarehouseForCurrentState()
+        private void OnBackButtonClicked()
         {
-            bool preserveScroll = _warehouse != null;
+            if (!_liveMutationPlaying)
+            {
+                _session?.OnExitClicked();
+            }
+        }
+
+        private void RenderSession(bool preserveScroll)
+        {
+            UpdateBookChromeScale();
+            HideRecipeDishTips();
             float previousScroll = preserveScroll
+                && _warehouse != null
                 ? _warehouse.VerticalNormalizedPosition
                 : 1f;
-            ClearWarehouse();
 
-            RecipeReadonlyBookState state = _stateMachine?.Current;
-            if (state == null
-                || Database == null
-                || _warehouseContainer == null
-                || _warehousePrefab == null
-                || _dishPrefab == null)
+            if (_session == null || Database == null || !ValidateBindings())
             {
                 return;
             }
 
             DisableLegacyWarehouseLayout();
-            string title;
-            if (state is ShopDeleteDishState)
+            if (_session.UsesSemanticTitle)
             {
-                title = "选择一个食物进行删除";
+                SemanticDescriptionFormatter.Set(
+                    _titleText,
+                    _session.PanelTitle);
             }
             else
             {
-                title = state.PanelTitle;
+                SetText(_titleText, _session.PanelTitle);
             }
 
-            if (state is ActiveRecipeDishSelectState)
-            {
-                if (_titleText != null)
-                {
-                    SemanticDescriptionFormatter.Set(_titleText, title);
-                }
-            }
-            else
-            {
-                SetText(_titleText, title);
-            }
-            if (_backButton != null)
-            {
-                _backButton.gameObject.SetActive(state.ShowExitButton);
-            }
-
-            SetButtonText(_backButton, state.ExitButtonText);
+            _backButton.gameObject.SetActive(_session.ShowExitButton);
+            SetButtonText(_backButton, _session.ExitButtonText);
 
             const int bookIndex = 0;
-            if (state.BookIndexFilter < 0
-                || state.BookIndexFilter == bookIndex)
+            if (_session.BookIndexFilter >= 0
+                && _session.BookIndexFilter != bookIndex)
             {
-                _warehouse = Instantiate(
-                    _warehousePrefab,
-                    _warehouseContainer);
-                _warehouse.gameObject.name = "RecipeWarehouse";
-                StretchWarehouseToContainer(_warehouse);
-
-                RectTransform dishContainer = _warehouse.DishContainer;
-                if (dishContainer != null)
-                {
-                    IReadOnlyList<RecipeBookSlot> entries =
-                        EntriesForBook(bookIndex);
-                    List<int> displayOrder =
-                        BuildDishDisplayOrder(entries);
-                    for (int displayIndex = 0;
-                         displayIndex < displayOrder.Count;
-                         displayIndex++)
-                    {
-                        int dishIndex = displayOrder[displayIndex];
-                        SpawnDish(
-                            dishContainer,
-                            entries[dishIndex],
-                            bookIndex,
-                            dishIndex,
-                            state);
-                    }
-                }
-
-                _warehouse.RefreshLayout();
-                _warehouse.SetVerticalNormalizedPosition(
-                    preserveScroll ? previousScroll : 1f);
+                ReleaseWarehouseContent();
+                _onChanged?.Invoke();
+                return;
             }
 
+            EnsureWarehouse();
+            RectTransform dishContainer = _warehouse.DishContainer;
+            IReadOnlyList<RecipeBookSlot> entries = EntriesForBook(bookIndex);
+            List<int> displayOrder = BuildDishDisplayOrder(entries);
+            for (int displayIndex = 0;
+                 displayIndex < displayOrder.Count;
+                 displayIndex++)
+            {
+                int dishIndex = displayOrder[displayIndex];
+                RecipeEditDishView dish = DishForDisplayIndex(
+                    displayIndex,
+                    dishContainer);
+                BindDish(
+                    dish,
+                    entries[dishIndex],
+                    bookIndex,
+                    dishIndex);
+            }
+
+            ReleaseDishesFrom(displayOrder.Count);
+            _warehouse.RefreshLayout();
+            _warehouse.SetVerticalNormalizedPosition(previousScroll);
             _onChanged?.Invoke();
         }
 
-        private void SpawnDish(
-            RectTransform dishContainer,
+        private void BindDish(
+            RecipeEditDishView dish,
             RecipeBookSlot slot,
             int bookIndex,
-            int dishIndex,
-            RecipeReadonlyBookState state)
+            int dishIndex)
         {
             string dishId = slot.DishId;
             DishDef def = Database.GetDish(dishId);
-            RecipeEditDishView dish = Instantiate(_dishPrefab, dishContainer);
             dish.gameObject.name =
                 $"RecipeDish_{bookIndex + 1}_{dishIndex + 1}";
-            bool shopDeleteLimitExhausted = state is ShopDeleteDishState
+            bool shopDeleteLimitExhausted = _session.IsShopDelete
                 && ShopService.DeleteDishRemaining(_run) <= 0;
-            bool canClickDish = state.CanClickDish
-                && (!(state is ShopDeleteDishState)
+            bool canClickDish = _session.CanClickDish
+                && (!_session.IsShopDelete
                     || ShopService.CanDeleteDish(_run)
                     || shopDeleteLimitExhausted);
             dish.Bind(
@@ -531,7 +548,68 @@ namespace GourmetProject.Game.UI.Meta
             {
                 dish.PreparePassiveMutationHidden();
             }
-            _spawnedDishes.Add(dish);
+        }
+
+        private void EnsureWarehouse()
+        {
+            if (_warehouse == null)
+            {
+                _warehouse = Instantiate(
+                    _warehousePrefab,
+                    _warehouseContainer);
+                _warehouse.gameObject.name = "RecipeWarehouse";
+                StretchWarehouseToContainer(_warehouse);
+            }
+
+            if (!_warehouse.gameObject.activeSelf)
+            {
+                _warehouse.gameObject.SetActive(true);
+            }
+        }
+
+        private RecipeEditDishView DishForDisplayIndex(
+            int displayIndex,
+            RectTransform dishContainer)
+        {
+            while (_spawnedDishes.Count <= displayIndex)
+            {
+                RecipeEditDishView created = Instantiate(
+                    _dishPrefab,
+                    dishContainer);
+                created.gameObject.SetActive(false);
+                _spawnedDishes.Add(created);
+            }
+
+            RecipeEditDishView dish = _spawnedDishes[displayIndex];
+            if (dish.transform.parent != dishContainer)
+            {
+                dish.transform.SetParent(dishContainer, false);
+            }
+
+            if (!dish.gameObject.activeSelf)
+            {
+                dish.gameObject.SetActive(true);
+            }
+
+            dish.transform.SetSiblingIndex(displayIndex + 1);
+            return dish;
+        }
+
+        private void ReleaseDishesFrom(int firstUnusedIndex)
+        {
+            for (int i = Mathf.Max(0, firstUnusedIndex);
+                 i < _spawnedDishes.Count;
+                 i++)
+            {
+                RecipeEditDishView dish = _spawnedDishes[i];
+                if (dish == null || !dish.gameObject.activeSelf)
+                {
+                    continue;
+                }
+
+                dish.ReleaseForReuse();
+                dish.gameObject.SetActive(false);
+            }
         }
 
         private IReadOnlyList<RecipeBookSlot> EntriesForBook(int bookIndex)
@@ -629,7 +707,7 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            _stateMachine?.Current?.OnDishClicked(this, dish);
+            _session?.OnDishClicked(this, dish);
         }
 
         private RecipeEditDishView FindDish(int bookIndex, int dishIndex)
@@ -638,6 +716,7 @@ namespace GourmetProject.Game.UI.Meta
             {
                 RecipeEditDishView dish = _spawnedDishes[i];
                 if (dish != null
+                    && dish.gameObject.activeSelf
                     && dish.BookIndex == bookIndex
                     && dish.DishIndex == dishIndex)
                 {
@@ -704,23 +783,34 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private void ClearWarehouse()
+        private void ReleaseWarehouseContent()
         {
-            if (_warehouse != null)
+            ReleaseDishesFrom(0);
+            if (_warehouse != null && _warehouse.gameObject.activeSelf)
             {
-                if (Application.isPlaying)
-                {
-                    Destroy(_warehouse.gameObject);
-                }
-                else
-                {
-                    DestroyImmediate(_warehouse.gameObject);
-                }
+                _warehouse.gameObject.SetActive(false);
+            }
+        }
 
-                _warehouse = null;
+        private bool ValidateBindings()
+        {
+            if (_bookChrome != null
+                && _titleText != null
+                && _warehouseContainer != null
+                && _warehousePrefab != null
+                && _dishPrefab != null
+                && _backButton != null)
+            {
+                return true;
             }
 
-            _spawnedDishes.Clear();
+            Debug.LogError(
+                $"{nameof(RecipeReadonlyBookView)} prefab bindings are incomplete. "
+                + "Book chrome, title, warehouse container/prefab, dish prefab "
+                + "and back button "
+                + "must all be assigned.",
+                this);
+            return false;
         }
 
         private static void SetText(TMP_Text text, string value)

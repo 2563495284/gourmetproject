@@ -10,11 +10,11 @@ namespace GourmetProject.Game.UI.Meta
     public sealed class RecipeWarehouseItemFrameGraphic : MaskableGraphic
     {
         private static readonly Color NormalFill =
-            new Color(0.8f, 0.68f, 0.42f, 0.025f);
+            new Color(0.9569f, 0.9216f, 0.8667f, 0.035f);
         private static readonly Color HighlightedFill =
-            new Color(0.96f, 0.72f, 0.24f, 0.12f);
+            new Color(0.6627f, 0.7255f, 0.6314f, 0.18f);
         private static readonly Color NormalBorder =
-            new Color(0.96f, 0.72f, 0.24f, 1f);
+            new Color(0.3961f, 0.4588f, 0.4f, 1f);
         private static readonly Color CannotPlaceFill =
             new Color(0.92f, 0.18f, 0.16f, 0.10f);
         private static readonly Color CannotPlaceBorder =
