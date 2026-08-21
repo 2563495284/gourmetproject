@@ -65,6 +65,58 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
+        [Test]
+        public void PlaceAroundRectTransform_WhenSummaryIsLeft_ExternalSkillsStayOnItsLeft()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(FoodTipsPath);
+            Assert.That(prefab, Is.Not.Null);
+
+            var parentObject = new GameObject("FoodTipsPlacementParent", typeof(RectTransform));
+            RectTransform parent = parentObject.GetComponent<RectTransform>();
+            parent.sizeDelta = new Vector2(1600f, 1000f);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab, parent, false);
+            try
+            {
+                Assert.That(instance.TryGetComponent(out FoodTipsView tips), Is.True);
+                tips.Bind(new FoodTipsData(
+                    new FoodSummaryTipsData(
+                        "蛋卷",
+                        new[] { new FoodInfoEntry("本行", "每有1份食物，分数+10") },
+                        Array.Empty<string>()),
+                    FoodScoreTipsData.Empty,
+                    Array.Empty<FoodInfoEntry>(),
+                    new[] { new FoodInfoEntry("糖豆<甜蜜传递>", "右侧及自身每有1个技能，分数+6") },
+                    Array.Empty<FoodInfoEntry>()));
+
+                var targetObject = new GameObject("Target", typeof(RectTransform));
+                RectTransform target = targetObject.GetComponent<RectTransform>();
+                target.SetParent(parent, false);
+                target.anchorMin = new Vector2(0.5f, 0.5f);
+                target.anchorMax = new Vector2(0.5f, 0.5f);
+                target.pivot = new Vector2(0.5f, 0.5f);
+                target.sizeDelta = new Vector2(100f, 100f);
+                target.anchoredPosition = new Vector2(700f, 0f);
+
+                Canvas.ForceUpdateCanvases();
+                tips.PlaceAroundRectTransform(target, null);
+
+                RectTransform summary = tips.SummaryView.transform as RectTransform;
+                RectTransform externalSkills = tips.transform.Find("4_TransferredSubSkills") as RectTransform;
+                Assert.That(summary, Is.Not.Null);
+                Assert.That(externalSkills, Is.Not.Null);
+                Rect targetBounds = RectInParent(target, parent);
+                Rect summaryBounds = RectInParent(summary, parent);
+                Rect externalBounds = RectInParent(externalSkills, parent);
+                Assert.That(summaryBounds.center.x, Is.LessThan(targetBounds.center.x));
+                Assert.That(externalBounds.xMax, Is.LessThan(summaryBounds.xMin));
+                Assert.That(summaryBounds.xMin - externalBounds.xMax, Is.EqualTo(10f).Within(0.1f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parentObject);
+            }
+        }
+
         private static void AssertContentSized(RectTransform rect)
         {
             Assert.That(rect, Is.Not.Null);
@@ -84,6 +136,22 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(fitter.verticalFit, Is.EqualTo(ContentSizeFitter.FitMode.Unconstrained));
             Assert.That(rect.TryGetComponent(out CanvasGroup canvasGroup), Is.True);
             Assert.That(canvasGroup.alpha, Is.EqualTo(visible ? 1f : 0f));
+        }
+
+        private static Rect RectInParent(RectTransform rect, RectTransform parent)
+        {
+            var corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            Vector2 min = parent.InverseTransformPoint(corners[0]);
+            Vector2 max = min;
+            for (int i = 1; i < corners.Length; i++)
+            {
+                Vector2 point = parent.InverseTransformPoint(corners[i]);
+                min = Vector2.Min(min, point);
+                max = Vector2.Max(max, point);
+            }
+
+            return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
         }
     }
 }

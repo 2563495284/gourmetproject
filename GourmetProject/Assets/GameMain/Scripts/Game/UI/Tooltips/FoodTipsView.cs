@@ -164,6 +164,7 @@ namespace GourmetProject.Game.UI.Tooltips
             SeparateScoreFromTarget(canvasRect, targetRect);
             PlaceSummaryGroup(targetRect, canvasRect);
             SeparateSummaryGroupFromPrimaryModules(canvasRect, targetRect);
+            PlaceExternalSkillsOutsideSummary(targetRect, canvasRect);
         }
 
         public void PlaceAroundRectTransform(RectTransform target, Canvas canvas)
@@ -193,6 +194,7 @@ namespace GourmetProject.Game.UI.Tooltips
             SeparateScoreFromTarget(canvasRect, targetRect);
             PlaceSummaryGroup(targetRect, canvasRect);
             SeparateSummaryGroupFromPrimaryModules(canvasRect, targetRect);
+            PlaceExternalSkillsOutsideSummary(targetRect, canvasRect);
         }
 
         private void PlaceSummaryGroup(Rect targetRect, RectTransform canvasRect)
@@ -446,6 +448,44 @@ namespace GourmetProject.Game.UI.Tooltips
             Vector2 anchorSize = PreferredSize(anchor);
             Vector2 center = new Vector2(anchorCenter.x + anchorSize.x * 0.5f + _detailGap + size.x * 0.5f, anchorCenter.y);
             SetCenter(rect, center);
+        }
+
+        private void PlaceLeft(RectTransform rect, RectTransform anchor)
+        {
+            if (rect == null || anchor == null || !rect.gameObject.activeSelf || !anchor.gameObject.activeSelf)
+            {
+                return;
+            }
+
+            Vector2 size = PreferredSize(rect);
+            Vector2 anchorCenter = RectCenterInParent(anchor);
+            Vector2 anchorSize = PreferredSize(anchor);
+            Vector2 center = new Vector2(anchorCenter.x - anchorSize.x * 0.5f - _detailGap - size.x * 0.5f, anchorCenter.y);
+            SetCenter(rect, center);
+        }
+
+        private void PlaceExternalSkillsOutsideSummary(Rect targetRect, RectTransform canvasRect)
+        {
+            RectTransform summaryRect = _summaryView.transform as RectTransform;
+            if (summaryRect == null
+                || _externalSkillsRoot == null
+                || !_externalSkillsRoot.gameObject.activeSelf)
+            {
+                return;
+            }
+
+            Rect summaryBounds = RectTransformToLocalRect(summaryRect, canvasRect);
+            if (summaryBounds.center.x < targetRect.center.x)
+            {
+                PlaceLeft(_externalSkillsRoot, summaryRect);
+            }
+            else
+            {
+                PlaceRight(_externalSkillsRoot, summaryRect);
+            }
+
+            Canvas.ForceUpdateCanvases();
+            ClampSummaryGroupToBounds(canvasRect, canvasRect.rect, summaryRect);
         }
 
         private void ClampSummaryGroupToBounds(RectTransform canvasRect, Rect bounds, RectTransform summaryRect)
