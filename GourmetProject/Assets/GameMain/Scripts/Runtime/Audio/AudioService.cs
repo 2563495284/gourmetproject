@@ -38,11 +38,10 @@ namespace GourmetProject.Runtime.Audio
 
         private static readonly string[] BattleMusic =
         {
-            SoundRoot + "music1.ogg",
-            SoundRoot + "music2.ogg",
-            SoundRoot + "music3.ogg",
-            SoundRoot + "music4.ogg",
-            SoundRoot + "music5.ogg",
+            SoundRoot + "甜品店bgm.ogg",
+            SoundRoot + "甜品店bgm2.ogg",
+            SoundRoot + "甜品店bgm3.ogg",
+            SoundRoot + "甜品店bgm4.ogg",
         };
 
         private readonly SoundComponent _sound;

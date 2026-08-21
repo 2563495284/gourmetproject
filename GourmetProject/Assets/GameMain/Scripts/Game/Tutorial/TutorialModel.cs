@@ -13,6 +13,7 @@ namespace GourmetProject.Game.Tutorial
         public const string FirstAction = "tutorial.core.first_action";
         public const string FirstBattle = "tutorial.core.first_battle";
         internal const string FirstBattleSettleHint = "tutorial.core.first_battle_settle_hint";
+        internal const string FirstBattleSettlementOrderHint = "tutorial.core.first_battle_settlement_order_hint";
         public const string Settlement = "tutorial.core.settlement";
         public const string RewardSummary = "tutorial.core.reward_summary";
         public const string SecondAction = "tutorial.core.second_action";
@@ -53,6 +54,7 @@ namespace GourmetProject.Game.Tutorial
         public const string ScoreMeter = "battle.score.meter";
         public const string Hearts = "battle.hearts";
         public const string Recipe = "battle.recipe";
+        public const string ViewTable = "battle.view_table";
         public const string RecipePanel = "battle.recipe_panel";
         public const string Table = "battle.table";
         public const string FoodInfo = "battle.food_info";
@@ -278,15 +280,22 @@ namespace GourmetProject.Game.Tutorial
                         allowTargetInteraction: false,
                         TutorialAnchorId.ServingOutlet),
                     new TutorialStepDefinition(
-                        "你可以把它拖到餐桌上，也可以拖进垃圾桶丢弃。",
+                        "你可以把它拖到餐桌上",
                         TutorialMascotPose.PointRight,
                         TutorialAdvanceMode.Continue,
                         signal: null,
                         enterCommand: null,
                         exitCommand: null,
                         allowTargetInteraction: false,
-                        TutorialAnchorId.ServingOutlet,
-                        TutorialAnchorId.Table,
+                        TutorialAnchorId.Table),
+                    new TutorialStepDefinition(
+                        "也可以拖进垃圾桶丢弃",
+                        TutorialMascotPose.PointRight,
+                        TutorialAdvanceMode.Continue,
+                        signal: null,
+                        enterCommand: null,
+                        exitCommand: null,
+                        allowTargetInteraction: false,
                         TutorialAnchorId.Discard),
                     V(
                         "这里是你的初始食谱，里面是经营会抽到的食物。",
@@ -294,6 +303,9 @@ namespace GourmetProject.Game.Tutorial
                         TutorialCommand.OpenInitialRecipe,
                         TutorialCommand.CloseInitialRecipe,
                         TutorialAnchorId.RecipePanel),
+                    C(
+                        "后续获得新的食物也可以从这里查看。",
+                        TutorialAnchorId.ViewTable),
                     V(
                         "每个食物都有自己的特殊效果。老板好好搭配，它们就能发挥更大的作用！",
                         TutorialMascotPose.Explain,
@@ -301,7 +313,7 @@ namespace GourmetProject.Game.Tutorial
                         TutorialCommand.HidePreparedFoodTips,
                         TutorialAnchorId.FoodTips),
                     new TutorialStepDefinition(
-                        "这里是需要达到的美味值。努力超过它吧！",
+                        "这里是本次营业需要达到的美味值。努力超过它吧！",
                         TutorialMascotPose.Remind,
                         TutorialAdvanceMode.Continue,
                         signal: null,
@@ -322,7 +334,10 @@ namespace GourmetProject.Game.Tutorial
                         enterCommand: null,
                         exitCommand: null,
                         allowTargetInteraction: false,
-                        TutorialAnchorId.Settle),
+                        TutorialAnchorId.Settle)),
+
+                [TutorialId.FirstBattleSettlementOrderHint] = new TutorialSequenceDefinition(
+                    TutorialId.FirstBattleSettlementOrderHint,
                     new TutorialStepDefinition(
                         "食物会从上到下，从左到右开始结算。",
                         TutorialMascotPose.Explain,
