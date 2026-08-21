@@ -251,7 +251,7 @@
     "weight": 1,
     "poolId": "pool_dish",
     "dishHiddenOffset": [
-      10,
+      4,
       0
     ],
     "itemLuckOffset": [
@@ -282,7 +282,7 @@
       0
     ],
     "itemLuckOffset": [
-      7,
+      4,
       0
     ],
     "fragmentHiddenOffset": [
@@ -313,7 +313,7 @@
       0
     ],
     "fragmentHiddenOffset": [
-      7,
+      4,
       0
     ],
     "goldHiddenOffset": [
