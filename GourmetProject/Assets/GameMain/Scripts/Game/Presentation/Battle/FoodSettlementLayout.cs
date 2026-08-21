@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using GourmetProject.Gameplay.Board;
+using GourmetProject.Gameplay.Model;
 using UnityEngine;
 using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
@@ -37,19 +39,12 @@ namespace GourmetProject.Game.Presentation.Battle
             float settlementBottom,
             float settlementTop,
             GpTable board,
-            float builtCellSize)
+            float builtCellSize,
+            IEnumerable<GridPos> additionalVisibleCells = null)
         {
             if (board == null)
             {
                 return Identity(builtCellSize);
-            }
-
-            if (!board.TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY))
-            {
-                minX = 0;
-                minY = 0;
-                maxX = board.Width - 1;
-                maxY = board.Height - 1;
             }
 
             return ComputeBoardTween(
@@ -63,7 +58,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 settlementTop,
                 board.Width,
                 board.Height,
-                new TableFragmentBuilder.PlacementBounds(minX, minY, maxX, maxY),
+                DiningTableLayout.VisibleBounds(board, additionalVisibleCells),
                 builtCellSize);
         }
 
