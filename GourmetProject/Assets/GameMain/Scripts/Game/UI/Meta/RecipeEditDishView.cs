@@ -67,15 +67,6 @@ namespace GourmetProject.Game.UI.Meta
         public DishDef DishDef { get; private set; }
         public Vector2Int DisplayedGridSize { get; private set; } = Vector2Int.one;
 
-        /// <summary>
-        /// 食谱删除后仅更新数据地址，保留当前卡片、预览纹理和视觉状态。
-        /// </summary>
-        internal void Reindex(int bookIndex, int dishIndex)
-        {
-            BookIndex = bookIndex;
-            DishIndex = dishIndex;
-        }
-
         public bool ContainsScreenPoint(Vector2 screenPoint)
         {
             RectTransform rect = _rect != null ? _rect : transform as RectTransform;

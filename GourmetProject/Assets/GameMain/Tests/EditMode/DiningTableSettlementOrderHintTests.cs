@@ -74,7 +74,7 @@ namespace GourmetProject.Tests.EditMode
     public sealed class DiningTableEdgeTests
     {
         [Test]
-        public void EdgeCondition_TreatsDisabledNeighborAsTableBoundary()
+        public void EdgeCondition_DoesNotTreatDisabledNeighborAsTableBoundary()
         {
             var table = new DiningTable(3, 3);
             DishInstance dish = CreateSingleCellDish(1, new GridPos(1, 1));
@@ -90,17 +90,18 @@ namespace GourmetProject.Tests.EditMode
 
             Assert.That(
                 SkillConditionEvaluator.Evaluate(rule, table, history: null, self: dish),
-                Is.EqualTo(1),
-                "儿童餐禁用格应形成餐桌边界。被禁用格相邻的食物应属于边缘。");
+                Is.Zero,
+                "禁用格仍属于餐桌轮廓，不应让相邻食物成为新的边缘。");
         }
 
         [Test]
-        public void EdgeScope_IncludesUsableCellsAdjacentToDisabledCell()
+        public void EdgeScope_IncludesDisabledCellOnTableEdge()
         {
             var table = new DiningTable(5, 5);
-            DishInstance dish = CreateSingleCellDish(1, new GridPos(2, 1));
+            DishInstance dish = CreateSingleCellDish(1, new GridPos(2, 2));
             table.Place(dish);
-            table.SetDisabled(new GridPos(2, 2), true);
+            var disabledEdge = new GridPos(4, 2);
+            table.SetDisabled(disabledEdge, true);
             SkillRuleDef rule = CreateEdgeRule(SkillScope.Edge);
 
             SkillScopeVisual visual = SkillScopeResolver.Resolve(
@@ -110,20 +111,10 @@ namespace GourmetProject.Tests.EditMode
                 rule: rule,
                 mode: SkillScopeVisualMode.CandidateScope);
 
-            CollectionAssert.IsSubsetOf(
-                new[]
-                {
-                    new GridPos(2, 1),
-                    new GridPos(1, 2),
-                    new GridPos(3, 2),
-                    new GridPos(2, 3),
-                },
+            CollectionAssert.Contains(
                 visual.ActionScopeCells,
-                "禁用格四周的可用格都应纳入边缘作用域。");
-            CollectionAssert.DoesNotContain(
-                visual.ActionScopeCells,
-                new GridPos(2, 2),
-                "禁用格形成边界，但自身不是可用的边缘格。");
+                disabledEdge,
+                "位于餐桌外沿的禁用格仍应纳入边缘作用域，再由禁用状态阻止摆放。");
         }
 
         private static SkillRuleDef CreateEdgeRule(SkillScope actionScope)

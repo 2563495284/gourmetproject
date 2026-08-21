@@ -14,8 +14,11 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private TMP_Text _nameText;
         [SerializeField] private TmpTextVertexAnimator _nameAnimator;
+        [SerializeField] private RectTransform _baseInfoView;
         [SerializeField] private RectTransform _duplicateView;
+        [SerializeField] private CanvasGroup _duplicateCanvasGroup;
         [SerializeField] private RectTransform _countAsView;
+        [SerializeField] private CanvasGroup _countAsCanvasGroup;
         [SerializeField] private TMP_Text _countAsText;
         [SerializeField] private RectTransform _skillsContent;
         [SerializeField] private RectTransform _flavorContent;
@@ -43,9 +46,9 @@ namespace GourmetProject.Game.UI.Tooltips
             _nameText.text = data.FoodName;
             EnsureNameAnimator();
             _nameAnimator?.Rebuild();
-            _duplicateView.gameObject.SetActive(data.IsTemporaryCopy);
+            SetBadgeVisible(_duplicateView, _duplicateCanvasGroup, data.IsTemporaryCopy);
             bool showCountAs = data.CountAs > 1;
-            _countAsView.gameObject.SetActive(showCountAs);
+            SetBadgeVisible(_countAsView, _countAsCanvasGroup, showCountAs);
             _countAsText.text = FormatCountAs(data.CountAs);
             float skillsTextWidth = BuildSkills(data.Skills, data.SkillsDisabled);
             BuildFlavors(data.Flavors);
@@ -159,9 +162,12 @@ namespace GourmetProject.Game.UI.Tooltips
                 return;
             }
 
-            float preferredWidth = _nameText != null
-                ? _nameText.preferredWidth + SummaryHorizontalPadding
-                : 0f;
+            RebuildActiveLayout(_countAsView);
+            RebuildActiveLayout(_nameText.rectTransform);
+            RebuildActiveLayout(_duplicateView);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_baseInfoView);
+            float preferredWidth = LayoutUtility.GetPreferredWidth(_baseInfoView)
+                + SummaryHorizontalPadding;
 
             preferredWidth = Mathf.Max(preferredWidth, MinWidthForTenDescCharacters());
 
@@ -184,6 +190,25 @@ namespace GourmetProject.Game.UI.Tooltips
             LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
         }
 
+        private static void RebuildActiveLayout(RectTransform rect)
+        {
+            if (rect != null && rect.gameObject.activeSelf)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+            }
+        }
+
+        private static void SetBadgeVisible(
+            RectTransform view,
+            CanvasGroup canvasGroup,
+            bool visible)
+        {
+            view.gameObject.SetActive(true);
+            canvasGroup.alpha = visible ? 1f : 0f;
+            canvasGroup.interactable = false;
+            canvasGroup.blocksRaycasts = false;
+        }
+
         private float MinWidthForTenDescCharacters()
         {
             if (_skillCardPrefab == null)
@@ -201,8 +226,11 @@ namespace GourmetProject.Game.UI.Tooltips
         {
             bool valid = true;
             valid &= ReportMissing(_nameText, nameof(_nameText));
+            valid &= ReportMissing(_baseInfoView, nameof(_baseInfoView));
             valid &= ReportMissing(_duplicateView, nameof(_duplicateView));
+            valid &= ReportMissing(_duplicateCanvasGroup, nameof(_duplicateCanvasGroup));
             valid &= ReportMissing(_countAsView, nameof(_countAsView));
+            valid &= ReportMissing(_countAsCanvasGroup, nameof(_countAsCanvasGroup));
             valid &= ReportMissing(_countAsText, nameof(_countAsText));
             valid &= ReportMissing(_skillsContent, nameof(_skillsContent));
             valid &= ReportMissing(_flavorContent, nameof(_flavorContent));

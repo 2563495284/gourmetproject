@@ -1016,20 +1016,23 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
-        /// 按棋盘实际可用轮廓判定边缘：菜品任一占用格的上、下、左、右四邻中，
-        /// 只要存在一个「不可用格」（不存在、越界或被禁用），即视为处于边缘（闸门）。
-        /// 这样不规则/阶梯形棋盘和儿童餐禁用格形成的边缘都能被正确识别。
+        /// 按棋盘实际轮廓判定边缘：菜品任一占用格的上、下、左、右四邻中，
+        /// 只要存在一个「不存在格」（含越界），即视为处于边缘（闸门）。
+        /// 禁用格仍属于餐桌轮廓，只影响摆放，不会在轮廓内部制造新的边缘。
         /// </summary>
         internal static bool IsOnEdge(GpTable board, DishInstance self)
         {
-            if (board == null || self == null)
+            if (board == null)
             {
                 return false;
             }
 
             foreach (GridPos c in self.OccupiedCells)
             {
-                if (IsEdgeCell(board, c))
+                if (!board.Exists(c.Offset(1, 0))
+                    || !board.Exists(c.Offset(-1, 0))
+                    || !board.Exists(c.Offset(0, 1))
+                    || !board.Exists(c.Offset(0, -1)))
                 {
                     return true;
                 }
@@ -1037,22 +1040,5 @@ namespace GourmetProject.Gameplay.Scoring
 
             return false;
         }
-
-        /// <summary>可用格的四邻中存在不存在、越界或禁用格时，该格属于餐桌边缘。</summary>
-        internal static bool IsEdgeCell(GpTable board, GridPos cell)
-        {
-            if (board == null || !board.Exists(cell) || board.IsDisabled(cell))
-            {
-                return false;
-            }
-
-            return IsUnavailable(board, cell.Offset(1, 0))
-                   || IsUnavailable(board, cell.Offset(-1, 0))
-                   || IsUnavailable(board, cell.Offset(0, 1))
-                   || IsUnavailable(board, cell.Offset(0, -1));
-        }
-
-        private static bool IsUnavailable(GpTable board, GridPos cell)
-            => !board.Exists(cell) || board.IsDisabled(cell);
     }
 }

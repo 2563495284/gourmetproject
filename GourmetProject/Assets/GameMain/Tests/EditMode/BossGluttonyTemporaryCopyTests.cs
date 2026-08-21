@@ -71,4 +71,44 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(tips.Summary.IsTemporaryCopy, Is.True);
         }
     }
+
+    public sealed class KidsMealBossDebuffTests
+    {
+        [Test]
+        public void ModifyPreparedTable_DisablesBottomEdgeWithoutRemovingIt()
+        {
+            var table = new DiningTable(3, 3);
+            int originalCapacity = table.CellCapacity;
+            var model = new KidsMealBossDebuffModel();
+
+            model.ModifyPreparedTable(table, recipeEntryCount: 0, rng: null);
+
+            Assert.That(table.CellCapacity, Is.EqualTo(originalCapacity));
+            for (int x = 0; x < table.Width; x++)
+            {
+                var bottom = new GridPos(x, table.Height - 1);
+                Assert.That(table.Exists(bottom), Is.True, $"{bottom} 应保留在餐桌轮廓中。");
+                Assert.That(table.IsDisabled(bottom), Is.True, $"{bottom} 应在轮廓计算后被禁用。");
+            }
+        }
+    }
+
+    public sealed class VegetarianBossDebuffTests
+    {
+        [Test]
+        public void ModifyPreparedTable_DisablesCellWithoutRemovingIt()
+        {
+            var table = new DiningTable(1, 1);
+            var cell = new GridPos(0, 0);
+            var model = new VegetarianBossDebuffModel();
+
+            model.ModifyPreparedTable(
+                table,
+                recipeEntryCount: 0,
+                rng: new Xoshiro256SS(1UL));
+
+            Assert.That(table.Exists(cell), Is.True, "素食禁用格必须保留在餐桌轮廓中。");
+            Assert.That(table.IsDisabled(cell), Is.True, "素食选中的格子应保持禁用。");
+        }
+    }
 }

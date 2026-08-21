@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GourmetProject.Game.Meta.Passives;
-using GourmetProject.Game.Run;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
@@ -228,56 +227,40 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void PassiveRemovalIndexMap_RemovesTargetsAndCompactsSurvivors()
+        public void RecipeMutationResult_DetectsRemovalOnlyPresentation()
         {
             var result = new RecipeMutationResult();
-            foreach (string dishId in new[] { "a", "cookie_1", "b", "cookie_2", "c" })
-            {
-                result.BeforeRecipe.Add(new RecipeDishSnapshot { DishId = dishId });
-            }
-
             result.Entries.Add(RemoveEntry(1, "cookie_1"));
             result.Entries.Add(RemoveEntry(3, "cookie_2"));
 
-            bool mapped = RecipeReadonlyBookView.TryBuildPassiveRemovalIndexMap(
-                result,
-                3,
-                out int[] oldToNewIndex);
-
-            Assert.That(mapped, Is.True);
-            Assert.That(oldToNewIndex, Is.EqualTo(new[] { 0, -1, 1, -1, 2 }));
+            Assert.That(result.OnlyRemovesDishes, Is.True);
         }
 
         [Test]
-        public void PassiveRemovalIndexMap_RejectsNonRemovalMutation()
+        public void RecipeMutationResult_RejectsMixedRemovalPresentation()
         {
             var result = new RecipeMutationResult();
-            result.BeforeRecipe.Add(new RecipeDishSnapshot { DishId = "a" });
+            result.Entries.Add(RemoveEntry(0, "cookie_1"));
             result.Entries.Add(new RecipeMutationEntry
             {
                 BookIndex = 0,
-                DishIndex = 0,
+                DishIndex = 1,
                 Before = new RecipeDishSnapshot { DishId = "a" },
                 After = new RecipeDishSnapshot { DishId = "b" },
             });
 
-            Assert.That(
-                RecipeReadonlyBookView.TryBuildPassiveRemovalIndexMap(
-                    result,
-                    0,
-                    out _),
-                Is.False);
+            Assert.That(result.OnlyRemovesDishes, Is.False);
         }
 
         [Test]
-        public void PassiveRemovalCommit_ReusesSurvivorCardsAndReindexesThem()
+        public void PassiveRemovalCompletion_LeavesCurrentLayoutUntouched()
         {
             GameObject instance = UnityEngine.Object.Instantiate(
                 LoadPrefab(ViewPrefabPath));
             try
             {
-                string[] beforeIds = { "a", "cookie_1", "b", "cookie_2", "c" };
-                DishDef[] dishes = beforeIds
+                string[] dishIds = { "a", "cookie", "b" };
+                DishDef[] dishes = dishIds
                     .Select((dishId, index) => new DishDef(
                         dishId,
                         dishId,
@@ -296,41 +279,24 @@ namespace GourmetProject.Tests.EditMode
                     Array.Empty<FlavorDef>(),
                     Array.Empty<RecipeDef>());
                 var view = instance.GetComponent<RecipeReadonlyBookView>();
-                view.OpenForReadonlyDishPool(database, beforeIds, "删除预览");
-
-                Dictionary<int, RecipeEditDishView> originalCards = instance
-                    .GetComponentsInChildren<RecipeEditDishView>(false)
-                    .ToDictionary(dish => dish.DishIndex);
+                view.OpenForReadonlyDishPool(database, dishIds, "删除预览");
+                RecipeEditDishView[] before = instance
+                    .GetComponentsInChildren<RecipeEditDishView>(false);
                 var result = new RecipeMutationResult();
-                foreach (string dishId in beforeIds)
-                {
-                    result.BeforeRecipe.Add(
-                        new RecipeDishSnapshot { DishId = dishId });
-                }
+                result.Entries.Add(RemoveEntry(1, "cookie"));
+                bool completed = false;
 
-                result.Entries.Add(RemoveEntry(1, "cookie_1"));
-                result.Entries.Add(RemoveEntry(3, "cookie_2"));
-                var afterEntries = new List<RecipeReadonlyDishEntry>
-                {
-                    new(new RecipeBookSlot("a")),
-                    new(new RecipeBookSlot("b")),
-                    new(new RecipeBookSlot("c")),
-                };
-
-                bool applied = view.TryApplyPassiveRemovalEntries(
+                view.CompletePassiveMutation(
                     result,
-                    afterEntries,
-                    null);
+                    Array.Empty<RecipeReadonlyDishEntry>(),
+                    () => completed = true);
 
-                Assert.That(applied, Is.True);
-                Assert.That(originalCards[1].gameObject.activeSelf, Is.False);
-                Assert.That(originalCards[3].gameObject.activeSelf, Is.False);
-                Assert.That(originalCards[0].DishIndex, Is.EqualTo(0));
-                Assert.That(originalCards[2].DishIndex, Is.EqualTo(1));
-                Assert.That(originalCards[4].DishIndex, Is.EqualTo(2));
-                Assert.That(
-                    instance.GetComponentsInChildren<RecipeEditDishView>(false),
-                    Has.Length.EqualTo(3));
+                RecipeEditDishView[] after = instance
+                    .GetComponentsInChildren<RecipeEditDishView>(false);
+                Assert.That(completed, Is.True);
+                Assert.That(after, Is.EqualTo(before));
+                Assert.That(after.Select(dish => dish.DishIndex),
+                    Is.EqualTo(new[] { 0, 1, 2 }));
             }
             finally
             {

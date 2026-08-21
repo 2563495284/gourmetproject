@@ -27,6 +27,27 @@ namespace GourmetProject.Game.Meta.Passives
         public List<RecipeDishSnapshot> AfterRecipe { get; } = new List<RecipeDishSnapshot>();
 
         public bool HasChanges => Entries.Count > 0;
+
+        public bool OnlyRemovesDishes
+        {
+            get
+            {
+                if (Entries.Count == 0)
+                {
+                    return false;
+                }
+
+                foreach (RecipeMutationEntry entry in Entries)
+                {
+                    if (entry == null || !entry.IsRemove)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
     }
 
     public sealed class RecipeMutationEntry
