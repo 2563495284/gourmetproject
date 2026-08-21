@@ -106,7 +106,7 @@
     "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
-      2
+      3
     ],
     "actionParam": [],
     "signed": true,
@@ -220,7 +220,7 @@
     "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
-      2
+      3
     ],
     "actionParam": [],
     "signed": true,
@@ -372,7 +372,7 @@
     "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
-      5
+      6
     ],
     "actionParam": [],
     "signed": true,
@@ -410,7 +410,7 @@
     "actionScope": 6,
     "actionCount": 0,
     "actionValue": [
-      30
+      25
     ],
     "actionParam": [],
     "signed": true,
@@ -467,7 +467,7 @@
     "actionScope": 23,
     "actionCount": 0,
     "actionValue": [
-      1.2
+      1.5
     ],
     "actionParam": [],
     "signed": true,
@@ -564,7 +564,7 @@
     "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
-      10
+      12
     ],
     "actionParam": [],
     "signed": true,
@@ -599,10 +599,10 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 1,
-    "actionScope": 13,
+    "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
-      40
+      35
     ],
     "actionParam": [],
     "signed": true,
@@ -635,18 +635,18 @@
     "condScope": 4,
     "condUnit": 0,
     "condMode": 0,
-    "condParam": "eq:2",
+    "condParam": "<=3",
     "actionType": 1,
     "actionScope": 4,
     "actionCount": 0,
     "actionValue": [
-      12
+      5
     ],
     "actionParam": [
-      "size:2"
+      "size:<=3"
     ],
     "signed": true,
-    "descTemplate": "每有 1 {unit}占 2 格的食物\n此类食物[strong]分数[/strong] [score]{0}[/score]",
+    "descTemplate": "每有 1 {unit}不大于3格的食物\n此类食物[strong]分数[/strong] [score]{0}[/score]",
     "termId": ""
   },
   {
@@ -680,13 +680,13 @@
     "actionScope": 13,
     "actionCount": 0,
     "actionValue": [
-      0.25
+      0.333333
     ],
     "actionParam": [
       "source:row-max;exclude:source"
     ],
     "signed": false,
-    "descTemplate": "将本行最高当前[strong]分数[/strong]的 1/4\n加至本行其他食物上",
+    "descTemplate": "将本行最高当前[strong]分数[/strong]的 1/3\n加至本行其他食物上",
     "termId": ""
   },
   {
@@ -701,7 +701,7 @@
     "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
-      12
+      15
     ],
     "actionParam": [],
     "signed": true,
@@ -755,10 +755,10 @@
     "condMode": 2,
     "condParam": "",
     "actionType": 1,
-    "actionScope": 14,
+    "actionScope": 13,
     "actionCount": 0,
     "actionValue": [
-      50
+      45
     ],
     "actionParam": [
       "when:receive-transfer;resultscope:BuffTargets"
@@ -814,7 +814,7 @@
     "condScope": 14,
     "condUnit": 0,
     "condMode": 1,
-    "condParam": "tiers:6|15|30",
+    "condParam": "tiers:6|15|25",
     "actionType": 9,
     "actionScope": 14,
     "actionCount": 0,
@@ -822,7 +822,7 @@
       0
     ],
     "actionParam": [
-      "tiervals:2.5|9|20"
+      "tiervals:2|6.5|14"
     ],
     "signed": true,
     "descTemplate": "{cscope}食物[strong]份数[/strong]达 {tiers} 时\n[strong]倍率[/strong] [multadd]{tiervals}[/multadd]",
@@ -1043,10 +1043,10 @@
       1
     ],
     "actionParam": [
-      "modifier:add-targets;chance:0.5"
+      "modifier:add-targets;chance:0.4"
     ],
     "signed": false,
-    "descTemplate": "[context]结算[/context]后\n所有食物发动[term]甜蜜传递[/term]时\n每个目标有 50% 概率使其[benefit]额外选择[/benefit] 1 个目标",
+    "descTemplate": "[context]结算[/context]后\n所有食物发动[term]甜蜜传递[/term]时\n有40%概率使其[benefit]额外选择[/benefit] 1 个目标",
     "termId": "term_sweet_transfer"
   },
   {
@@ -1078,7 +1078,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 5,
+    "actionCount": 4,
     "actionValue": [
       0
     ],
@@ -1121,7 +1121,7 @@
       1.3
     ],
     "actionParam": [
-      "multfloor:15"
+      "multfloor:20"
     ],
     "signed": false,
     "descTemplate": "[term]欢乐蛋糕[/term]层数 ×{0}\n至少 +{floor} 层",
@@ -1155,7 +1155,7 @@
     "condScope": 13,
     "condUnit": 0,
     "condMode": 1,
-    "condParam": "tiers:8|16|30",
+    "condParam": "tiers:7|15|25",
     "actionType": 2,
     "actionScope": 13,
     "actionCount": 0,
@@ -1163,7 +1163,7 @@
       0
     ],
     "actionParam": [
-      "tiervals:1.5|2|2.8"
+      "tiervals:1.6|2.2|3"
     ],
     "signed": false,
     "descTemplate": "{cscope}食物达 {tiers} 份时\n[strong]倍率[/strong] [multmul]×{tiervals}[/multmul]",
@@ -1181,7 +1181,7 @@
     "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
-      0.5
+      0.4
     ],
     "actionParam": [],
     "signed": true,
@@ -1219,7 +1219,7 @@
     "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
-      30
+      50
     ],
     "actionParam": [
       "cat:cake"
@@ -1334,7 +1334,7 @@
     "condScope": 4,
     "condUnit": 2,
     "condMode": 1,
-    "condParam": "cake;tiers:3|5|8",
+    "condParam": "cake;tiers:3|5|9",
     "actionType": 6,
     "actionScope": 16,
     "actionCount": 0,
@@ -1398,7 +1398,7 @@
     "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
-      1.1
+      1.15
     ],
     "actionParam": [],
     "signed": false,
@@ -1462,10 +1462,10 @@
       1
     ],
     "actionParam": [
-      "target:occupiedcells;offset:-1"
+      "target:occupiedcells;div:2"
     ],
     "signed": true,
-    "descTemplate": "{ascope}食物[benefit]额外视为[/benefit] N 份食物\n（N 为各自所占格子数-1）",
+    "descTemplate": "{ascope}食物[benefit]额外视为[/benefit]N份食物\n（N为各自所占格子数/2）",
     "termId": ""
   },
   {
@@ -1528,7 +1528,7 @@
       "source:target-countas"
     ],
     "signed": true,
-    "descTemplate": "{ascope}食物\n把自身[strong]份数[/strong]记入[strong]倍率[/strong]",
+    "descTemplate": "{ascope}食物\n把自身[strong]份数[/strong]加入[strong]倍率[/strong]",
     "termId": ""
   },
   {

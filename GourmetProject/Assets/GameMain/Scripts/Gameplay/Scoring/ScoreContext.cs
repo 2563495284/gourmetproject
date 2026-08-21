@@ -148,7 +148,11 @@ namespace GourmetProject.Gameplay.Scoring
                 float basis;
                 if (HasActionParam(rule, "target:occupiedcells"))
                 {
-                    basis = target.OccupiedCells.Count + ActionIntParam(rule, "offset", 0);
+                    int occupiedCellBasis = Math.Max(
+                        0,
+                        target.OccupiedCells.Count + ActionIntParam(rule, "offset", 0));
+                    int divisor = Math.Max(1, ActionIntParam(rule, "div", 1));
+                    basis = occupiedCellBasis / divisor;
                 }
                 else if (HasActionParam(rule, "source:target-skill-count"))
                 {

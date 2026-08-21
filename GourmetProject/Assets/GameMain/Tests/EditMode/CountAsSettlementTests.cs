@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using BreakInfinity;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
@@ -64,8 +65,112 @@ namespace GourmetProject.Tests.EditMode
             Assert.AreEqual(2, plan.PreludeGroups[0].Lines.Count, "同一装饰品应在一组内对全场食物播放份数增加。");
         }
 
-        private static DishInstance Dish(int id, string dishId, DishShape shape, int x)
+        [Test]
+        public void DishSizeAtMostThree_BuffsOnlyMatchingDishes()
         {
+            const string skillId = "skill_hawthorn";
+            var rule = new SkillRuleDef(
+                id: "skill_hawthorn_1",
+                skillId: skillId,
+                order: 0,
+                trigger: SkillTrigger.OnSettle,
+                condType: SkillConditionType.DishSize,
+                condScope: SkillScope.All,
+                condUnit: CountUnit.Instances,
+                condMode: CountMode.Per,
+                condParam: "<=3",
+                actionType: SkillActionType.AddFlat,
+                actionScope: SkillScope.All,
+                actionCount: 0,
+                actionValues: new[] { 5f },
+                actionParams: new[] { "size:<=3" });
+            var skill = new SkillDef(
+                skillId,
+                "山楂糕",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { rule });
+
+            var table = new DiningTable(10, 1);
+            DishInstance sizeThree = Dish(1, "size_three", DishShape.FromRows(new[] { "XXX" }), 0, skillId);
+            DishInstance sizeOne = Dish(2, "size_one", DishShape.FromRows(new[] { "X" }), 3);
+            DishInstance sizeTwo = Dish(3, "size_two", DishShape.FromRows(new[] { "XX" }), 4);
+            DishInstance sizeFour = Dish(4, "size_four", DishShape.FromRows(new[] { "XXXX" }), 6);
+            table.Place(sizeThree);
+            table.Place(sizeOne);
+            table.Place(sizeTwo);
+            table.Place(sizeFour);
+
+            var db = new GameplayDatabase(
+                new[] { sizeThree.Def, sizeOne.Def, sizeTwo.Def, sizeFour.Def },
+                new[] { skill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+
+            ScoreResult result = new ScoreCalculator().Calculate(table, db);
+
+            CollectionAssert.AreEqual(
+                new[] { new BigDouble(15), new BigDouble(15), new BigDouble(15), BigDouble.Zero },
+                result.DishScores.Select(score => score.FlatBonus).ToArray());
+        }
+
+        [Test]
+        public void OccupiedCellCountDividedByTwo_AddsFlooredCountAsBonus()
+        {
+            const string skillId = "skill_mala_gao";
+            var rule = new SkillRuleDef(
+                id: "skill_mala_gao_1",
+                skillId: skillId,
+                order: 0,
+                trigger: SkillTrigger.OnSettle,
+                condType: SkillConditionType.None,
+                condScope: SkillScope.Self,
+                condUnit: CountUnit.Instances,
+                condMode: CountMode.Gate,
+                condParam: string.Empty,
+                actionType: SkillActionType.AddCountAs,
+                actionScope: SkillScope.All,
+                actionCount: 0,
+                actionValues: new[] { 1f },
+                actionParams: new[] { "target:occupiedcells;div:2" });
+            var skill = new SkillDef(
+                skillId,
+                "马拉糕",
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { rule });
+
+            var table = new DiningTable(10, 1);
+            DishInstance sizeOne = Dish(1, "size_one", DishShape.FromRows(new[] { "X" }), 0, skillId);
+            DishInstance sizeTwo = Dish(2, "size_two", DishShape.FromRows(new[] { "XX" }), 1);
+            DishInstance sizeThree = Dish(3, "size_three", DishShape.FromRows(new[] { "XXX" }), 3);
+            DishInstance sizeFour = Dish(4, "size_four", DishShape.FromRows(new[] { "XXXX" }), 6);
+            table.Place(sizeOne);
+            table.Place(sizeTwo);
+            table.Place(sizeThree);
+            table.Place(sizeFour);
+
+            var db = new GameplayDatabase(
+                new[] { sizeOne.Def, sizeTwo.Def, sizeThree.Def, sizeFour.Def },
+                new[] { skill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+
+            ScoreResult result = new ScoreCalculator().Calculate(table, db);
+
+            CollectionAssert.AreEqual(
+                new[] { 1, 2, 2, 3 },
+                result.DishScores.Select(score => score.EffectiveCountAs).ToArray());
+        }
+
+        private static DishInstance Dish(
+            int id,
+            string dishId,
+            DishShape shape,
+            int x,
+            params string[] skillIds)
+        {
+            skillIds ??= Array.Empty<string>();
             var def = new DishDef(
                 dishId,
                 dishId,
@@ -74,14 +179,14 @@ namespace GourmetProject.Tests.EditMode
                 hiddenMin: 0,
                 hiddenMax: 0,
                 baseWeight: 1f,
-                skillIds: Array.Empty<string>(),
+                skillIds: skillIds,
                 flavorId: string.Empty);
             var placement = new Placement(shape, rotationIndex: 0, origin: new GridPos(x, 0));
             return new DishInstance(
                 id,
                 def,
                 placement,
-                Array.Empty<string>(),
+                skillIds,
                 Array.Empty<string>());
         }
     }
