@@ -1149,6 +1149,14 @@ namespace GourmetProject.Gameplay.Scoring
                 targets = targets.Where(target => ctx.IsCategory(target, category));
             }
 
+            if (TryParseTargetSizeComparison(_rule, out string sizeComparison))
+            {
+                targets = targets.Where(target => SkillConditionParamParser.EvaluateComparison(
+                    sizeComparison,
+                    target.OccupiedCells.Count,
+                    defaultValue: false));
+            }
+
             if (HasActionParam(_rule, "exclude:source") || HasActionParam(_rule, "exclude:self"))
             {
                 targets = targets.Where(target => target.Id != _self.Id);
@@ -1181,6 +1189,47 @@ namespace GourmetProject.Gameplay.Scoring
 
             ctx.UpdateTraceVisualTargets(selected);
             return selected;
+        }
+
+        private static bool TryParseTargetSizeComparison(
+            SkillRuleDef rule,
+            out string comparison)
+        {
+            comparison = string.Empty;
+            if (rule?.ActionParams == null)
+            {
+                return false;
+            }
+
+            const string prefix = "size:";
+            foreach (string param in rule.ActionParams)
+            {
+                if (string.IsNullOrEmpty(param)) continue;
+                foreach (string raw in param.Split(';'))
+                {
+                    string segment = raw.Trim();
+                    if (!segment.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    string value = segment.Substring(prefix.Length).Trim();
+                    if (int.TryParse(
+                        value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int exactSize))
+                    {
+                        comparison = $"eq:{exactSize}";
+                        return true;
+                    }
+
+                    if (SkillConditionParamParser.TryGetComparison(value, out _, out _))
+                    {
+                        comparison = value;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private static bool TryParseRandomIntegerRange(SkillRuleDef rule, out int min, out int max)

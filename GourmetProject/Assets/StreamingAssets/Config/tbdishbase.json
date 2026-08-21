@@ -109,7 +109,7 @@
     "deliciousness": 20,
     "skills": "sk_eggtart",
     "category": "",
-    "countAs": 1,
+    "countAs": 2,
     "shapeRows": [
       "XX"
     ],
@@ -160,7 +160,7 @@
     "deliciousness": 20,
     "skills": "sk_mousse",
     "category": "cake",
-    "countAs": 1,
+    "countAs": 2,
     "shapeRows": [
       "XX"
     ],
@@ -230,7 +230,7 @@
     "deliciousness": 20,
     "skills": "sk_mochi",
     "category": "",
-    "countAs": 1,
+    "countAs": 2,
     "shapeRows": [
       "X",
       "X"
@@ -399,16 +399,16 @@
     ]
   },
   {
-    "id": "nougat",
-    "name": "牛轧糖",
+    "id": "popping_candy",
+    "name": "跳跳糖",
     "deliciousness": 30,
-    "skills": "sk_nougat",
+    "skills": "sk_popping_candy",
     "category": "",
     "countAs": 1,
     "shapeRows": [
       "XXX"
     ],
-    "sortOrder": 240,
+    "sortOrder": 300,
     "archetypeWeights": [
       3,
       0,
@@ -505,10 +505,10 @@
     ]
   },
   {
-    "id": "popping_candy",
-    "name": "跳跳糖",
+    "id": "nougat",
+    "name": "牛轧糖",
     "deliciousness": 30,
-    "skills": "sk_popping_candy",
+    "skills": "sk_nougat",
     "category": "",
     "countAs": 1,
     "shapeRows": [
@@ -516,7 +516,7 @@
       "X",
       "X"
     ],
-    "sortOrder": 300,
+    "sortOrder": 240,
     "archetypeWeights": [
       3,
       0,
@@ -950,7 +950,7 @@
     "deliciousness": 60,
     "skills": "sk_mango_sago",
     "category": "",
-    "countAs": 4,
+    "countAs": 5,
     "shapeRows": [
       "XXX",
       "XXX"
@@ -987,7 +987,7 @@
     "deliciousness": 60,
     "skills": "sk_mala_gao",
     "category": "",
-    "countAs": 4,
+    "countAs": 5,
     "shapeRows": [
       "XX",
       "XX",
@@ -1044,7 +1044,7 @@
     "deliciousness": 100,
     "skills": "sk_double_skin_milk",
     "category": "",
-    "countAs": 6,
+    "countAs": 8,
     "shapeRows": [
       "XXX",
       "XXX",

@@ -2,7 +2,7 @@
   {
     "id": "t_sweet",
     "name": "甜",
-    "desc": "",
+    "desc": "342",
     "effectType": 8,
     "effectParam": [],
     "effectValue": [
@@ -13,7 +13,7 @@
   {
     "id": "t_bitter",
     "name": "苦",
-    "desc": "",
+    "desc": "342",
     "effectType": 8,
     "effectParam": [],
     "effectValue": [
@@ -24,7 +24,7 @@
   {
     "id": "t_fresh",
     "name": "鲜",
-    "desc": "",
+    "desc": "342",
     "effectType": 7,
     "effectParam": [],
     "effectValue": [],
@@ -33,7 +33,7 @@
   {
     "id": "t_numb",
     "name": "麻",
-    "desc": "",
+    "desc": "342",
     "effectType": 9,
     "effectParam": [],
     "effectValue": [
@@ -44,7 +44,7 @@
   {
     "id": "t_sour",
     "name": "酸",
-    "desc": "",
+    "desc": "342",
     "effectType": 10,
     "effectParam": [],
     "effectValue": [
@@ -55,7 +55,7 @@
   {
     "id": "t_salty",
     "name": "咸",
-    "desc": "",
+    "desc": "342",
     "effectType": 11,
     "effectParam": [],
     "effectValue": [
