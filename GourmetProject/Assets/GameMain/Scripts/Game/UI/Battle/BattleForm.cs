@@ -2292,6 +2292,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _world?.AppendFoodSettlementLayoutTween(sequence, tableDuration);
+            sequence.OnUpdate(RefreshTemporaryAreaWorldLayout);
 
             if (sequence.Duration() <= 0f)
             {
@@ -2346,6 +2347,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _bottomUi.anchoredPosition = _bottomUiRestPosition;
+            RefreshTemporaryAreaWorldLayout();
             SetBottomUiInteractable(true);
         }
 
@@ -2359,7 +2361,13 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _bottomUi.anchoredPosition = HiddenBottomUiPosition();
+            RefreshTemporaryAreaWorldLayout();
             SetBottomUiInteractable(false);
+        }
+
+        private void RefreshTemporaryAreaWorldLayout()
+        {
+            (_world ?? BattleWorldController.Instance)?.RefreshTemporaryAreaLayout();
         }
 
         private Tween CreateBottomUiHideTween(float duration)

@@ -153,12 +153,14 @@ namespace GourmetProject.Game.UI.Meta
             BattleRecipeEntryStatus? battleStatus = null,
             bool skillsDisabled = false,
             bool excludedFromScore = false,
+            bool isTemporaryCopy = false,
             bool initiallyHidden = false)
         {
             Slot = slot;
             BattleStatus = battleStatus;
             SkillsDisabled = skillsDisabled;
             ExcludedFromScore = excludedFromScore;
+            IsTemporaryCopy = isTemporaryCopy;
             InitiallyHidden = initiallyHidden;
         }
 
@@ -170,6 +172,9 @@ namespace GourmetProject.Game.UI.Meta
         public bool SkillsDisabled { get; }
 
         public bool ExcludedFromScore { get; }
+
+        /// <summary>是否显示临时复制标记。</summary>
+        public bool IsTemporaryCopy { get; }
 
         public bool InitiallyHidden { get; }
     }

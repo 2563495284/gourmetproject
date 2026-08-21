@@ -33,6 +33,7 @@ namespace GourmetProject.Gameplay.Battle
             BigDouble scoreFlatBonus,
             bool skillsDisabled,
             bool excludedFromScore,
+            bool isTemporaryCopy,
             BattleRecipeEntryStatus status)
         {
             EntryId = entryId;
@@ -44,6 +45,7 @@ namespace GourmetProject.Gameplay.Battle
             ScoreFlatBonus = scoreFlatBonus;
             SkillsDisabled = skillsDisabled;
             ExcludedFromScore = excludedFromScore;
+            IsTemporaryCopy = isTemporaryCopy;
             Status = status;
         }
 
@@ -64,6 +66,9 @@ namespace GourmetProject.Gameplay.Battle
         public bool SkillsDisabled { get; }
 
         public bool ExcludedFromScore { get; }
+
+        /// <summary>是否为本场经营挑战临时复制到食谱中的条目。</summary>
+        public bool IsTemporaryCopy { get; }
 
         public BattleRecipeEntryStatus Status { get; }
     }

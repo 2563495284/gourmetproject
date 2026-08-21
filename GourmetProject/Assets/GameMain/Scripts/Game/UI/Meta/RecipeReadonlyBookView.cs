@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
@@ -25,6 +26,7 @@ namespace GourmetProject.Game.UI.Meta
     {
         private static readonly Vector2 BookChromeReferenceSize =
             new(1286.4f, 714.6667f);
+        private const float PassiveRemovalReflowDuration = 0.24f;
 
         [Header("Chrome")]
         [SerializeField] private RectTransform _bookChrome;
@@ -338,8 +340,7 @@ namespace GourmetProject.Game.UI.Meta
 
             if (animations.Count == 0)
             {
-                ApplyPassiveMutationEntries(afterEntries);
-                onComplete?.Invoke();
+                CompletePassiveMutation(result, afterEntries, onComplete);
                 return;
             }
 
@@ -351,8 +352,7 @@ namespace GourmetProject.Game.UI.Meta
                     remaining--;
                     if (remaining == 0)
                     {
-                        ApplyPassiveMutationEntries(afterEntries);
-                        onComplete?.Invoke();
+                        CompletePassiveMutation(result, afterEntries, onComplete);
                     }
                 });
             }
@@ -411,6 +411,217 @@ namespace GourmetProject.Game.UI.Meta
             _readonlyEntries = entries;
             _readonlySlots = BuildReadonlySlots(entries);
             RenderSession(true);
+        }
+
+        private void CompletePassiveMutation(
+            RecipeMutationResult result,
+            IReadOnlyList<RecipeReadonlyDishEntry> afterEntries,
+            Action onComplete)
+        {
+            if (TryApplyPassiveRemovalEntries(result, afterEntries, onComplete))
+            {
+                return;
+            }
+
+            ApplyPassiveMutationEntries(afterEntries);
+            onComplete?.Invoke();
+        }
+
+        /// <summary>
+        /// 纯删除不会改变幸存食物的视觉排序。复用现有卡片并只重映射 recipe 索引，
+        /// 避免 RenderSession 重新 Bind 整本食谱及其 RenderTexture 预览。
+        /// </summary>
+        internal bool TryApplyPassiveRemovalEntries(
+            RecipeMutationResult result,
+            IReadOnlyList<RecipeReadonlyDishEntry> afterEntries,
+            Action onComplete)
+        {
+            int afterCount = afterEntries?.Count ?? 0;
+            if (_warehouse == null
+                || !TryBuildPassiveRemovalIndexMap(
+                    result,
+                    afterCount,
+                    out int[] oldToNewIndex))
+            {
+                return false;
+            }
+
+            var activeByOldIndex = new Dictionary<int, RecipeEditDishView>(
+                oldToNewIndex.Length);
+            foreach (RecipeEditDishView dish in _spawnedDishes)
+            {
+                if (dish == null || !dish.gameObject.activeSelf)
+                {
+                    continue;
+                }
+
+                if (dish.BookIndex != 0
+                    || dish.DishIndex < 0
+                    || dish.DishIndex >= oldToNewIndex.Length
+                    || activeByOldIndex.ContainsKey(dish.DishIndex))
+                {
+                    return false;
+                }
+
+                activeByOldIndex.Add(dish.DishIndex, dish);
+            }
+
+            if (activeByOldIndex.Count != oldToNewIndex.Length)
+            {
+                return false;
+            }
+
+            for (int oldIndex = 0; oldIndex < oldToNewIndex.Length; oldIndex++)
+            {
+                int newIndex = oldToNewIndex[oldIndex];
+                if (newIndex < 0)
+                {
+                    continue;
+                }
+
+                string beforeDishId = result.BeforeRecipe[oldIndex]?.DishId;
+                string afterDishId = afterEntries[newIndex]?.Slot?.DishId;
+                if (!string.Equals(
+                        beforeDishId,
+                        afterDishId,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            HideRecipeDishTips();
+            var survivors = new List<RecipeEditDishView>(afterCount);
+            var pooled = new List<RecipeEditDishView>(
+                Math.Max(0, _spawnedDishes.Count - afterCount));
+            var oldPositions = new Dictionary<RecipeEditDishView, Vector2>(afterCount);
+
+            foreach (RecipeEditDishView dish in _spawnedDishes)
+            {
+                if (dish == null)
+                {
+                    continue;
+                }
+
+                if (!dish.gameObject.activeSelf)
+                {
+                    pooled.Add(dish);
+                    continue;
+                }
+
+                int newIndex = oldToNewIndex[dish.DishIndex];
+                if (newIndex < 0)
+                {
+                    dish.ReleaseForReuse();
+                    dish.gameObject.SetActive(false);
+                    pooled.Add(dish);
+                    continue;
+                }
+
+                oldPositions[dish] = ((RectTransform)dish.transform).anchoredPosition;
+                dish.Reindex(0, newIndex);
+                dish.gameObject.name = $"RecipeDish_1_{newIndex + 1}";
+                survivors.Add(dish);
+            }
+
+            _readonlyEntries = afterEntries;
+            _readonlySlots = BuildReadonlySlots(afterEntries);
+
+            _spawnedDishes.Clear();
+            _spawnedDishes.AddRange(survivors);
+            _spawnedDishes.AddRange(pooled);
+            for (int displayIndex = 0; displayIndex < survivors.Count; displayIndex++)
+            {
+                survivors[displayIndex].transform.SetSiblingIndex(displayIndex + 1);
+            }
+
+            _warehouse.RefreshLayout();
+            _onChanged?.Invoke();
+
+            Sequence reflow = DOTween.Sequence()
+                .SetUpdate(true)
+                .SetLink(gameObject);
+            int movingCount = 0;
+            foreach (RecipeEditDishView dish in survivors)
+            {
+                var rect = (RectTransform)dish.transform;
+                Vector2 target = rect.anchoredPosition;
+                Vector2 origin = oldPositions[dish];
+                if ((target - origin).sqrMagnitude <= 0.01f)
+                {
+                    continue;
+                }
+
+                movingCount++;
+                rect.anchoredPosition = origin;
+                reflow.Join(
+                    rect.DOAnchorPos(target, PassiveRemovalReflowDuration)
+                        .SetEase(Ease.OutCubic));
+            }
+
+            if (movingCount == 0)
+            {
+                reflow.Kill();
+                onComplete?.Invoke();
+            }
+            else
+            {
+                reflow.OnComplete(() => onComplete?.Invoke());
+            }
+
+            return true;
+        }
+
+        internal static bool TryBuildPassiveRemovalIndexMap(
+            RecipeMutationResult result,
+            int afterCount,
+            out int[] oldToNewIndex)
+        {
+            oldToNewIndex = Array.Empty<int>();
+            int beforeCount = result?.BeforeRecipe?.Count ?? 0;
+            if (beforeCount <= 0
+                || afterCount < 0
+                || result.Entries.Count == 0
+                || beforeCount - result.Entries.Count != afterCount)
+            {
+                return false;
+            }
+
+            var removed = new bool[beforeCount];
+            foreach (RecipeMutationEntry entry in result.Entries)
+            {
+                if (entry == null
+                    || entry.BookIndex != 0
+                    || !entry.IsRemove
+                    || entry.DishIndex < 0
+                    || entry.DishIndex >= beforeCount
+                    || removed[entry.DishIndex])
+                {
+                    return false;
+                }
+
+                string snapshotDishId = result.BeforeRecipe[entry.DishIndex]?.DishId;
+                if (!string.Equals(
+                        snapshotDishId,
+                        entry.Before?.DishId,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                removed[entry.DishIndex] = true;
+            }
+
+            oldToNewIndex = new int[beforeCount];
+            int nextIndex = 0;
+            for (int oldIndex = 0; oldIndex < beforeCount; oldIndex++)
+            {
+                oldToNewIndex[oldIndex] = removed[oldIndex]
+                    ? -1
+                    : nextIndex++;
+            }
+
+            return nextIndex == afterCount;
         }
 
         private void EnsureWired()

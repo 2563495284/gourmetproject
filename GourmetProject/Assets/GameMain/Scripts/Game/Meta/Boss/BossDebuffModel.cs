@@ -189,7 +189,9 @@ namespace GourmetProject.Game.Meta.BossDebuffs
                 {
                     foreach (RecipeSlotEntry original in originals)
                     {
-                        slot.AddEntry(original.Clone());
+                        RecipeSlotEntry copy = original.Clone();
+                        copy.MarkTemporaryCopy();
+                        slot.AddEntry(copy);
                     }
                 }
             }

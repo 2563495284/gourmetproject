@@ -527,14 +527,11 @@ namespace GourmetProject.Gameplay.Scoring
                 return result;
             }
 
-            // 与 SkillConditionEvaluator.IsOnEdge 保持一致：按实际轮廓取边缘，
-            // 即四邻中存在「不存在格」（含越界）的存在格。
+            // 与 SkillConditionEvaluator.IsOnEdge 保持一致：按实际可用轮廓取边缘，
+            // 即四邻中存在「不可用格」（不存在、越界或被禁用）的可用格。
             foreach (GridPos cell in board.ExistingCells())
             {
-                if (!board.Exists(cell.Offset(1, 0))
-                    || !board.Exists(cell.Offset(-1, 0))
-                    || !board.Exists(cell.Offset(0, 1))
-                    || !board.Exists(cell.Offset(0, -1)))
+                if (SkillConditionEvaluator.IsEdgeCell(board, cell))
                 {
                     result.Add(cell);
                 }

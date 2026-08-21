@@ -543,7 +543,8 @@ namespace GourmetProject.Game.UI.Battle.View
                     slot,
                     entry.Status,
                     entry.SkillsDisabled,
-                    entry.ExcludedFromScore));
+                    entry.ExcludedFromScore,
+                    entry.IsTemporaryCopy));
             }
 
             return entries;

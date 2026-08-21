@@ -128,6 +128,9 @@ namespace GourmetProject.Gameplay.Battle
 
         public bool ExcludeFromScore { get; private set; }
 
+        /// <summary>是否为本场经营挑战临时复制到食谱中的条目。</summary>
+        public bool IsTemporaryCopy { get; private set; }
+
         /// <summary>玩家用调味小票为该食谱条目永久附加的额外风味（上菜时与变体自带风味合并）。</summary>
         public IReadOnlyList<string> ExtraFlavorIds => _extraFlavorIds;
 
@@ -151,6 +154,12 @@ namespace GourmetProject.Gameplay.Battle
             ExcludeFromScore = true;
         }
 
+        /// <summary>标记为本场经营挑战临时复制到食谱中的条目。</summary>
+        public void MarkTemporaryCopy()
+        {
+            IsTemporaryCopy = true;
+        }
+
         public RecipeSlotEntry Clone()
         {
             var clone = new RecipeSlotEntry(
@@ -169,6 +178,11 @@ namespace GourmetProject.Gameplay.Battle
             if (ExcludeFromScore)
             {
                 clone.MarkExcludedFromScore();
+            }
+
+            if (IsTemporaryCopy)
+            {
+                clone.MarkTemporaryCopy();
             }
 
             return clone;

@@ -470,6 +470,7 @@ namespace GourmetProject.Gameplay.Battle
                     entry.ScoreFlatBonus,
                     entry.DisableSkills,
                     entry.ExcludeFromScore,
+                    entry.IsTemporaryCopy,
                     ResolveDisplayStatus(tracked)));
             }
 
@@ -1572,6 +1573,11 @@ namespace GourmetProject.Gameplay.Battle
             if (entry.ExcludeFromScore)
             {
                 instance.ExcludeFromScore();
+            }
+
+            if (entry.IsTemporaryCopy)
+            {
+                instance.MarkTemporary();
             }
         }
 
