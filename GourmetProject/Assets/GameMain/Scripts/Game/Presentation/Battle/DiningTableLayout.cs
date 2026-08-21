@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
 using GourmetProject.Gameplay.Board;
+using GourmetProject.Gameplay.Model;
 using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Game.Presentation.Battle
@@ -19,7 +21,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
     /// <summary>
     /// 餐桌在世界空间的居中定位计算（Food 态与餐桌编辑/餐桌视图态共用）。
-    /// 只按「实际存在的格子」(胃) 求包围盒铺满可用区并居中，不论胃多大、落在 8×8 哪个角都居中。
+    /// 默认按「实际存在的格子」(胃) 求包围盒；Boss 演出可额外传入持续显示的移除格，
+    /// 使视觉上的整张餐桌都会铺满可用区并居中。
     /// </summary>
     public static class DiningTableLayout
     {
@@ -185,13 +188,25 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>按视口半宽/半高与胃包围盒，算出铺满可用区且居中的单格尺寸与餐桌根位置。</summary>
-        public static BoardPlacement Compute(float halfW, float halfH, GpTable board, float bottomMargin)
+        public static BoardPlacement Compute(
+            float halfW,
+            float halfH,
+            GpTable board,
+            float bottomMargin,
+            IEnumerable<GridPos> additionalVisibleCells = null)
         {
             float boardLeft = -halfW + SideMargin;
             float boardRight = halfW - SideMargin;
             float boardTop = halfH - TopMargin;
             float boardBottom = -halfH + bottomMargin;
-            return ComputeInRect(boardLeft, boardRight, boardBottom, boardTop, board, MinCellSize);
+            return ComputeInRect(
+                boardLeft,
+                boardRight,
+                boardBottom,
+                boardTop,
+                board,
+                MinCellSize,
+                additionalVisibleCells);
         }
 
         /// <summary>按预测存在格包围盒计算餐桌布局，不必先构造一张临时餐桌。</summary>
@@ -228,14 +243,12 @@ namespace GourmetProject.Game.Presentation.Battle
             float boardBottom,
             float boardTop,
             GpTable board,
-            float minCellSize)
+            float minCellSize,
+            IEnumerable<GridPos> additionalVisibleCells = null)
         {
-            if (!board.TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY))
-            {
-                minX = minY = 0;
-                maxX = board.Width - 1;
-                maxY = board.Height - 1;
-            }
+            TableFragmentBuilder.PlacementBounds bounds = VisibleBounds(
+                board,
+                additionalVisibleCells);
 
             return ComputeInRectForBounds(
                 boardLeft,
@@ -244,8 +257,55 @@ namespace GourmetProject.Game.Presentation.Battle
                 boardTop,
                 board.Width,
                 board.Height,
-                new TableFragmentBuilder.PlacementBounds(minX, minY, maxX, maxY),
+                bounds,
                 minCellSize);
+        }
+
+        /// <summary>
+        /// 求餐桌的视觉包围盒。除玩法上的存在格外，还包含 Boss 演出后仍保留在桌面上的移除格。
+        /// </summary>
+        public static TableFragmentBuilder.PlacementBounds VisibleBounds(
+            GpTable board,
+            IEnumerable<GridPos> additionalVisibleCells = null)
+        {
+            bool hasBounds = board.TryGetExistingBounds(
+                out int minX,
+                out int minY,
+                out int maxX,
+                out int maxY);
+
+            if (additionalVisibleCells != null)
+            {
+                foreach (GridPos cell in additionalVisibleCells)
+                {
+                    if (!board.InBounds(cell))
+                    {
+                        continue;
+                    }
+
+                    if (!hasBounds)
+                    {
+                        minX = maxX = cell.X;
+                        minY = maxY = cell.Y;
+                        hasBounds = true;
+                        continue;
+                    }
+
+                    minX = Mathf.Min(minX, cell.X);
+                    minY = Mathf.Min(minY, cell.Y);
+                    maxX = Mathf.Max(maxX, cell.X);
+                    maxY = Mathf.Max(maxY, cell.Y);
+                }
+            }
+
+            if (!hasBounds)
+            {
+                minX = minY = 0;
+                maxX = board.Width - 1;
+                maxY = board.Height - 1;
+            }
+
+            return new TableFragmentBuilder.PlacementBounds(minX, minY, maxX, maxY);
         }
 
         public static BoardPlacement ComputeInRectForBounds(
