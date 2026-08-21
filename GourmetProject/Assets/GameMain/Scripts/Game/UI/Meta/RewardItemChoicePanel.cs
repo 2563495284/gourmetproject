@@ -267,10 +267,10 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             var lines = new List<string>();
-            if (!string.IsNullOrWhiteSpace(group.Title))
-            {
-                lines.Add(group.Title);
-            }
+            // if (!string.IsNullOrWhiteSpace(group.Title))
+            // {
+            //     lines.Add(group.Title);
+            // }
             if (!string.IsNullOrWhiteSpace(group.Description))
             {
                 lines.Add(group.Description);

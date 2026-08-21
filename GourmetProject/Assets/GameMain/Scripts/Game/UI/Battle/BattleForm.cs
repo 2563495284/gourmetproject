@@ -68,6 +68,7 @@ namespace GourmetProject.Game.UI.Battle
             TableCell,
             TableFragment,
             ServingOutlet,
+            Tutorial,
         }
 
         /// <summary>当前打开的经营挑战界面，供各弹窗回调推进周循环。</summary>
@@ -5109,6 +5110,11 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnDishHoverEntered(DishPieceView piece)
         {
+            if (_foodTipsHoverOwner == FoodTipsHoverOwner.Tutorial)
+            {
+                return;
+            }
+
             if (_current != GameplayView.Food)
             {
                 return;
@@ -5134,6 +5140,11 @@ namespace GourmetProject.Game.UI.Battle
 
         private bool OnServingOutletDishHoverEntered(ServingOutletView servingOutlet)
         {
+            if (_foodTipsHoverOwner == FoodTipsHoverOwner.Tutorial)
+            {
+                return true;
+            }
+
             if (_current != GameplayView.Food
                 || servingOutlet == null
                 || _session?.PreparedServe?.Dish == null
@@ -5393,8 +5404,6 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            TutorialRuntime.Publish(TutorialSignal.SettleClicked);
-
             // if (_session.DiningTable.DishCount == 0)
             // {
             //     SetMessage("餐桌还是空的，先上几个食物吧。");
@@ -5446,6 +5455,30 @@ namespace GourmetProject.Game.UI.Battle
             {
                 _world?.SetFoodSettlementLayoutBusy(false);
                 RefreshFoodActions();
+                return;
+            }
+
+            if (TryPlayFirstBattleSettlementOrderHint())
+            {
+                return;
+            }
+
+            ContinueFoodSettlementAfterLayout();
+        }
+
+        private void ContinueFoodSettlementAfterLayout()
+        {
+            if (_discardSettlementCallbacks
+                || Active != this
+                || _run == null
+                || _session == null
+                || _session.IsSettled)
+            {
+                if (Active == this)
+                {
+                    _world?.SetFoodSettlementLayoutBusy(false);
+                    RefreshFoodActions();
+                }
                 return;
             }
 
@@ -5584,6 +5617,7 @@ namespace GourmetProject.Game.UI.Battle
             TutorialAnchorRegistry.Register(TutorialAnchorId.ScoreMeter, _infoColumn?.ScoreMeterRect);
             TutorialAnchorRegistry.Register(TutorialAnchorId.Hearts, _infoColumn?.HeartsRect);
             TutorialAnchorRegistry.Register(TutorialAnchorId.Recipe, _infoColumn?.ViewRecipeButtonRect);
+            TutorialAnchorRegistry.Register(TutorialAnchorId.ViewTable, _infoColumn?.ViewTableButtonRect);
             TutorialAnchorRegistry.Register(
                 TutorialAnchorId.RecipePanel,
                 _inspectionLayer?.RecipeView != null ? _inspectionLayer.RecipeView.transform as RectTransform : null);
@@ -5604,6 +5638,7 @@ namespace GourmetProject.Game.UI.Battle
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.ScoreMeter);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.Hearts);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.Recipe);
+            TutorialAnchorRegistry.Unregister(TutorialAnchorId.ViewTable);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.RecipePanel);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.FoodTips);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.FoodInfo);
@@ -5653,12 +5688,16 @@ namespace GourmetProject.Game.UI.Battle
 
         private void TutorialShowPreparedFoodTips(Action done)
         {
-            bool shown = OnServingOutletDishHoverEntered(_servingOutlet);
+            bool shown = OnServingOutletDishHoverEntered(ResolveServingOutlet());
             if (shown && _tips?.Food != null)
             {
+                _foodTipsHoverOwner = FoodTipsHoverOwner.Tutorial;
+                Canvas.ForceUpdateCanvases();
                 TutorialAnchorRegistry.Register(
                     TutorialAnchorId.FoodTips,
-                    _tips.Food.transform as RectTransform);
+                    _tips.Food.SummaryView != null
+                        ? _tips.Food.SummaryView.transform as RectTransform
+                        : null);
             }
             done?.Invoke();
         }
@@ -5745,6 +5784,39 @@ namespace GourmetProject.Game.UI.Battle
                 && !foodInteractionBusy
                 && !hasTemporaryAreaDishes
                 && !canServeAny;
+        }
+
+        private bool TryPlayFirstBattleSettlementOrderHint()
+        {
+            BattleSession session = _session;
+            if (!ShouldPlayFirstBattleSettlementOrderHint(
+                    isFirstTutorialBattle: IsFirstTutorialBattle(),
+                    hasSession: session != null,
+                    isSettled: session?.IsSettled == true,
+                    orderHintCompleted: TutorialProgressService.IsCompleted(
+                        TutorialId.FirstBattleSettlementOrderHint),
+                    tutorialPlaying: TutorialRuntime.IsPlaying))
+            {
+                return false;
+            }
+
+            return TutorialRuntime.Play(
+                TutorialId.FirstBattleSettlementOrderHint,
+                ContinueFoodSettlementAfterLayout);
+        }
+
+        internal static bool ShouldPlayFirstBattleSettlementOrderHint(
+            bool isFirstTutorialBattle,
+            bool hasSession,
+            bool isSettled,
+            bool orderHintCompleted,
+            bool tutorialPlaying)
+        {
+            return isFirstTutorialBattle
+                && hasSession
+                && !isSettled
+                && !orderHintCompleted
+                && !tutorialPlaying;
         }
 
         private void OnGoldChanged(int before, int after)
