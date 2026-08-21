@@ -2,7 +2,7 @@
   {
     "id": "t_sweet",
     "name": "甜",
-    "desc": "342",
+    "desc": "优先结算",
     "effectType": 8,
     "effectParam": [],
     "effectValue": [
@@ -13,7 +13,7 @@
   {
     "id": "t_bitter",
     "name": "苦",
-    "desc": "342",
+    "desc": "后置结算",
     "effectType": 8,
     "effectParam": [],
     "effectValue": [
@@ -24,7 +24,7 @@
   {
     "id": "t_fresh",
     "name": "鲜",
-    "desc": "342",
+    "desc": "优先出菜",
     "effectType": 7,
     "effectParam": [],
     "effectValue": [],
@@ -33,7 +33,7 @@
   {
     "id": "t_numb",
     "name": "麻",
-    "desc": "342",
+    "desc": "食物旋转90度",
     "effectType": 9,
     "effectParam": [],
     "effectValue": [
@@ -44,7 +44,7 @@
   {
     "id": "t_sour",
     "name": "酸",
-    "desc": "342",
+    "desc": "[context]结算开始[/context]时，若仍在食谱中\n场上食物[strong]倍率[/strong] [multadd]+0.5[/multadd]",
     "effectType": 10,
     "effectParam": [],
     "effectValue": [
@@ -55,7 +55,7 @@
   {
     "id": "t_salty",
     "name": "咸",
-    "desc": "342",
+    "desc": "有 20% 概率[benefit]额外结算[/benefit] 1 次",
     "effectType": 11,
     "effectParam": [],
     "effectValue": [
