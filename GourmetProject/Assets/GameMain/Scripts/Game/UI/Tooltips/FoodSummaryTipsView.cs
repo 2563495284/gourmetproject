@@ -15,11 +15,14 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private TMP_Text _nameText;
         [SerializeField] private TmpTextVertexAnimator _nameAnimator;
         [SerializeField] private RectTransform _baseInfoView;
-        [SerializeField] private RectTransform _duplicateView;
-        [SerializeField] private CanvasGroup _duplicateCanvasGroup;
+        [SerializeField] private HorizontalLayoutGroup _baseInfoLayout;
+        [SerializeField] private RectTransform _countAsSlot;
+        [SerializeField] private LayoutElement _countAsSlotLayout;
         [SerializeField] private RectTransform _countAsView;
-        [SerializeField] private CanvasGroup _countAsCanvasGroup;
         [SerializeField] private TMP_Text _countAsText;
+        [SerializeField] private RectTransform _duplicateSlot;
+        [SerializeField] private LayoutElement _duplicateSlotLayout;
+        [SerializeField] private RectTransform _duplicateView;
         [SerializeField] private RectTransform _skillsContent;
         [SerializeField] private RectTransform _flavorContent;
         [SerializeField] private FoodSkillDescriptionView _skillCardPrefab;
@@ -32,6 +35,7 @@ namespace GourmetProject.Game.UI.Tooltips
         private const float SummaryHorizontalPadding = 24f;
         private const float SkillCardHorizontalPadding = 20f;
         private const float SkillDescPanelHorizontalPadding = 20f;
+        private const float BaseInfoSpacing = 8f;
         private const string MinWidthSampleText = "十十十十十十十十十十";
 
         public void Bind(FoodSummaryTipsData data)
@@ -46,10 +50,9 @@ namespace GourmetProject.Game.UI.Tooltips
             _nameText.text = data.FoodName;
             EnsureNameAnimator();
             _nameAnimator?.Rebuild();
-            SetBadgeVisible(_duplicateView, _duplicateCanvasGroup, data.IsTemporaryCopy);
             bool showCountAs = data.CountAs > 1;
-            SetBadgeVisible(_countAsView, _countAsCanvasGroup, showCountAs);
             _countAsText.text = FormatCountAs(data.CountAs);
+            ConfigureBaseInfo(showCountAs, data.IsTemporaryCopy);
             float skillsTextWidth = BuildSkills(data.Skills, data.SkillsDisabled);
             BuildFlavors(data.Flavors);
             ResizeToContent(skillsTextWidth, data.Flavors);
@@ -162,9 +165,7 @@ namespace GourmetProject.Game.UI.Tooltips
                 return;
             }
 
-            RebuildActiveLayout(_countAsView);
             RebuildActiveLayout(_nameText.rectTransform);
-            RebuildActiveLayout(_duplicateView);
             LayoutRebuilder.ForceRebuildLayoutImmediate(_baseInfoView);
             float preferredWidth = LayoutUtility.GetPreferredWidth(_baseInfoView)
                 + SummaryHorizontalPadding;
@@ -198,15 +199,35 @@ namespace GourmetProject.Game.UI.Tooltips
             }
         }
 
-        private static void SetBadgeVisible(
-            RectTransform view,
-            CanvasGroup canvasGroup,
-            bool visible)
+        private void ConfigureBaseInfo(bool showCountAs, bool showDuplicate)
         {
-            view.gameObject.SetActive(true);
-            canvasGroup.alpha = visible ? 1f : 0f;
-            canvasGroup.interactable = false;
-            canvasGroup.blocksRaycasts = false;
+            // Measure both badges at their natural content widths before hiding either one.
+            _countAsView.gameObject.SetActive(true);
+            _duplicateView.gameObject.SetActive(true);
+            RebuildActiveLayout(_countAsView);
+            RebuildActiveLayout(_duplicateView);
+
+            float countAsWidth = showCountAs
+                ? LayoutUtility.GetPreferredWidth(_countAsView)
+                : 0f;
+            float duplicateWidth = showDuplicate
+                ? LayoutUtility.GetPreferredWidth(_duplicateView)
+                : 0f;
+            float slotWidth = Mathf.Max(countAsWidth, duplicateWidth);
+
+            SetSlotWidth(_countAsSlotLayout, slotWidth);
+            SetSlotWidth(_duplicateSlotLayout, slotWidth);
+            _baseInfoLayout.spacing = showCountAs || showDuplicate ? BaseInfoSpacing : 0f;
+
+            _countAsView.gameObject.SetActive(showCountAs);
+            _duplicateView.gameObject.SetActive(showDuplicate);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_baseInfoView);
+        }
+
+        private static void SetSlotWidth(LayoutElement slot, float width)
+        {
+            slot.minWidth = width;
+            slot.preferredWidth = width;
         }
 
         private float MinWidthForTenDescCharacters()
@@ -227,11 +248,14 @@ namespace GourmetProject.Game.UI.Tooltips
             bool valid = true;
             valid &= ReportMissing(_nameText, nameof(_nameText));
             valid &= ReportMissing(_baseInfoView, nameof(_baseInfoView));
-            valid &= ReportMissing(_duplicateView, nameof(_duplicateView));
-            valid &= ReportMissing(_duplicateCanvasGroup, nameof(_duplicateCanvasGroup));
+            valid &= ReportMissing(_baseInfoLayout, nameof(_baseInfoLayout));
+            valid &= ReportMissing(_countAsSlot, nameof(_countAsSlot));
+            valid &= ReportMissing(_countAsSlotLayout, nameof(_countAsSlotLayout));
             valid &= ReportMissing(_countAsView, nameof(_countAsView));
-            valid &= ReportMissing(_countAsCanvasGroup, nameof(_countAsCanvasGroup));
             valid &= ReportMissing(_countAsText, nameof(_countAsText));
+            valid &= ReportMissing(_duplicateSlot, nameof(_duplicateSlot));
+            valid &= ReportMissing(_duplicateSlotLayout, nameof(_duplicateSlotLayout));
+            valid &= ReportMissing(_duplicateView, nameof(_duplicateView));
             valid &= ReportMissing(_skillsContent, nameof(_skillsContent));
             valid &= ReportMissing(_flavorContent, nameof(_flavorContent));
             valid &= ReportMissing(_skillCardPrefab, nameof(_skillCardPrefab));

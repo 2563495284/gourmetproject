@@ -16,7 +16,7 @@ namespace GourmetProject.Tests.EditMode
         [TestCase(true, 1)]
         [TestCase(false, 9)]
         [TestCase(true, 9)]
-        public void Bind_NameStaysCenteredWithFixedBadgeSlots(bool isTemporaryCopy, int countAs)
+        public void Bind_NameStaysCenteredWithSymmetricContentSlots(bool isTemporaryCopy, int countAs)
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(FoodTipsPath);
             Assert.That(prefab, Is.Not.Null);
@@ -42,15 +42,24 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(summaryRect, Is.Not.Null);
                 RectTransform baseInfo = summaryRect.Find("BaseInfoView") as RectTransform;
                 Assert.That(baseInfo, Is.Not.Null);
-                RectTransform countAsRect = baseInfo.Find("CountAsView") as RectTransform;
+                RectTransform countAsSlot = baseInfo.Find("CountAsSlot") as RectTransform;
+                Assert.That(countAsSlot, Is.Not.Null);
+                RectTransform countAsRect = countAsSlot.Find("CountAsView") as RectTransform;
                 RectTransform name = baseInfo.Find("Name") as RectTransform;
-                RectTransform duplicate = baseInfo.Find("DuplicateView") as RectTransform;
+                RectTransform duplicateSlot = baseInfo.Find("DuplicateSlot") as RectTransform;
+                Assert.That(duplicateSlot, Is.Not.Null);
+                RectTransform duplicate = duplicateSlot.Find("DuplicateView") as RectTransform;
 
                 Assert.That(baseInfo.TryGetComponent(out HorizontalLayoutGroup _), Is.True);
-                AssertFixedBadge(countAsRect, countAs > 1);
+                AssertContentSizedBadge(countAsRect, countAs > 1);
                 AssertContentSized(name);
-                AssertFixedBadge(duplicate, isTemporaryCopy);
-                Assert.That(countAsRect.rect.width, Is.EqualTo(duplicate.rect.width).Within(0.1f));
+                AssertContentSizedBadge(duplicate, isTemporaryCopy);
+
+                float expectedSlotWidth = Mathf.Max(
+                    countAs > 1 ? LayoutUtility.GetPreferredWidth(countAsRect) : 0f,
+                    isTemporaryCopy ? LayoutUtility.GetPreferredWidth(duplicate) : 0f);
+                Assert.That(countAsSlot.rect.width, Is.EqualTo(expectedSlotWidth).Within(0.1f));
+                Assert.That(duplicateSlot.rect.width, Is.EqualTo(expectedSlotWidth).Within(0.1f));
 
                 Vector3 nameCenter = baseInfo.InverseTransformPoint(
                     name.TransformPoint(name.rect.center));
@@ -58,6 +67,38 @@ namespace GourmetProject.Tests.EditMode
 
                 float baseInfoWidth = LayoutUtility.GetPreferredWidth(baseInfo);
                 Assert.That(summaryRect.rect.width, Is.GreaterThan(baseInfoWidth + 24f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void Bind_SummaryWidthIncludesBaseInfoPreferredWidth()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(FoodTipsPath);
+            Assert.That(prefab, Is.Not.Null);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                Assert.That(instance.TryGetComponent(out FoodTipsView tips), Is.True);
+                FoodSummaryTipsView summary = tips.SummaryView;
+                summary.Bind(new FoodSummaryTipsData(
+                    "这是一个非常非常非常非常非常非常非常非常长的食物名字",
+                    Array.Empty<FoodInfoEntry>(),
+                    Array.Empty<string>(),
+                    isTemporaryCopy: true,
+                    countAs: 9));
+                Canvas.ForceUpdateCanvases();
+
+                RectTransform summaryRect = summary.transform as RectTransform;
+                Assert.That(summaryRect, Is.Not.Null);
+                RectTransform baseInfo = summaryRect.Find("BaseInfoView") as RectTransform;
+                Assert.That(baseInfo, Is.Not.Null);
+
+                float baseInfoWidth = LayoutUtility.GetPreferredWidth(baseInfo);
+                Assert.That(summaryRect.rect.width, Is.EqualTo(baseInfoWidth + 24f).Within(0.1f));
             }
             finally
             {
@@ -73,17 +114,17 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(rect.rect.width, Is.EqualTo(LayoutUtility.GetPreferredWidth(rect)).Within(0.1f));
         }
 
-        private static void AssertFixedBadge(RectTransform rect, bool visible)
+        private static void AssertContentSizedBadge(RectTransform rect, bool visible)
         {
             Assert.That(rect, Is.Not.Null);
-            Assert.That(rect.gameObject.activeSelf, Is.True);
-            Assert.That(rect.rect.width, Is.EqualTo(80f).Within(0.1f));
-            Assert.That(rect.rect.height, Is.EqualTo(38f).Within(0.1f));
+            Assert.That(rect.gameObject.activeSelf, Is.EqualTo(visible));
             Assert.That(rect.TryGetComponent(out ContentSizeFitter fitter), Is.True);
-            Assert.That(fitter.horizontalFit, Is.EqualTo(ContentSizeFitter.FitMode.Unconstrained));
-            Assert.That(fitter.verticalFit, Is.EqualTo(ContentSizeFitter.FitMode.Unconstrained));
-            Assert.That(rect.TryGetComponent(out CanvasGroup canvasGroup), Is.True);
-            Assert.That(canvasGroup.alpha, Is.EqualTo(visible ? 1f : 0f));
+            Assert.That(fitter.horizontalFit, Is.EqualTo(ContentSizeFitter.FitMode.PreferredSize));
+            Assert.That(fitter.verticalFit, Is.EqualTo(ContentSizeFitter.FitMode.PreferredSize));
+            if (visible)
+            {
+                Assert.That(rect.rect.width, Is.EqualTo(LayoutUtility.GetPreferredWidth(rect)).Within(0.1f));
+            }
         }
     }
 }
