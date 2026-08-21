@@ -10,9 +10,9 @@ namespace GourmetProject.Game.UI.Meta
     public sealed class RecipeWarehouseView : MonoBehaviour
     {
         private static readonly Color DefaultSurfaceColor =
-            new(0.96f, 0.945f, 0.91f, 1f);
+            new(0.9569f, 0.9216f, 0.8667f, 1f);
         private static readonly Color DefaultGridColor =
-            new(0.34f, 0.39f, 0.4f, 0.82f);
+            new(0.3961f, 0.4588f, 0.4f, 0.72f);
 
         [Header("Hierarchy")]
         [SerializeField] private RectTransform _dishContainer;
@@ -21,10 +21,10 @@ namespace GourmetProject.Game.UI.Meta
 
         [Header("Warehouse Layout")]
         [SerializeField, Min(1)] private int _warehouseColumns = 12;
-        [SerializeField, Min(0)] private int _warehouseTrailingRows = 10;
+        [SerializeField, Min(0)] private int _warehouseTrailingRows = 1;
         [SerializeField, Min(24f)] private float _warehouseCellSize = 88f;
-        [SerializeField, Min(0f)] private float _warehousePadding = 24f;
-        [SerializeField, Min(0f)] private float _itemInset = 6f;
+        [SerializeField, Min(0f)] private float _warehousePadding = 20f;
+        [SerializeField, Min(0f)] private float _itemInset = 8f;
         [SerializeField, Min(0.5f)] private float _gridLineWidth = 2f;
 
         [Header("Warehouse Style")]
@@ -32,13 +32,14 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Color _gridColor = DefaultGridColor;
         [SerializeField] private Sprite _cellSprite;
         [SerializeField] private Color _cellColor = Color.white;
-        [SerializeField, Min(0f)] private float _cellInset = 2f;
+        [SerializeField, Min(0f)] private float _cellInset = 3f;
 
         private readonly List<RecipeEditDishView> _layoutDishes = new();
         private readonly List<Vector2Int> _layoutSizes = new();
         private bool _hasLayout;
         private bool _refreshing;
         private int _lastWarnedEffectiveColumns;
+        private int _lastLayoutSignature;
         private Vector2 _lastViewportSize = new(-1f, -1f);
 
         public RectTransform DishContainer => _dishContainer;
@@ -105,6 +106,14 @@ namespace GourmetProject.Game.UI.Meta
                     : 1f;
                 BuildLayoutInputs();
                 Vector2 viewportSize = ViewportSize();
+                int layoutSignature = LayoutSignature();
+                if (_hasLayout
+                    && layoutSignature == _lastLayoutSignature
+                    && (viewportSize - _lastViewportSize).sqrMagnitude <= 0.01f)
+                {
+                    return;
+                }
+
                 _lastViewportSize = viewportSize;
                 RecipeWarehouseLayout.Result layout = RecipeWarehouseLayout.Pack(
                     _layoutSizes,
@@ -183,6 +192,7 @@ namespace GourmetProject.Game.UI.Meta
                 _gridGraphic.transform.SetAsFirstSibling();
                 Canvas.ForceUpdateCanvases();
                 _hasLayout = true;
+                _lastLayoutSignature = layoutSignature;
                 SetVerticalNormalizedPosition(previousNormalized);
             }
             finally
@@ -230,6 +240,29 @@ namespace GourmetProject.Game.UI.Meta
                 _layoutSizes.Add(new Vector2Int(
                     Mathf.Max(1, size.x),
                     Mathf.Max(1, size.y)));
+            }
+        }
+
+        private int LayoutSignature()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + _warehouseColumns;
+                hash = hash * 31 + _warehouseTrailingRows;
+                hash = hash * 31 + _warehouseCellSize.GetHashCode();
+                hash = hash * 31 + _warehousePadding.GetHashCode();
+                hash = hash * 31 + _itemInset.GetHashCode();
+                hash = hash * 31 + _gridLineWidth.GetHashCode();
+                hash = hash * 31 + _cellInset.GetHashCode();
+                hash = hash * 31 + _layoutSizes.Count;
+                for (int i = 0; i < _layoutSizes.Count; i++)
+                {
+                    hash = hash * 31 + _layoutSizes[i].x;
+                    hash = hash * 31 + _layoutSizes[i].y;
+                }
+
+                return hash;
             }
         }
 

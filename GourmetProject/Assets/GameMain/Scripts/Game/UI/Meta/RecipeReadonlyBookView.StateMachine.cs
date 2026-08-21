@@ -1,260 +1,175 @@
-using System;
-using System.Collections.Generic;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Gameplay.Battle;
 
 namespace GourmetProject.Game.UI.Meta
 {
     public sealed partial class RecipeReadonlyBookView
     {
-        private sealed class RecipeReadonlyBookStateMachine
+        /// <summary>
+        /// 单次食谱界面的不可变模式配置。它集中回答“显示什么”和“交互如何路由”，
+        /// 视图本身只负责复用已有对象并把数据绑定到 prefab。
+        /// </summary>
+        internal sealed class RecipeReadonlyBookSession
         {
-            private readonly RecipeReadonlyBookView _panel;
+            private readonly RecipeReadonlyBookRequest _request;
 
-            public RecipeReadonlyBookStateMachine(RecipeReadonlyBookView panel)
+            public RecipeReadonlyBookSession(RecipeReadonlyBookRequest request)
             {
-                _panel = panel;
+                _request = request;
             }
 
-            public RecipeReadonlyBookState Current { get; private set; }
+            public RecipeReadonlyBookMode Mode => _request.Mode;
 
-            public void Switch(RecipeReadonlyBookState next)
+            public bool IsShopDelete =>
+                Mode == RecipeReadonlyBookMode.ShopDeleteDish;
+
+            public bool UsesSemanticTitle =>
+                Mode == RecipeReadonlyBookMode.ActiveItemTarget;
+
+            public string PanelTitle
             {
-                Current?.Exit(_panel);
-                Current = next;
-                Current?.Enter(_panel);
+                get
+                {
+                    switch (Mode)
+                    {
+                        case RecipeReadonlyBookMode.ReadonlyBook:
+                            return "查看食谱";
+                        case RecipeReadonlyBookMode.ReadonlyDishPool:
+                            return string.IsNullOrWhiteSpace(_request.Title)
+                                ? "可能获得的食物"
+                                : _request.Title;
+                        case RecipeReadonlyBookMode.ShopDeleteDish:
+                            return "选择一个食物进行删除";
+                        case RecipeReadonlyBookMode.ActiveItemTarget:
+                            return _request.Item != null
+                                ? _request.Item.Desc
+                                : "选择食物";
+                        case RecipeReadonlyBookMode.EventDeleteDish:
+                            return string.IsNullOrWhiteSpace(_request.Title)
+                                ? "选择要删除的食物"
+                                : _request.Title;
+                        default:
+                            return "查看食谱";
+                    }
+                }
             }
 
-            public void Refresh()
+            public string ExitButtonText
             {
-                Current?.Refresh(_panel);
+                get
+                {
+                    switch (Mode)
+                    {
+                        case RecipeReadonlyBookMode.ReadonlyBook:
+                            return "返回";
+                        case RecipeReadonlyBookMode.ShopDeleteDish:
+                            return "返回商店";
+                        case RecipeReadonlyBookMode.EventDeleteDish:
+                            return "返回事件";
+                        default:
+                            return "取消";
+                    }
+                }
+            }
+
+            public bool CanClickDish =>
+                Mode == RecipeReadonlyBookMode.ShopDeleteDish
+                || Mode == RecipeReadonlyBookMode.ActiveItemTarget
+                || Mode == RecipeReadonlyBookMode.EventDeleteDish;
+
+            public bool ShowExitButton =>
+                Mode != RecipeReadonlyBookMode.ReadonlyDishPool
+                && (Mode != RecipeReadonlyBookMode.ReadonlyBook
+                    || !_request.HideExitButton);
+
+            public int BookIndexFilter
+            {
+                get
+                {
+                    switch (Mode)
+                    {
+                        case RecipeReadonlyBookMode.ReadonlyBook:
+                            return _request.BookIndex;
+                        case RecipeReadonlyBookMode.ReadonlyDishPool:
+                            return 0;
+                        default:
+                            return -1;
+                    }
+                }
             }
 
             public void OnExitClicked()
             {
-                if (_panel._liveMutationPlaying)
+                switch (Mode)
+                {
+                    case RecipeReadonlyBookMode.ReadonlyBook:
+                    case RecipeReadonlyBookMode.ShopDeleteDish:
+                        _request.OnExit?.Invoke();
+                        break;
+                    case RecipeReadonlyBookMode.ActiveItemTarget:
+                    case RecipeReadonlyBookMode.EventDeleteDish:
+                        _request.OnCancel?.Invoke();
+                        break;
+                }
+            }
+
+            public void OnDishClicked(
+                RecipeReadonlyBookView panel,
+                RecipeEditDishView dish)
+            {
+                if (panel == null || dish == null || !CanClickDish)
                 {
                     return;
                 }
 
-                Current?.OnExitClicked(_panel);
-            }
-
-            public void Clear()
-            {
-                Current?.Exit(_panel);
-                Current = null;
-            }
-        }
-
-        private abstract class RecipeReadonlyBookState
-        {
-            public virtual string PanelTitle => "查看食谱";
-
-            public virtual string ExitButtonText => "取消";
-
-            public virtual bool CanClickDish => false;
-
-            public virtual bool ShowExitButton => true;
-
-            public virtual int BookIndexFilter => -1;
-
-            public virtual void Enter(RecipeReadonlyBookView panel)
-            {
-            }
-
-            public virtual void Exit(RecipeReadonlyBookView panel)
-            {
-            }
-
-            public virtual void Refresh(RecipeReadonlyBookView panel)
-            {
-                panel.RebuildWarehouseForCurrentState();
-            }
-
-            public virtual void OnExitClicked(RecipeReadonlyBookView panel)
-            {
-            }
-
-            public virtual void OnDishClicked(RecipeReadonlyBookView panel, RecipeEditDishView dish)
-            {
-            }
-        }
-
-        private sealed class ShopDeleteDishState : RecipeReadonlyBookState
-        {
-            private readonly Action _onExit;
-
-            public ShopDeleteDishState(Action onExit)
-            {
-                _onExit = onExit;
-            }
-
-            public override bool CanClickDish => true;
-
-            public override string PanelTitle => "删除食物";
-
-            public override string ExitButtonText => "返回商店";
-
-            public override void Enter(RecipeReadonlyBookView panel)
-            {
-                panel.RebuildWarehouseForCurrentState();
-            }
-
-            public override void OnExitClicked(RecipeReadonlyBookView panel)
-            {
-                _onExit?.Invoke();
-            }
-
-            public override void OnDishClicked(RecipeReadonlyBookView panel, RecipeEditDishView dish)
-            {
-                if (ShopService.DeleteDishRemaining(panel._run) <= 0)
+                switch (Mode)
                 {
-                    dish?.PlayInteractionFailed();
-                    return;
-                }
+                    case RecipeReadonlyBookMode.ShopDeleteDish:
+                        if (ShopService.DeleteDishRemaining(panel._run) <= 0)
+                        {
+                            dish.PlayInteractionFailed();
+                            return;
+                        }
 
-                if (panel.TryBuildRecipeTarget(dish, out ActiveTarget target))
-                {
-                    panel.ShowShopDeleteConfirm(target);
+                        if (panel.TryBuildRecipeTarget(
+                                dish,
+                                out ActiveTarget shopTarget))
+                        {
+                            panel.ShowShopDeleteConfirm(shopTarget);
+                        }
+
+                        break;
+                    case RecipeReadonlyBookMode.ActiveItemTarget:
+                        if (_request.Item != null
+                            && panel.TryBuildRecipeTarget(
+                                dish,
+                                out ActiveTarget itemTarget))
+                        {
+                            panel.ShowActiveItemConfirm(
+                                _request.Item,
+                                itemTarget,
+                                _request.OnTargetConfirmed);
+                        }
+
+                        break;
+                    case RecipeReadonlyBookMode.EventDeleteDish:
+                        if (panel.TryBuildRecipeTarget(
+                                dish,
+                                out ActiveTarget eventTarget))
+                        {
+                            panel.ShowEventDeleteConfirm(
+                                _request.Title,
+                                eventTarget,
+                                () => { },
+                                target => _request.OnTargetConfirmed?.Invoke(
+                                    target,
+                                    null));
+                        }
+
+                        break;
                 }
             }
         }
-
-        private sealed class ReadonlyRecipeBookState : RecipeReadonlyBookState
-        {
-            private readonly int _bookIndex;
-            private readonly bool _hideExitButton;
-
-            public ReadonlyRecipeBookState(int bookIndex, bool hideExitButton = false)
-            {
-                _bookIndex = bookIndex;
-                _hideExitButton = hideExitButton;
-            }
-
-            public override string PanelTitle => "查看食谱";
-
-            public override string ExitButtonText => "返回";
-
-            public override bool ShowExitButton => !_hideExitButton;
-
-            public override int BookIndexFilter => _bookIndex;
-
-            public override void Enter(RecipeReadonlyBookView panel)
-            {
-                panel.RebuildWarehouseForCurrentState();
-            }
-
-            public override void OnExitClicked(RecipeReadonlyBookView panel)
-            {
-                panel._onExit?.Invoke();
-            }
-        }
-
-        private sealed class ReadonlyDishPoolState : RecipeReadonlyBookState
-        {
-            private readonly string _title;
-
-            public ReadonlyDishPoolState(string title)
-            {
-                _title = title;
-            }
-
-            public override string PanelTitle =>
-                string.IsNullOrWhiteSpace(_title)
-                    ? "可能获得的食物"
-                    : _title;
-
-            public override bool ShowExitButton => false;
-
-            public override int BookIndexFilter => 0;
-
-            public override void Enter(RecipeReadonlyBookView panel)
-            {
-                panel.RebuildWarehouseForCurrentState();
-            }
-        }
-
-        private sealed class ActiveRecipeDishSelectState : RecipeReadonlyBookState
-        {
-            private readonly ItemDefinition _item;
-            private readonly Action _onCancel;
-            private readonly Action<ActiveTarget, Action> _onTargetConfirmed;
-
-            public ActiveRecipeDishSelectState(ItemDefinition item, Action onCancel, Action<ActiveTarget, Action> onTargetConfirmed)
-            {
-                _item = item;
-                _onCancel = onCancel;
-                _onTargetConfirmed = onTargetConfirmed;
-            }
-
-            public override bool CanClickDish => true;
-
-            public override string PanelTitle => _item != null ? _item.Desc : "选择食物";
-
-            public override void Enter(RecipeReadonlyBookView panel)
-            {
-                panel.RebuildWarehouseForCurrentState();
-            }
-
-            public override void OnExitClicked(RecipeReadonlyBookView panel)
-            {
-                _onCancel?.Invoke();
-            }
-
-            public override void OnDishClicked(RecipeReadonlyBookView panel, RecipeEditDishView dish)
-            {
-                if (_item == null || !panel.TryBuildRecipeTarget(dish, out ActiveTarget target))
-                {
-                    return;
-                }
-
-                panel.ShowActiveItemConfirm(
-                    _item,
-                    target,
-                    _onTargetConfirmed);
-            }
-        }
-
-        private sealed class EventRecipeDishDeleteState : RecipeReadonlyBookState
-        {
-            private readonly string _title;
-            private readonly Action _onCancel;
-            private readonly Action<ActiveTarget> _onTargetConfirmed;
-
-            public EventRecipeDishDeleteState(string title, Action onCancel, Action<ActiveTarget> onTargetConfirmed)
-            {
-                _title = title;
-                _onCancel = onCancel;
-                _onTargetConfirmed = onTargetConfirmed;
-            }
-
-            public override string ExitButtonText => "返回事件";
-
-            public override bool CanClickDish => true;
-
-            public override string PanelTitle => string.IsNullOrWhiteSpace(_title) ? "选择要删除的食物" : _title;
-
-            public override void Enter(RecipeReadonlyBookView panel)
-            {
-                panel.RebuildWarehouseForCurrentState();
-            }
-
-            public override void OnExitClicked(RecipeReadonlyBookView panel)
-            {
-                _onCancel?.Invoke();
-            }
-
-            public override void OnDishClicked(RecipeReadonlyBookView panel, RecipeEditDishView dish)
-            {
-                if (!panel.TryBuildRecipeTarget(dish, out ActiveTarget target))
-                {
-                    return;
-                }
-
-                panel.ShowEventDeleteConfirm(_title, target, () => { }, _onTargetConfirmed);
-            }
-        }
-
     }
 }

@@ -105,6 +105,7 @@ namespace GourmetProject.Game.UI.Meta
             BattleRecipeEntryStatus? battleStatus = null,
             int? deliciousnessOverride = null)
         {
+            PrepareForBind();
             BookIndex = bookIndex;
             DishIndex = dishIndex;
             DishDef = dishDef;
@@ -146,6 +147,99 @@ namespace GourmetProject.Game.UI.Meta
             if (_button != null)
             {
                 _button.interactable = dragEnabled || onClick != null;
+            }
+        }
+
+        /// <summary>
+        /// 清理会跨绑定残留的运行时状态。只读食谱会复用菜品实例，因此 Bind 必须
+        /// 从稳定的视觉与交互基线开始。
+        /// </summary>
+        private void PrepareForBind()
+        {
+            EnsureDragStateRefs();
+            EnsureButton();
+            ResolveDishPreview();
+            HideHover();
+            StopInteractionFailedFeedback();
+            if (_rect != null)
+            {
+                DOTween.Kill(_rect);
+                _rect.localScale = Vector3.one;
+                _rect.localRotation = Quaternion.identity;
+            }
+
+            _dragging = false;
+            _dropHandled = false;
+            _suppressClick = false;
+            _cannotPlace = false;
+            _panScrollRect = null;
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.alpha = 1f;
+                _canvasGroup.blocksRaycasts = true;
+                _canvasGroup.interactable = true;
+            }
+        }
+
+        /// <summary>
+        /// 供食谱视图回池时调用：释放 RenderTexture，并断开所有由上一会话注入的回调。
+        /// </summary>
+        internal void ReleaseForReuse()
+        {
+            EnsureDragStateRefs();
+            EnsureButton();
+            ResolveDishPreview();
+            HideHover();
+            StopInteractionFailedFeedback();
+            if (_rect != null)
+            {
+                DOTween.Kill(_rect);
+                _rect.localScale = Vector3.one;
+                _rect.localRotation = Quaternion.identity;
+            }
+
+            _dishPreview?.Hide();
+            _onClick = null;
+            _onBeginDrag = null;
+            _onDragCancelled = null;
+            _onHoverEnter = null;
+            _onHoverExit = null;
+            _dragEnabled = false;
+            _dragging = false;
+            _dropHandled = false;
+            _hovered = false;
+            _warehouseClickable = false;
+            _cannotPlace = false;
+            _suppressClick = false;
+            _panScrollRect = null;
+            _deliciousnessOverride = null;
+            _previewMode = DishIconPreviewMode.Card;
+            BookIndex = -1;
+            DishIndex = -1;
+            DishDef = null;
+            DisplayedGridSize = Vector2Int.one;
+            SetWarehouseHighlight(false);
+
+            if (_warehouseHighlight != null)
+            {
+                _warehouseHighlight.gameObject.SetActive(false);
+            }
+
+            if (_battleStatusOverlay != null)
+            {
+                _battleStatusOverlay.gameObject.SetActive(false);
+            }
+
+            if (_button != null)
+            {
+                _button.interactable = false;
+            }
+
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.alpha = 1f;
+                _canvasGroup.blocksRaycasts = false;
+                _canvasGroup.interactable = false;
             }
         }
 

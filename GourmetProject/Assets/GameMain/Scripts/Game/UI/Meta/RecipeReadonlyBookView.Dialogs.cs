@@ -67,7 +67,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (!ShopService.CanDeleteDish(_run))
             {
-                RebuildWarehouseForCurrentState();
+                RenderSession(true);
                 return;
             }
 
@@ -93,7 +93,7 @@ namespace GourmetProject.Game.UI.Meta
                     {
                         if (!ShopService.DeleteDishAt(_run, target.Y))
                         {
-                            RebuildWarehouseForCurrentState();
+                            RenderSession(true);
                             return;
                         }
 
