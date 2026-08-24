@@ -18,9 +18,9 @@ namespace GourmetProject.Game.Presentation.Battle
     {
         private static readonly Color BrushColor = new Color(0.15f, 0.1f, 0.08f, 1f);
 
-        // STS2 的半分辨率 Line2D 宽度分别为 4 / 12；shader 使用半径，因此对应 2 / 6 像素。
+        // 绘制沿用 STS2 的半分辨率 4px 线宽；擦除范围在其 12px 线宽基础上扩大 2 倍。
         private const float DrawRadius = 2f;
-        private const float EraseRadius = 6f;
+        private const float EraseRadius = 12f;
         private const int ResolutionDivisor = 2;
         private const int MinimumCanvasDimension = 64;
         private const string CanvasShaderResourcePath = "Shaders/BattleDoodleCanvas";
