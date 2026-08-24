@@ -122,6 +122,7 @@ namespace GourmetProject.Game.UI.Widgets
 
         private RenderTexture _renderTexture;
         private Sequence _transformSequence;
+        private Tween _valueBadgeFadeTween;
         private Material _transformMaterial;
         private Material _dissolveMaterial;
         private Material _materialBeforeTransform;
@@ -138,8 +139,12 @@ namespace GourmetProject.Game.UI.Widgets
         private bool _hasBinding;
         private bool _requiresLiveRendering;
         private bool _lockDisplayToDefaultFoodCell;
+        private bool _showValueBadge = true;
+        private float _valueBadgeAlpha = 1f;
 
         public RenderTexture CurrentTexture => _renderTexture;
+
+        internal float ValueBadgeAlpha => _valueBadgeAlpha;
 
         public RawImage TargetImage
         {
@@ -219,6 +224,52 @@ namespace GourmetProject.Game.UI.Widgets
                 color.a = Mathf.Clamp01(alpha);
                 _targetImage.color = color;
             }
+        }
+
+        /// <summary>控制渲染纹理中的美味值 Badge；切换后立即重绘当前绑定。</summary>
+        public void SetValueBadgeVisible(bool visible)
+        {
+            KillValueBadgeFade();
+            float alpha = visible ? 1f : 0f;
+            if (_showValueBadge == visible
+                && Mathf.Approximately(_valueBadgeAlpha, alpha))
+            {
+                return;
+            }
+
+            _showValueBadge = visible;
+            _valueBadgeAlpha = alpha;
+            RenderCurrentBinding();
+        }
+
+        /// <summary>只渐隐/渐显美味值数字，Badge 外框和图标保持可见。</summary>
+        public void FadeValueBadge(bool visible, float duration, Action onComplete = null)
+        {
+            KillValueBadgeFade();
+            _showValueBadge = true;
+            float targetAlpha = visible ? 1f : 0f;
+            if (duration <= 0.0001f
+                || Mathf.Approximately(_valueBadgeAlpha, targetAlpha))
+            {
+                SetValueBadgeAlpha(targetAlpha);
+                onComplete?.Invoke();
+                return;
+            }
+
+            _valueBadgeFadeTween = DOTween.To(
+                    () => _valueBadgeAlpha,
+                    SetValueBadgeAlpha,
+                    targetAlpha,
+                    duration)
+                .SetEase(visible ? Ease.OutQuad : Ease.InQuad)
+                .SetUpdate(true)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    _valueBadgeFadeTween = null;
+                    SetValueBadgeAlpha(targetAlpha);
+                    onComplete?.Invoke();
+                });
         }
 
         public static Vector2 DisplaySizeForGrid(
@@ -322,7 +373,9 @@ namespace GourmetProject.Game.UI.Widgets
                 _pixelsPerCell,
                 request.Mode,
                 request.VisualSeed,
-                request.RotationIndex);
+                request.RotationIndex,
+                _showValueBadge,
+                _valueBadgeAlpha);
             CaptureBinding(request, sprite);
             ApplyTextureToTarget(request.Mode);
         }
@@ -335,8 +388,17 @@ namespace GourmetProject.Game.UI.Widgets
 
         private void LateUpdate()
         {
-            if (!_requiresLiveRendering
-                || !_hasBinding
+            if (!_requiresLiveRendering)
+            {
+                return;
+            }
+
+            RenderCurrentBinding();
+        }
+
+        private void RenderCurrentBinding()
+        {
+            if (!_hasBinding
                 || _renderTexture == null
                 || !_renderTexture.IsCreated()
                 || _targetImage == null
@@ -360,7 +422,9 @@ namespace GourmetProject.Game.UI.Widgets
                 _pixelsPerCell,
                 _boundMode,
                 _boundVisualSeed,
-                _boundRotationIndex);
+                _boundRotationIndex,
+                _showValueBadge,
+                _valueBadgeAlpha);
         }
 
         public void PlayTransformTo(
@@ -369,15 +433,34 @@ namespace GourmetProject.Game.UI.Widgets
             int? deliciousnessOverride,
             Action onComplete)
         {
+            PlayTransformTo(new DishPreviewRequest(
+                dish,
+                null,
+                deliciousnessOverride ?? dish?.Deliciousness ?? 0,
+                flavorIds,
+                _mode,
+                null,
+                dish != null
+                    ? (float)(StableHash.Fnv1a64(dish.Id) & 0xFFFFFF)
+                    : 0f),
+                onComplete);
+        }
+
+        public void PlayTransformTo(DishInstance dish, Action onComplete)
+        {
+            PlayTransformTo(
+                DishPreviewRequest.FromInstance(dish, mode: _mode),
+                onComplete);
+        }
+
+        private void PlayTransformTo(DishPreviewRequest request, Action onComplete)
+        {
             EnsureRefs();
             KillTransformSequence();
+            DishDef dish = request.Dish;
             if (dish?.Shape == null || _targetImage == null)
             {
-                Bind(
-                    dish,
-                    deliciousnessOverride: deliciousnessOverride,
-                    flavorIds: flavorIds,
-                    mode: _mode);
+                Bind(request);
                 onComplete?.Invoke();
                 return;
             }
@@ -391,11 +474,7 @@ namespace GourmetProject.Game.UI.Widgets
                         0.24f,
                         vibrato: 6,
                         elasticity: 0.6f))
-                    .InsertCallback(TransformInDuration, () => Bind(
-                        dish,
-                        deliciousnessOverride: deliciousnessOverride,
-                        flavorIds: flavorIds,
-                        mode: _mode))
+                    .InsertCallback(TransformInDuration, () => Bind(request))
                     .AppendInterval(TransformHoldDuration)
                     .SetUpdate(true)
                     .SetLink(gameObject)
@@ -417,11 +496,7 @@ namespace GourmetProject.Game.UI.Widgets
                     .SetEase(Ease.OutQuad))
                 .AppendCallback(() =>
                 {
-                    Bind(
-                        dish,
-                        deliciousnessOverride: deliciousnessOverride,
-                        flavorIds: flavorIds,
-                        mode: _mode);
+                    Bind(request);
                     ApplyTransformEffect(1f);
                 })
                 .Append(DOTween.To(
@@ -501,8 +576,11 @@ namespace GourmetProject.Game.UI.Widgets
         {
             EnsureRefs();
             KillTransformSequence();
+            KillValueBadgeFade();
             ReleaseTexture();
             ClearBinding();
+            _showValueBadge = true;
+            _valueBadgeAlpha = 1f;
             if (_targetImage != null)
             {
                 _targetImage.texture = null;
@@ -518,6 +596,7 @@ namespace GourmetProject.Game.UI.Widgets
         private void OnDestroy()
         {
             KillTransformSequence();
+            KillValueBadgeFade();
             ReleaseTexture();
             if (_transformMaterial != null)
             {
@@ -558,6 +637,23 @@ namespace GourmetProject.Game.UI.Widgets
 
             EndTransformMaterial();
             EndDissolveMaterial();
+        }
+
+        private void SetValueBadgeAlpha(float alpha)
+        {
+            _valueBadgeAlpha = Mathf.Clamp01(alpha);
+            RenderCurrentBinding();
+        }
+
+        private void KillValueBadgeFade()
+        {
+            if (_valueBadgeFadeTween == null)
+            {
+                return;
+            }
+
+            _valueBadgeFadeTween.Kill();
+            _valueBadgeFadeTween = null;
         }
 
         private bool BeginTransformMaterial()

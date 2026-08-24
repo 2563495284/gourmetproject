@@ -7,6 +7,7 @@ using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using NUnit.Framework;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
 
@@ -174,6 +175,128 @@ namespace GourmetProject.Tests.PlayMode
                     UnityEngine.Object.DestroyImmediate(rig.gameObject);
                 }
             }
+        }
+
+        [Test]
+        public void CardPreview_ValueBadgeVisibilityAndAlpha_CanBeControlled()
+        {
+            GameObject piecePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PiecePrefabPath);
+            GameObject cellPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CellPrefabPath);
+            GameObject badgePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BadgePrefabPath);
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(DishSpritePath);
+            var definition = new DishDef(
+                "preview-badge-visibility-test",
+                "Preview Badge Visibility Test",
+                10,
+                DishShape.FromRows(new[] { "X" }),
+                0,
+                0,
+                1f,
+                Array.Empty<string>(),
+                string.Empty);
+            SpriteRenderer cell = cellPrefab.GetComponentInChildren<SpriteRenderer>(true);
+            DishPieceView piece = piecePrefab.GetComponent<DishPieceView>();
+            DishValueBadgeView badge = badgePrefab.GetComponent<DishValueBadgeView>();
+            RenderTexture target = null;
+            DishIconPreviewRenderer rig = null;
+
+            try
+            {
+                target = DishIconPreviewRenderer.Render(
+                    definition,
+                    sprite,
+                    new BigDouble(10),
+                    Array.Empty<string>(),
+                    cell,
+                    piece,
+                    badge,
+                    64,
+                    DishIconPreviewMode.Card,
+                    0f);
+                Assert.That(target, Is.Not.Null);
+
+                DishIconPreviewRenderer[] rigs =
+                    Resources.FindObjectsOfTypeAll<DishIconPreviewRenderer>();
+                rig = rigs[rigs.Length - 1];
+                Assert.That(HasActiveBadge(rig), Is.True);
+                float fullTextAlpha = ActiveBadge(rig)
+                    .GetComponentInChildren<TextMeshPro>(true)
+                    .color.a;
+
+                Assert.That(DishIconPreviewRenderer.RenderInto(
+                    target,
+                    definition,
+                    sprite,
+                    new BigDouble(10),
+                    Array.Empty<string>(),
+                    cell,
+                    piece,
+                    badge,
+                    64,
+                    DishIconPreviewMode.Card,
+                    0f,
+                    showValueBadge: true,
+                    valueBadgeAlpha: 0.35f), Is.True);
+                Assert.That(ActiveBadge(rig).CurrentAlpha, Is.EqualTo(0.35f).Within(0.001f));
+                Assert.That(
+                    ActiveBadge(rig).GetComponentInChildren<TextMeshPro>(true).color.a,
+                    Is.EqualTo(fullTextAlpha * 0.35f).Within(0.001f));
+
+                Assert.That(DishIconPreviewRenderer.RenderInto(
+                    target,
+                    definition,
+                    sprite,
+                    new BigDouble(10),
+                    Array.Empty<string>(),
+                    cell,
+                    piece,
+                    badge,
+                    64,
+                    DishIconPreviewMode.Card,
+                    0f,
+                    showValueBadge: false), Is.True);
+                Assert.That(HasActiveBadge(rig), Is.False);
+
+                Assert.That(DishIconPreviewRenderer.RenderInto(
+                    target,
+                    definition,
+                    sprite,
+                    new BigDouble(10),
+                    Array.Empty<string>(),
+                    cell,
+                    piece,
+                    badge,
+                    64,
+                    DishIconPreviewMode.Card,
+                    0f,
+                    showValueBadge: true), Is.True);
+                Assert.That(HasActiveBadge(rig), Is.True);
+            }
+            finally
+            {
+                if (target != null)
+                {
+                    target.Release();
+                    UnityEngine.Object.DestroyImmediate(target);
+                }
+
+                if (rig != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(rig.gameObject);
+                }
+            }
+        }
+
+        private static bool HasActiveBadge(DishIconPreviewRenderer rig)
+        {
+            return ActiveBadge(rig) != null;
+        }
+
+        private static DishValueBadgeView ActiveBadge(DishIconPreviewRenderer rig)
+        {
+            DishValueBadgeView[] badges =
+                rig.GetComponentsInChildren<DishValueBadgeView>(true);
+            return Array.Find(badges, badge => badge.gameObject.activeSelf);
         }
 
         private static void AssertFootprintShadow(DishShape orientation, int rotationIndex)

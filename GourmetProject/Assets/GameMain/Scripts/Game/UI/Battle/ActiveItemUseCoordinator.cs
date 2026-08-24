@@ -456,6 +456,10 @@ namespace GourmetProject.Game.UI.Battle
 
             bool dimPlacedDishes = false;
             world.BeginActiveItemWorldTargeting(dimPlacedDishes);
+            if (_pendingItem.TargetKind == cfg.ItemTargetKind.DiningTableDish)
+            {
+                _host.SetServingOutletActiveItemTargeting(true);
+            }
             CaptureAndHideCursor();
             CreateUiArrow();
             if (_uiArrow == null)
@@ -481,9 +485,19 @@ namespace GourmetProject.Game.UI.Battle
             Vector2 pointer = Mouse.current != null ? Mouse.current.position.ReadValue() : _pendingStartScreen;
             _uiArrow?.SetEndScreenPoint(pointer);
 
-            bool pointerHasTarget = _pendingItem.TargetKind == cfg.ItemTargetKind.DiningTableCell
-                ? world.TryPointerCellTarget(out ActiveTarget hovered)
-                : world.TryPointerDishTarget(out hovered);
+            ActiveTarget hovered = default;
+            bool servingOutletHover = false;
+            bool pointerHasTarget;
+            if (_pendingItem.TargetKind == cfg.ItemTargetKind.DiningTableCell)
+            {
+                pointerHasTarget = world.TryPointerCellTarget(out hovered);
+            }
+            else
+            {
+                servingOutletHover = _host.TryServingOutletDishTarget(pointer, out hovered);
+                pointerHasTarget = servingOutletHover || world.TryPointerDishTarget(out hovered);
+            }
+
             bool hasHover = pointerHasTarget && ContainsTarget(_candidateTargets, hovered);
             ActiveTarget? hoverTarget = hasHover ? hovered : null;
             world.SetActiveItemTargetHighlights(
@@ -491,8 +505,13 @@ namespace GourmetProject.Game.UI.Battle
                 _candidateTargets,
                 _selectedTargets,
                 hoverTarget);
+            _host.SetServingOutletActiveItemTargetHighlighted(
+                hasHover && servingOutletHover);
 
-            if (Time.frameCount <= _targetFrame || !WorldInput.PrimaryPressedThisFrame)
+            bool primaryPressed = Mouse.current != null
+                && Mouse.current.leftButton.wasPressedThisFrame
+                && (servingOutletHover || !WorldInput.PointerOverUi);
+            if (Time.frameCount <= _targetFrame || !primaryPressed)
             {
                 return;
             }
@@ -628,10 +647,17 @@ namespace GourmetProject.Game.UI.Battle
 
             ActiveTarget target = targets[0];
             BattleWorldController world = _host.ActiveWorld;
+            bool servingOutletTarget = _host.IsServingOutletDishTarget(target);
             CleanupTargeting();
 
-            bool animationStarted = world != null
-                && world.PlayActiveItemDishFlavorApplied(target, FinishDishFlavorTargeting);
+            bool animationStarted = servingOutletTarget
+                ? _host.PlayActiveItemServingOutletFlavorApplied(
+                    target,
+                    FinishDishFlavorTargeting)
+                : world != null
+                    && world.PlayActiveItemDishFlavorApplied(
+                        target,
+                        FinishDishFlavorTargeting);
             if (!animationStarted)
             {
                 FinishDishFlavorTargeting();
@@ -700,6 +726,8 @@ namespace GourmetProject.Game.UI.Battle
 
             _targetButtons.Clear();
             _host.ActiveWorld?.EndActiveItemWorldTargeting();
+            _host.SetServingOutletActiveItemTargetHighlighted(false);
+            _host.SetServingOutletActiveItemTargeting(false);
             if (closeTimelineAxisTarget)
             {
                 _host.EndActiveItemTimelineAxisTarget();
@@ -1004,7 +1032,16 @@ namespace GourmetProject.Game.UI.Battle
                 {
                     if (int.TryParse(target.Id, out int id))
                     {
-                        DishDef dish = _host.ActiveSession?.FindDishById(id)?.Def;
+                        DishInstance prepared = _host.ActiveSession?.PreparedServe?.Dish;
+                        bool atServingOutlet = prepared != null && prepared.Id == id;
+                        DishDef dish = atServingOutlet
+                            ? prepared.Def
+                            : _host.ActiveSession?.FindDishById(id)?.Def;
+                        if (atServingOutlet)
+                        {
+                            return $"{dish?.Name ?? target.Id}（出餐口）";
+                        }
+
                         return $"{dish?.Name ?? target.Id} ({target.X + 1},{target.Y + 1})";
                     }
 

@@ -346,6 +346,17 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishValueBadgePresenter?.SetVisible(visible);
         }
 
+        internal void FadeDishValueBadge(bool visible, float duration, Action onComplete = null)
+        {
+            if (_dishValueBadgePresenter == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            _dishValueBadgePresenter.FadeValue(visible, duration, onComplete);
+        }
+
         public void UpdatePlacement(Placement placement)
         {
             if (Instance == null)

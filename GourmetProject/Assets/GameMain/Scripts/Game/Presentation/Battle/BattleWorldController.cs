@@ -43,6 +43,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float TemporaryAreaLayoutDuration = 0.18f;
         private const float TemporaryAreaFadeDuration = 0.18f;
         private const float TemporaryAreaFlyDuration = 0.38f;
+        private const float ActiveItemValueFadeDuration = 0.16f;
         private const int TemporaryAreaSortingStride = 20;
         private const int PassiveSlotCapacity = 10;
         private const int PassiveSlotColumns = 2;
@@ -914,32 +915,61 @@ namespace GourmetProject.Game.Presentation.Battle
             if (temporaryDish != null)
             {
                 _activeItemTransitioning = true;
-                piece.SetDishValueBadgeVisible(false);
                 piece.SetClickEnabled(false);
                 piece.SetMoveCallbacks(null, null, null);
-                RefreshTemporaryAreaVisibility(animated: true);
-                EnsureTemporaryAreaLayoutReady();
-                int index = TemporaryAreaDishIndex(dishId);
-                TemporaryAreaStackSlot[] targetSlots = CalculateTemporaryAreaSlots();
-                LayoutTemporaryAreaPieces(animated: true, slotsOverride: targetSlots);
-                TemporaryAreaStackSlot targetSlot = index >= 0 && index < targetSlots.Length
-                    ? targetSlots[index]
-                    : new TemporaryAreaStackSlot(TemporaryAreaFallbackCenter(), 1f);
-
-                piece.PlayActiveItemNumbTransform(temporaryDish.Placement, () =>
+                piece.FadeDishValueBadge(false, ActiveItemValueFadeDuration, () =>
                 {
                     if (piece == null)
                     {
-                        CompleteTemporaryAreaArrival(null, temporaryDish, index, onComplete);
+                        CompleteTemporaryAreaArrival(null, temporaryDish, -1, onComplete);
                         return;
                     }
 
-                    BeginTemporaryAreaFlyIn(piece, temporaryDish, targetSlot, index, onComplete);
+                    RefreshTemporaryAreaVisibility(animated: true);
+                    EnsureTemporaryAreaLayoutReady();
+                    int index = TemporaryAreaDishIndex(dishId);
+                    TemporaryAreaStackSlot[] targetSlots = CalculateTemporaryAreaSlots();
+                    LayoutTemporaryAreaPieces(animated: true, slotsOverride: targetSlots);
+                    TemporaryAreaStackSlot targetSlot = index >= 0 && index < targetSlots.Length
+                        ? targetSlots[index]
+                        : new TemporaryAreaStackSlot(TemporaryAreaFallbackCenter(), 1f);
+
+                    piece.PlayActiveItemNumbTransform(temporaryDish.Placement, () =>
+                    {
+                        if (piece == null)
+                        {
+                            CompleteTemporaryAreaArrival(null, temporaryDish, index, onComplete);
+                            return;
+                        }
+
+                        BeginTemporaryAreaFlyIn(piece, temporaryDish, targetSlot, index, onComplete);
+                    });
                 });
                 return true;
             }
 
-            piece.PlayActiveItemFlavorTransform(onVisualSwitch: null, onComplete);
+            piece.FadeDishValueBadge(false, ActiveItemValueFadeDuration, () =>
+            {
+                if (piece == null)
+                {
+                    onComplete?.Invoke();
+                    return;
+                }
+
+                piece.PlayActiveItemFlavorTransform(onVisualSwitch: null, () =>
+                {
+                    if (piece == null)
+                    {
+                        onComplete?.Invoke();
+                        return;
+                    }
+
+                    piece.FadeDishValueBadge(
+                        true,
+                        ActiveItemValueFadeDuration,
+                        onComplete);
+                });
+            });
             return true;
         }
 
@@ -992,7 +1022,6 @@ namespace GourmetProject.Game.Presentation.Battle
             Action onComplete)
         {
             _temporaryAreaFlyInPiece = null;
-            _activeItemTransitioning = false;
             if (piece == null || dish == null)
             {
                 RebuildPlacedPieces();
@@ -1015,7 +1044,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
                 piece.SetClickEnabled(true);
                 BuildHudFood(piece, dish, _dishClicked);
-                piece.SetDishValueBadgeVisible(true);
 
                 int insertIndex = Mathf.Clamp(index, 0, _temporaryAreaPieces.Count);
                 _temporaryAreaPieces.Insert(insertIndex, piece);
@@ -1023,8 +1051,23 @@ namespace GourmetProject.Game.Presentation.Battle
                 _boardView?.Sync();
             }
 
-            _stateChanged?.Invoke();
-            onComplete?.Invoke();
+            if (piece != null && dish != null)
+            {
+                piece.FadeDishValueBadge(
+                    true,
+                    ActiveItemValueFadeDuration,
+                    FinishArrival);
+                return;
+            }
+
+            FinishArrival();
+
+            void FinishArrival()
+            {
+                _activeItemTransitioning = false;
+                _stateChanged?.Invoke();
+                onComplete?.Invoke();
+            }
         }
 
         public void SkipTableEditPack()

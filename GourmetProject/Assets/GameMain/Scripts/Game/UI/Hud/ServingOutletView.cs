@@ -1,6 +1,7 @@
 using System;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Battle;
+using GourmetProject.Gameplay.Board;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -23,6 +24,7 @@ namespace GourmetProject.Game.UI.Hud
     public sealed class ServingOutletView : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         private const float PreparedDishRaycastPadding = 24f;
+        private const float ValueBadgeFadeDuration = 0.16f;
 
         [SerializeField] private RectTransform _preparedDishRoot;
         [SerializeField] private DishIconRenderTexturePreview _dishPreview;
@@ -40,11 +42,120 @@ namespace GourmetProject.Game.UI.Hud
         private Action<Vector2> _drag;
         private Func<Vector2, bool> _endDrag;
         private bool _dragging;
+        private bool _activeItemTargeting;
+        private bool _activeItemTargetHighlighted;
+        private bool _activeItemTransforming;
+        private int? _preparedDishId;
 
         public ServingOutletState State { get; private set; }
 
         public RectTransform TipPlacementTarget =>
             _preparedDishRoot != null ? _preparedDishRoot : transform as RectTransform;
+
+        public bool IsPreparedDishAtScreenPoint(Vector2 screenPoint)
+        {
+            if (State != ServingOutletState.WaitingForDishDrag
+                || !_preparedDishId.HasValue
+                || _preparedDishRoot == null
+                || !_preparedDishRoot.gameObject.activeInHierarchy)
+            {
+                return false;
+            }
+
+            Canvas canvas = _preparedDishRoot.GetComponentInParent<Canvas>();
+            Camera eventCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? canvas.worldCamera
+                : null;
+            return RectTransformUtility.RectangleContainsScreenPoint(
+                _preparedDishRoot,
+                screenPoint,
+                eventCamera);
+        }
+
+        public void SetActiveItemTargeting(bool active)
+        {
+            _activeItemTargeting = active;
+            SetActiveItemTargetHighlighted(false);
+            if (_dishHoverTrigger != null)
+            {
+                _dishHoverTrigger.enabled = !active && !_activeItemTransforming;
+            }
+        }
+
+        public void SetActiveItemTargetHighlighted(bool highlighted)
+        {
+            _activeItemTargetHighlighted = highlighted
+                && State == ServingOutletState.WaitingForDishDrag;
+            if (State == ServingOutletState.WaitingForDishDrag)
+            {
+                SetBackground(_activeItemTargetHighlighted ? _readyColor : _dragColor);
+            }
+        }
+
+        public bool PlayActiveItemFlavorApplied(DishInstance dish, Action onComplete)
+        {
+            if (dish == null
+                || !_preparedDishId.HasValue
+                || _preparedDishId.Value != dish.Id
+                || _dishPreview == null)
+            {
+                return false;
+            }
+
+            _dragging = false;
+            _activeItemTransforming = true;
+            _dishHoverTrigger?.CancelHover();
+            if (_dishHoverTrigger != null)
+            {
+                _dishHoverTrigger.enabled = false;
+            }
+
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.interactable = false;
+                _canvasGroup.blocksRaycasts = false;
+            }
+
+            _dishPreview.FadeValueBadge(false, ValueBadgeFadeDuration, () =>
+            {
+                if (_dishPreview == null)
+                {
+                    RestoreInteraction();
+                    return;
+                }
+
+                _dishPreview.PlayTransformTo(dish, () =>
+                {
+                    onComplete?.Invoke();
+                    if (_dishPreview == null)
+                    {
+                        RestoreInteraction();
+                        return;
+                    }
+
+                    _dishPreview.FadeValueBadge(
+                        true,
+                        ValueBadgeFadeDuration,
+                        RestoreInteraction);
+                });
+            });
+            return true;
+
+            void RestoreInteraction()
+            {
+                _activeItemTransforming = false;
+                if (_canvasGroup != null)
+                {
+                    _canvasGroup.interactable = true;
+                    _canvasGroup.blocksRaycasts = true;
+                }
+
+                if (_dishHoverTrigger != null)
+                {
+                    _dishHoverTrigger.enabled = !_activeItemTargeting;
+                }
+            }
+        }
 
         public void SetVisible(bool visible)
         {
@@ -106,6 +217,8 @@ namespace GourmetProject.Game.UI.Hud
             State = state;
 
             bool waitingForDrag = state == ServingOutletState.WaitingForDishDrag && prepared != null;
+            _preparedDishId = waitingForDrag ? prepared.Dish.Id : null;
+            _activeItemTargetHighlighted = false;
             if (_preparedDishRoot != null)
             {
                 _preparedDishRoot.gameObject.SetActive(waitingForDrag);
@@ -163,7 +276,10 @@ namespace GourmetProject.Game.UI.Hud
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (State != ServingOutletState.WaitingForDishDrag || eventData == null)
+            if (State != ServingOutletState.WaitingForDishDrag
+                || _activeItemTargeting
+                || _activeItemTransforming
+                || eventData == null)
             {
                 return;
             }
@@ -226,6 +342,19 @@ namespace GourmetProject.Game.UI.Hud
             if (text != null)
             {
                 text.text = value ?? string.Empty;
+            }
+        }
+
+        private void OnDisable()
+        {
+            _dragging = false;
+            _activeItemTargeting = false;
+            _activeItemTargetHighlighted = false;
+            _activeItemTransforming = false;
+            _dishPreview?.SetValueBadgeVisible(true);
+            if (_dishHoverTrigger != null)
+            {
+                _dishHoverTrigger.enabled = true;
             }
         }
     }

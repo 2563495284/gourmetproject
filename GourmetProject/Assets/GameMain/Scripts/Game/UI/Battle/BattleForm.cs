@@ -2053,6 +2053,56 @@ namespace GourmetProject.Game.UI.Battle
                 && _recipeBookPage.PlayActiveItemRecipeFlavorApplied(target, onComplete);
         }
 
+        internal bool TryServingOutletDishTarget(Vector2 screenPoint, out ActiveTarget target)
+        {
+            target = default;
+            DishInstance dish = _session?.PreparedServe?.Dish;
+            ServingOutletView outlet = ResolveServingOutlet();
+            if (dish == null || outlet?.IsPreparedDishAtScreenPoint(screenPoint) != true)
+            {
+                return false;
+            }
+
+            GridPos origin = dish.Placement.Origin;
+            target = new ActiveTarget(
+                dish.Id.ToString(),
+                origin.X,
+                origin.Y,
+                cfg.ItemTargetKind.DiningTableDish);
+            return true;
+        }
+
+        internal bool IsServingOutletDishTarget(ActiveTarget target)
+        {
+            return target.TargetKind == cfg.ItemTargetKind.DiningTableDish
+                && int.TryParse(target.Id, out int dishId)
+                && _session?.PreparedServe?.Dish?.Id == dishId;
+        }
+
+        internal void SetServingOutletActiveItemTargeting(bool active)
+        {
+            ResolveServingOutlet()?.SetActiveItemTargeting(active);
+        }
+
+        internal void SetServingOutletActiveItemTargetHighlighted(bool highlighted)
+        {
+            ResolveServingOutlet()?.SetActiveItemTargetHighlighted(highlighted);
+        }
+
+        internal bool PlayActiveItemServingOutletFlavorApplied(
+            ActiveTarget target,
+            Action onComplete)
+        {
+            if (!IsServingOutletDishTarget(target))
+            {
+                return false;
+            }
+
+            return ResolveServingOutlet()?.PlayActiveItemFlavorApplied(
+                _session.PreparedServe.Dish,
+                onComplete) == true;
+        }
+
         internal bool OpenActiveItemTableCellTarget(Action onOpened)
         {
             if (_inspectionCoordinator == null || _fragmentEditCoordinator?.IsActive == true)

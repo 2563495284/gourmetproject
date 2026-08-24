@@ -1013,6 +1013,31 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>
+        /// 出餐口食物获得或失去“麻”风味时，按变化量更新其固定朝向。
+        /// 食物尚未占用餐桌，因此这里只迁移实例朝向；合法落点由
+        /// <see cref="FindPreparedServePlacements"/> 在玩家拖动时实时重算。
+        /// </summary>
+        public bool RotatePreparedDishAfterFlavorDelta(int dishId, int ccwSteps)
+        {
+            DishInstance dish = PreparedServe?.Dish;
+            if (IsSettled || dish == null || dish.Id != dishId || ccwSteps == 0)
+            {
+                return false;
+            }
+
+            int rotationIndex = ((dish.Placement.RotationIndex - ccwSteps) % 4 + 4) % 4;
+            DishShape orientation = dish.Def.Shape.RotatedBy(rotationIndex);
+            dish.Relocate(new Placement(
+                orientation,
+                rotationIndex,
+                DishShape.OriginAfterCenteredRotation(
+                    dish.Placement.Orientation,
+                    dish.Placement.Origin,
+                    orientation)));
+            return true;
+        }
+
+        /// <summary>
         /// 把出菜口食物预摆到玩家选择的位置。预摆会占用餐桌并参与预览，
         /// 但在 <see cref="ConfirmPendingDish"/> 前不增加上菜次数或触发 OnServe。
         /// </summary>

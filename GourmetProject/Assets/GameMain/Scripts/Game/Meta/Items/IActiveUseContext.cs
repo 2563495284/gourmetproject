@@ -77,7 +77,7 @@ namespace GourmetProject.Game.Meta
 
         // —— 调味小票：仅 Food 经营挑战中使用，并永久改 Run ——
 
-        /// <summary>能力：给桌上目标食物附加风味，并永久写回其食谱来源。</summary>
+        /// <summary>能力：给经营挑战中的目标食物附加风味，并永久写回其食谱来源。</summary>
         bool AddFlavorToDish(ActiveTarget target, string flavorId);
 
         /// <summary>能力：移除目标食物的一个风味。<paramref name="flavorId"/> 为空时移除最后一个风味。</summary>

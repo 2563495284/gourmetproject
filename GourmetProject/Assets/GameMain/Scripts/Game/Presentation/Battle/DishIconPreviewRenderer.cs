@@ -63,7 +63,9 @@ namespace GourmetProject.Game.Presentation.Battle
             int pixelsPerCell,
             DishIconPreviewMode mode,
             float visualSeed,
-            int? rotationIndexOverride = null)
+            int? rotationIndexOverride = null,
+            bool showValueBadge = true,
+            float valueBadgeAlpha = 1f)
         {
             if (dish?.Shape == null
                 || sprite == null
@@ -86,6 +88,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 mode,
                 visualSeed,
                 rotationIndexOverride,
+                showValueBadge,
+                valueBadgeAlpha,
                 null);
         }
 
@@ -104,7 +108,9 @@ namespace GourmetProject.Game.Presentation.Battle
             int pixelsPerCell,
             DishIconPreviewMode mode,
             float visualSeed,
-            int? rotationIndexOverride = null)
+            int? rotationIndexOverride = null,
+            bool showValueBadge = true,
+            float valueBadgeAlpha = 1f)
         {
             if (target == null
                 || !target.IsCreated()
@@ -129,6 +135,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 mode,
                 visualSeed,
                 rotationIndexOverride,
+                showValueBadge,
+                valueBadgeAlpha,
                 target);
             return ReferenceEquals(rendered, target);
         }
@@ -278,6 +286,8 @@ namespace GourmetProject.Game.Presentation.Battle
             DishIconPreviewMode mode,
             float visualSeed,
             int? rotationIndexOverride,
+            bool showValueBadge,
+            float valueBadgeAlpha,
             RenderTexture existingTarget)
         {
             MoveRigToActiveScene();
@@ -343,7 +353,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 badgePrefab,
                 displayShape,
                 deliciousness,
-                mode);
+                mode,
+                showValueBadge,
+                valueBadgeAlpha);
 
             _camera.clearFlags = CameraClearFlags.SolidColor;
             _camera.backgroundColor = backgroundColor;
@@ -627,7 +639,9 @@ namespace GourmetProject.Game.Presentation.Battle
             DishValueBadgeView badgePrefab,
             DishShape displayShape,
             BigDouble deliciousness,
-            DishIconPreviewMode mode)
+            DishIconPreviewMode mode,
+            bool visible,
+            float valueAlpha)
         {
             if (target == null || badgePrefab == null)
             {
@@ -635,6 +649,11 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             PruneBadgeStates();
+            if (!visible)
+            {
+                return;
+            }
+
             if (!_badgesByTarget.TryGetValue(target, out BadgePreviewState state)
                 || state?.View == null
                 || !ReferenceEquals(state.SourcePrefab, badgePrefab))
@@ -661,6 +680,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             state.View.gameObject.SetActive(true);
+            state.View.SetValueAlpha(valueAlpha);
             Vector2Int shapeSize = new(displayShape.Width, displayShape.Height);
             bool layoutChanged = state.Mode != mode || state.ShapeSize != shapeSize;
             state.View.transform.localScale = Vector3.one * BadgeScale;
