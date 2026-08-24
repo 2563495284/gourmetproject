@@ -508,7 +508,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (mode == DishIconPreviewMode.Card)
             {
-                BuildContactShadow(displayShape, dishPrefab);
+                BuildContactShadow(dishPrefab);
             }
 
             FlavorOrganicVisual.ApplyToSpriteRenderer(
@@ -520,25 +520,26 @@ namespace GourmetProject.Game.Presentation.Battle
                 useGlobalTime: true);
         }
 
-        private void BuildContactShadow(DishShape displayShape, DishPieceView dishPrefab)
+        private void BuildContactShadow(DishPieceView dishPrefab)
         {
-            Vector2 span = DishVisualLayout.FootprintSpan(displayShape, CellSize, Pitch);
             _dishShadowRenderer.gameObject.SetActive(true);
-            _dishShadowRenderer.sprite = BattleShadow.SoftShadowSprite;
+            _dishShadowRenderer.sprite = _dishRenderer.sprite;
             _dishShadowRenderer.color = new Color(
                 0f,
                 0f,
                 0f,
                 dishPrefab.PreviewShadowBaseAlpha);
+            float scale = Mathf.Max(0.0001f, dishPrefab.PreviewShadowGroundScale);
             _dishShadowRenderer.transform.localPosition = new Vector3(
-                CellSize * dishPrefab.PreviewShadowGroundSide,
-                -CellSize * dishPrefab.PreviewShadowGroundDrop,
+                _dishRoot.localPosition.x + CellSize * dishPrefab.PreviewShadowGroundSide,
+                _dishRoot.localPosition.y - CellSize * dishPrefab.PreviewShadowGroundDrop,
                 0.05f);
-            _dishShadowRenderer.transform.localRotation = Quaternion.identity;
-            _dishShadowRenderer.transform.localScale = new Vector3(
-                span.x * dishPrefab.PreviewShadowGroundScale,
-                span.y * dishPrefab.PreviewShadowGroundScale,
-                1f);
+            _dishShadowRenderer.transform.localRotation = _dishRoot.localRotation;
+            _dishShadowRenderer.transform.localScale = Vector3.Scale(
+                _dishRoot.localScale,
+                new Vector3(scale, scale, 1f));
+            _dishShadowRenderer.flipX = _dishRenderer.flipX;
+            _dishShadowRenderer.flipY = _dishRenderer.flipY;
             SpriteRenderStyle.ApplyUnlitMaterial(_dishShadowRenderer);
             BattleSorting.Apply(
                 _dishShadowRenderer,

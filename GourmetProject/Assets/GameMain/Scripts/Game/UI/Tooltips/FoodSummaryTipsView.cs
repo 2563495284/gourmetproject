@@ -28,6 +28,9 @@ namespace GourmetProject.Game.UI.Tooltips
         [SerializeField] private FoodSkillDescriptionView _skillCardPrefab;
         [SerializeField] private FoodFlavorTagView _flavorTagPrefab;
 
+        private float _lastSkillsTextWidth;
+        private IReadOnlyList<string> _lastFlavors;
+
         private const int MaxFlavorColumns = 1;
         private const float FlavorCellHeight = 44f;
         private const float FlavorCellWidth = 96f;
@@ -35,7 +38,7 @@ namespace GourmetProject.Game.UI.Tooltips
         private const float SummaryHorizontalPadding = 24f;
         private const float SkillCardHorizontalPadding = 20f;
         private const float SkillDescPanelHorizontalPadding = 20f;
-        private const float BaseInfoSpacing = 8f;
+        private const float BaseInfoSpacing = 16f;
         private const string MinWidthSampleText = "十十十十十十十十十十";
 
         public void Bind(FoodSummaryTipsData data)
@@ -49,14 +52,30 @@ namespace GourmetProject.Game.UI.Tooltips
 
             _nameText.text = data.FoodName;
             EnsureNameAnimator();
-            _nameAnimator?.Rebuild();
             bool showCountAs = data.CountAs > 1;
             _countAsText.text = FormatCountAs(data.CountAs);
             ConfigureBaseInfo(showCountAs, data.IsTemporaryCopy);
-            float skillsTextWidth = BuildSkills(data.Skills, data.SkillsDisabled);
+            _lastSkillsTextWidth = BuildSkills(data.Skills, data.SkillsDisabled);
+            _lastFlavors = data.Flavors;
             BuildFlavors(data.Flavors);
-            ResizeToContent(skillsTextWidth, data.Flavors);
+            ResizeToContent(_lastSkillsTextWidth, _lastFlavors);
+            _nameAnimator?.Rebuild();
             Show();
+        }
+
+        internal void RefreshLayoutAfterActivation()
+        {
+            if (!ValidateReferences() || !gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            ConfigureBaseInfo(
+                _countAsView.gameObject.activeSelf,
+                _duplicateView.gameObject.activeSelf);
+            ResizeToContent(_lastSkillsTextWidth, _lastFlavors);
+            EnsureNameAnimator();
+            _nameAnimator?.Rebuild();
         }
 
         internal static string FormatCountAs(int countAs)
@@ -189,6 +208,11 @@ namespace GourmetProject.Game.UI.Tooltips
 
             rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, preferredWidth);
             LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+
+            // Resizing the summary also resizes BaseInfoView through the parent
+            // VerticalLayoutGroup. Rebuild the row once more at its final width so
+            // its badge/name positions cannot survive for a frame with stale values.
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_baseInfoView);
         }
 
         private static void RebuildActiveLayout(RectTransform rect)
@@ -201,6 +225,8 @@ namespace GourmetProject.Game.UI.Tooltips
 
         private void ConfigureBaseInfo(bool showCountAs, bool showDuplicate)
         {
+            DisableLegacyNameFitter();
+
             // Measure both badges at their natural content widths before hiding either one.
             _countAsView.gameObject.SetActive(true);
             _duplicateView.gameObject.SetActive(true);
@@ -222,6 +248,21 @@ namespace GourmetProject.Game.UI.Tooltips
             _countAsView.gameObject.SetActive(showCountAs);
             _duplicateView.gameObject.SetActive(showDuplicate);
             LayoutRebuilder.ForceRebuildLayoutImmediate(_baseInfoView);
+        }
+
+        private void DisableLegacyNameFitter()
+        {
+            // Existing tooltip instances and older prefab variants can retain the
+            // fitter even after it was removed from the source prefab. It competes
+            // with BaseInfoView's HorizontalLayoutGroup and reintroduces overlap.
+            ContentSizeFitter fitter = _nameText.GetComponent<ContentSizeFitter>();
+            if (fitter == null)
+            {
+                return;
+            }
+
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
         }
 
         private static void SetSlotWidth(LayoutElement slot, float width)

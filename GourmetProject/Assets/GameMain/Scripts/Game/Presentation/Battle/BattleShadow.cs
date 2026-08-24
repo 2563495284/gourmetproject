@@ -5,9 +5,9 @@ using GourmetProject.Game.Run;
 namespace GourmetProject.Game.Presentation.Battle
 {
     /// <summary>
-    /// 经营挑战世界共享的「假阴影」资源：程序生成的径向羽化软暗斑，缩放后可当椭圆接触阴影/投影使用。
+    /// 经营挑战世界共享的径向羽化暗斑资源，仅供粒子、舞台与其他不具备 Sprite 轮廓的特效使用。
     /// 按 battle-fake-shadow 规则统一走 drop shadow，禁止 Light2D + ShadowCaster2D。
-    /// 由 DishPieceView 等表现单元共用，避免重复生成纹理。
+    /// 食物接触影由 DishPieceView 直接复用食物 Alpha 轮廓，不得回退到这里的矩形占格软斑。
     /// </summary>
     internal static class BattleShadow
     {
@@ -29,14 +29,14 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        /// <summary>全程从中心羽化的弥散软斑（无实心核），读起来更糊，用作高空"光晕"层。</summary>
+        /// <summary>全程从中心羽化的弥散软斑（无实心核），用于粒子或舞台特效的低频扩散层。</summary>
         public static Sprite DiffuseShadowSprite
         {
             get
             {
                 if (_diffuseShadowSprite == null)
                 {
-                    // 无实心核：从中心一路渐隐到边缘，整体糊成一团弥散投影。
+                    // 无实心核：从中心一路渐隐到边缘，形成低频弥散斑。
                     _diffuseShadowSprite = CreateRadialShadowSprite(0f);
                 }
 
