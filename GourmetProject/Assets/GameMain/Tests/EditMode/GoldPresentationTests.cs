@@ -2,6 +2,7 @@ using System.Runtime.Serialization;
 using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Gameplay.Battle;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -45,6 +46,20 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 BattleInfoColumn.ResolveDisplayedGold(runGold, pendingGold, includePending),
                 Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void ResolveGoldDeltaStart_FollowsGoldTextMovement_AndStaysHorizontallyCentered()
+        {
+            var originalGoldPosition = new Vector2(15.6f, 389f);
+            var movedGoldPosition = new Vector2(15.6f, 339.5f);
+
+            Vector2 originalStart = BattleInfoColumn.ResolveGoldDeltaStart(originalGoldPosition);
+            Vector2 movedStart = BattleInfoColumn.ResolveGoldDeltaStart(movedGoldPosition);
+
+            Assert.That(originalStart, Is.EqualTo(new Vector2(15.6f, 419f)));
+            Assert.That(movedStart.x, Is.EqualTo(movedGoldPosition.x));
+            Assert.That(movedStart - originalStart, Is.EqualTo(movedGoldPosition - originalGoldPosition));
         }
     }
 }
