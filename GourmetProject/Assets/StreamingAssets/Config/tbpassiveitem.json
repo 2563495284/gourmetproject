@@ -2037,7 +2037,7 @@
   {
     "id": "item_randomize_recipe_dishes",
     "name": "万花筒菜单板",
-    "desc": "将[context]所有[/context]食物随机为新的食物",
+    "desc": "将[context]所有[/context]食物随机为\n占格数相同的新食物",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 0,

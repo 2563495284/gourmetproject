@@ -42,6 +42,33 @@ namespace GourmetProject.Game.Run
             }
         }
 
+        /// <summary>
+        /// 替换食物本体，并把给定的完整风味序列保存为后天风味。
+        /// 仅供替换到无原生风味的食物本体时使用，以保持原有风味顺序。
+        /// </summary>
+        internal void ReplaceDishIdAndExtraFlavors(string dishId, IReadOnlyList<string> flavorIds)
+        {
+            if (string.IsNullOrEmpty(dishId))
+            {
+                return;
+            }
+
+            DishId = ContentIdAliases.NormalizeDishId(dishId);
+            _extraFlavorIds.Clear();
+            if (flavorIds == null)
+            {
+                return;
+            }
+
+            foreach (string flavorId in flavorIds)
+            {
+                if (!string.IsNullOrEmpty(flavorId))
+                {
+                    _extraFlavorIds.Add(ContentIdAliases.NormalizeFlavorId(flavorId));
+                }
+            }
+        }
+
         public void AddFlavor(string flavorId, int flavorLimit = int.MaxValue)
         {
             if (string.IsNullOrEmpty(flavorId))

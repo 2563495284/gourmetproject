@@ -3729,6 +3729,27 @@ namespace GourmetProject.Game.Run
             return true;
         }
 
+        /// <summary>
+        /// 替换食谱格为无原生风味的食物本体，并按原顺序保留该格当前的全部有效风味。
+        /// 后天技能与永久分数修正保存在原格对象上，不受替换影响。
+        /// </summary>
+        internal bool ReplaceRecipeDishAtPreservingFlavors(int dishIndex, string dishId)
+        {
+            DishDef replacement = Database.GetDish(dishId);
+            if (dishIndex < 0
+                || dishIndex >= _recipe.Count
+                || replacement == null
+                || replacement.HasFlavor)
+            {
+                return false;
+            }
+
+            IReadOnlyList<string> flavorIds = GetRecipeFlavorIds(dishIndex);
+            _recipe[dishIndex].ReplaceDishIdAndExtraFlavors(dishId, flavorIds);
+            RebuildBonusDishCache();
+            return true;
+        }
+
         public bool AddBonusDish(string dishId, string flavorId)
         {
             if (Database.GetDish(dishId) == null)

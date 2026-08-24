@@ -288,7 +288,10 @@ namespace GourmetProject.Game.Meta.Passives
             var pool = new List<DishDef>();
             foreach (DishDef dish in run.Database.AllDishes)
             {
-                if (dish != null && !string.IsNullOrEmpty(dish.Id) && dish.BaseWeight > 0f)
+                if (dish != null
+                    && !string.IsNullOrEmpty(dish.Id)
+                    && dish.BaseWeight > 0f
+                    && !dish.HasFlavor)
                 {
                     pool.Add(dish);
                 }
@@ -297,11 +300,22 @@ namespace GourmetProject.Game.Meta.Passives
             for (int dishIndex = 0; dishIndex < run.RecipeEntries.Count; dishIndex++)
             {
                 string currentId = run.RecipeEntries[dishIndex].DishId;
+                DishDef current = run.Database.GetDish(currentId);
+                if (current == null)
+                {
+                    continue;
+                }
+
+                int occupiedCellCount = current.Shape.CellCount;
                 var candidates = new List<DishDef>();
                 var weights = new List<float>();
                 foreach (DishDef dish in pool)
                 {
-                    if (string.Equals(dish.Id, currentId, System.StringComparison.OrdinalIgnoreCase))
+                    if (dish.Shape.CellCount != occupiedCellCount
+                        || string.Equals(
+                            dish.BaseId,
+                            current.BaseId,
+                            System.StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
@@ -317,7 +331,7 @@ namespace GourmetProject.Game.Meta.Passives
 
                 RecipeDishSnapshot before = Snapshot(run, new RecipeTarget(dishIndex));
                 DishDef selected = candidates[rng.WeightedPickIndex(weights)];
-                if (!run.ReplaceRecipeDishAt(dishIndex, selected.Id))
+                if (!run.ReplaceRecipeDishAtPreservingFlavors(dishIndex, selected.Id))
                 {
                     continue;
                 }
