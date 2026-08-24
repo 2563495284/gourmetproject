@@ -1921,7 +1921,7 @@
     "desc": "[context]放弃奖励领取[/context]时\n获取食物的运气提升",
     "quality": 1,
     "specialTags": 0,
-    "effectValue": 10,
+    "effectValue": 3,
     "effectParam": "purpose:Dish",
     "baseWeight": 100,
     "targetScoreHiddenOffset": 0,

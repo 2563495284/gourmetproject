@@ -4,6 +4,7 @@ using System.Linq;
 using BreakInfinity;
 using GourmetProject.Config;
 using GourmetProject.Core.Rng;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -199,6 +200,23 @@ namespace GourmetProject.Tests.EditMode
             StringAssert.DoesNotContain("永久", source.Desc);
             Assert.That(target.EffectValue, Is.EqualTo(0.4f).Within(0.0001f));
             Assert.That(source.EffectValue, Is.EqualTo(0.5f).Within(0.0001f));
+        }
+
+        [Test]
+        public void TransferGrowthItems_DoNotShowCounterText()
+        {
+            PassiveItemModel[] models =
+            {
+                new TransferTargetFlatModel(),
+                new TransferSourceFlatModel(),
+                new TransferTargetMultModel(),
+                new TransferSourceMultModel(),
+            };
+
+            foreach (PassiveItemModel model in models)
+            {
+                Assert.That(model.InfoText, Is.Empty, model.GetType().Name);
+            }
         }
 
         private GameRun Run(GameplayDatabase db, params string[] dishIds)
