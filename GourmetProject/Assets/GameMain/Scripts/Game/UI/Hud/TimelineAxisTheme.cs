@@ -100,6 +100,7 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Sprite _cursor;
         [SerializeField] private Sprite _dayBadge;
         [SerializeField] private Sprite _nodeBubble;
+        [SerializeField] private Sprite _bossNodeBubble;
 
         [Header("Node icons")]
         [SerializeField] private Sprite _shop;
@@ -122,6 +123,7 @@ namespace GourmetProject.Game.UI.Hud
         public Sprite Cursor => _cursor;
         public Sprite DayBadge => _dayBadge;
         public Sprite NodeBubble => _nodeBubble;
+        public Sprite BossNodeBubble => _bossNodeBubble != null ? _bossNodeBubble : _nodeBubble;
         public TimelineAxisPalette Palette => _palette ??= new TimelineAxisPalette();
         public TimelineAxisMotion Motion => _motion ??= new TimelineAxisMotion();
 

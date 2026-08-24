@@ -25,7 +25,7 @@ namespace GourmetProject.Game.UI.Battle.View
         private const float ScoreTitleBossY = 102f;
         private const float BossStatTransitionDuration = 0.24f;
 
-        [SerializeField] private TMP_Text _weekText;
+        [SerializeField] private StarProgressView _starProgress;
         [SerializeField] private TMP_Text _goldText;
         [SerializeField] private TMP_Text _goldDeltaTemplate;
         [SerializeField] private RectTransform _heartContainer;
@@ -57,8 +57,6 @@ namespace GourmetProject.Game.UI.Battle.View
         private bool _inspectionAvailabilityInitialized;
         private bool _recipeInspectionAvailable;
         private bool _tableInspectionAvailable;
-        private Sequence _weekChangeSequence;
-        private Action _weekChangeOnComplete;
         private int? _recipeCountPresentationOverride;
         private RectTransform _scoreSection;
         private RectTransform _scoreMeter;
@@ -339,14 +337,6 @@ namespace GourmetProject.Game.UI.Battle.View
 
         internal void CancelWeekIndexChange(bool complete)
         {
-            _weekChangeSequence?.Kill();
-            _weekChangeSequence = null;
-            Action callback = _weekChangeOnComplete;
-            _weekChangeOnComplete = null;
-            if (complete)
-            {
-                callback?.Invoke();
-            }
         }
 
         internal void PlayWeekIndexChange(
@@ -355,42 +345,8 @@ namespace GourmetProject.Game.UI.Battle.View
             int afterWeekIndex,
             Action onComplete)
         {
-            if (_weekText == null || run == null)
-            {
-                onComplete?.Invoke();
-                return;
-            }
-
-            CancelWeekIndexChange(complete: true);
-            RectTransform rect = _weekText.rectTransform;
-            Vector3 originalScale = rect.localScale;
-            Color originalColor = _weekText.color;
-            _weekText.text = WeekText(run, beforeWeekIndex);
-            _weekChangeOnComplete = onComplete;
-            _weekChangeSequence = DOTween.Sequence()
-                .SetUpdate(true)
-                .AppendInterval(0.10f)
-                .AppendCallback(() => _weekText.text = WeekText(run, afterWeekIndex))
-                .Append(rect.DOPunchScale(Vector3.one * 0.28f, 0.34f, 8, 0.62f))
-                .Join(_weekText.DOColor(new Color(1f, 0.58f, 0.12f, 1f), 0.12f))
-                .Append(_weekText.DOColor(originalColor, 0.16f))
-                .OnComplete(() =>
-                {
-                    rect.localScale = originalScale;
-                    _weekText.color = originalColor;
-                    _weekText.text = WeekText(run, afterWeekIndex);
-                    _weekChangeSequence = null;
-                    Action callback = _weekChangeOnComplete;
-                    _weekChangeOnComplete = null;
-                    callback?.Invoke();
-                });
-        }
-
-        private static string WeekText(GameRun run, int weekIndex)
-        {
-            return weekIndex > run.TotalWeeks
-                ? $"无尽第{weekIndex - run.TotalWeeks}关"
-                : $"{weekIndex}/{run.TotalWeeks}周";
+            _starProgress?.Bind(run?.RatingStarsEarned ?? 0);
+            onComplete?.Invoke();
         }
 
         /// <summary>接线按钮回调（由壳在 OnInit 调用一次）。</summary>
@@ -723,12 +679,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 }
             }
 
-            if (_weekText != null)
-            {
-                _weekText.text = run.IsEndless
-                    ? $"无尽第{run.WeekIndex - run.TotalWeeks}关"
-                    : $"{run.WeekIndex}/{run.TotalWeeks}周";
-            }
+            _starProgress?.Bind(run.RatingStarsEarned);
 
             bool includePendingGold = inspection == BattleInspectionView.None
                 && current == GameplayView.Food

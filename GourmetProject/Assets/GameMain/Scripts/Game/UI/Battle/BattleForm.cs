@@ -4408,6 +4408,17 @@ namespace GourmetProject.Game.UI.Battle
             GameApp.UI.OpenUIForm(UIForms.HeartBreak, UIForms.GroupDialog, openArgs);
         }
 
+        public void ShowStarAward(StarAwardFormOpenArgs args)
+        {
+            if (args == null)
+            {
+                return;
+            }
+
+            RefreshAll();
+            GameApp.UI.OpenUIForm(UIForms.StarAward, UIForms.GroupDialog, args);
+        }
+
         // —— 经营挑战 ——
 
         public void StartBattle(

@@ -576,6 +576,8 @@ namespace GourmetProject.Game.Balance
 
         public void ShowHeartBreak(HeartBreakFormOpenArgs args, Action onComplete) => Enqueue(onComplete);
 
+        public void ShowStarAward(StarAwardFormOpenArgs args) => Enqueue(args?.OnContinue);
+
         public void OpenEventRecipeDishDelete(
             GameRun run,
             string title,

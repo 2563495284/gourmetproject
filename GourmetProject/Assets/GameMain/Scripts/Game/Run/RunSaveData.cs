@@ -39,6 +39,18 @@ namespace GourmetProject.Game.Run
         /// <summary>已经失去红心、等待播放或恢复的碎心演出。</summary>
         public PendingHeartBreakSaveData PendingHeartBreak;
 
+        /// <summary>六星评鉴进度是否已经初始化；旧存档缺少该字段时执行一次迁移。</summary>
+        public bool StarProgressInitialized;
+
+        /// <summary>本局已经获得的星级评鉴星数，范围 0-6。</summary>
+        public int RatingStarsEarned;
+
+        /// <summary>已经发放过星星的 BattleKey；用于保证结算回调幂等。</summary>
+        public List<string> AwardedRatingStarBattleKeys = new List<string>();
+
+        /// <summary>已经发星、等待播放或恢复的获星演出。</summary>
+        public PendingStarAwardSaveData PendingStarAward;
+
         /// <summary>本局利息节点金币阈值。</summary>
         public int InterestThreshold = -1;
 
@@ -526,6 +538,14 @@ namespace GourmetProject.Game.Run
         public int BattleTotal;
         public BigNumberSaveData BattleTotalBig;
         public bool IsTerminal;
+    }
+
+    [Serializable]
+    public sealed class PendingStarAwardSaveData
+    {
+        public string BattleKey;
+        public int BeforeStars;
+        public int AfterStars;
     }
 
     [Serializable]
