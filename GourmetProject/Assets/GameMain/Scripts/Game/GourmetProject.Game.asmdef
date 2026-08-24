@@ -9,6 +9,7 @@
         "GourmetProject.Gameplay",
         "BreakInfinity",
         "DOTween.Modules",
+        "Coffee.UIEffect",
         "Luban.Runtime",
         "Unity.InputSystem",
         "Unity.RenderPipelines.Universal.2D.Runtime",

@@ -25,6 +25,7 @@ namespace GourmetProject.Tests.EditMode
         private const string AwardPrefabPath = "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/StarAwardForm.prefab";
         private const string BubblePrefabPath = "Assets/GameMain/Content/Resources/Prefabs/UI/Hud/TimelineNodeBubbleView.prefab";
         private const string ThemePath = "Assets/GameMain/Content/Resources/Sprites/UI/TimelineFresh/TimelineAxisTheme.asset";
+        private const string ProgressPanelPath = SpriteRoot + "star_progress_panel.png";
 
         private static cfg.Tables _tables;
         private static GameplayDatabase _database;
@@ -123,7 +124,34 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(FindByName(battle.transform, "WeekText"), Is.Null);
             Transform starCard = FindByName(battle.transform, "StarCard");
             Assert.That(starCard, Is.Not.Null);
+            var starCardRect = (RectTransform)starCard;
+            Assert.That(starCardRect.sizeDelta.x, Is.EqualTo(313f).Within(0.01f));
+            Assert.That(starCardRect.sizeDelta.y, Is.EqualTo(138.22f).Within(0.01f));
+            Assert.That(starCardRect.anchoredPosition.x, Is.EqualTo(-1.9000001f).Within(0.01f));
+            Assert.That(starCardRect.anchoredPosition.y, Is.EqualTo(460.61066f).Within(0.01f));
+
+            Image panelImage = starCard.GetComponent<Image>();
+            Assert.That(panelImage.sprite, Is.SameAs(AssetDatabase.LoadAssetAtPath<Sprite>(ProgressPanelPath)));
+            Assert.That(panelImage.type, Is.EqualTo(Image.Type.Sliced));
+            Assert.That(panelImage.raycastTarget, Is.False);
+
+            Transform gridTransform = FindByName(starCard, "StarGrid");
+            Assert.That(gridTransform, Is.Not.Null);
+            var gridRect = (RectTransform)gridTransform;
+            Assert.That(gridRect.sizeDelta, Is.EqualTo(new Vector2(196f, 116f)));
+            GridLayoutGroup grid = gridTransform.GetComponent<GridLayoutGroup>();
+            Assert.That(grid.cellSize, Is.EqualTo(new Vector2(56f, 56f)));
+            Assert.That(grid.spacing, Is.EqualTo(new Vector2(14f, 4f)));
+            Assert.That(grid.constraint, Is.EqualTo(GridLayoutGroup.Constraint.FixedColumnCount));
+            Assert.That(grid.constraintCount, Is.EqualTo(3));
+            Assert.That(gridTransform.childCount, Is.EqualTo(GameRun.MaxRatingStars));
+
             StarProgressView hud = starCard.GetComponent<StarProgressView>();
+            Assert.That(hud.HudEffectsEnabled, Is.True);
+            Assert.That(hud.Sparkles, Is.Not.Null);
+            Assert.That(hud.Sparkles.raycastTarget, Is.False);
+            hud.Bind(0);
+            Assert.That(hud.GetStarRect(0).GetComponent<Image>().color.a, Is.GreaterThanOrEqualTo(0.45f));
             AssertProgressStates(hud);
             BattleInfoColumn info = battle.GetComponentInChildren<BattleInfoColumn>(true);
             Assert.That(new SerializedObject(info).FindProperty("_starProgress").objectReferenceValue, Is.SameAs(hud));
@@ -133,6 +161,8 @@ namespace GourmetProject.Tests.EditMode
             StarAwardForm form = award.GetComponent<StarAwardForm>();
             StarProgressView awardProgress = award.GetComponentInChildren<StarProgressView>(true);
             Assert.That(form, Is.Not.Null);
+            Assert.That(awardProgress.HudEffectsEnabled, Is.False);
+            Assert.That(awardProgress.Sparkles, Is.Null);
             AssertProgressStates(awardProgress);
             var serialized = new SerializedObject(form);
             foreach (string field in new[]
@@ -148,7 +178,12 @@ namespace GourmetProject.Tests.EditMode
         [Test]
         public void StarSprites_UsePolicyAndHaveTransparentAntialiasedEdges()
         {
-            foreach (string name in new[] { "star_rating_medal.png", "timeline_node_star_bubble.png" })
+            foreach (string name in new[]
+                     {
+                         "star_rating_medal.png",
+                         "timeline_node_star_bubble.png",
+                         "star_progress_panel.png",
+                     })
             {
                 string path = SpriteRoot + name;
                 var importer = AssetImporter.GetAtPath(path) as TextureImporter;
@@ -160,6 +195,11 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(importer.wrapMode, Is.EqualTo(TextureWrapMode.Clamp), name);
                 Assert.That(importer.filterMode, Is.EqualTo(FilterMode.Bilinear), name);
                 Assert.That(importer.spritePixelsPerUnit, Is.EqualTo(100f), name);
+                if (name == "star_progress_panel.png")
+                {
+                    Assert.That(importer.spriteBorder, Is.EqualTo(new Vector4(64f, 64f, 64f, 64f)));
+                    Assert.That(importer.textureCompression, Is.EqualTo(TextureImporterCompression.Uncompressed));
+                }
 
                 byte[] bytes = File.ReadAllBytes(Path.Combine(Directory.GetParent(Application.dataPath).FullName, path));
                 var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
@@ -251,6 +291,31 @@ namespace GourmetProject.Tests.EditMode
             progress.Bind(6);
             Assert.That(Enumerable.Range(0, 6).All(i =>
                 progress.GetStarRect(i).GetComponent<Image>().color.a == 1f), Is.True);
+
+            var serialized = new SerializedObject(progress);
+            SerializedProperty effects = serialized.FindProperty("_starEffects");
+            SerializedProperty shinyTweeners = serialized.FindProperty("_starShinyTweeners");
+            if (progress.HudEffectsEnabled)
+            {
+                Assert.That(effects.arraySize, Is.EqualTo(GameRun.MaxRatingStars));
+                Assert.That(shinyTweeners.arraySize, Is.EqualTo(GameRun.MaxRatingStars));
+                for (int i = 0; i < GameRun.MaxRatingStars; i++)
+                {
+                    var effect = effects.GetArrayElementAtIndex(i).objectReferenceValue as Behaviour;
+                    var tweener = shinyTweeners.GetArrayElementAtIndex(i).objectReferenceValue as Behaviour;
+                    Assert.That(effect, Is.Not.Null);
+                    Assert.That(tweener, Is.Not.Null);
+                    Assert.That(effect.GetType().FullName, Is.EqualTo("Coffee.UIEffects.UIEffect"));
+                    Assert.That(tweener.GetType().FullName, Is.EqualTo("Coffee.UIEffects.UIEffectTweener"));
+                    Assert.That(effect.enabled, Is.True);
+                    Assert.That(tweener.enabled, Is.True);
+                }
+            }
+            else
+            {
+                Assert.That(effects.arraySize, Is.Zero);
+                Assert.That(shinyTweeners.arraySize, Is.Zero);
+            }
         }
 
         private static Transform FindByName(Transform root, string name)
