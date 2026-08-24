@@ -2199,7 +2199,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _pendingServeTriggerCues.Add(cue);
         }
 
-        private void PlayPendingServeTriggerCues()
+        public void PlayPendingServeTriggerCues()
         {
             if (_pendingServeTriggerCues.Count == 0
                 || _serveTriggerCuePlaybackActive)

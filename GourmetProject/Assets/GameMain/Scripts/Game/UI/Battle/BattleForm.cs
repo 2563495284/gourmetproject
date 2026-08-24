@@ -4708,7 +4708,8 @@ namespace GourmetProject.Game.UI.Battle
                 string debuffId = _session?.BossDebuffPresentation?.DebuffId ?? string.Empty;
                 if (result.ActionKind == PendingDishActionKind.Serve)
                 {
-                    await _world.PlayPendingServeTriggerCuesAsync(token);
+                    // 数值提示只是视觉反馈，不应占用 Boss 全屏输入锁；队列会在世界层自行串行播放。
+                    _world.PlayPendingServeTriggerCues();
 
                     if (string.Equals(debuffId, "debuff_appetizer", StringComparison.Ordinal)
                         && result.RemovedAfterServe)

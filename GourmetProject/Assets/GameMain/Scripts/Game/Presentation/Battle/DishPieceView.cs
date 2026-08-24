@@ -49,7 +49,10 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector2 screenSize,
             float screenRotationDegrees,
             bool flipX,
-            bool flipY)
+            bool flipY,
+            IReadOnlyList<string> flavorIds,
+            float flavorSeed,
+            float flavorIntensity)
         {
             Sprite = sprite;
             Color = color;
@@ -58,6 +61,9 @@ namespace GourmetProject.Game.Presentation.Battle
             ScreenRotationDegrees = screenRotationDegrees;
             FlipX = flipX;
             FlipY = flipY;
+            FlavorIds = flavorIds;
+            FlavorSeed = flavorSeed;
+            FlavorIntensity = flavorIntensity;
         }
 
         public Sprite Sprite { get; }
@@ -67,12 +73,15 @@ namespace GourmetProject.Game.Presentation.Battle
         public float ScreenRotationDegrees { get; }
         public bool FlipX { get; }
         public bool FlipY { get; }
+        public IReadOnlyList<string> FlavorIds { get; }
+        public float FlavorSeed { get; }
+        public float FlavorIntensity { get; }
     }
 
     /// <summary>
     /// 已摆放食物表现：固定结构（接触阴影 + 食物本体 + 碰撞盒）预拼在 prefab 上，由 <see cref="BuildPlaced"/> 喂数据。
     /// sprite/缩放/旋转/碰撞尺寸随形状(1x1/2x1/L/T...)与朝向变化，必须运行时计算（见 dish-footprint-sprite 规则）。
-    /// 阴影一律走假阴影软暗斑（见 battle-fake-shadow 规则），全程 Unlit 平涂，不依赖 Light2D。
+    /// 阴影一律复用食物 Alpha 轮廓做绘本式接触影（见 battle-fake-shadow 规则），全程 Unlit 平涂，不依赖 Light2D。
     /// </summary>
     public sealed class DishPieceView : MonoBehaviour
     {
@@ -95,32 +104,32 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly int BoingId = Shader.PropertyToID("_Boing");
         private static readonly int EdgeClampPointId = Shader.PropertyToID("_EdgeClampPoint");
 
-        [Header("接触阴影：贴桌态（偏移按单格尺寸取比例，适配不同餐桌缩放）")]
-        [SerializeField] private float _shadowBaseAlpha = 0.5f;
-        [SerializeField] private float _shadowGroundScale = 1.22f;
-        [SerializeField] private float _shadowGroundDrop = 0.16f;
-        [SerializeField] private float _shadowGroundSide = 0.06f;
+        [Header("接触阴影：贴桌态（复用食物 Alpha 轮廓，偏移按单格尺寸取比例）")]
+        [SerializeField] private float _shadowBaseAlpha = 0.22f;
+        [SerializeField] private float _shadowGroundScale = 1.004f;
+        [SerializeField] private float _shadowGroundDrop = 0.014f;
+        [SerializeField] private float _shadowGroundSide = 0.007f;
 
-        [Header("接触阴影：举高态（按本体离地高度连续：越高越大、越淡、越虚）")]
-        [Tooltip("阴影达到最大扩散/虚化的参考高度（按单格尺寸倍数，适配不同餐桌缩放）。")]
+        [Header("接触阴影：举高态（越高越淡，低透明轮廓层轻微外扩）")]
+        [Tooltip("阴影达到最大外扩/淡化的参考高度（按单格尺寸倍数，适配不同餐桌缩放）。")]
         [SerializeField] private float _shadowLiftRefCells = 1.5f;
         [Tooltip("锐利核心层在最高处的放大倍数。")]
-        [SerializeField] private float _coreGrow = 1.15f;
+        [SerializeField] private float _coreGrow = 1.08f;
         [Tooltip("锐利核心层在最高处的透明度乘子（越小越淡）。")]
-        [SerializeField] private float _coreFadeWhenHigh = 0.15f;
-        [Tooltip("弥散光晕层在最高处的放大倍数。")]
-        [SerializeField] private float _haloGrow = 2.0f;
-        [Tooltip("弥散光晕层在最高处的透明度（绝对值，贴桌时为 0）。")]
-        [SerializeField] private float _haloAlphaWhenHigh = 0.28f;
+        [SerializeField] private float _coreFadeWhenHigh = 0.25f;
+        [Tooltip("低透明外扩轮廓层在最高处的放大倍数。")]
+        [SerializeField] private float _haloGrow = 1.12f;
+        [Tooltip("低透明外扩轮廓层在最高处的透明度（绝对值，贴桌时为 0）。")]
+        [SerializeField] private float _haloAlphaWhenHigh = 0.08f;
 
         [Header("拖拽悬浮（本体中心始终跟随鼠标，阴影只负责制造离桌感）")]
         [SerializeField] private float _dragVisualScale = 1.15f;
-        [SerializeField] private float _dragShadowSideCells = 0.18f;
-        [SerializeField] private float _dragShadowDropCells = 0.28f;
-        [SerializeField] private float _dragShadowCoreScale = 1.30f;
-        [SerializeField] private float _dragShadowCoreAlpha = 0.44f;
-        [SerializeField] private float _dragShadowHaloScale = 1.75f;
-        [SerializeField] private float _dragShadowHaloAlpha = 0.20f;
+        [SerializeField] private float _dragShadowSideCells = 0.12f;
+        [SerializeField] private float _dragShadowDropCells = 0.20f;
+        [SerializeField] private float _dragShadowCoreScale = 1.06f;
+        [SerializeField] private float _dragShadowCoreAlpha = 0.18f;
+        [SerializeField] private float _dragShadowHaloScale = 1.14f;
+        [SerializeField] private float _dragShadowHaloAlpha = 0.07f;
 
         [Header("固定结构（prefab 预拼，运行时引用）")]
         [Tooltip("食物本体渲染体（子物体 Sprite 上的 SpriteRenderer）。")]
@@ -459,7 +468,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 size,
                 Mathf.Atan2(rightDelta.y, rightDelta.x) * Mathf.Rad2Deg,
                 _spriteRenderer.flipX,
-                _spriteRenderer.flipY);
+                _spriteRenderer.flipY,
+                Instance != null
+                    ? new List<string>(Instance.FlavorIds)
+                    : Array.Empty<string>(),
+                Instance != null ? Instance.Id : 0f,
+                _flavorVisualIntensity);
             return true;
         }
 
@@ -927,20 +941,19 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 悬浮/飞行时把本体和两层假阴影一起切到 PiecesFlying：
-        /// 阴影仍以层内 order 排在本体下方，但整组都会压过餐桌和已摆放食物。
-        /// 落定后整组切回 Pieces。
+        /// 悬浮/飞行时只把本体切到 PiecesFlying；两层假阴影始终留在地面的 Pieces，
+        /// 被沿途已摆放食物遮挡，避免飞行层阴影在棋盘上形成脏暗斑。
         /// </summary>
         public void SetFlying(bool flying)
         {
             EnsureRefs();
             _flying = flying;
-            string layer = flying ? BattleSorting.PiecesFlying : BattleSorting.Pieces;
+            string bodyLayer = flying ? BattleSorting.PiecesFlying : BattleSorting.Pieces;
             if (_spriteRenderer != null)
             {
                 foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
                 {
-                    renderer.sortingLayerName = layer;
+                    renderer.sortingLayerName = bodyLayer;
                 }
 
                 _spriteRenderer.sortingOrder = BattleSorting.OrderBody + _sortingOrderOffset;
@@ -950,7 +963,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 BattleSorting.Apply(
                     _shadowRenderer,
-                    layer,
+                    BattleSorting.Pieces,
                     BattleSorting.OrderShadow + _sortingOrderOffset);
             }
 
@@ -958,13 +971,13 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 BattleSorting.Apply(
                     _shadowHaloRenderer,
-                    layer,
+                    BattleSorting.Pieces,
                     BattleSorting.OrderShadow - 1 + _sortingOrderOffset);
             }
 
             if (_placementGlow != null)
             {
-                _placementGlow.sortingLayerName = layer;
+                _placementGlow.sortingLayerName = bodyLayer;
                 _placementGlow.sortingOrder = _spriteRenderer != null
                     ? _spriteRenderer.sortingOrder + 1
                     : BattleSorting.OrderBody + 1 + _sortingOrderOffset;
@@ -972,7 +985,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (_scopeTargetGlow != null)
             {
-                _scopeTargetGlow.sortingLayerName = layer;
+                _scopeTargetGlow.sortingLayerName = bodyLayer;
                 _scopeTargetGlow.sortingOrder = _spriteRenderer != null
                     ? _spriteRenderer.sortingOrder + 3
                     : BattleSorting.OrderBody + 3 + _sortingOrderOffset;
@@ -992,8 +1005,8 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 切换统一拖拽悬浮表现。拖拽本体和两层阴影一起进入 PiecesFlying，
-        /// 本体保持不透明并放大，阴影改为更大、更偏移的悬浮投影。
+        /// 切换统一拖拽悬浮表现。本体进入 PiecesFlying 并保持不透明放大；
+        /// 两层轮廓影留在地面的 Pieces，只做低透明度的轻微外扩与偏移。
         /// </summary>
         public void SetDragPresentation(bool active)
         {
@@ -2087,8 +2100,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            ConfigureContactShadow(shape);
             ConfigureFootprintSprite(shape);
+            ConfigureContactShadow(shape);
             _dishValueBadgePresenter?.UpdateLayout(shape, _cellSize, _pitch);
             ApplyLiftHeight(_liftHeight);
             if (_dragPresentationActive)
@@ -2103,13 +2116,14 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 脚下软边接触阴影：用径向羽化暗斑铺满整个脚印，不依赖食物图留白，必定可见。
-        /// 分两层——锐利核心层（贴桌接触）+ 弥散光晕层（高空虚化），都钉在地面脚印中心。
+        /// 脚下绘本式接触阴影：直接复用食物 Sprite 的 Alpha 轮廓，因此 L/T 等异形食物
+        /// 不会污染包围盒内的空格。核心层负责贴桌硬影，低透明外扩层只在举高/拖拽时显现。
+        /// 两层都钉在地面脚印中心，不跟随本体视觉枢轴抬升。
         /// </summary>
         private void ConfigureContactShadow(DishShape shape)
         {
-            Sprite blob = BattleShadow.SoftShadowSprite;
-            _shadowRenderer.sprite = blob;
+            Sprite shadowSprite = _spriteRenderer != null ? _spriteRenderer.sprite : _sprite;
+            _shadowRenderer.sprite = shadowSprite;
             BattleSorting.Apply(
                 _shadowRenderer,
                 BattleSorting.Pieces,
@@ -2117,28 +2131,30 @@ namespace GourmetProject.Game.Presentation.Battle
             _shadowRenderer.color = new Color(0f, 0f, 0f, _shadowBaseAlpha);
             SpriteRenderStyle.ApplyUnlitMaterial(_shadowRenderer);
 
-            // 阴影覆盖旋转后的实际占格脚印（软边自然探出本体轮廓），无需随朝向旋转。
-            float spanX = (shape.Width - 1) * _pitch + _cellSize;
-            float spanY = (shape.Height - 1) * _pitch + _cellSize;
-            Vector2 bounds = blob != null ? (Vector2)blob.bounds.size : Vector2.one;
-            float sx = bounds.x > 0f ? spanX / bounds.x : spanX;
-            float sy = bounds.y > 0f ? spanY / bounds.y : spanY;
-            _shadowBaseScale = new Vector3(sx * _shadowGroundScale, sy * _shadowGroundScale, 1f);
+            Transform body = _spriteRenderer.transform;
+            float groundScale = Mathf.Max(0.0001f, _shadowGroundScale);
+            _shadowBaseScale = Vector3.Scale(
+                body.localScale,
+                new Vector3(groundScale, groundScale, 1f));
 
             Transform t = _shadowRenderer.transform;
             t.localScale = _shadowBaseScale;
+            t.localRotation = body.localRotation;
+            _shadowRenderer.flipX = _spriteRenderer.flipX;
+            _shadowRenderer.flipY = _spriteRenderer.flipY;
 
-            Vector3 center = new Vector3(
-                (shape.Width - 1) * _pitch * 0.5f,
-                -(shape.Height - 1) * _pitch * 0.5f,
-                0.05f);
-            _shadowBaseLocalPos = center + new Vector3(_cellSize * _shadowGroundSide, -_cellSize * _shadowGroundDrop, 0f);
+            Vector3 center = FootprintCenterLocal(shape);
+            center.z = 0.05f;
+            _shadowBaseLocalPos = center + new Vector3(
+                _cellSize * _shadowGroundSide,
+                -_cellSize * _shadowGroundDrop,
+                0f);
             t.localPosition = _shadowBaseLocalPos;
 
             if (_shadowHaloRenderer != null)
             {
-                _shadowHaloRenderer.sprite = BattleShadow.DiffuseShadowSprite;
-                // 光晕排在核心层之下（仍在所有食物本体之下），保证锐利核心压在弥散光晕之上。
+                _shadowHaloRenderer.sprite = shadowSprite;
+                // 外扩影排在核心层之下（仍在所有食物本体之下）。
                 BattleSorting.Apply(
                     _shadowHaloRenderer,
                     BattleSorting.Pieces,
@@ -2148,6 +2164,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 Transform ht = _shadowHaloRenderer.transform;
                 ht.localScale = _shadowBaseScale;
                 ht.localPosition = _shadowBaseLocalPos;
+                ht.localRotation = body.localRotation;
+                _shadowHaloRenderer.flipX = _spriteRenderer.flipX;
+                _shadowHaloRenderer.flipY = _spriteRenderer.flipY;
             }
         }
 
@@ -2267,7 +2286,7 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>
         /// 设置本体离地高度（世界单位）：0=贴桌，越大越高。
         /// 只抬升本体视觉枢轴，根节点保持贴格、阴影留在地面脚印中心；
-        /// 阴影随高度变大、变淡、变虚（核心层淡出 + 弥散光晕层显现）。
+        /// 阴影随高度轻微变大并淡出（核心层淡出 + 低透明外扩轮廓层显现）。
         /// </summary>
         public void SetLiftHeight(float worldHeight)
         {
@@ -2308,7 +2327,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _shadowRenderer.color = c;
             }
 
-            // 弥散光晕层：大幅放大、贴桌时隐形、高空才显现，做出"越高越虚"的扩散投影。
+            // 外扩轮廓层：只轻微放大，贴桌时隐形，举高后以低透明度显现。
             if (_shadowHaloRenderer != null)
             {
                 Transform ht = _shadowHaloRenderer.transform;
@@ -2349,7 +2368,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _shadowRenderer.color = color;
                 BattleSorting.Apply(
                     _shadowRenderer,
-                    BattleSorting.PiecesFlying,
+                    BattleSorting.Pieces,
                     BattleSorting.OrderShadow + _sortingOrderOffset);
             }
 
@@ -2365,7 +2384,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _shadowHaloRenderer.color = color;
                 BattleSorting.Apply(
                     _shadowHaloRenderer,
-                    BattleSorting.PiecesFlying,
+                    BattleSorting.Pieces,
                     BattleSorting.OrderShadow - 1 + _sortingOrderOffset);
             }
 

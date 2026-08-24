@@ -40,6 +40,7 @@ namespace GourmetProject.Game.UI.Battle
         private readonly System.Random _cosmeticRandom = new System.Random();
         private bool _isBound;
         private int _playbackVersion;
+        private Material _grabbedDishFlavorMaterial;
 
         public bool IsPlaying { get; private set; }
 
@@ -204,6 +205,15 @@ namespace GourmetProject.Game.UI.Battle
                 1f);
             _grabbedDishImage.sprite = dishVisual.Sprite;
             _grabbedDishImage.color = dishVisual.Color;
+            EnsureGrabbedDishFlavorMaterial();
+            FlavorOrganicVisual.ApplyToGraphic(
+                _grabbedDishImage,
+                _grabbedDishFlavorMaterial,
+                dishVisual.Sprite,
+                dishVisual.FlavorIds,
+                dishVisual.FlavorSeed,
+                dishVisual.FlavorIntensity,
+                useGlobalTime: true);
             _grabbedDishGroup.alpha = 1f;
 
             _hand.anchoredPosition = above;
@@ -357,6 +367,21 @@ namespace GourmetProject.Game.UI.Battle
             return new Vector2(x, _overlay.rect.yMax + belowPivot + 80f);
         }
 
+        private void EnsureGrabbedDishFlavorMaterial()
+        {
+            if (_grabbedDishFlavorMaterial != null
+                || SpriteRenderStyle.SpriteFlavorOrganicMaterial == null)
+            {
+                return;
+            }
+
+            _grabbedDishFlavorMaterial = new Material(SpriteRenderStyle.SpriteFlavorOrganicMaterial)
+            {
+                name = "BossGrabbedDishFlavorOrganic",
+                hideFlags = HideFlags.DontSave,
+            };
+        }
+
         private Vector2 ScreenToLocal(Vector2 screenPoint)
         {
             Canvas canvas = _overlay.GetComponentInParent<Canvas>();
@@ -443,6 +468,14 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnDisable() => CancelCurrent();
 
-        private void OnDestroy() => CancelCurrent();
+        private void OnDestroy()
+        {
+            CancelCurrent();
+            if (_grabbedDishFlavorMaterial != null)
+            {
+                Destroy(_grabbedDishFlavorMaterial);
+                _grabbedDishFlavorMaterial = null;
+            }
+        }
     }
 }

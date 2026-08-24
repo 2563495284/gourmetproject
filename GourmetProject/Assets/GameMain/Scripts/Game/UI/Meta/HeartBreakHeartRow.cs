@@ -208,9 +208,7 @@ namespace GourmetProject.Game.UI.Meta
             ApplyHeartCount(_state.AfterHeartCount);
             if (_statusText != null)
             {
-                _statusText.text = _state.AfterHeartCount <= 0
-                    ? "红心已耗尽"
-                    : $"剩余红心 {_state.AfterHeartCount} / {_state.Capacity}";
+                _statusText.text = $"剩余红心 {_state.AfterHeartCount} / {_state.Capacity}";
             }
         }
 
@@ -218,7 +216,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             if (_statusText != null)
             {
-                _statusText.text = $"当前红心 {_state.BeforeHeartCount} / {_state.Capacity}";
+                _statusText.text = $"剩余红心 {_state.BeforeHeartCount} / {_state.Capacity}";
             }
         }
 

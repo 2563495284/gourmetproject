@@ -83,6 +83,8 @@ namespace GourmetProject.Game.UI.Tooltips
             ValidateReferences();
             bool wasActive = gameObject.activeSelf;
             gameObject.SetActive(true);
+            _summaryView?.RefreshLayoutAfterActivation();
+            Canvas.ForceUpdateCanvases();
             if (_canvasGroup != null)
             {
                 KillVisibilityTween();
