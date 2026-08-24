@@ -1018,7 +1018,7 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>
         /// 按棋盘实际轮廓判定边缘：菜品任一占用格的上、下、左、右四邻中，
         /// 只要存在一个「不存在格」（含越界），即视为处于边缘（闸门）。
-        /// 这样不规则/阶梯形棋盘的凹凸边缘也能被正确识别。
+        /// 禁用格仍属于餐桌轮廓，只影响摆放，不会在轮廓内部制造新的边缘。
         /// </summary>
         internal static bool IsOnEdge(GpTable board, DishInstance self)
         {

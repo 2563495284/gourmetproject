@@ -338,8 +338,7 @@ namespace GourmetProject.Game.UI.Meta
 
             if (animations.Count == 0)
             {
-                ApplyPassiveMutationEntries(afterEntries);
-                onComplete?.Invoke();
+                CompletePassiveMutation(result, afterEntries, onComplete);
                 return;
             }
 
@@ -351,8 +350,7 @@ namespace GourmetProject.Game.UI.Meta
                     remaining--;
                     if (remaining == 0)
                     {
-                        ApplyPassiveMutationEntries(afterEntries);
-                        onComplete?.Invoke();
+                        CompletePassiveMutation(result, afterEntries, onComplete);
                     }
                 });
             }
@@ -411,6 +409,23 @@ namespace GourmetProject.Game.UI.Meta
             _readonlyEntries = entries;
             _readonlySlots = BuildReadonlySlots(entries);
             RenderSession(true);
+        }
+
+        internal void CompletePassiveMutation(
+            RecipeMutationResult result,
+            IReadOnlyList<RecipeReadonlyDishEntry> afterEntries,
+            Action onComplete)
+        {
+            // 删除演出结束后保持当前布局不动，由 BattleForm 直接关闭窗口。
+            // 下次打开时再从已经更新的 GameRun 重建食谱。
+            if (result?.OnlyRemovesDishes == true)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            ApplyPassiveMutationEntries(afterEntries);
+            onComplete?.Invoke();
         }
 
         private void EnsureWired()

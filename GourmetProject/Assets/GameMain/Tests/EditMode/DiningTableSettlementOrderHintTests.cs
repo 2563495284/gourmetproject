@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
+using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 
 namespace GourmetProject.Tests.EditMode
@@ -66,6 +68,93 @@ namespace GourmetProject.Tests.EditMode
                     new GridPos(0, 0),
                 },
                 actual);
+        }
+    }
+
+    public sealed class DiningTableEdgeTests
+    {
+        [Test]
+        public void EdgeCondition_DoesNotTreatDisabledNeighborAsTableBoundary()
+        {
+            var table = new DiningTable(3, 3);
+            DishInstance dish = CreateSingleCellDish(1, new GridPos(1, 1));
+            table.Place(dish);
+            SkillRuleDef rule = CreateEdgeRule(SkillScope.Self);
+
+            Assert.That(
+                SkillConditionEvaluator.Evaluate(rule, table, history: null, self: dish),
+                Is.Zero,
+                "没有相邻禁用格时，中央食物不应属于边缘。");
+
+            table.SetDisabled(new GridPos(2, 1), true);
+
+            Assert.That(
+                SkillConditionEvaluator.Evaluate(rule, table, history: null, self: dish),
+                Is.Zero,
+                "禁用格仍属于餐桌轮廓，不应让相邻食物成为新的边缘。");
+        }
+
+        [Test]
+        public void EdgeScope_IncludesDisabledCellOnTableEdge()
+        {
+            var table = new DiningTable(5, 5);
+            DishInstance dish = CreateSingleCellDish(1, new GridPos(2, 2));
+            table.Place(dish);
+            var disabledEdge = new GridPos(4, 2);
+            table.SetDisabled(disabledEdge, true);
+            SkillRuleDef rule = CreateEdgeRule(SkillScope.Edge);
+
+            SkillScopeVisual visual = SkillScopeResolver.Resolve(
+                db: null,
+                board: table,
+                self: dish,
+                rule: rule,
+                mode: SkillScopeVisualMode.CandidateScope);
+
+            CollectionAssert.Contains(
+                visual.ActionScopeCells,
+                disabledEdge,
+                "位于餐桌外沿的禁用格仍应纳入边缘作用域，再由禁用状态阻止摆放。");
+        }
+
+        private static SkillRuleDef CreateEdgeRule(SkillScope actionScope)
+        {
+            return new SkillRuleDef(
+                id: "edge_rule",
+                skillId: "edge_skill",
+                order: 0,
+                trigger: SkillTrigger.OnSettle,
+                condType: SkillConditionType.Edge,
+                condScope: SkillScope.Self,
+                condUnit: CountUnit.Instances,
+                condMode: CountMode.Gate,
+                condParam: string.Empty,
+                actionType: SkillActionType.AddFlat,
+                actionScope: actionScope,
+                actionCount: 0,
+                actionValues: new[] { 1f },
+                actionParams: Array.Empty<string>());
+        }
+
+        private static DishInstance CreateSingleCellDish(int id, GridPos origin)
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            var def = new DishDef(
+                id: $"dish_{id}",
+                name: $"dish_{id}",
+                deliciousness: 1,
+                shape: shape,
+                hiddenMin: 0,
+                hiddenMax: 0,
+                baseWeight: 1f,
+                skillIds: Array.Empty<string>(),
+                flavorId: string.Empty);
+            return new DishInstance(
+                id,
+                def,
+                new Placement(shape, rotationIndex: 0, origin: origin),
+                Array.Empty<string>(),
+                Array.Empty<string>());
         }
     }
 

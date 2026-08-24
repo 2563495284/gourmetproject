@@ -28,8 +28,8 @@ namespace GourmetProject.Game.Meta.BossDebuffs
     [BossDebuffModel("debuff_kids_meal")]
     public sealed class KidsMealBossDebuffModel : BossDebuffModel
     {
-        public override void ModifyBuiltTable(DiningTable table, int recipeEntryCount, IRandomStream rng)
-            => BossDebuffOperations.RemoveBottomCells(table);
+        public override void ModifyPreparedTable(DiningTable table, int recipeEntryCount, IRandomStream rng)
+            => BossDebuffOperations.DisableBottomCells(table);
     }
 
     [Preserve]

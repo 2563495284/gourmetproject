@@ -189,7 +189,9 @@ namespace GourmetProject.Game.Meta.BossDebuffs
                 {
                     foreach (RecipeSlotEntry original in originals)
                     {
-                        slot.AddEntry(original.Clone());
+                        RecipeSlotEntry copy = original.Clone();
+                        copy.MarkTemporaryCopy();
+                        slot.AddEntry(copy);
                     }
                 }
             }
@@ -307,6 +309,33 @@ namespace GourmetProject.Game.Meta.BossDebuffs
             foreach (GridPos cell in toRemove)
             {
                 table.SetExists(cell, false);
+            }
+        }
+
+        public static void DisableBottomCells(DiningTable table)
+        {
+            List<GridPos> cells = table.ExistingCells();
+            var toDisable = new HashSet<GridPos>();
+            for (int x = 0; x < table.Width; x++)
+            {
+                int maxY = -1;
+                foreach (GridPos cell in cells)
+                {
+                    if (cell.X == x && cell.Y > maxY)
+                    {
+                        maxY = cell.Y;
+                    }
+                }
+
+                if (maxY >= 0)
+                {
+                    toDisable.Add(new GridPos(x, maxY));
+                }
+            }
+
+            foreach (GridPos cell in toDisable)
+            {
+                table.SetDisabled(cell, true);
             }
         }
 

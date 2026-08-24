@@ -108,6 +108,7 @@ namespace GourmetProject.Game.UI.Meta
                 skills,
                 flavorNames,
                 readonlyEntry?.SkillsDisabled == true,
+                readonlyEntry?.IsTemporaryCopy == true,
                 countAs: FoodTipsDataFactory.ResolveIntrinsicCountAs(
                     def,
                     skillIds,

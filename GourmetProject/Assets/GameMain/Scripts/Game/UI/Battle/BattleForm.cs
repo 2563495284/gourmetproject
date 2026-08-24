@@ -1093,7 +1093,10 @@ namespace GourmetProject.Game.UI.Battle
         {
             IReadOnlyList<RecipeReadonlyDishEntry> beforeEntries = BuildRecipeMutationEntries(result, before: true);
             IReadOnlyList<RecipeReadonlyDishEntry> afterEntries = BuildRecipeMutationEntries(result, before: false);
-            BattleInspectionView restoreView = ActiveInspectionView;
+            bool closeAfterMutation = result.OnlyRemovesDishes;
+            BattleInspectionView restoreView = closeAfterMutation
+                ? BattleInspectionView.None
+                : ActiveInspectionView;
             DiningTable restoreTable = restoreView == BattleInspectionView.Table
                 ? BuildTablePresentationSnapshot()
                 : null;
@@ -1119,6 +1122,24 @@ namespace GourmetProject.Game.UI.Battle
                     CompleteOnce();
                 }
 
+                void RestoreAfterMutation()
+                {
+                    void RestoreNow() => RestorePassiveInspection(
+                        restoreView,
+                        afterEntries,
+                        restoreTable,
+                        Finish);
+
+                    if (closeAfterMutation)
+                    {
+                        RestoreNow();
+                    }
+                    else
+                    {
+                        WaitPassiveHold(RestoreNow);
+                    }
+                }
+
                 bool opened = _inspectionCoordinator?.ShowPassiveRecipe(
                     beforeEntries,
                     () =>
@@ -1140,11 +1161,7 @@ namespace GourmetProject.Game.UI.Battle
 
                             if (recipe == null)
                             {
-                                WaitPassiveHold(() => RestorePassiveInspection(
-                                    restoreView,
-                                    afterEntries,
-                                    restoreTable,
-                                    Finish));
+                                RestoreAfterMutation();
                                 return;
                             }
 
@@ -1156,11 +1173,7 @@ namespace GourmetProject.Game.UI.Battle
                                     return;
                                 }
 
-                                WaitPassiveHold(() => RestorePassiveInspection(
-                                    restoreView,
-                                    afterEntries,
-                                    restoreTable,
-                                    Finish));
+                                RestoreAfterMutation();
                             });
                         });
                     },
@@ -2292,6 +2305,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _world?.AppendFoodSettlementLayoutTween(sequence, tableDuration);
+            sequence.OnUpdate(RefreshTemporaryAreaWorldLayout);
 
             if (sequence.Duration() <= 0f)
             {
@@ -2346,6 +2360,7 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _bottomUi.anchoredPosition = _bottomUiRestPosition;
+            RefreshTemporaryAreaWorldLayout();
             SetBottomUiInteractable(true);
         }
 
@@ -2359,7 +2374,13 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _bottomUi.anchoredPosition = HiddenBottomUiPosition();
+            RefreshTemporaryAreaWorldLayout();
             SetBottomUiInteractable(false);
+        }
+
+        private void RefreshTemporaryAreaWorldLayout()
+        {
+            (_world ?? BattleWorldController.Instance)?.RefreshTemporaryAreaLayout();
         }
 
         private Tween CreateBottomUiHideTween(float duration)
@@ -4554,6 +4575,14 @@ namespace GourmetProject.Game.UI.Battle
                                 await ShowBossDialogueAsync("这几块别放肉。", token);
                                 break;
 
+                            case "debuff_kids_meal":
+                                await ShowBossDialogueAsync("我要少吃点", token);
+                                await SweepCellsAsync(
+                                    plan.DisabledCells,
+                                    openingWorld.RevealBossDisabledCell,
+                                    token);
+                                break;
+
                             case "debuff_indulgent":
                             case "debuff_binge":
                                 await ShowBossDialogueAsync("我要多吃点", token);
@@ -4561,7 +4590,6 @@ namespace GourmetProject.Game.UI.Battle
                                 break;
 
                             case "debuff_weight_loss":
-                            case "debuff_kids_meal":
                                 await ShowBossDialogueAsync("我要少吃点", token);
                                 await SweepCellsAsync(plan.RemovedCells, openingWorld.RevealBossRemovedCell, token);
                                 break;
@@ -4680,7 +4708,8 @@ namespace GourmetProject.Game.UI.Battle
                 string debuffId = _session?.BossDebuffPresentation?.DebuffId ?? string.Empty;
                 if (result.ActionKind == PendingDishActionKind.Serve)
                 {
-                    await _world.PlayPendingServeTriggerCuesAsync(token);
+                    // 数值提示只是视觉反馈，不应占用 Boss 全屏输入锁；队列会在世界层自行串行播放。
+                    _world.PlayPendingServeTriggerCues();
 
                     if (string.Equals(debuffId, "debuff_appetizer", StringComparison.Ordinal)
                         && result.RemovedAfterServe)

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.UI.Meta;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
@@ -226,6 +227,84 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void RecipeMutationResult_DetectsRemovalOnlyPresentation()
+        {
+            var result = new RecipeMutationResult();
+            result.Entries.Add(RemoveEntry(1, "cookie_1"));
+            result.Entries.Add(RemoveEntry(3, "cookie_2"));
+
+            Assert.That(result.OnlyRemovesDishes, Is.True);
+        }
+
+        [Test]
+        public void RecipeMutationResult_RejectsMixedRemovalPresentation()
+        {
+            var result = new RecipeMutationResult();
+            result.Entries.Add(RemoveEntry(0, "cookie_1"));
+            result.Entries.Add(new RecipeMutationEntry
+            {
+                BookIndex = 0,
+                DishIndex = 1,
+                Before = new RecipeDishSnapshot { DishId = "a" },
+                After = new RecipeDishSnapshot { DishId = "b" },
+            });
+
+            Assert.That(result.OnlyRemovesDishes, Is.False);
+        }
+
+        [Test]
+        public void PassiveRemovalCompletion_LeavesCurrentLayoutUntouched()
+        {
+            GameObject instance = UnityEngine.Object.Instantiate(
+                LoadPrefab(ViewPrefabPath));
+            try
+            {
+                string[] dishIds = { "a", "cookie", "b" };
+                DishDef[] dishes = dishIds
+                    .Select((dishId, index) => new DishDef(
+                        dishId,
+                        dishId,
+                        deliciousness: 1,
+                        shape: DishShape.FromRows(new[] { "X" }),
+                        hiddenMin: 0,
+                        hiddenMax: 0,
+                        baseWeight: 1f,
+                        skillIds: Array.Empty<string>(),
+                        flavorId: string.Empty,
+                        sortOrder: index))
+                    .ToArray();
+                var database = new GameplayDatabase(
+                    dishes,
+                    Array.Empty<SkillDef>(),
+                    Array.Empty<FlavorDef>(),
+                    Array.Empty<RecipeDef>());
+                var view = instance.GetComponent<RecipeReadonlyBookView>();
+                view.OpenForReadonlyDishPool(database, dishIds, "删除预览");
+                RecipeEditDishView[] before = instance
+                    .GetComponentsInChildren<RecipeEditDishView>(false);
+                var result = new RecipeMutationResult();
+                result.Entries.Add(RemoveEntry(1, "cookie"));
+                bool completed = false;
+
+                view.CompletePassiveMutation(
+                    result,
+                    Array.Empty<RecipeReadonlyDishEntry>(),
+                    () => completed = true);
+
+                RecipeEditDishView[] after = instance
+                    .GetComponentsInChildren<RecipeEditDishView>(false);
+                Assert.That(completed, Is.True);
+                Assert.That(after, Is.EqualTo(before));
+                Assert.That(after.Select(dish => dish.DishIndex),
+                    Is.EqualTo(new[] { 0, 1, 2 }));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
         public void Prefabs_HaveResponsiveChrome_CompleteBindings_AndSafeRaycasts()
         {
             GameObject prefab = LoadPrefab(ViewPrefabPath);
@@ -434,6 +513,17 @@ namespace GourmetProject.Tests.EditMode
             RecipeReadonlyBookRequest request)
         {
             return new RecipeReadonlyBookView.RecipeReadonlyBookSession(request);
+        }
+
+        private static RecipeMutationEntry RemoveEntry(int dishIndex, string dishId)
+        {
+            return new RecipeMutationEntry
+            {
+                BookIndex = 0,
+                DishIndex = dishIndex,
+                Before = new RecipeDishSnapshot { DishId = dishId },
+                After = new RecipeDishSnapshot(),
+            };
         }
 
         private static void AssertSession(

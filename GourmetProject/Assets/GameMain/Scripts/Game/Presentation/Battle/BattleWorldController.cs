@@ -2199,7 +2199,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _pendingServeTriggerCues.Add(cue);
         }
 
-        private void PlayPendingServeTriggerCues()
+        public void PlayPendingServeTriggerCues()
         {
             if (_pendingServeTriggerCues.Count == 0
                 || _serveTriggerCuePlaybackActive)
@@ -3126,6 +3126,14 @@ namespace GourmetProject.Game.Presentation.Battle
         public void RefreshTemporaryAreaPresentation()
         {
             RefreshTemporaryAreaVisibility(animated: false);
+            RefreshTemporaryAreaLayout();
+        }
+
+        /// <summary>
+        /// HUD 临时桌移动时，同步仍挂在世界层的临时菜及其美味值标签。
+        /// </summary>
+        internal void RefreshTemporaryAreaLayout()
+        {
             if (_temporaryArea != null && _temporaryArea.gameObject.activeInHierarchy)
             {
                 LayoutTemporaryAreaPieces();
