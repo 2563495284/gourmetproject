@@ -89,7 +89,7 @@ namespace GourmetProject.Game.UI.Common
                 : null;
         }
 
-        protected void OnEnable()
+        private void OnEnable()
         {
             if (_hasBound)
             {
@@ -103,13 +103,13 @@ namespace GourmetProject.Game.UI.Common
             }
         }
 
-        protected void OnDisable()
+        private void OnDisable()
         {
             KillAllTweens();
             ResetStarScales();
         }
 
-        protected void OnDestroy()
+        private void OnDestroy()
         {
             KillAllTweens();
         }

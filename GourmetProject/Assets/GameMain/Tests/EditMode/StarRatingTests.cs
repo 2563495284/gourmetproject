@@ -132,16 +132,24 @@ namespace GourmetProject.Tests.EditMode
 
             Image panelImage = starCard.GetComponent<Image>();
             Assert.That(panelImage.sprite, Is.SameAs(AssetDatabase.LoadAssetAtPath<Sprite>(ProgressPanelPath)));
-            Assert.That(panelImage.type, Is.EqualTo(Image.Type.Sliced));
+            Assert.That(panelImage.type, Is.EqualTo(Image.Type.Simple));
             Assert.That(panelImage.raycastTarget, Is.False);
+            Assert.That(
+                starCard.GetComponents<Component>()
+                    .Any(component => component.GetType().FullName == "Coffee.UIEffects.UIEffect"),
+                Is.False);
+            Assert.That(
+                starCard.GetComponents<Component>()
+                    .Any(component => component.GetType().FullName == "Coffee.UIEffects.UIEffectTweener"),
+                Is.False);
 
             Transform gridTransform = FindByName(starCard, "StarGrid");
             Assert.That(gridTransform, Is.Not.Null);
             var gridRect = (RectTransform)gridTransform;
-            Assert.That(gridRect.sizeDelta, Is.EqualTo(new Vector2(196f, 116f)));
+            Assert.That(gridRect.sizeDelta, Is.EqualTo(new Vector2(164f, 96f)));
             GridLayoutGroup grid = gridTransform.GetComponent<GridLayoutGroup>();
-            Assert.That(grid.cellSize, Is.EqualTo(new Vector2(56f, 56f)));
-            Assert.That(grid.spacing, Is.EqualTo(new Vector2(14f, 4f)));
+            Assert.That(grid.cellSize, Is.EqualTo(new Vector2(44f, 44f)));
+            Assert.That(grid.spacing, Is.EqualTo(new Vector2(16f, 8f)));
             Assert.That(grid.constraint, Is.EqualTo(GridLayoutGroup.Constraint.FixedColumnCount));
             Assert.That(grid.constraintCount, Is.EqualTo(3));
             Assert.That(gridTransform.childCount, Is.EqualTo(GameRun.MaxRatingStars));
@@ -176,7 +184,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void StarSprites_UsePolicyAndHaveTransparentAntialiasedEdges()
+        public void StarSprites_UsePolicyAndExpectedEdges()
         {
             foreach (string name in new[]
                      {
@@ -197,7 +205,7 @@ namespace GourmetProject.Tests.EditMode
                 Assert.That(importer.spritePixelsPerUnit, Is.EqualTo(100f), name);
                 if (name == "star_progress_panel.png")
                 {
-                    Assert.That(importer.spriteBorder, Is.EqualTo(new Vector4(64f, 64f, 64f, 64f)));
+                    Assert.That(importer.spriteBorder, Is.EqualTo(Vector4.zero));
                     Assert.That(importer.textureCompression, Is.EqualTo(TextureImporterCompression.Uncompressed));
                 }
 
@@ -207,9 +215,16 @@ namespace GourmetProject.Tests.EditMode
                 {
                     Assert.That(ImageConversion.LoadImage(texture, bytes, false), Is.True, name);
                     Color32[] pixels = texture.GetPixels32();
-                    Assert.That(pixels[0].a, Is.Zero, name + " corner");
-                    Assert.That(pixels.Any(pixel => pixel.a > 0 && pixel.a < 255), Is.True, name + " antialias");
                     Assert.That(pixels.Any(pixel => pixel.a == 255), Is.True, name + " opaque center");
+                    if (name == "star_progress_panel.png")
+                    {
+                        Assert.That(pixels.All(pixel => pixel.a == 255), Is.True, name + " opaque panel");
+                    }
+                    else
+                    {
+                        Assert.That(pixels[0].a, Is.Zero, name + " corner");
+                        Assert.That(pixels.Any(pixel => pixel.a > 0 && pixel.a < 255), Is.True, name + " antialias");
+                    }
                 }
                 finally
                 {

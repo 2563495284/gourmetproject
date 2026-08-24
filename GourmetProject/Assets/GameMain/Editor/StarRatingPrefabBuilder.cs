@@ -32,7 +32,7 @@ namespace GourmetProject.Editor
         {
             ConfigureSprite(MedalPath);
             ConfigureSprite(NodeBubblePath);
-            ConfigureSprite(ProgressPanelPath, new Vector4(64f, 64f, 64f, 64f));
+            ConfigureSprite(ProgressPanelPath);
             Sprite medal = AssetDatabase.LoadAssetAtPath<Sprite>(MedalPath)
                 ?? throw new InvalidOperationException($"Missing star medal sprite: {MedalPath}");
             Sprite nodeBubble = AssetDatabase.LoadAssetAtPath<Sprite>(NodeBubblePath)
@@ -103,21 +103,21 @@ namespace GourmetProject.Editor
                 RemoveOwnedStarCardChildren(weekCard);
                 Image panelImage = Ensure<Image>(weekCard.gameObject);
                 panelImage.sprite = progressPanel;
-                panelImage.type = Image.Type.Sliced;
+                panelImage.type = Image.Type.Simple;
                 panelImage.preserveAspect = false;
                 panelImage.raycastTarget = false;
                 panelImage.color = Color.white;
 
-                ConfigurePanelEffect(weekCard.gameObject);
+                RemovePanelEffect(weekCard.gameObject);
                 StarProgressView progress = weekCard.GetComponent<StarProgressView>()
                     ?? weekCard.gameObject.AddComponent<StarProgressView>();
 
                 GameObject gridObject = CreateUi("StarGrid", weekCard, false);
                 RectTransform gridRect = gridObject.GetComponent<RectTransform>();
-                Anchor(gridRect, new Vector2(0.5f, 0.5f), new Vector2(196f, 116f), Vector2.zero);
+                Anchor(gridRect, new Vector2(0.5f, 0.5f), new Vector2(164f, 96f), Vector2.zero);
                 GridLayoutGroup grid = gridObject.AddComponent<GridLayoutGroup>();
-                grid.cellSize = new Vector2(56f, 56f);
-                grid.spacing = new Vector2(14f, 4f);
+                grid.cellSize = new Vector2(44f, 44f);
+                grid.spacing = new Vector2(16f, 8f);
                 grid.childAlignment = TextAnchor.MiddleCenter;
                 grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
                 grid.startAxis = GridLayoutGroup.Axis.Horizontal;
@@ -328,36 +328,17 @@ namespace GourmetProject.Editor
             EditorUtility.SetDirty(progress);
         }
 
-        private static void ConfigurePanelEffect(GameObject panelObject)
+        private static void RemovePanelEffect(GameObject panelObject)
         {
-            UIEffect effect = Ensure<UIEffect>(panelObject);
-            effect.transitionFilter = TransitionFilter.None;
-            effect.shadowMode = ShadowMode.Outline8;
-            effect.shadowDistance = new Vector2(2f, -2f);
-            effect.shadowIteration = 1;
-            effect.shadowFade = 0.34f;
-            effect.shadowBlurIntensity = 0.58f;
-            effect.shadowColorFilter = ColorFilter.Replace;
-            effect.shadowColor = new Color(1f, 0.54f, 0.08f, 0.36f);
-            effect.shadowColorGlow = true;
-            effect.edgeMode = EdgeMode.Shiny;
-            effect.edgeWidth = 0.18f;
-            effect.edgeColorFilter = ColorFilter.MultiplyAdditive;
-            effect.edgeColor = new Color(0.82f, 0.45f, 0.08f, 0.42f);
-            effect.edgeColorGlow = true;
-            effect.edgeShinyRate = 0f;
-            effect.edgeShinyWidth = 0.22f;
-            effect.edgeShinyAutoPlaySpeed = 0f;
-            effect.enabled = true;
+            if (panelObject.TryGetComponent(out UIEffectTweener tweener))
+            {
+                UnityEngine.Object.DestroyImmediate(tweener, true);
+            }
 
-            UIEffectTweener tweener = Ensure<UIEffectTweener>(panelObject);
-            ConfigureTweener(
-                tweener,
-                UIEffectTweener.CullingMask.EdgeShiny,
-                duration: 0.8f,
-                interval: 5.2f,
-                delay: 0f);
-            tweener.enabled = true;
+            if (panelObject.TryGetComponent(out UIEffect effect))
+            {
+                UnityEngine.Object.DestroyImmediate(effect, true);
+            }
         }
 
         private static void ConfigureStarEffect(

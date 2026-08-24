@@ -238,11 +238,6 @@ namespace GourmetProject.Editor
                 RemoveUnexpected(root, typeof(RectTransform), typeof(CanvasRenderer), typeof(CanvasGroup), typeof(TimelineAxisView));
                 RectTransform rootRect = root.GetComponent<RectTransform>();
 
-                Image background = CreateImage("Background", rootRect, theme.Panel);
-                Stretch(background.rectTransform);
-                background.type = Image.Type.Sliced;
-                background.pixelsPerUnitMultiplier = 3.25f;
-
                 RectTransform content = CreateUi("AxisContent", rootRect).GetComponent<RectTransform>();
                 content.anchorMin = Vector2.zero;
                 content.anchorMax = Vector2.one;
@@ -289,7 +284,6 @@ namespace GourmetProject.Editor
                 current.fontStyle = FontStyles.Bold;
 
                 Set(view, "_theme", theme);
-                Set(view, "_background", background);
                 Set(view, "_axisContent", content);
                 Set(view, "_track", track);
                 Set(view, "_progress", progress);
