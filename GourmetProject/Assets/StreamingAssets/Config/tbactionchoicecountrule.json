@@ -3,7 +3,7 @@
     "id": "count_2",
     "choiceCount": 2,
     "weeklyWeights": [
-      4,
+      1,
       3,
       2
     ]
@@ -12,7 +12,7 @@
     "id": "count_3",
     "choiceCount": 3,
     "weeklyWeights": [
-      1,
+      0,
       1,
       1
     ]
