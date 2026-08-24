@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Coffee.UIEffects;
 using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Hud;
@@ -17,23 +18,29 @@ namespace GourmetProject.Editor
         private const string AssetRoot = "Assets/GameMain/Content/Resources/Sprites/UI/StarRating/";
         private const string MedalPath = AssetRoot + "star_rating_medal.png";
         private const string NodeBubblePath = AssetRoot + "timeline_node_star_bubble.png";
+        private const string ProgressPanelPath = AssetRoot + "star_progress_panel.png";
         private const string BattleFormPath = "Assets/GameMain/Content/Prefabs/UI/Battle/BattleForm.prefab";
         private const string AwardFormPath = "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/StarAwardForm.prefab";
         private const string TimelineThemePath = "Assets/GameMain/Content/Resources/Sprites/UI/TimelineFresh/TimelineAxisTheme.asset";
         private const string FontPath = "Assets/GameMain/Content/Resources/Fonts/AlimamaShuHeiTi-Bold SDF.asset";
         private const string UiSpriteRoot = "Assets/GameMain/Content/Resources/Sprites/UI/";
+        private const string ShinyTexturePath =
+            "Packages/com.coffee.ui-effect/UIEffectPresets/Textures/Transition-Horizontal.png";
 
         [MenuItem("GourmetProject/UI/Star Rating/Rebuild Six-Star Rating UI")]
         public static void Rebuild()
         {
             ConfigureSprite(MedalPath);
             ConfigureSprite(NodeBubblePath);
+            ConfigureSprite(ProgressPanelPath);
             Sprite medal = AssetDatabase.LoadAssetAtPath<Sprite>(MedalPath)
                 ?? throw new InvalidOperationException($"Missing star medal sprite: {MedalPath}");
             Sprite nodeBubble = AssetDatabase.LoadAssetAtPath<Sprite>(NodeBubblePath)
                 ?? throw new InvalidOperationException($"Missing star node sprite: {NodeBubblePath}");
+            Sprite progressPanel = AssetDatabase.LoadAssetAtPath<Sprite>(ProgressPanelPath)
+                ?? throw new InvalidOperationException($"Missing star progress panel sprite: {ProgressPanelPath}");
 
-            RebuildBattleForm(medal);
+            RebuildBattleForm(medal, progressPanel);
             RebuildAwardForm(medal);
             WireTimelineTheme(nodeBubble);
             AssetDatabase.SaveAssets();
@@ -41,7 +48,7 @@ namespace GourmetProject.Editor
             Debug.Log("Six-star rating HUD, award dialog, and timeline boss bubble rebuilt.");
         }
 
-        private static void ConfigureSprite(string path)
+        private static void ConfigureSprite(string path, Vector4? border = null)
         {
             if (AssetImporter.GetAtPath(path) is not TextureImporter importer)
             {
@@ -59,13 +66,13 @@ namespace GourmetProject.Editor
             importer.spritePixelsPerUnit = 100f;
             var settings = new TextureImporterSettings();
             importer.ReadTextureSettings(settings);
-            settings.spriteBorder = Vector4.zero;
+            settings.spriteBorder = border ?? Vector4.zero;
             settings.spriteMeshType = SpriteMeshType.FullRect;
             importer.SetTextureSettings(settings);
             importer.SaveAndReimport();
         }
 
-        private static void RebuildBattleForm(Sprite medal)
+        private static void RebuildBattleForm(Sprite medal, Sprite progressPanel)
         {
             GameObject root = PrefabUtility.LoadPrefabContents(BattleFormPath);
             if (root == null)
@@ -93,13 +100,51 @@ namespace GourmetProject.Editor
                 }
 
                 weekCard.name = "StarCard";
-                RectTransform cardRect = weekCard as RectTransform;
-                cardRect.sizeDelta = new Vector2(222f, 106f);
-                ClearChildren(weekCard);
+                RemoveOwnedStarCardChildren(weekCard);
+                Image panelImage = Ensure<Image>(weekCard.gameObject);
+                panelImage.sprite = progressPanel;
+                panelImage.type = Image.Type.Simple;
+                panelImage.preserveAspect = false;
+                panelImage.raycastTarget = false;
+                panelImage.color = Color.white;
+
+                RemovePanelEffect(weekCard.gameObject);
                 StarProgressView progress = weekCard.GetComponent<StarProgressView>()
                     ?? weekCard.gameObject.AddComponent<StarProgressView>();
-                Image[] slots = CreateSixStarSlots(weekCard, medal, 42f, 48f, 23f);
-                ConfigureProgress(progress, slots, medal);
+
+                GameObject gridObject = CreateUi("StarGrid", weekCard, false);
+                RectTransform gridRect = gridObject.GetComponent<RectTransform>();
+                Anchor(gridRect, new Vector2(0.5f, 0.5f), new Vector2(164f, 96f), Vector2.zero);
+                GridLayoutGroup grid = gridObject.AddComponent<GridLayoutGroup>();
+                grid.cellSize = new Vector2(44f, 44f);
+                grid.spacing = new Vector2(16f, 8f);
+                grid.childAlignment = TextAnchor.MiddleCenter;
+                grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
+                grid.startAxis = GridLayoutGroup.Axis.Horizontal;
+                grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+                grid.constraintCount = 3;
+
+                Image[] slots = CreateGridStarSlots(gridObject.transform, medal);
+                var effects = new UIEffect[slots.Length];
+                var shinyTweeners = new UIEffectTweener[slots.Length];
+                for (int i = 0; i < slots.Length; i++)
+                {
+                    ConfigureStarEffect(slots[i], i, out effects[i], out shinyTweeners[i]);
+                }
+
+                GameObject sparkleObject = CreateUi("SparkleOverlay", weekCard);
+                Stretch(sparkleObject.GetComponent<RectTransform>());
+                StarCardSparkleGraphic sparkles = sparkleObject.AddComponent<StarCardSparkleGraphic>();
+                sparkles.raycastTarget = false;
+
+                ConfigureProgress(
+                    progress,
+                    slots,
+                    medal,
+                    enableHudEffects: true,
+                    effects,
+                    shinyTweeners,
+                    sparkles);
 
                 BattleInfoColumn column = root.GetComponentInChildren<BattleInfoColumn>(true)
                     ?? throw new InvalidOperationException("BattleInfoColumn is missing from BattleForm.");
@@ -221,7 +266,44 @@ namespace GourmetProject.Editor
             return result;
         }
 
-        private static void ConfigureProgress(StarProgressView progress, Image[] slots, Sprite medal)
+        private static Image[] CreateGridStarSlots(Transform parent, Sprite medal)
+        {
+            var result = new Image[6];
+            for (int i = 0; i < result.Length; i++)
+            {
+                Image star = CreateImage($"Star{i + 1}", parent, medal);
+                star.rectTransform.sizeDelta = new Vector2(56f, 56f);
+                star.preserveAspect = true;
+                result[i] = star;
+            }
+
+            return result;
+        }
+
+        private static void RemoveOwnedStarCardChildren(Transform starCard)
+        {
+            for (int i = starCard.childCount - 1; i >= 0; i--)
+            {
+                Transform child = starCard.GetChild(i);
+                bool isLegacySlot = child.name.Length == 5
+                    && child.name.StartsWith("Star", StringComparison.Ordinal)
+                    && child.name[4] >= '1'
+                    && child.name[4] <= '6';
+                if (child.name == "StarGrid" || child.name == "SparkleOverlay" || isLegacySlot)
+                {
+                    UnityEngine.Object.DestroyImmediate(child.gameObject, true);
+                }
+            }
+        }
+
+        private static void ConfigureProgress(
+            StarProgressView progress,
+            Image[] slots,
+            Sprite medal,
+            bool enableHudEffects = false,
+            UIEffect[] effects = null,
+            UIEffectTweener[] shinyTweeners = null,
+            StarCardSparkleGraphic sparkles = null)
         {
             var serialized = new SerializedObject(progress);
             SerializedProperty stars = serialized.FindProperty("_stars");
@@ -232,9 +314,97 @@ namespace GourmetProject.Editor
             }
 
             serialized.FindProperty("_starSprite").objectReferenceValue = medal;
+            serialized.FindProperty("_enableHudEffects").boolValue = enableHudEffects;
+            if (enableHudEffects)
+            {
+                serialized.FindProperty("_lockedColor").colorValue =
+                    new Color(0.68f, 0.62f, 0.52f, 0.48f);
+            }
+            SetObjectArray(serialized.FindProperty("_starEffects"), effects);
+            SetObjectArray(serialized.FindProperty("_starShinyTweeners"), shinyTweeners);
+            serialized.FindProperty("_sparkles").objectReferenceValue = sparkles;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             progress.Bind(0);
             EditorUtility.SetDirty(progress);
+        }
+
+        private static void RemovePanelEffect(GameObject panelObject)
+        {
+            if (panelObject.TryGetComponent(out UIEffectTweener tweener))
+            {
+                UnityEngine.Object.DestroyImmediate(tweener, true);
+            }
+
+            if (panelObject.TryGetComponent(out UIEffect effect))
+            {
+                UnityEngine.Object.DestroyImmediate(effect, true);
+            }
+        }
+
+        private static void ConfigureStarEffect(
+            Image star,
+            int index,
+            out UIEffect effect,
+            out UIEffectTweener tweener)
+        {
+            effect = star.gameObject.AddComponent<UIEffect>();
+            effect.transitionFilter = TransitionFilter.Shiny;
+            effect.transitionTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(ShinyTexturePath);
+            effect.transitionRotation = 25f;
+            effect.transitionWidth = 0.18f;
+            effect.transitionSoftness = 0.45f;
+            effect.transitionColorFilter = ColorFilter.MultiplyAdditive;
+            effect.transitionColor = new Color(0.58f, 0.42f, 0.18f, 0.88f);
+            effect.transitionColorGlow = true;
+            effect.transitionAutoPlaySpeed = 0f;
+            effect.shadowMode = ShadowMode.Outline8;
+            effect.shadowDistance = new Vector2(2f, -2f);
+            effect.shadowIteration = 1;
+            effect.shadowFade = 0.52f;
+            effect.shadowBlurIntensity = 0.46f;
+            effect.shadowColorFilter = ColorFilter.Replace;
+            effect.shadowColor = new Color(1f, 0.58f, 0.08f, 0.48f);
+            effect.shadowColorGlow = true;
+            effect.enabled = false;
+
+            tweener = star.gameObject.AddComponent<UIEffectTweener>();
+            ConfigureTweener(
+                tweener,
+                UIEffectTweener.CullingMask.Transition,
+                duration: 0.65f,
+                interval: 4.2f,
+                delay: index * 0.12f);
+            tweener.enabled = false;
+        }
+
+        private static void ConfigureTweener(
+            UIEffectTweener tweener,
+            UIEffectTweener.CullingMask mask,
+            float duration,
+            float interval,
+            float delay)
+        {
+            tweener.cullingMask = mask;
+            tweener.direction = UIEffectTweener.Direction.Forward;
+            tweener.curve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+            tweener.duration = duration;
+            tweener.interval = interval;
+            tweener.delay = delay;
+            tweener.wrapMode = UIEffectTweener.WrapMode.Loop;
+            tweener.updateMode = UIEffectTweener.UpdateMode.Unscaled;
+            tweener.playOnEnable = UIEffectTweener.PlayOnEnable.Forward;
+            tweener.resetTimeOnEnable = true;
+        }
+
+        private static void SetObjectArray<T>(SerializedProperty property, T[] values)
+            where T : UnityEngine.Object
+        {
+            values ??= Array.Empty<T>();
+            property.arraySize = values.Length;
+            for (int i = 0; i < values.Length; i++)
+            {
+                property.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+            }
         }
 
         private static void EnsureAwardPrefabAsset()

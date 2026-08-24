@@ -24,6 +24,7 @@ namespace GourmetProject.Game.UI.Battle.View
         private const float ScoreTitleDefaultY = 190f;
         private const float ScoreTitleBossY = 102f;
         private const float BossStatTransitionDuration = 0.24f;
+        private const float GoldDeltaVerticalOffset = 30f;
 
         [SerializeField] private StarProgressView _starProgress;
         [SerializeField] private TMP_Text _goldText;
@@ -77,7 +78,6 @@ namespace GourmetProject.Game.UI.Battle.View
         private int _goldPresentationTarget;
         private bool _goldPresentationInitialized;
         private Vector3 _goldTextBaseScale = Vector3.one;
-        private int _activeGoldDeltaCount;
 
         public SettlementScoreFireView ScoreFire => _scoreFire;
         public RectTransform ViewRecipeButtonRect =>
@@ -183,6 +183,11 @@ namespace GourmetProject.Game.UI.Battle.View
                 ? (int)Math.Round(pendingGold, MidpointRounding.AwayFromZero)
                 : 0;
             return Mathf.Max(0, runGold + pending);
+        }
+
+        internal static Vector2 ResolveGoldDeltaStart(Vector2 goldAnchoredPosition)
+        {
+            return goldAnchoredPosition + Vector2.up * GoldDeltaVerticalOffset;
         }
 
         internal void PresentGoldChange(int before, int after)
@@ -306,11 +311,12 @@ namespace GourmetProject.Game.UI.Battle.View
             label.gameObject.SetActive(true);
 
             RectTransform rect = label.rectTransform;
-            Vector2 start = _goldDeltaTemplate.rectTransform.anchoredPosition
-                + new Vector2((_activeGoldDeltaCount % 3) * 8f, 0f);
+            RectTransform goldRect = _goldText.rectTransform;
+            Vector2 start = goldRect.parent == rect.parent
+                ? ResolveGoldDeltaStart(goldRect.anchoredPosition)
+                : _goldDeltaTemplate.rectTransform.anchoredPosition;
             rect.anchoredPosition = start;
             rect.localScale = Vector3.one * 0.78f;
-            _activeGoldDeltaCount++;
 
             CanvasGroup group = label.GetComponent<CanvasGroup>();
             if (group == null)
@@ -327,7 +333,6 @@ namespace GourmetProject.Game.UI.Battle.View
                 .Insert(0.44f, group.DOFade(0f, 0.34f))
                 .OnComplete(() =>
                 {
-                    _activeGoldDeltaCount = Mathf.Max(0, _activeGoldDeltaCount - 1);
                     if (label != null)
                     {
                         Destroy(label.gameObject);

@@ -162,6 +162,20 @@ namespace GourmetProject.Game.UI.Meta
         internal bool AllowsPersistentInteractions =>
             !_isClosing && !_isSuspendedForRewardSubflow;
 
+        /// <summary>
+        /// 奖励内容仍覆盖在 Battle 上方时禁止世界餐桌 hover。只有玩家主动隐藏奖励查看结算，
+        /// 或从常驻栏进入显式查看层后，才允许底层食物重新显示 Tips。
+        /// </summary>
+        internal bool BlocksBattleWorldHover =>
+            ShouldBlockBattleWorldHover(_peekHidden, IsPersistentInspectionActive);
+
+        internal static bool ShouldBlockBattleWorldHover(
+            bool peekHidden,
+            bool persistentInspectionActive)
+        {
+            return !peekHidden && !persistentInspectionActive;
+        }
+
         protected override void OnInit(object userData)
         {
             base.OnInit(userData);
@@ -190,6 +204,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             base.OnOpen(userData);
             Active = this;
+            BattleForm.Active?.HideBattleFoodTipsForRewardOverlay();
             PrepareOpenTransition();
             ConfigureRewardScrollbar();
             EnsureRewardListGroup();

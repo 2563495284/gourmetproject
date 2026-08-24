@@ -2787,6 +2787,11 @@ namespace GourmetProject.Game.UI.Battle
             }
         }
 
+        internal void HideBattleFoodTipsForRewardOverlay()
+        {
+            HideFoodTips();
+        }
+
         /// <summary>商店内数据变化回调：刷新常驻壳信息。</summary>
         private void RefreshShopPersistent()
         {
@@ -5152,6 +5157,12 @@ namespace GourmetProject.Game.UI.Battle
         {
             if (_foodTipsHoverOwner == FoodTipsHoverOwner.Tutorial)
             {
+                return;
+            }
+
+            if (RewardForm.Active?.BlocksBattleWorldHover == true)
+            {
+                HideFoodTips();
                 return;
             }
 
