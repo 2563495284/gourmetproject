@@ -4,6 +4,7 @@ using System.Linq;
 using BreakInfinity;
 using GourmetProject.Config;
 using GourmetProject.Core.Rng;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -28,7 +29,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void LargeCandyPlate_AddsPointFourAndWritesExactRatioOnce()
+        public void LargeCandyPlate_AddsPointFourWithoutWritingBackToRecipe()
         {
             const string skillId = "skill_transfer_target_growth_test";
             SkillDef skill = TransferSkill(skillId, SkillTrigger.OnSettle, SkillScope.Other, actionCount: 1);
@@ -53,21 +54,18 @@ namespace GourmetProject.Tests.EditMode
             session.Settle();
 
             Assert.That(target.PermanentMultBonus.ToDouble(), Is.EqualTo(2.4d).Within(Tolerance));
-            Assert.That(session.LastRecipeScoreMultiplierDeltas, Has.Count.EqualTo(1));
-            Assert.That(
-                session.LastRecipeScoreMultiplierDeltas[0].Multiplier.ToDouble(),
-                Is.EqualTo(1.2d).Within(Tolerance));
+            Assert.That(session.LastRecipeScoreMultiplierDeltas, Is.Empty);
 
             GameRun run = Run(db, sourceDef.Id, targetDef.Id);
             Assert.That(run.MultiplyRecipeScore(1, 2f), Is.True);
             Assert.That(BattleSettlementApplier.ApplyRecipeGrowth(run, session), Is.True);
-            Assert.That(run.RecipeEntries[1].ScoreMultiplier.ToDouble(), Is.EqualTo(2.4d).Within(Tolerance));
+            Assert.That(run.RecipeEntries[1].ScoreMultiplier.ToDouble(), Is.EqualTo(2d).Within(Tolerance));
             Assert.That(BattleSettlementApplier.ApplyRecipeGrowth(run, session), Is.False);
-            Assert.That(run.RecipeEntries[1].ScoreMultiplier.ToDouble(), Is.EqualTo(2.4d).Within(Tolerance));
+            Assert.That(run.RecipeEntries[1].ScoreMultiplier.ToDouble(), Is.EqualTo(2d).Within(Tolerance));
         }
 
         [Test]
-        public void LongSpoutSyrupPot_TwoTargetsAddOneWithoutCompounding()
+        public void LongSpoutSyrupPot_TwoTargetsAddOneWithoutRecipeWriteback()
         {
             const string skillId = "skill_transfer_source_growth_test";
             SkillDef skill = TransferSkill(skillId, SkillTrigger.OnSettle, SkillScope.Other, actionCount: 0);
@@ -89,17 +87,12 @@ namespace GourmetProject.Tests.EditMode
             session.Settle();
 
             Assert.That(source.PermanentMultBonus.ToDouble(), Is.EqualTo(3d).Within(Tolerance));
-            Assert.That(session.LastRecipeScoreMultiplierDeltas, Has.Count.EqualTo(2));
-            Assert.That(
-                session.LastRecipeScoreMultiplierDeltas
-                    .Aggregate(BigDouble.One, (value, delta) => value * delta.Multiplier)
-                    .ToDouble(),
-                Is.EqualTo(1.5d).Within(Tolerance));
+            Assert.That(session.LastRecipeScoreMultiplierDeltas, Is.Empty);
 
             GameRun run = Run(db, sourceDef.Id, firstTargetDef.Id, secondTargetDef.Id);
             Assert.That(run.MultiplyRecipeScore(0, 2f), Is.True);
             Assert.That(BattleSettlementApplier.ApplyRecipeGrowth(run, session), Is.True);
-            Assert.That(run.RecipeEntries[0].ScoreMultiplier.ToDouble(), Is.EqualTo(3d).Within(Tolerance));
+            Assert.That(run.RecipeEntries[0].ScoreMultiplier.ToDouble(), Is.EqualTo(2d).Within(Tolerance));
         }
 
         [Test]
@@ -153,7 +146,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void OnServeGrowth_SurvivesTheFollowingSettlement()
+        public void OnServeMultiplier_RemainsInCurrentBattleWithoutRecipeWriteback()
         {
             const string skillId = "skill_transfer_on_serve_growth_test";
             SkillDef skill = TransferSkill(skillId, SkillTrigger.OnServe, SkillScope.Other, actionCount: 1);
@@ -188,29 +181,42 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(served.Success, Is.True);
             Assert.That(served.Dish.PermanentMultBonus.ToDouble(), Is.EqualTo(2.5d).Within(Tolerance));
             Assert.That(target.PermanentMultBonus.ToDouble(), Is.EqualTo(2.4d).Within(Tolerance));
-            Assert.That(session.LastRecipeScoreMultiplierDeltas, Has.Count.EqualTo(2));
+            Assert.That(session.LastRecipeScoreMultiplierDeltas, Is.Empty);
 
             session.Settle();
 
-            Assert.That(session.LastRecipeScoreMultiplierDeltas, Has.Count.EqualTo(2));
-            Assert.That(
-                session.LastRecipeScoreMultiplierDeltas.Single(delta => delta.DishIndex == 0).Multiplier.ToDouble(),
-                Is.EqualTo(1.25d).Within(Tolerance));
-            Assert.That(
-                session.LastRecipeScoreMultiplierDeltas.Single(delta => delta.DishIndex == 1).Multiplier.ToDouble(),
-                Is.EqualTo(1.2d).Within(Tolerance));
+            Assert.That(served.Dish.PermanentMultBonus.ToDouble(), Is.EqualTo(2.5d).Within(Tolerance));
+            Assert.That(target.PermanentMultBonus.ToDouble(), Is.EqualTo(2.4d).Within(Tolerance));
+            Assert.That(session.LastRecipeScoreMultiplierDeltas, Is.Empty);
         }
 
         [Test]
-        public void TransferMultiplierItems_ConfigKeepsValuesAndMarksGrowthPermanent()
+        public void TransferMultiplierItems_ConfigKeepsValuesWithoutPermanentClaim()
         {
             cfg.PassiveItem target = _tables.TbPassiveItem.Get("item_transfer_target_mult");
             cfg.PassiveItem source = _tables.TbPassiveItem.Get("item_transfer_source_mult");
 
-            StringAssert.Contains("永久", target.Desc);
-            StringAssert.Contains("永久", source.Desc);
+            StringAssert.DoesNotContain("永久", target.Desc);
+            StringAssert.DoesNotContain("永久", source.Desc);
             Assert.That(target.EffectValue, Is.EqualTo(0.4f).Within(0.0001f));
             Assert.That(source.EffectValue, Is.EqualTo(0.5f).Within(0.0001f));
+        }
+
+        [Test]
+        public void TransferGrowthItems_DoNotShowCounterText()
+        {
+            PassiveItemModel[] models =
+            {
+                new TransferTargetFlatModel(),
+                new TransferSourceFlatModel(),
+                new TransferTargetMultModel(),
+                new TransferSourceMultModel(),
+            };
+
+            foreach (PassiveItemModel model in models)
+            {
+                Assert.That(model.InfoText, Is.Empty, model.GetType().Name);
+            }
         }
 
         private GameRun Run(GameplayDatabase db, params string[] dishIds)
