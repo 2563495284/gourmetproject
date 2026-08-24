@@ -67,7 +67,7 @@ namespace GourmetProject.Runtime.Settings
 
         public bool Muted
         {
-            get => _setting.GetBool(KeyMuted, false);
+            get => _setting.GetBool(KeyMuted, true);
             set => _setting.SetBool(KeyMuted, value);
         }
 
