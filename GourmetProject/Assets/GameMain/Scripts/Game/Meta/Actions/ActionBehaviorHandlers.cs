@@ -67,10 +67,24 @@ namespace GourmetProject.Game.Meta
                     return ActionOutcome.Immediate(string.Empty);
                 }
 
-                IRandomStream debuffRng = run.Random.DomainStream(
-                    SeedDomains.Boss,
-                    BossService.BuildBossDebuffSeedKey(run, bossKey, context.SourceKey));
-                cfg.BossDebuff debuff = BossService.RollBossDebuff(run, debuffRng, sourceNodeId: context.SourceKey);
+                cfg.TimelineNode sourceNode = !string.IsNullOrEmpty(context.SourceKey)
+                    ? TimelineService.GetNode(run, context.SourceKey)
+                    : null;
+                cfg.BossDebuff debuff;
+                if (sourceNode != null)
+                {
+                    debuff = BossService.PreviewBossDebuff(run, sourceNode);
+                }
+                else
+                {
+                    IRandomStream debuffRng = run.Random.DomainStream(
+                        SeedDomains.Boss,
+                        BossService.BuildBossDebuffSeedKey(run, bossKey, context.SourceKey));
+                    debuff = BossService.RollBossDebuff(
+                        run,
+                        debuffRng,
+                        sourceNodeId: context.SourceKey);
+                }
                 int bossRequired = RequiredScoreForFood(run, context, boss, debuff?.TargetScoreHiddenOffset ?? 0);
                 string battleKey = $"boss_{bossKey}_{debuff?.Id ?? "none"}";
                 return ActionOutcome.Battle(

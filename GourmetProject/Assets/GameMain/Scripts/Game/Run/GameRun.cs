@@ -67,6 +67,8 @@ namespace GourmetProject.Game.Run
         private bool _starProgressInitialized;
         private PendingStarAwardSaveData _pendingStarAward;
         private readonly List<string> _rolledBossDebuffIds = new List<string>();
+        private readonly Dictionary<string, string> _lockedBossDebuffIdsByNode =
+            new Dictionary<string, string>(System.StringComparer.Ordinal);
         private int _bossDebuffRerollWeekIndex;
         private int _bossDebuffRerollIndex;
         private string _bossDebuffRerollNodeId = string.Empty;
@@ -1291,6 +1293,7 @@ namespace GourmetProject.Game.Run
 
             _runtimeTimelineNodes.RemoveAt(index);
             _pendingExtraTimelineNodeIds.RemoveAll(id => id == nodeId);
+            _lockedBossDebuffIdsByNode.Remove(nodeId);
             if (_bossDebuffRerollNodeId == nodeId)
             {
                 _bossDebuffRerollNodeId = string.Empty;
@@ -1701,16 +1704,73 @@ namespace GourmetProject.Game.Run
 
         public bool IsBossDebuffRolled(string debuffId) => !string.IsNullOrEmpty(debuffId) && _rolledBossDebuffIds.Contains(debuffId);
 
+        internal bool TryGetLockedBossDebuffId(string nodeId, out string debuffId)
+        {
+            if (!string.IsNullOrEmpty(nodeId)
+                && _lockedBossDebuffIdsByNode.TryGetValue(nodeId, out debuffId)
+                && !string.IsNullOrEmpty(debuffId))
+            {
+                return true;
+            }
+
+            debuffId = string.Empty;
+            return false;
+        }
+
+        internal void LockBossDebuffForNode(string nodeId, string debuffId)
+        {
+            if (!string.IsNullOrEmpty(nodeId) && !string.IsNullOrEmpty(debuffId))
+            {
+                _lockedBossDebuffIdsByNode[nodeId] = debuffId;
+            }
+        }
+
+        internal void UnlockBossDebuffForNode(string nodeId)
+        {
+            if (!string.IsNullOrEmpty(nodeId))
+            {
+                _lockedBossDebuffIdsByNode.Remove(nodeId);
+            }
+        }
+
+        internal bool IsBossDebuffLockedByOtherPendingNode(string debuffId, string sourceNodeId)
+        {
+            if (string.IsNullOrEmpty(debuffId))
+            {
+                return false;
+            }
+
+            foreach (KeyValuePair<string, string> pair in _lockedBossDebuffIdsByNode)
+            {
+                if (pair.Key != sourceNodeId
+                    && pair.Value == debuffId
+                    && ContainsRuntimeTimelineNode(pair.Key)
+                    && !IsNodeTriggered(pair.Key))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void ClearLockedBossDebuffs()
+        {
+            _lockedBossDebuffIdsByNode.Clear();
+        }
+
         public void ForceBossDebuffForCurrentWeek(string debuffId)
         {
             _forcedBossDebuffWeekIndex = WeekIndex;
             _forcedBossDebuffId = debuffId ?? string.Empty;
+            ClearLockedBossDebuffs();
         }
 
         public void ClearForcedBossDebuff()
         {
             _forcedBossDebuffWeekIndex = 0;
             _forcedBossDebuffId = string.Empty;
+            ClearLockedBossDebuffs();
         }
 
         public void MarkBossCompleted(string bossId)
@@ -1754,6 +1814,7 @@ namespace GourmetProject.Game.Run
             _bossDebuffRerollNodeId = nodeId;
             _bossDebuffRerollExcludedId = current?.Id ?? string.Empty;
             _bossDebuffRerollIndex++;
+            UnlockBossDebuffForNode(nodeId);
             return true;
         }
 
@@ -1774,6 +1835,7 @@ namespace GourmetProject.Game.Run
             _runtimeTimelineNodes.Clear();
             _runtimeTimelineNodeSerial = 0;
             _pendingExtraTimelineNodeIds.Clear();
+            ClearLockedBossDebuffs();
             _bossDebuffRerollNodeId = string.Empty;
             _bossDebuffRerollExcludedId = string.Empty;
             if (nodes != null)
@@ -2484,6 +2546,7 @@ namespace GourmetProject.Game.Run
                 UsedEventIds = new List<string>(_usedEventIds),
                 CompletedBossIds = new List<string>(_completedBossIds),
                 RolledBossDebuffIds = new List<string>(_rolledBossDebuffIds),
+                LockedBossDebuffIdsByNode = new Dictionary<string, string>(_lockedBossDebuffIdsByNode),
                 BossDebuffRerollWeekIndex = _bossDebuffRerollWeekIndex,
                 BossDebuffRerollIndex = _bossDebuffRerollIndex,
                 BossDebuffRerollNodeId = _bossDebuffRerollNodeId,
@@ -2863,6 +2926,19 @@ namespace GourmetProject.Game.Run
             if (data.RolledBossDebuffIds != null)
             {
                 run._rolledBossDebuffIds.AddRange(data.RolledBossDebuffIds);
+            }
+
+            if (data.LockedBossDebuffIdsByNode != null)
+            {
+                foreach (KeyValuePair<string, string> pair in data.LockedBossDebuffIdsByNode)
+                {
+                    if (!string.IsNullOrEmpty(pair.Key)
+                        && !string.IsNullOrEmpty(pair.Value)
+                        && run.ContainsRuntimeTimelineNode(pair.Key))
+                    {
+                        run._lockedBossDebuffIdsByNode[pair.Key] = pair.Value;
+                    }
+                }
             }
 
             run._bossDebuffRerollWeekIndex = data.BossDebuffRerollWeekIndex;

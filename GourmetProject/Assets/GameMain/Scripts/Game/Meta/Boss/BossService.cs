@@ -62,7 +62,7 @@ namespace GourmetProject.Game.Meta
 
             string excludedId = ResolveRerollExcludedDebuffId(run, sourceNodeId);
             List<cfg.BossDebuff> candidates = ExcludeDebuff(
-                BuildUnrolledDebuffCandidates(run, available),
+                BuildUnrolledDebuffCandidates(run, available, sourceNodeId),
                 excludedId);
             if (candidates.Count == 0)
             {
@@ -71,7 +71,9 @@ namespace GourmetProject.Game.Meta
                     run.ResetBossDebuffRollHistory();
                 }
 
-                candidates = ExcludeDebuff(available, excludedId);
+                candidates = ExcludeDebuff(
+                    ExcludeLockedDebuffs(run, available, sourceNodeId),
+                    excludedId);
             }
 
             if (candidates.Count == 0)
@@ -89,12 +91,24 @@ namespace GourmetProject.Game.Meta
             return candidates[rng.WeightedPickIndex(weights)];
         }
 
-        /// <summary>预览时间轴 星级评鉴节点将使用的 Debuff，不推进对应随机流。</summary>
+        /// <summary>预览并锁定时间轴 星级评鉴节点将使用的 Debuff，不推进对应随机流。</summary>
         public static cfg.BossDebuff PreviewBossDebuff(GameRun run, cfg.TimelineNode node)
         {
             if (run == null || node == null)
             {
                 return null;
+            }
+
+            if (run.TryGetLockedBossDebuffId(node.Id, out string lockedId))
+            {
+                cfg.BossDebuff locked = (run.Tables ?? GameApp.Config.Tables)
+                    .TbBossDebuff.GetOrDefault(lockedId);
+                if (locked != null && IsEligible(run, locked))
+                {
+                    return locked;
+                }
+
+                run.UnlockBossDebuffForNode(node.Id);
             }
 
             string bossKey = $"w{run.WeekIndex}_{node.Id}";
@@ -104,7 +118,13 @@ namespace GourmetProject.Game.Meta
             RngState state = rng.State;
             try
             {
-                return RollBossDebuff(run, rng, mutateHistoryOnExhaustion: false, node.Id);
+                cfg.BossDebuff debuff = RollBossDebuff(
+                    run,
+                    rng,
+                    mutateHistoryOnExhaustion: false,
+                    node.Id);
+                run.LockBossDebuffForNode(node.Id, debuff?.Id);
+                return debuff;
             }
             finally
             {
@@ -192,12 +212,33 @@ namespace GourmetProject.Game.Meta
             return PreconditionEvaluator.IsSatisfied(run, debuff.UnlockCondition);
         }
 
-        private static List<cfg.BossDebuff> BuildUnrolledDebuffCandidates(GameRun run, IReadOnlyList<cfg.BossDebuff> available)
+        private static List<cfg.BossDebuff> BuildUnrolledDebuffCandidates(
+            GameRun run,
+            IReadOnlyList<cfg.BossDebuff> available,
+            string sourceNodeId)
         {
             var candidates = new List<cfg.BossDebuff>(available.Count);
             foreach (cfg.BossDebuff debuff in available)
             {
-                if (!run.IsBossDebuffRolled(debuff.Id))
+                if (!run.IsBossDebuffRolled(debuff.Id)
+                    && !run.IsBossDebuffLockedByOtherPendingNode(debuff.Id, sourceNodeId))
+                {
+                    candidates.Add(debuff);
+                }
+            }
+
+            return candidates;
+        }
+
+        private static List<cfg.BossDebuff> ExcludeLockedDebuffs(
+            GameRun run,
+            IReadOnlyList<cfg.BossDebuff> available,
+            string sourceNodeId)
+        {
+            var candidates = new List<cfg.BossDebuff>(available.Count);
+            foreach (cfg.BossDebuff debuff in available)
+            {
+                if (!run.IsBossDebuffLockedByOtherPendingNode(debuff.Id, sourceNodeId))
                 {
                     candidates.Add(debuff);
                 }

@@ -61,7 +61,7 @@ namespace GourmetProject.Game.Balance
         public const string AllUnlockedProfileId = "all-unlocked-v1";
         public const string DefaultMetaAffinityProfileId = MetaAffinityCatalog.DefaultProfileId;
 
-        public int SchemaVersion = 3;
+        public int SchemaVersion = 4;
         public string GeneratedUtc = string.Empty;
         public string StartedUtc = string.Empty;
         public string FinishedUtc = string.Empty;
@@ -113,6 +113,8 @@ namespace GourmetProject.Game.Balance
         public bool PolicyCalibrationValid;
         public float CompletionRate;
         public float AverageArchetypeChanges;
+        public int FragmentChoiceRuns;
+        public float FragmentChoiceRunShare;
         public List<int> BalanceFailureSeeds = new List<int>();
         public List<int> RuntimeErrorSeeds = new List<int>();
         public List<int> UnsupportedMechanicSeeds = new List<int>();
@@ -372,7 +374,7 @@ namespace GourmetProject.Game.Balance
         {
             if (report == null) throw new ArgumentNullException(nameof(report));
             var text = new StringBuilder();
-            text.AppendLine("schemaVersion,generatedUtc,applicationVersion,unityVersion,configHash,configLoadedUtc,configStale,unlockProfile,unlockProfileHash,metaAffinityProfile,metaAffinityProfileHash,policyVersion,characterId,characterName,baseSeed,requestedRunsPerLevel,normalCandidateLimit,expertCandidateLimit,placementNodeBudget,interestReserve,softmaxTemperature,dualArchetypeThreshold,maxActionsPerWeek,samplingComplete,cancelled,reportValid,playerLevel,week,bossDay,bossEncounterKey,bossActionId,bossId,bossIdentityValid,bossLegacyAmbiguous,actualRuns,completedRuns,normalDefeats,runtimeErrors,unsupportedMechanics,userCancelled,stageReached,stageReachRate,bossReached,bossPassed,bossReachRate,bossPassRate,bossMetricsValid,suggestionValid,p10,p30,p50,p90,suggestedRequirement,mealBattles,mealPasses,mealPassRate,meanGoldBalance,solverTruncatedRate,placementCandidateLimitedRate,noLegalPlacementRate,activeItemsUsedPerRun,sweetTransferShare,countShare,cakeShare,normalRouteShare,eventRouteShare,interestRouteShare,shopRouteShare,balanceFailureSeeds,runtimeErrorSeeds,unsupportedMechanicSeeds,userCancelledSeeds,warningCodes");
+            text.AppendLine("schemaVersion,generatedUtc,applicationVersion,unityVersion,configHash,configLoadedUtc,configStale,unlockProfile,unlockProfileHash,metaAffinityProfile,metaAffinityProfileHash,policyVersion,characterId,characterName,baseSeed,requestedRunsPerLevel,normalCandidateLimit,expertCandidateLimit,placementNodeBudget,interestReserve,softmaxTemperature,actionRewardPriority,dualArchetypeThreshold,maxActionsPerWeek,samplingComplete,cancelled,reportValid,playerLevel,week,bossDay,bossEncounterKey,bossActionId,bossId,bossIdentityValid,bossLegacyAmbiguous,actualRuns,completedRuns,normalDefeats,runtimeErrors,unsupportedMechanics,userCancelled,fragmentChoiceRuns,fragmentChoiceRunShare,stageReached,stageReachRate,bossReached,bossPassed,bossReachRate,bossPassRate,bossMetricsValid,suggestionValid,p10,p30,p50,p90,suggestedRequirement,mealBattles,mealPasses,mealPassRate,meanGoldBalance,solverTruncatedRate,placementCandidateLimitedRate,noLegalPlacementRate,activeItemsUsedPerRun,sweetTransferShare,countShare,cakeShare,normalRouteShare,eventRouteShare,interestRouteShare,shopRouteShare,balanceFailureSeeds,runtimeErrorSeeds,unsupportedMechanicSeeds,userCancelledSeeds,warningCodes");
             foreach (AutoRunWeekSummary week in report.WeekSummaries)
             {
                 AutoRunLevelSummary level = report.LevelSummaries.First(summary => summary.PlayerLevel == week.PlayerLevel);
@@ -435,6 +437,7 @@ namespace GourmetProject.Game.Balance
                     .Append(report.Policy.PlacementNodeBudget).Append(',')
                     .Append(report.Policy.InterestReserve).Append(',')
                     .Append(Number(report.Policy.SoftmaxTemperature)).Append(',')
+                    .Append(Csv(report.Policy.ActionRewardPriority.ToString())).Append(',')
                     .Append(Number(report.Policy.DualArchetypeThreshold)).Append(',')
                     .Append(report.Policy.MaxActionsPerWeek).Append(',')
                     .Append(Bool(report.SamplingComplete)).Append(',')
@@ -454,6 +457,8 @@ namespace GourmetProject.Game.Balance
                     .Append(week.RuntimeErrors).Append(',')
                     .Append(level.UnsupportedMechanics).Append(',')
                     .Append(level.UserCancelled).Append(',')
+                    .Append(level.FragmentChoiceRuns).Append(',')
+                    .Append(Number(level.FragmentChoiceRunShare)).Append(',')
                     .Append(week.StageReached).Append(',')
                     .Append(Number(week.StageReachRate)).Append(',')
                     .Append(bossReached).Append(',')
@@ -503,6 +508,7 @@ namespace GourmetProject.Game.Balance
                 ActualRuns = runs.Count,
                 CompletedRuns = runs.Count(run => ClassifyOutcome(run) == AutoRunOutcomeKind.Completed),
                 AverageArchetypeChanges = runs.Count > 0 ? (float)runs.Average(run => run.ArchetypeChanges) : 0f,
+                FragmentChoiceRuns = runs.Count(SelectedFragmentChoice),
             };
             foreach (AutoRunTrace run in runs)
             {
@@ -530,7 +536,16 @@ namespace GourmetProject.Game.Balance
             result.CompletionRate = result.ActualRuns > 0
                 ? result.CompletedRuns / (float)result.ActualRuns
                 : 0f;
+            result.FragmentChoiceRunShare = Rate(result.FragmentChoiceRuns, result.ActualRuns);
             return result;
+        }
+
+        private static bool SelectedFragmentChoice(AutoRunTrace run)
+        {
+            return (run?.Stages ?? new List<AutoRunStageTrace>())
+                .SelectMany(stage => stage?.ActionDecisions ?? new List<AutoRunActionDecisionTrace>())
+                .Any(decision => decision != null
+                                 && decision.SelectedRewardKind == cfg.RewardKind.FragmentChoice);
         }
 
         private static IEnumerable<AutoRunFailureRecord> BuildFailures(IEnumerable<AutoRunTrace> runs)
@@ -1041,6 +1056,7 @@ namespace GourmetProject.Game.Balance
                 DualArchetypeThreshold = source.DualArchetypeThreshold,
                 InterestReserve = source.InterestReserve,
                 MaxActionsPerWeek = source.MaxActionsPerWeek,
+                ActionRewardPriority = source.ActionRewardPriority,
             };
         }
 

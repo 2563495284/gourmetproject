@@ -273,6 +273,9 @@ namespace GourmetProject.Game.Run
         /// <summary>Boss Debuff 不放回随机的已抽取记录；抽光后会重置。</summary>
         public List<string> RolledBossDebuffIds = new List<string>();
 
+        /// <summary>当前时间轴 Boss 节点已展示并锁定的 Debuff；进战必须复用预览结果。</summary>
+        public Dictionary<string, string> LockedBossDebuffIdsByNode = new Dictionary<string, string>();
+
         /// <summary>本周星级评鉴 Debuff 主动重抽所属周；0=未重抽。</summary>
         public int BossDebuffRerollWeekIndex;
 

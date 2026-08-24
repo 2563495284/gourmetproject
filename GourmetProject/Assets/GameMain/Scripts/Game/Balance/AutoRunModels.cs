@@ -8,6 +8,15 @@ namespace GourmetProject.Game.Balance
     public enum AutoPlayerLevel { Normal, Expert }
     public enum BuildArchetype { SweetTransfer, Count, Cake }
     public enum MetaRoute { Normal, Event, Interest, Shop }
+    public enum AutoActionRewardPriority
+    {
+        Balanced,
+        FragmentChoice,
+        PassiveItemChoice,
+        ActiveItemStrengthen,
+        ActiveItemAdjust,
+        Gold,
+    }
 
     /// <summary>自动局的结构化终止原因；与面向人的 <see cref="AutoRunTrace.FailureReason"/> 分离。</summary>
     public enum AutoRunTerminationKind
@@ -147,9 +156,11 @@ namespace GourmetProject.Game.Balance
         public string OfferKey = string.Empty;
         public int Revision;
         public List<string> CandidateActionIds = new List<string>();
+        public List<cfg.RewardKind> CandidateRewardKinds = new List<cfg.RewardKind>();
         public List<float> CandidateCosts = new List<float>();
         public List<float> CandidatePolicyWeights = new List<float>();
         public string SelectedActionId = string.Empty;
+        public cfg.RewardKind SelectedRewardKind;
         public int SelectedIndex = -1;
         public string SelectionReason = string.Empty;
         public bool Rerolled;
@@ -165,6 +176,7 @@ namespace GourmetProject.Game.Balance
         [Range(0f, 1f)] public float DualArchetypeThreshold = 0.15f;
         [Min(0)] public int InterestReserve = 50;
         public int MaxActionsPerWeek = 32;
+        public AutoActionRewardPriority ActionRewardPriority = AutoActionRewardPriority.Balanced;
 
         public int PlacementCandidateLimit(AutoPlayerLevel level)
         {
@@ -190,7 +202,7 @@ namespace GourmetProject.Game.Balance
     /// <summary>规则随机与自动玩家决策随机分离时使用的稳定 seed 派生。</summary>
     public static class AutoRunPolicySeed
     {
-        public const string Version = "bounded-policy-v5";
+        public const string Version = "bounded-policy-v6";
 
         public static ulong Derive(int seed, AutoPlayerLevel level, string scope)
         {
