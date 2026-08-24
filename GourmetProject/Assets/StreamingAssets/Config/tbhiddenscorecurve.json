@@ -10,7 +10,7 @@
     "dayCoeff": 0,
     "expConstant": 5.2,
     "expWeekCoeff": 0,
-    "expDayCoeff": 0.4,
+    "expDayCoeff": 0.36,
     "roundTo": 100
   },
   {
@@ -24,7 +24,7 @@
     "dayCoeff": 0,
     "expConstant": 8.2,
     "expWeekCoeff": 0,
-    "expDayCoeff": 0.403,
+    "expDayCoeff": 0.534,
     "roundTo": 1000
   },
   {
@@ -36,9 +36,9 @@
     "linearBase": 0,
     "weekCoeff": 0,
     "dayCoeff": 0,
-    "expConstant": 11,
+    "expConstant": 11.5,
     "expWeekCoeff": 0,
-    "expDayCoeff": 0.375,
+    "expDayCoeff": 0.6157,
     "roundTo": 10000
   },
   {
