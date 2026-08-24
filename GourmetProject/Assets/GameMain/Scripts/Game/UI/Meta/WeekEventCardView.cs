@@ -35,6 +35,23 @@ namespace GourmetProject.Game.UI.Meta
         public float Speed { get; }
     }
 
+    internal readonly struct WeekEventCardPresentation
+    {
+        public WeekEventCardPresentation(
+            WeekEventTitleAnimation titleAnimation,
+            Color titleColor,
+            bool isHotBusiness)
+        {
+            TitleAnimation = titleAnimation;
+            TitleColor = titleColor;
+            IsHotBusiness = isHotBusiness;
+        }
+
+        public WeekEventTitleAnimation TitleAnimation { get; }
+        public Color TitleColor { get; }
+        public bool IsHotBusiness { get; }
+    }
+
     /// <summary>
     /// 周地图「n 选一」事件卡视图。固定结构在 WeekEventCardView.prefab，
     /// 文案与点击回调通过 <see cref="Bind"/> 数据驱动填充。
@@ -65,6 +82,9 @@ namespace GourmetProject.Game.UI.Meta
         private static readonly Color FooterNodeColor = new Color(0.78f, 1f, 0.88f, 0.92f);
         private static readonly Color EventTextColor = new Color32(78, 37, 21, 255);
         private static readonly Color NodeFooterTextColor = Color.white;
+        private static readonly Color HotTitleColor = new Color32(200, 74, 34, 255);
+        private static readonly Color HotGlowColor = new Color32(255, 106, 37, 255);
+        private static readonly Color HotHoverGlowColor = new Color32(255, 177, 59, 255);
 
         [SerializeField] private TMP_Text _nameText;
         [SerializeField] private TmpTextVertexAnimator _nameAnimator;
@@ -116,6 +136,9 @@ namespace GourmetProject.Game.UI.Meta
         private ItemTipView _rewardTip;
         private CardSkin _cardSkin;
         private bool _rewardVisible;
+        private bool _isHotBusiness;
+        private bool _effectsVisible;
+        private WeekEventCardEmberGraphic _hotEmbers;
         private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
 
         // 选中特效停留已在 OnPickClicked 内于回调前播放完毕，退场不再额外等待。
@@ -138,7 +161,7 @@ namespace GourmetProject.Game.UI.Meta
                 string.Empty,
                 onPick,
                 formatTitleAsDescription: true);
-            ConfigureTitleAnimation(ActionDisplayKind.Event);
+            ConfigurePresentation(ActionDisplayKind.Event);
             SetFooter(NodeEventFooter, true, FooterNodeColor);
             SetArt(Resources.Load<Sprite>("Sprites/UI/card_action_event"));
             SetRewardBadge(false);
@@ -235,7 +258,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             ApplyCommon(title, desc, onPick);
             ApplyCardSkin(CardSkin.Node);
-            ConfigureTitleAnimation(displayKind, foodKind);
+            ConfigurePresentation(displayKind, foodKind);
             SetFooter(NodeEventFooter, true, FooterNodeColor);
             SetArt(Resources.Load<Sprite>("Sprites/UI/card_action_event"));
             SetArtByName(artSpriteName);
@@ -253,7 +276,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             Bind(CardName(action), string.Empty, action.MinCostDays, onPick);
-            ConfigureTitleAnimationFor(action);
+            ConfigurePresentationFor(action);
             SetArt(CardSpriteFor(action));
             SetFoodRewardBadge(action);
         }
@@ -268,7 +291,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             Bind(CardName(choice.Action), string.Empty, choice.CostDays, onPick);
-            ConfigureTitleAnimationFor(choice.Action);
+            ConfigurePresentationFor(choice.Action);
             SetArt(CardSpriteFor(choice.Action));
             SetFoodRewardBadge(choice.Action);
         }
@@ -296,7 +319,7 @@ namespace GourmetProject.Game.UI.Meta
         public void Bind(string name, string desc, float costDays, Action onPick)
         {
             ApplyCommon(name, desc, onPick);
-            ConfigureTitleAnimation(ActionDisplayKind.Event);
+            ConfigurePresentation(ActionDisplayKind.Event);
             if (costDays > 0f)
             {
                 SetFooter($"用时：{costDays.ToString("0.#", CultureInfo.InvariantCulture)}天", true, FooterActionColor);
@@ -335,17 +358,28 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private void ConfigureTitleAnimationFor(cfg.GameAction action)
+        private void ConfigurePresentationFor(cfg.GameAction action)
         {
             ActionDisplayKind displayKind = ActionDisplay.KindOf(action);
             cfg.Food food = action != null ? ResolveFood(action) : null;
-            ConfigureTitleAnimation(displayKind, food != null ? food.ActionKind : null);
+            ConfigurePresentation(displayKind, food != null ? food.ActionKind : null);
         }
 
-        private void ConfigureTitleAnimation(
+        private void ConfigurePresentation(
             ActionDisplayKind displayKind,
             cfg.FoodActionKind? foodKind = null)
         {
+            WeekEventCardPresentation presentation = ResolvePresentation(displayKind, foodKind);
+            _isHotBusiness = presentation.IsHotBusiness;
+
+            if (_nameText != null)
+            {
+                _nameText.color = presentation.TitleColor;
+            }
+
+            EnsureHotEmbersReference();
+            _hotEmbers?.SetHot(_isHotBusiness && _effectsVisible && isActiveAndEnabled);
+
             if (_nameAnimator == null && _nameText != null)
             {
                 _nameAnimator = _nameText.GetComponent<TmpTextVertexAnimator>();
@@ -356,9 +390,21 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            WeekEventTitleAnimation animation = ResolveTitleAnimation(displayKind, foodKind);
+            WeekEventTitleAnimation animation = presentation.TitleAnimation;
             _nameAnimator.SetPreset(animation.Preset, animation.Intensity, animation.Speed);
             _nameAnimator.Rebuild();
+        }
+
+        internal static WeekEventCardPresentation ResolvePresentation(
+            ActionDisplayKind displayKind,
+            cfg.FoodActionKind? foodKind = null)
+        {
+            bool isHotBusiness = displayKind == ActionDisplayKind.Food
+                && foodKind == cfg.FoodActionKind.Super;
+            return new WeekEventCardPresentation(
+                ResolveTitleAnimation(displayKind, foodKind),
+                isHotBusiness ? HotTitleColor : EventTextColor,
+                isHotBusiness);
         }
 
         internal static WeekEventTitleAnimation ResolveTitleAnimation(
@@ -370,7 +416,7 @@ namespace GourmetProject.Game.UI.Meta
                 switch (foodKind)
                 {
                     case cfg.FoodActionKind.Super:
-                        return new WeekEventTitleAnimation(TmpTextAnimationPreset.Food, 1.15f, 1.33f);
+                        return new WeekEventTitleAnimation(TmpTextAnimationPreset.HotFood, 1f, 1f);
                     case cfg.FoodActionKind.Feast:
                         return new WeekEventTitleAnimation(TmpTextAnimationPreset.Boss, 1.2f, 1f);
                     default:
@@ -828,7 +874,9 @@ namespace GourmetProject.Game.UI.Meta
             _hover = false;
             _selectedGlow = false;
             _isHidden = false;
+            _effectsVisible = true;
             EnsureRefs();
+            _hotEmbers?.SetHot(_isHotBusiness);
             ResetGlow();
             transform.localScale = new Vector3(1f, 0f, 1f);
             UpdateGlowQuadSize();
@@ -838,6 +886,8 @@ namespace GourmetProject.Game.UI.Meta
         {
             KillScaleTween();
             KillPickDelayTween();
+            _effectsVisible = false;
+            _hotEmbers?.SetHot(false);
 
             if (_glowMat != null)
             {
@@ -873,10 +923,33 @@ namespace GourmetProject.Game.UI.Meta
 
             UpdateGlowQuadSize();
 
-            Color target = _selectedGlow ? _selectedColor : _hoverColor;
-            if (!_selectedGlow && !_hover)
+            Color target;
+            if (_selectedGlow)
             {
-                target.a = 0f;
+                target = _selectedColor;
+            }
+            else if (_effectsVisible && _isHotBusiness)
+            {
+                if (_hover)
+                {
+                    target = HotHoverGlowColor;
+                    target.a = 0.85f;
+                }
+                else
+                {
+                    float phase = Mathf.Repeat(Time.unscaledTime / 1.8f, 1f);
+                    float pulse = 0.5f - Mathf.Cos(phase * Mathf.PI * 2f) * 0.5f;
+                    target = HotGlowColor;
+                    target.a = Mathf.Lerp(0.2f, 0.34f, pulse);
+                }
+            }
+            else
+            {
+                target = _hoverColor;
+                if (!_hover || !_effectsVisible)
+                {
+                    target.a = 0f;
+                }
             }
 
             float k = 1f - Mathf.Exp(-_glowFadeSpeed * Time.unscaledDeltaTime);
@@ -903,6 +976,8 @@ namespace GourmetProject.Game.UI.Meta
         {
             KillScaleTween();
             _isHidden = false;
+            _effectsVisible = true;
+            _hotEmbers?.SetHot(_isHotBusiness);
             transform.localScale = new Vector3(1f, 0f, 1f);
             SetPickInteractable(false);
             _scaleTween = transform.DOScaleY(1f, Mathf.Max(0.01f, _showDuration))
@@ -928,6 +1003,8 @@ namespace GourmetProject.Game.UI.Meta
 
             KillScaleTween();
             SetPickInteractable(false);
+            _effectsVisible = false;
+            _hotEmbers?.SetHot(false);
             Sequence seq = DOTween.Sequence().SetUpdate(true);
             if (delay > 0f)
             {
@@ -1124,7 +1201,16 @@ namespace GourmetProject.Game.UI.Meta
                 _particleTemplate.gameObject.SetActive(false);
             }
 
+            EnsureHotEmbersReference();
             EnsureGlowMaterial();
+        }
+
+        private void EnsureHotEmbersReference()
+        {
+            if (_hotEmbers == null && _particleContainer != null)
+            {
+                _hotEmbers = _particleContainer.GetComponent<WeekEventCardEmberGraphic>();
+            }
         }
 
         private void SetPickInteractable(bool interactable)

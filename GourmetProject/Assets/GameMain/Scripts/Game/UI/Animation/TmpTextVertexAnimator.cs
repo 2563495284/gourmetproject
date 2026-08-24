@@ -15,6 +15,7 @@ namespace GameStartStudio.UI
         Slot = 7,
         Boss = 8,
         TipTitle = 9,
+        HotFood = 10,
     }
 
     [DisallowMultipleComponent]
@@ -278,6 +279,8 @@ namespace GameStartStudio.UI
                     float second = WindowPulse(time, 3.2f, 0.14f, 0.19f);
                     return 1f + (first + second * 0.72f) * 0.04f * intensity;
                 }
+                case TmpTextAnimationPreset.HotFood:
+                    return 1f + WindowPulse(time, 1.9f, 0.38f, 0f) * 0.012f * intensity;
                 case TmpTextAnimationPreset.TipTitle:
                     // Tip titles live inside layout groups. Scaling the RectTransform
                     // makes bold CJK glyphs blur and can fight layout rebuilding.
@@ -397,6 +400,7 @@ namespace GameStartStudio.UI
                 case TmpTextAnimationPreset.Interest:
                 case TmpTextAnimationPreset.Slot:
                 case TmpTextAnimationPreset.Boss:
+                case TmpTextAnimationPreset.HotFood:
                     return true;
                 default:
                     return false;
@@ -549,6 +553,21 @@ namespace GameStartStudio.UI
                     }
                     break;
                 }
+                case TmpTextAnimationPreset.HotFood:
+                {
+                    float local = TravelingProgress(time, characterIndex, 1.9f, 0.58f, 0.045f);
+                    if (local >= 0f)
+                    {
+                        float lift = Mathf.Sin(local * Mathf.PI);
+                        float flicker = 0.78f + Mathf.Sin(local * Mathf.PI * 3f + characterIndex * 0.71f) * 0.22f;
+                        offset.x = Mathf.Sin(local * Mathf.PI * 2f + characterIndex * 0.53f)
+                            * 0.5f * lift * intensity;
+                        offset.y = lift * (3.4f + flicker * 1.2f) * intensity;
+                        angleDegrees = Mathf.Sin(local * Mathf.PI * 2f + characterIndex * 0.81f)
+                            * 1.1f * lift * intensity;
+                    }
+                    break;
+                }
             }
         }
 
@@ -654,6 +673,12 @@ namespace GameStartStudio.UI
                     interval = 4f;
                     bandWidth = 0.18f;
                     strength = 0.18f;
+                    return true;
+                case TmpTextAnimationPreset.HotFood:
+                    interval = 2.2f;
+                    bandWidth = 0.17f;
+                    color = new Color(1f, 0.82f, 0.32f, 1f);
+                    strength = 0.42f;
                     return true;
                 default:
                     return false;
