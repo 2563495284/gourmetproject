@@ -16,6 +16,7 @@ namespace GameStartStudio.UI
         Boss = 8,
         TipTitle = 9,
         HotFood = 10,
+        StarEvaluation = 11,
     }
 
     [DisallowMultipleComponent]
@@ -281,6 +282,12 @@ namespace GameStartStudio.UI
                 }
                 case TmpTextAnimationPreset.HotFood:
                     return 1f + WindowPulse(time, 1.9f, 0.38f, 0f) * 0.012f * intensity;
+                case TmpTextAnimationPreset.StarEvaluation:
+                {
+                    float first = WindowPulse(time, 2.15f, 0.2f, 0f);
+                    float second = WindowPulse(time, 2.15f, 0.18f, 0.24f);
+                    return 1f + (first + second * 0.82f) * 0.065f * intensity;
+                }
                 case TmpTextAnimationPreset.TipTitle:
                     // Tip titles live inside layout groups. Scaling the RectTransform
                     // makes bold CJK glyphs blur and can fight layout rebuilding.
@@ -401,6 +408,7 @@ namespace GameStartStudio.UI
                 case TmpTextAnimationPreset.Slot:
                 case TmpTextAnimationPreset.Boss:
                 case TmpTextAnimationPreset.HotFood:
+                case TmpTextAnimationPreset.StarEvaluation:
                     return true;
                 default:
                     return false;
@@ -568,6 +576,22 @@ namespace GameStartStudio.UI
                     }
                     break;
                 }
+                case TmpTextAnimationPreset.StarEvaluation:
+                {
+                    float local = Mathf.Repeat(time, 2.15f);
+                    if (local <= 0.58f)
+                    {
+                        float decay = 1f - local / 0.58f;
+                        float impact = Mathf.Sin(Mathf.Clamp01(local / 0.18f) * Mathf.PI);
+                        offset.x = Mathf.Sin(local * 92f + characterIndex * 0.73f)
+                            * 3.2f * decay * intensity;
+                        offset.y = (impact * 4.8f + Mathf.Abs(Mathf.Sin(local * 51f + characterIndex))
+                            * 1.4f * decay) * intensity;
+                        angleDegrees = Mathf.Sin(local * 74f + characterIndex * 0.91f)
+                            * 2.6f * decay * intensity;
+                    }
+                    break;
+                }
             }
         }
 
@@ -679,6 +703,12 @@ namespace GameStartStudio.UI
                     bandWidth = 0.17f;
                     color = new Color(1f, 0.82f, 0.32f, 1f);
                     strength = 0.42f;
+                    return true;
+                case TmpTextAnimationPreset.StarEvaluation:
+                    interval = 1.35f;
+                    bandWidth = 0.24f;
+                    color = new Color(1f, 0.98f, 0.72f, 1f);
+                    strength = 0.85f;
                     return true;
                 default:
                     return false;

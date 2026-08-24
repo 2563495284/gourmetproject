@@ -40,16 +40,19 @@ namespace GourmetProject.Game.UI.Meta
         public WeekEventCardPresentation(
             WeekEventTitleAnimation titleAnimation,
             Color titleColor,
-            bool isHotBusiness)
+            bool isHotBusiness,
+            bool isStarEvaluation)
         {
             TitleAnimation = titleAnimation;
             TitleColor = titleColor;
             IsHotBusiness = isHotBusiness;
+            IsStarEvaluation = isStarEvaluation;
         }
 
         public WeekEventTitleAnimation TitleAnimation { get; }
         public Color TitleColor { get; }
         public bool IsHotBusiness { get; }
+        public bool IsStarEvaluation { get; }
     }
 
     /// <summary>
@@ -72,6 +75,9 @@ namespace GourmetProject.Game.UI.Meta
         private const string RewardBackingPath = "Sprites/UI/WeekEventCards/card_choice_reward_backing";
         private const string EventFooterPath = "Sprites/UI/WeekEventCards/card_choice_event_footer";
         private const string NodeFooterPath = "Sprites/UI/WeekEventCards/card_choice_node_footer";
+        private const string StarBodyPath = "Sprites/UI/WeekEventCards/card_choice_star_event_body";
+        private const string StarTitlePath = "Sprites/UI/WeekEventCards/card_choice_star_node_title";
+        private const string StarFooterPath = "Sprites/UI/WeekEventCards/card_choice_star_node_footer";
         private const float GlowPadding = 48f;
         private const float DefaultHideDuration = 0.2f;
         private const float DefaultPickEffectHold = 0.5f;
@@ -85,6 +91,10 @@ namespace GourmetProject.Game.UI.Meta
         private static readonly Color HotTitleColor = new Color32(200, 74, 34, 255);
         private static readonly Color HotGlowColor = new Color32(255, 106, 37, 255);
         private static readonly Color HotHoverGlowColor = new Color32(255, 177, 59, 255);
+        private static readonly Color StarTitleColor = new Color32(243, 211, 138, 255);
+        private static readonly Color StarGlowColor = new Color32(255, 183, 35, 255);
+        private static readonly Color StarPulseGlowColor = new Color32(196, 70, 255, 255);
+        private static readonly Color StarHoverGlowColor = new Color32(255, 242, 164, 255);
 
         [SerializeField] private TMP_Text _nameText;
         [SerializeField] private TmpTextVertexAnimator _nameAnimator;
@@ -106,6 +116,7 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Image _glowBorder;
         [SerializeField] private RectTransform _particleContainer;
         [SerializeField] private Image _particleTemplate;
+        [SerializeField] private WeekEventCardStarburstGraphic _starburst;
 
         [Header("Effects - Timing")]
         [SerializeField] private float _showDuration = 0.22f;
@@ -137,6 +148,7 @@ namespace GourmetProject.Game.UI.Meta
         private CardSkin _cardSkin;
         private bool _rewardVisible;
         private bool _isHotBusiness;
+        private bool _isStarEvaluation;
         private bool _effectsVisible;
         private WeekEventCardEmberGraphic _hotEmbers;
         private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
@@ -371,14 +383,18 @@ namespace GourmetProject.Game.UI.Meta
         {
             WeekEventCardPresentation presentation = ResolvePresentation(displayKind, foodKind);
             _isHotBusiness = presentation.IsHotBusiness;
+            _isStarEvaluation = presentation.IsStarEvaluation;
+            ApplyPresentationSkin();
 
             if (_nameText != null)
             {
                 _nameText.color = presentation.TitleColor;
             }
 
-            EnsureHotEmbersReference();
+            EnsurePersistentEffectsReferences();
             _hotEmbers?.SetHot(_isHotBusiness && _effectsVisible && isActiveAndEnabled);
+            _starburst?.SetStarEvaluation(_isStarEvaluation && _effectsVisible && isActiveAndEnabled);
+            _starburst?.SetHighlighted(_isStarEvaluation && (_hover || _selectedGlow));
 
             if (_nameAnimator == null && _nameText != null)
             {
@@ -401,10 +417,12 @@ namespace GourmetProject.Game.UI.Meta
         {
             bool isHotBusiness = displayKind == ActionDisplayKind.Food
                 && foodKind == cfg.FoodActionKind.Super;
+            bool isStarEvaluation = displayKind == ActionDisplayKind.Boss;
             return new WeekEventCardPresentation(
                 ResolveTitleAnimation(displayKind, foodKind),
-                isHotBusiness ? HotTitleColor : EventTextColor,
-                isHotBusiness);
+                isStarEvaluation ? StarTitleColor : isHotBusiness ? HotTitleColor : EventTextColor,
+                isHotBusiness,
+                isStarEvaluation);
         }
 
         internal static WeekEventTitleAnimation ResolveTitleAnimation(
@@ -426,8 +444,7 @@ namespace GourmetProject.Game.UI.Meta
 
             if (displayKind == ActionDisplayKind.Boss)
             {
-                float bossIntensity = foodKind == cfg.FoodActionKind.Feast ? 1.2f : 1f;
-                return new WeekEventTitleAnimation(TmpTextAnimationPreset.Boss, bossIntensity, 1f);
+                return new WeekEventTitleAnimation(TmpTextAnimationPreset.StarEvaluation, 1.35f, 1.08f);
             }
 
             TmpTextAnimationPreset preset = displayKind switch
@@ -466,7 +483,9 @@ namespace GourmetProject.Game.UI.Meta
             if (_footerBackingImage != null)
             {
                 _footerBackingImage.sprite = LoadSkinSprite(
-                    _cardSkin == CardSkin.Node ? NodeFooterPath : EventFooterPath);
+                    _isStarEvaluation
+                        ? StarFooterPath
+                        : _cardSkin == CardSkin.Node ? NodeFooterPath : EventFooterPath);
                 _footerBackingImage.type = Image.Type.Sliced;
                 SetBacking(
                     _footerBackingImage,
@@ -521,6 +540,37 @@ namespace GourmetProject.Game.UI.Meta
         private static Sprite LoadSkinSprite(string path)
         {
             return Resources.Load<Sprite>(path);
+        }
+
+        private void ApplyPresentationSkin()
+        {
+            if (!_isStarEvaluation)
+            {
+                return;
+            }
+
+            if (_cardBackingImage != null)
+            {
+                _cardBackingImage.sprite = LoadSkinSprite(StarBodyPath);
+                _cardBackingImage.type = Image.Type.Sliced;
+                _cardBackingImage.color = Color.white;
+                _cardBackingImage.enabled = _cardBackingImage.sprite != null;
+            }
+
+            if (_titleBackingImage != null)
+            {
+                _titleBackingImage.sprite = LoadSkinSprite(StarTitlePath);
+                _titleBackingImage.type = Image.Type.Sliced;
+                _titleBackingImage.color = Color.white;
+                _titleBackingImage.enabled = _titleBackingImage.sprite != null;
+            }
+
+            if (_footerBackingImage != null)
+            {
+                _footerBackingImage.sprite = LoadSkinSprite(StarFooterPath);
+                _footerBackingImage.type = Image.Type.Sliced;
+                _footerBackingImage.color = Color.white;
+            }
         }
 
         private void UpdateArtViewport()
@@ -877,6 +927,8 @@ namespace GourmetProject.Game.UI.Meta
             _effectsVisible = true;
             EnsureRefs();
             _hotEmbers?.SetHot(_isHotBusiness);
+            _starburst?.SetStarEvaluation(_isStarEvaluation);
+            _starburst?.SetHighlighted(false);
             ResetGlow();
             transform.localScale = new Vector3(1f, 0f, 1f);
             UpdateGlowQuadSize();
@@ -888,6 +940,7 @@ namespace GourmetProject.Game.UI.Meta
             KillPickDelayTween();
             _effectsVisible = false;
             _hotEmbers?.SetHot(false);
+            _starburst?.SetStarEvaluation(false);
 
             if (_glowMat != null)
             {
@@ -928,6 +981,21 @@ namespace GourmetProject.Game.UI.Meta
             {
                 target = _selectedColor;
             }
+            else if (_effectsVisible && _isStarEvaluation)
+            {
+                if (_hover)
+                {
+                    target = StarHoverGlowColor;
+                    target.a = 1f;
+                }
+                else
+                {
+                    float phase = Mathf.Repeat(Time.unscaledTime / 1.08f, 1f);
+                    float pulse = 0.5f - Mathf.Cos(phase * Mathf.PI * 2f) * 0.5f;
+                    target = Color.Lerp(StarGlowColor, StarPulseGlowColor, pulse);
+                    target.a = Mathf.Lerp(0.48f, 0.72f, pulse);
+                }
+            }
             else if (_effectsVisible && _isHotBusiness)
             {
                 if (_hover)
@@ -964,11 +1032,13 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _hover = true;
+            _starburst?.SetHighlighted(_isStarEvaluation);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
             _hover = false;
+            _starburst?.SetHighlighted(_isStarEvaluation && _selectedGlow);
         }
 
         // 入场：Y 方向 0→1 弹出，由持有方在转场完成后显式触发。
@@ -978,6 +1048,8 @@ namespace GourmetProject.Game.UI.Meta
             _isHidden = false;
             _effectsVisible = true;
             _hotEmbers?.SetHot(_isHotBusiness);
+            _starburst?.SetStarEvaluation(_isStarEvaluation);
+            _starburst?.SetHighlighted(false);
             transform.localScale = new Vector3(1f, 0f, 1f);
             SetPickInteractable(false);
             _scaleTween = transform.DOScaleY(1f, Mathf.Max(0.01f, _showDuration))
@@ -1005,6 +1077,7 @@ namespace GourmetProject.Game.UI.Meta
             SetPickInteractable(false);
             _effectsVisible = false;
             _hotEmbers?.SetHot(false);
+            _starburst?.SetStarEvaluation(false);
             Sequence seq = DOTween.Sequence().SetUpdate(true);
             if (delay > 0f)
             {
@@ -1067,6 +1140,11 @@ namespace GourmetProject.Game.UI.Meta
             _picking = true;
             _selectedGlow = true;
             _hover = false;
+            _starburst?.SetHighlighted(_isStarEvaluation);
+            if (_isStarEvaluation)
+            {
+                _starburst?.TriggerBurst();
+            }
             SetPickInteractable(false);
             EmitParticles();
 
@@ -1201,15 +1279,20 @@ namespace GourmetProject.Game.UI.Meta
                 _particleTemplate.gameObject.SetActive(false);
             }
 
-            EnsureHotEmbersReference();
+            EnsurePersistentEffectsReferences();
             EnsureGlowMaterial();
         }
 
-        private void EnsureHotEmbersReference()
+        private void EnsurePersistentEffectsReferences()
         {
             if (_hotEmbers == null && _particleContainer != null)
             {
                 _hotEmbers = _particleContainer.GetComponent<WeekEventCardEmberGraphic>();
+            }
+
+            if (_starburst == null && _particleContainer != null)
+            {
+                _starburst = _particleContainer.GetComponentInChildren<WeekEventCardStarburstGraphic>(true);
             }
         }
 

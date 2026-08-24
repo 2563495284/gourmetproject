@@ -49,16 +49,16 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void ResolveGoldDeltaStart_FollowsGoldTextMovement_AndStaysHorizontallyCentered()
+        public void ResolveGoldDeltaStart_IsRightOfGoldText_AndVerticallyCentered()
         {
             var originalGoldPosition = new Vector2(15.6f, 389f);
             var movedGoldPosition = new Vector2(15.6f, 339.5f);
 
-            Vector2 originalStart = BattleInfoColumn.ResolveGoldDeltaStart(originalGoldPosition);
-            Vector2 movedStart = BattleInfoColumn.ResolveGoldDeltaStart(movedGoldPosition);
+            Vector2 originalStart = BattleInfoColumn.ResolveGoldDeltaStart(originalGoldPosition, 110f, 104f);
+            Vector2 movedStart = BattleInfoColumn.ResolveGoldDeltaStart(movedGoldPosition, 110f, 104f);
 
-            Assert.That(originalStart, Is.EqualTo(new Vector2(15.6f, 419f)));
-            Assert.That(movedStart.x, Is.EqualTo(movedGoldPosition.x));
+            Assert.That(originalStart, Is.EqualTo(new Vector2(128.6f, 389f)));
+            Assert.That(movedStart.y, Is.EqualTo(movedGoldPosition.y));
             Assert.That(movedStart - originalStart, Is.EqualTo(movedGoldPosition - originalGoldPosition));
         }
     }
