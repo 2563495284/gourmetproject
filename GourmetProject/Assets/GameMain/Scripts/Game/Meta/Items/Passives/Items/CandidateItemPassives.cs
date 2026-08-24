@@ -271,11 +271,11 @@ namespace GourmetProject.Game.Meta.Passives
 
     [Preserve]
     [PassiveItemModel("item_remove_arrow_cookie_all")]
-    public sealed class RemoveAllArrowCookiesModel : FlavorTagOnAcquireModel
+    public sealed class RemoveFiveArrowCookiesModel : FlavorTagOnAcquireModel
     {
         public override void OnAcquired()
         {
-            FinishRecipe(PassiveRecipeMutationService.RemoveArrowCookies(Run, Def?.Name, int.MaxValue));
+            FinishRecipe(PassiveRecipeMutationService.RemoveArrowCookies(Run, Def?.Name, 5));
         }
     }
 

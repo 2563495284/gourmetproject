@@ -19,6 +19,7 @@ MonoBehaviour:
   _cursor: {fileID: 21300000, guid: 64b58749d625a44a1b40e9e24161dc91, type: 3}
   _dayBadge: {fileID: 21300000, guid: 5ae4e2d569bac4eb3827bf04920a551c, type: 3}
   _nodeBubble: {fileID: 21300000, guid: b17eac574774c451787b4a0256a7527a, type: 3}
+  _bossNodeBubble: {fileID: 21300000, guid: 5322b170c6e4948eaa514bbfb87bb6a6, type: 3}
   _shop: {fileID: -301693539505010683, guid: 5035cc02892a84b298e3e07bf6e89fe1, type: 3}
   _interest: {fileID: -368961291865462981, guid: 70943e5c6b5ec41279e4f5e1a1958c66, type: 3}
   _boss: {fileID: -894558083634107281, guid: 08d8f77b0cee54c8f81e0e24aa8b3b7f, type: 3}

@@ -166,29 +166,30 @@ namespace GourmetProject.Game.UI.Meta
             ActionDisplayKind displayKind = ActionDisplay.KindOf(action);
             cfg.Food food = ResolveFood(action);
             cfg.FoodActionKind? foodKind = food != null ? food.ActionKind : null;
+            string artSpriteName = NodeCardSpriteNameFor(action);
             switch (displayKind)
             {
                 case ActionDisplayKind.Shop:
-                    BindNodeCard("商店", string.Empty, "card_node_shop", displayKind, foodKind, onPick);
+                    BindNodeCard("商店", string.Empty, artSpriteName, displayKind, foodKind, onPick);
                     break;
                 case ActionDisplayKind.Interest:
                     int threshold = Mathf.Max(0, interestThreshold ?? GameApp.Config.Tables.TbGameBase.InterestThreshold);
                     int configuredGoldPer = interestGoldPer ?? GameApp.Config.Tables.TbGameBase.InterestGoldPer;
                     int goldPer = configuredGoldPer > 0 ? configuredGoldPer : 1;
-                    BindNodeCard("收取利息", string.Empty, "card_node_interest", displayKind, foodKind, onPick);
+                    BindNodeCard("收取利息", string.Empty, artSpriteName, displayKind, foodKind, onPick);
                     break;
                 case ActionDisplayKind.Boss:
                     cfg.BossDebuff bossDebuff = BossService.PreviewBossDebuff(GameRunContext.Current, node);
-                    BindNodeCard(BossTitle(bossDebuff?.Name), string.Empty, "card_node_boss", displayKind, foodKind, onPick);
-                    break;
-                case ActionDisplayKind.Event:
-                    BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", displayKind, foodKind, onPick);
-                    break;
-                case ActionDisplayKind.Slot:
-                    BindNodeCard(string.IsNullOrEmpty(action.Name) ? "抽奖机" : action.Name, string.Empty, "card_action_slot", displayKind, foodKind, onPick);
+                    BindNodeCard(BossTitle(bossDebuff?.Name), string.Empty, artSpriteName, displayKind, foodKind, onPick);
                     break;
                 default:
-                    BindNodeCard(string.IsNullOrEmpty(action.Name) ? "事件" : action.Name, string.Empty, "card_action_event", displayKind, foodKind, onPick);
+                    BindNodeCard(
+                        string.IsNullOrEmpty(action.Name) ? "事件" : action.Name,
+                        string.Empty,
+                        artSpriteName,
+                        displayKind,
+                        foodKind,
+                        onPick);
                     break;
             }
         }
@@ -614,6 +615,12 @@ namespace GourmetProject.Game.UI.Meta
                 return string.Empty;
             }
 
+            string configuredSpriteName = ConfiguredActionSpriteNameFor(action.Id);
+            if (!string.IsNullOrEmpty(configuredSpriteName))
+            {
+                return configuredSpriteName;
+            }
+
             string spriteName;
             switch (action.Behavior)
             {
@@ -656,6 +663,88 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             return spriteName;
+        }
+
+        internal static string NodeCardSpriteNameFor(cfg.GameAction action)
+        {
+            if (action == null)
+            {
+                return "card_action_event";
+            }
+
+            string configuredSpriteName = ConfiguredActionSpriteNameFor(action.Id);
+            if (!string.IsNullOrEmpty(configuredSpriteName))
+            {
+                return configuredSpriteName;
+            }
+
+            switch (ActionDisplay.KindOf(action))
+            {
+                case ActionDisplayKind.Food:
+                    return CardSpriteNameFor(action);
+                case ActionDisplayKind.Boss:
+                    return "card_node_boss";
+                case ActionDisplayKind.Reward:
+                    return "card_action_reward";
+                case ActionDisplayKind.Negative:
+                    return "card_action_negative";
+                case ActionDisplayKind.Shop:
+                    return "card_action_shop";
+                case ActionDisplayKind.Interest:
+                    return "card_node_interest";
+                case ActionDisplayKind.Slot:
+                    return "card_action_slot";
+                case ActionDisplayKind.Event:
+                default:
+                    return "card_action_event";
+            }
+        }
+
+        internal static string ConfiguredActionSpriteNameFor(string actionId)
+        {
+            switch (actionId)
+            {
+                case "act_food_gold":
+                    return "card_action_food_normal_gold";
+                case "act_food_fragment":
+                    return "card_action_food_normal_fragment";
+                case "act_food_passive":
+                    return "card_action_food_normal_passive";
+                case "act_food_active_strengthen":
+                    return "card_action_food_normal_active_strengthen";
+                case "act_food_active_adjust":
+                    return "card_action_food_normal_active_adjust";
+                case "act_food_hard_gold":
+                    return "card_action_food_hard_gold";
+                case "act_food_hard_fragment":
+                    return "card_action_food_hard_fragment";
+                case "act_food_hard_passive":
+                    return "card_action_food_hard_passive";
+                case "act_food_hard_active_strengthen":
+                    return "card_action_food_hard_active_strengthen";
+                case "act_food_hard_active_adjust":
+                    return "card_action_food_hard_active_adjust";
+                case "act_event":
+                    return "card_action_event";
+                case "act_reward":
+                    return "card_action_reward";
+                case "act_shop":
+                    return "card_action_shop";
+                case "act_interest":
+                    return "card_node_interest";
+                case "act_boss":
+                    return "card_node_boss";
+                case "act_slot":
+                    return "card_action_slot";
+                case "act_loan_repay":
+                    return "card_action_loan_repay";
+                case "act_gold_clear":
+                    return "card_action_gold_clear";
+                case "act_restore_heart":
+                    return "card_action_restore_heart";
+                default:
+                    return string.Empty;
+            }
         }
 
         internal static string FoodRewardSpriteName(

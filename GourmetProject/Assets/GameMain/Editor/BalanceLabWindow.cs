@@ -146,6 +146,10 @@ namespace GourmetProject.EditorTools
                 _autoPolicy.ExpertBeamWidth = EditorGUILayout.IntSlider("高手候选上限", _autoPolicy.ExpertBeamWidth, 1, 64);
                 _autoPolicy.PlacementNodeBudget = EditorGUILayout.IntField("单战正式预览预算", _autoPolicy.PlacementNodeBudget);
                 _autoPolicy.InterestReserve = EditorGUILayout.IntField("利息保留本金", _autoPolicy.InterestReserve);
+                _autoPolicy.ActionRewardPriority = (AutoActionRewardPriority)EditorGUILayout.Popup(
+                    "行动奖励优先级",
+                    (int)_autoPolicy.ActionRewardPriority,
+                    new[] { "综合策略", "格子优先", "装饰品优先", "强化消耗品优先", "调整消耗品优先", "金币优先" });
                 if (GUILayout.Button("恢复推荐默认值", GUILayout.Width(140))) _autoPolicy = new AutoPlayerPolicy();
             }
             bool canStart = CanStartAutoSimulation();
@@ -943,7 +947,7 @@ namespace GourmetProject.EditorTools
                 $"{_lastAutoStatus}\n配置 {ShortHash(report.ConfigContentHash)}… · " +
                 $"解锁档案 {report.UnlockProfileId}@{ShortHash(report.UnlockProfileHash)}… · " +
                 $"路线档案 {report.MetaAffinityProfileId}@{ShortHash(report.MetaAffinityProfileHash)}… · " +
-                $"策略 {report.PolicyVersion}",
+                $"策略 {report.PolicyVersion} · 行动 {ActionPriorityLabel(report.Policy.ActionRewardPriority)}",
                 reportType);
             if (report.HasRuntimeErrors)
                 EditorGUILayout.HelpBox("存在运行异常，本报告不可作为正式平衡结论；请先按下方 Seed 复现并修复。", MessageType.Error);
@@ -962,7 +966,8 @@ namespace GourmetProject.EditorTools
                 EditorGUILayout.LabelField(
                     $"局数 {level.ActualRuns}/{level.RequestedRuns}　全{Math.Max(1, report.TotalWeeks)}周通关 {level.CompletedRuns}（{level.CompletionRate:P1}）　" +
                     $"正常战败 {level.NormalDefeats}　运行异常 {level.RuntimeErrors}　规则不支持 {level.UnsupportedMechanics}　" +
-                    $"用户取消 {level.UserCancelled}　平均转向 {level.AverageArchetypeChanges:0.00}");
+                    $"用户取消 {level.UserCancelled}　平均转向 {level.AverageArchetypeChanges:0.00}　" +
+                    $"选择格子的局数 {level.FragmentChoiceRuns}/{level.ActualRuns}（{level.FragmentChoiceRunShare:P1}）");
                 if (!level.PolicyCalibrationValid)
                     EditorGUILayout.HelpBox($"自动玩家没有完成全部 {Math.Max(1, report.TotalWeeks)} 周，尚不能代表真人基线；该玩家档的建议要求已关闭。", MessageType.Error);
 
@@ -1141,7 +1146,21 @@ namespace GourmetProject.EditorTools
                 DualArchetypeThreshold = source.DualArchetypeThreshold,
                 InterestReserve = source.InterestReserve,
                 MaxActionsPerWeek = source.MaxActionsPerWeek,
+                ActionRewardPriority = source.ActionRewardPriority,
             };
+        }
+
+        private static string ActionPriorityLabel(AutoActionRewardPriority priority)
+        {
+            switch (priority)
+            {
+                case AutoActionRewardPriority.FragmentChoice: return "格子优先";
+                case AutoActionRewardPriority.PassiveItemChoice: return "装饰品优先";
+                case AutoActionRewardPriority.ActiveItemStrengthen: return "强化消耗品优先";
+                case AutoActionRewardPriority.ActiveItemAdjust: return "调整消耗品优先";
+                case AutoActionRewardPriority.Gold: return "金币优先";
+                default: return "综合策略";
+            }
         }
 
         private static string WarningText(AutoRunWeekSummary week, string code)

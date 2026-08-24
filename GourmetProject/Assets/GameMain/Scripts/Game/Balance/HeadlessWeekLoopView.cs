@@ -576,6 +576,8 @@ namespace GourmetProject.Game.Balance
 
         public void ShowHeartBreak(HeartBreakFormOpenArgs args, Action onComplete) => Enqueue(onComplete);
 
+        public void ShowStarAward(StarAwardFormOpenArgs args) => Enqueue(args?.OnContinue);
+
         public void OpenEventRecipeDishDelete(
             GameRun run,
             string title,
@@ -807,47 +809,71 @@ namespace GourmetProject.Game.Balance
                 return null;
             }
 
+            cfg.RewardKind preferredReward = PreferredRewardKind(_policy.ActionRewardPriority);
+            List<ActionEvaluation> selectionPool = preferredReward == cfg.RewardKind.None
+                ? evaluations
+                : evaluations.Where(value => value.RewardKind == preferredReward).ToList();
+            bool preferredAvailable = preferredReward != cfg.RewardKind.None && selectionPool.Count > 0;
+            if (!preferredAvailable)
+            {
+                selectionPool = evaluations;
+            }
+
             float temperature = Math.Max(0.35f, _policy.SoftmaxTemperature);
-            float maximum = evaluations.Max(value => value.Utility);
-            var weights = evaluations.Select(value =>
+            float maximum = selectionPool.Max(value => value.Utility);
+            var selectionWeights = selectionPool.Select(value =>
             {
                 double exponent = Math.Max(-50d, Math.Min(0d, (value.Utility - maximum) / temperature));
                 return Math.Max(0.000001f, (float)Math.Exp(exponent));
             }).ToList();
-            float weightTotal = weights.Sum();
+            float weightTotal = selectionWeights.Sum();
             if (weightTotal > 0f)
             {
-                for (int i = 0; i < weights.Count; i++)
+                for (int i = 0; i < selectionWeights.Count; i++)
                 {
-                    weights[i] /= weightTotal;
+                    selectionWeights[i] /= weightTotal;
                 }
             }
+
+            var weights = evaluations.Select(value =>
+            {
+                int poolIndex = selectionPool.IndexOf(value);
+                return poolIndex >= 0 ? selectionWeights[poolIndex] : 0f;
+            }).ToList();
 
             int index;
             string selectionMode;
             if (_request.PlayerLevel == AutoPlayerLevel.Expert)
             {
-                index = IndexOfMax(evaluations.Select(value => value.Utility).ToList());
+                index = IndexOfMax(selectionPool.Select(value => value.Utility).ToList());
                 selectionMode = "最高风险调整效用";
             }
             else
             {
-                index = _decisionRandom.WeightedPickIndex(weights);
+                index = _decisionRandom.WeightedPickIndex(selectionWeights);
                 selectionMode = $"policy-softmax(T={temperature.ToString("0.00", CultureInfo.InvariantCulture)})";
             }
 
-            ActionEvaluation selected = evaluations[index];
+            ActionEvaluation selected = selectionPool[index];
+            int selectedIndex = evaluations.IndexOf(selected);
+            if (preferredAvailable)
+            {
+                selectionMode = $"{ActionPriorityName(_policy.ActionRewardPriority)}优先/{selectionMode}";
+            }
             decisionTrace = DescribeActionDecision(selected, evaluations, selectionMode, stage);
             if (structuredTrace != null)
             {
                 structuredTrace.RunStepIndex = selected.Choice.RunStepIndex;
                 structuredTrace.CandidateActionIds.AddRange(
                     evaluations.Select(value => value.Choice.Action.Id ?? string.Empty));
+                structuredTrace.CandidateRewardKinds.AddRange(
+                    evaluations.Select(value => value.RewardKind));
                 structuredTrace.CandidateCosts.AddRange(
                     evaluations.Select(value => value.Choice.CostDays));
                 structuredTrace.CandidatePolicyWeights.AddRange(weights);
                 structuredTrace.SelectedActionId = selected.Choice.Action.Id ?? string.Empty;
-                structuredTrace.SelectedIndex = index;
+                structuredTrace.SelectedRewardKind = selected.RewardKind;
+                structuredTrace.SelectedIndex = selectedIndex;
                 structuredTrace.SelectionReason = decisionTrace;
             }
             return selected.Choice;
@@ -860,6 +886,7 @@ namespace GourmetProject.Game.Balance
         {
             cfg.GameAction action = choice.Action;
             cfg.Food food = FoodService.Resolve(_run.Tables, action);
+            cfg.RewardKind rewardKind = food?.RewardKind ?? cfg.RewardKind.None;
             bool isMeal = food != null
                 && (food.ActionKind == cfg.FoodActionKind.Normal
                     || food.ActionKind == cfg.FoodActionKind.Super);
@@ -933,7 +960,8 @@ namespace GourmetProject.Game.Balance
                 risk,
                 rewardUtility,
                 utility,
-                hasUndying);
+                hasUndying,
+                rewardKind);
         }
 
         private string DescribeActionDecision(
@@ -1043,7 +1071,8 @@ namespace GourmetProject.Game.Balance
                 float risk,
                 float rewardUtility,
                 float utility,
-                bool hasUndying)
+                bool hasUndying,
+                cfg.RewardKind rewardKind)
             {
                 Choice = choice;
                 ActionKind = actionKind;
@@ -1056,6 +1085,7 @@ namespace GourmetProject.Game.Balance
                 RewardUtility = rewardUtility;
                 Utility = utility;
                 HasUndying = hasUndying;
+                RewardKind = rewardKind;
             }
 
             public ActionChoice Choice { get; }
@@ -1069,6 +1099,7 @@ namespace GourmetProject.Game.Balance
             public float RewardUtility { get; }
             public float Utility { get; }
             public bool HasUndying { get; }
+            public cfg.RewardKind RewardKind { get; }
         }
 
         private static float ActionWeight(cfg.GameAction action, MetaRoute route)
@@ -1091,6 +1122,32 @@ namespace GourmetProject.Game.Balance
             if (id.IndexOf("fragment", StringComparison.OrdinalIgnoreCase) >= 0) return 3f;
             if (id.IndexOf("active_adjust", StringComparison.OrdinalIgnoreCase) >= 0) return 2f;
             return 1f;
+        }
+
+        private static cfg.RewardKind PreferredRewardKind(AutoActionRewardPriority priority)
+        {
+            switch (priority)
+            {
+                case AutoActionRewardPriority.FragmentChoice: return cfg.RewardKind.FragmentChoice;
+                case AutoActionRewardPriority.PassiveItemChoice: return cfg.RewardKind.PassiveItemChoice;
+                case AutoActionRewardPriority.ActiveItemStrengthen: return cfg.RewardKind.ActiveItemStrengthen;
+                case AutoActionRewardPriority.ActiveItemAdjust: return cfg.RewardKind.ActiveItemAdjust;
+                case AutoActionRewardPriority.Gold: return cfg.RewardKind.Gold;
+                default: return cfg.RewardKind.None;
+            }
+        }
+
+        private static string ActionPriorityName(AutoActionRewardPriority priority)
+        {
+            switch (priority)
+            {
+                case AutoActionRewardPriority.FragmentChoice: return "格子";
+                case AutoActionRewardPriority.PassiveItemChoice: return "装饰品";
+                case AutoActionRewardPriority.ActiveItemStrengthen: return "强化消耗品";
+                case AutoActionRewardPriority.ActiveItemAdjust: return "调整消耗品";
+                case AutoActionRewardPriority.Gold: return "金币";
+                default: return "综合";
+            }
         }
 
         internal float ShopValue(ShopEntry entry, MetaRoute route)

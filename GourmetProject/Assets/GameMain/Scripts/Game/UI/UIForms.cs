@@ -47,6 +47,7 @@ namespace GourmetProject.Game.UI
         public const string Reward = "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/RewardForm.prefab";
         public const string Result = "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/ResultForm.prefab";
         public const string HeartBreak = "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/HeartBreakForm.prefab";
+        public const string StarAward = "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/StarAwardForm.prefab";
 
         // 玩家总档槽位。保留此别名供旧调用兼容；新持久化代码统一经 GameSavePersistence 访问。
         public const string GameSaveSlot = GameSavePersistence.Slot;

@@ -1393,16 +1393,16 @@
     "condScope": 12,
     "condUnit": 0,
     "condMode": 0,
-    "condParam": "",
+    "condParam": "div:5",
     "actionType": 2,
     "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
-      1.15
+      1.2
     ],
     "actionParam": [],
     "signed": false,
-    "descTemplate": "{cscope}每有 1 {unit}食物\n[strong]倍率[/strong] [multmul]×{0}[/multmul]",
+    "descTemplate": "{cscope}每有5{unit}食物\n[strong]倍率[/strong] [multmul]×{0}[/multmul]",
     "termId": ""
   },
   {

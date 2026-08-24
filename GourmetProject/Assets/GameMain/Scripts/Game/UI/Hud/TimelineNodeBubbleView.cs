@@ -31,6 +31,8 @@ namespace GourmetProject.Game.UI.Hud
         private float _boundAlpha = 1f;
         private bool _executing;
         private bool _preview;
+        private bool _boss;
+        private bool _negative;
         private bool _removing;
         private Tween _layoutTween;
         private Tween _visibilityTween;
@@ -76,10 +78,13 @@ namespace GourmetProject.Game.UI.Hud
             EnsureRefs();
             TimelineAxisPalette palette = _theme?.Palette ?? new TimelineAxisPalette();
             _preview = preview;
+            _boss = boss;
+            _negative = negative;
             _executing = executing && !completed && !preview;
             _removing = false;
             _boundAlpha = completed && !preview ? 0.72f : 1f;
-            _boundScale = _authoredScale * (completed && !preview ? CompletedScale : 1f);
+            float completedScale = completed && !preview ? CompletedScale : 1f;
+            _boundScale = _authoredScale * completedScale * (boss ? 1.08f : 1f);
             _tailColor = preview
                 ? palette.Preview
                 : (negative ? new Color(palette.Danger.r, palette.Danger.g, palette.Danger.b, 0.78f) : palette.Cream);
@@ -95,11 +100,13 @@ namespace GourmetProject.Game.UI.Hud
 
             if (_shell != null)
             {
-                _shell.color = _tailColor;
+                _shell.sprite = boss ? _theme?.BossNodeBubble : _theme?.NodeBubble;
+                _shell.color = boss ? Color.white : _tailColor;
             }
 
             if (_stateRing != null)
             {
+                _stateRing.sprite = boss ? _theme?.BossNodeBubble : _theme?.NodeBubble;
                 _stateRing.enabled = preview || executing || boss || negative;
                 _stateRing.color = preview
                     ? palette.Preview
@@ -320,9 +327,17 @@ namespace GourmetProject.Game.UI.Hud
             TimelineAxisPalette palette = _theme?.Palette ?? new TimelineAxisPalette();
             if (_stateRing != null)
             {
-                _stateRing.enabled = eligible || _executing || _preview;
-                _stateRing.color = destructive ? palette.Danger : palette.Preview;
-                _stateRing.rectTransform.localScale = emphasized ? Vector3.one * 1.10f : Vector3.one;
+                _stateRing.enabled = eligible || _executing || _preview || _boss || _negative;
+                if (_boss && !eligible)
+                {
+                    _stateRing.color = palette.Apricot;
+                    _stateRing.rectTransform.localScale = Vector3.one;
+                }
+                else
+                {
+                    _stateRing.color = destructive ? palette.Danger : palette.Preview;
+                    _stateRing.rectTransform.localScale = emphasized ? Vector3.one * 1.10f : Vector3.one;
+                }
             }
 
             if (eligible && emphasized)
@@ -341,10 +356,14 @@ namespace GourmetProject.Game.UI.Hud
             if (_stateRing != null)
             {
                 _stateRing.rectTransform.localScale = Vector3.one;
-                _stateRing.enabled = _executing || _preview;
+                _stateRing.enabled = _executing || _preview || _boss || _negative;
                 _stateRing.color = _preview
                     ? (_theme?.Palette.Preview ?? Color.green)
-                    : (_theme?.Palette.ExecutingGlow ?? Color.yellow);
+                    : (_boss
+                        ? (_theme?.Palette.Apricot ?? Color.yellow)
+                        : (_negative
+                            ? (_theme?.Palette.Danger ?? Color.red)
+                            : (_theme?.Palette.ExecutingGlow ?? Color.yellow)));
             }
 
             RefreshStateTween();
@@ -382,6 +401,8 @@ namespace GourmetProject.Game.UI.Hud
             _dayAnchor = null;
             _executing = false;
             _preview = false;
+            _boss = false;
+            _negative = false;
             _removing = false;
             _canvasGroup.alpha = 1f;
             _canvasGroup.blocksRaycasts = false;
@@ -390,8 +411,15 @@ namespace GourmetProject.Game.UI.Hud
             Rect.localRotation = Quaternion.identity;
             if (_stateRing != null)
             {
+                _stateRing.sprite = _theme?.NodeBubble;
                 _stateRing.enabled = false;
                 _stateRing.rectTransform.localScale = Vector3.one;
+            }
+
+            if (_shell != null)
+            {
+                _shell.sprite = _theme?.NodeBubble;
+                _shell.color = Color.white;
             }
 
             if (_skipStamp != null)

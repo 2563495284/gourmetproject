@@ -214,9 +214,25 @@ namespace GourmetProject.Game.Meta
             return null;
         }
 
-        /// <summary>节点复制单候选：当前时间轴上的全部节点，不论是否已执行。</summary>
+        /// <summary>节点复制单候选：当前时间轴上的非星级评鉴节点，不论是否已执行。</summary>
         public static List<cfg.TimelineNode> GetCloneableNodes(GameRun run)
-            => GetNodes(run);
+        {
+            var result = new List<cfg.TimelineNode>();
+            if (run == null)
+            {
+                return result;
+            }
+
+            foreach (cfg.TimelineNode node in GetNodes(run))
+            {
+                if (!IsRatingEvaluationNode(run, node))
+                {
+                    result.Add(node);
+                }
+            }
+
+            return result;
+        }
 
         public static List<cfg.TimelineNode> GetFutureUntriggeredNodes(GameRun run)
         {
@@ -247,7 +263,9 @@ namespace GourmetProject.Game.Meta
 
             foreach (cfg.TimelineNode node in GetNodes(run))
             {
-                if (node.Day < run.CurrentDay - TimelineMath.Epsilon && run.IsNodeTriggered(node.Id))
+                if (node.Day < run.CurrentDay - TimelineMath.Epsilon
+                    && run.IsNodeTriggered(node.Id)
+                    && !IsRatingEvaluationNode(run, node))
                 {
                     result.Add(node);
                 }
@@ -267,13 +285,21 @@ namespace GourmetProject.Game.Meta
 
             foreach (cfg.TimelineNode node in GetNodes(run))
             {
-                if (!run.IsNodeTriggered(node.Id) && !run.IsTimelineNodeExecutionInProgress(node.Id))
+                if (!run.IsNodeTriggered(node.Id)
+                    && !run.IsTimelineNodeExecutionInProgress(node.Id)
+                    && !IsRatingEvaluationNode(run, node))
                 {
                     result.Add(node);
                 }
             }
 
             return result;
+        }
+
+        public static bool IsRatingEvaluationNode(GameRun run, cfg.TimelineNode node)
+        {
+            cfg.GameAction action = run?.Tables?.TbAction.GetOrDefault(node?.ActionId);
+            return node != null && FoodService.IsBossAction(run?.Tables, action);
         }
 
         /// <summary>取得时间轴上最近的尚未触发 星级评鉴节点；同一天按节点 ID 升序稳定选择。</summary>
