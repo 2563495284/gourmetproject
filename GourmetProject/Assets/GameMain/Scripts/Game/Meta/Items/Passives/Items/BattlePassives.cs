@@ -112,8 +112,6 @@ namespace GourmetProject.Game.Meta.Passives
 
         public int TransferCount => _transferCount;
 
-        public override string InfoText => _transferCount.ToString(CultureInfo.InvariantCulture);
-
         public override void ApplyToBattle(BattleSession session)
         {
             if (session != null)

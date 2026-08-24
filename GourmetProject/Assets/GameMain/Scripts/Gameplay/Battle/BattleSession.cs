@@ -1862,9 +1862,6 @@ namespace GourmetProject.Gameplay.Battle
             List<RecipeScoreFlatDelta> serveRecipeFlats = _lastRecipeScoreFlatDeltas.Count > 0
                 ? new List<RecipeScoreFlatDelta>(_lastRecipeScoreFlatDeltas)
                 : null;
-            List<RecipeScoreMultiplierDelta> serveRecipeMultipliers = _lastRecipeScoreMultiplierDeltas.Count > 0
-                ? new List<RecipeScoreMultiplierDelta>(_lastRecipeScoreMultiplierDeltas)
-                : null;
             _lastRecipeScoreFlatDeltas.Clear();
             _lastRecipeScoreMultiplierDeltas.Clear();
 
@@ -1973,11 +1970,6 @@ namespace GourmetProject.Gameplay.Battle
             {
                 _lastRecipeScoreFlatDeltas.InsertRange(0, serveRecipeFlats);
             }
-
-            if (serveRecipeMultipliers != null && serveRecipeMultipliers.Count > 0)
-            {
-                _lastRecipeScoreMultiplierDeltas.InsertRange(0, serveRecipeMultipliers);
-            }
         }
 
         /// <summary>甜蜜传递落地：对每个请求，用随机流在候选目标中均权取 Count 个（0=全部），把技能追加给它们并标注来源。</summary>
@@ -2043,37 +2035,22 @@ namespace GourmetProject.Gameplay.Battle
 
         private void ApplySweetTransferTargetMultiplier(DishInstance target)
         {
-            ApplySweetTransferPermanentMultiplier(target, SweetTransferTargetMultiplier);
+            if (target != null && SweetTransferTargetMultiplier > 0f)
+            {
+                target.AddPermanentMultBonus(SweetTransferTargetMultiplier);
+            }
+
             ApplySweetTransferTargetFlat(target);
         }
 
         private void ApplySweetTransferSourceMultiplier(DishInstance source)
         {
-            ApplySweetTransferPermanentMultiplier(source, SweetTransferSourceMultiplier);
+            if (source != null && SweetTransferSourceMultiplier > 0f)
+            {
+                source.AddPermanentMultBonus(SweetTransferSourceMultiplier);
+            }
+
             ApplySweetTransferSourceFlat(source);
-        }
-
-        private void ApplySweetTransferPermanentMultiplier(DishInstance inst, float additiveBonus)
-        {
-            if (inst == null || additiveBonus <= 0f)
-            {
-                return;
-            }
-
-            BigDouble before = inst.PermanentMultBonus;
-            inst.AddPermanentMultBonus(additiveBonus);
-            if (inst.SourceSlotIndex < 0 || inst.SourceDishIndex < 0 || before <= BigDouble.Zero)
-            {
-                return;
-            }
-
-            // Recipe growth uses multiplicative deltas. Record the exact before/after ratio so an
-            // additive bonus remains additive after writeback (for example 2.0 + 0.4 = 2.4, ratio 1.2).
-            BigDouble ratio = inst.PermanentMultBonus / before;
-            _lastRecipeScoreMultiplierDeltas.Add(new RecipeScoreMultiplierDelta(
-                inst.SourceSlotIndex,
-                inst.SourceDishIndex,
-                ratio));
         }
 
         private void ApplySweetTransferTargetFlat(DishInstance target)

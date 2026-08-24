@@ -24,7 +24,7 @@ namespace GourmetProject.Game.UI.Battle.View
         private const float ScoreTitleDefaultY = 190f;
         private const float ScoreTitleBossY = 102f;
         private const float BossStatTransitionDuration = 0.24f;
-        private const float GoldDeltaVerticalOffset = 30f;
+        private const float GoldDeltaHorizontalGap = 6f;
 
         [SerializeField] private StarProgressView _starProgress;
         [SerializeField] private TMP_Text _goldText;
@@ -185,9 +185,16 @@ namespace GourmetProject.Game.UI.Battle.View
             return Mathf.Max(0, runGold + pending);
         }
 
-        internal static Vector2 ResolveGoldDeltaStart(Vector2 goldAnchoredPosition)
+        internal static Vector2 ResolveGoldDeltaStart(
+            Vector2 goldAnchoredPosition,
+            float goldWidth,
+            float deltaWidth)
         {
-            return goldAnchoredPosition + Vector2.up * GoldDeltaVerticalOffset;
+            float x = goldAnchoredPosition.x
+                + Mathf.Max(0f, goldWidth) * 0.5f
+                + Mathf.Max(0f, deltaWidth) * 0.5f
+                + GoldDeltaHorizontalGap;
+            return new Vector2(x, goldAnchoredPosition.y);
         }
 
         internal void PresentGoldChange(int before, int after)
@@ -313,7 +320,10 @@ namespace GourmetProject.Game.UI.Battle.View
             RectTransform rect = label.rectTransform;
             RectTransform goldRect = _goldText.rectTransform;
             Vector2 start = goldRect.parent == rect.parent
-                ? ResolveGoldDeltaStart(goldRect.anchoredPosition)
+                ? ResolveGoldDeltaStart(
+                    goldRect.anchoredPosition,
+                    goldRect.rect.width,
+                    rect.rect.width)
                 : _goldDeltaTemplate.rectTransform.anchoredPosition;
             rect.anchoredPosition = start;
             rect.localScale = Vector3.one * 0.78f;
