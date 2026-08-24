@@ -697,7 +697,7 @@
     "deliciousness": 40,
     "skills": "sk_egg_yolk_pastry",
     "category": "",
-    "countAs": 3,
+    "countAs": 2,
     "shapeRows": [
       "XX",
       "XX"
@@ -987,7 +987,7 @@
     "deliciousness": 60,
     "skills": "sk_mala_gao",
     "category": "",
-    "countAs": 5,
+    "countAs": 3,
     "shapeRows": [
       "XX",
       "XX",

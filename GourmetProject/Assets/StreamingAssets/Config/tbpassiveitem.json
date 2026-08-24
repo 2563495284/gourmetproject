@@ -1463,7 +1463,7 @@
   {
     "id": "item_transfer_target_mult",
     "name": "大号糖果盘",
-    "desc": "[term]甜蜜传递[/term]时\n被传递方[strong]倍率[/strong][multadd]+0.4[/multadd]",
+    "desc": "[term]甜蜜传递[/term]时\n被传递方[strong]倍率[/strong]永久[multadd]+0.4[/multadd]",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 0.4,
@@ -1482,7 +1482,7 @@
   {
     "id": "item_transfer_source_mult",
     "name": "长嘴糖浆壶",
-    "desc": "[term]甜蜜传递[/term]时\n传递方每成功传递1个目标\n[strong]倍率[/strong][multadd]+0.5[/multadd]",
+    "desc": "[term]甜蜜传递[/term]时\n传递方每成功传递1个目标\n[strong]倍率[/strong]永久[multadd]+0.5[/multadd]",
     "quality": 2,
     "specialTags": 0,
     "effectValue": 0.5,
@@ -2020,7 +2020,7 @@
   {
     "id": "item_remove_arrow_cookie_all",
     "name": "曲奇粉碎机",
-    "desc": "删除食谱中所有箭头饼干",
+    "desc": "删除食谱中最多5个箭头饼干",
     "quality": 3,
     "specialTags": 0,
     "effectValue": 0,

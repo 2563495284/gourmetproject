@@ -123,7 +123,7 @@ namespace GourmetProject.Game.Meta.BossDebuffs
     {
         public override void ModifyPreparedTable(DiningTable table, int recipeEntryCount, IRandomStream rng)
         {
-            int disableCount = Math.Max(0, recipeEntryCount / 12 + 1);
+            int disableCount = Math.Max(0, recipeEntryCount / 8 + 1);
             List<GridPos> cells = table.ExistingCells();
             rng.Shuffle(cells);
             int disabled = 0;
