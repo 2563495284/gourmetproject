@@ -163,7 +163,7 @@ namespace GourmetProject.Tests.EditMode
             var serialized = new SerializedObject(view);
             string[] required =
             {
-                "_theme", "_background", "_axisContent", "_track", "_progress",
+                "_theme", "_axisContent", "_track", "_progress",
                 "_dayLayer", "_nodeLayer", "_cursorLayer", "_cursor", "_dayBadge",
                 "_currentDayText", "_dayPointPrefab", "_dayNodeGroupPrefab", "_nodeBubblePrefab",
             };
@@ -265,13 +265,10 @@ namespace GourmetProject.Tests.EditMode
         {
             GameObject main = AssetDatabase.LoadAssetAtPath<GameObject>(
                 PrefabRoot + "TimelineAxisView.prefab");
-            Image background = main.transform.Find("Background").GetComponent<Image>();
             Image track = main.transform.Find("AxisContent/Track/TrackBackground").GetComponent<Image>();
             Image progress = main.transform.Find("AxisContent/Track/TrackProgress").GetComponent<Image>();
             Image badge = main.transform.Find("AxisContent/CursorLayer/Cursor/DayBadge").GetComponent<Image>();
 
-            Assert.That(background.type, Is.EqualTo(Image.Type.Sliced));
-            Assert.That(background.pixelsPerUnitMultiplier, Is.EqualTo(3.25f).Within(0.001f));
             Assert.That(track.type, Is.EqualTo(Image.Type.Sliced));
             Assert.That(track.pixelsPerUnitMultiplier, Is.EqualTo(12f).Within(0.001f));
             Assert.That(progress.type, Is.EqualTo(Image.Type.Sliced));

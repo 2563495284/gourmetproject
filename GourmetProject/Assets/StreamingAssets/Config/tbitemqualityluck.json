@@ -25,10 +25,10 @@
   },
   {
     "quality": 3,
-    "baseWeight": 8,
+    "baseWeight": 5,
     "luckGrowth": 0.031,
-    "constant": -10,
+    "constant": -7,
     "minWeight": 0,
-    "maxWeight": 15
+    "maxWeight": 10
   }
 ]

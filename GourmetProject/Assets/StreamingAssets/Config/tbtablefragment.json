@@ -59,18 +59,6 @@
     ]
   },
   {
-    "id": "frag_3_3",
-    "baseWeight": 1400,
-    "hiddenRange": {
-      "min": 10,
-      "max": 100
-    },
-    "shapeRows": [
-      "XX",
-      "X."
-    ]
-  },
-  {
     "id": "frag_4_1",
     "baseWeight": 1400,
     "hiddenRange": {

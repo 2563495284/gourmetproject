@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 2d4e8205494474d598415f5e0e677fe6
+guid: 61fdcec6e53e04104a03815b1e36b06a
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8230611890874585258
-    second: board_cell_plate_0
+      213: 2969370097851739162
+    second: star-card-polish-3-final_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: board_cell_plate_0
+      name: star-card-polish-3-final_0
       rect:
         serializedVersion: 2
-        x: 7
-        y: 7
-        width: 306
-        height: 306
+        x: 0
+        y: 0
+        width: 1750
+        height: 984
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 65f6058c71ef6cd80800000000000000
-      internalID: -8230611890874585258
+      spriteID: a1cae112f52553920800000000000000
+      internalID: 2969370097851739162
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      board_cell_plate_0: -8230611890874585258
+      star-card-polish-3-final_0: 2969370097851739162
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
