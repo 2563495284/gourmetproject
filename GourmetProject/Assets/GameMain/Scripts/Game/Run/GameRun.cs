@@ -24,6 +24,7 @@ namespace GourmetProject.Game.Run
     public sealed class GameRun : IPreconditionContext
     {
         public const int MaxQueuedBusinessGoldEffects = 100;
+        public const int MaxRatingStars = 6;
 
         public event System.Action<RunContentAcquisition> ContentAcquired;
         private readonly cfg.Tables _tables;
@@ -60,6 +61,11 @@ namespace GourmetProject.Game.Run
         private int _runtimeTimelineNodeSerial;
         private readonly List<string> _usedEventIds = new List<string>();
         private readonly List<string> _completedBossIds = new List<string>();
+        private readonly HashSet<string> _awardedRatingStarBattleKeys =
+            new HashSet<string>(System.StringComparer.Ordinal);
+        private int _ratingStarsEarned;
+        private bool _starProgressInitialized;
+        private PendingStarAwardSaveData _pendingStarAward;
         private readonly List<string> _rolledBossDebuffIds = new List<string>();
         private int _bossDebuffRerollWeekIndex;
         private int _bossDebuffRerollIndex;
@@ -168,6 +174,7 @@ namespace GourmetProject.Game.Run
             RunId = System.Guid.NewGuid().ToString("N");
             IsTutorialRun = isTutorialRun;
             WeekIndex = weekIndex;
+            _starProgressInitialized = initializeCharacterLoadout;
 
             cfg.TbGameBase gameBase = _tables.TbGameBase;
             Gold = System.Math.Max(0, gameBase.InitialGold);
@@ -224,6 +231,42 @@ namespace GourmetProject.Game.Run
         {
             get => _weekIndex;
             set => _weekIndex = System.Math.Max(1, value);
+        }
+
+        public int RatingStarsEarned => System.Math.Min(MaxRatingStars, System.Math.Max(0, _ratingStarsEarned));
+
+        public bool HasPendingStarAward => _pendingStarAward != null;
+
+        public PendingStarAwardSaveData GetPendingStarAward()
+        {
+            return ClonePendingStarAward(_pendingStarAward);
+        }
+
+        public bool TryAwardRatingStar(string battleKey)
+        {
+            if (string.IsNullOrWhiteSpace(battleKey)
+                || RatingStarsEarned >= MaxRatingStars
+                || _pendingStarAward != null
+                || !_awardedRatingStarBattleKeys.Add(battleKey))
+            {
+                return false;
+            }
+
+            int before = RatingStarsEarned;
+            _ratingStarsEarned = before + 1;
+            _starProgressInitialized = true;
+            _pendingStarAward = new PendingStarAwardSaveData
+            {
+                BattleKey = battleKey,
+                BeforeStars = before,
+                AfterStars = _ratingStarsEarned,
+            };
+            return true;
+        }
+
+        public void ClearPendingStarAward()
+        {
+            _pendingStarAward = null;
         }
 
         private int _gold;
@@ -1143,7 +1186,7 @@ namespace GourmetProject.Game.Run
             string sourceItemId = "")
         {
             int index = _runtimeTimelineNodes.FindIndex(node => node.Id == sourceNodeId);
-            if (index < 0)
+            if (index < 0 || IsBossAction(_runtimeTimelineNodes[index].ActionId))
             {
                 return string.Empty;
             }
@@ -1241,7 +1284,7 @@ namespace GourmetProject.Game.Run
             }
 
             int index = _runtimeTimelineNodes.FindIndex(node => node.Id == nodeId);
-            if (index < 0)
+            if (index < 0 || IsBossAction(_runtimeTimelineNodes[index].ActionId))
             {
                 return false;
             }
@@ -1412,6 +1455,31 @@ namespace GourmetProject.Game.Run
         {
             cfg.GameAction action = _tables?.TbAction.GetOrDefault(actionId);
             return GourmetProject.Game.Meta.FoodService.IsBossAction(_tables, action);
+        }
+
+        private void MigrateLegacyRatingStars()
+        {
+            int completedConfiguredWeeks = System.Math.Min(
+                System.Math.Max(0, WeekIndex - 1),
+                System.Math.Max(0, TotalWeeks));
+            int migrated = completedConfiguredWeeks * 2;
+
+            if (WeekIndex <= TotalWeeks)
+            {
+                foreach (RuntimeTimelineNode node in _runtimeTimelineNodes)
+                {
+                    if (IsBossAction(node.ActionId)
+                        && IsNodeTriggered(node.Id)
+                        && !IsTimelineNodeExecutionInProgress(node.Id))
+                    {
+                        migrated++;
+                    }
+                }
+            }
+
+            _ratingStarsEarned = System.Math.Min(MaxRatingStars, System.Math.Max(0, migrated));
+            _pendingStarAward = null;
+            _starProgressInitialized = true;
         }
 
         public IReadOnlyList<string> UsedEventIds => _usedEventIds;
@@ -2330,6 +2398,10 @@ namespace GourmetProject.Game.Run
                 HeartCapacity = _heartCapacity,
                 HeartsRemaining = HeartsRemaining,
                 PendingHeartBreak = ClonePendingHeartBreak(_pendingHeartBreak),
+                StarProgressInitialized = _starProgressInitialized,
+                RatingStarsEarned = RatingStarsEarned,
+                AwardedRatingStarBattleKeys = new List<string>(_awardedRatingStarBattleKeys),
+                PendingStarAward = ClonePendingStarAward(_pendingStarAward),
                 InterestThreshold = _interestThreshold,
                 InterestGoldPer = _interestGoldPer,
                 InterestCap = _interestCap,
@@ -2461,6 +2533,19 @@ namespace GourmetProject.Game.Run
             // 装饰品模型尚未恢复，不能先按基础上限截断；待持有列表重建后再按有效上限收口。
             run._heartsRemaining = System.Math.Max(0, data.HeartsRemaining);
             run._pendingHeartBreak = ClonePendingHeartBreak(data.PendingHeartBreak);
+            run._starProgressInitialized = data.StarProgressInitialized;
+            run._ratingStarsEarned = System.Math.Min(MaxRatingStars, System.Math.Max(0, data.RatingStarsEarned));
+            run._pendingStarAward = ClonePendingStarAward(data.PendingStarAward);
+            if (data.AwardedRatingStarBattleKeys != null)
+            {
+                foreach (string battleKey in data.AwardedRatingStarBattleKeys)
+                {
+                    if (!string.IsNullOrWhiteSpace(battleKey))
+                    {
+                        run._awardedRatingStarBattleKeys.Add(battleKey);
+                    }
+                }
+            }
             run._interestThreshold = data.InterestThreshold >= 0
                 ? data.InterestThreshold
                 : System.Math.Max(0, tables.TbGameBase.InterestThreshold);
@@ -2768,6 +2853,11 @@ namespace GourmetProject.Game.Run
             if (data.CompletedBossIds != null)
             {
                 run._completedBossIds.AddRange(data.CompletedBossIds);
+            }
+
+            if (!run._starProgressInitialized)
+            {
+                run.MigrateLegacyRatingStars();
             }
 
             if (data.RolledBossDebuffIds != null)
@@ -3192,6 +3282,21 @@ namespace GourmetProject.Game.Run
                 BattleTotal = data.BattleTotal,
                 BattleTotalBig = data.BattleTotalBig?.Clone(),
                 IsTerminal = data.IsTerminal,
+            };
+        }
+
+        private static PendingStarAwardSaveData ClonePendingStarAward(PendingStarAwardSaveData data)
+        {
+            if (data == null)
+            {
+                return null;
+            }
+
+            return new PendingStarAwardSaveData
+            {
+                BattleKey = data.BattleKey ?? string.Empty,
+                BeforeStars = System.Math.Min(MaxRatingStars, System.Math.Max(0, data.BeforeStars)),
+                AfterStars = System.Math.Min(MaxRatingStars, System.Math.Max(0, data.AfterStars)),
             };
         }
 

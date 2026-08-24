@@ -77,6 +77,8 @@ namespace GourmetProject.Game.Orchestration
 
         void ShowHeartBreak(HeartBreakFormOpenArgs args, Action onComplete);
 
+        void ShowStarAward(StarAwardFormOpenArgs args);
+
         void OpenEventRecipeDishDelete(
             GameRun run,
             string title,
@@ -199,6 +201,12 @@ namespace GourmetProject.Game.Orchestration
             if (_run.HasPendingHeartBreak)
             {
                 OpenPendingHeartBreak();
+                return;
+            }
+
+            if (_run.HasPendingStarAward)
+            {
+                OpenPendingStarAward();
                 return;
             }
 
@@ -565,7 +573,7 @@ namespace GourmetProject.Game.Orchestration
                 EnsurePendingBattleReward(battleContext);
 
                 // 达标：发奖（不推进周），奖励确认后继续编排。
-                _view.OpenRewardForm(RewardFormOpenArgs.BattleReward());
+                OpenBattleRewardAfterStarAward();
                 return;
             }
 
@@ -598,7 +606,7 @@ namespace GourmetProject.Game.Orchestration
                     $"[strong]分数[/strong]未达标，但{itemName}替你挡下了失败，红心恢复至{_run.HeartsRemaining}颗（[term]装饰品[/term]和[term]消耗品[/term]已消耗）。",
                     () =>
                     {
-                        _view.OpenRewardForm(RewardFormOpenArgs.BattleReward());
+                        OpenBattleRewardAfterStarAward();
                     });
                 return;
             }
@@ -862,7 +870,66 @@ namespace GourmetProject.Game.Orchestration
             _afterBattleWin = ContinueAfterRecoveredBattleReward;
             _beforeBattleReward = null;
             _view.RestorePendingRewardBattleView();
+            OpenBattleRewardAfterStarAward();
+        }
+
+        private void OpenPendingStarAward()
+        {
+            CurrentBattleActionContext = _run.LastActionContext;
+            _afterBattleWin = ContinueAfterRecoveredBattleReward;
+            _beforeBattleReward = null;
+            if (_run.HasPendingRewardBattleView)
+            {
+                _view.RestorePendingRewardBattleView();
+            }
+
+            ShowPendingStarAward();
+        }
+
+        private void OpenBattleRewardAfterStarAward()
+        {
+            if (_run.HasPendingStarAward)
+            {
+                ShowPendingStarAward();
+                return;
+            }
+
             _view.OpenRewardForm(RewardFormOpenArgs.BattleReward());
+        }
+
+        private void ShowPendingStarAward()
+        {
+            PendingStarAwardSaveData pending = _run.GetPendingStarAward();
+            if (pending == null)
+            {
+                OpenBattleRewardAfterStarAward();
+                return;
+            }
+
+            _view.ShowStarAward(new StarAwardFormOpenArgs(
+                pending.BattleKey,
+                pending.BeforeStars,
+                pending.AfterStars,
+                () => CompletePendingStarAward(pending.BattleKey)));
+        }
+
+        private void CompletePendingStarAward(string battleKey)
+        {
+            PendingStarAwardSaveData current = _run.GetPendingStarAward();
+            if (current == null || !string.Equals(current.BattleKey, battleKey, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _run.ClearPendingStarAward();
+            _run.RequestSave();
+            if (_run.HasPendingRewardOffer && _run.HasPendingRewardBattleView)
+            {
+                _view.OpenRewardForm(RewardFormOpenArgs.BattleReward());
+                return;
+            }
+
+            ContinueAfterRecoveredBattleReward();
         }
 
         private void OpenPendingHeartBreak()
@@ -909,7 +976,7 @@ namespace GourmetProject.Game.Orchestration
 
             _run.ClearPendingHeartBreak();
             _run?.RequestSave();
-            _view.OpenRewardForm(RewardFormOpenArgs.BattleReward());
+            OpenBattleRewardAfterStarAward();
         }
 
         private void ContinueAfterRecoveredBattleReward()
@@ -1528,6 +1595,7 @@ namespace GourmetProject.Game.Orchestration
 
         private void CompleteBossBeforeReward(ActionOutcome outcome, cfg.Food boss, Action onBossComplete)
         {
+            _run.TryAwardRatingStar(outcome?.BattleKey);
             _run.ClearPendingActionExecution();
             onBossComplete?.Invoke();
 
@@ -1535,7 +1603,8 @@ namespace GourmetProject.Game.Orchestration
                 ? outcome.BossId
                 : boss?.Id ?? string.Empty;
             MarkBossCompletedAndApplyGold(bossId);
-            _run?.RequestSave();
+            // 紧随其后的 EnsurePendingBattleReward 会把发星、Boss 完成与奖励一起提交，
+            // 避免在获星已保存但奖励尚未生成的极小中断窗口恢复。
         }
 
         private void MarkBossCompletedAndApplyGold(string bossId)
