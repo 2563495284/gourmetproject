@@ -217,6 +217,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 dishViews,
                 mapper,
                 fxRoot,
+                worldCamera,
                 _visualScale);
             SettlementPresentationPlan plan = SettlementPresentationPlan.Build(result);
             var playback = new SettlementPlaybackState(plan.ResultBeatCount, scoreFire);
@@ -1712,6 +1713,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
             }
 
+            ResultLabelSlotAllocator resultLabelSlots = BuildResultLabelSlots(
+                lines,
+                dishViews,
+                showOnlyResponseSummaries);
+
             // 同一批次的计分明细仍按原顺序写入账本与发出事件，但所有结果动画
             // 在同一帧启动。这样保留正式因果顺序，同时恢复“一起触发”的节奏。
             for (int i = 0; i < lines.Count; i++)
@@ -1810,12 +1816,13 @@ namespace GourmetProject.Game.Presentation.Battle
                     impactTier,
                     targetCount,
                     reachedTarget);
-                if (!showOnlyResponseSummaries || IsSweetTransferResponseLine(line))
+                if (ShouldShowResultLabelInBatch(line, showOnlyResponseSummaries))
                 {
                     float audioPitch = Mathf.Lerp(0.96f, 1.18f, NormalizedProgress(playback));
                     bool holdUntilCleared = holdResultLabels && IsSweetTransferAnnounceLine(line);
                     if (resultVisualIds.Count == 0)
                     {
+                        ResultLabelLayoutSlot layoutSlot = resultLabelSlots.Take(0);
                         resultTasks.Add(_stage.ShowResultAsync(
                             group,
                             line,
@@ -1826,6 +1833,7 @@ namespace GourmetProject.Game.Presentation.Battle
                             impactTier,
                             audioPitch,
                             playPrimaryFeedback,
+                            layoutSlot,
                             cancellationToken,
                             holdUntilCleared));
                     }
@@ -1833,7 +1841,10 @@ namespace GourmetProject.Game.Presentation.Battle
                     {
                         for (int targetIndex = 0; targetIndex < resultVisualIds.Count; targetIndex++)
                         {
-                            dishViews.TryGetValue(resultVisualIds[targetIndex], out DishPieceView resultTarget);
+                            int targetId = resultVisualIds[targetIndex];
+                            dishViews.TryGetValue(targetId, out DishPieceView resultTarget);
+                            int layoutKey = resultTarget != null ? targetId : 0;
+                            ResultLabelLayoutSlot layoutSlot = resultLabelSlots.Take(layoutKey);
                             resultTasks.Add(_stage.ShowResultAsync(
                                 group,
                                 line,
@@ -1844,6 +1855,7 @@ namespace GourmetProject.Game.Presentation.Battle
                                 impactTier,
                                 audioPitch,
                                 playPrimaryFeedback,
+                                layoutSlot,
                                 cancellationToken,
                                 holdUntilCleared));
                         }
@@ -1857,6 +1869,51 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 await resultTasks[resultIndex];
             }
+        }
+
+        private static ResultLabelSlotAllocator BuildResultLabelSlots(
+            IReadOnlyList<ResultLineRef> lines,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            bool showOnlyResponseSummaries)
+        {
+            var allocator = new ResultLabelSlotAllocator();
+            for (int i = 0; i < lines.Count; i++)
+            {
+                ScoreLine line = lines[i].Line;
+                if (!ShouldShowResultLabelInBatch(line, showOnlyResponseSummaries))
+                {
+                    continue;
+                }
+
+                IReadOnlyList<int> targetIds = ResultVisualDishInstanceIds(line);
+                if (targetIds.Count == 0)
+                {
+                    allocator.Add(0);
+                    continue;
+                }
+
+                for (int targetIndex = 0; targetIndex < targetIds.Count; targetIndex++)
+                {
+                    int targetId = targetIds[targetIndex];
+                    int layoutKey = targetId > 0
+                        && dishViews != null
+                        && dishViews.TryGetValue(targetId, out DishPieceView target)
+                        && target != null
+                            ? targetId
+                            : 0;
+                    allocator.Add(layoutKey);
+                }
+            }
+
+            return allocator;
+        }
+
+        internal static bool ShouldShowResultLabelInBatch(
+            ScoreLine line,
+            bool showOnlyResponseSummaries)
+        {
+            return (!showOnlyResponseSummaries || IsSweetTransferResponseLine(line))
+                && SettlementStageView.ShouldShowResultLabel(line);
         }
 
         private static bool ChangesDishValue(ScoreLineKind kind)

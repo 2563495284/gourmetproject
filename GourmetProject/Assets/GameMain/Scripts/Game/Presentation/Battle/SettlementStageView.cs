@@ -42,12 +42,21 @@ namespace GourmetProject.Game.Presentation.Battle
         [Header("聚焦过渡")]
         [SerializeField, Min(0f)] private float _dishFocusFadeDuration = 0.12f;
 
+        [Header("结果标签布局")]
+        [SerializeField, Min(0.01f)] private float _resultLabelWidth = 1.8f;
+        [SerializeField, Min(0.01f)] private float _resultLabelHeight = 0.48f;
+        [SerializeField, Min(0f)] private float _resultLabelRowGap = 0.08f;
+        [SerializeField, Min(0f)] private float _resultLabelColumnGap = 0.16f;
+        [SerializeField, Range(0f, 0.2f)] private float _resultLabelViewportPadding =
+            SettlementResultLabelLayout.DefaultViewportPadding;
+
         private GameObject _groupSpotlight;
         private GameObject _chapterSpotlight;
         private Tween _chapterSpotlightTween;
         private int _chapterDishInstanceId;
         private readonly List<GameObject> _heldLabels = new();
         private SettlementEffectGroup _resultHitSoundGroup;
+        private Camera _worldCamera;
 
         internal float PendingDishBrightness => _pendingDishBrightness;
 
@@ -55,6 +64,7 @@ namespace GourmetProject.Game.Presentation.Battle
             IReadOnlyDictionary<int, DishPieceView> dishViews,
             DiningTableCoordinateMapper mapper,
             Transform fxRoot,
+            Camera worldCamera,
             float visualScale = 1f)
         {
             // 餐桌入场已经通过 DishPieceView 的结算亮度通道渐暗到“未结算”。
@@ -65,6 +75,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishViews = dishViews;
             _mapper = mapper;
             _fxRoot = fxRoot != null ? fxRoot : transform;
+            _worldCamera = worldCamera;
             _visualScale = Mathf.Max(0.0001f, visualScale);
             ApplySettlementProgressFocus(0f);
         }
@@ -607,6 +618,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementImpactTier impactTier,
             float audioPitch,
             bool playTargetFeedback,
+            ResultLabelLayoutSlot layoutSlot,
             CancellationToken cancellationToken,
             bool holdUntilCleared = false)
         {
@@ -630,11 +642,16 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
             }
 
-            Vector3 anchor = ResultLabelAnchor(target)
-                + ResultLabelScatterOffset(
-                    _visualScale,
-                    UnityEngine.Random.Range(-1f, 1f),
-                    UnityEngine.Random.Range(0f, 1f));
+            Vector3 anchor = SettlementResultLabelLayout.Resolve(
+                _worldCamera,
+                ResultLabelAnchor(target),
+                layoutSlot,
+                new Vector2(
+                    _resultLabelWidth * _visualScale,
+                    _resultLabelHeight * _visualScale),
+                _resultLabelRowGap * _visualScale,
+                _resultLabelColumnGap * _visualScale,
+                _resultLabelViewportPadding);
             Awaitable impactTask = playTargetFeedback
                 ? PlayImpactRingAsync(target, theme, impactTier, cancellationToken)
                 : default;
