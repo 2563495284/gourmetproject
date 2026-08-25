@@ -339,7 +339,7 @@ namespace GourmetProject.Game.Tutorial
                 [TutorialId.FirstBattleSettlementOrderHint] = new TutorialSequenceDefinition(
                     TutorialId.FirstBattleSettlementOrderHint,
                     new TutorialStepDefinition(
-                        "食物会从上到下，从左到右开始结算。",
+                        "食物会从上到下，从左到右开始结算。合理摆放位置可以发挥它们更大的作用！",
                         TutorialMascotPose.Explain,
                         TutorialAdvanceMode.Continue,
                         signal: null,
@@ -369,10 +369,10 @@ namespace GourmetProject.Game.Tutorial
                 [TutorialId.Flavor] = new TutorialSequenceDefinition(
                     TutorialId.Flavor,
                     C(
-                        "老板，食物现在有风味啦！每个食物只有 1 个风味位哦。",
+                        "老板，这是风味罐，可以帮我们为食物附加风味。",
                         TutorialAnchorId.AcquiredActiveItem),
                     C(
-                        "风味会改变食物的属性和结算效果，强化箱道具可以帮我们为食物附加风味。",
+                        "风味会改变食物的属性和结算效果，每个食物只有 1 个风味位哦。",
                         TutorialAnchorId.AcquiredActiveItem)),
 
                 [TutorialId.Adjustment] = new TutorialSequenceDefinition(

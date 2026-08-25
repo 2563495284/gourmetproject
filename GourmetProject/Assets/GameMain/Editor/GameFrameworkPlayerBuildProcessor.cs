@@ -96,7 +96,7 @@ namespace GourmetProject.Editor
             GFPlatform platform = ToGameFrameworkPlatform(report.summary.platform);
             ResourceBuilderController controller = CreateController(platform);
             string packageDirectory = Path.Combine(controller.OutputPackagePath, platform.ToString());
-            ValidatePackageFreshness(packageDirectory, platform);
+            ValidatePackageForPlayerBuild(packageDirectory, platform);
             StagePackage(packageDirectory);
             Debug.Log($"[Build] GameFramework package staged from '{packageDirectory}'.");
         }
@@ -136,7 +136,8 @@ namespace GourmetProject.Editor
             BuildPackageResources(GFPlatform.MacOS);
         }
 
-        [MenuItem("Gourmet Project/Build/Build Active Target Player", false, 1)]
+        [MenuItem("Gourmet Project/Build/One-Click Build Active Target Player", false, 1)]
+        [MenuItem("Gourmet Project/Build/Build Active Target Player", false, 2)]
         private static void BuildActiveTargetPlayerMenu()
         {
             BuildTarget target = EditorUserBuildSettings.activeBuildTarget;
@@ -153,6 +154,8 @@ namespace GourmetProject.Editor
 
         private static void BuildPlayer(BuildTarget target, string outputPath)
         {
+            EnsureEditorReadyForBuild();
+
             if (EditorUserBuildSettings.activeBuildTarget != target)
             {
                 throw new BuildFailedException(
@@ -160,7 +163,7 @@ namespace GourmetProject.Editor
             }
 
             GFPlatform platform = ToGameFrameworkPlatform(target);
-            BuildPackageResources(platform);
+            EnsurePackageResources(platform);
 
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
 
@@ -177,7 +180,17 @@ namespace GourmetProject.Editor
                 options = BuildOptions.None,
             };
 
-            BuildReport report = BuildPipeline.BuildPlayer(options);
+            BuildReport report;
+            try
+            {
+                report = BuildPipeline.BuildPlayer(options);
+            }
+            finally
+            {
+                // IPostprocessBuildWithReport is not guaranteed to run for every failed build.
+                CleanupStagedPackage();
+            }
+
             if (report.summary.result != BuildResult.Succeeded)
             {
                 throw new BuildFailedException(
@@ -257,22 +270,109 @@ namespace GourmetProject.Editor
             return controller;
         }
 
-        private static string BuildPackageResources(GFPlatform platform)
+        private static string EnsurePackageResources(GFPlatform platform)
         {
             GenerateResourceCollection();
+
+            string packageDirectory = GetPackageDirectory(platform);
+            try
+            {
+                ValidatePackageFreshness(packageDirectory, platform);
+                Debug.Log(
+                    $"[Build] Reusing the up-to-date GameFramework package at " +
+                    $"'{packageDirectory}'.");
+                return packageDirectory;
+            }
+            catch (BuildFailedException exception)
+            {
+                Debug.Log(
+                    $"[Build] {exception.Message} Rebuilding {platform} automatically...");
+                return BuildPackageResources(platform, false);
+            }
+        }
+
+        private static string BuildPackageResources(
+            GFPlatform platform,
+            bool regenerateResourceCollection = true)
+        {
+            EnsureEditorReadyForBuild();
+            if (regenerateResourceCollection)
+            {
+                GenerateResourceCollection();
+            }
+
             ResourceBuilderController controller = CreateController(platform);
 
             Debug.Log($"[Build] Building GameFramework package resources for {platform}...");
-            if (!controller.BuildResources())
+            bool controllerSucceeded = controller.BuildResources();
+            string packageDirectory =
+                Path.Combine(controller.OutputPackagePath, platform.ToString());
+
+            if (!controllerSucceeded ||
+                !File.Exists(Path.Combine(packageDirectory, "GameFrameworkVersion.dat")))
             {
-                throw new BuildFailedException(
-                    $"GameFramework resource build failed for {platform}. " +
-                    $"See {controller.BuildReportPath} for details.");
+                ThrowResourceBuildFailure(controller, platform);
             }
 
-            string packageDirectory = Path.Combine(controller.OutputPackagePath, platform.ToString());
+            ValidatePackageFreshness(packageDirectory, platform);
             Debug.Log($"[Build] GameFramework package created at '{packageDirectory}'.");
             return packageDirectory;
+        }
+
+        private static void EnsureEditorReadyForBuild()
+        {
+            if (EditorApplication.isCompiling)
+            {
+                throw new BuildFailedException(
+                    "Wait for script compilation to finish before building.");
+            }
+
+            if (EditorApplication.isUpdating)
+            {
+                throw new BuildFailedException(
+                    "Wait for the Asset Database import to finish before building.");
+            }
+
+            if (EditorUtility.scriptCompilationFailed)
+            {
+                throw new BuildFailedException(
+                    "The project has C# compiler errors. Fix the errors in the Unity Console " +
+                    "before building GameFramework resources or the Player.");
+            }
+        }
+
+        private static void ThrowResourceBuildFailure(
+            ResourceBuilderController controller,
+            GFPlatform platform)
+        {
+            string buildLogPath = Path.Combine(controller.BuildReportPath, "BuildLog.txt");
+            string detail = GetLastResourceBuildError(buildLogPath);
+            if (EditorUtility.scriptCompilationFailed)
+            {
+                detail = "The project has C# compiler errors.";
+            }
+
+            if (string.IsNullOrEmpty(detail))
+            {
+                detail = "The GameFramework builder did not produce a complete package.";
+            }
+
+            throw new BuildFailedException(
+                $"GameFramework resource build failed for {platform}. {detail} " +
+                $"See '{controller.BuildReportPath}' for details.");
+        }
+
+        private static string GetLastResourceBuildError(string buildLogPath)
+        {
+            if (!File.Exists(buildLogPath))
+            {
+                return null;
+            }
+
+            return File.ReadLines(buildLogPath)
+                .LastOrDefault(line =>
+                    line.IndexOf("[ERROR]", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    line.IndexOf("[FATAL]", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         private static int GenerateResourceCollection()
@@ -471,8 +571,7 @@ namespace GourmetProject.Editor
             {
                 throw new BuildFailedException(
                     $"GameFramework package resources for {platform} are missing at " +
-                    $"'{packageDirectory}'. Open 'Gourmet Project/Build/Build Window' and run " +
-                    $"'Rebuild {platform} Package' before building.");
+                    $"'{packageDirectory}'.");
             }
 
             DateTime packageTime = File.GetLastWriteTimeUtc(versionFile);
@@ -502,8 +601,23 @@ namespace GourmetProject.Editor
             {
                 throw new BuildFailedException(
                     $"GameFramework package resources for {platform} are older than " +
-                    $"'{stalePath}'. Open 'Gourmet Project/Build/Build Window' and run " +
-                    $"'Rebuild {platform} Package' before building.");
+                    $"'{stalePath}'.");
+            }
+        }
+
+        private static void ValidatePackageForPlayerBuild(
+            string packageDirectory,
+            GFPlatform platform)
+        {
+            try
+            {
+                ValidatePackageFreshness(packageDirectory, platform);
+            }
+            catch (BuildFailedException exception)
+            {
+                throw new BuildFailedException(
+                    $"{exception.Message} Use 'Gourmet Project/Build/One-Click Build Active " +
+                    "Target Player' so resources are checked and rebuilt automatically.");
             }
         }
 
@@ -781,8 +895,8 @@ namespace GourmetProject.Editor
                     using (new EditorGUI.DisabledScope(editorBusy || !isSupported))
                     {
                         string buildButtonLabel = isSupported
-                            ? $"Build {platform} Player"
-                            : "Build Active Target Player";
+                            ? $"One-Click Build {platform} Player"
+                            : "One-Click Build Active Target Player";
                         if (GUILayout.Button(buildButtonLabel, GUILayout.Height(38f)))
                         {
                             RunOperation(
@@ -792,6 +906,11 @@ namespace GourmetProject.Editor
                                     GetDefaultPlayerOutputPath(activeTarget)));
                         }
                     }
+
+                    EditorGUILayout.HelpBox(
+                        "The one-click build reuses fresh GameFramework resources, rebuilds " +
+                        "them only when needed, then builds the Player.",
+                        MessageType.Info);
 
                     string playerOutputPath = GetActivePlayerOutputPathOrUnavailable();
                     string playerDirectory =

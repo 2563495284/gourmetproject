@@ -793,6 +793,42 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>
+        /// 返回目标在当前计算中已经获得的全部甜蜜传递子技能。
+        /// 顺序固定为实例上已持久化的技能，再按本轮传递发生顺序追加待提交技能；
+        /// 只构造结算视图，不修改实例，保证预览仍为纯计算。
+        /// </summary>
+        internal IReadOnlyList<TransferredSkill> TransferredSkillsForCurrentCalculation(DishInstance target)
+        {
+            if (target == null)
+            {
+                return Array.Empty<TransferredSkill>();
+            }
+
+            var result = new List<TransferredSkill>(target.TransferredSkills.Count + _skillTransfers.Count);
+            result.AddRange(target.TransferredSkills);
+            foreach (SkillTransferSideEffect transfer in _skillTransfers)
+            {
+                if (transfer.TargetInstanceId != target.Id)
+                {
+                    continue;
+                }
+
+                string sourceLabel = string.IsNullOrEmpty(transfer.SourceName)
+                    ? string.Empty
+                    : $"{transfer.SourceName}<甜蜜传递>";
+                foreach (SkillEffect effect in transfer.Effects)
+                {
+                    if (effect?.Rule != null)
+                    {
+                        result.Add(new TransferredSkill(effect, sourceLabel, transfer.SourceInstanceId));
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// 在当前规则真正轮到结算时，为作用域内食物登记甜蜜传递 Buff。
         /// 注册只存在于本次 <see cref="ScoreContext"/>，因此天然遵守实际结算顺序。
         /// </summary>

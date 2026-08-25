@@ -957,6 +957,12 @@ namespace GourmetProject.Game.UI.Meta
             MarkChoiceClaimed(groupIndex, index);
             CacheCurrentOffer();
             RefreshBattlePersistentHud(refreshItems: !itemFlyStarted);
+            if (isItemReward
+                && _run.GetItemCount(choice.Id) > itemCountBefore
+                && !itemFlyStarted)
+            {
+                BattleForm.Active?.CompleteTutorialAcquiredItemPresentation();
+            }
             ContinueAfterRewardClaim();
         }
 

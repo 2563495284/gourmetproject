@@ -201,20 +201,13 @@ namespace GourmetProject.Game.Tutorial
         internal static string ContentHookFor(RunContentAcquisition acquisition)
         {
             if (acquisition == null) return string.Empty;
-            if (acquisition.Kind == RunContentAcquisitionKind.DishFlavor) return TutorialId.Flavor;
             if (acquisition.Kind != RunContentAcquisitionKind.Item) return string.Empty;
             if (acquisition.ItemKind == cfg.ItemKind.Passive) return TutorialId.PassiveItem;
-            if (string.Equals(acquisition.ItemEffectType, ItemEffectTypes.AddFlavor, StringComparison.Ordinal)
-                || string.Equals(acquisition.ItemEffectType, ItemEffectTypes.EnhanceFlavor, StringComparison.Ordinal))
+            if (acquisition.ItemKind != cfg.ItemKind.Active) return string.Empty;
+            if (string.Equals(acquisition.ItemEffectType, ItemEffectTypes.AddFlavor, StringComparison.Ordinal))
                 return TutorialId.Flavor;
             if (acquisition.ActiveItemCategory == cfg.ActiveItemCategory.Adjust) return TutorialId.Adjustment;
             return string.Empty;
-        }
-
-        public static void ObserveItemShown(ItemDefinition item)
-        {
-            if (item?.Kind == cfg.ItemKind.Active && item.ActiveItemCategory == cfg.ActiveItemCategory.Adjust)
-                EnqueueHook(TutorialId.Adjustment);
         }
 
         public static void DrainPending()

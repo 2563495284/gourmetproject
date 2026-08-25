@@ -448,13 +448,16 @@ namespace GourmetProject.Game.UI.Hud
                 if (isNew)
                 {
                     group.Add(node.Id, bubble, false, animate, speed: speed);
-                    _decorateNode?.Invoke(node.Clone(), bubble.gameObject);
                 }
                 else if (!moved && animate
                     && !string.Equals(previousActionId, node.ActionId, StringComparison.Ordinal))
                 {
                     bubble.PlayChange(speed: speed);
                 }
+
+                // 节点气泡会跨页面切换、热重载和池化复用；每次重绑都刷新装饰器，
+                // 确保已有节点也能补回 hover Tip 等运行时组件与最新数据。
+                _decorateNode?.Invoke(node.Clone(), bubble.gameObject);
             }
 
             var removed = new List<string>();

@@ -18,6 +18,7 @@ namespace GourmetProject.Game.UI.Tooltips
         private const string CountAsTermId = "term_food_count_as";
         private const float ShowDuration = 0.12f;
         private const float HideDuration = 0.08f;
+        private const float MinimumTermCardWidth = 180f;
 
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private FoodScoreTipsView _scoreView;
@@ -74,7 +75,8 @@ namespace GourmetProject.Game.UI.Tooltips
             BuildInfoCards(
                 _specialTagsRoot,
                 BuildSpecialTagsWithCountAs(data.SpecialTags, data.Summary.CountAs),
-                "SpecialTag");
+                "SpecialTag",
+                MinimumTermCardWidth);
             BuildInfoCards(_externalSkillsRoot, data.ExternalSkills, "ExternalSkill");
         }
 
@@ -269,17 +271,34 @@ namespace GourmetProject.Game.UI.Tooltips
             }
         }
 
-        private void BuildInfoCards(RectTransform root, IReadOnlyList<FoodInfoEntry> entries, string prefix)
+        private void BuildInfoCards(
+            RectTransform root,
+            IReadOnlyList<FoodInfoEntry> entries,
+            string prefix,
+            float minimumWidth = 0f)
         {
             FoodTipUiUtility.ClearChildren(root);
             int count = entries != null ? entries.Count : 0;
             root.gameObject.SetActive(count > 0);
+            float preferredWidth = minimumWidth;
             for (int i = 0; i < count; i++)
             {
                 FoodInfoEntry entry = entries[i];
                 FoodTipCardView card = Instantiate(_infoCardPrefab, root, false);
                 card.name = $"{prefix}_{i}";
                 card.Bind(entry.Title, entry.Desc);
+                if (minimumWidth > 0f)
+                {
+                    preferredWidth = Mathf.Max(preferredWidth, card.PreferredSingleLineWidth);
+                }
+            }
+
+            if (minimumWidth > 0f)
+            {
+                root.SetSizeWithCurrentAnchors(
+                    RectTransform.Axis.Horizontal,
+                    Mathf.Ceil(preferredWidth));
+                LayoutRebuilder.ForceRebuildLayoutImmediate(root);
             }
         }
 

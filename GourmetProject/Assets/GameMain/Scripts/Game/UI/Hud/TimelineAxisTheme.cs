@@ -7,6 +7,14 @@ namespace GourmetProject.Game.UI.Hud
     public static class TimelineAxisIconKeys
     {
         private const string BossPrefix = "boss:";
+        public const string RestoreHeart = "restore_heart";
+
+        public static string ForAction(string actionId, ActionDisplayKind fallbackKind)
+        {
+            return string.Equals(actionId, "act_restore_heart", StringComparison.Ordinal)
+                ? RestoreHeart
+                : ForKind(fallbackKind);
+        }
 
         public static string ForKind(ActionDisplayKind kind)
         {
@@ -107,6 +115,7 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Sprite _interest;
         [SerializeField] private Sprite _boss;
         [SerializeField] private Sprite _event;
+        [SerializeField] private Sprite _restoreHeart;
         [SerializeField] private Sprite _reward;
         [SerializeField] private Sprite _slot;
         [SerializeField] private Sprite _negative;
@@ -129,6 +138,11 @@ namespace GourmetProject.Game.UI.Hud
 
         public Sprite ResolveIcon(string iconKey, ActionDisplayKind fallbackKind)
         {
+            if (string.Equals(iconKey, TimelineAxisIconKeys.RestoreHeart, StringComparison.Ordinal))
+            {
+                return _restoreHeart != null ? _restoreHeart : _event;
+            }
+
             if (TimelineAxisIconKeys.TryGetBossId(iconKey, out string debuffId))
             {
                 for (int i = 0; i < (_bossIcons?.Length ?? 0); i++)

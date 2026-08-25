@@ -490,9 +490,7 @@
     "fragmentHiddenOffset": 0,
     "termId": "",
     "price": 100,
-    "archetypeTags": [
-      1
-    ]
+    "archetypeTags": []
   },
   {
     "id": "item_perma_flat_all",
@@ -1340,7 +1338,7 @@
     "dishHiddenOffset": 0,
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
-    "termId": "term_food_count_as",
+    "termId": "",
     "price": 360,
     "archetypeTags": [
       1
@@ -1359,7 +1357,7 @@
     "dishHiddenOffset": 0,
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
-    "termId": "term_food_count_as",
+    "termId": "",
     "price": 200,
     "archetypeTags": [
       1
@@ -1378,7 +1376,7 @@
     "dishHiddenOffset": 0,
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
-    "termId": "term_food_count_as",
+    "termId": "",
     "price": 100,
     "archetypeTags": [
       1
@@ -1513,7 +1511,9 @@
     "fragmentHiddenOffset": 0,
     "termId": "",
     "price": 100,
-    "archetypeTags": []
+    "archetypeTags": [
+      0
+    ]
   },
   {
     "id": "item_gold_on_transfer",
