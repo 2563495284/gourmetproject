@@ -24,6 +24,7 @@ MonoBehaviour:
   _interest: {fileID: -368961291865462981, guid: 70943e5c6b5ec41279e4f5e1a1958c66, type: 3}
   _boss: {fileID: -894558083634107281, guid: 08d8f77b0cee54c8f81e0e24aa8b3b7f, type: 3}
   _event: {fileID: -8146783246870417221, guid: aa5d676f1015443a19f442ccd44b7559, type: 3}
+  _restoreHeart: {fileID: 21300000, guid: 2e60fa122bec342b48f10a977d87d762, type: 3}
   _reward: {fileID: 4544165035937701156, guid: 2fbfc4690fbf74c52923e4f67fd51acf, type: 3}
   _slot: {fileID: -6223748211427554869, guid: b5fc0f6766869482c8903aa9c3f92fe5, type: 3}
   _negative: {fileID: -4532144880468886551, guid: e59ed1979d60e4d838a6055485c3c738, type: 3}

@@ -4,6 +4,7 @@ using GourmetProject.Game;
 using GourmetProject.Game.Meta;
 using GourmetProject.Runtime;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Tooltips
 {
@@ -15,6 +16,7 @@ namespace GourmetProject.Game.UI.Tooltips
     public sealed class ItemTipView : ActionTipView, ITooltipPlacementAware
     {
         private const float SpecialTagsGap = 18f;
+        private const float MinimumTermCardWidth = 180f;
 
         [SerializeField] private RectTransform _specialTagsRoot;
         [SerializeField] private FoodTipCardView _infoCardPrefab;
@@ -86,16 +88,24 @@ namespace GourmetProject.Game.UI.Tooltips
             root.gameObject.SetActive(canBuild);
             if (!canBuild)
             {
+                root.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, MinimumTermCardWidth);
                 return;
             }
 
+            float preferredWidth = MinimumTermCardWidth;
             for (int i = 0; i < count; i++)
             {
                 FoodInfoEntry entry = entries[i];
                 FoodTipCardView card = Instantiate(_infoCardPrefab, root, false);
                 card.name = $"{prefix}_{i}";
                 card.Bind(entry.Title, entry.Desc);
+                preferredWidth = Mathf.Max(preferredWidth, card.PreferredSingleLineWidth);
             }
+
+            root.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Horizontal,
+                Mathf.Ceil(preferredWidth));
+            LayoutRebuilder.ForceRebuildLayoutImmediate(root);
         }
 
         private void PlaceSpecialTags(bool left)

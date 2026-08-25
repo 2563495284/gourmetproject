@@ -64,7 +64,7 @@ namespace GourmetProject.Game.UI.Hud
                 Id = TimelineAxisSelectionController.PreviewId,
                 ActionId = actionId ?? string.Empty,
                 Kind = kind,
-                IconKey = TimelineAxisIconKeys.ForKind(kind),
+                IconKey = TimelineAxisIconKeys.ForAction(actionId, kind),
             };
         }
 
@@ -83,7 +83,7 @@ namespace GourmetProject.Game.UI.Hud
 
             cfg.GameAction action = run.Tables?.TbAction.GetOrDefault(actionId);
             ActionDisplayKind kind = ActionDisplay.KindOf(run.Tables, action);
-            string iconKey = TimelineAxisIconKeys.ForKind(kind);
+            string iconKey = TimelineAxisIconKeys.ForAction(actionId, kind);
             if (kind == ActionDisplayKind.Boss)
             {
                 cfg.TimelineNode node = TimelineService.GetNode(run, id);

@@ -144,7 +144,7 @@
     "actionScope": 23,
     "actionCount": 0,
     "actionValue": [
-      6
+      5
     ],
     "actionParam": [],
     "signed": true,
@@ -161,7 +161,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 1,
+    "actionCount": 2,
     "actionValue": [
       0
     ],
@@ -258,7 +258,7 @@
     "actionScope": 22,
     "actionCount": 0,
     "actionValue": [
-      0.8
+      0.6
     ],
     "actionParam": [],
     "signed": true,
@@ -275,7 +275,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 1,
+    "actionCount": 2,
     "actionValue": [
       0
     ],
@@ -296,7 +296,7 @@
     "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
-      8
+      6
     ],
     "actionParam": [],
     "signed": true,
@@ -313,7 +313,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 1,
+    "actionCount": 2,
     "actionValue": [
       0
     ],
@@ -467,7 +467,7 @@
     "actionScope": 23,
     "actionCount": 0,
     "actionValue": [
-      1.5
+      1.2
     ],
     "actionParam": [],
     "signed": true,
@@ -484,7 +484,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 1,
+    "actionCount": 2,
     "actionValue": [
       0
     ],
@@ -602,7 +602,7 @@
     "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
-      35
+      30
     ],
     "actionParam": [],
     "signed": true,
@@ -619,7 +619,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 2,
+    "actionCount": 3,
     "actionValue": [
       0
     ],
@@ -840,7 +840,7 @@
     "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
-      0.8
+      1
     ],
     "actionParam": [
       "when:transfer;resultscope:BuffTargets"
@@ -1240,7 +1240,7 @@
     "actionScope": 0,
     "actionCount": 0,
     "actionValue": [
-      2
+      1.3
     ],
     "actionParam": [],
     "signed": false,
@@ -1257,7 +1257,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 2,
+    "actionCount": 3,
     "actionValue": [
       0
     ],
@@ -1360,7 +1360,7 @@
     "actionScope": 23,
     "actionCount": 0,
     "actionValue": [
-      2
+      1.5
     ],
     "actionParam": [],
     "signed": false,
@@ -1377,7 +1377,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 1,
+    "actionCount": 3,
     "actionValue": [
       0
     ],
@@ -1398,7 +1398,7 @@
     "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
-      1.2
+      1.3
     ],
     "actionParam": [],
     "signed": false,

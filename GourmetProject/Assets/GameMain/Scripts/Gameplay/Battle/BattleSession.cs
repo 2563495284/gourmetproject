@@ -1862,6 +1862,9 @@ namespace GourmetProject.Gameplay.Battle
             List<RecipeScoreFlatDelta> serveRecipeFlats = _lastRecipeScoreFlatDeltas.Count > 0
                 ? new List<RecipeScoreFlatDelta>(_lastRecipeScoreFlatDeltas)
                 : null;
+            List<RecipeScoreMultiplierDelta> serveRecipeMultipliers = _lastRecipeScoreMultiplierDeltas.Count > 0
+                ? new List<RecipeScoreMultiplierDelta>(_lastRecipeScoreMultiplierDeltas)
+                : null;
             _lastRecipeScoreFlatDeltas.Clear();
             _lastRecipeScoreMultiplierDeltas.Clear();
 
@@ -1874,23 +1877,11 @@ namespace GourmetProject.Gameplay.Battle
             // 技能传递。
             foreach (SkillTransferSideEffect transfer in result.SkillTransfers)
             {
-                DishInstance inst = FindInstance(transfer.TargetInstanceId);
-                if (inst == null)
-                {
-                    continue;
-                }
-
-                string label = string.IsNullOrEmpty(transfer.SourceName) ? null : $"{transfer.SourceName}<甜蜜传递>";
-                foreach (SkillEffect effect in transfer.Effects)
-                {
-                    inst.AddTransferredSkill(effect, label, transfer.SourceInstanceId);
-                }
-
-                ApplySweetTransferTargetMultiplier(inst);
-                ApplySweetTransferSourceMultiplier(FindInstance(transfer.SourceInstanceId));
-                SweetTransferTriggered?.Invoke(new SweetTransferOccurrence(
+                CommitSweetTransfer(
                     transfer.SourceInstanceId,
-                    transfer.TargetInstanceId));
+                    FindInstance(transfer.TargetInstanceId),
+                    transfer.Effects,
+                    transfer.SourceName);
             }
 
             // 技能复制：结算阶段只登记候选池，正式结算后由会话随机流落地，避免预览消耗 RNG。
@@ -1970,6 +1961,11 @@ namespace GourmetProject.Gameplay.Battle
             {
                 _lastRecipeScoreFlatDeltas.InsertRange(0, serveRecipeFlats);
             }
+
+            if (serveRecipeMultipliers != null && serveRecipeMultipliers.Count > 0)
+            {
+                _lastRecipeScoreMultiplierDeltas.InsertRange(0, serveRecipeMultipliers);
+            }
         }
 
         /// <summary>甜蜜传递落地：对每个请求，用随机流在候选目标中均权取 Count 个（0=全部），把技能追加给它们并标注来源。</summary>
@@ -1994,27 +1990,41 @@ namespace GourmetProject.Gameplay.Battle
                     targets = targets.GetRange(0, request.Count);
                 }
 
-                string sourceLabel = $"{request.SourceName}<甜蜜传递>";
                 foreach (int targetId in targets)
                 {
-                    DishInstance target = FindInstance(targetId);
-                    if (target == null || target.Id == request.SourceInstanceId)
-                    {
-                        continue;
-                    }
-
-                    foreach (SkillEffect effect in request.Effects)
-                    {
-                        target.AddTransferredSkill(effect, sourceLabel, request.SourceInstanceId);
-                    }
-
-                    ApplySweetTransferTargetMultiplier(target);
-                    ApplySweetTransferSourceMultiplier(FindInstance(request.SourceInstanceId));
-                    SweetTransferTriggered?.Invoke(new SweetTransferOccurrence(
+                    CommitSweetTransfer(
                         request.SourceInstanceId,
-                        targetId));
+                        FindInstance(targetId),
+                        request.Effects,
+                        request.SourceName);
                 }
             }
+        }
+
+        /// <summary>
+        /// 甜蜜传递成功落地的唯一入口。追加外来技能、应用双方成长并广播成功事件；
+        /// 预览和未选中的候选目标不会进入这里，因此不会产生持久副作用。
+        /// </summary>
+        private bool CommitSweetTransfer(
+            int sourceInstanceId,
+            DishInstance target,
+            IReadOnlyList<SkillEffect> effects,
+            string sourceName)
+        {
+            if (target == null || target.Id == sourceInstanceId || effects == null || effects.Count == 0)
+            {
+                return false;
+            }
+
+            string sourceLabel = string.IsNullOrEmpty(sourceName) ? null : $"{sourceName}<甜蜜传递>";
+            foreach (SkillEffect effect in effects)
+            {
+                target.AddTransferredSkill(effect, sourceLabel, sourceInstanceId);
+            }
+
+            ApplySweetTransferGrowth(FindInstance(sourceInstanceId), target);
+            SweetTransferTriggered?.Invoke(new SweetTransferOccurrence(sourceInstanceId, target.Id));
+            return true;
         }
 
         private IReadOnlyList<IScoreEffectSource> BuildSettlementExtraSources()
@@ -2033,46 +2043,40 @@ namespace GourmetProject.Gameplay.Battle
             };
         }
 
-        private void ApplySweetTransferTargetMultiplier(DishInstance target)
+        private void ApplySweetTransferGrowth(DishInstance source, DishInstance target)
         {
-            if (target != null && SweetTransferTargetMultiplier > 0f)
-            {
-                target.AddPermanentMultBonus(SweetTransferTargetMultiplier);
-            }
-
-            ApplySweetTransferTargetFlat(target);
+            ApplySweetTransferPermanentGrowth(
+                target,
+                SweetTransferTargetMultiplier,
+                SweetTransferTargetFlat);
+            ApplySweetTransferPermanentGrowth(
+                source,
+                SweetTransferSourceMultiplier,
+                SweetTransferSourceFlat);
         }
 
-        private void ApplySweetTransferSourceMultiplier(DishInstance source)
+        private void ApplySweetTransferPermanentGrowth(
+            DishInstance instance,
+            float multiplierBonus,
+            float flatBonus)
         {
-            if (source != null && SweetTransferSourceMultiplier > 0f)
-            {
-                source.AddPermanentMultBonus(SweetTransferSourceMultiplier);
-            }
-
-            ApplySweetTransferSourceFlat(source);
-        }
-
-        private void ApplySweetTransferTargetFlat(DishInstance target)
-        {
-            if (target == null || Math.Abs(SweetTransferTargetFlat) < 0.0001f)
+            if (instance == null)
             {
                 return;
             }
 
-            target.AddPermanentFlat(SweetTransferTargetFlat);
-            RecordRecipeFlatDelta(target, SweetTransferTargetFlat);
-        }
-
-        private void ApplySweetTransferSourceFlat(DishInstance source)
-        {
-            if (source == null || Math.Abs(SweetTransferSourceFlat) < 0.0001f)
+            if (multiplierBonus > 0f)
             {
-                return;
+                BigDouble before = instance.PermanentMultBonus;
+                instance.AddPermanentMultBonus(multiplierBonus);
+                RecordRecipeMultiplierDelta(instance, before, instance.PermanentMultBonus);
             }
 
-            source.AddPermanentFlat(SweetTransferSourceFlat);
-            RecordRecipeFlatDelta(source, SweetTransferSourceFlat);
+            if (Math.Abs(flatBonus) >= 0.0001f)
+            {
+                instance.AddPermanentFlat(flatBonus);
+                RecordRecipeFlatDelta(instance, flatBonus);
+            }
         }
 
         private void RecordRecipeFlatDelta(DishInstance inst, float amount)
@@ -2086,6 +2090,26 @@ namespace GourmetProject.Gameplay.Battle
                 inst.SourceSlotIndex,
                 inst.SourceDishIndex,
                 amount));
+        }
+
+        private void RecordRecipeMultiplierDelta(
+            DishInstance instance,
+            BigDouble before,
+            BigDouble after)
+        {
+            if (instance == null
+                || instance.SourceSlotIndex < 0
+                || instance.SourceDishIndex < 0
+                || before <= BigDouble.Zero
+                || after <= BigDouble.Zero)
+            {
+                return;
+            }
+
+            _lastRecipeScoreMultiplierDeltas.Add(new RecipeScoreMultiplierDelta(
+                instance.SourceSlotIndex,
+                instance.SourceDishIndex,
+                after / before));
         }
 
         /// <summary>技能复制落地：对每个请求，用随机流从候选池挑选 Count 个不同技能加到目标实例。</summary>

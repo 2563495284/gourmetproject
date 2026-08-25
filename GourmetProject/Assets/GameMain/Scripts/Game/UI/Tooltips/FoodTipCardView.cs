@@ -19,6 +19,23 @@ namespace GourmetProject.Game.UI.Tooltips
 
         public float PreferredDescWidth => _descText != null ? _descText.preferredWidth : 0f;
 
+        /// <summary>
+        /// 标题或描述中最长单行完整显示时，卡片所需的宽度（包含布局留白）。
+        /// </summary>
+        internal float PreferredSingleLineWidth
+        {
+            get
+            {
+                float rootPadding = HorizontalPadding(GetComponent<VerticalLayoutGroup>());
+                float descPadding = _descText != null
+                    ? HorizontalPadding(_descText.GetComponentInParent<HorizontalLayoutGroup>())
+                    : 0f;
+                return rootPadding + Mathf.Max(
+                    PreferredTitleWidth,
+                    PreferredDescWidth + descPadding);
+            }
+        }
+
         public float PreferredDescWidthFor(string value)
         {
             if (_descText == null)
@@ -105,6 +122,13 @@ namespace GourmetProject.Game.UI.Tooltips
             {
                 DebuffVisualStyle.ClearGraphic(graphic);
             }
+        }
+
+        private static float HorizontalPadding(LayoutGroup layout)
+        {
+            return layout != null
+                ? layout.padding.left + layout.padding.right
+                : 0f;
         }
 
         private bool ReportMissing(Object reference, string fieldName)
