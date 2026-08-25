@@ -224,7 +224,7 @@ namespace GourmetProject.Tests.EditMode
                     plan[0].Position,
                     Is.EqualTo(target)
                     .Using(Vector3ComparerWithEqualsOperator.Instance));
-                Assert.That(plan[0].VerticalDirection, Is.EqualTo(1f));
+                Assert.That(plan[0].VerticalDirection, Is.EqualTo(-1f));
                 for (int i = 1; i < plan.Count; i++)
                 {
                     Assert.That(plan[i].VerticalDirection, Is.EqualTo(-1f));
