@@ -109,7 +109,6 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private Image _footerBackingImage;
         [SerializeField] private Image _rewardBadgeImage;
         [SerializeField] private Image _rewardIconImage;
-        [SerializeField] private TMP_Text _rewardBadgeText;
         [SerializeField] private Button _pickButton;
 
         [Header("Effects - References")]
@@ -641,13 +640,6 @@ namespace GourmetProject.Game.UI.Meta
             if (_rewardBadgeImage != null)
             {
                 _rewardBadgeImage.gameObject.SetActive(visible);
-            }
-
-            if (_rewardBadgeText != null)
-            {
-                bool alertVisible = visible && actionKind == cfg.FoodActionKind.Super;
-                _rewardBadgeText.gameObject.SetActive(alertVisible);
-                _rewardBadgeText.text = alertVisible ? "!" : string.Empty;
             }
 
             if (_rewardIconImage != null)

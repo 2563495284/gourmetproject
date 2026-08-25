@@ -1214,7 +1214,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 targetScale,
                 new Vector3(0.80f, 0.80f, 1f));
             float animationDuration = Mathf.Max(0.0001f, duration);
-            float driftDirection = verticalDriftDirection < 0f ? -1f : 1f;
+            float driftDirection = Mathf.Approximately(verticalDriftDirection, 0f)
+                ? 0f
+                : verticalDriftDirection < 0f ? -1f : 1f;
 
             Tween tween = DOVirtual.Float(0f, 1f, animationDuration, t =>
                 {

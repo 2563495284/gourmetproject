@@ -55,7 +55,9 @@ namespace GourmetProject.Game.Presentation.Battle
         public ResultLabelLayoutPlacement(Vector3 position, float verticalDirection)
         {
             Position = position;
-            VerticalDirection = verticalDirection < 0f ? -1f : 1f;
+            VerticalDirection = Mathf.Approximately(verticalDirection, 0f)
+                ? 0f
+                : verticalDirection < 0f ? -1f : 1f;
         }
 
         public Vector3 Position { get; }
@@ -122,20 +124,21 @@ namespace GourmetProject.Game.Presentation.Battle
                     out int targetOccurrenceIndex);
                 targetOccurrenceCounts[request.TargetKey] =
                     targetOccurrenceIndex + 1;
+                if (targetOccurrenceIndex == 0)
+                {
+                    // 每个目标的第一条完全锁定原演出锚点，不参与位置漂移。
+                    placements[i] = new ResultLabelLayoutPlacement(
+                        request.BaseAnchor,
+                        0f);
+                    continue;
+                }
+
                 ResolveDirections(
                     camera,
                     request,
                     i,
                     out float horizontalDirection,
                     out float verticalDirection);
-                if (targetOccurrenceIndex == 0)
-                {
-                    // 第一条保持原演出锚点，但漂移方向仍远离演出来源。
-                    placements[i] = new ResultLabelLayoutPlacement(
-                        request.BaseAnchor,
-                        verticalDirection);
-                    continue;
-                }
 
                 var laneKey = new LaneKey(request.TargetKey, verticalDirection);
                 laneCounts.TryGetValue(laneKey, out int laneIndex);

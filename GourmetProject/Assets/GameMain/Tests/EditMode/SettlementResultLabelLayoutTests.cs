@@ -28,7 +28,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void OneLabelPerTarget_KeepsOriginalAnchorAndDriftsAwayFromSource()
+        public void OneLabelPerTarget_KeepsOriginalAnchorWithoutDrift()
         {
             Camera camera = CreateCamera();
             try
@@ -54,8 +54,8 @@ namespace GourmetProject.Tests.EditMode
                     plan[1].Position,
                     Is.EqualTo(secondTarget)
                     .Using(Vector3ComparerWithEqualsOperator.Instance));
-                Assert.That(plan[0].VerticalDirection, Is.EqualTo(1f));
-                Assert.That(plan[1].VerticalDirection, Is.EqualTo(-1f));
+                Assert.That(plan[0].VerticalDirection, Is.Zero);
+                Assert.That(plan[1].VerticalDirection, Is.Zero);
             }
             finally
             {
@@ -84,7 +84,7 @@ namespace GourmetProject.Tests.EditMode
                     plan[0].Position,
                     Is.EqualTo(anchor)
                     .Using(Vector3ComparerWithEqualsOperator.Instance));
-                Assert.That(plan[0].VerticalDirection, Is.EqualTo(1f));
+                Assert.That(plan[0].VerticalDirection, Is.Zero);
                 Assert.That(plan[1].Position.y, Is.GreaterThan(anchor.y));
                 Assert.That(plan[1].VerticalDirection, Is.EqualTo(1f));
             }
@@ -224,7 +224,7 @@ namespace GourmetProject.Tests.EditMode
                     plan[0].Position,
                     Is.EqualTo(target)
                     .Using(Vector3ComparerWithEqualsOperator.Instance));
-                Assert.That(plan[0].VerticalDirection, Is.EqualTo(-1f));
+                Assert.That(plan[0].VerticalDirection, Is.Zero);
                 for (int i = 1; i < plan.Count; i++)
                 {
                     Assert.That(plan[i].VerticalDirection, Is.EqualTo(-1f));
@@ -367,7 +367,7 @@ namespace GourmetProject.Tests.EditMode
                         Is.EqualTo(first[i].VerticalDirection));
                 }
 
-                Assert.That(first[0].VerticalDirection, Is.EqualTo(1f));
+                Assert.That(first[0].VerticalDirection, Is.Zero);
                 Assert.That(first[1].VerticalDirection, Is.EqualTo(-1f));
             }
             finally
