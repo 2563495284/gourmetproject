@@ -112,10 +112,25 @@ namespace GourmetProject.Game.Presentation.Battle
             var placements = new ResultLabelLayoutPlacement[requests.Count];
             var laneCounts = new Dictionary<LaneKey, int>();
             var targetGroups = new Dictionary<int, List<int>>();
+            var targetOccurrenceCounts = new Dictionary<int, int>();
 
             for (int i = 0; i < requests.Count; i++)
             {
                 ResultLabelLayoutRequest request = requests[i];
+                targetOccurrenceCounts.TryGetValue(
+                    request.TargetKey,
+                    out int targetOccurrenceIndex);
+                targetOccurrenceCounts[request.TargetKey] =
+                    targetOccurrenceIndex + 1;
+                if (targetOccurrenceIndex == 0)
+                {
+                    // 每个目标的第一条沿用原演出锚点；只有后续结果才向外错位。
+                    placements[i] = new ResultLabelLayoutPlacement(
+                        request.BaseAnchor,
+                        1f);
+                    continue;
+                }
+
                 ResolveDirections(
                     camera,
                     request,

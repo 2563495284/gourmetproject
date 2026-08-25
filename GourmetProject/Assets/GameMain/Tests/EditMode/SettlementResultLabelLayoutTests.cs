@@ -27,6 +27,42 @@ namespace GourmetProject.Tests.EditMode
                 Is.True);
         }
 
+        [Test]
+        public void OneLabelPerTarget_KeepsOriginalAnchorAndDefaultDrift()
+        {
+            Camera camera = CreateCamera();
+            try
+            {
+                Vector3 firstTarget = ViewportWorld(camera, 0.15f, 0.80f);
+                Vector3 secondTarget = ViewportWorld(camera, 0.85f, 0.20f);
+                ResultLabelLayoutPlan plan = Resolve(
+                    camera,
+                    Request(
+                        10,
+                        firstTarget,
+                        ViewportWorld(camera, 0.80f, 0.20f)),
+                    Request(
+                        20,
+                        secondTarget,
+                        ViewportWorld(camera, 0.20f, 0.80f)));
+
+                Assert.That(
+                    plan[0].Position,
+                    Is.EqualTo(firstTarget)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+                Assert.That(
+                    plan[1].Position,
+                    Is.EqualTo(secondTarget)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+                Assert.That(plan[0].VerticalDirection, Is.EqualTo(1f));
+                Assert.That(plan[1].VerticalDirection, Is.EqualTo(1f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(camera.gameObject);
+            }
+        }
+
         [TestCase(0.70f, 0.70f, -1f, -1f)]
         [TestCase(0.30f, 0.70f, 1f, -1f)]
         [TestCase(0.70f, 0.30f, -1f, 1f)]
@@ -47,8 +83,9 @@ namespace GourmetProject.Tests.EditMode
                     sourceViewportY);
                 ResultLabelLayoutPlan plan = Resolve(
                     camera,
+                    Request(10, target, source),
                     Request(10, target, source));
-                Vector3 offsetViewport = camera.WorldToViewportPoint(plan[0].Position)
+                Vector3 offsetViewport = camera.WorldToViewportPoint(plan[1].Position)
                     - camera.WorldToViewportPoint(target);
 
                 Assert.That(
@@ -61,7 +98,7 @@ namespace GourmetProject.Tests.EditMode
                     Mathf.Abs(offsetViewport.y),
                     Is.GreaterThan(Mathf.Abs(offsetViewport.x)));
                 Assert.That(
-                    plan[0].VerticalDirection,
+                    plan[1].VerticalDirection,
                     Is.EqualTo(expectedVerticalDirection));
             }
             finally
@@ -83,13 +120,14 @@ namespace GourmetProject.Tests.EditMode
                 Vector3 source = ViewportWorld(camera, 0.5f, sourceViewportY);
                 ResultLabelLayoutPlan plan = Resolve(
                     camera,
+                    Request(10, target, source),
                     Request(10, target, source));
 
                 Assert.That(
-                    Mathf.Sign(plan[0].Position.y - target.y),
+                    Mathf.Sign(plan[1].Position.y - target.y),
                     Is.EqualTo(expectedVerticalDirection));
                 Assert.That(
-                    plan[0].VerticalDirection,
+                    plan[1].VerticalDirection,
                     Is.EqualTo(expectedVerticalDirection));
             }
             finally
@@ -121,10 +159,11 @@ namespace GourmetProject.Tests.EditMode
                     targetViewportY);
                 ResultLabelLayoutPlan plan = Resolve(
                     camera,
+                    Request(10, target, source),
                     Request(10, target, source));
 
                 Assert.That(
-                    plan[0].VerticalDirection,
+                    plan[1].VerticalDirection,
                     Is.EqualTo(expectedVerticalDirection));
             }
             finally
@@ -150,10 +189,15 @@ namespace GourmetProject.Tests.EditMode
                 ResultLabelLayoutPlan plan = Resolve(camera, requests);
                 float expectedVerticalPitch = Footprint.y
                     * SettlementResultLabelLayout.VerticalPitchRatio;
-                for (int i = 0; i < plan.Count; i++)
+                Assert.That(
+                    plan[0].Position,
+                    Is.EqualTo(target)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+                Assert.That(plan[0].VerticalDirection, Is.EqualTo(1f));
+                for (int i = 1; i < plan.Count; i++)
                 {
                     Assert.That(plan[i].VerticalDirection, Is.EqualTo(-1f));
-                    if (i == 0)
+                    if (i == 1)
                     {
                         continue;
                     }
@@ -174,7 +218,8 @@ namespace GourmetProject.Tests.EditMode
                     plan[3].Position.x - target.x,
                     Is.EqualTo(
                         Footprint.x
-                        * SettlementResultLabelLayout.MaximumHorizontalOffsetRatio)
+                        * (SettlementResultLabelLayout.FirstHorizontalOffsetRatio
+                            + SettlementResultLabelLayout.HorizontalStaggerRatio * 2f))
                     .Within(0.0001f));
             }
             finally
@@ -204,14 +249,15 @@ namespace GourmetProject.Tests.EditMode
                     + Footprint.y * SettlementResultLabelLayout.VerticalPitchRatio;
 
                 Assert.That(
-                    target.y - plan[0].Position.y,
-                    Is.EqualTo(firstVerticalOffset).Within(0.0001f));
+                    plan[0].Position,
+                    Is.EqualTo(target)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
                 Assert.That(
                     plan[1].Position.y - target.y,
                     Is.EqualTo(firstVerticalOffset).Within(0.0001f));
                 Assert.That(
                     target.y - plan[2].Position.y,
-                    Is.EqualTo(secondVerticalOffset).Within(0.0001f));
+                    Is.EqualTo(firstVerticalOffset).Within(0.0001f));
                 Assert.That(
                     plan[3].Position.y - target.y,
                     Is.EqualTo(secondVerticalOffset).Within(0.0001f));
@@ -223,7 +269,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void DifferentTargets_StartFromTheirOwnFirstLane()
+        public void DifferentTargets_KeepTheirOwnFirstLabelAtTheOriginalAnchor()
         {
             Camera camera = CreateCamera();
             try
@@ -242,13 +288,19 @@ namespace GourmetProject.Tests.EditMode
                     * SettlementResultLabelLayout.FirstVerticalOffsetRatio;
 
                 Assert.That(
-                    targetA.y - plan[0].Position.y,
+                    plan[0].Position,
+                    Is.EqualTo(targetA)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+                Assert.That(
+                    plan[1].Position,
+                    Is.EqualTo(targetB)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+                Assert.That(
+                    targetA.y - plan[2].Position.y,
                     Is.EqualTo(firstVerticalOffset).Within(0.0001f));
                 Assert.That(
-                    targetB.y - plan[1].Position.y,
+                    targetB.y - plan[3].Position.y,
                     Is.EqualTo(firstVerticalOffset).Within(0.0001f));
-                Assert.That(plan[2].Position.y, Is.LessThan(plan[0].Position.y));
-                Assert.That(plan[3].Position.y, Is.LessThan(plan[1].Position.y));
             }
             finally
             {
@@ -324,15 +376,19 @@ namespace GourmetProject.Tests.EditMode
 
                     ResultLabelLayoutPlan raw = Resolve(null, requests);
                     ResultLabelLayoutPlan fitted = Resolve(camera, requests);
-                    for (int i = 1; i < fitted.Count; i++)
+                    Assert.That(
+                        fitted[0].Position,
+                        Is.EqualTo(target)
+                        .Using(Vector3ComparerWithEqualsOperator.Instance));
+                    for (int i = 2; i < fitted.Count; i++)
                     {
                         Assert.That(
-                            fitted[i].Position - fitted[0].Position,
-                            Is.EqualTo(raw[i].Position - raw[0].Position)
+                            fitted[i].Position - fitted[1].Position,
+                            Is.EqualTo(raw[i].Position - raw[1].Position)
                             .Using(Vector3ComparerWithEqualsOperator.Instance));
                     }
 
-                    AssertFootprintsInsideSafeViewport(camera, fitted);
+                    AssertFootprintsInsideSafeViewport(camera, fitted, 1);
                 }
             }
             finally
@@ -347,19 +403,20 @@ namespace GourmetProject.Tests.EditMode
             Vector3 target = new(2f, 3f, 0f);
             Vector3 source = new(1f, 4f, 0f);
             ResultLabelLayoutRequest request = Request(10, target, source);
+            ResultLabelLayoutRequest[] requests = { request, request };
 
             ResultLabelLayoutPlan normal = SettlementResultLabelLayout.ResolveBatch(
                 null,
-                new[] { request },
+                requests,
                 Footprint);
             ResultLabelLayoutPlan doubled = SettlementResultLabelLayout.ResolveBatch(
                 null,
-                new[] { request },
+                requests,
                 Footprint * 2f);
 
             Assert.That(
-                doubled[0].Position - target,
-                Is.EqualTo((normal[0].Position - target) * 2f)
+                doubled[1].Position - target,
+                Is.EqualTo((normal[1].Position - target) * 2f)
                 .Using(Vector3ComparerWithEqualsOperator.Instance));
         }
 
@@ -417,7 +474,8 @@ namespace GourmetProject.Tests.EditMode
 
         private static void AssertFootprintsInsideSafeViewport(
             Camera camera,
-            ResultLabelLayoutPlan plan)
+            ResultLabelLayoutPlan plan,
+            int startIndex = 0)
         {
             float halfWidth = Footprint.x
                 / (camera.orthographicSize * 2f * camera.aspect)
@@ -425,7 +483,7 @@ namespace GourmetProject.Tests.EditMode
             float halfHeight = Footprint.y
                 / (camera.orthographicSize * 2f)
                 * 0.5f;
-            for (int i = 0; i < plan.Count; i++)
+            for (int i = Mathf.Max(0, startIndex); i < plan.Count; i++)
             {
                 Vector3 viewport = camera.WorldToViewportPoint(plan[i].Position);
                 Assert.That(
