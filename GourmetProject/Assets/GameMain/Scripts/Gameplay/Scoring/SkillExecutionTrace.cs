@@ -17,6 +17,7 @@ namespace GourmetProject.Gameplay.Scoring
     /// <summary>
     /// 一条技能规则在结算/演出层的可视化上下文。
     /// A 的子技能传给 B 时：Owner=A，RuntimeSelf=B，目标范围按 B 计算。
+    /// 若该规则是因为 C 本次新传递给 B 而重触发，HandoffSource=C；Owner 仍保持 A。
     /// </summary>
     public sealed class SkillExecutionTrace
     {
@@ -48,7 +49,11 @@ namespace GourmetProject.Gameplay.Scoring
             IReadOnlyList<GridPos> scopeRegionCells = null,
             SkillScopeRegionKind scopeRegionKind = SkillScopeRegionKind.None,
             int visualIndex = -1,
-            bool hasCategoryTargetFilter = false)
+            bool hasCategoryTargetFilter = false,
+            int sweetTransferHandoffSourceDishInstanceId = 0,
+            int sweetTransferHandoffExecutionGroupId = 0,
+            string sweetTransferHandoffSkillId = null,
+            int sweetTransferHandoffPayloadCount = 0)
         {
             Kind = kind;
             OwnerDishInstanceId = ownerDishInstanceId;
@@ -75,6 +80,10 @@ namespace GourmetProject.Gameplay.Scoring
             ScopeRegionKind = scopeRegionKind;
             VisualIndex = visualIndex;
             HasCategoryTargetFilter = hasCategoryTargetFilter;
+            SweetTransferHandoffSourceDishInstanceId = sweetTransferHandoffSourceDishInstanceId;
+            SweetTransferHandoffExecutionGroupId = sweetTransferHandoffExecutionGroupId;
+            SweetTransferHandoffSkillId = sweetTransferHandoffSkillId ?? string.Empty;
+            SweetTransferHandoffPayloadCount = sweetTransferHandoffPayloadCount;
         }
 
         public SkillExecutionKind Kind { get; }
@@ -110,6 +119,24 @@ namespace GourmetProject.Gameplay.Scoring
         public SkillScope ActionScope { get; }
 
         public string SourceLabel { get; }
+
+        /// <summary>
+        /// 本次真正把技能传给 <see cref="RuntimeSelfDishInstanceId"/> 的食物实例。
+        /// 仅在“收到新传递后立即重触发累计技能”时设置；历史技能 Owner 不会因此改变。
+        /// </summary>
+        public int SweetTransferHandoffSourceDishInstanceId { get; }
+
+        /// <summary>
+        /// 发起本次甜蜜传递的 TransferSkills 根效果执行批次。
+        /// 同一批次、同一来源、同一接收者的累计技能只应表现为一次交接。
+        /// </summary>
+        public int SweetTransferHandoffExecutionGroupId { get; }
+
+        /// <summary>发起本次交接的 TransferSkills 所属技能，用于揭示本次真正新增的卡片。</summary>
+        public string SweetTransferHandoffSkillId { get; }
+
+        /// <summary>本次交接真正新增的外来子技能条目数。</summary>
+        public int SweetTransferHandoffPayloadCount { get; }
 
         public IReadOnlyList<int> VisualTargetDishInstanceIds { get; }
 
@@ -156,7 +183,11 @@ namespace GourmetProject.Gameplay.Scoring
                 ScopeRegionCells,
                 ScopeRegionKind,
                 visualIndex,
-                HasCategoryTargetFilter);
+                HasCategoryTargetFilter,
+                SweetTransferHandoffSourceDishInstanceId,
+                SweetTransferHandoffExecutionGroupId,
+                SweetTransferHandoffSkillId,
+                SweetTransferHandoffPayloadCount);
         }
 
         public SkillExecutionTrace WithVisualTargets(
@@ -188,7 +219,11 @@ namespace GourmetProject.Gameplay.Scoring
                 ScopeRegionCells,
                 ScopeRegionKind,
                 VisualIndex,
-                HasCategoryTargetFilter);
+                HasCategoryTargetFilter,
+                SweetTransferHandoffSourceDishInstanceId,
+                SweetTransferHandoffExecutionGroupId,
+                SweetTransferHandoffSkillId,
+                SweetTransferHandoffPayloadCount);
         }
 
         public SkillExecutionTrace WithRuntimeContext(
@@ -222,7 +257,49 @@ namespace GourmetProject.Gameplay.Scoring
                 ScopeRegionCells,
                 ScopeRegionKind,
                 VisualIndex,
-                HasCategoryTargetFilter);
+                HasCategoryTargetFilter,
+                SweetTransferHandoffSourceDishInstanceId,
+                SweetTransferHandoffExecutionGroupId,
+                SweetTransferHandoffSkillId,
+                SweetTransferHandoffPayloadCount);
+        }
+
+        public SkillExecutionTrace WithSweetTransferHandoff(
+            int sourceDishInstanceId,
+            int executionGroupId,
+            string skillId,
+            int payloadCount)
+        {
+            return new SkillExecutionTrace(
+                Kind,
+                OwnerDishInstanceId,
+                OwnerDishId,
+                OwnerDishName,
+                RuntimeSelfDishInstanceId,
+                RuntimeSelfDishId,
+                RuntimeSelfDishName,
+                SkillId,
+                SkillName,
+                RuleId,
+                RuleOrder,
+                Trigger,
+                ActionType,
+                ConditionType,
+                ConditionScope,
+                ActionScope,
+                SourceLabel,
+                VisualTargetDishInstanceIds,
+                VisualTargetCells,
+                ConditionCells,
+                ActionScopeCells,
+                ScopeRegionCells,
+                ScopeRegionKind,
+                VisualIndex,
+                HasCategoryTargetFilter,
+                sourceDishInstanceId,
+                executionGroupId,
+                skillId,
+                payloadCount);
         }
 
         public static SkillExecutionTrace Create(
@@ -312,7 +389,11 @@ namespace GourmetProject.Gameplay.Scoring
                 trace.ScopeRegionCells,
                 trace.ScopeRegionKind,
                 trace.VisualIndex,
-                trace.HasCategoryTargetFilter);
+                trace.HasCategoryTargetFilter,
+                trace.SweetTransferHandoffSourceDishInstanceId,
+                trace.SweetTransferHandoffExecutionGroupId,
+                trace.SweetTransferHandoffSkillId,
+                trace.SweetTransferHandoffPayloadCount);
         }
     }
 }

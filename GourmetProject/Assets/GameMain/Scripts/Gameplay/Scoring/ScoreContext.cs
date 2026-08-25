@@ -466,6 +466,9 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>本次结算登记的永久倍率增量（实例 Id → 累乘倍数）。正式结算后写回实例。</summary>
         public IReadOnlyDictionary<int, BigDouble> PermanentMultDeltas => _permanentMultDeltas;
 
+        /// <summary>当前正在执行的根/嵌套效果批次，仅用于诊断与演出关联。</summary>
+        internal int CurrentExecutionGroupId => _currentExecutionGroupId;
+
         public void EmitEvent(ScoreEventType type, string message)
         {
             if (!CaptureDiagnostics)

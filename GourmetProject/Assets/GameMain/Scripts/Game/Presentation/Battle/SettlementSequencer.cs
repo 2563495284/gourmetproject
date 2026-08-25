@@ -817,7 +817,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return result;
             }
 
-            var seen = new HashSet<SettlementSweetTransferPresentationKey>();
+            var indicesByKey = new Dictionary<SettlementSweetTransferPresentationKey, int>();
             int end = Mathf.Min(groups.Count, startIndex + length);
             for (int groupIndex = Mathf.Max(0, startIndex); groupIndex < end; groupIndex++)
             {
@@ -831,11 +831,29 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     SettlementSweetTransferPresentationContext context =
                         SettlementSweetTransferPresentationContext.FromLine(group.Lines[lineIndex]);
-                    if (!context.IsValid || !seen.Add(context.Key))
+                    if (!context.IsValid)
                     {
                         continue;
                     }
 
+                    if (indicesByKey.TryGetValue(context.Key, out int existingIndex))
+                    {
+                        SettlementSweetTransferPresentationContext existing = result[existingIndex];
+                        bool existingIsHandoffOwner = existing.EffectOwnerDishInstanceId
+                            == existing.SourceDishInstanceId;
+                        bool candidateIsHandoffOwner = context.EffectOwnerDishInstanceId
+                            == context.SourceDishInstanceId;
+                        if (!existingIsHandoffOwner && candidateIsHandoffOwner)
+                        {
+                            // 累计重触发时，旧技能通常先于本次新技能产生日志。
+                            // 粒子仍只需要一个，但保留本次来源自己的 context，便于正确揭示新卡片。
+                            result[existingIndex] = context;
+                        }
+
+                        continue;
+                    }
+
+                    indicesByKey.Add(context.Key, result.Count);
                     result.Add(context);
                 }
             }
@@ -1318,6 +1336,9 @@ namespace GourmetProject.Game.Presentation.Battle
             List<SettlementSweetTransferPresentationContext> handoffContexts =
                 CollectWaveHandoffs(groups, startIndex, waveLength);
             var handoffs = new List<SettlementStageView.SweetTransferHandoffVisual>(handoffContexts.Count);
+            var transferredRevealDeltas = new Dictionary<int, int>();
+            var transferredRevealViews = new Dictionary<int, DishPieceView>();
+            var transferredRevealOrder = new List<int>();
             for (int i = 0; i < handoffContexts.Count; i++)
             {
                 SettlementSweetTransferPresentationContext context = handoffContexts[i];
@@ -1329,9 +1350,14 @@ namespace GourmetProject.Game.Presentation.Battle
                     baselineSnapshot);
                 if (transferredDelta > 0)
                 {
-                    onReveal?.Invoke(SettlementRevealSignal.TransferredReveal(
-                        context.ExecutorDishInstanceId,
-                        transferredDelta));
+                    if (!transferredRevealDeltas.ContainsKey(context.ExecutorDishInstanceId))
+                    {
+                        transferredRevealDeltas.Add(context.ExecutorDishInstanceId, 0);
+                        transferredRevealViews.Add(context.ExecutorDishInstanceId, executorView);
+                        transferredRevealOrder.Add(context.ExecutorDishInstanceId);
+                    }
+
+                    transferredRevealDeltas[context.ExecutorDishInstanceId] += transferredDelta;
                 }
 
                 handoffs.Add(new SettlementStageView.SweetTransferHandoffVisual(
@@ -1341,6 +1367,26 @@ namespace GourmetProject.Game.Presentation.Battle
                 sweetTransferPlayback.PresentationKey = context.Key;
                 sweetTransferPlayback.ReceiverDishInstanceId = context.ExecutorDishInstanceId;
                 sweetTransferPlayback.ExecutorDishInstanceId = context.ExecutorDishInstanceId;
+            }
+
+            for (int i = 0; i < transferredRevealOrder.Count; i++)
+            {
+                int executorId = transferredRevealOrder[i];
+                int availableDelta = CountAllNewTransferredSkills(
+                    executorId,
+                    transferredRevealViews[executorId],
+                    baselineSnapshot);
+                sweetTransferPlayback.RevealedTransferredSkillCounts.TryGetValue(
+                    executorId,
+                    out int alreadyRevealed);
+                int remainingDelta = Mathf.Max(0, availableDelta - alreadyRevealed);
+                int revealDelta = Mathf.Min(transferredRevealDeltas[executorId], remainingDelta);
+                if (revealDelta > 0)
+                {
+                    onReveal?.Invoke(SettlementRevealSignal.TransferredReveal(executorId, revealDelta));
+                    sweetTransferPlayback.RevealedTransferredSkillCounts[executorId] =
+                        alreadyRevealed + revealDelta;
+                }
             }
 
             EmitBeat(
@@ -2369,8 +2415,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 if (step.Scope.Trace?.Kind == SkillExecutionKind.SweetTransfer)
                 {
+                    int sourceDishInstanceId = step.Scope.Trace.SweetTransferHandoffSourceDishInstanceId > 0
+                        ? step.Scope.Trace.SweetTransferHandoffSourceDishInstanceId
+                        : step.Scope.OwnerDishInstanceId;
                     return new SweetTransferVisualContext(
-                        step.Scope.OwnerDishInstanceId,
+                        sourceDishInstanceId,
                         step.Scope.RuntimeSelfDishInstanceId);
                 }
 
@@ -2500,7 +2549,9 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             if (scope.Trace?.Kind == SkillExecutionKind.SweetTransfer)
             {
-                return scope.OwnerDishInstanceId;
+                return scope.Trace.SweetTransferHandoffSourceDishInstanceId > 0
+                    ? scope.Trace.SweetTransferHandoffSourceDishInstanceId
+                    : scope.OwnerDishInstanceId;
             }
 
             return scope.OwnerDishInstanceId > 0
@@ -3253,7 +3304,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     || entry.SourceInstanceId != context.SourceDishInstanceId
                     || !string.Equals(
                         entry.Effect?.Rule?.SkillId,
-                        context.SkillId,
+                        context.HandoffSkillId,
                         StringComparison.Ordinal))
                 {
                     continue;
@@ -3262,7 +3313,26 @@ namespace GourmetProject.Game.Presentation.Battle
                 count++;
             }
 
-            return count;
+            return context.HandoffPayloadCount > 0
+                ? Mathf.Min(count, context.HandoffPayloadCount)
+                : count;
+        }
+
+        private static int CountAllNewTransferredSkills(
+            int executorDishInstanceId,
+            DishPieceView executorView,
+            SettlementBaselineSnapshot baselineSnapshot)
+        {
+            if (executorDishInstanceId <= 0 || executorView?.Instance?.TransferredSkills == null)
+            {
+                return 0;
+            }
+
+            int baselineCount = baselineSnapshot != null
+                && baselineSnapshot.TryGet(executorDishInstanceId, out SettlementDishBaseline baseline)
+                    ? baseline.TransferredSkillCount
+                    : 0;
+            return Mathf.Max(0, executorView.Instance.TransferredSkills.Count - baselineCount);
         }
 
         private static int CountSettlementCues(SettlementPlaybackPlan plan)
@@ -4266,6 +4336,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private sealed class SweetTransferPlaybackState
         {
+            public Dictionary<int, int> RevealedTransferredSkillCounts { get; } = new();
+
             public int SourceDishInstanceId { get; set; }
 
             public int ReceiverDishInstanceId { get; set; }
