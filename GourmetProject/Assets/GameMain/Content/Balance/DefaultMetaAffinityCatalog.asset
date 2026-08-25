@@ -24,6 +24,11 @@ MonoBehaviour:
     Event: 100
     Interest: 0
     Shop: 0
+  - ItemId: item_active_add_restore_heart_node
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
   - ItemId: item_active_add_reward_node
     Normal: 1
     Event: 0
@@ -45,11 +50,6 @@ MonoBehaviour:
     Interest: 0
     Shop: 0
   - ItemId: item_active_execute_future_node
-    Normal: 1
-    Event: 0
-    Interest: 0
-    Shop: 0
-  - ItemId: item_active_execute_past_node
     Normal: 1
     Event: 0
     Interest: 0
@@ -114,7 +114,17 @@ MonoBehaviour:
     Event: 0
     Interest: 0
     Shop: 0
+  - ItemId: item_cake_on_settle
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
   - ItemId: item_cake_req_minus
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_cake_req_minus_30
     Normal: 1
     Event: 0
     Interest: 0
@@ -150,6 +160,11 @@ MonoBehaviour:
     Interest: 0
     Shop: 0
   - ItemId: item_count_as_cake
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_count_as_plus1
     Normal: 1
     Event: 0
     Interest: 0
@@ -245,6 +260,11 @@ MonoBehaviour:
     Interest: 0
     Shop: 0
   - ItemId: item_double_daily_cost_repeat_node
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_edge_count_as
     Normal: 1
     Event: 0
     Interest: 0
@@ -479,6 +499,11 @@ MonoBehaviour:
     Event: 0
     Interest: 0
     Shop: 0
+  - ItemId: item_random_two_as_cake
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
   - ItemId: item_randomize_items
     Normal: 1
     Event: 0
@@ -545,6 +570,16 @@ MonoBehaviour:
     Interest: 0
     Shop: 0
   - ItemId: item_score_to_one
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_self_count_flat
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_self_count_mult
     Normal: 1
     Event: 0
     Interest: 0
@@ -629,7 +664,17 @@ MonoBehaviour:
     Event: 0
     Interest: 0
     Shop: 0
+  - ItemId: item_transfer_source_flat
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
   - ItemId: item_transfer_source_mult
+    Normal: 1
+    Event: 0
+    Interest: 0
+    Shop: 0
+  - ItemId: item_transfer_target_flat
     Normal: 1
     Event: 0
     Interest: 0
@@ -669,4 +714,3 @@ MonoBehaviour:
     Event: 0
     Interest: 0
     Shop: 0
-
