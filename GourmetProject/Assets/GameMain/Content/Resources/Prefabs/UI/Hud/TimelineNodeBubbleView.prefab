@@ -216,6 +216,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   _baseWidth: 16
+  _baseOverlap: 4
   _outlineWidth: 2
   _outlineColor: {r: 0.35686275, g: 0.22352941, b: 0.14901961, a: 1}
 --- !u!1 &6521925586741184874
@@ -426,6 +427,7 @@ MonoBehaviour:
   _rect: {fileID: 8965850949486497296}
   _hitArea: {fileID: 5893990496247193755}
   _tail: {fileID: 9007817441920626539}
+  _bossTailBaseOverlap: 10
   _shell: {fileID: 8970015589693997471}
   _stateRing: {fileID: 339749242544047248}
   _icon: {fileID: 3032036398795166719}

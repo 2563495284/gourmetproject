@@ -9,12 +9,26 @@ namespace GourmetProject.Game.UI.Hud
     public sealed class TimelineNodeTailGraphic : MaskableGraphic
     {
         [SerializeField, Min(1f)] private float _baseWidth = 16f;
+        [SerializeField, Min(0f)] private float _baseOverlap = 4f;
         [SerializeField, Min(0f)] private float _outlineWidth = 2f;
         [SerializeField] private Color _outlineColor = new Color32(91, 57, 38, 255);
 
         private Vector2 _tip;
 
         public Vector2 Tip => _tip;
+        public float BaseOverlap => _baseOverlap;
+
+        public void SetBaseOverlap(float value)
+        {
+            value = Mathf.Max(0f, value);
+            if (Mathf.Approximately(_baseOverlap, value))
+            {
+                return;
+            }
+
+            _baseOverlap = value;
+            SetVerticesDirty();
+        }
 
         public void SetTip(Vector2 localTip, Color value)
         {
@@ -33,7 +47,8 @@ namespace GourmetProject.Game.UI.Hud
             vh.Clear();
             Rect rect = rectTransform.rect;
             float half = Mathf.Max(0.5f, _baseWidth * 0.5f);
-            float baseY = rect.yMin + 1f;
+            // 把尾巴底边压进气泡内部，避免缩放或像素取整时露出背景缝隙。
+            float baseY = rect.yMin + _baseOverlap;
             float outline = Mathf.Clamp(_outlineWidth, 0f, half - 0.5f);
 
             if (outline <= 0.01f)
