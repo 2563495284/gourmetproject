@@ -15056,7 +15056,6 @@ MonoBehaviour:
   _coreParticles: {fileID: 1827380911844144563}
   _tongueParticles: {fileID: 1576103448317998525}
   _emberParticles: {fileID: 859821988224293127}
-  _screenFever: {fileID: 0}
   _coreHot: {r: 1, g: 0.66, b: 0.24, a: 1}
   _coreOrange: {r: 1, g: 0.38, b: 0.075, a: 1}
   _tongueOrange: {r: 1, g: 0.31, b: 0.055, a: 1}
@@ -23277,8 +23276,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -34.400024, y: 270.5}
-  m_SizeDelta: {x: 250, y: 50}
+  m_AnchoredPosition: {x: -34.400024, y: 264}
+  m_SizeDelta: {x: 184, y: 45}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5458615869504846544
 CanvasRenderer:
@@ -23306,7 +23305,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 3
-  m_Spacing: 10
+  m_Spacing: 20
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 1

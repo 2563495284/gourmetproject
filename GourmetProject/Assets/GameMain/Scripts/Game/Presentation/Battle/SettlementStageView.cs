@@ -569,20 +569,9 @@ namespace GourmetProject.Game.Presentation.Battle
             for (int i = 0; i < occurrences.Count; i++)
             {
                 ResultLabelLayoutOccurrence occurrence = occurrences[i];
-                DishPieceView target = occurrence.Target;
-                Vector3 anchor = ResultLabelAnchor(target);
-                Vector3 targetPosition = target != null
-                    ? target.WorldBounds.center
-                    : anchor;
-                DishPieceView source = occurrence.Group != null
-                    ? TryGetDish(occurrence.Group.ActorDishInstanceId)
-                    : null;
                 requests[i] = new ResultLabelLayoutRequest(
                     occurrence.TargetKey,
-                    anchor,
-                    targetPosition,
-                    source != null ? source.WorldBounds.center : default,
-                    source != null);
+                    ResultLabelAnchor(occurrence.Target));
             }
 
             return SettlementResultLabelLayout.ResolveBatch(
@@ -696,7 +685,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 cancellationToken,
                 holdUntilCleared: holdUntilCleared,
                 headerSemanticColor: ResultHeaderSemanticColorFor(line, theme),
-                sortingOrder: WorldLabelSorting.NextOrder(),
+                sortingOrder: WorldLabelSorting.NextOrder()
+                    + layoutPlacement.StackIndex,
                 verticalDriftDirection: layoutPlacement.VerticalDirection);
             if (playTargetFeedback)
             {

@@ -1941,7 +1941,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 if (targetIds.Count == 0)
                 {
                     occurrences.Add(new ResultLabelLayoutOccurrence(
-                        lineRef.Group,
                         null,
                         0));
                     continue;
@@ -1957,7 +1956,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     }
 
                     occurrences.Add(new ResultLabelLayoutOccurrence(
-                        lineRef.Group,
                         target,
                         target != null ? targetId : 0));
                 }
