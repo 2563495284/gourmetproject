@@ -43,6 +43,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float TemporaryAreaLayoutDuration = 0.18f;
         private const float TemporaryAreaFadeDuration = 0.18f;
         private const float TemporaryAreaFlyDuration = 0.38f;
+        private const float DishDiscardFlyDuration = 0.3f;
+        private const float DishDiscardEndScale = 0.08f;
+        private const float ActiveItemValueFadeDuration = 0.16f;
         private const int TemporaryAreaSortingStride = 20;
         private const int PassiveSlotCapacity = 10;
         private const int PassiveSlotColumns = 2;
@@ -131,6 +134,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private Placement _movingOriginalPlacement;
         private Placement? _movingHoverPlacement;
         private DishPieceView _temporaryAreaDragPiece;
+        private DishPieceView _discardAnimationPiece;
+        private Tween _discardAnimationTween;
+        private Action _discardAnimationCompletion;
         private Placement? _temporaryAreaHoverPlacement;
         private DishPieceView _temporaryAreaFlyInPiece;
         private bool _activeItemTransitioning;
@@ -154,7 +160,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<TableFragmentHoverInfo> _tableFragmentHoverEntered;
         private Action<TableFragmentHoverInfo> _tableFragmentHoverExited;
         private Func<Vector2, bool> _preparedDishDiscardHitTest;
+        private Func<Vector2> _preparedDishDiscardAnimationTarget;
         private Action<bool> _preparedDishDiscardHoverChanged;
+        private Action _preparedDishDiscardAccepted;
         private bool _outletHoveringDiscard;
         private bool _activeItemDishesDimmed;
         private bool _serveTriggerCuePlaybackActive;
@@ -189,7 +197,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     && !_bossPresentationBusy
                     && _outletDragPiece == null
                     && _movingPiece == null
-                    && _temporaryAreaDragPiece == null);
+                    && _temporaryAreaDragPiece == null
+                    && _discardAnimationPiece == null);
 
         public bool IsFoodInteractionBusy
             => _settling
@@ -198,12 +207,15 @@ namespace GourmetProject.Game.Presentation.Battle
                 || _bossPresentationBusy
                 || _outletDragPiece != null
                 || _movingPiece != null
-                || _temporaryAreaDragPiece != null;
+                || _temporaryAreaDragPiece != null
+                || _discardAnimationPiece != null;
 
         public bool IsSettlementPlaying => _settling;
 
         internal DishPieceView ActiveDragPiece =>
-            _outletDragPiece != null
+            _discardAnimationPiece != null
+                ? _discardAnimationPiece
+                : _outletDragPiece != null
                 ? _outletDragPiece
                 : _movingPiece != null
                     ? _movingPiece
@@ -914,32 +926,61 @@ namespace GourmetProject.Game.Presentation.Battle
             if (temporaryDish != null)
             {
                 _activeItemTransitioning = true;
-                piece.SetDishValueBadgeVisible(false);
                 piece.SetClickEnabled(false);
                 piece.SetMoveCallbacks(null, null, null);
-                RefreshTemporaryAreaVisibility(animated: true);
-                EnsureTemporaryAreaLayoutReady();
-                int index = TemporaryAreaDishIndex(dishId);
-                TemporaryAreaStackSlot[] targetSlots = CalculateTemporaryAreaSlots();
-                LayoutTemporaryAreaPieces(animated: true, slotsOverride: targetSlots);
-                TemporaryAreaStackSlot targetSlot = index >= 0 && index < targetSlots.Length
-                    ? targetSlots[index]
-                    : new TemporaryAreaStackSlot(TemporaryAreaFallbackCenter(), 1f);
-
-                piece.PlayActiveItemNumbTransform(temporaryDish.Placement, () =>
+                piece.FadeDishValueBadge(false, ActiveItemValueFadeDuration, () =>
                 {
                     if (piece == null)
                     {
-                        CompleteTemporaryAreaArrival(null, temporaryDish, index, onComplete);
+                        CompleteTemporaryAreaArrival(null, temporaryDish, -1, onComplete);
                         return;
                     }
 
-                    BeginTemporaryAreaFlyIn(piece, temporaryDish, targetSlot, index, onComplete);
+                    RefreshTemporaryAreaVisibility(animated: true);
+                    EnsureTemporaryAreaLayoutReady();
+                    int index = TemporaryAreaDishIndex(dishId);
+                    TemporaryAreaStackSlot[] targetSlots = CalculateTemporaryAreaSlots();
+                    LayoutTemporaryAreaPieces(animated: true, slotsOverride: targetSlots);
+                    TemporaryAreaStackSlot targetSlot = index >= 0 && index < targetSlots.Length
+                        ? targetSlots[index]
+                        : new TemporaryAreaStackSlot(TemporaryAreaFallbackCenter(), 1f);
+
+                    piece.PlayActiveItemNumbTransform(temporaryDish.Placement, () =>
+                    {
+                        if (piece == null)
+                        {
+                            CompleteTemporaryAreaArrival(null, temporaryDish, index, onComplete);
+                            return;
+                        }
+
+                        BeginTemporaryAreaFlyIn(piece, temporaryDish, targetSlot, index, onComplete);
+                    });
                 });
                 return true;
             }
 
-            piece.PlayActiveItemFlavorTransform(onVisualSwitch: null, onComplete);
+            piece.FadeDishValueBadge(false, ActiveItemValueFadeDuration, () =>
+            {
+                if (piece == null)
+                {
+                    onComplete?.Invoke();
+                    return;
+                }
+
+                piece.PlayActiveItemFlavorTransform(onVisualSwitch: null, () =>
+                {
+                    if (piece == null)
+                    {
+                        onComplete?.Invoke();
+                        return;
+                    }
+
+                    piece.FadeDishValueBadge(
+                        true,
+                        ActiveItemValueFadeDuration,
+                        onComplete);
+                });
+            });
             return true;
         }
 
@@ -992,7 +1033,6 @@ namespace GourmetProject.Game.Presentation.Battle
             Action onComplete)
         {
             _temporaryAreaFlyInPiece = null;
-            _activeItemTransitioning = false;
             if (piece == null || dish == null)
             {
                 RebuildPlacedPieces();
@@ -1015,7 +1055,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
                 piece.SetClickEnabled(true);
                 BuildHudFood(piece, dish, _dishClicked);
-                piece.SetDishValueBadgeVisible(true);
 
                 int insertIndex = Mathf.Clamp(index, 0, _temporaryAreaPieces.Count);
                 _temporaryAreaPieces.Insert(insertIndex, piece);
@@ -1023,8 +1062,23 @@ namespace GourmetProject.Game.Presentation.Battle
                 _boardView?.Sync();
             }
 
-            _stateChanged?.Invoke();
-            onComplete?.Invoke();
+            if (piece != null && dish != null)
+            {
+                piece.FadeDishValueBadge(
+                    true,
+                    ActiveItemValueFadeDuration,
+                    FinishArrival);
+                return;
+            }
+
+            FinishArrival();
+
+            void FinishArrival()
+            {
+                _activeItemTransitioning = false;
+                _stateChanged?.Invoke();
+                onComplete?.Invoke();
+            }
         }
 
         public void SkipTableEditPack()
@@ -1049,6 +1103,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDestroy()
         {
+            ClearDishDiscardAnimation(invokeCompletion: false);
             if (_session != null)
             {
                 _session.ServeTriggerCueRaised -= OnServeTriggerCueRaised;
@@ -1185,7 +1240,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void SetPreparedDishDiscardTarget(
             Func<Vector2, bool> hitTest,
-            Action<bool> hoverChanged)
+            Action<bool> hoverChanged,
+            Func<Vector2> animationTarget = null,
+            Action accepted = null)
         {
             if (_outletHoveringDiscard)
             {
@@ -1195,6 +1252,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _preparedDishDiscardHitTest = hitTest;
             _preparedDishDiscardHoverChanged = hoverChanged;
+            _preparedDishDiscardAnimationTarget = animationTarget;
+            _preparedDishDiscardAccepted = accepted;
         }
 
         public void HideWorld()
@@ -1980,7 +2039,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 || _bossPresentationBusy
                 || _outletDragPiece != null
                 || _movingPiece != null
-                || _temporaryAreaDragPiece != null)
+                || _temporaryAreaDragPiece != null
+                || _discardAnimationPiece != null)
             {
                 return;
             }
@@ -2051,17 +2111,18 @@ namespace GourmetProject.Game.Presentation.Battle
             UpdateServingOutletDrag(screenPoint);
             if (_outletHoveringDiscard)
             {
+                DishPieceView piece = _outletDragPiece;
                 string dishName = _session.PreparedServe.Dish.Def.Name;
-                ClearOutletDragPreview();
                 if (_session.TryDiscardPreparedServe())
                 {
+                    BeginDishDiscardAnimation(piece, CompleteDishDiscardFlow);
                     SetMessage($"已丢弃：{dishName}");
-                    EnsureNextDishPrepared();
                     RefreshAll();
                     _stateChanged?.Invoke();
                     return true;
                 }
 
+                ClearOutletDragPreview();
                 SetMessage("本局已经不能再丢弃食物。");
                 RefreshAll();
                 _stateChanged?.Invoke();
@@ -2176,6 +2237,172 @@ namespace GourmetProject.Game.Presentation.Battle
             _outletDragPiece = null;
             _outletHoverPlacement = null;
             ResetDragPointerTracking();
+        }
+
+        private void BeginDishDiscardAnimation(DishPieceView piece, Action onComplete)
+        {
+            ClearDishDiscardAnimation(invokeCompletion: true);
+            ClearDishScopeHighlights();
+            _boardView?.ClearDragPlacementFeedback();
+            SetOutletDiscardHover(false);
+            _outletHoverPlacement = null;
+            _movingHoverPlacement = null;
+            _temporaryAreaHoverPlacement = null;
+            if (ReferenceEquals(_outletDragPiece, piece))
+            {
+                _outletDragPiece = null;
+            }
+
+            if (ReferenceEquals(_movingPiece, piece))
+            {
+                _movingPiece = null;
+            }
+
+            if (ReferenceEquals(_temporaryAreaDragPiece, piece))
+            {
+                _temporaryAreaDragPiece = null;
+            }
+
+            ResetDragPointerTracking();
+            if (piece == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            DishInstance dish = piece.Instance;
+            _placedPieces.Remove(piece);
+            _temporaryAreaPieces.Remove(piece);
+            if (dish != null)
+            {
+                _dishViewsById.Remove(dish.Id);
+                _temporaryAreaViewsById.Remove(dish.Id);
+            }
+
+            _discardAnimationPiece = piece;
+            _discardAnimationCompletion = onComplete;
+            piece.transform.DOKill();
+            piece.SetClickEnabled(false);
+            piece.SetDragPresentation(true);
+            piece.SetBodyAlpha(1f);
+
+            Vector3 startWorld = piece.OccupiedCellCenterWorld();
+            Vector2 fallbackScreen = WorldCamera != null
+                ? WorldCamera.WorldToScreenPoint(startWorld)
+                : Vector2.zero;
+            Vector2 targetScreen = _preparedDishDiscardAnimationTarget?.Invoke()
+                ?? fallbackScreen;
+            Vector3 targetWorld = ScreenToWorld(targetScreen);
+            float startScale = piece.ActiveDragVisualScale;
+            float endRotation = targetWorld.x < startWorld.x ? 24f : -24f;
+            _preparedDishDiscardAccepted?.Invoke();
+
+            Sequence sequence = DOTween.Sequence()
+                .SetUpdate(true)
+                .SetTarget(piece)
+                .SetLink(gameObject);
+            sequence.Append(DOVirtual.Float(
+                    0f,
+                    1f,
+                    DishDiscardFlyDuration,
+                    progress => piece.MoveVisualCenterToWorld(
+                        DishDiscardArcPosition(startWorld, targetWorld, progress)))
+                .SetEase(Ease.InQuad));
+            sequence.Join(DOVirtual.Float(
+                    startScale,
+                    DishDiscardEndScale,
+                    DishDiscardFlyDuration,
+                    piece.SetVisualScaleMultiplier)
+                .SetEase(Ease.InCubic));
+            sequence.Join(DOVirtual.Float(
+                    0f,
+                    endRotation,
+                    DishDiscardFlyDuration,
+                    piece.SetVisualRotationDegrees)
+                .SetEase(Ease.InQuad));
+            sequence.Insert(
+                DishDiscardFlyDuration * 0.4f,
+                DOVirtual.Float(
+                        1f,
+                        0f,
+                        DishDiscardFlyDuration * 0.6f,
+                        piece.SetBodyAlpha)
+                    .SetEase(Ease.InQuad));
+
+            _discardAnimationTween = sequence;
+            sequence.OnComplete(() => CompleteDishDiscardAnimation(piece, sequence))
+                .OnKill(() =>
+                {
+                    if (ReferenceEquals(_discardAnimationTween, sequence))
+                    {
+                        _discardAnimationTween = null;
+                    }
+                });
+        }
+
+        internal static Vector3 DishDiscardArcPosition(
+            Vector3 start,
+            Vector3 target,
+            float progress)
+        {
+            float t = Mathf.Clamp01(progress);
+            Vector3 position = Vector3.LerpUnclamped(start, target, t);
+            float distance = Vector2.Distance(start, target);
+            float arcHeight = Mathf.Clamp(distance * 0.12f, 0.16f, 0.72f);
+            position.y += arcHeight * 4f * t * (1f - t);
+            return position;
+        }
+
+        private void CompleteDishDiscardAnimation(DishPieceView piece, Tween animation)
+        {
+            if (!ReferenceEquals(_discardAnimationPiece, piece))
+            {
+                return;
+            }
+
+            Action completion = _discardAnimationCompletion;
+            _discardAnimationCompletion = null;
+            _discardAnimationPiece = null;
+            if (ReferenceEquals(_discardAnimationTween, animation))
+            {
+                _discardAnimationTween = null;
+            }
+
+            if (piece != null)
+            {
+                piece.gameObject.SetActive(false);
+                Destroy(piece.gameObject);
+            }
+
+            completion?.Invoke();
+        }
+
+        private void ClearDishDiscardAnimation(bool invokeCompletion)
+        {
+            Tween animation = _discardAnimationTween;
+            DishPieceView piece = _discardAnimationPiece;
+            Action completion = _discardAnimationCompletion;
+            _discardAnimationTween = null;
+            _discardAnimationPiece = null;
+            _discardAnimationCompletion = null;
+            animation?.Kill();
+            if (piece != null)
+            {
+                piece.gameObject.SetActive(false);
+                Destroy(piece.gameObject);
+            }
+
+            if (invokeCompletion)
+            {
+                completion?.Invoke();
+            }
+        }
+
+        private void CompleteDishDiscardFlow()
+        {
+            EnsureNextDishPrepared();
+            RefreshAll();
+            _stateChanged?.Invoke();
         }
 
         private void SetOutletDiscardHover(bool hovered)
@@ -2363,7 +2590,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 || _activeItemTransitioning
                 || _bossPresentationBusy
                 || _outletDragPiece != null
-                || _temporaryAreaDragPiece != null)
+                || _temporaryAreaDragPiece != null
+                || _discardAnimationPiece != null)
             {
                 return;
             }
@@ -2443,14 +2671,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     string dishName = dish.Def.Name;
                     PlayPendingServeTriggerCues();
-                    piece.gameObject.SetActive(false);
-                    _movingPiece = null;
-                    _movingHoverPlacement = null;
-                    ResetDragPointerTracking();
+                    BeginDishDiscardAnimation(piece, CompleteDishDiscardFlow);
                     RebuildPlacedPieces();
                     _boardView.Sync();
                     SetMessage($"已丢弃：{dishName}");
-                    EnsureNextDishPrepared();
                     RefreshAll();
                     _stateChanged?.Invoke();
                     return;
@@ -2500,7 +2724,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 || _activeItemTransitioning
                 || _outletDragPiece != null
                 || _movingPiece != null
-                || _temporaryAreaDragPiece != null)
+                || _temporaryAreaDragPiece != null
+                || _discardAnimationPiece != null)
             {
                 return;
             }
@@ -2600,11 +2825,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     string dishName = dish.Def.Name;
                     PlayPendingServeTriggerCues();
-                    piece.gameObject.SetActive(false);
+                    BeginDishDiscardAnimation(piece, CompleteDishDiscardFlow);
                     RebuildPlacedPieces();
                     _boardView.Sync();
                     SetMessage($"已丢弃：{dishName}");
-                    EnsureNextDishPrepared();
                     RefreshAll();
                     _stateChanged?.Invoke();
                     return;
@@ -3002,6 +3226,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void CancelServeInteractions()
         {
+            ClearDishDiscardAnimation(invokeCompletion: true);
             ClearDishScopeHighlights();
             _boardView?.ClearDragPlacementFeedback();
             ClearOutletDragPreview();

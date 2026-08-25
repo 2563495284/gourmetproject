@@ -38,7 +38,7 @@ namespace GourmetProject.Game.Meta
                     return EnumerateTableCells(_session?.DiningTable);
                 case cfg.ItemTargetKind.DiningTableDish:
                     return item.EffectType == ItemEffectTypes.AddFlavor
-                        ? EnumerateSourceBackedTableDishes(_session?.DiningTable, Run)
+                        ? EnumerateSourceBackedBattleDishes(_session, Run)
                         : EnumerateTableDishes(_session?.DiningTable);
                 case cfg.ItemTargetKind.FlavorSlot:
                     return EnumerateFlavorSlots(Run);
@@ -121,7 +121,7 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            DishInstance dish = _session.FindDishById(dishId);
+            DishInstance dish = FindDiningOrPreparedDish(_session, dishId);
             int sourceIndex = dish?.SourceDishIndex ?? -1;
             if (sourceIndex < 0 || sourceIndex >= Run.RecipeEntries.Count)
             {
@@ -136,10 +136,15 @@ namespace GourmetProject.Game.Meta
             int beforeSteps = NumbRotationSteps(dish.FlavorIds, Run.Database);
             dish.AddFlavor(flavorId, Run.FoodFlavorLimit);
             int rotationDelta = NumbRotationSteps(dish.FlavorIds, Run.Database) - beforeSteps;
-            if (rotationDelta != 0
-                && !_session.MoveDishToTemporaryAreaAfterRotationDelta(dishId, rotationDelta))
+            if (rotationDelta != 0)
             {
-                return false;
+                bool rotated = ReferenceEquals(_session.PreparedServe?.Dish, dish)
+                    ? _session.RotatePreparedDishAfterFlavorDelta(dishId, rotationDelta)
+                    : _session.MoveDishToTemporaryAreaAfterRotationDelta(dishId, rotationDelta);
+                if (!rotated)
+                {
+                    return false;
+                }
             }
 
             return true;
@@ -322,6 +327,51 @@ namespace GourmetProject.Game.Meta
             }
 
             return targets;
+        }
+
+        /// <summary>
+        /// 调味小票在经营挑战中同时允许选择餐桌和出餐口里能永久写回食谱条目的食物。
+        /// 两者继续复用 <see cref="cfg.ItemTargetKind.DiningTableDish"/>，实例 Id 足以区分来源。
+        /// </summary>
+        internal static IReadOnlyList<ActiveTarget> EnumerateSourceBackedBattleDishes(
+            BattleSession session,
+            GameRun run)
+        {
+            var targets = new List<ActiveTarget>();
+            if (session == null || run == null)
+            {
+                return targets;
+            }
+
+            targets.AddRange(EnumerateSourceBackedTableDishes(session.DiningTable, run));
+
+            DishInstance prepared = session.PreparedServe?.Dish;
+            if (prepared == null
+                || prepared.SourceDishIndex < 0
+                || prepared.SourceDishIndex >= run.RecipeEntries.Count)
+            {
+                return targets;
+            }
+
+            GridPos origin = prepared.Placement.Origin;
+            targets.Add(new ActiveTarget(
+                prepared.Id.ToString(),
+                origin.X,
+                origin.Y,
+                cfg.ItemTargetKind.DiningTableDish));
+            return targets;
+        }
+
+        private static DishInstance FindDiningOrPreparedDish(BattleSession session, int dishId)
+        {
+            DishInstance diningDish = session?.FindDishById(dishId);
+            if (diningDish != null)
+            {
+                return diningDish;
+            }
+
+            DishInstance prepared = session?.PreparedServe?.Dish;
+            return prepared != null && prepared.Id == dishId ? prepared : null;
         }
 
         internal static IReadOnlyList<ActiveTarget> EnumerateFlavorSlots(GameRun run)

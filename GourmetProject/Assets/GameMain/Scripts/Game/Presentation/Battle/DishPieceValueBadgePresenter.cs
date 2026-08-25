@@ -20,6 +20,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private int _sortingOrderOffset;
         private bool _visible = true;
         private bool _chapterFocused;
+        private Tween _valueFadeTween;
 
         internal DishValueBadgeView View => _badge;
 
@@ -70,8 +71,47 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal void SetVisible(bool visible)
         {
+            KillValueFade();
             _visible = visible;
             ApplyVisible();
+            if (visible)
+            {
+                _badge?.SetValueAlpha(1f);
+            }
+        }
+
+        internal void FadeValue(bool visible, float duration, System.Action onComplete = null)
+        {
+            KillValueFade();
+            if (_badge == null || !_visible)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            float targetAlpha = visible ? 1f : 0f;
+            if (duration <= 0.0001f
+                || Mathf.Approximately(_badge.CurrentAlpha, targetAlpha))
+            {
+                _badge.SetValueAlpha(targetAlpha);
+                onComplete?.Invoke();
+                return;
+            }
+
+            _valueFadeTween = DOTween.To(
+                    () => _badge != null ? _badge.CurrentAlpha : targetAlpha,
+                    alpha => _badge?.SetValueAlpha(alpha),
+                    targetAlpha,
+                    duration)
+                .SetEase(visible ? Ease.OutQuad : Ease.InQuad)
+                .SetUpdate(true)
+                .SetLink(_badge.gameObject)
+                .OnComplete(() =>
+                {
+                    _valueFadeTween = null;
+                    _badge?.SetValueAlpha(targetAlpha);
+                    onComplete?.Invoke();
+                });
         }
 
         internal void SetDimmed(bool dimmed)
@@ -171,11 +211,28 @@ namespace GourmetProject.Game.Presentation.Battle
 
             string layer = _flying
                 ? BattleSorting.PiecesFlying
-                : BattleSorting.Fx;
+                : BattleSorting.WorldUi;
             int order = _flying
                 ? BattleSorting.OrderBody + 5 + _sortingOrderOffset
-                : BattleSorting.OrderFloatingText + _sortingOrderOffset;
+                : BattleSorting.OrderDishBadge + _sortingOrderOffset;
             _badge.ConfigureSorting(layer, order);
+        }
+
+        private void KillValueFade()
+        {
+            if (_valueFadeTween == null)
+            {
+                return;
+            }
+
+            _valueFadeTween.Kill();
+            _valueFadeTween = null;
+        }
+
+        private void OnDisable()
+        {
+            KillValueFade();
+            _badge?.SetValueAlpha(1f);
         }
     }
 }

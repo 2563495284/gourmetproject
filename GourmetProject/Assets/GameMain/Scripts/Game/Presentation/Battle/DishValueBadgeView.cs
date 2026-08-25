@@ -13,19 +13,18 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private MeshRenderer _valueMeshRenderer;
         [SerializeField] private TextMeshPro _valueText;
 
-        private string _sortingLayer = BattleSorting.Fx;
-        private int _sortingOrder = BattleSorting.OrderFloatingText;
+        private string _sortingLayer = BattleSorting.WorldUi;
+        private int _sortingOrder = BattleSorting.OrderDishBadge;
         private bool _dimmed;
         private bool _chapterFocused;
+        private float _valueAlpha = 1f;
         private bool _presentationBaseColorsCaptured;
         private Color _backgroundPresentationBaseColor;
         private Color _valueBackingPresentationBaseColor;
         private Color _iconPresentationBaseColor;
         private Color _textPresentationBaseColor;
 
-        internal float CurrentAlpha => _valueText != null
-            ? _valueText.color.a
-            : (_background != null ? _background.color.a : 1f);
+        internal float CurrentAlpha => _valueAlpha;
 
         /// <summary>Badge 根节点到最高可见 Sprite 边缘的本地距离。</summary>
         public float TopExtent
@@ -83,6 +82,19 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplyPresentationColors();
         }
 
+        /// <summary>只调整美味值数字的透明度，保留 Badge 外框和图标。</summary>
+        public void SetValueAlpha(float alpha)
+        {
+            float clamped = Mathf.Clamp01(alpha);
+            if (Mathf.Approximately(_valueAlpha, clamped))
+            {
+                return;
+            }
+
+            _valueAlpha = clamped;
+            ApplyPresentationColors();
+        }
+
         private void ApplyPresentationColors()
         {
             CapturePresentationBaseColors();
@@ -93,7 +105,12 @@ namespace GourmetProject.Game.Presentation.Battle
             if (_valueText != null)
             {
                 Color color = ChapterTint(_textPresentationBaseColor, gold, 0.20f);
-                _valueText.color = _dimmed ? WithAlphaMultiplier(color, 0.5f) : color;
+                if (_dimmed)
+                {
+                    color = WithAlphaMultiplier(color, 0.5f);
+                }
+
+                _valueText.color = WithAlphaMultiplier(color, _valueAlpha);
             }
         }
 
@@ -171,6 +188,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             SetChapterFocused(false);
             SetDimmed(false);
+            SetValueAlpha(1f);
         }
     }
 }

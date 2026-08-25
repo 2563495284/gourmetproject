@@ -346,6 +346,17 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishValueBadgePresenter?.SetVisible(visible);
         }
 
+        internal void FadeDishValueBadge(bool visible, float duration, Action onComplete = null)
+        {
+            if (_dishValueBadgePresenter == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            _dishValueBadgePresenter.FadeValue(visible, duration, onComplete);
+        }
+
         public void UpdatePlacement(Placement placement)
         {
             if (Instance == null)
@@ -801,6 +812,24 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        /// <summary>一次性表现使用：统一调整食物本体透明度，让 Overlay 拖拽残影同步淡出。</summary>
+        internal void SetBodyAlpha(float alpha)
+        {
+            EnsureRefs();
+            float clamped = Mathf.Clamp01(alpha);
+            foreach (SpriteRenderer renderer in EnumerateBodyRenderers())
+            {
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                Color color = renderer.color;
+                color.a = clamped;
+                renderer.color = color;
+            }
+        }
+
         private IEnumerable<SpriteRenderer> EnumerateBodyRenderers()
         {
             if (_spriteRenderer == null)
@@ -1082,6 +1111,17 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 float safeScale = Mathf.Max(0.0001f, scale);
                 target.localScale = new Vector3(safeScale, safeScale, 1f);
+            }
+        }
+
+        /// <summary>一次性飞行动画使用：绕食物视觉中心旋转，不改动根节点和落格坐标。</summary>
+        internal void SetVisualRotationDegrees(float degrees)
+        {
+            EnsureRefs();
+            Transform target = VisualAnimationTarget();
+            if (target != null)
+            {
+                target.localRotation = Quaternion.Euler(0f, 0f, degrees);
             }
         }
 
