@@ -448,13 +448,18 @@ namespace GourmetProject.Gameplay.Scoring
             ApplyRegisteredSweetTransferBuffs(ctx, buffs, targets, resolvedBuffExtraTargets);
 
             string sourceName = CurrentSkillSourceName(ctx);
+            int handoffExecutionGroupId = ctx.CurrentExecutionGroupId;
             foreach (DishInstance target in targets)
             {
                 ctx.RecordSkillTransfer(target, effects, sourceName, _self.Id);
                 ResolveTransferredEffects(
                     ctx,
                     target,
-                    ctx.TransferredSkillsForCurrentCalculation(target));
+                    ctx.TransferredSkillsForCurrentCalculation(target),
+                    _self.Id,
+                    handoffExecutionGroupId,
+                    _rule.SkillId,
+                    effects.Count);
             }
         }
 
@@ -863,7 +868,11 @@ namespace GourmetProject.Gameplay.Scoring
         private void ResolveTransferredEffects(
             ScoreContext ctx,
             DishInstance target,
-            IReadOnlyList<TransferredSkill> transferredSkills)
+            IReadOnlyList<TransferredSkill> transferredSkills,
+            int handoffSourceDishInstanceId,
+            int handoffExecutionGroupId,
+            string handoffSkillId,
+            int handoffPayloadCount)
         {
             int boardOrder = target.Placement.Origin.Y * ctx.DiningTable.Width + target.Placement.Origin.X;
             foreach (TransferredSkill transferred in transferredSkills)
@@ -878,6 +887,37 @@ namespace GourmetProject.Gameplay.Scoring
                 string sourceLabel = transferred.SourceLabel;
                 DishInstance owner = ctx.DiningTable.Dishes.FirstOrDefault(
                     dish => dish.Id == transferred.SourceInstanceId);
+                SkillExecutionTrace trace = null;
+                if (ctx.CaptureDiagnostics)
+                {
+                    trace = owner != null
+                        ? SkillExecutionTrace.Create(
+                            ctx.Db,
+                            ctx.DiningTable,
+                            owner,
+                            target,
+                            parent,
+                            rule,
+                            SkillExecutionKind.SweetTransfer,
+                            sourceLabel,
+                            SkillScopeVisualMode.ResolvedTargets)
+                        : SkillExecutionTrace.CreateWithOwnerFallback(
+                            ctx.Db,
+                            ctx.DiningTable,
+                            transferred.SourceInstanceId,
+                            SourceNameWithoutTag(sourceLabel),
+                            target,
+                            parent,
+                            rule,
+                            SkillExecutionKind.SweetTransfer,
+                            sourceLabel,
+                            SkillScopeVisualMode.ResolvedTargets);
+                    trace = trace?.WithSweetTransferHandoff(
+                        handoffSourceDishInstanceId,
+                        handoffExecutionGroupId,
+                        handoffSkillId,
+                        handoffPayloadCount);
+                }
 
                 var entry = new ScoreEffectEntry(
                     ScorePhase.DishSkills,
@@ -888,30 +928,7 @@ namespace GourmetProject.Gameplay.Scoring
                     null,
                     rule.Order,
                     boardOrder,
-                    !ctx.CaptureDiagnostics
-                        ? null
-                        : owner != null
-                            ? SkillExecutionTrace.Create(
-                                ctx.Db,
-                                ctx.DiningTable,
-                                owner,
-                                target,
-                                parent,
-                                rule,
-                                SkillExecutionKind.SweetTransfer,
-                                sourceLabel,
-                                SkillScopeVisualMode.ResolvedTargets)
-                            : SkillExecutionTrace.CreateWithOwnerFallback(
-                                ctx.Db,
-                                ctx.DiningTable,
-                                transferred.SourceInstanceId,
-                                SourceNameWithoutTag(sourceLabel),
-                                target,
-                                parent,
-                                rule,
-                                SkillExecutionKind.SweetTransfer,
-                                sourceLabel,
-                                SkillScopeVisualMode.ResolvedTargets));
+                    trace);
                 ctx.ResolveTransferredEffect(entry);
             }
         }

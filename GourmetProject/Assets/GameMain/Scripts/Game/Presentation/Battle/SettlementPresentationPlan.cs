@@ -117,23 +117,36 @@ namespace GourmetProject.Game.Presentation.Battle
         public SettlementSweetTransferPresentationKey(
             int sourceDishInstanceId,
             int executorDishInstanceId,
-            string skillId)
+            string skillId,
+            int handoffExecutionGroupId = 0)
         {
             SourceDishInstanceId = sourceDishInstanceId;
             ExecutorDishInstanceId = executorDishInstanceId;
             SkillId = skillId ?? string.Empty;
+            HandoffExecutionGroupId = handoffExecutionGroupId;
         }
 
         public int SourceDishInstanceId { get; }
         public int ExecutorDishInstanceId { get; }
         public string SkillId { get; }
+        public int HandoffExecutionGroupId { get; }
         public bool IsEmpty => SourceDishInstanceId <= 0 || ExecutorDishInstanceId <= 0;
 
         public bool Equals(SettlementSweetTransferPresentationKey other)
         {
-            return SourceDishInstanceId == other.SourceDishInstanceId
-                && ExecutorDishInstanceId == other.ExecutorDishInstanceId
-                && string.Equals(SkillId, other.SkillId, StringComparison.Ordinal);
+            if (SourceDishInstanceId != other.SourceDishInstanceId
+                || ExecutorDishInstanceId != other.ExecutorDishInstanceId)
+            {
+                return false;
+            }
+
+            if (HandoffExecutionGroupId > 0 || other.HandoffExecutionGroupId > 0)
+            {
+                return HandoffExecutionGroupId > 0
+                    && HandoffExecutionGroupId == other.HandoffExecutionGroupId;
+            }
+
+            return string.Equals(SkillId, other.SkillId, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj)
@@ -147,7 +160,9 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 int hash = SourceDishInstanceId;
                 hash = (hash * 397) ^ ExecutorDishInstanceId;
-                hash = (hash * 397) ^ StringComparer.Ordinal.GetHashCode(SkillId ?? string.Empty);
+                hash = HandoffExecutionGroupId > 0
+                    ? (hash * 397) ^ HandoffExecutionGroupId
+                    : (hash * 397) ^ StringComparer.Ordinal.GetHashCode(SkillId ?? string.Empty);
                 return hash;
             }
         }
@@ -157,35 +172,50 @@ namespace GourmetProject.Game.Presentation.Battle
     {
         private SettlementSweetTransferPresentationContext(
             int sourceDishInstanceId,
+            int effectOwnerDishInstanceId,
             int executorDishInstanceId,
             string sourceName,
             string executorName,
             string skillId,
             string skillName,
-            int executionGroupId)
+            int executionGroupId,
+            int handoffExecutionGroupId,
+            string handoffSkillId,
+            int handoffPayloadCount)
         {
             SourceDishInstanceId = sourceDishInstanceId;
+            EffectOwnerDishInstanceId = effectOwnerDishInstanceId;
             ExecutorDishInstanceId = executorDishInstanceId;
             SourceName = sourceName ?? string.Empty;
             ExecutorName = executorName ?? string.Empty;
             SkillId = skillId ?? string.Empty;
             SkillName = skillName ?? SkillId;
             ExecutionGroupId = executionGroupId;
+            HandoffExecutionGroupId = handoffExecutionGroupId;
+            HandoffSkillId = string.IsNullOrEmpty(handoffSkillId) ? SkillId : handoffSkillId;
+            HandoffPayloadCount = handoffPayloadCount;
         }
 
+        /// <summary>本次真正发送粒子并播放触发反馈的食物实例。</summary>
         public int SourceDishInstanceId { get; }
+        /// <summary>当前被执行子技能的历史拥有者，仅用于效果来源归因。</summary>
+        public int EffectOwnerDishInstanceId { get; }
         public int ExecutorDishInstanceId { get; }
         public string SourceName { get; }
         public string ExecutorName { get; }
         public string SkillId { get; }
         public string SkillName { get; }
         public int ExecutionGroupId { get; }
+        public int HandoffExecutionGroupId { get; }
+        public string HandoffSkillId { get; }
+        public int HandoffPayloadCount { get; }
         public bool IsValid => SourceDishInstanceId > 0 && ExecutorDishInstanceId > 0;
         public bool IsSelfTransfer => IsValid && SourceDishInstanceId == ExecutorDishInstanceId;
         public SettlementSweetTransferPresentationKey Key => new(
             SourceDishInstanceId,
             ExecutorDishInstanceId,
-            SkillId);
+            SkillId,
+            HandoffExecutionGroupId);
 
         public bool RequiresHandoffAfter(SettlementSweetTransferPresentationKey previous)
         {
@@ -211,14 +241,21 @@ namespace GourmetProject.Game.Presentation.Battle
                 return default;
             }
 
+            int handoffSourceDishInstanceId = trace.SweetTransferHandoffSourceDishInstanceId > 0
+                ? trace.SweetTransferHandoffSourceDishInstanceId
+                : trace.OwnerDishInstanceId;
             return new SettlementSweetTransferPresentationContext(
+                handoffSourceDishInstanceId,
                 trace.OwnerDishInstanceId,
                 trace.RuntimeSelfDishInstanceId,
                 trace.OwnerDishName,
                 trace.RuntimeSelfDishName,
                 trace.SkillId,
                 trace.SkillName,
-                executionGroupId);
+                executionGroupId,
+                trace.SweetTransferHandoffExecutionGroupId,
+                trace.SweetTransferHandoffSkillId,
+                trace.SweetTransferHandoffPayloadCount);
         }
     }
 

@@ -217,6 +217,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 dishViews,
                 mapper,
                 fxRoot,
+                worldCamera,
                 _visualScale);
             SettlementPresentationPlan plan = SettlementPresentationPlan.Build(result);
             var playback = new SettlementPlaybackState(plan.ResultBeatCount, scoreFire);
@@ -816,7 +817,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return result;
             }
 
-            var seen = new HashSet<SettlementSweetTransferPresentationKey>();
+            var indicesByKey = new Dictionary<SettlementSweetTransferPresentationKey, int>();
             int end = Mathf.Min(groups.Count, startIndex + length);
             for (int groupIndex = Mathf.Max(0, startIndex); groupIndex < end; groupIndex++)
             {
@@ -830,11 +831,29 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     SettlementSweetTransferPresentationContext context =
                         SettlementSweetTransferPresentationContext.FromLine(group.Lines[lineIndex]);
-                    if (!context.IsValid || !seen.Add(context.Key))
+                    if (!context.IsValid)
                     {
                         continue;
                     }
 
+                    if (indicesByKey.TryGetValue(context.Key, out int existingIndex))
+                    {
+                        SettlementSweetTransferPresentationContext existing = result[existingIndex];
+                        bool existingIsHandoffOwner = existing.EffectOwnerDishInstanceId
+                            == existing.SourceDishInstanceId;
+                        bool candidateIsHandoffOwner = context.EffectOwnerDishInstanceId
+                            == context.SourceDishInstanceId;
+                        if (!existingIsHandoffOwner && candidateIsHandoffOwner)
+                        {
+                            // 累计重触发时，旧技能通常先于本次新技能产生日志。
+                            // 粒子仍只需要一个，但保留本次来源自己的 context，便于正确揭示新卡片。
+                            result[existingIndex] = context;
+                        }
+
+                        continue;
+                    }
+
+                    indicesByKey.Add(context.Key, result.Count);
                     result.Add(context);
                 }
             }
@@ -1317,6 +1336,9 @@ namespace GourmetProject.Game.Presentation.Battle
             List<SettlementSweetTransferPresentationContext> handoffContexts =
                 CollectWaveHandoffs(groups, startIndex, waveLength);
             var handoffs = new List<SettlementStageView.SweetTransferHandoffVisual>(handoffContexts.Count);
+            var transferredRevealDeltas = new Dictionary<int, int>();
+            var transferredRevealViews = new Dictionary<int, DishPieceView>();
+            var transferredRevealOrder = new List<int>();
             for (int i = 0; i < handoffContexts.Count; i++)
             {
                 SettlementSweetTransferPresentationContext context = handoffContexts[i];
@@ -1328,9 +1350,14 @@ namespace GourmetProject.Game.Presentation.Battle
                     baselineSnapshot);
                 if (transferredDelta > 0)
                 {
-                    onReveal?.Invoke(SettlementRevealSignal.TransferredReveal(
-                        context.ExecutorDishInstanceId,
-                        transferredDelta));
+                    if (!transferredRevealDeltas.ContainsKey(context.ExecutorDishInstanceId))
+                    {
+                        transferredRevealDeltas.Add(context.ExecutorDishInstanceId, 0);
+                        transferredRevealViews.Add(context.ExecutorDishInstanceId, executorView);
+                        transferredRevealOrder.Add(context.ExecutorDishInstanceId);
+                    }
+
+                    transferredRevealDeltas[context.ExecutorDishInstanceId] += transferredDelta;
                 }
 
                 handoffs.Add(new SettlementStageView.SweetTransferHandoffVisual(
@@ -1340,6 +1367,26 @@ namespace GourmetProject.Game.Presentation.Battle
                 sweetTransferPlayback.PresentationKey = context.Key;
                 sweetTransferPlayback.ReceiverDishInstanceId = context.ExecutorDishInstanceId;
                 sweetTransferPlayback.ExecutorDishInstanceId = context.ExecutorDishInstanceId;
+            }
+
+            for (int i = 0; i < transferredRevealOrder.Count; i++)
+            {
+                int executorId = transferredRevealOrder[i];
+                int availableDelta = CountAllNewTransferredSkills(
+                    executorId,
+                    transferredRevealViews[executorId],
+                    baselineSnapshot);
+                sweetTransferPlayback.RevealedTransferredSkillCounts.TryGetValue(
+                    executorId,
+                    out int alreadyRevealed);
+                int remainingDelta = Mathf.Max(0, availableDelta - alreadyRevealed);
+                int revealDelta = Mathf.Min(transferredRevealDeltas[executorId], remainingDelta);
+                if (revealDelta > 0)
+                {
+                    onReveal?.Invoke(SettlementRevealSignal.TransferredReveal(executorId, revealDelta));
+                    sweetTransferPlayback.RevealedTransferredSkillCounts[executorId] =
+                        alreadyRevealed + revealDelta;
+                }
             }
 
             EmitBeat(
@@ -1712,6 +1759,15 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
             }
 
+            List<ResultLabelLayoutOccurrence> resultLabelOccurrences =
+                BuildResultLabelOccurrences(
+                lines,
+                dishViews,
+                showOnlyResponseSummaries);
+            ResultLabelLayoutPlan resultLabelPlan =
+                _stage.BuildResultLabelLayoutPlan(resultLabelOccurrences);
+            int resultLabelIndex = 0;
+
             // 同一批次的计分明细仍按原顺序写入账本与发出事件，但所有结果动画
             // 在同一帧启动。这样保留正式因果顺序，同时恢复“一起触发”的节奏。
             for (int i = 0; i < lines.Count; i++)
@@ -1810,12 +1866,14 @@ namespace GourmetProject.Game.Presentation.Battle
                     impactTier,
                     targetCount,
                     reachedTarget);
-                if (!showOnlyResponseSummaries || IsSweetTransferResponseLine(line))
+                if (ShouldShowResultLabelInBatch(line, showOnlyResponseSummaries))
                 {
                     float audioPitch = Mathf.Lerp(0.96f, 1.18f, NormalizedProgress(playback));
                     bool holdUntilCleared = holdResultLabels && IsSweetTransferAnnounceLine(line);
                     if (resultVisualIds.Count == 0)
                     {
+                        ResultLabelLayoutPlacement layoutPlacement =
+                            resultLabelPlan[resultLabelIndex++];
                         resultTasks.Add(_stage.ShowResultAsync(
                             group,
                             line,
@@ -1826,6 +1884,7 @@ namespace GourmetProject.Game.Presentation.Battle
                             impactTier,
                             audioPitch,
                             playPrimaryFeedback,
+                            layoutPlacement,
                             cancellationToken,
                             holdUntilCleared));
                     }
@@ -1833,7 +1892,10 @@ namespace GourmetProject.Game.Presentation.Battle
                     {
                         for (int targetIndex = 0; targetIndex < resultVisualIds.Count; targetIndex++)
                         {
-                            dishViews.TryGetValue(resultVisualIds[targetIndex], out DishPieceView resultTarget);
+                            int targetId = resultVisualIds[targetIndex];
+                            dishViews.TryGetValue(targetId, out DishPieceView resultTarget);
+                            ResultLabelLayoutPlacement layoutPlacement =
+                                resultLabelPlan[resultLabelIndex++];
                             resultTasks.Add(_stage.ShowResultAsync(
                                 group,
                                 line,
@@ -1844,6 +1906,7 @@ namespace GourmetProject.Game.Presentation.Battle
                                 impactTier,
                                 audioPitch,
                                 playPrimaryFeedback,
+                                layoutPlacement,
                                 cancellationToken,
                                 holdUntilCleared));
                         }
@@ -1857,6 +1920,58 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 await resultTasks[resultIndex];
             }
+        }
+
+        private static List<ResultLabelLayoutOccurrence> BuildResultLabelOccurrences(
+            IReadOnlyList<ResultLineRef> lines,
+            IReadOnlyDictionary<int, DishPieceView> dishViews,
+            bool showOnlyResponseSummaries)
+        {
+            var occurrences = new List<ResultLabelLayoutOccurrence>();
+            for (int i = 0; i < lines.Count; i++)
+            {
+                ResultLineRef lineRef = lines[i];
+                ScoreLine line = lineRef.Line;
+                if (!ShouldShowResultLabelInBatch(line, showOnlyResponseSummaries))
+                {
+                    continue;
+                }
+
+                IReadOnlyList<int> targetIds = ResultVisualDishInstanceIds(line);
+                if (targetIds.Count == 0)
+                {
+                    occurrences.Add(new ResultLabelLayoutOccurrence(
+                        lineRef.Group,
+                        null,
+                        0));
+                    continue;
+                }
+
+                for (int targetIndex = 0; targetIndex < targetIds.Count; targetIndex++)
+                {
+                    int targetId = targetIds[targetIndex];
+                    DishPieceView target = null;
+                    if (targetId > 0 && dishViews != null)
+                    {
+                        dishViews.TryGetValue(targetId, out target);
+                    }
+
+                    occurrences.Add(new ResultLabelLayoutOccurrence(
+                        lineRef.Group,
+                        target,
+                        target != null ? targetId : 0));
+                }
+            }
+
+            return occurrences;
+        }
+
+        internal static bool ShouldShowResultLabelInBatch(
+            ScoreLine line,
+            bool showOnlyResponseSummaries)
+        {
+            return (!showOnlyResponseSummaries || IsSweetTransferResponseLine(line))
+                && SettlementStageView.ShouldShowResultLabel(line);
         }
 
         private static bool ChangesDishValue(ScoreLineKind kind)
@@ -2312,8 +2427,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 if (step.Scope.Trace?.Kind == SkillExecutionKind.SweetTransfer)
                 {
+                    int sourceDishInstanceId = step.Scope.Trace.SweetTransferHandoffSourceDishInstanceId > 0
+                        ? step.Scope.Trace.SweetTransferHandoffSourceDishInstanceId
+                        : step.Scope.OwnerDishInstanceId;
                     return new SweetTransferVisualContext(
-                        step.Scope.OwnerDishInstanceId,
+                        sourceDishInstanceId,
                         step.Scope.RuntimeSelfDishInstanceId);
                 }
 
@@ -2443,7 +2561,9 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             if (scope.Trace?.Kind == SkillExecutionKind.SweetTransfer)
             {
-                return scope.OwnerDishInstanceId;
+                return scope.Trace.SweetTransferHandoffSourceDishInstanceId > 0
+                    ? scope.Trace.SweetTransferHandoffSourceDishInstanceId
+                    : scope.OwnerDishInstanceId;
             }
 
             return scope.OwnerDishInstanceId > 0
@@ -3196,7 +3316,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     || entry.SourceInstanceId != context.SourceDishInstanceId
                     || !string.Equals(
                         entry.Effect?.Rule?.SkillId,
-                        context.SkillId,
+                        context.HandoffSkillId,
                         StringComparison.Ordinal))
                 {
                     continue;
@@ -3205,7 +3325,26 @@ namespace GourmetProject.Game.Presentation.Battle
                 count++;
             }
 
-            return count;
+            return context.HandoffPayloadCount > 0
+                ? Mathf.Min(count, context.HandoffPayloadCount)
+                : count;
+        }
+
+        private static int CountAllNewTransferredSkills(
+            int executorDishInstanceId,
+            DishPieceView executorView,
+            SettlementBaselineSnapshot baselineSnapshot)
+        {
+            if (executorDishInstanceId <= 0 || executorView?.Instance?.TransferredSkills == null)
+            {
+                return 0;
+            }
+
+            int baselineCount = baselineSnapshot != null
+                && baselineSnapshot.TryGet(executorDishInstanceId, out SettlementDishBaseline baseline)
+                    ? baseline.TransferredSkillCount
+                    : 0;
+            return Mathf.Max(0, executorView.Instance.TransferredSkills.Count - baselineCount);
         }
 
         private static int CountSettlementCues(SettlementPlaybackPlan plan)
@@ -4209,6 +4348,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private sealed class SweetTransferPlaybackState
         {
+            public Dictionary<int, int> RevealedTransferredSkillCounts { get; } = new();
+
             public int SourceDishInstanceId { get; set; }
 
             public int ReceiverDishInstanceId { get; set; }

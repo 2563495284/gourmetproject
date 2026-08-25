@@ -42,12 +42,19 @@ namespace GourmetProject.Game.Presentation.Battle
         [Header("聚焦过渡")]
         [SerializeField, Min(0f)] private float _dishFocusFadeDuration = 0.12f;
 
+        [Header("结果标签布局")]
+        [SerializeField, Min(0.01f)] private float _resultLabelWidth = 1.8f;
+        [SerializeField, Min(0.01f)] private float _resultLabelHeight = 0.48f;
+        [SerializeField, Range(0f, 0.2f)] private float _resultLabelViewportPadding =
+            SettlementResultLabelLayout.DefaultViewportPadding;
+
         private GameObject _groupSpotlight;
         private GameObject _chapterSpotlight;
         private Tween _chapterSpotlightTween;
         private int _chapterDishInstanceId;
         private readonly List<GameObject> _heldLabels = new();
         private SettlementEffectGroup _resultHitSoundGroup;
+        private Camera _worldCamera;
 
         internal float PendingDishBrightness => _pendingDishBrightness;
 
@@ -55,6 +62,7 @@ namespace GourmetProject.Game.Presentation.Battle
             IReadOnlyDictionary<int, DishPieceView> dishViews,
             DiningTableCoordinateMapper mapper,
             Transform fxRoot,
+            Camera worldCamera,
             float visualScale = 1f)
         {
             // 餐桌入场已经通过 DishPieceView 的结算亮度通道渐暗到“未结算”。
@@ -65,6 +73,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishViews = dishViews;
             _mapper = mapper;
             _fxRoot = fxRoot != null ? fxRoot : transform;
+            _worldCamera = worldCamera;
             _visualScale = Mathf.Max(0.0001f, visualScale);
             ApplySettlementProgressFocus(0f);
         }
@@ -542,6 +551,49 @@ namespace GourmetProject.Game.Presentation.Battle
                 + Vector3.down * (0.42f * _visualScale);
         }
 
+        internal ResultLabelLayoutPlan BuildResultLabelLayoutPlan(
+            IReadOnlyList<ResultLabelLayoutOccurrence> occurrences)
+        {
+            if (occurrences == null || occurrences.Count == 0)
+            {
+                return SettlementResultLabelLayout.ResolveBatch(
+                    _worldCamera,
+                    Array.Empty<ResultLabelLayoutRequest>(),
+                    new Vector2(
+                        _resultLabelWidth * _visualScale,
+                        _resultLabelHeight * _visualScale),
+                    _resultLabelViewportPadding);
+            }
+
+            var requests = new ResultLabelLayoutRequest[occurrences.Count];
+            for (int i = 0; i < occurrences.Count; i++)
+            {
+                ResultLabelLayoutOccurrence occurrence = occurrences[i];
+                DishPieceView target = occurrence.Target;
+                Vector3 anchor = ResultLabelAnchor(target);
+                Vector3 targetPosition = target != null
+                    ? target.WorldBounds.center
+                    : anchor;
+                DishPieceView source = occurrence.Group != null
+                    ? TryGetDish(occurrence.Group.ActorDishInstanceId)
+                    : null;
+                requests[i] = new ResultLabelLayoutRequest(
+                    occurrence.TargetKey,
+                    anchor,
+                    targetPosition,
+                    source != null ? source.WorldBounds.center : default,
+                    source != null);
+            }
+
+            return SettlementResultLabelLayout.ResolveBatch(
+                _worldCamera,
+                requests,
+                new Vector2(
+                    _resultLabelWidth * _visualScale,
+                    _resultLabelHeight * _visualScale),
+                _resultLabelViewportPadding);
+        }
+
         internal static bool IsLaunchResultLabel(ScoreLine line)
         {
             if (line == null)
@@ -607,6 +659,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementImpactTier impactTier,
             float audioPitch,
             bool playTargetFeedback,
+            ResultLabelLayoutPlacement layoutPlacement,
             CancellationToken cancellationToken,
             bool holdUntilCleared = false)
         {
@@ -630,11 +683,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
             }
 
-            Vector3 anchor = ResultLabelAnchor(target)
-                + ResultLabelScatterOffset(
-                    _visualScale,
-                    UnityEngine.Random.Range(-1f, 1f),
-                    UnityEngine.Random.Range(0f, 1f));
+            Vector3 anchor = layoutPlacement.Position;
             Awaitable impactTask = playTargetFeedback
                 ? PlayImpactRingAsync(target, theme, impactTier, cancellationToken)
                 : default;
@@ -647,7 +696,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 cancellationToken,
                 holdUntilCleared: holdUntilCleared,
                 headerSemanticColor: ResultHeaderSemanticColorFor(line, theme),
-                sortingOrder: WorldLabelSorting.NextOrder());
+                sortingOrder: WorldLabelSorting.NextOrder(),
+                verticalDriftDirection: layoutPlacement.VerticalDirection);
             if (playTargetFeedback)
             {
                 await impactTask;
@@ -1130,7 +1180,8 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform parentOverride = null,
             float visualScaleOverride = -1f,
             Color? headerSemanticColor = null,
-            int sortingOrder = -1)
+            int sortingOrder = -1,
+            float verticalDriftDirection = 1f)
         {
             SettlementStageLabelView prefab = finalStamp ? _finaleLabelPrefab : _labelPrefab;
             if (prefab == null)
@@ -1163,6 +1214,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 targetScale,
                 new Vector3(0.80f, 0.80f, 1f));
             float animationDuration = Mathf.Max(0.0001f, duration);
+            float driftDirection = verticalDriftDirection < 0f ? -1f : 1f;
 
             Tween tween = DOVirtual.Float(0f, 1f, animationDuration, t =>
                 {
@@ -1177,7 +1229,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         targetScale,
                         new Vector3(0.80f + enter * 0.20f + pulse, 0.80f + enter * 0.20f + pulse, 1f));
                     root.transform.position = anchor
-                        + Vector3.up * (0.10f * visualScale * enter);
+                        + Vector3.up * (
+                            driftDirection * 0.10f * visualScale * enter);
 
                     float alpha = holdUntilCleared ? 1f : Mathf.Clamp01((1f - t) / 0.24f);
                     headerText.color = WithAlpha(headerColor, alpha);
