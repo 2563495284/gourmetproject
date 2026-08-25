@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a36a0f2d9e7493eb14fbe04cefc28d7, type: 3}
   m_Name: ExampleBalanceScenario
   m_EditorClassIdentifier: 
-  BuildName: GM 数值平衡示例
+  BuildName: "GM \u6570\u503C\u5E73\u8861\u793A\u4F8B"
   Checkpoints:
-  - Name: W1 合法摆盘示例
+  - Name: "W1 \u5408\u6CD5\u6446\u76D8\u793A\u4F8B"
     CharacterId: glutton_dog
     Week: 1
     Day: 0
@@ -26,7 +26,6 @@ MonoBehaviour:
     Items: []
     TableFragmentIds: []
     FragmentPlacements: []
-    CellMaterials: []
     Dishes:
     - DishId: arrow_cookie_1
       X: 16
