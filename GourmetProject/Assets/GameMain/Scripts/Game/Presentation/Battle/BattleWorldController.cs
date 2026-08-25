@@ -2056,7 +2056,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _outletDragPiece = piece;
             _outletHoverPlacement = null;
             piece.SetClickEnabled(false);
-            piece.SetDragPresentation(true);
+            piece.SetDragPresentation(true, _cellSize);
             BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateServingOutletDrag(screenPoint);
             GameApp.Audio.PlayPickup();
@@ -2283,7 +2283,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _discardAnimationCompletion = onComplete;
             piece.transform.DOKill();
             piece.SetClickEnabled(false);
-            piece.SetDragPresentation(true);
+            piece.SetDragPresentation(true, _cellSize);
             piece.SetBodyAlpha(1f);
 
             Vector3 startWorld = piece.OccupiedCellCenterWorld();
@@ -2602,7 +2602,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SetOutletDiscardHover(false);
             _session.DiningTable.RemoveDish(dish);
             ClearDishScopeHighlights();
-            piece.SetDragPresentation(true);
+            piece.SetDragPresentation(true, _cellSize);
             SetPendingDishActionButtonVisible(dish.Id, false);
             BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateMovableDishDrag(screenPoint);
@@ -2738,7 +2738,7 @@ namespace GourmetProject.Game.Presentation.Battle
             piece.transform.DOKill();
             piece.transform.localScale = Vector3.one;
             piece.MoveVisualCenterToWorld(currentCenter);
-            piece.SetDragPresentation(true);
+            piece.SetDragPresentation(true, _cellSize);
             BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateTemporaryAreaDishDrag(screenPoint);
             GameApp.Audio.PlayPickup();

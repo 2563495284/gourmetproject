@@ -218,11 +218,12 @@ namespace GourmetProject.Game.UI.Menu
             _entryRequested = true;
             _continueButton.interactable = false;
 
-            // 流程请求必须在点击回调内立即登记，不能依赖转场动画的 OnCovered。
-            // 即使转场资源正在加载、已存在或播放失败，ProcedureMenu 也能在下一帧进入玩法流程。
-            GameplayEntryRequest.RequestContinue();
-            Log.Info("Continue run requested.", Tag);
-            ShowBattleTransition(null);
+            // 等遮罩完全覆盖后再切换流程，避免菜单先关闭而转场仍在预热时露出底层画面。
+            ShowBattleTransition(() =>
+            {
+                GameplayEntryRequest.RequestContinue();
+                Log.Info("Continue run requested.", Tag);
+            });
         }
 
         private static void ConfirmStartNewRun(cfg.Character character)
