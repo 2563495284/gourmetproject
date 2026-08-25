@@ -10,6 +10,44 @@ using GourmetProject.Gameplay.Model;
 namespace GourmetProject.Game.Meta
 {
     /// <summary>
+    /// 收集同一个事件选项产生的通用奖励组，待该选项的全部效果按序解析完成后一次性入队。
+    /// 非事件选项调用不创建此批次，仍保持每个效果独立入队。
+    /// </summary>
+    internal sealed class GenericRewardBatch
+    {
+        private readonly List<RewardChoiceGroup> _groups = new List<RewardChoiceGroup>();
+
+        public void Add(RewardOffer offer)
+        {
+            if (offer == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < offer.FixedGroups.Count; i++)
+            {
+                RewardChoiceGroup group = offer.FixedGroups[i];
+                if (group != null && group.HasChoices)
+                {
+                    _groups.Add(group);
+                }
+            }
+
+            if (offer.SpecificGroup != null && offer.SpecificGroup.HasChoices)
+            {
+                _groups.Add(offer.SpecificGroup);
+            }
+        }
+
+        public RewardOffer BuildOffer()
+        {
+            return _groups.Count > 0
+                ? new RewardOffer(0, _groups, null, baseGoldClaimed: true)
+                : null;
+        }
+    }
+
+    /// <summary>
     /// 局外即时效果结算（金币/装饰品和消耗品/降目标/赌博/加菜…）。奖励/负面行动与事件选项共用，避免规则漂移。
     /// 只处理「即时」类 <see cref="cfg.EffectType"/>；跟进类（FoodBattle/Shop/GameOver/Victory）由
     /// <see cref="EventService"/> 转成 <see cref="EventResolveResult"/> 的后续动作，不在这里结算。
@@ -28,6 +66,25 @@ namespace GourmetProject.Game.Meta
             float effectValue,
             string effectParam,
             IRandomStream rng,
+            out RecipeMutationResult recipeMutation)
+        {
+            return Apply(
+                run,
+                effectType,
+                effectValue,
+                effectParam,
+                rng,
+                rewardBatch: null,
+                out recipeMutation);
+        }
+
+        internal static string Apply(
+            GameRun run,
+            cfg.EffectType effectType,
+            float effectValue,
+            string effectParam,
+            IRandomStream rng,
+            GenericRewardBatch rewardBatch,
             out RecipeMutationResult recipeMutation)
         {
             recipeMutation = null;
@@ -52,7 +109,7 @@ namespace GourmetProject.Game.Meta
                     return $"本周目标美味值降低至 {run.RequiredScoreOverride}。";
 
                 case cfg.EffectType.GainItem:
-                    return EnqueueConfigReward(run, rng, effectParam, "获得装饰品和消耗品", 40);
+                    return EnqueueConfigReward(run, rng, effectParam, "获得装饰品和消耗品", 40, rewardBatch);
 
                 case cfg.EffectType.Gamble:
                     if (rng.NextBool())
@@ -65,7 +122,7 @@ namespace GourmetProject.Game.Meta
                     return $"豪赌失败…金币 -{value}。";
 
                 case cfg.EffectType.AddDish:
-                    return EnqueueConfigReward(run, rng, effectParam, "食物奖励", 30);
+                    return EnqueueConfigReward(run, rng, effectParam, "食物奖励", 30, rewardBatch);
 
                 case cfg.EffectType.UpgradeDish:
                     // 「提升食物」是改造而非发放，暂折金币占位（不在本次奖励统一范围）。
@@ -76,10 +133,10 @@ namespace GourmetProject.Game.Meta
                     return AddHiddenScoreOffset(run, effectValue, effectParam);
 
                 case cfg.EffectType.EnqueueDishChoice:
-                    return EnqueueConfigReward(run, rng, effectParam, "食物奖励", 30);
+                    return EnqueueConfigReward(run, rng, effectParam, "食物奖励", 30, rewardBatch);
 
                 case cfg.EffectType.EnqueueItemChoice:
-                    return EnqueueConfigReward(run, rng, effectParam, "装饰品和消耗品奖励", 40);
+                    return EnqueueConfigReward(run, rng, effectParam, "装饰品和消耗品奖励", 40, rewardBatch);
 
                 case cfg.EffectType.AddRandomRecipeFlavor:
                     return AddRandomRecipeFlavor(
@@ -89,10 +146,10 @@ namespace GourmetProject.Game.Meta
                         out recipeMutation);
 
                 case cfg.EffectType.GainSpecificItem:
-                    return EnqueueConfigReward(run, rng, effectParam, "获得装饰品和消耗品", 40);
+                    return EnqueueConfigReward(run, rng, effectParam, "获得装饰品和消耗品", 40, rewardBatch);
 
                 case cfg.EffectType.GrantFragmentPack:
-                    return EnqueueConfigReward(run, rng, effectParam, "餐桌格", 40);
+                    return EnqueueConfigReward(run, rng, effectParam, "餐桌格", 40, rewardBatch);
 
                 case cfg.EffectType.AddShopPricePct:
                     run.AddEventShopPricePct(effectValue);
@@ -118,7 +175,7 @@ namespace GourmetProject.Game.Meta
                     return IncrementEventCounter(run, value, effectParam);
 
                 case cfg.EffectType.GainRandomFlavoredDishes:
-                    return EnqueueConfigReward(run, rng, effectParam, "风味食物", 60);
+                    return EnqueueConfigReward(run, rng, effectParam, "风味食物", 60, rewardBatch);
 
                 case cfg.EffectType.RemoveRandomRecipeDish:
                     return RemoveRandomRecipeDish(
@@ -134,7 +191,7 @@ namespace GourmetProject.Game.Meta
                     return $"失去所有[gold]金币（-{lost}）[/gold]。";
 
                 case cfg.EffectType.GainLegendaryItem:
-                    return EnqueueConfigReward(run, rng, effectParam, "传奇装饰品和消耗品", 80);
+                    return EnqueueConfigReward(run, rng, effectParam, "传奇装饰品和消耗品", 80, rewardBatch);
 
                 case cfg.EffectType.CollectInterest:
                     return CollectInterest(run, effectParam);
@@ -179,10 +236,22 @@ namespace GourmetProject.Game.Meta
                     return $"后续星级评鉴基础金币 {FormatMultiplier(effectValue)}。";
 
                 case cfg.EffectType.GrantRandomActiveItems:
-                    return GrantRandomItems(run, rng, cfg.ItemKind.Active, System.Math.Max(1, value), effectParam);
+                    return GrantRandomItems(
+                        run,
+                        rng,
+                        cfg.ItemKind.Active,
+                        System.Math.Max(1, value),
+                        effectParam,
+                        rewardBatch);
 
                 case cfg.EffectType.GrantRandomPassiveItems:
-                    return GrantRandomItems(run, rng, cfg.ItemKind.Passive, System.Math.Max(1, value), effectParam);
+                    return GrantRandomItems(
+                        run,
+                        rng,
+                        cfg.ItemKind.Passive,
+                        System.Math.Max(1, value),
+                        effectParam,
+                        rewardBatch);
 
                 case cfg.EffectType.LoseEscalatingGold:
                     return LoseEscalatingGold(run, value, effectParam);
@@ -289,7 +358,13 @@ namespace GourmetProject.Game.Meta
         /// 奖励类效果统一入口：effectParam = "奖励槽组id[|标题]"。按配置 roll 出 offer 入通用领奖队列，等同于一次正常领奖。
         /// 无配置 / 无候选时折金币兜底。
         /// </summary>
-        private static string EnqueueConfigReward(GameRun run, IRandomStream rng, string param, string defaultTitle, int goldFallback)
+        private static string EnqueueConfigReward(
+            GameRun run,
+            IRandomStream rng,
+            string param,
+            string defaultTitle,
+            int goldFallback,
+            GenericRewardBatch rewardBatch)
         {
             if (rng == null)
             {
@@ -311,8 +386,58 @@ namespace GourmetProject.Game.Meta
                 return $"奖励池为空，折算金币 +{goldFallback}。";
             }
 
-            run.EnqueueGenericRewardOffer(BuildGenericRewardKey(run, slotGroupId, rewardTitle), rewardTitle, offer);
+            // 单独入队时标题保存在队列条目上；合批后每个效果共享同一条队列记录，
+            // 因此把显式配置的标题下沉到奖励组，确保各奖励条仍能区分来源。
+            if (!string.IsNullOrWhiteSpace(title) && offer.MainGroup.HasChoices)
+            {
+                RewardChoiceGroup source = offer.MainGroup;
+                var titledGroup = new RewardChoiceGroup(
+                    rewardTitle,
+                    source.Choices,
+                    source.RequiredChoiceCount,
+                    source.ClaimedIndices,
+                    source.Skipped,
+                    source.Description,
+                    source.RuleText,
+                    source.SourceSlotId);
+                offer = new RewardOffer(0, new[] { titledGroup }, null, baseGoldClaimed: true);
+            }
+
+            if (rewardBatch != null)
+            {
+                rewardBatch.Add(offer);
+            }
+            else
+            {
+                run.EnqueueGenericRewardOffer(
+                    BuildGenericRewardKey(run, slotGroupId, rewardTitle),
+                    rewardTitle,
+                    offer);
+            }
+
             return $"获得奖励：{rewardTitle}。";
+        }
+
+        internal static void EnqueueRewardBatch(
+            GameRun run,
+            GenericRewardBatch rewardBatch,
+            string optionId,
+            string title)
+        {
+            RewardOffer offer = rewardBatch?.BuildOffer();
+            if (run == null || offer == null)
+            {
+                return;
+            }
+
+            string rewardTitle = string.IsNullOrWhiteSpace(title) ? "奖励" : title;
+            string source = string.IsNullOrWhiteSpace(optionId)
+                ? "event_option"
+                : $"event_option_{optionId}";
+            run.EnqueueGenericRewardOffer(
+                BuildGenericRewardKey(run, source, rewardTitle),
+                rewardTitle,
+                offer);
         }
 
         /// <summary>解析 "slotGroupId" 或 "slotGroupId|标题"。</summary>
@@ -444,7 +569,8 @@ namespace GourmetProject.Game.Meta
             IRandomStream rng,
             cfg.ItemKind kind,
             int count,
-            string param)
+            string param,
+            GenericRewardBatch rewardBatch)
         {
             if (rng == null)
             {
@@ -504,7 +630,18 @@ namespace GourmetProject.Game.Meta
             string title = kind == cfg.ItemKind.Passive ? "装饰品奖励" : "消耗品奖励";
             var group = new RewardChoiceGroup(title, choices, choices.Count, ruleText: "点击领取");
             var offer = new RewardOffer(0, new[] { group }, null, baseGoldClaimed: true);
-            run.EnqueueGenericRewardOffer(BuildGenericRewardKey(run, kind.ToString(), title), title, offer);
+            if (rewardBatch != null)
+            {
+                rewardBatch.Add(offer);
+            }
+            else
+            {
+                run.EnqueueGenericRewardOffer(
+                    BuildGenericRewardKey(run, kind.ToString(), title),
+                    title,
+                    offer);
+            }
+
             return $"获得 {items.Count} 个{(kind == cfg.ItemKind.Passive ? "装饰品" : "消耗品")}。";
         }
 

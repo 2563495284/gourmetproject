@@ -1408,7 +1408,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private static void RefreshBattlePersistentHud(bool refreshItems = true)
         {
-            BattleForm.Active?.RefreshPersistentHud(refreshItems);
+            BattleForm.Active?.ShowPersistentHudForReward(refreshItems);
         }
 
         private RewardChoiceGroup GroupFor(int groupIndex)
@@ -1738,10 +1738,10 @@ namespace GourmetProject.Game.UI.Meta
                     return;
                 }
 
-                bool directFoodReward = choice?.Kind == cfg.RewardKind.DishChoice;
+                bool useChoiceIdentity = UsesConcreteRewardPresentation(choice?.Kind ?? cfg.RewardKind.None);
                 Sprite icon;
                 bool suppressDishPreview;
-                if (directFoodReward)
+                if (useChoiceIdentity)
                 {
                     icon = LoadChoiceIcon(choice);
                     suppressDishPreview = true;
@@ -2059,13 +2059,7 @@ namespace GourmetProject.Game.UI.Meta
                 return group?.Description ?? string.Empty;
             }
 
-            string description = BuildChoiceDescription(choice);
-            if (choice.Kind == cfg.RewardKind.DishChoice && string.IsNullOrWhiteSpace(choice.Description))
-            {
-                description = !string.IsNullOrWhiteSpace(group?.Description)
-                    ? group.Description
-                    : description;
-            }
+            string description = BuildDirectChoiceBaseDescription(choice, group);
 
             if (IsActiveItemReward(choice.Kind) && _run != null && !_run.HasFreeActiveSlot)
             {
@@ -2075,6 +2069,27 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             return description;
+        }
+
+        internal static string BuildDirectChoiceBaseDescription(
+            RewardChoice choice,
+            RewardChoiceGroup group)
+        {
+            if (choice == null)
+            {
+                return group?.Description ?? string.Empty;
+            }
+
+            return UsesConcreteRewardPresentation(choice.Kind)
+                ? "领取奖励"
+                : BuildChoiceDescription(choice);
+        }
+
+        internal static bool UsesConcreteRewardPresentation(cfg.RewardKind kind)
+        {
+            return kind == cfg.RewardKind.DishChoice
+                || kind == cfg.RewardKind.PassiveItemChoice
+                || IsActiveItemReward(kind);
         }
 
         private static string BuildChoiceDescription(RewardChoice choice)

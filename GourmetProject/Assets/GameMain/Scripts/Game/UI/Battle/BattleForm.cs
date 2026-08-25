@@ -2790,6 +2790,36 @@ namespace GourmetProject.Game.UI.Battle
             RefreshPersistent(refreshItems);
         }
 
+        internal void ShowPersistentHudForReward(bool refreshItems = true)
+        {
+            EnsurePersistentRewardHudVisible(
+                _hudFrame,
+                _infoColumn != null ? _infoColumn.gameObject : null,
+                _itemsColumn != null ? _itemsColumn.gameObject : null);
+            RefreshPersistent(refreshItems);
+        }
+
+        internal static void EnsurePersistentRewardHudVisible(
+            GameObject hudFrame,
+            GameObject leftColumn,
+            GameObject rightColumn)
+        {
+            if (hudFrame != null)
+            {
+                hudFrame.SetActive(true);
+            }
+
+            if (leftColumn != null)
+            {
+                leftColumn.SetActive(true);
+            }
+
+            if (rightColumn != null)
+            {
+                rightColumn.SetActive(true);
+            }
+        }
+
         internal void CommitRewardInventoryMutation()
         {
             if (_run == null || RewardForm.Active == null)

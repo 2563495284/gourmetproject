@@ -381,6 +381,7 @@ namespace GourmetProject.Game.Meta
             EventResolveResult followUp = null;
             var feedbacks = new List<string>();
             var recipeMutation = new RecipeMutationResult { Title = option.Text };
+            var rewardBatch = new GenericRewardBatch();
             int count = option.EffectTypes.Count;
             for (int i = 0; i < count; i++)
             {
@@ -392,7 +393,14 @@ namespace GourmetProject.Game.Meta
 
                 float value = i < option.EffectValues.Count ? option.EffectValues[i] : 0f;
                 string param = i < option.EffectParams.Count ? option.EffectParams[i] : string.Empty;
-                EventResolveResult r = ResolveEffect(run, type, value, param, option.Text, rng);
+                EventResolveResult r = ResolveEffect(
+                    run,
+                    type,
+                    value,
+                    param,
+                    option.Text,
+                    rng,
+                    rewardBatch);
                 if (r.RecipeMutation?.HasChanges == true)
                 {
                     recipeMutation.Entries.AddRange(r.RecipeMutation.Entries);
@@ -407,6 +415,8 @@ namespace GourmetProject.Game.Meta
                     feedbacks.Add(r.Feedback);
                 }
             }
+
+            EffectResolver.EnqueueRewardBatch(run, rewardBatch, option.Id, option.Text);
 
             if (followUp != null)
             {
@@ -462,7 +472,14 @@ namespace GourmetProject.Game.Meta
             return true;
         }
 
-        private static EventResolveResult ResolveEffect(GameRun run, cfg.EffectType effectType, float effectValue, string effectParam, string fallback, IRandomStream rng)
+        private static EventResolveResult ResolveEffect(
+            GameRun run,
+            cfg.EffectType effectType,
+            float effectValue,
+            string effectParam,
+            string fallback,
+            IRandomStream rng,
+            GenericRewardBatch rewardBatch)
         {
             switch (effectType)
             {
@@ -499,6 +516,7 @@ namespace GourmetProject.Game.Meta
                         effectValue,
                         effectParam,
                         rng,
+                        rewardBatch,
                         out RecipeMutationResult recipeMutation);
                     return EventResolveResult.Immediate(
                         string.IsNullOrEmpty(feedback) ? fallback : feedback,
