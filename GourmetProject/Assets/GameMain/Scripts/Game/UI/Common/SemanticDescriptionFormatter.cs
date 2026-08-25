@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using TMPro;
+using UnityEngine;
 
 namespace GourmetProject.Game.UI.Common
 {
@@ -17,6 +18,7 @@ namespace GourmetProject.Game.UI.Common
         public const string GoldColor = "#9A6500";
         public const string TermColor = "#7656A8";
         public const string MultiplyFaceColor = "#E15A64";
+        public const string PureWhiteColor = "#FFFFFF";
         public const string MultiplyMaterialName = "DescriptionMultiplyOutline";
 
         private static readonly TagDefinition[] Definitions =
@@ -29,6 +31,8 @@ namespace GourmetProject.Game.UI.Common
             new TagDefinition(
                 "multmul",
                 $"<material=\"{MultiplyMaterialName}\"><b><color={MultiplyFaceColor}>",
+                "</color></b></material>",
+                $"<material=\"{MultiplyMaterialName}\"><b><color={PureWhiteColor}>",
                 "</color></b></material>"),
             Colored("gold", GoldColor),
             Colored("term", TermColor),
@@ -37,6 +41,17 @@ namespace GourmetProject.Game.UI.Common
 
         /// <summary>将语义标签转换为 TMP 富文本；null 会转换为空字符串。</summary>
         public static string Format(string source)
+        {
+            return Format(source, false);
+        }
+
+        /// <summary>将所有语义颜色统一覆盖为纯白，保留粗体等非颜色样式。</summary>
+        public static string FormatPureWhite(string source)
+        {
+            return Format(source, true);
+        }
+
+        private static string Format(string source, bool usePureWhite)
         {
             if (string.IsNullOrEmpty(source))
             {
@@ -66,7 +81,9 @@ namespace GourmetProject.Game.UI.Common
 
                 if (TryReadTag(source, index, out TagDefinition definition, out bool isClosing, out int tagLength))
                 {
-                    result.Append(isClosing ? definition.Suffix : definition.Prefix);
+                    result.Append(isClosing
+                        ? definition.SuffixFor(usePureWhite)
+                        : definition.PrefixFor(usePureWhite));
                     index += tagLength;
                     continue;
                 }
@@ -90,9 +107,27 @@ namespace GourmetProject.Game.UI.Common
             target.text = Format(source);
         }
 
+        /// <summary>开启富文本，将语义颜色统一覆盖为纯白后写入目标文本组件。</summary>
+        public static void SetPureWhite(TMP_Text target, string source)
+        {
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            target.color = Color.white;
+            target.richText = true;
+            target.text = FormatPureWhite(source);
+        }
+
         private static TagDefinition Colored(string name, string color)
         {
-            return new TagDefinition(name, $"<b><color={color}>", "</color></b>");
+            return new TagDefinition(
+                name,
+                $"<b><color={color}>",
+                "</color></b>",
+                $"<b><color={PureWhiteColor}>",
+                "</color></b>");
         }
 
         private static bool HasValidSemanticStructure(string source)
@@ -219,16 +254,29 @@ namespace GourmetProject.Game.UI.Common
 
         private sealed class TagDefinition
         {
-            public TagDefinition(string name, string prefix, string suffix)
+            public TagDefinition(
+                string name,
+                string prefix,
+                string suffix,
+                string pureWhitePrefix = null,
+                string pureWhiteSuffix = null)
             {
                 Name = name;
                 Prefix = prefix;
                 Suffix = suffix;
+                PureWhitePrefix = pureWhitePrefix ?? prefix;
+                PureWhiteSuffix = pureWhiteSuffix ?? suffix;
             }
 
             public string Name { get; }
             public string Prefix { get; }
             public string Suffix { get; }
+            private string PureWhitePrefix { get; }
+            private string PureWhiteSuffix { get; }
+
+            public string PrefixFor(bool usePureWhite) => usePureWhite ? PureWhitePrefix : Prefix;
+
+            public string SuffixFor(bool usePureWhite) => usePureWhite ? PureWhiteSuffix : Suffix;
         }
     }
 }

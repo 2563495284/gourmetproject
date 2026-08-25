@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using GourmetProject.Game.Meta;
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Game.UI.Meta;
 using NUnit.Framework;
 
@@ -37,6 +38,16 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 RewardForm.BuildDirectChoiceBaseDescription(choice, null),
                 Is.EqualTo("领取后获得[gold]金币+40[/gold]。"));
+        }
+
+        [Test]
+        public void ChoicePrompt_OverridesSemanticColorsWithPureWhite()
+        {
+            string formatted = SemanticDescriptionFormatter.FormatPureWhite(
+                "选择 1 件[term]装饰品[/term]或[term]消耗品[/term]");
+
+            Assert.That(formatted, Does.Not.Contain(SemanticDescriptionFormatter.TermColor));
+            Assert.That(formatted, Does.Contain(SemanticDescriptionFormatter.PureWhiteColor));
         }
     }
 }

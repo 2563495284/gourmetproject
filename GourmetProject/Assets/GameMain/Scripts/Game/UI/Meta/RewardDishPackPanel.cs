@@ -318,7 +318,7 @@ namespace GourmetProject.Game.UI.Meta
                 string prompt = required > 1
                     ? $"{_basePrompt}\n已领 {claimed}/{required}"
                     : _basePrompt;
-                SemanticDescriptionFormatter.Set(_promptText, prompt);
+                SemanticDescriptionFormatter.SetPureWhite(_promptText, prompt);
             }
 
             if (_skipButton != null)
