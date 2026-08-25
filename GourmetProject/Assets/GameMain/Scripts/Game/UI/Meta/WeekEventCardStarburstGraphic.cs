@@ -51,11 +51,13 @@ namespace GourmetProject.Game.UI.Meta
             base.OnDisable();
         }
 
+#if UNITY_EDITOR
         protected override void Reset()
         {
             base.Reset();
             ConfigureGraphic();
         }
+#endif
 
         public void SetStarEvaluation(bool active)
         {
@@ -345,6 +347,7 @@ namespace GourmetProject.Game.UI.Meta
             helper.AddVert(vertex);
         }
 
+#if UNITY_EDITOR
         protected override void OnValidate()
         {
             base.OnValidate();
@@ -355,6 +358,7 @@ namespace GourmetProject.Game.UI.Meta
             _particleSize = ClampRange(_particleSize, 0.5f);
             ConfigureGraphic();
         }
+#endif
 
         private static Vector2 ClampRange(Vector2 range, float minimum)
         {
