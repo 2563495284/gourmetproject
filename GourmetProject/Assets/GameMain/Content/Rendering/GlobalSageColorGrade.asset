@@ -15,10 +15,10 @@ MonoBehaviour:
   active: 1
   redOutRedIn:
     m_OverrideState: 1
-    m_Value: 96
+    m_Value: 99
   redOutGreenIn:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 1
   redOutBlueIn:
     m_OverrideState: 1
     m_Value: 0
@@ -30,16 +30,16 @@ MonoBehaviour:
     m_Value: 100
   greenOutBlueIn:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 1
   blueOutRedIn:
     m_OverrideState: 1
     m_Value: 0
   blueOutGreenIn:
     m_OverrideState: 1
-    m_Value: 3
+    m_Value: 2
   blueOutBlueIn:
     m_OverrideState: 1
-    m_Value: 98
+    m_Value: 99
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -71,10 +71,10 @@ MonoBehaviour:
   active: 1
   postExposure:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 0.1
   contrast:
     m_OverrideState: 1
-    m_Value: -3
+    m_Value: 0
   colorFilter:
     m_OverrideState: 1
     m_Value: {r: 1, g: 1, b: 1, a: 1}
@@ -83,7 +83,7 @@ MonoBehaviour:
     m_Value: 0
   saturation:
     m_OverrideState: 1
-    m_Value: -8
+    m_Value: -3
 --- !u!114 &2355785265383843565
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -96,7 +96,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 899c54efeace73346a0a16faa3afe726, type: 3}
   m_Name: Vignette
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.Vignette
-  active: 1
+  active: 0
   color:
     m_OverrideState: 1
     m_Value: {r: 0.105882354, g: 0.16470589, b: 0.14117648, a: 1}
