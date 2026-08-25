@@ -354,7 +354,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            _dishValueBadgePresenter.FadeValue(visible, duration, onComplete);
+            _dishValueBadgePresenter.Fade(visible, duration, onComplete);
         }
 
         public void UpdatePlacement(Placement placement)

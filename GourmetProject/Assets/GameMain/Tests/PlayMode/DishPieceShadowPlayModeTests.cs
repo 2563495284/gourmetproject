@@ -222,6 +222,9 @@ namespace GourmetProject.Tests.PlayMode
                 float fullTextAlpha = ActiveBadge(rig)
                     .GetComponentInChildren<TextMeshPro>(true)
                     .color.a;
+                float fullSpriteAlpha = ActiveBadge(rig)
+                    .GetComponentInChildren<SpriteRenderer>(true)
+                    .color.a;
 
                 Assert.That(DishIconPreviewRenderer.RenderInto(
                     target,
@@ -241,6 +244,9 @@ namespace GourmetProject.Tests.PlayMode
                 Assert.That(
                     ActiveBadge(rig).GetComponentInChildren<TextMeshPro>(true).color.a,
                     Is.EqualTo(fullTextAlpha * 0.35f).Within(0.001f));
+                Assert.That(
+                    ActiveBadge(rig).GetComponentInChildren<SpriteRenderer>(true).color.a,
+                    Is.EqualTo(fullSpriteAlpha * 0.35f).Within(0.001f));
 
                 Assert.That(DishIconPreviewRenderer.RenderInto(
                     target,

@@ -76,11 +76,11 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplyVisible();
             if (visible)
             {
-                _badge?.SetValueAlpha(1f);
+                _badge?.SetAlpha(1f);
             }
         }
 
-        internal void FadeValue(bool visible, float duration, System.Action onComplete = null)
+        internal void Fade(bool visible, float duration, System.Action onComplete = null)
         {
             KillValueFade();
             if (_badge == null || !_visible)
@@ -93,14 +93,14 @@ namespace GourmetProject.Game.Presentation.Battle
             if (duration <= 0.0001f
                 || Mathf.Approximately(_badge.CurrentAlpha, targetAlpha))
             {
-                _badge.SetValueAlpha(targetAlpha);
+                _badge.SetAlpha(targetAlpha);
                 onComplete?.Invoke();
                 return;
             }
 
             _valueFadeTween = DOTween.To(
                     () => _badge != null ? _badge.CurrentAlpha : targetAlpha,
-                    alpha => _badge?.SetValueAlpha(alpha),
+                    alpha => _badge?.SetAlpha(alpha),
                     targetAlpha,
                     duration)
                 .SetEase(visible ? Ease.OutQuad : Ease.InQuad)
@@ -109,7 +109,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 .OnComplete(() =>
                 {
                     _valueFadeTween = null;
-                    _badge?.SetValueAlpha(targetAlpha);
+                    _badge?.SetAlpha(targetAlpha);
                     onComplete?.Invoke();
                 });
         }
@@ -232,7 +232,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private void OnDisable()
         {
             KillValueFade();
-            _badge?.SetValueAlpha(1f);
+            _badge?.SetAlpha(1f);
         }
     }
 }

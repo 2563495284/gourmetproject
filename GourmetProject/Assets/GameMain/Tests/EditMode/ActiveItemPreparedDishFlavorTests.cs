@@ -5,6 +5,7 @@ using GourmetProject.Config;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
@@ -62,6 +63,20 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 session.FindPreparedServePlacements().All(placement => placement.RotationIndex == 3),
                 Is.True);
+        }
+
+        [Test]
+        public void ServingOutletNumbPreview_UsesCounterClockwiseRotationFromOldToNewOrientation()
+        {
+            Assert.That(
+                DishIconRenderTexturePreview.CounterClockwiseStepsBetween(0, 3),
+                Is.EqualTo(1));
+            Assert.That(
+                DishIconRenderTexturePreview.CounterClockwiseStepsBetween(3, 2),
+                Is.EqualTo(1));
+            Assert.That(
+                DishIconRenderTexturePreview.CounterClockwiseStepsBetween(2, 2),
+                Is.Zero);
         }
 
         private (GameRun Run, BattleSession Session) CreatePreparedBattle()

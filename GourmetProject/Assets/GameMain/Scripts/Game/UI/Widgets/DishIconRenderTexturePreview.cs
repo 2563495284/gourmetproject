@@ -100,6 +100,7 @@ namespace GourmetProject.Game.UI.Widgets
         private const float TransformInDuration = 0.14f;
         private const float TransformOutDuration = 0.2f;
         private const float TransformHoldDuration = 0.5f;
+        private const float RotationTransformDuration = 0.28f;
         private const float DissolveDuration = 0.85f;
         private const float PrefabGridSize = 3f;
         private static readonly int BrightnessId = Shader.PropertyToID("_Brightness");
@@ -122,6 +123,8 @@ namespace GourmetProject.Game.UI.Widgets
 
         private RenderTexture _renderTexture;
         private Sequence _transformSequence;
+        private Transform _rotationTransformTarget;
+        private Quaternion _rotationTransformBase = Quaternion.identity;
         private Tween _valueBadgeFadeTween;
         private Material _transformMaterial;
         private Material _dissolveMaterial;
@@ -242,7 +245,7 @@ namespace GourmetProject.Game.UI.Widgets
             RenderCurrentBinding();
         }
 
-        /// <summary>只渐隐/渐显美味值数字，Badge 外框和图标保持可见。</summary>
+        /// <summary>渐隐/渐显整个 DishValueBadge。</summary>
         public void FadeValueBadge(bool visible, float duration, Action onComplete = null)
         {
             KillValueBadgeFade();
@@ -448,9 +451,98 @@ namespace GourmetProject.Game.UI.Widgets
 
         public void PlayTransformTo(DishInstance dish, Action onComplete)
         {
-            PlayTransformTo(
-                DishPreviewRequest.FromInstance(dish, mode: _mode),
-                onComplete);
+            DishPreviewRequest request = DishPreviewRequest.FromInstance(dish, mode: _mode);
+            if (_hasBinding
+                && _boundRotationIndex.HasValue
+                && request.RotationIndex.HasValue)
+            {
+                int ccwSteps = CounterClockwiseStepsBetween(
+                    _boundRotationIndex.Value,
+                    request.RotationIndex.Value);
+                if (ccwSteps > 0)
+                {
+                    PlayRotationTransformTo(request, ccwSteps, onComplete);
+                    return;
+                }
+            }
+
+            PlayTransformTo(request, onComplete);
+        }
+
+        internal static int CounterClockwiseStepsBetween(
+            int sourceRotationIndex,
+            int targetRotationIndex)
+        {
+            return ((sourceRotationIndex - targetRotationIndex) % 4 + 4) % 4;
+        }
+
+        private void PlayRotationTransformTo(
+            DishPreviewRequest request,
+            int ccwSteps,
+            Action onComplete)
+        {
+            EnsureRefs();
+            KillTransformSequence();
+            if (request.Dish?.Shape == null || _targetImage == null)
+            {
+                Bind(request);
+                onComplete?.Invoke();
+                return;
+            }
+
+            _rotationTransformTarget = _targetImage.rectTransform;
+            _rotationTransformBase = _rotationTransformTarget.localRotation;
+            bool useTransformEffect = BeginTransformMaterial();
+            if (useTransformEffect)
+            {
+                ApplyTransformEffect(0f);
+            }
+
+            _transformSequence = DOTween.Sequence()
+                .Append(_rotationTransformTarget.DOLocalRotate(
+                        new Vector3(0f, 0f, ccwSteps * 90f),
+                        RotationTransformDuration,
+                        RotateMode.LocalAxisAdd)
+                    .SetEase(Ease.OutBack));
+            if (useTransformEffect)
+            {
+                _transformSequence.Join(DOTween.To(
+                        () => 0f,
+                        ApplyTransformEffect,
+                        1f,
+                        TransformInDuration)
+                    .SetEase(Ease.OutQuad));
+            }
+
+            _transformSequence.AppendCallback(() =>
+            {
+                RestoreRotationTransform();
+                Bind(request);
+                if (useTransformEffect)
+                {
+                    ApplyTransformEffect(1f);
+                }
+            });
+            if (useTransformEffect)
+            {
+                _transformSequence.Append(DOTween.To(
+                        () => 1f,
+                        ApplyTransformEffect,
+                        0f,
+                        TransformOutDuration)
+                    .SetEase(Ease.InOutQuad));
+            }
+
+            _transformSequence
+                .SetUpdate(true)
+                .SetLink(gameObject)
+                .OnComplete(() =>
+                {
+                    _transformSequence = null;
+                    RestoreRotationTransform();
+                    EndTransformMaterial();
+                    onComplete?.Invoke();
+                });
         }
 
         private void PlayTransformTo(DishPreviewRequest request, Action onComplete)
@@ -635,8 +727,20 @@ namespace GourmetProject.Game.UI.Widgets
                 _transformSequence = null;
             }
 
+            RestoreRotationTransform();
             EndTransformMaterial();
             EndDissolveMaterial();
+        }
+
+        private void RestoreRotationTransform()
+        {
+            if (_rotationTransformTarget != null)
+            {
+                _rotationTransformTarget.localRotation = _rotationTransformBase;
+            }
+
+            _rotationTransformTarget = null;
+            _rotationTransformBase = Quaternion.identity;
         }
 
         private void SetValueBadgeAlpha(float alpha)
