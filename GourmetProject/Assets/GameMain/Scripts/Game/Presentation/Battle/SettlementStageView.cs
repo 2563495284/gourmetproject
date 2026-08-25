@@ -45,8 +45,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [Header("结果标签布局")]
         [SerializeField, Min(0.01f)] private float _resultLabelWidth = 1.8f;
         [SerializeField, Min(0.01f)] private float _resultLabelHeight = 0.48f;
-        [SerializeField, Min(0f)] private float _resultLabelRowGap = 0.08f;
-        [SerializeField, Min(0f)] private float _resultLabelColumnGap = 0.16f;
+        [SerializeField, Range(0f, 0.75f)] private float _resultLabelHorizontalOverlap =
+            0.35f;
         [SerializeField, Range(0f, 0.2f)] private float _resultLabelViewportPadding =
             SettlementResultLabelLayout.DefaultViewportPadding;
 
@@ -649,8 +649,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 new Vector2(
                     _resultLabelWidth * _visualScale,
                     _resultLabelHeight * _visualScale),
-                _resultLabelRowGap * _visualScale,
-                _resultLabelColumnGap * _visualScale,
+                _resultLabelHorizontalOverlap,
                 _resultLabelViewportPadding);
             Awaitable impactTask = playTargetFeedback
                 ? PlayImpactRingAsync(target, theme, impactTier, cancellationToken)

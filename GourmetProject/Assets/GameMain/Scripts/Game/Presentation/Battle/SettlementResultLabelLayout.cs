@@ -49,99 +49,79 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 baseAnchor,
             ResultLabelLayoutSlot slot,
             Vector2 footprintWorld,
-            float rowGapWorld,
-            float columnGapWorld,
+            float horizontalOverlapRatio,
             float viewportPadding = DefaultViewportPadding)
         {
             int count = Mathf.Max(1, slot.Count);
             int index = Mathf.Clamp(slot.Index, 0, count - 1);
             float width = Mathf.Max(0.0001f, footprintWorld.x);
-            float height = Mathf.Max(0.0001f, footprintWorld.y);
-            float rowGap = Mathf.Max(0f, rowGapWorld);
 
             if (count <= 1)
             {
                 return baseAnchor;
             }
 
+            float horizontalPitch = width
+                * (1f - Mathf.Clamp(horizontalOverlapRatio, 0f, 0.75f));
+            float centeredIndex = index - (count - 1) * 0.5f;
+            Vector3 rawPosition = baseAnchor
+                + Vector3.right * (centeredIndex * horizontalPitch);
             if (camera == null)
             {
-                return baseAnchor + Vector3.down * (index * (height + rowGap));
+                return rawPosition;
             }
 
             Vector3 baseViewport = camera.WorldToViewportPoint(baseAnchor);
             if (baseViewport.z <= 0f || !IsFinite(baseViewport))
             {
-                return baseAnchor + Vector3.down * (index * (height + rowGap));
+                return rawPosition;
             }
 
             float viewportWidth = ViewportDistance(
                 camera,
                 baseAnchor,
                 camera.transform.right * width);
-            float viewportHeight = ViewportDistance(
-                camera,
-                baseAnchor,
-                camera.transform.up * height);
-            float rowPitch = viewportHeight + ViewportDistance(
-                camera,
-                baseAnchor,
-                camera.transform.up * rowGap);
-            float columnPitch = viewportWidth + ViewportDistance(
-                camera,
-                baseAnchor,
-                camera.transform.right * Mathf.Max(0f, columnGapWorld));
-            if (viewportWidth <= 0.000001f
-                || viewportHeight <= 0.000001f
-                || rowPitch <= 0.000001f
-                || columnPitch <= 0.000001f)
+            if (viewportWidth <= 0.000001f)
             {
-                return baseAnchor + Vector3.down * (index * (height + rowGap));
+                return rawPosition;
             }
 
             float safePadding = Mathf.Clamp(viewportPadding, 0f, 0.45f);
             float minCenterX = safePadding + viewportWidth * 0.5f;
             float maxCenterX = 1f - safePadding - viewportWidth * 0.5f;
-            float minCenterY = safePadding + viewportHeight * 0.5f;
-            float maxCenterY = 1f - safePadding - viewportHeight * 0.5f;
-            if (minCenterX > maxCenterX || minCenterY > maxCenterY)
+            if (minCenterX > maxCenterX)
             {
-                return baseAnchor + Vector3.down * (index * (height + rowGap));
+                return rawPosition;
             }
 
-            float layoutBaseX = Mathf.Clamp(baseViewport.x, minCenterX, maxCenterX);
-            float layoutBaseY = Mathf.Clamp(baseViewport.y, minCenterY, maxCenterY);
-            int rowsPerColumn = Mathf.Max(
-                1,
-                Mathf.FloorToInt((layoutBaseY - minCenterY) / rowPitch) + 1);
-            rowsPerColumn = Mathf.Min(rowsPerColumn, count);
-            int columnCount = Mathf.CeilToInt((float)count / rowsPerColumn);
-            float inwardDirection = layoutBaseX >= 0.5f ? -1f : 1f;
+            Vector3 rawViewport = camera.WorldToViewportPoint(rawPosition);
+            float groupMinX = float.PositiveInfinity;
+            float groupMaxX = float.NegativeInfinity;
+            for (int candidateIndex = 0; candidateIndex < count; candidateIndex++)
+            {
+                float candidateCenteredIndex = candidateIndex - (count - 1) * 0.5f;
+                Vector3 candidatePosition = baseAnchor
+                    + Vector3.right * (candidateCenteredIndex * horizontalPitch);
+                Vector3 candidateViewport = camera.WorldToViewportPoint(
+                    candidatePosition);
+                groupMinX = Mathf.Min(groupMinX, candidateViewport.x);
+                groupMaxX = Mathf.Max(groupMaxX, candidateViewport.x);
+            }
 
-            float lastColumnX = layoutBaseX
-                + inwardDirection * (columnCount - 1) * columnPitch;
-            float groupMinX = Mathf.Min(layoutBaseX, lastColumnX);
-            float groupMaxX = Mathf.Max(layoutBaseX, lastColumnX);
-            float groupMinY = layoutBaseY - (rowsPerColumn - 1) * rowPitch;
-            float groupMaxY = layoutBaseY;
             float translationX = FitGroupTranslation(
                 groupMinX,
                 groupMaxX,
                 minCenterX,
                 maxCenterX);
-            float translationY = FitGroupTranslation(
-                groupMinY,
-                groupMaxY,
-                minCenterY,
-                maxCenterY);
 
-            int column = index / rowsPerColumn;
-            int row = index % rowsPerColumn;
             Vector3 resolvedViewport = new(
-                layoutBaseX + inwardDirection * column * columnPitch + translationX,
-                layoutBaseY - row * rowPitch + translationY,
+                rawViewport.x + translationX,
+                rawViewport.y,
                 baseViewport.z);
-            return camera.ViewportToWorldPoint(resolvedViewport);
+            Vector3 resolved = camera.ViewportToWorldPoint(resolvedViewport);
+            resolved.y = baseAnchor.y;
+            resolved.z = baseAnchor.z;
+            return resolved;
         }
 
         private static float ViewportDistance(
