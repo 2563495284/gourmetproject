@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
@@ -10,26 +11,10 @@ namespace GourmetProject.Tests.EditMode
     public sealed class SettlementResultLabelLayoutTests
     {
         private static readonly Vector2 Footprint = new(1.8f, 0.48f);
-        private const float HorizontalOverlap = 0.35f;
         private const float ViewportPadding = 0.035f;
 
         [Test]
-        public void SlotAllocator_KeepsIndependentStableSequencesPerTarget()
-        {
-            var allocator = new ResultLabelSlotAllocator();
-            allocator.Add(10);
-            allocator.Add(20);
-            allocator.Add(10);
-            allocator.Add(10);
-
-            AssertSlot(allocator.Take(10), 0, 3);
-            AssertSlot(allocator.Take(20), 0, 1);
-            AssertSlot(allocator.Take(10), 1, 3);
-            AssertSlot(allocator.Take(10), 2, 3);
-        }
-
-        [Test]
-        public void BatchVisibility_SkipsNonVisualSourceLinesBeforeTheyConsumeSlots()
+        public void BatchVisibility_SkipsNonVisualSourceLines()
         {
             ScoreLine hiddenSourceLine = CreateLine(ScoreLineKind.TriggeredSweetTransferSource);
             ScoreLine visibleLine = CreateLine(ScoreLineKind.DishFlat);
@@ -42,66 +27,105 @@ namespace GourmetProject.Tests.EditMode
                 Is.True);
         }
 
-        [Test]
-        public void FourLabels_KeepAnchorYAndSpreadEvenlyOnX()
+        [TestCase(0.70f, 0.70f, -1f, -1f)]
+        [TestCase(0.30f, 0.70f, 1f, -1f)]
+        [TestCase(0.70f, 0.30f, -1f, 1f)]
+        [TestCase(0.30f, 0.30f, 1f, 1f)]
+        public void SourceQuadrants_OffsetAwayWithVerticalScreenPriority(
+            float sourceViewportX,
+            float sourceViewportY,
+            float expectedHorizontalDirection,
+            float expectedVerticalDirection)
         {
             Camera camera = CreateCamera();
             try
             {
-                Vector3 anchor = camera.ViewportToWorldPoint(new Vector3(0.5f, 0.82f, 10f));
-                Vector3[] positions = Resolve(camera, anchor, 4);
-                Vector3[] viewport = ToViewport(camera, positions);
-                float expectedPitch = Footprint.x * (1f - HorizontalOverlap);
-
-                for (int i = 0; i < positions.Length; i++)
-                {
-                    Assert.That(positions[i].y, Is.EqualTo(anchor.y).Within(0.0001f));
-                    Assert.That(positions[i].z, Is.EqualTo(anchor.z).Within(0.0001f));
-                    if (i > 0)
-                    {
-                        Assert.That(
-                            positions[i].x - positions[i - 1].x,
-                            Is.EqualTo(expectedPitch).Within(0.0001f));
-                    }
-                }
-
-                Assert.That(expectedPitch, Is.LessThan(Footprint.x));
-                Assert.That(viewport[0].y, Is.EqualTo(viewport[3].y).Within(0.0001f));
-                AssertFootprintsInsideSafeViewport(camera, positions);
-            }
-            finally
-            {
-                Object.DestroyImmediate(camera.gameObject);
-            }
-        }
-
-        [TestCase(0.10f, 1f)]
-        [TestCase(0.90f, -1f)]
-        public void SideEdge_ShiftsWholeRowOnXWithoutChangingY(
-            float anchorViewportX,
-            float expectedDirection)
-        {
-            Camera camera = CreateCamera();
-            try
-            {
-                Vector3 anchor = camera.ViewportToWorldPoint(
-                    new Vector3(anchorViewportX, 0.82f, 10f));
-                Vector3[] positions = Resolve(camera, anchor, 4);
-                Vector3[] viewport = ToViewport(camera, positions);
-                float centroidX = 0f;
-                for (int i = 0; i < viewport.Length; i++)
-                {
-                    centroidX += viewport[i].x;
-                    Assert.That(positions[i].y, Is.EqualTo(anchor.y).Within(0.0001f));
-                }
-
-                centroidX /= viewport.Length;
+                Vector3 target = ViewportWorld(camera, 0.5f, 0.5f);
+                Vector3 source = ViewportWorld(
+                    camera,
+                    sourceViewportX,
+                    sourceViewportY);
+                ResultLabelLayoutPlan plan = Resolve(
+                    camera,
+                    Request(10, target, source));
+                Vector3 offsetViewport = camera.WorldToViewportPoint(plan[0].Position)
+                    - camera.WorldToViewportPoint(target);
 
                 Assert.That(
-                    Mathf.Sign(centroidX - anchorViewportX),
-                    Is.EqualTo(expectedDirection));
+                    Mathf.Sign(offsetViewport.x),
+                    Is.EqualTo(expectedHorizontalDirection));
+                Assert.That(
+                    Mathf.Sign(offsetViewport.y),
+                    Is.EqualTo(expectedVerticalDirection));
+                Assert.That(
+                    Mathf.Abs(offsetViewport.y),
+                    Is.GreaterThan(Mathf.Abs(offsetViewport.x)));
+                Assert.That(
+                    plan[0].VerticalDirection,
+                    Is.EqualTo(expectedVerticalDirection));
+            }
+            finally
+            {
+                Object.DestroyImmediate(camera.gameObject);
+            }
+        }
 
-                AssertFootprintsInsideSafeViewport(camera, positions);
+        [TestCase(0.70f, -1f)]
+        [TestCase(0.30f, 1f)]
+        public void VerticallyAlignedSource_OffsetsAwayOnY(
+            float sourceViewportY,
+            float expectedVerticalDirection)
+        {
+            Camera camera = CreateCamera();
+            try
+            {
+                Vector3 target = ViewportWorld(camera, 0.5f, 0.5f);
+                Vector3 source = ViewportWorld(camera, 0.5f, sourceViewportY);
+                ResultLabelLayoutPlan plan = Resolve(
+                    camera,
+                    Request(10, target, source));
+
+                Assert.That(
+                    Mathf.Sign(plan[0].Position.y - target.y),
+                    Is.EqualTo(expectedVerticalDirection));
+                Assert.That(
+                    plan[0].VerticalDirection,
+                    Is.EqualTo(expectedVerticalDirection));
+            }
+            finally
+            {
+                Object.DestroyImmediate(camera.gameObject);
+            }
+        }
+
+        [TestCase(0.50f, 0.80f, 0.20f, -1f)]
+        [TestCase(0.50f, 0.20f, 0.20f, 1f)]
+        [TestCase(0.50f, 0.50f, 0.20f, 1f)]
+        [TestCase(0.50f, 0.50f, 0.80f, -1f)]
+        public void NearlyHorizontalSource_UsesScreenSpaceFallback(
+            float targetViewportX,
+            float targetViewportY,
+            float sourceViewportX,
+            float expectedVerticalDirection)
+        {
+            Camera camera = CreateCamera();
+            try
+            {
+                Vector3 target = ViewportWorld(
+                    camera,
+                    targetViewportX,
+                    targetViewportY);
+                Vector3 source = ViewportWorld(
+                    camera,
+                    sourceViewportX,
+                    targetViewportY);
+                ResultLabelLayoutPlan plan = Resolve(
+                    camera,
+                    Request(10, target, source));
+
+                Assert.That(
+                    plan[0].VerticalDirection,
+                    Is.EqualTo(expectedVerticalDirection));
             }
             finally
             {
@@ -110,40 +134,48 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void EightLabels_StayInOneHorizontalRow()
-        {
-            Vector3 anchor = new(2f, 3f, 0f);
-            Vector3[] positions = Resolve(null, anchor, 8);
-            AssertHorizontalPitch(positions);
-            for (int i = 0; i < positions.Length; i++)
-            {
-                Assert.That(positions[i].y, Is.EqualTo(anchor.y).Within(0.0001f));
-                if (i > 0)
-                {
-                    Assert.That(positions[i].x, Is.GreaterThan(positions[i - 1].x));
-                }
-            }
-        }
-
-        [Test]
-        public void TwoThroughEightLabels_UseConfiguredOverlapWithinTheSafeViewport()
+        public void FourLabelsOnSameSide_ContinueOutwardWithTwentyPercentOverlap()
         {
             Camera camera = CreateCamera();
             try
             {
-                Vector3 anchor = camera.ViewportToWorldPoint(
-                    new Vector3(0.5f, 0.82f, 10f));
-                for (int count = 2; count <= 8; count++)
+                Vector3 target = ViewportWorld(camera, 0.5f, 0.5f);
+                Vector3 source = ViewportWorld(camera, 0.35f, 0.72f);
+                var requests = new ResultLabelLayoutRequest[4];
+                for (int i = 0; i < requests.Length; i++)
                 {
-                    Vector3[] positions = Resolve(camera, anchor, count);
-                    for (int i = 0; i < positions.Length; i++)
+                    requests[i] = Request(10, target, source);
+                }
+
+                ResultLabelLayoutPlan plan = Resolve(camera, requests);
+                float expectedVerticalPitch = Footprint.y
+                    * SettlementResultLabelLayout.VerticalPitchRatio;
+                for (int i = 0; i < plan.Count; i++)
+                {
+                    Assert.That(plan[i].VerticalDirection, Is.EqualTo(-1f));
+                    if (i == 0)
                     {
-                        Assert.That(positions[i].y, Is.EqualTo(anchor.y).Within(0.0001f));
+                        continue;
                     }
 
-                    AssertHorizontalPitch(positions);
-                    AssertFootprintsInsideSafeViewport(camera, positions);
+                    Assert.That(
+                        plan[i - 1].Position.y - plan[i].Position.y,
+                        Is.EqualTo(expectedVerticalPitch).Within(0.0001f));
+                    Assert.That(
+                        plan[i].Position.x,
+                        Is.GreaterThanOrEqualTo(plan[i - 1].Position.x));
                 }
+
+                float verticalOverlap = Footprint.y - expectedVerticalPitch;
+                Assert.That(
+                    verticalOverlap,
+                    Is.EqualTo(Footprint.y * 0.20f).Within(0.0001f));
+                Assert.That(
+                    plan[3].Position.x - target.x,
+                    Is.EqualTo(
+                        Footprint.x
+                        * SettlementResultLabelLayout.MaximumHorizontalOffsetRatio)
+                    .Within(0.0001f));
             }
             finally
             {
@@ -152,36 +184,155 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void ViewportEdges_KeepTheWholeRowInsideTheSafeArea()
+        public void OppositeSidesOfOneTarget_KeepIndependentLaneIndices()
         {
             Camera camera = CreateCamera();
             try
             {
-                Vector2[] anchors =
+                Vector3 target = ViewportWorld(camera, 0.5f, 0.5f);
+                Vector3 sourceAbove = ViewportWorld(camera, 0.35f, 0.72f);
+                Vector3 sourceBelow = ViewportWorld(camera, 0.35f, 0.28f);
+                ResultLabelLayoutPlan plan = Resolve(
+                    camera,
+                    Request(10, target, sourceAbove),
+                    Request(10, target, sourceBelow),
+                    Request(10, target, sourceAbove),
+                    Request(10, target, sourceBelow));
+                float firstVerticalOffset = Footprint.y
+                    * SettlementResultLabelLayout.FirstVerticalOffsetRatio;
+                float secondVerticalOffset = firstVerticalOffset
+                    + Footprint.y * SettlementResultLabelLayout.VerticalPitchRatio;
+
+                Assert.That(
+                    target.y - plan[0].Position.y,
+                    Is.EqualTo(firstVerticalOffset).Within(0.0001f));
+                Assert.That(
+                    plan[1].Position.y - target.y,
+                    Is.EqualTo(firstVerticalOffset).Within(0.0001f));
+                Assert.That(
+                    target.y - plan[2].Position.y,
+                    Is.EqualTo(secondVerticalOffset).Within(0.0001f));
+                Assert.That(
+                    plan[3].Position.y - target.y,
+                    Is.EqualTo(secondVerticalOffset).Within(0.0001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(camera.gameObject);
+            }
+        }
+
+        [Test]
+        public void DifferentTargets_StartFromTheirOwnFirstLane()
+        {
+            Camera camera = CreateCamera();
+            try
+            {
+                Vector3 targetA = ViewportWorld(camera, 0.35f, 0.5f);
+                Vector3 targetB = ViewportWorld(camera, 0.65f, 0.5f);
+                Vector3 sourceA = ViewportWorld(camera, 0.25f, 0.72f);
+                Vector3 sourceB = ViewportWorld(camera, 0.55f, 0.72f);
+                ResultLabelLayoutPlan plan = Resolve(
+                    camera,
+                    Request(10, targetA, sourceA),
+                    Request(20, targetB, sourceB),
+                    Request(10, targetA, sourceA),
+                    Request(20, targetB, sourceB));
+                float firstVerticalOffset = Footprint.y
+                    * SettlementResultLabelLayout.FirstVerticalOffsetRatio;
+
+                Assert.That(
+                    targetA.y - plan[0].Position.y,
+                    Is.EqualTo(firstVerticalOffset).Within(0.0001f));
+                Assert.That(
+                    targetB.y - plan[1].Position.y,
+                    Is.EqualTo(firstVerticalOffset).Within(0.0001f));
+                Assert.That(plan[2].Position.y, Is.LessThan(plan[0].Position.y));
+                Assert.That(plan[3].Position.y, Is.LessThan(plan[1].Position.y));
+            }
+            finally
+            {
+                Object.DestroyImmediate(camera.gameObject);
+            }
+        }
+
+        [Test]
+        public void MissingAndCoincidentSources_UseDeterministicDetailOrderFallback()
+        {
+            Camera camera = CreateCamera();
+            try
+            {
+                Vector3 target = ViewportWorld(camera, 0.5f, 0.5f);
+                ResultLabelLayoutRequest[] requests =
                 {
-                    new(0.5f, 0.08f),
-                    new(0.5f, 0.92f),
-                    new(0.08f, 0.5f),
-                    new(0.92f, 0.5f),
-                    new(0.08f, 0.08f),
-                    new(0.92f, 0.92f),
+                    RequestWithoutSource(10, target),
+                    Request(10, target, target),
+                    RequestWithoutSource(10, target),
+                    Request(10, target, target),
                 };
-                for (int i = 0; i < anchors.Length; i++)
+                ResultLabelLayoutPlan first = Resolve(camera, requests);
+                ResultLabelLayoutPlan second = Resolve(camera, requests);
+
+                for (int i = 0; i < requests.Length; i++)
                 {
-                    Vector3 anchor = camera.ViewportToWorldPoint(
-                        new Vector3(anchors[i].x, anchors[i].y, 10f));
-                    Vector3[] positions = Resolve(camera, anchor, 8);
-                    for (int positionIndex = 0;
-                         positionIndex < positions.Length;
-                         positionIndex++)
+                    Assert.That(
+                        second[i].Position,
+                        Is.EqualTo(first[i].Position)
+                        .Using(Vector3ComparerWithEqualsOperator.Instance));
+                    Assert.That(
+                        second[i].VerticalDirection,
+                        Is.EqualTo(first[i].VerticalDirection));
+                }
+
+                Assert.That(first[0].VerticalDirection, Is.EqualTo(1f));
+                Assert.That(first[1].VerticalDirection, Is.EqualTo(-1f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(camera.gameObject);
+            }
+        }
+
+        [Test]
+        public void ViewportEdges_TranslateEachTargetGroupAsAWholeIntoSafeArea()
+        {
+            Camera camera = CreateCamera();
+            try
+            {
+                Vector2[] targetViewports =
+                {
+                    new(0.06f, 0.06f),
+                    new(0.94f, 0.06f),
+                    new(0.06f, 0.94f),
+                    new(0.94f, 0.94f),
+                };
+                for (int targetIndex = 0;
+                     targetIndex < targetViewports.Length;
+                     targetIndex++)
+                {
+                    Vector2 viewport = targetViewports[targetIndex];
+                    Vector3 target = ViewportWorld(camera, viewport.x, viewport.y);
+                    Vector3 source = ViewportWorld(
+                        camera,
+                        1f - viewport.x,
+                        1f - viewport.y);
+                    var requests = new ResultLabelLayoutRequest[4];
+                    for (int i = 0; i < requests.Length; i++)
+                    {
+                        requests[i] = Request(targetIndex + 1, target, source);
+                    }
+
+                    ResultLabelLayoutPlan raw = Resolve(null, requests);
+                    ResultLabelLayoutPlan fitted = Resolve(camera, requests);
+                    for (int i = 1; i < fitted.Count; i++)
                     {
                         Assert.That(
-                            positions[positionIndex].y,
-                            Is.EqualTo(anchor.y).Within(0.0001f));
+                            fitted[i].Position - fitted[0].Position,
+                            Is.EqualTo(raw[i].Position - raw[0].Position)
+                            .Using(Vector3ComparerWithEqualsOperator.Instance));
                     }
 
-                    AssertHorizontalPitch(positions);
-                    AssertFootprintsInsideSafeViewport(camera, positions);
+                    AssertFootprintsInsideSafeViewport(camera, fitted);
                 }
             }
             finally
@@ -191,27 +342,24 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void MissingCamera_PreservesDeterministicScaleAwareHorizontalRow()
+        public void MissingCamera_PreservesDeterministicScaleAwareOffsets()
         {
-            Vector3 anchor = new(2f, 3f, 0f);
-            var first = new ResultLabelLayoutSlot(0, 2);
+            Vector3 target = new(2f, 3f, 0f);
+            Vector3 source = new(1f, 4f, 0f);
+            ResultLabelLayoutRequest request = Request(10, target, source);
 
-            Vector3 normal = SettlementResultLabelLayout.Resolve(
+            ResultLabelLayoutPlan normal = SettlementResultLabelLayout.ResolveBatch(
                 null,
-                anchor,
-                first,
-                Footprint,
-                HorizontalOverlap);
-            Vector3 doubled = SettlementResultLabelLayout.Resolve(
+                new[] { request },
+                Footprint);
+            ResultLabelLayoutPlan doubled = SettlementResultLabelLayout.ResolveBatch(
                 null,
-                anchor,
-                first,
-                Footprint * 2f,
-                HorizontalOverlap);
+                new[] { request },
+                Footprint * 2f);
 
             Assert.That(
-                doubled - anchor,
-                Is.EqualTo((normal - anchor) * 2f)
+                doubled[0].Position - target,
+                Is.EqualTo((normal[0].Position - target) * 2f)
                 .Using(Vector3ComparerWithEqualsOperator.Instance));
         }
 
@@ -226,43 +374,60 @@ namespace GourmetProject.Tests.EditMode
             return camera;
         }
 
-        private static Vector3[] Resolve(Camera camera, Vector3 anchor, int count)
+        private static Vector3 ViewportWorld(Camera camera, float x, float y)
         {
-            var result = new Vector3[count];
-            for (int i = 0; i < count; i++)
-            {
-                result[i] = SettlementResultLabelLayout.Resolve(
-                    camera,
-                    anchor,
-                    new ResultLabelLayoutSlot(i, count),
-                    Footprint,
-                    HorizontalOverlap,
-                    ViewportPadding);
-            }
-
-            return result;
+            return camera.ViewportToWorldPoint(new Vector3(x, y, 10f));
         }
 
-        private static Vector3[] ToViewport(Camera camera, Vector3[] positions)
+        private static ResultLabelLayoutRequest Request(
+            int targetKey,
+            Vector3 target,
+            Vector3 source)
         {
-            var result = new Vector3[positions.Length];
-            for (int i = 0; i < positions.Length; i++)
-            {
-                result[i] = camera.WorldToViewportPoint(positions[i]);
-            }
+            return new ResultLabelLayoutRequest(
+                targetKey,
+                target,
+                target,
+                source,
+                true);
+        }
 
-            return result;
+        private static ResultLabelLayoutRequest RequestWithoutSource(
+            int targetKey,
+            Vector3 target)
+        {
+            return new ResultLabelLayoutRequest(
+                targetKey,
+                target,
+                target,
+                default,
+                false);
+        }
+
+        private static ResultLabelLayoutPlan Resolve(
+            Camera camera,
+            params ResultLabelLayoutRequest[] requests)
+        {
+            return SettlementResultLabelLayout.ResolveBatch(
+                camera,
+                requests,
+                Footprint,
+                ViewportPadding);
         }
 
         private static void AssertFootprintsInsideSafeViewport(
             Camera camera,
-            Vector3[] positions)
+            ResultLabelLayoutPlan plan)
         {
-            float halfWidth = Footprint.x / (camera.orthographicSize * 2f * camera.aspect) * 0.5f;
-            float halfHeight = Footprint.y / (camera.orthographicSize * 2f) * 0.5f;
-            for (int i = 0; i < positions.Length; i++)
+            float halfWidth = Footprint.x
+                / (camera.orthographicSize * 2f * camera.aspect)
+                * 0.5f;
+            float halfHeight = Footprint.y
+                / (camera.orthographicSize * 2f)
+                * 0.5f;
+            for (int i = 0; i < plan.Count; i++)
             {
-                Vector3 viewport = camera.WorldToViewportPoint(positions[i]);
+                Vector3 viewport = camera.WorldToViewportPoint(plan[i].Position);
                 Assert.That(
                     viewport.x - halfWidth,
                     Is.GreaterThanOrEqualTo(ViewportPadding - 0.0001f));
@@ -276,23 +441,6 @@ namespace GourmetProject.Tests.EditMode
                     viewport.y + halfHeight,
                     Is.LessThanOrEqualTo(1f - ViewportPadding + 0.0001f));
             }
-        }
-
-        private static void AssertHorizontalPitch(Vector3[] positions)
-        {
-            float expectedPitch = Footprint.x * (1f - HorizontalOverlap);
-            for (int i = 1; i < positions.Length; i++)
-            {
-                Assert.That(
-                    positions[i].x - positions[i - 1].x,
-                    Is.EqualTo(expectedPitch).Within(0.0001f));
-            }
-        }
-
-        private static void AssertSlot(ResultLabelLayoutSlot slot, int index, int count)
-        {
-            Assert.That(slot.Index, Is.EqualTo(index));
-            Assert.That(slot.Count, Is.EqualTo(count));
         }
 
         private static ScoreLine CreateLine(ScoreLineKind kind)
