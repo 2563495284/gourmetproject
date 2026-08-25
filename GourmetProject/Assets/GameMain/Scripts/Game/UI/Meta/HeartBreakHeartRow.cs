@@ -1,32 +1,23 @@
 using System;
 using System.Collections.Generic;
 using DG.Tweening;
-using GourmetProject.Game.UI.Common;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>在一行中展示红心状态，并将失去的红心逐颗熄灭。</summary>
     internal sealed class HeartBreakHeartRow : MonoBehaviour
     {
-        internal const string FullHeartGlyph = "♥";
-        // 当前 TMP 字体不包含 U+2661 空心心；用同字形的低亮度版本表达熄灭，避免缺字方框。
-        internal const string EmptyHeartGlyph = "♥";
-
-        private static readonly Color FullHeartColor = ParseColor(HeartDisplayText.FullColor);
-        private static readonly Color EmptyHeartColor = WithAlpha(
-            ParseColor(HeartDisplayText.BrokenColor),
-            0.55f);
-
-        [SerializeField] private TMP_Text _heartTemplate;
+        [SerializeField] private Image _heartTemplate;
         [SerializeField] private TMP_Text _statusText;
+        [SerializeField] private Sprite _fullHeartSprite;
+        [SerializeField] private Sprite _emptyHeartSprite;
         [SerializeField] private float _maxRowWidth = 520f;
         [SerializeField] private float _maxCellWidth = 100f;
-        [SerializeField] private float _maxFontSize = 88f;
-        [SerializeField] private float _minFontSize = 18f;
 
-        private readonly List<TMP_Text> _heartSlots = new List<TMP_Text>();
+        private readonly List<Image> _heartSlots = new List<Image>();
         private HeartBreakHeartRowState _state;
 
         internal HeartBreakHeartRowState State => _state;
@@ -75,7 +66,7 @@ namespace GourmetProject.Game.UI.Meta
                     continue;
                 }
 
-                TMP_Text heart = _heartSlots[slotIndex];
+                Image heart = _heartSlots[slotIndex];
                 RectTransform rect = heart.rectTransform;
                 sequence.Append(rect.DOPunchScale(Vector3.one * 0.18f, 0.18f, 5, 0.55f));
                 sequence.Join(rect.DOPunchRotation(new Vector3(0f, 0f, 10f), 0.18f, 6, 0.6f));
@@ -88,18 +79,11 @@ namespace GourmetProject.Game.UI.Meta
             sequence.AppendCallback(ApplyFinalState);
         }
 
-        internal string GetHeartGlyph(int index)
+        internal Sprite GetHeartSprite(int index)
         {
             return index >= 0 && index < _heartSlots.Count
-                ? _heartSlots[index].text
-                : string.Empty;
-        }
-
-        internal Color GetHeartColor(int index)
-        {
-            return index >= 0 && index < _heartSlots.Count
-                ? _heartSlots[index].color
-                : Color.clear;
+                ? _heartSlots[index].sprite
+                : null;
         }
 
         internal Vector3 GetHeartScale(int index)
@@ -129,7 +113,7 @@ namespace GourmetProject.Game.UI.Meta
 
             while (_heartSlots.Count < capacity)
             {
-                TMP_Text heart = Instantiate(_heartTemplate, _heartTemplate.transform.parent);
+                Image heart = Instantiate(_heartTemplate, _heartTemplate.transform.parent);
                 heart.name = $"HeartSlot{_heartSlots.Count + 1}";
                 _heartSlots.Add(heart);
             }
@@ -152,14 +136,13 @@ namespace GourmetProject.Game.UI.Meta
                 ? Mathf.Min(_maxRowWidth, rowRect.rect.width)
                 : _maxRowWidth;
             float cellWidth = Mathf.Min(_maxCellWidth, availableWidth / capacity);
-            float fontSize = Mathf.Clamp(cellWidth * 0.88f, _minFontSize, _maxFontSize);
             float rowHeight = rowRect != null && rowRect.rect.height > 0f
                 ? rowRect.rect.height
                 : 120f;
 
             for (int index = 0; index < capacity && index < _heartSlots.Count; index++)
             {
-                TMP_Text heart = _heartSlots[index];
+                Image heart = _heartSlots[index];
                 RectTransform rect = heart.rectTransform;
                 rect.anchorMin = new Vector2(0.5f, 0.5f);
                 rect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -170,9 +153,7 @@ namespace GourmetProject.Game.UI.Meta
                 rect.localScale = Vector3.one;
                 rect.SetSiblingIndex(index);
 
-                heart.enableAutoSizing = false;
-                heart.fontSize = fontSize;
-                heart.alignment = TextAlignmentOptions.Center;
+                heart.preserveAspect = true;
                 heart.raycastTarget = false;
             }
         }
@@ -197,9 +178,9 @@ namespace GourmetProject.Game.UI.Meta
                 return;
             }
 
-            TMP_Text heart = _heartSlots[index];
-            heart.text = isFull ? FullHeartGlyph : EmptyHeartGlyph;
-            heart.color = isFull ? FullHeartColor : EmptyHeartColor;
+            Image heart = _heartSlots[index];
+            heart.sprite = isFull ? _fullHeartSprite : _emptyHeartSprite;
+            heart.color = Color.white;
             heart.rectTransform.localRotation = Quaternion.identity;
         }
 
@@ -222,7 +203,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void ResetSlotTransforms()
         {
-            foreach (TMP_Text heart in _heartSlots)
+            foreach (Image heart in _heartSlots)
             {
                 if (heart == null)
                 {
@@ -236,7 +217,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void KillTweens()
         {
-            foreach (TMP_Text heart in _heartSlots)
+            foreach (Image heart in _heartSlots)
             {
                 if (heart == null)
                 {
@@ -248,18 +229,6 @@ namespace GourmetProject.Game.UI.Meta
             }
         }
 
-        private static Color ParseColor(string htmlColor)
-        {
-            return ColorUtility.TryParseHtmlString(htmlColor, out Color color)
-                ? color
-                : Color.white;
-        }
-
-        private static Color WithAlpha(Color color, float alpha)
-        {
-            color.a = alpha;
-            return color;
-        }
     }
 
     internal readonly struct HeartBreakHeartRowState

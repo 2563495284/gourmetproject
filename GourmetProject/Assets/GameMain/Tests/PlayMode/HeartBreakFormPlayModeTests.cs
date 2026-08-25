@@ -15,16 +15,26 @@ namespace GourmetProject.Tests.PlayMode
     {
         private const string PrefabPath =
             "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/HeartBreakForm.prefab";
+        private const string FullHeartSpritePath =
+            "Assets/GameMain/Content/Resources/Sprites/UI/FengKuangCanTing/Icons/icon_heart_active.png";
+        private const string EmptyHeartSpritePath =
+            "Assets/GameMain/Content/Resources/Sprites/UI/FengKuangCanTing/Icons/icon_heart_empty.png";
 
         [UnityTest]
-        public IEnumerator Presentation_UsesUnscaledTime_ExtinguishesTargetAndReusesSlots()
+        public IEnumerator Presentation_UsesHudSprites_ExtinguishesTargetAndReusesSlots()
         {
 #if UNITY_EDITOR
             HeartBreakForm prefab = AssetDatabase.LoadAssetAtPath<HeartBreakForm>(PrefabPath);
+            Sprite fullHeartSprite = AssetDatabase.LoadAssetAtPath<Sprite>(FullHeartSpritePath);
+            Sprite emptyHeartSprite = AssetDatabase.LoadAssetAtPath<Sprite>(EmptyHeartSpritePath);
 #else
             HeartBreakForm prefab = null;
+            Sprite fullHeartSprite = null;
+            Sprite emptyHeartSprite = null;
 #endif
             Assert.That(prefab, Is.Not.Null);
+            Assert.That(fullHeartSprite, Is.Not.Null);
+            Assert.That(emptyHeartSprite, Is.Not.Null);
 
             HeartBreakForm instance = Object.Instantiate(prefab);
             HeartBreakHeartRow row = instance.GetComponentInChildren<HeartBreakHeartRow>(true);
@@ -40,21 +50,19 @@ namespace GourmetProject.Tests.PlayMode
                 instance.Bind(args);
 
                 Assert.That(continueButton.interactable, Is.False);
-                Assert.That(row.StatusText, Is.EqualTo("当前红心 3 / 3"));
-                Assert.That(row.GetHeartGlyph(0), Is.EqualTo(HeartBreakHeartRow.FullHeartGlyph));
-                Assert.That(row.GetHeartGlyph(1), Is.EqualTo(HeartBreakHeartRow.FullHeartGlyph));
-                Assert.That(row.GetHeartGlyph(2), Is.EqualTo(HeartBreakHeartRow.FullHeartGlyph));
+                Assert.That(row.StatusText, Is.EqualTo("剩余红心 3 / 3"));
+                Assert.That(row.GetHeartSprite(0), Is.SameAs(fullHeartSprite));
+                Assert.That(row.GetHeartSprite(1), Is.SameAs(fullHeartSprite));
+                Assert.That(row.GetHeartSprite(2), Is.SameAs(fullHeartSprite));
 
                 instance.Play();
                 yield return new WaitForSecondsRealtime(1.4f);
 
                 Assert.That(continueButton.interactable, Is.True);
                 Assert.That(row.StatusText, Is.EqualTo("剩余红心 2 / 3"));
-                Assert.That(row.GetHeartGlyph(0), Is.EqualTo(HeartBreakHeartRow.FullHeartGlyph));
-                Assert.That(row.GetHeartGlyph(1), Is.EqualTo(HeartBreakHeartRow.FullHeartGlyph));
-                Assert.That(row.GetHeartGlyph(2), Is.EqualTo(HeartBreakHeartRow.EmptyHeartGlyph));
-                Assert.That(row.GetHeartColor(2), Is.Not.EqualTo(row.GetHeartColor(1)));
-                Assert.That(row.GetHeartColor(2).a, Is.LessThan(row.GetHeartColor(1).a));
+                Assert.That(row.GetHeartSprite(0), Is.SameAs(fullHeartSprite));
+                Assert.That(row.GetHeartSprite(1), Is.SameAs(fullHeartSprite));
+                Assert.That(row.GetHeartSprite(2), Is.SameAs(emptyHeartSprite));
                 Vector3 finalScale = row.GetHeartScale(2);
                 Assert.That(finalScale.x, Is.EqualTo(0.84f).Within(0.001f));
                 Assert.That(finalScale.y, Is.EqualTo(0.84f).Within(0.001f));
@@ -63,8 +71,21 @@ namespace GourmetProject.Tests.PlayMode
                 int createdSlotCount = row.SlotCount;
                 instance.Bind(args);
                 Assert.That(row.SlotCount, Is.EqualTo(createdSlotCount));
-                Assert.That(row.GetHeartGlyph(2), Is.EqualTo(HeartBreakHeartRow.FullHeartGlyph));
+                Assert.That(row.GetHeartSprite(2), Is.SameAs(fullHeartSprite));
                 Assert.That(continueButton.interactable, Is.False);
+
+                instance.Bind(new HeartBreakFormOpenArgs(1, 0, 3, true));
+                Assert.That(row.SlotCount, Is.EqualTo(createdSlotCount));
+                Assert.That(row.GetHeartSprite(0), Is.SameAs(fullHeartSprite));
+                Assert.That(row.GetHeartSprite(1), Is.SameAs(emptyHeartSprite));
+                Assert.That(row.GetHeartSprite(2), Is.SameAs(emptyHeartSprite));
+
+                instance.Play();
+                yield return new WaitForSecondsRealtime(1.4f);
+
+                Assert.That(continueButton.interactable, Is.True);
+                Assert.That(row.StatusText, Is.EqualTo("剩余红心 0 / 3"));
+                Assert.That(row.GetHeartSprite(0), Is.SameAs(emptyHeartSprite));
             }
             finally
             {

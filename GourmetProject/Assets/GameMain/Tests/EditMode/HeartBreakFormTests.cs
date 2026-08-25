@@ -3,6 +3,7 @@ using NUnit.Framework;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -10,6 +11,10 @@ namespace GourmetProject.Tests.EditMode
     {
         private const string PrefabPath =
             "Assets/GameMain/Content/Prefabs/UI/Meta/Rewards/HeartBreakForm.prefab";
+        private const string FullHeartSpritePath =
+            "Assets/GameMain/Content/Resources/Sprites/UI/FengKuangCanTing/Icons/icon_heart_active.png";
+        private const string EmptyHeartSpritePath =
+            "Assets/GameMain/Content/Resources/Sprites/UI/FengKuangCanTing/Icons/icon_heart_empty.png";
 
         [TestCase(3, 2, 3, false, 3, 2, 3, 1)]
         [TestCase(4, 3, 5, false, 4, 3, 5, 1)]
@@ -58,8 +63,14 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(formObject.FindProperty("_transitionPanel").objectReferenceValue, Is.Not.Null);
 
             var rowObject = new SerializedObject(row);
-            Assert.That(rowObject.FindProperty("_heartTemplate").objectReferenceValue, Is.TypeOf<TextMeshProUGUI>());
+            Sprite fullHeartSprite = AssetDatabase.LoadAssetAtPath<Sprite>(FullHeartSpritePath);
+            Sprite emptyHeartSprite = AssetDatabase.LoadAssetAtPath<Sprite>(EmptyHeartSpritePath);
+            Assert.That(fullHeartSprite, Is.Not.Null);
+            Assert.That(emptyHeartSprite, Is.Not.Null);
+            Assert.That(rowObject.FindProperty("_heartTemplate").objectReferenceValue, Is.TypeOf<Image>());
             Assert.That(rowObject.FindProperty("_statusText").objectReferenceValue, Is.TypeOf<TextMeshProUGUI>());
+            Assert.That(rowObject.FindProperty("_fullHeartSprite").objectReferenceValue, Is.SameAs(fullHeartSprite));
+            Assert.That(rowObject.FindProperty("_emptyHeartSprite").objectReferenceValue, Is.SameAs(emptyHeartSprite));
 
             Transform heartRow = prefab.transform.Find("Panel/Content/HeartRow");
             Assert.That(heartRow, Is.Not.Null);
