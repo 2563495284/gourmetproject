@@ -68,6 +68,7 @@ namespace GourmetProject.Game.UI.Menu
         private RectTransform _tutorialCharacterName;
         private RectTransform _tutorialCharacterDescription;
         private RectTransform _tutorialButtonList;
+        private bool _entryRequested;
         private bool _recipeViewOpen;
         private Vector2 _confirmButtonDefaultPosition;
         private int _index;
@@ -80,26 +81,51 @@ namespace GourmetProject.Game.UI.Menu
             _confirmButtonDefaultPosition =
                 _confirmButton.GetComponent<RectTransform>().anchoredPosition;
 
-            _leftArrow.onClick.AddListener(OnPrevClicked);
-            _rightArrow.onClick.AddListener(OnNextClicked);
-            _confirmButton.onClick.AddListener(OnConfirmClicked);
-            _continueButton.onClick.AddListener(OnContinueClicked);
-            _backButton.onClick.AddListener(OnBackClicked);
-            _recipeViewButton.onClick.AddListener(OnRecipeViewClicked);
+            BindButtonListeners();
+        }
+
+        private void OnEnable()
+        {
+            // Unity 编辑器热重载会清空运行时 UnityEvent 监听，但不会重新执行 GameFramework 的 OnInit。
+            // 在对象重新启用时幂等补绑，避免界面仍显示却所有按钮都失效。
+            BindButtonListeners();
         }
 
         protected override void OnOpen(object userData)
         {
             base.OnOpen(userData);
 
+            BindButtonListeners();
             ReloadCharacters();
             ReloadGameplayDatabase();
             _index = 0;
+            _entryRequested = false;
             SetRecipeViewOpen(false);
             RefreshSaveEntryState();
             Refresh();
             RegisterTutorialAnchors();
             PlayDirectionTutorialIfNeeded();
+        }
+
+        private void BindButtonListeners()
+        {
+            Rebind(_leftArrow, OnPrevClicked);
+            Rebind(_rightArrow, OnNextClicked);
+            Rebind(_confirmButton, OnConfirmClicked);
+            Rebind(_continueButton, OnContinueClicked);
+            Rebind(_backButton, OnBackClicked);
+            Rebind(_recipeViewButton, OnRecipeViewClicked);
+        }
+
+        private static void Rebind(Button button, UnityEngine.Events.UnityAction listener)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            button.onClick.RemoveListener(listener);
+            button.onClick.AddListener(listener);
         }
 
         protected override void OnClose(bool isShutdown, object userData)
@@ -178,17 +204,25 @@ namespace GourmetProject.Game.UI.Menu
 
         private void OnContinueClicked()
         {
+            if (_entryRequested)
+            {
+                return;
+            }
+
             if (!RunPersistence.HasSave)
             {
                 RefreshSaveEntryState();
                 return;
             }
 
-            ShowBattleTransition(() =>
-            {
-                GameApp.UI.CloseUIForm(UIForm);
-                GameplayEntryRequest.RequestContinue();
-            });
+            _entryRequested = true;
+            _continueButton.interactable = false;
+
+            // 流程请求必须在点击回调内立即登记，不能依赖转场动画的 OnCovered。
+            // 即使转场资源正在加载、已存在或播放失败，ProcedureMenu 也能在下一帧进入玩法流程。
+            GameplayEntryRequest.RequestContinue();
+            Log.Info("Continue run requested.", Tag);
+            ShowBattleTransition(null);
         }
 
         private static void ConfirmStartNewRun(cfg.Character character)
@@ -233,6 +267,7 @@ namespace GourmetProject.Game.UI.Menu
         {
             bool hasSave = RunPersistence.HasSave;
             _continueButton.gameObject.SetActive(hasSave);
+            _continueButton.interactable = hasSave && !_entryRequested;
             _confirmLabel.text = "新游戏";
 
             RectTransform confirmRect =
