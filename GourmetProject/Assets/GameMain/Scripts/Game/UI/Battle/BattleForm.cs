@@ -1006,6 +1006,34 @@ namespace GourmetProject.Game.UI.Battle
             _axisBinder?.EndAdvanceSequence();
         }
 
+        public void PlayTimelineWeekTransition(Action onDone)
+        {
+            SetActionAxisVisible(true);
+            if (_axisBinder == null || _run == null)
+            {
+                onDone?.Invoke();
+                return;
+            }
+
+            void ReplaceHiddenTimeline()
+            {
+                _axisBinder.EndAdvanceSequence();
+                _axisBinder.Rebuild(_run);
+            }
+
+            if (_timelineAxisFocus?.CanPresent != true)
+            {
+                ReplaceHiddenTimeline();
+                onDone?.Invoke();
+                return;
+            }
+
+            _timelineAxisFocus.Enter(() =>
+                _timelineAxisFocus.SwapContent(
+                    ReplaceHiddenTimeline,
+                    () => _timelineAxisFocus.Exit(onDone)));
+        }
+
         /// <summary>
         /// 经营挑战领奖完成后先退出世界态并清空中部卡片，再允许周循环推进时间轴。
         /// 这样时间轴聚焦演出不会被强制叠到仍可见的战斗画面上。
