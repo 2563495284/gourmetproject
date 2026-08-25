@@ -191,7 +191,7 @@ namespace GourmetProject.Game.UI.Meta
                 string title = required > 1
                     ? $"{_baseTitle}\n已领 {claimed}/{required}"
                     : _baseTitle;
-                SemanticDescriptionFormatter.Set(_titleText, title);
+                SemanticDescriptionFormatter.SetPureWhite(_titleText, title);
             }
 
             if (_skipButton != null)
