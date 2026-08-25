@@ -19,6 +19,8 @@ namespace GourmetProject.Game.UI.Meta
     public sealed class RecipeEditDishView : MonoBehaviour, IPointerDownHandler, IInitializePotentialDragHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
         private const float ReturnFlyDuration = 0.22f;
+        private const float RemovalTransitionDuration = 0.24f;
+        private const float RemovalTransitionScale = 0.72f;
         private const float FinishedDishAlpha = 0.35f;
         private static readonly Vector2 FloatingAnchor = new(0.5f, 0.5f);
         private static readonly Color WaitingForPlacementOverlayColor =
@@ -58,6 +60,7 @@ namespace GourmetProject.Game.UI.Meta
         private bool _warehouseClickable;
         private bool _cannotPlace;
         private bool _suppressClick;
+        private Tween _removalTween;
         private Tween _failureTween;
         private RectTransform _failureFeedbackRect;
         private Vector2 _failureFeedbackOrigin;
@@ -161,6 +164,7 @@ namespace GourmetProject.Game.UI.Meta
             ResolveDishPreview();
             HideHover();
             StopInteractionFailedFeedback();
+            StopRemovalTransition(restoreVisuals: false);
             if (_rect != null)
             {
                 DOTween.Kill(_rect);
@@ -191,6 +195,7 @@ namespace GourmetProject.Game.UI.Meta
             ResolveDishPreview();
             HideHover();
             StopInteractionFailedFeedback();
+            StopRemovalTransition(restoreVisuals: false);
             if (_rect != null)
             {
                 DOTween.Kill(_rect);
@@ -463,51 +468,66 @@ namespace GourmetProject.Game.UI.Meta
         {
             EnsureDragStateRefs();
             HideHover();
+            StopRemovalTransition(restoreVisuals: false);
             if (_rect != null)
             {
                 DOTween.Kill(_rect);
+                _rect.localScale = Vector3.one;
             }
 
             if (_canvasGroup != null)
             {
                 _canvasGroup.blocksRaycasts = false;
-            }
-
-            if (_dishPreview == null)
-            {
-                FadeCardThenComplete(onComplete);
-                return;
-            }
-
-            if (_canvasGroup != null)
-            {
+                _canvasGroup.interactable = false;
                 _canvasGroup.alpha = 1f;
             }
 
-            _dishPreview.PlayDissolve(() =>
+            var sequence = DOTween.Sequence()
+                .SetUpdate(true)
+                .SetTarget(_rect != null ? (object)_rect : this)
+                .SetLink(gameObject);
+            if (_canvasGroup != null)
             {
-                if (_canvasGroup != null)
-                {
-                    _canvasGroup.alpha = 0f;
-                }
-
-                onComplete?.Invoke();
-            });
-        }
-
-        private void FadeCardThenComplete(Action onComplete)
-        {
-            if (_canvasGroup == null)
-            {
-                onComplete?.Invoke();
-                return;
+                sequence.Join(_canvasGroup
+                    .DOFade(0f, RemovalTransitionDuration)
+                    .SetEase(Ease.InCubic));
             }
 
-            _canvasGroup.DOFade(0f, 0.85f)
-                .SetEase(Ease.InSine)
-                .SetUpdate(true)
-                .SetLink(gameObject)
-                .OnComplete(() => onComplete?.Invoke());
+            if (_rect != null)
+            {
+                sequence.Join(_rect
+                    .DOScale(Vector3.one * RemovalTransitionScale, RemovalTransitionDuration)
+                    .SetEase(Ease.InCubic));
+            }
+
+            if (_canvasGroup == null && _rect == null)
+            {
+                sequence.AppendInterval(RemovalTransitionDuration);
+            }
+
+            _removalTween = sequence;
+            sequence.OnComplete(() =>
+                {
+                    if (_canvasGroup != null)
+                    {
+                        _canvasGroup.alpha = 0f;
+                    }
+
+                    if (_rect != null)
+                    {
+                        _rect.localScale = Vector3.one * RemovalTransitionScale;
+                    }
+
+                    _removalTween = null;
+                    onComplete?.Invoke();
+                })
+                .OnKill(() =>
+                {
+                    if (ReferenceEquals(_removalTween, sequence))
+                    {
+                        _removalTween = null;
+                    }
+                });
         }
 
         /// <summary>播放与商店购买失败一致的横向衰减晃动。</summary>
@@ -671,6 +691,7 @@ namespace GourmetProject.Game.UI.Meta
         private void OnDisable()
         {
             StopInteractionFailedFeedback();
+            StopRemovalTransition(restoreVisuals: true);
         }
 
         private void HideHover()
@@ -696,6 +717,29 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _failureFeedbackRect = null;
+        }
+
+        private void StopRemovalTransition(bool restoreVisuals)
+        {
+            Tween removalTween = _removalTween;
+            _removalTween = null;
+            removalTween?.Kill();
+            if (!restoreVisuals)
+            {
+                return;
+            }
+
+            if (_rect != null)
+            {
+                _rect.localScale = Vector3.one;
+            }
+
+            if (_canvasGroup != null)
+            {
+                _canvasGroup.alpha = 1f;
+                _canvasGroup.blocksRaycasts = true;
+                _canvasGroup.interactable = true;
+            }
         }
 
         private void PrepareAsFloating(Vector3 worldCenter)

@@ -41,6 +41,7 @@ namespace GourmetProject.Game.Presentation.Battle
         public const int OrderButtonBg = 0;
         public const int OrderButtonLabel = 1;
         public const int OrderScoreFire = 5;
+        public const int OrderDishBadge = 10;
         public const int OrderFloatingText = 10;
         public const int OrderScopeRegion = -100;
 

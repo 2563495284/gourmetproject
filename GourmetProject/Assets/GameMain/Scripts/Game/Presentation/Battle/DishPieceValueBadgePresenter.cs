@@ -211,10 +211,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
             string layer = _flying
                 ? BattleSorting.PiecesFlying
-                : BattleSorting.Fx;
+                : BattleSorting.WorldUi;
             int order = _flying
                 ? BattleSorting.OrderBody + 5 + _sortingOrderOffset
-                : BattleSorting.OrderFloatingText + _sortingOrderOffset;
+                : BattleSorting.OrderDishBadge + _sortingOrderOffset;
             _badge.ConfigureSorting(layer, order);
         }
 

@@ -105,6 +105,35 @@ namespace GourmetProject.Tests.PlayMode
         }
 
         [Test]
+        public void ValueBadge_StaysBelowFxOnGround_AndFollowsFlyingPieceLayer()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            GameObject pieceObject = BuildPiece(shape, 0, out DishPieceView view);
+
+            try
+            {
+                DishValueBadgeView badge =
+                    pieceObject.GetComponentInChildren<DishValueBadgeView>(true);
+                Assert.That(badge, Is.Not.Null);
+
+                AssertBadgeSortingLayer(badge, BattleSorting.WorldUi);
+                Assert.That(
+                    SortingLayer.GetLayerValueFromName(BattleSorting.WorldUi),
+                    Is.LessThan(SortingLayer.GetLayerValueFromName(BattleSorting.Fx)));
+
+                view.SetFlying(true);
+                AssertBadgeSortingLayer(badge, BattleSorting.PiecesFlying);
+
+                view.SetFlying(false);
+                AssertBadgeSortingLayer(badge, BattleSorting.WorldUi);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(pieceObject);
+            }
+        }
+
+        [Test]
         public void CardPreview_ReusesDishSilhouetteTransform()
         {
             GameObject piecePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PiecePrefabPath);
@@ -290,6 +319,18 @@ namespace GourmetProject.Tests.PlayMode
         private static bool HasActiveBadge(DishIconPreviewRenderer rig)
         {
             return ActiveBadge(rig) != null;
+        }
+
+        private static void AssertBadgeSortingLayer(
+            DishValueBadgeView badge,
+            string expectedLayer)
+        {
+            Renderer[] renderers = badge.GetComponentsInChildren<Renderer>(true);
+            Assert.That(renderers, Is.Not.Empty);
+            foreach (Renderer renderer in renderers)
+            {
+                Assert.That(renderer.sortingLayerName, Is.EqualTo(expectedLayer));
+            }
         }
 
         private static DishValueBadgeView ActiveBadge(DishIconPreviewRenderer rig)
