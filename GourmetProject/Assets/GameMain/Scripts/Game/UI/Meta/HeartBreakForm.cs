@@ -1,6 +1,7 @@
 using System;
 using DG.Tweening;
 using GourmetProject.Game.Tutorial;
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
 using TMPro;
@@ -72,20 +73,14 @@ namespace GourmetProject.Game.UI.Meta
                 args.HeartCapacity,
                 args.IsTerminal);
 
-            if (_contentGroup != null)
-            {
-                _contentGroup.alpha = 1f;
-            }
+            UITransition.PreparePopupLayers(
+                _transitionGroup,
+                _contentGroup,
+                IsHandoffArrival);
 
             if (_continueButton != null)
             {
                 _continueButton.interactable = false;
-            }
-
-            if (_transitionGroup != null)
-            {
-                _transitionGroup.alpha = 0f;
-                _transitionGroup.blocksRaycasts = false;
             }
 
             if (_transitionPanel != null)
@@ -98,19 +93,44 @@ namespace GourmetProject.Game.UI.Meta
         {
             _sequence?.Kill();
             _sequence = DOTween.Sequence().SetUpdate(true).SetTarget(this);
+            bool hasIntro = false;
 
-            if (_transitionGroup != null)
+            if (_transitionGroup != null && !IsHandoffArrival)
             {
                 _sequence.Append(DOTween.To(
                     () => _transitionGroup.alpha,
                     value => _transitionGroup.alpha = value,
                     1f,
                     0.18f).SetEase(Ease.OutQuad));
+                hasIntro = true;
+            }
+
+            if (_contentGroup != null)
+            {
+                Tween contentFade = _contentGroup.DOFade(1f, 0.18f).SetEase(Ease.OutQuad);
+                if (hasIntro)
+                {
+                    _sequence.Join(contentFade);
+                }
+                else
+                {
+                    _sequence.Append(contentFade);
+                }
+
+                hasIntro = true;
             }
 
             if (_transitionPanel != null)
             {
-                _sequence.Join(_transitionPanel.DOScale(1f, 0.24f).SetEase(Ease.OutBack));
+                Tween panelScale = _transitionPanel.DOScale(1f, 0.24f).SetEase(Ease.OutBack);
+                if (hasIntro)
+                {
+                    _sequence.Join(panelScale);
+                }
+                else
+                {
+                    _sequence.Append(panelScale);
+                }
             }
 
             _sequence.AppendInterval(0.18f);
@@ -121,6 +141,12 @@ namespace GourmetProject.Game.UI.Meta
                 if (_transitionGroup != null)
                 {
                     _transitionGroup.blocksRaycasts = true;
+                }
+
+                if (_contentGroup != null)
+                {
+                    _contentGroup.interactable = true;
+                    _contentGroup.blocksRaycasts = true;
                 }
 
                 if (_continueButton != null)
@@ -143,25 +169,40 @@ namespace GourmetProject.Game.UI.Meta
                 _continueButton.interactable = false;
             }
 
-            if (_transitionGroup != null)
+            if (_contentGroup != null)
             {
-                _transitionGroup.blocksRaycasts = false;
+                _contentGroup.interactable = false;
+                _contentGroup.blocksRaycasts = false;
             }
 
             _sequence?.Kill();
             _sequence = DOTween.Sequence().SetUpdate(true).SetTarget(this);
-            if (_transitionGroup != null)
+            bool hasOutro = false;
+            if (_contentGroup != null)
             {
-                _sequence.Append(DOTween.To(
-                    () => _transitionGroup.alpha,
-                    value => _transitionGroup.alpha = value,
-                    0f,
-                    0.18f).SetEase(Ease.InQuad));
+                _sequence.Append(_contentGroup.DOFade(0f, 0.18f).SetEase(Ease.InQuad));
+                hasOutro = true;
             }
 
             if (_transitionPanel != null)
             {
-                _sequence.Join(_transitionPanel.DOScale(0.96f, 0.18f).SetEase(Ease.InQuad));
+                Tween panelScale = _transitionPanel.DOScale(0.96f, 0.18f).SetEase(Ease.InQuad);
+                if (hasOutro)
+                {
+                    _sequence.Join(panelScale);
+                }
+                else
+                {
+                    _sequence.Append(panelScale);
+                }
+
+                hasOutro = true;
+            }
+
+            // 没有续接弹窗时仍正常揭开底层；有续接时让遮罩保持到下一窗 OnOpen。
+            if (_onComplete == null && _transitionGroup != null)
+            {
+                _sequence.Append(_transitionGroup.DOFade(0f, 0.12f).SetEase(Ease.InSine));
             }
 
             _sequence.OnComplete(CompleteOnce);
@@ -177,7 +218,13 @@ namespace GourmetProject.Game.UI.Meta
             _completed = true;
             Action callback = _onComplete;
             _onComplete = null;
-            GameApp.UI.CloseUIForm(UIForm);
+            bool heldForNext = callback != null
+                && HoldUntilNextFormOpens(() => GameApp.UI.CloseUIForm(UIForm));
+            if (!heldForNext)
+            {
+                GameApp.UI.CloseUIForm(UIForm);
+            }
+
             callback?.Invoke();
         }
 

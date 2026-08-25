@@ -138,6 +138,7 @@ namespace GourmetProject.Game.UI.Meta
         private ItemTipView _itemTipView;
         private Sequence _transitionSequence;
         private Sequence _rewardRowsSequence;
+        private CanvasGroup _transitionPanelGroup;
         private CanvasGroup _rewardListGroup;
         private Vector2 _transitionPanelRestingPosition;
         private bool _hasBuiltRewardRows;
@@ -193,6 +194,11 @@ namespace GourmetProject.Game.UI.Meta
             if (_transitionPanel != null)
             {
                 _transitionPanelRestingPosition = _transitionPanel.anchoredPosition;
+                _transitionPanelGroup = _transitionPanel.GetComponent<CanvasGroup>();
+                if (_transitionPanelGroup == null)
+                {
+                    _transitionPanelGroup = _transitionPanel.gameObject.AddComponent<CanvasGroup>();
+                }
             }
 
             ConfigureRewardScrollbar();
@@ -339,6 +345,13 @@ namespace GourmetProject.Game.UI.Meta
             {
                 _transitionPanel.anchoredPosition = _transitionPanelRestingPosition;
                 _transitionPanel.localScale = Vector3.one;
+            }
+
+            if (_transitionPanelGroup != null)
+            {
+                _transitionPanelGroup.alpha = 1f;
+                _transitionPanelGroup.interactable = true;
+                _transitionPanelGroup.blocksRaycasts = true;
             }
 
             _isClosing = false;
@@ -543,19 +556,26 @@ namespace GourmetProject.Game.UI.Meta
             _rewardRowsSequence = null;
             if (_transitionGroup != null)
             {
-                _transitionGroup.blocksRaycasts = false;
+                // 关闭内容期间仍由全屏遮罩拦截输入，避免点穿到底层玩法。
+                _transitionGroup.blocksRaycasts = true;
             }
 
             _transitionSequence?.Kill();
             _transitionSequence = DOTween.Sequence().SetUpdate(true).SetTarget(this);
             RewardFormTransitionSettings settings = TransitionSettings;
+            if (_transitionPanelGroup != null)
+            {
+                _transitionPanelGroup.interactable = false;
+                _transitionPanelGroup.blocksRaycasts = false;
+                _transitionSequence.Append(
+                    _transitionPanelGroup.DOFade(0f, settings.CloseDuration).SetEase(Ease.InSine));
+            }
+
             if (_transitionGroup != null)
             {
-                _transitionSequence.Append(DOTween.To(
-                    () => _transitionGroup.alpha,
-                    value => _transitionGroup.alpha = value,
-                    0f,
-                    settings.CloseDuration).SetEase(Ease.InSine));
+                // 面板先退场，再平滑揭开底层；连续弹窗进入时则由前一窗的 handoff 遮罩承接。
+                _transitionSequence.Append(
+                    _transitionGroup.DOFade(0f, settings.CloseDuration).SetEase(Ease.InSine));
             }
 
             _transitionSequence.OnComplete(() =>
@@ -573,12 +593,10 @@ namespace GourmetProject.Game.UI.Meta
             _hasBuiltRewardRows = false;
             _isClosing = false;
             _continueButton.interactable = true;
-            if (_transitionGroup != null)
-            {
-                _transitionGroup.alpha = 0f;
-                _transitionGroup.interactable = true;
-                _transitionGroup.blocksRaycasts = false;
-            }
+            UITransition.PreparePopupLayers(
+                _transitionGroup,
+                _transitionPanelGroup,
+                IsHandoffArrival);
 
             if (_transitionPanel != null)
             {
@@ -599,13 +617,30 @@ namespace GourmetProject.Game.UI.Meta
             _transitionSequence?.Kill();
             _transitionSequence = DOTween.Sequence().SetUpdate(true).SetTarget(this);
             RewardFormTransitionSettings settings = TransitionSettings;
-            if (_transitionGroup != null)
+            bool hasTransition = false;
+            if (_transitionGroup != null && !IsHandoffArrival)
             {
                 _transitionSequence.Append(DOTween.To(
                     () => _transitionGroup.alpha,
                     value => _transitionGroup.alpha = value,
                     1f,
                     settings.BackgroundFade).SetEase(Ease.OutSine));
+                hasTransition = true;
+            }
+
+            if (_transitionPanelGroup != null)
+            {
+                Tween panelFade = _transitionPanelGroup
+                    .DOFade(1f, settings.BackgroundFade)
+                    .SetEase(Ease.OutSine);
+                if (hasTransition)
+                {
+                    _transitionSequence.Join(panelFade);
+                }
+                else
+                {
+                    _transitionSequence.Append(panelFade);
+                }
             }
 
             _transitionSequence.OnComplete(() =>
@@ -614,6 +649,12 @@ namespace GourmetProject.Game.UI.Meta
                 {
                     _transitionGroup.interactable = true;
                     _transitionGroup.blocksRaycasts = true;
+                }
+
+                if (_transitionPanelGroup != null)
+                {
+                    _transitionPanelGroup.interactable = true;
+                    _transitionPanelGroup.blocksRaycasts = true;
                 }
             });
         }

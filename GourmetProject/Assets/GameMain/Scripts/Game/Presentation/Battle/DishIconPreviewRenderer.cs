@@ -641,7 +641,7 @@ namespace GourmetProject.Game.Presentation.Battle
             BigDouble deliciousness,
             DishIconPreviewMode mode,
             bool visible,
-            float valueAlpha)
+            float alpha)
         {
             if (target == null || badgePrefab == null)
             {
@@ -680,7 +680,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             state.View.gameObject.SetActive(true);
-            state.View.SetValueAlpha(valueAlpha);
+            state.View.SetAlpha(alpha);
             Vector2Int shapeSize = new(displayShape.Width, displayShape.Height);
             bool layoutChanged = state.Mode != mode || state.ShapeSize != shapeSize;
             state.View.transform.localScale = Vector3.one * BadgeScale;
