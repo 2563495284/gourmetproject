@@ -53,10 +53,13 @@ namespace GourmetProject.Game.UI.Hud
         private bool _stateTransitioning;
         private int? _preparedDishId;
         private bool _hasPresentation;
+        private OutletPresentation _displayedPresentation;
         private OutletPresentation _targetPresentation;
         private Sequence _stateTransition;
         private bool _preparedDishScaleCaptured;
         private Vector3 _preparedDishBaseScale = Vector3.one;
+        private bool _statusAlphaCaptured;
+        private float _statusBaseAlpha = 1f;
 
         public ServingOutletState State { get; private set; }
 
@@ -227,8 +230,13 @@ namespace GourmetProject.Game.UI.Hud
             if (!_hasPresentation)
             {
                 _hasPresentation = true;
+                _displayedPresentation = presentation;
                 _targetPresentation = presentation;
-                ApplyPresentation(presentation, prepareDishPop: false);
+                ApplyPresentation(
+                    presentation,
+                    prepareDishPop: false,
+                    dishAlpha: 1f,
+                    applyBackground: true);
                 NormalizeTransitionVisuals();
                 RefreshInteractionState();
                 return;
@@ -240,7 +248,12 @@ namespace GourmetProject.Game.UI.Hud
             {
                 if (_stateTransition == null)
                 {
-                    ApplyPresentation(presentation, prepareDishPop: false);
+                    _displayedPresentation = presentation;
+                    ApplyPresentation(
+                        presentation,
+                        prepareDishPop: false,
+                        dishAlpha: 1f,
+                        applyBackground: true);
                     NormalizeTransitionVisuals();
                     RefreshInteractionState();
                 }
@@ -261,13 +274,20 @@ namespace GourmetProject.Game.UI.Hud
             _dishHoverTrigger?.CancelHover();
             RefreshInteractionState();
 
+            OutletPresentation target = _targetPresentation;
+            bool displayedDishVisible = _displayedPresentation.HasPreparedDish
+                && _preparedDishRoot != null
+                && _preparedDishRoot.gameObject.activeSelf;
+            bool dishContentChanged = !_displayedPresentation.PreparedDishMatches(target);
+            bool fadeDisplayedDish = displayedDishVisible && dishContentChanged;
+            bool revealTargetDish = target.HasPreparedDish && dishContentChanged;
             var sequence = DOTween.Sequence()
                 .SetUpdate(true)
                 .SetTarget(this)
                 .SetLink(gameObject);
-            if (_canvasGroup != null)
+            if (_statusText != null)
             {
-                sequence.Append(_canvasGroup
+                sequence.Append(_statusText
                     .DOFade(0f, StateFadeOutDuration)
                     .SetEase(Ease.InQuad));
             }
@@ -276,12 +296,31 @@ namespace GourmetProject.Game.UI.Hud
                 sequence.AppendInterval(StateFadeOutDuration);
             }
 
-            sequence.AppendCallback(() =>
-                ApplyPresentation(_targetPresentation, prepareDishPop: true));
-            if (_canvasGroup != null)
+            if (fadeDisplayedDish)
             {
-                sequence.Append(_canvasGroup
-                    .DOFade(1f, StateFadeInDuration)
+                sequence.Join(DOVirtual.Float(
+                        CurrentDishAlpha(),
+                        0f,
+                        StateFadeOutDuration,
+                        SetDishAlpha)
+                    .SetEase(Ease.InQuad));
+            }
+
+            sequence.AppendCallback(() =>
+            {
+                _displayedPresentation = target;
+                ApplyPresentation(
+                    target,
+                    prepareDishPop: revealTargetDish,
+                    dishAlpha: revealTargetDish ? 0f : 1f,
+                    applyBackground: false);
+                SetStatusAlpha(0f);
+            });
+
+            if (_statusText != null)
+            {
+                sequence.Append(_statusText
+                    .DOFade(_statusBaseAlpha, StateFadeInDuration)
                     .SetEase(Ease.OutQuad));
             }
             else
@@ -289,11 +328,31 @@ namespace GourmetProject.Game.UI.Hud
                 sequence.AppendInterval(StateFadeInDuration);
             }
 
-            if (_targetPresentation.HasPreparedDish && _preparedDishRoot != null)
+            if (revealTargetDish)
             {
-                sequence.Join(_preparedDishRoot
-                    .DOScale(_preparedDishBaseScale, PreparedDishPopDuration)
-                    .SetEase(Ease.OutBack));
+                sequence.Join(DOVirtual.Float(
+                        0f,
+                        1f,
+                        StateFadeInDuration,
+                        SetDishAlpha)
+                    .SetEase(Ease.OutQuad));
+                if (_preparedDishRoot != null)
+                {
+                    sequence.Join(_preparedDishRoot
+                        .DOScale(_preparedDishBaseScale, PreparedDishPopDuration)
+                        .SetEase(Ease.OutBack));
+                }
+            }
+
+            if (_background != null)
+            {
+                float backgroundDuration = StateFadeOutDuration
+                    + Mathf.Max(
+                        StateFadeInDuration,
+                        revealTargetDish ? PreparedDishPopDuration : 0f);
+                sequence.Insert(0f, _background
+                    .DOColor(BackgroundColorFor(target.State), backgroundDuration)
+                    .SetEase(Ease.InOutQuad));
             }
 
             _stateTransition = sequence;
@@ -314,7 +373,9 @@ namespace GourmetProject.Game.UI.Hud
 
         private void ApplyPresentation(
             OutletPresentation presentation,
-            bool prepareDishPop)
+            bool prepareDishPop,
+            float dishAlpha,
+            bool applyBackground)
         {
             State = presentation.State;
             PreparedServeDish prepared = presentation.Prepared;
@@ -347,7 +408,9 @@ namespace GourmetProject.Game.UI.Hud
                     _dishPreview.SetDisplayLockedToDefaultFoodCell(true);
                     _dishPreview.Bind(
                         DishPreviewRequest.FromInstance(prepared.Dish));
-                    SetDishAlpha(1f);
+                    // Bind 会把 RawImage 颜色恢复为白色；必须在同一帧重新压回目标透明度，
+                    // 否则换菜时会先渲染一帧完全不透明的新菜。
+                    SetDishAlpha(dishAlpha);
                 }
                 else
                 {
@@ -357,17 +420,9 @@ namespace GourmetProject.Game.UI.Hud
             }
 
             SetText(_statusText, presentation.StatusText);
-            switch (presentation.State)
+            if (applyBackground)
             {
-                case ServingOutletState.WaitingForPendingConfirmation:
-                    SetBackground(_readyColor);
-                    break;
-                case ServingOutletState.WaitingForDishDrag:
-                    SetBackground(_dragColor);
-                    break;
-                default:
-                    SetBackground(_blockedColor);
-                    break;
+                SetBackground(BackgroundColorFor(presentation.State));
             }
         }
 
@@ -382,6 +437,8 @@ namespace GourmetProject.Game.UI.Hud
             {
                 _preparedDishRoot.localScale = _preparedDishBaseScale;
             }
+
+            SetStatusAlpha(_statusBaseAlpha);
         }
 
         public void OnBeginDrag(PointerEventData eventData)
@@ -440,12 +497,40 @@ namespace GourmetProject.Game.UI.Hud
             _dishPreview.SetAlpha(alpha);
         }
 
+        private float CurrentDishAlpha()
+        {
+            RawImage image = _dishPreview != null ? _dishPreview.TargetImage : null;
+            return image != null ? image.color.a : 1f;
+        }
+
+        private void SetStatusAlpha(float alpha)
+        {
+            if (_statusText == null)
+            {
+                return;
+            }
+
+            Color color = _statusText.color;
+            color.a = Mathf.Clamp01(alpha);
+            _statusText.color = color;
+        }
+
         private void SetBackground(Color color)
         {
             if (_background != null)
             {
                 _background.color = color;
             }
+        }
+
+        private Color BackgroundColorFor(ServingOutletState state)
+        {
+            return state switch
+            {
+                ServingOutletState.WaitingForPendingConfirmation => _readyColor,
+                ServingOutletState.WaitingForDishDrag => _dragColor,
+                _ => _blockedColor,
+            };
         }
 
         private static void SetText(TMP_Text text, string value)
@@ -463,6 +548,12 @@ namespace GourmetProject.Game.UI.Hud
             {
                 _preparedDishBaseScale = _preparedDishRoot.localScale;
                 _preparedDishScaleCaptured = true;
+            }
+
+            if (!_statusAlphaCaptured && _statusText != null)
+            {
+                _statusBaseAlpha = _statusText.color.a;
+                _statusAlphaCaptured = true;
             }
         }
 
@@ -489,7 +580,12 @@ namespace GourmetProject.Game.UI.Hud
             _stateTransitioning = false;
             if (_hasPresentation)
             {
-                ApplyPresentation(_targetPresentation, prepareDishPop: false);
+                _displayedPresentation = _targetPresentation;
+                ApplyPresentation(
+                    _targetPresentation,
+                    prepareDishPop: false,
+                    dishAlpha: 1f,
+                    applyBackground: true);
             }
 
             NormalizeTransitionVisuals();
@@ -540,6 +636,11 @@ namespace GourmetProject.Game.UI.Hud
                         StatusText,
                         other.StatusText,
                         StringComparison.Ordinal);
+            }
+
+            public bool PreparedDishMatches(OutletPresentation other)
+            {
+                return ReferenceEquals(Prepared?.Dish, other.Prepared?.Dish);
             }
         }
     }

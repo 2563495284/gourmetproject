@@ -2626,7 +2626,9 @@ namespace GourmetProject.Game.UI.Battle
             {
                 world.SetPreparedDishDiscardTarget(
                     discardBin == null ? null : discardBin.CanAcceptDropAt,
-                    discardBin == null ? null : discardBin.SetDragHovered);
+                    discardBin == null ? null : discardBin.SetDragHovered,
+                    discardBin == null ? null : discardBin.GetDiscardAnimationTargetScreenPosition,
+                    discardBin == null ? null : discardBin.PlayAcceptedAnimation);
             }
 
             servingOutlet?.Bind(
