@@ -173,6 +173,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     FitTargetGroupInsideViewport(
                         camera,
+                        requests,
                         placements,
                         group.Value,
                         width,
@@ -318,6 +319,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private static void FitTargetGroupInsideViewport(
             Camera camera,
+            IReadOnlyList<ResultLabelLayoutRequest> requests,
             ResultLabelLayoutPlacement[] placements,
             IReadOnlyList<int> groupIndices,
             float footprintWidth,
@@ -362,6 +364,20 @@ namespace GourmetProject.Game.Presentation.Battle
                 groupMaxY,
                 safePadding,
                 1f - safePadding);
+            translationX = KeepOnlyOutwardTranslation(
+                camera,
+                requests,
+                placements,
+                groupIndices,
+                translationX,
+                useHorizontalAxis: true);
+            translationY = KeepOnlyOutwardTranslation(
+                camera,
+                requests,
+                placements,
+                groupIndices,
+                translationY,
+                useHorizontalAxis: false);
             if (Mathf.Approximately(translationX, 0f)
                 && Mathf.Approximately(translationY, 0f))
             {
@@ -386,6 +402,47 @@ namespace GourmetProject.Game.Presentation.Battle
                     resolved,
                     placement.VerticalDirection);
             }
+        }
+
+        private static float KeepOnlyOutwardTranslation(
+            Camera camera,
+            IReadOnlyList<ResultLabelLayoutRequest> requests,
+            ResultLabelLayoutPlacement[] placements,
+            IReadOnlyList<int> groupIndices,
+            float requestedTranslation,
+            bool useHorizontalAxis)
+        {
+            if (Mathf.Approximately(requestedTranslation, 0f))
+            {
+                return 0f;
+            }
+
+            for (int i = 0; i < groupIndices.Count; i++)
+            {
+                int placementIndex = groupIndices[i];
+                if (!TryGetViewportPoint(
+                        camera,
+                        requests[placementIndex].BaseAnchor,
+                        out Vector3 anchorViewport)
+                    || !TryGetViewportPoint(
+                        camera,
+                        placements[placementIndex].Position,
+                        out Vector3 placementViewport))
+                {
+                    return 0f;
+                }
+
+                float outwardOffset = useHorizontalAxis
+                    ? placementViewport.x - anchorViewport.x
+                    : placementViewport.y - anchorViewport.y;
+                if (outwardOffset * requestedTranslation < 0f)
+                {
+                    // 安全区修正不能抵消原始的远离偏移，更不能跨回原锚点另一侧。
+                    return 0f;
+                }
+            }
+
+            return requestedTranslation;
         }
 
         private static bool TryGetFootprintViewportBounds(

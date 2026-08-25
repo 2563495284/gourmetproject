@@ -377,7 +377,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void ViewportEdges_TranslateEachTargetGroupAsAWholeIntoSafeArea()
+        public void ViewportEdges_NeverPullOffsetsBackTowardOriginalAnchor()
         {
             Camera camera = CreateCamera();
             try
@@ -419,8 +419,53 @@ namespace GourmetProject.Tests.EditMode
                             .Using(Vector3ComparerWithEqualsOperator.Instance));
                     }
 
-                    AssertFootprintsInsideSafeViewport(camera, fitted, 1);
+                    Vector3 targetViewport = camera.WorldToViewportPoint(target);
+                    for (int i = 1; i < fitted.Count; i++)
+                    {
+                        Vector3 rawOffset = camera.WorldToViewportPoint(raw[i].Position)
+                            - targetViewport;
+                        Vector3 fittedOffset = camera.WorldToViewportPoint(fitted[i].Position)
+                            - targetViewport;
+                        Assert.That(
+                            Mathf.Sign(fittedOffset.x),
+                            Is.EqualTo(Mathf.Sign(rawOffset.x)));
+                        Assert.That(
+                            Mathf.Sign(fittedOffset.y),
+                            Is.EqualTo(Mathf.Sign(rawOffset.y)));
+                        Assert.That(
+                            Mathf.Abs(fittedOffset.x),
+                            Is.GreaterThanOrEqualTo(Mathf.Abs(rawOffset.x) - 0.0001f));
+                        Assert.That(
+                            Mathf.Abs(fittedOffset.y),
+                            Is.GreaterThanOrEqualTo(Mathf.Abs(rawOffset.y) - 0.0001f));
+                    }
                 }
+            }
+            finally
+            {
+                Object.DestroyImmediate(camera.gameObject);
+            }
+        }
+
+        [Test]
+        public void ViewportFit_StillAppliesWhenItMovesFurtherAwayFromOriginalAnchor()
+        {
+            Camera camera = CreateCamera();
+            try
+            {
+                Vector3 target = ViewportWorld(camera, 0.06f, 0.50f);
+                Vector3 source = ViewportWorld(camera, 0.01f, 0.50f);
+                ResultLabelLayoutRequest[] requests =
+                {
+                    Request(10, target, source),
+                    Request(10, target, source),
+                };
+
+                ResultLabelLayoutPlan raw = Resolve(null, requests);
+                ResultLabelLayoutPlan fitted = Resolve(camera, requests);
+
+                Assert.That(fitted[1].Position.x, Is.GreaterThan(raw[1].Position.x));
+                AssertFootprintsInsideSafeViewport(camera, fitted, 1);
             }
             finally
             {
