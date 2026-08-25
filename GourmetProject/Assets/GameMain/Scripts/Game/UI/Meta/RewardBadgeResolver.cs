@@ -5,7 +5,7 @@ namespace GourmetProject.Game.UI.Meta
     /// </summary>
     internal static class RewardBadgeResolver
     {
-        internal const string BaseDishSpriteName = "reward_badge_base_dish";
+        internal const string BaseDishSpriteName = "reward_badge_food";
 
         internal static string DefaultSpriteNameFor(cfg.RewardKind rewardKind)
         {
@@ -32,7 +32,7 @@ namespace GourmetProject.Game.UI.Meta
                 case cfg.RewardKind.ActiveItemGrant:
                     return "ui_icon_shop_active";
                 case cfg.RewardKind.DishChoice:
-                    return "ui_icon_shop_food";
+                    return "reward_badge_food";
                 default:
                     return "ui_icon_shop_food";
             }

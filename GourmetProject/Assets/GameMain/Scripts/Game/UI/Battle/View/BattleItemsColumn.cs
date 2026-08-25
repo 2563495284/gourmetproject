@@ -1079,6 +1079,7 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 if (slot != null)
                 {
+                    slot.UnbindPassiveModel();
                     slot.ClearTip();
                     Destroy(slot.gameObject);
                 }

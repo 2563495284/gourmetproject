@@ -163,6 +163,11 @@ namespace GourmetProject.Game.UI.Hud
 
         public void PlayPassivePulse()
         {
+            if (this == null)
+            {
+                return;
+            }
+
             EnsureRefs();
             if (_icon == null || !_icon.enabled)
             {
@@ -188,11 +193,19 @@ namespace GourmetProject.Game.UI.Hud
             }, true).SetUpdate(true).SetTarget(this);
         }
 
-        private void OnDestroy()
+        /// <summary>
+        /// 在槽位进入延迟销毁队列前立即解除模型事件，避免销毁完成前后仍收到闪光或状态刷新回调。
+        /// </summary>
+        public void UnbindPassiveModel()
         {
             BindPassiveModel(null);
             _pulseTween?.Kill(false);
             _pulseTween = null;
+        }
+
+        private void OnDestroy()
+        {
+            UnbindPassiveModel();
 
             if (_iconEffectMaterial != null)
             {
@@ -395,16 +408,31 @@ namespace GourmetProject.Game.UI.Hud
 
         private void OnPassiveModelFlashed(PassiveItemModel model)
         {
+            if (this == null || !ReferenceEquals(_boundPassiveModel, model))
+            {
+                return;
+            }
+
             PlayPassivePulse();
         }
 
         private void OnPassiveIconStateChanged(PassiveItemModel model)
         {
+            if (this == null || !ReferenceEquals(_boundPassiveModel, model))
+            {
+                return;
+            }
+
             RefreshPassiveIconState();
         }
 
         private void OnPassiveModelInfoTextChanged(PassiveItemModel model)
         {
+            if (this == null || !ReferenceEquals(_boundPassiveModel, model))
+            {
+                return;
+            }
+
             RefreshInfoText();
         }
 
