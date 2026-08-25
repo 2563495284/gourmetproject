@@ -28,7 +28,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void OneLabelPerTarget_KeepsOriginalAnchorAndDefaultDrift()
+        public void OneLabelPerTarget_KeepsOriginalAnchorAndDriftsAwayFromSource()
         {
             Camera camera = CreateCamera();
             try
@@ -55,6 +55,37 @@ namespace GourmetProject.Tests.EditMode
                     Is.EqualTo(secondTarget)
                     .Using(Vector3ComparerWithEqualsOperator.Instance));
                 Assert.That(plan[0].VerticalDirection, Is.EqualTo(1f));
+                Assert.That(plan[1].VerticalDirection, Is.EqualTo(-1f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(camera.gameObject);
+            }
+        }
+
+        [Test]
+        public void OffsetStartsAtOriginalAnchor_AndDirectionStaysAwayFromSource()
+        {
+            Camera camera = CreateCamera();
+            try
+            {
+                Vector3 anchor = ViewportWorld(camera, 0.5f, 0.30f);
+                Vector3 source = ViewportWorld(camera, 0.5f, 0.40f);
+                Vector3 foodCenter = ViewportWorld(camera, 0.5f, 0.50f);
+                ResultLabelLayoutPlan plan = Resolve(
+                    camera,
+                    Request(10, anchor, foodCenter, source),
+                    Request(10, anchor, foodCenter, source));
+
+                // 来源位于原锚点和目标中心之间：位置从锚点起算，方向仍远离来源。
+                Assert.That(source.y, Is.GreaterThan(anchor.y));
+                Assert.That(source.y, Is.LessThan(foodCenter.y));
+                Assert.That(
+                    plan[0].Position,
+                    Is.EqualTo(anchor)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+                Assert.That(plan[0].VerticalDirection, Is.EqualTo(1f));
+                Assert.That(plan[1].Position.y, Is.GreaterThan(anchor.y));
                 Assert.That(plan[1].VerticalDirection, Is.EqualTo(1f));
             }
             finally
@@ -193,7 +224,7 @@ namespace GourmetProject.Tests.EditMode
                     plan[0].Position,
                     Is.EqualTo(target)
                     .Using(Vector3ComparerWithEqualsOperator.Instance));
-                Assert.That(plan[0].VerticalDirection, Is.EqualTo(1f));
+                Assert.That(plan[0].VerticalDirection, Is.EqualTo(-1f));
                 for (int i = 1; i < plan.Count; i++)
                 {
                     Assert.That(plan[i].VerticalDirection, Is.EqualTo(-1f));
@@ -438,25 +469,34 @@ namespace GourmetProject.Tests.EditMode
 
         private static ResultLabelLayoutRequest Request(
             int targetKey,
-            Vector3 target,
+            Vector3 anchor,
+            Vector3 source)
+        {
+            return Request(targetKey, anchor, anchor, source);
+        }
+
+        private static ResultLabelLayoutRequest Request(
+            int targetKey,
+            Vector3 anchor,
+            Vector3 targetPosition,
             Vector3 source)
         {
             return new ResultLabelLayoutRequest(
                 targetKey,
-                target,
-                target,
+                anchor,
+                targetPosition,
                 source,
                 true);
         }
 
         private static ResultLabelLayoutRequest RequestWithoutSource(
             int targetKey,
-            Vector3 target)
+            Vector3 anchor)
         {
             return new ResultLabelLayoutRequest(
                 targetKey,
-                target,
-                target,
+                anchor,
+                anchor,
                 default,
                 false);
         }
