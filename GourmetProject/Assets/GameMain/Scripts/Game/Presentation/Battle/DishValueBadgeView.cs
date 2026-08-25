@@ -13,8 +13,8 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private MeshRenderer _valueMeshRenderer;
         [SerializeField] private TextMeshPro _valueText;
 
-        private string _sortingLayer = BattleSorting.Fx;
-        private int _sortingOrder = BattleSorting.OrderFloatingText;
+        private string _sortingLayer = BattleSorting.WorldUi;
+        private int _sortingOrder = BattleSorting.OrderDishBadge;
         private bool _dimmed;
         private bool _chapterFocused;
         private float _presentationAlpha = 1f;
