@@ -47,8 +47,8 @@
       0
     ],
     "goldHiddenOffset": [
-      10,
-      30
+      0,
+      20
     ],
     "name": "金币",
     "ruleTemplate": "[gold]金币+ {requiredPickCount}[/gold]"
@@ -668,8 +668,8 @@
       0
     ],
     "goldHiddenOffset": [
-      10,
-      30
+      0,
+      20
     ],
     "name": "金币",
     "ruleTemplate": "[gold]金币+ {requiredPickCount}[/gold]"

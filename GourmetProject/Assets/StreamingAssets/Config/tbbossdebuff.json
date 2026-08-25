@@ -2,7 +2,7 @@
   {
     "id": "debuff_indulgent",
     "name": "放纵餐",
-    "desc": "获得一行餐桌格",
+    "desc": "获得一行餐桌格\n美味值要求更高",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.5,
@@ -13,7 +13,7 @@
   {
     "id": "debuff_binge",
     "name": "暴食餐",
-    "desc": "获得一列餐桌格",
+    "desc": "获得一列餐桌格\n美味值要求更高",
     "weight": 1,
     "unlockCondition": "",
     "targetScoreHiddenOffset": 0.5,
