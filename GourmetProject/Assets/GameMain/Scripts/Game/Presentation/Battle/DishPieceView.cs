@@ -105,10 +105,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly int EdgeClampPointId = Shader.PropertyToID("_EdgeClampPoint");
 
         [Header("接触阴影：贴桌态（复用食物 Alpha 轮廓，偏移按单格尺寸取比例）")]
-        [SerializeField] private float _shadowBaseAlpha = 0.22f;
-        [SerializeField] private float _shadowGroundScale = 1.004f;
-        [SerializeField] private float _shadowGroundDrop = 0.014f;
-        [SerializeField] private float _shadowGroundSide = 0.007f;
+        [SerializeField] private float _shadowBaseAlpha = 0.28f;
+        [SerializeField] private float _shadowGroundScale = 1.02f;
+        [SerializeField] private float _shadowGroundDrop = 0.04f;
+        [SerializeField] private float _shadowGroundSide = 0.015f;
 
         [Header("接触阴影：举高态（越高越淡，低透明轮廓层轻微外扩）")]
         [Tooltip("阴影达到最大外扩/淡化的参考高度（按单格尺寸倍数，适配不同餐桌缩放）。")]
@@ -124,12 +124,12 @@ namespace GourmetProject.Game.Presentation.Battle
 
         [Header("拖拽悬浮（本体中心始终跟随鼠标，阴影只负责制造离桌感）")]
         [SerializeField] private float _dragVisualScale = 1.15f;
-        [SerializeField] private float _dragShadowSideCells = 0.12f;
-        [SerializeField] private float _dragShadowDropCells = 0.20f;
-        [SerializeField] private float _dragShadowCoreScale = 1.06f;
-        [SerializeField] private float _dragShadowCoreAlpha = 0.18f;
-        [SerializeField] private float _dragShadowHaloScale = 1.14f;
-        [SerializeField] private float _dragShadowHaloAlpha = 0.07f;
+        [SerializeField] private float _dragShadowSideCells = 0.06f;
+        [SerializeField] private float _dragShadowDropCells = 0.10f;
+        [SerializeField] private float _dragShadowCoreScale = 1.03f;
+        [SerializeField] private float _dragShadowCoreAlpha = 0.20f;
+        [SerializeField] private float _dragShadowHaloScale = 1.07f;
+        [SerializeField] private float _dragShadowHaloAlpha = 0.045f;
 
         [Header("固定结构（prefab 预拼，运行时引用）")]
         [Tooltip("食物本体渲染体（子物体 Sprite 上的 SpriteRenderer）。")]
@@ -199,6 +199,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private float _liftHeight;
         private Vector3 _shadowBaseLocalPos;
         private Vector3 _shadowBaseScale;
+        private float _dragShadowCellScale = 1f;
         private Vector3 _visualBaseLocalPos;
         private Action<DishInstance> _clicked;
         private Action<DishPieceView> _hoverEntered;
@@ -354,7 +355,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            _dishValueBadgePresenter.FadeValue(visible, duration, onComplete);
+            _dishValueBadgePresenter.Fade(visible, duration, onComplete);
         }
 
         public void UpdatePlacement(Placement placement)
@@ -1037,12 +1038,15 @@ namespace GourmetProject.Game.Presentation.Battle
         /// 切换统一拖拽悬浮表现。本体进入 PiecesFlying 并保持不透明放大；
         /// 两层轮廓影留在地面的 Pieces，只做低透明度的轻微外扩与偏移。
         /// </summary>
-        public void SetDragPresentation(bool active)
+        public void SetDragPresentation(bool active, float targetCellSize = 0f)
         {
             EnsureRefs();
             _scopeAffectedVersion++;
             StopScopeAffectedShake(restoreTransform: true);
             _dragPresentationActive = active;
+            _dragShadowCellScale = active && targetCellSize > 0f
+                ? targetCellSize / Mathf.Max(_cellSize, 0.0001f)
+                : 1f;
             _liftHeight = 0f;
             SetFlying(active);
 
@@ -2391,17 +2395,20 @@ namespace GourmetProject.Game.Presentation.Battle
                 target.localScale = new Vector3(scale, scale, 1f);
             }
 
-            Vector3 dragShadowPosition = _shadowBaseLocalPos
-                + new Vector3(
-                    _cellSize * _dragShadowSideCells,
-                    -_cellSize * _dragShadowDropCells,
-                    0f);
+            float targetScale = Mathf.Max(0.0001f, _dragShadowCellScale);
+            float targetCellSize = Mathf.Max(0.0001f, _cellSize) * targetScale;
+            Vector3 dragShadowPosition = FootprintCenterLocal(CurrentShape);
+            dragShadowPosition.z = _shadowBaseLocalPos.z;
+            dragShadowPosition += new Vector3(
+                targetCellSize * _dragShadowSideCells,
+                -targetCellSize * _dragShadowDropCells,
+                0f);
             if (_shadowRenderer != null)
             {
                 _shadowRenderer.transform.localPosition = dragShadowPosition;
                 _shadowRenderer.transform.localScale = new Vector3(
-                    _shadowBaseScale.x * _dragShadowCoreScale,
-                    _shadowBaseScale.y * _dragShadowCoreScale,
+                    _shadowBaseScale.x * targetScale * _dragShadowCoreScale,
+                    _shadowBaseScale.y * targetScale * _dragShadowCoreScale,
                     1f);
                 Color color = _shadowRenderer.color;
                 color.a = Mathf.Clamp01(_dragShadowCoreAlpha);
@@ -2416,8 +2423,8 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _shadowHaloRenderer.transform.localPosition = dragShadowPosition;
                 _shadowHaloRenderer.transform.localScale = new Vector3(
-                    _shadowBaseScale.x * _dragShadowHaloScale,
-                    _shadowBaseScale.y * _dragShadowHaloScale,
+                    _shadowBaseScale.x * targetScale * _dragShadowHaloScale,
+                    _shadowBaseScale.y * targetScale * _dragShadowHaloScale,
                     1f);
                 Color color = _shadowHaloRenderer.color;
                 color.a = Mathf.Clamp01(_dragShadowHaloAlpha);

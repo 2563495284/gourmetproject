@@ -6,12 +6,16 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Battle.View
 {
     /// <summary>
-    /// 时间轴推进时的聚焦演出：用全屏暗幕隔离其他 HUD，并把时间轴暂时移动到屏幕中央。
+    /// 时间轴推进/跨周时的聚焦演出：用全屏暗幕隔离其他 HUD，并把时间轴暂时移动到屏幕中央。
     /// </summary>
     internal sealed class TimelineAxisFocusPresenter
     {
         private const float EnterDuration = 0.64f;
-        // private const float PostEnterDelay = 0.6f;
+        private const float OldContentExitDuration = 0.42f;
+        private const float OldContentExitScale = 0.82f;
+        private const float HiddenSwapHoldDuration = 0.08f;
+        private const float NewContentEnterDuration = 0.56f;
+        private const float NewContentEnterScale = 1.08f;
         private const float PreExitDelay = 0.5f;
         private const float ExitDuration = 0.78f;
         private static readonly Color BackdropColor = new Color(0f, 0f, 0f, 0.76f);
@@ -22,6 +26,8 @@ namespace GourmetProject.Game.UI.Battle.View
         private CanvasGroup _backdropGroup;
         private Tween _transition;
         private Vector2 _restPosition;
+        private Vector3 _restScale;
+        private float _restAlpha;
         private int _restSiblingIndex;
         private bool _restInteractable;
         private bool _restBlocksRaycasts;
@@ -33,7 +39,10 @@ namespace GourmetProject.Game.UI.Battle.View
             _axisGroup = axisGroup;
         }
 
-        public bool CanPresent => _axis != null && _axis.parent is RectTransform;
+        public bool CanPresent =>
+            _axis != null
+            && _axisGroup != null
+            && _axis.parent is RectTransform;
 
         public void Enter(Action onComplete)
         {
@@ -53,9 +62,11 @@ namespace GourmetProject.Game.UI.Battle.View
 
             _active = true;
             _restPosition = _axis.anchoredPosition;
+            _restScale = _axis.localScale;
             _restSiblingIndex = _axis.GetSiblingIndex();
             if (_axisGroup != null)
             {
+                _restAlpha = _axisGroup.alpha;
                 _restInteractable = _axisGroup.interactable;
                 _restBlocksRaycasts = _axisGroup.blocksRaycasts;
                 _axisGroup.interactable = false;
@@ -74,12 +85,85 @@ namespace GourmetProject.Game.UI.Battle.View
                 .SetTarget(_axis)
                 .Join(_backdropGroup.DOFade(1f, EnterDuration).SetEase(Ease.OutCubic))
                 .Join(_axis.DOAnchorPosY(CenteredAnchoredY(_axis), EnterDuration).SetEase(Ease.OutCubic))
-                // .AppendInterval(PostEnterDelay)
                 .OnComplete(() =>
                 {
                     _transition = null;
                     onComplete?.Invoke();
                 });
+        }
+
+        /// <summary>
+        /// 在时间轴保持居中的状态下，把旧内容完整退场；只有完全透明后才替换内容，
+        /// 再把新内容作为一整条时间轴淡入。替换期间不触碰时间轴内部的日期或游标数值。
+        /// </summary>
+        public void SwapContent(Action replaceContent, Action onComplete)
+        {
+            if (!_active || !CanPresent)
+            {
+                replaceContent?.Invoke();
+                onComplete?.Invoke();
+                return;
+            }
+
+            _transition?.Kill(complete: false);
+            Vector3 oldExitScale = ScaledRest(OldContentExitScale);
+            Vector3 newEnterScale = ScaledRest(NewContentEnterScale);
+            Vector3 newContentScale = newEnterScale;
+            float newContentAlpha = 0f;
+
+            Sequence sequence = DOTween.Sequence()
+                .SetUpdate(true)
+                .SetTarget(_axis)
+                .Append(_axis
+                    .DOScale(oldExitScale, OldContentExitDuration)
+                    .SetEase(Ease.InOutSine));
+            if (_axisGroup != null)
+            {
+                sequence.Join(_axisGroup
+                    .DOFade(0f, OldContentExitDuration)
+                    .SetEase(Ease.InOutSine));
+            }
+
+            sequence.AppendCallback(() =>
+            {
+                replaceContent?.Invoke();
+                _axis.localScale = newEnterScale;
+                if (_axisGroup != null)
+                {
+                    _axisGroup.alpha = 0f;
+                }
+            });
+            // 至少保留一个完整渲染帧的全透明状态，避免替换后同帧推进导致新轴首帧已经可见。
+            sequence.AppendInterval(HiddenSwapHoldDuration);
+            sequence.Append(DOTween.To(
+                    () => newContentScale,
+                    value =>
+                    {
+                        newContentScale = value;
+                        _axis.localScale = value;
+                    },
+                    _restScale,
+                    NewContentEnterDuration)
+                .SetEase(Ease.InOutSine));
+            if (_axisGroup != null)
+            {
+                sequence.Join(DOTween.To(
+                        () => newContentAlpha,
+                        value =>
+                        {
+                            newContentAlpha = value;
+                            _axisGroup.alpha = value;
+                        },
+                        _restAlpha,
+                        NewContentEnterDuration)
+                    .SetEase(Ease.InOutSine));
+            }
+
+            _transition = sequence.OnComplete(() =>
+            {
+                _transition = null;
+                onComplete?.Invoke();
+            });
         }
 
         public void Exit(Action onComplete)
@@ -165,6 +249,7 @@ namespace GourmetProject.Game.UI.Battle.View
             if (_axis != null)
             {
                 _axis.anchoredPosition = _restPosition;
+                _axis.localScale = _restScale;
                 if (_axis.parent != null)
                 {
                     _axis.SetSiblingIndex(Mathf.Clamp(
@@ -176,6 +261,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
             if (_axisGroup != null)
             {
+                _axisGroup.alpha = _restAlpha;
                 _axisGroup.interactable = _restInteractable;
                 _axisGroup.blocksRaycasts = _restBlocksRaycasts;
             }
@@ -191,6 +277,14 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _backdropRect.gameObject.SetActive(false);
             }
+        }
+
+        private Vector3 ScaledRest(float scale)
+        {
+            return new Vector3(
+                _restScale.x * scale,
+                _restScale.y * scale,
+                _restScale.z);
         }
     }
 }

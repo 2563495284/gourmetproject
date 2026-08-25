@@ -506,22 +506,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3e902e92750145bea49a2277b359ce8, type: 3}
   m_Name:
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Gameplay.Presentation.DishPieceView
-  _shadowBaseAlpha: 0.22
-  _shadowGroundScale: 1.004
-  _shadowGroundDrop: 0.014
-  _shadowGroundSide: 0.007
+  _shadowBaseAlpha: 0.28
+  _shadowGroundScale: 1.02
+  _shadowGroundDrop: 0.04
+  _shadowGroundSide: 0.015
   _shadowLiftRefCells: 1.5
   _coreGrow: 1.08
   _coreFadeWhenHigh: 0.25
   _haloGrow: 1.12
   _haloAlphaWhenHigh: 0.08
   _dragVisualScale: 1.15
-  _dragShadowSideCells: 0.12
-  _dragShadowDropCells: 0.2
-  _dragShadowCoreScale: 1.06
-  _dragShadowCoreAlpha: 0.18
-  _dragShadowHaloScale: 1.14
-  _dragShadowHaloAlpha: 0.07
+  _dragShadowSideCells: 0.06
+  _dragShadowDropCells: 0.1
+  _dragShadowCoreScale: 1.03
+  _dragShadowCoreAlpha: 0.2
+  _dragShadowHaloScale: 1.07
+  _dragShadowHaloAlpha: 0.045
   _spriteRenderer: {fileID: 2000022}
   _visualPivot: {fileID: 652070270221368771}
   _shadowRenderer: {fileID: 2000012}

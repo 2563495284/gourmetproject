@@ -61,6 +61,9 @@ namespace GourmetProject.Game.Orchestration
         /// <summary>推进与所经过节点均处理完成后解除视觉游标锁。</summary>
         void EndTimelineAdvanceSequence();
 
+        /// <summary>非最终周结束后，居中替换整条时间轴；完成后才开放新周操作。</summary>
+        void PlayTimelineWeekTransition(Action onDone);
+
         void PlayTimelineNodeCue(
             string nodeId,
             TimelinePresentationCueKind kind,
@@ -258,17 +261,29 @@ namespace GourmetProject.Game.Orchestration
 
             _view.HideBattleWorld();
 
-            // 无时间轴，或换周后仍拿着上一周时间轴 → 随机一条新时间轴。
-            // 同周即使 CurrentDay 已到末尾，也先交给 PromptNextAction 恢复尚未点击的时间轴节点卡。
-            if (string.IsNullOrEmpty(_run.CurrentTimelineId) || _run.CurrentTimelineWeekIndex != _run.WeekIndex)
-            {
-                _run.RequiredScoreOverride = -1;
-                IRandomStream rng = _run.Random.DomainStream(SeedDomains.Map, $"w{_run.WeekIndex}");
-                TimelineService.RollWeekTimeline(_run, rng);
-            }
+            EnsureCurrentWeekTimeline();
 
             _run?.RequestSave();
             PromptNextAction();
+        }
+
+        /// <summary>
+        /// 确保运行态已经持有当前周的时间轴。这里只改数据，不要求视图立即重绑，
+        /// 因而跨周演出可以让旧轴一直保留到完全隐藏的替换中点。
+        /// </summary>
+        private void EnsureCurrentWeekTimeline()
+        {
+            // 同周即使 CurrentDay 已到末尾，也先交给 PromptNextAction 恢复尚未点击的时间轴节点卡。
+            if (_run == null
+                || (!string.IsNullOrEmpty(_run.CurrentTimelineId)
+                    && _run.CurrentTimelineWeekIndex == _run.WeekIndex))
+            {
+                return;
+            }
+
+            _run.RequiredScoreOverride = -1;
+            IRandomStream rng = _run.Random.DomainStream(SeedDomains.Map, $"w{_run.WeekIndex}");
+            TimelineService.RollWeekTimeline(_run, rng);
         }
 
         private void RestorePendingActionExecution()
@@ -1031,8 +1046,11 @@ namespace GourmetProject.Game.Orchestration
             _run.Execution.Telemetry.Track(
                 () => GameAnalyticsService.TrackRunCheckpoint(_run, _run.WeekIndex, 0));
             _run.RequiredScoreOverride = -1;
+            _view.HideResultPanel();
+            _view.HideBattleWorld();
+            EnsureCurrentWeekTimeline();
             _run?.RequestSave();
-            BeginWeek();
+            _view.PlayTimelineWeekTransition(Once(PromptNextAction));
         }
 
         /// <summary>

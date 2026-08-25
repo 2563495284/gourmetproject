@@ -197,6 +197,7 @@ namespace GourmetProject.Editor
                 tail.raycastTarget = false;
                 var serializedTail = new SerializedObject(tail);
                 serializedTail.FindProperty("_baseWidth").floatValue = 16f;
+                serializedTail.FindProperty("_baseOverlap").floatValue = 4f;
                 serializedTail.FindProperty("_outlineWidth").floatValue = 2f;
                 serializedTail.FindProperty("_outlineColor").colorValue = theme.Palette.Ink;
                 serializedTail.ApplyModifiedPropertiesWithoutUndo();
@@ -219,6 +220,7 @@ namespace GourmetProject.Editor
                 Set(view, "_rect", rect);
                 Set(view, "_hitArea", hit);
                 Set(view, "_tail", tail);
+                Set(view, "_bossTailBaseOverlap", 10f);
                 Set(view, "_shell", shell);
                 Set(view, "_stateRing", stateRing);
                 Set(view, "_icon", icon);
@@ -451,6 +453,15 @@ namespace GourmetProject.Editor
         {
             var serialized = new SerializedObject(component);
             Set(serialized, propertyName, value);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void Set(Component component, string propertyName, float value)
+        {
+            var serialized = new SerializedObject(component);
+            SerializedProperty property = serialized.FindProperty(propertyName)
+                ?? throw new InvalidOperationException($"Missing property {propertyName} on {component}");
+            property.floatValue = value;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
     }

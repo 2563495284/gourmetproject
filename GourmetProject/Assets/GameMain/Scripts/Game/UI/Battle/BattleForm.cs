@@ -190,6 +190,8 @@ namespace GourmetProject.Game.UI.Battle
         private ActiveItemUseCoordinator _activeItemUse;
         private int _shopItemFlyInFlight;
         private readonly HashSet<ShopPurchaseFlyView> _activeShopPurchaseFlys = new();
+        private readonly TutorialAcquiredItemPresentationGate _tutorialAcquiredItemPresentation =
+            new(TutorialRuntime.ObserveContentAcquired);
         private string _pendingTutorialAcquiredItemId = string.Empty;
         private cfg.ItemKind? _pendingTutorialAcquiredItemKind;
         private RectTransform _tutorialAcquiredItemAnchor;
@@ -1006,6 +1008,34 @@ namespace GourmetProject.Game.UI.Battle
             _axisBinder?.EndAdvanceSequence();
         }
 
+        public void PlayTimelineWeekTransition(Action onDone)
+        {
+            SetActionAxisVisible(true);
+            if (_axisBinder == null || _run == null)
+            {
+                onDone?.Invoke();
+                return;
+            }
+
+            void ReplaceHiddenTimeline()
+            {
+                _axisBinder.EndAdvanceSequence();
+                _axisBinder.Rebuild(_run);
+            }
+
+            if (_timelineAxisFocus?.CanPresent != true)
+            {
+                ReplaceHiddenTimeline();
+                onDone?.Invoke();
+                return;
+            }
+
+            _timelineAxisFocus.Enter(() =>
+                _timelineAxisFocus.SwapContent(
+                    ReplaceHiddenTimeline,
+                    () => _timelineAxisFocus.Exit(onDone)));
+        }
+
         /// <summary>
         /// 经营挑战领奖完成后先退出世界态并清空中部卡片，再允许周循环推进时间轴。
         /// 这样时间轴聚焦演出不会被强制叠到仍可见的战斗画面上。
@@ -1640,6 +1670,8 @@ namespace GourmetProject.Game.UI.Battle
         void IShopPageHost.WhenPassivePresentationsIdle(Action onIdle) =>
             _passivePresentations.WhenIdle(onIdle);
         void IShopPageHost.RefreshPersistent(bool refreshItems) => RefreshPersistent(refreshItems);
+        void IShopPageHost.CompleteTutorialAcquiredItemPresentation() =>
+            CompleteTutorialAcquiredItemPresentation();
         void IShopPageHost.OpenDeleteDish() => _recipeBookPage?.OpenShopDelete();
         void IShopPageHost.OpenTableEdit(Action onShown) => OpenTableEdit(onShown);
         void IShopPageHost.OpenRecipeInspect(int bookIndex) => OpenRecipeInspect(bookIndex);
@@ -1883,6 +1915,7 @@ namespace GourmetProject.Game.UI.Battle
 
             if (item == null || acquireResult.Outcome != ItemAcquireOutcome.Added)
             {
+                CompleteTutorialAcquiredItemPresentation();
                 CompleteRequest();
                 return;
             }
@@ -1905,6 +1938,7 @@ namespace GourmetProject.Game.UI.Battle
                         ShowItemInfo,
                         out acquirePlan))
                 {
+                    CompleteTutorialAcquiredItemPresentation();
                     done();
                     CompleteRequest();
                     return;
@@ -1915,6 +1949,7 @@ namespace GourmetProject.Game.UI.Battle
                 if (activeFly == null)
                 {
                     acquirePlan.Complete();
+                    CompleteTutorialAcquiredItemPresentation();
                     done();
                     CompleteRequest();
                     return;
@@ -1932,6 +1967,7 @@ namespace GourmetProject.Game.UI.Battle
 
                     presentationFinished = true;
                     acquirePlan.Complete();
+                    CompleteTutorialAcquiredItemPresentation();
                     UnregisterShopPurchaseFly(capturedFly);
                     if (ReferenceEquals(activeFly, capturedFly))
                     {
@@ -1954,7 +1990,11 @@ namespace GourmetProject.Game.UI.Battle
                         sprite,
                         RunItemSlotView.QualityColor(item.Quality),
                         acquirePlan.ApplyScroll,
-                        acquirePlan.Complete,
+                        () =>
+                        {
+                            acquirePlan.Complete();
+                            CompleteTutorialAcquiredItemPresentation();
+                        },
                         FinishPresentation);
                 }
                 catch (Exception exception)
@@ -1972,6 +2012,7 @@ namespace GourmetProject.Game.UI.Battle
                 }
                 else
                 {
+                    CompleteTutorialAcquiredItemPresentation();
                     CompleteRequest();
                 }
             });
@@ -3014,17 +3055,25 @@ namespace GourmetProject.Game.UI.Battle
             cfg.ItemKind kind,
             RewardItemChoiceCardView sourceCard)
         {
-            if (choice == null || sourceCard == null)
+            if (choice == null)
             {
                 return null;
             }
 
-            Func<bool> play = PrepareRewardItemSelectionFly(
-                choice,
-                kind,
-                sourceCard.SelectionFlySource,
-                sourceCard.SelectionFlySprite);
-            return play == null ? null : () => play.Invoke();
+            Func<bool> play = sourceCard == null
+                ? null
+                : PrepareRewardItemSelectionFly(
+                    choice,
+                    kind,
+                    sourceCard.SelectionFlySource,
+                    sourceCard.SelectionFlySprite);
+            return () =>
+            {
+                if (play?.Invoke() != true)
+                {
+                    CompleteTutorialAcquiredItemPresentation();
+                }
+            };
         }
 
         internal Func<bool> PrepareRewardItemSelectionFly(
@@ -3162,6 +3211,7 @@ namespace GourmetProject.Game.UI.Battle
         {
             if (_itemsColumn == null)
             {
+                CompleteTutorialAcquiredItemPresentation();
                 return;
             }
 
@@ -3178,12 +3228,14 @@ namespace GourmetProject.Game.UI.Battle
                     out Vector2 targetCenter,
                     out Vector2 targetSize))
             {
+                CompleteTutorialAcquiredItemPresentation();
                 return;
             }
 
             ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
             if (fly == null)
             {
+                CompleteTutorialAcquiredItemPresentation();
                 return;
             }
 
@@ -3271,7 +3323,10 @@ namespace GourmetProject.Game.UI.Battle
         private void OnShopItemFlyArrived()
         {
             _shopItemFlyInFlight = Mathf.Max(0, _shopItemFlyInFlight - 1);
-            RefreshItems();
+            if (_shopItemFlyInFlight <= 0)
+            {
+                CompleteTutorialAcquiredItemPresentation();
+            }
         }
 
         private void CancelActiveShopPurchaseAnimations()
@@ -5980,15 +6035,34 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnContentAcquired(RunContentAcquisition acquisition)
         {
-            ClearTutorialAcquiredItemAnchor();
-            if (acquisition?.Kind == RunContentAcquisitionKind.Item
-                && !string.IsNullOrEmpty(acquisition.ItemId))
+            string hook = TutorialRuntime.ContentHookFor(acquisition);
+            if (string.IsNullOrEmpty(hook) || TutorialProgressService.IsCompleted(hook))
             {
-                _pendingTutorialAcquiredItemId = acquisition.ItemId;
-                _pendingTutorialAcquiredItemKind = acquisition.ItemKind;
+                return;
             }
 
-            TutorialRuntime.ObserveContentAcquired(acquisition);
+            if (acquisition.Kind != RunContentAcquisitionKind.Item
+                || string.IsNullOrEmpty(acquisition.ItemId))
+            {
+                TutorialRuntime.ObserveContentAcquired(acquisition);
+                return;
+            }
+
+            ClearTutorialAcquiredItemAnchor();
+            _tutorialAcquiredItemPresentation.Stage(acquisition);
+            _pendingTutorialAcquiredItemId = acquisition.ItemId;
+            _pendingTutorialAcquiredItemKind = acquisition.ItemKind;
+        }
+
+        internal void CompleteTutorialAcquiredItemPresentation()
+        {
+            if (!_tutorialAcquiredItemPresentation.HasPending)
+            {
+                return;
+            }
+
+            RefreshItems();
+            _tutorialAcquiredItemPresentation.Complete();
         }
 
         private void TryRegisterTutorialAcquiredItemAnchor()
@@ -6035,6 +6109,7 @@ namespace GourmetProject.Game.UI.Battle
                 TutorialAnchorId.AcquiredActiveItem,
                 _tutorialAcquiredItemAnchor);
             _tutorialAcquiredItemAnchor = null;
+            _tutorialAcquiredItemPresentation.Clear();
             _pendingTutorialAcquiredItemId = string.Empty;
             _pendingTutorialAcquiredItemKind = null;
         }

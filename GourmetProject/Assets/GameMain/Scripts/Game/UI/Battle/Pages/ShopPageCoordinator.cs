@@ -67,6 +67,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
 
         void RefreshPersistent(bool refreshItems = true);
 
+        void CompleteTutorialAcquiredItemPresentation();
+
         void OpenDeleteDish();
 
         void OpenTableEdit(Action onShown = null);
@@ -184,6 +186,11 @@ namespace GourmetProject.Game.UI.Battle.Pages
             purchaseAnimation?.Play();
 
             RefreshPanel();
+            if ((result.Kind == ShopEntryKind.PassiveItem || result.Kind == ShopEntryKind.ActiveItem)
+                && purchaseAnimation == null)
+            {
+                _host.CompleteTutorialAcquiredItemPresentation();
+            }
             ReportStockShown(run);
             if (result.Kind == ShopEntryKind.Fragment && run.PendingFragmentPack.Count > 0)
             {

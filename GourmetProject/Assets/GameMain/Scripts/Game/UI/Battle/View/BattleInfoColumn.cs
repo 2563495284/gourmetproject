@@ -128,7 +128,9 @@ namespace GourmetProject.Game.UI.Battle.View
             EnsureTutorialScoreRects();
             EnsureBossStatRect();
             EnsureSettlementDeltaText();
-            _scoreFire?.BindToScore(_scoreCurrentText != null ? _scoreCurrentText.rectTransform : null);
+            _scoreFire?.BindToScore(
+                _scoreCurrentText != null ? _scoreCurrentText.rectTransform : null,
+                transform.parent as RectTransform);
             ResetBossStatPresentation();
             if (_goldText != null)
             {

@@ -390,6 +390,8 @@ namespace GourmetProject.Game.Balance
 
         public void EndTimelineAdvanceSequence() { }
 
+        public void PlayTimelineWeekTransition(Action onDone) => Enqueue(onDone);
+
         public void PlayTimelineNodeCue(
             string nodeId,
             TimelinePresentationCueKind kind,

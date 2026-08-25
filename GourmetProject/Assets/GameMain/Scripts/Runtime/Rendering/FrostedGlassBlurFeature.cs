@@ -45,21 +45,17 @@ namespace GourmetProject.Runtime.Rendering
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
-            if (blurMaterial == null)
+            if (blurMaterial == null
+                || renderingData.cameraData.cameraType != CameraType.Game
+                || renderingData.cameraData.renderType != CameraRenderType.Base)
             {
                 return;
             }
 
-            int previewLayer = LayerMask.NameToLayer("DishIconPreview");
             UnityEngine.Camera camera = renderingData.cameraData.camera;
-            if (camera != null
-                && previewLayer >= 0
-                && camera.cullingMask == 1 << previewLayer)
-            {
-                return;
-            }
-
-            if (renderingData.cameraData.cameraType != CameraType.Game)
+            if (camera == null
+                || camera.targetTexture != null
+                || !camera.CompareTag("MainCamera"))
             {
                 return;
             }

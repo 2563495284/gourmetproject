@@ -45,6 +45,30 @@ namespace GourmetProject.Game.UI.Common
         public const float DefaultFadeIn = 0.15f;
 
         /// <summary>
+        /// 准备「全屏遮罩 + 弹窗内容」两层入场状态。承接前一个弹窗时遮罩保持不透明，
+        /// 独立打开时遮罩从透明淡入；内容始终单独淡入，避免遮罩和内容同时消失。
+        /// </summary>
+        internal static void PreparePopupLayers(
+            CanvasGroup backdrop,
+            CanvasGroup content,
+            bool isHandoffArrival)
+        {
+            if (backdrop != null)
+            {
+                backdrop.alpha = isHandoffArrival ? 1f : 0f;
+                backdrop.interactable = true;
+                backdrop.blocksRaycasts = true;
+            }
+
+            if (content != null)
+            {
+                content.alpha = 0f;
+                content.interactable = false;
+                content.blocksRaycasts = false;
+            }
+        }
+
+        /// <summary>
         /// 对 <paramref name="region"/> 淡出 → 在淡出完成后执行 <paramref name="swap"/>（隐藏旧内容 + 构建新内容）→ 淡入。
         /// region 为 null 或两段时长都 &lt;= 0 时立即 swap（直切）。
         /// </summary>

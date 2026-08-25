@@ -17,6 +17,7 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private RectTransform _rect;
         [SerializeField] private Graphic _hitArea;
         [SerializeField] private TimelineNodeTailGraphic _tail;
+        [SerializeField, Min(0f)] private float _bossTailBaseOverlap = 10f;
         [SerializeField] private Image _shell;
         [SerializeField] private Image _stateRing;
         [SerializeField] private Image _icon;
@@ -28,6 +29,7 @@ namespace GourmetProject.Game.UI.Hud
         private Vector3 _authoredScale = Vector3.one;
         private Vector3 _boundScale = Vector3.one;
         private Color _tailColor = Color.white;
+        private float _normalTailBaseOverlap = 4f;
         private float _boundAlpha = 1f;
         private bool _executing;
         private bool _preview;
@@ -48,6 +50,11 @@ namespace GourmetProject.Game.UI.Hud
             _theme = theme;
             _authoredScale = Rect.localScale;
             _boundScale = _authoredScale;
+            if (_tail != null)
+            {
+                _normalTailBaseOverlap = _tail.BaseOverlap;
+            }
+
             if (theme != null)
             {
                 if (_shell != null)
@@ -88,6 +95,12 @@ namespace GourmetProject.Game.UI.Hud
             _tailColor = preview
                 ? palette.Preview
                 : (negative ? new Color(palette.Danger.r, palette.Danger.g, palette.Danger.b, 0.78f) : palette.Cream);
+
+            if (_tail != null)
+            {
+                // 星形贴图底部的透明边距和斜边都比普通圆形更深，需要让尾巴额外压进去。
+                _tail.SetBaseOverlap(boss ? _bossTailBaseOverlap : _normalTailBaseOverlap);
+            }
 
             if (_icon != null)
             {
@@ -404,6 +417,7 @@ namespace GourmetProject.Game.UI.Hud
             _boss = false;
             _negative = false;
             _removing = false;
+            _tail?.SetBaseOverlap(_normalTailBaseOverlap);
             _canvasGroup.alpha = 1f;
             _canvasGroup.blocksRaycasts = false;
             _canvasGroup.interactable = false;

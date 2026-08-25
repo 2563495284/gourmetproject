@@ -209,7 +209,13 @@ namespace GourmetProject.Game.UI.Meta
             _completed = true;
             Action callback = _onContinue;
             _onContinue = null;
-            GameApp.UI.CloseUIForm(UIForm);
+            bool heldForNext = callback != null
+                && HoldUntilNextFormOpens(() => GameApp.UI.CloseUIForm(UIForm));
+            if (!heldForNext)
+            {
+                GameApp.UI.CloseUIForm(UIForm);
+            }
+
             callback?.Invoke();
         }
 
