@@ -122,21 +122,20 @@ namespace GourmetProject.Game.Presentation.Battle
                     out int targetOccurrenceIndex);
                 targetOccurrenceCounts[request.TargetKey] =
                     targetOccurrenceIndex + 1;
-                if (targetOccurrenceIndex == 0)
-                {
-                    // 每个目标的第一条沿用原演出锚点；只有后续结果才向外错位。
-                    placements[i] = new ResultLabelLayoutPlacement(
-                        request.BaseAnchor,
-                        1f);
-                    continue;
-                }
-
                 ResolveDirections(
                     camera,
                     request,
                     i,
                     out float horizontalDirection,
                     out float verticalDirection);
+                if (targetOccurrenceIndex == 0)
+                {
+                    // 第一条保持原演出锚点，但漂移方向仍远离演出来源。
+                    placements[i] = new ResultLabelLayoutPlacement(
+                        request.BaseAnchor,
+                        verticalDirection);
+                    continue;
+                }
 
                 var laneKey = new LaneKey(request.TargetKey, verticalDirection);
                 laneCounts.TryGetValue(laneKey, out int laneIndex);
