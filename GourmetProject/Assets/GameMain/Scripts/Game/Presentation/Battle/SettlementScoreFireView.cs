@@ -24,6 +24,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private ParticleSystem _coreParticles;
         [SerializeField] private ParticleSystem _tongueParticles;
         [SerializeField] private ParticleSystem _emberParticles;
+        [SerializeField] private SettlementFeverScreenView _screenFever;
 
         [Header("卡通高能火配色")]
         [SerializeField] private Color _coreHot = new(1f, 0.73f, 0.25f, 1f);
@@ -70,6 +71,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal bool EmberEmitterRunning => IsRunning(_emberParticles);
 
+        internal SettlementFeverScreenView ScreenFever => _screenFever;
+
         private void Awake()
         {
             EnsureParticleRenderer();
@@ -77,8 +80,9 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>把火焰铺进 ScoreMeter，并固定为三行分数文本的背景层。</summary>
-        public void BindToScore(RectTransform scoreAnchor)
+        public void BindToScore(RectTransform scoreAnchor, RectTransform presentationRoot = null)
         {
+            EnsureScreenFever(presentationRoot);
             RectTransform scoreMeter = scoreAnchor != null
                 ? scoreAnchor.parent as RectTransform
                 : null;
@@ -105,12 +109,14 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             gameObject.SetActive(true);
             EnsureParticleRenderer();
+            _screenFever?.Show();
             _visible = true;
             SetPhase(SettlementPacePhase.BelowTarget, 1f);
         }
 
         public void Hide()
         {
+            _screenFever?.Hide();
             _visible = false;
             _phase = SettlementPacePhase.BelowTarget;
             _effectiveSpeed = 1f;
@@ -127,6 +133,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SetSimulationSpeed(_coreParticles, _effectiveSpeed);
             SetSimulationSpeed(_tongueParticles, _effectiveSpeed);
             SetSimulationSpeed(_emberParticles, _effectiveSpeed);
+            _screenFever?.SetPhase(phase, _effectiveSpeed);
 
             bool ignited = phase != SettlementPacePhase.BelowTarget;
             _glowGraphic.gameObject.SetActive(ignited);
@@ -167,6 +174,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             float clamped = Mathf.Clamp01(strength);
+            _screenFever?.Burst(clamped);
             _queuedBurstStrength = Mathf.Max(_queuedBurstStrength, clamped);
             _burstCompression = Mathf.Max(_burstCompression, Mathf.Lerp(0.10f, 0.14f, clamped));
             _burstDelayFrames = Mathf.Max(_burstDelayFrames, 1);
@@ -394,6 +402,34 @@ namespace GourmetProject.Game.Presentation.Battle
                     new Vector2(0.72f, 1.12f),
                     0.95f,
                     true));
+        }
+
+        private void EnsureScreenFever(RectTransform presentationRoot)
+        {
+            if (presentationRoot == null)
+            {
+                return;
+            }
+
+            if (_screenFever == null)
+            {
+                Transform existing = presentationRoot.Find("SettlementFeverScreen");
+                _screenFever = existing != null
+                    ? existing.GetComponent<SettlementFeverScreenView>()
+                    : null;
+            }
+
+            if (_screenFever == null)
+            {
+                var feverObject = new GameObject(
+                    "SettlementFeverScreen",
+                    typeof(RectTransform),
+                    typeof(CanvasGroup));
+                feverObject.transform.SetParent(presentationRoot, false);
+                _screenFever = feverObject.AddComponent<SettlementFeverScreenView>();
+            }
+
+            _screenFever.Bind(presentationRoot);
         }
 
         private ParticleSystem EnsureParticleSystem(
