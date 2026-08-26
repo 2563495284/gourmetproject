@@ -156,7 +156,7 @@ namespace GourmetProject.Gameplay.Scoring
                 }
                 else if (HasActionParam(rule, "source:target-skill-count"))
                 {
-                    basis = SkillConditionEvaluator.CountSubSkills(target, Db);
+                    basis = SkillConditionEvaluator.CountSubSkills(target, Db, this);
                 }
                 else
                 {

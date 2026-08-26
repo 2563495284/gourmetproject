@@ -114,6 +114,140 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void TutorialCatalog_UsesCondensedCoreCopyAndInteractions()
+        {
+            TutorialSequenceDefinition firstAction = TutorialCatalog.Get(TutorialId.FirstAction);
+            Assert.That(firstAction.Steps.Count, Is.EqualTo(2));
+            Assert.That(
+                new[] { firstAction.Steps[0].Message, firstAction.Steps[1].Message },
+                Is.EqualTo(new[]
+                {
+                    "这是行动卡，行动会消耗时间，带来收益。",
+                    "卡片上的图标，表示行动的额外奖励，点击开始营业吧！",
+                }));
+            Assert.That(firstAction.Steps[0].Mode, Is.EqualTo(TutorialAdvanceMode.Continue));
+            Assert.That(firstAction.Steps[1].Mode, Is.EqualTo(TutorialAdvanceMode.Signal));
+            Assert.That(firstAction.Steps[1].Signal, Is.EqualTo(TutorialSignal.ActionPicked));
+            Assert.That(firstAction.Steps[1].AllowTargetInteraction, Is.True);
+            Assert.That(
+                firstAction.Steps[1].Anchors,
+                Is.EqualTo(new[] { TutorialAnchorId.ActionCard0 }));
+
+            TutorialSequenceDefinition firstBattle = TutorialCatalog.Get(TutorialId.FirstBattle);
+            Assert.That(firstBattle.Steps.Count, Is.EqualTo(6));
+            Assert.That(
+                new[]
+                {
+                    firstBattle.Steps[0].Message,
+                    firstBattle.Steps[1].Message,
+                    firstBattle.Steps[2].Message,
+                    firstBattle.Steps[3].Message,
+                    firstBattle.Steps[4].Message,
+                    firstBattle.Steps[5].Message,
+                },
+                Is.EqualTo(new[]
+                {
+                    "偷偷告诉老板营业的秘诀，就是把尽可能多的食物摆上餐桌。",
+                    "老板，看这里！食物会从食谱中抽取。",
+                    "你可以把它拖到餐桌上，也可以拖进垃圾桶丢弃",
+                    "这里是现在的食谱，后续获得的食物也可以从这里查看。",
+                    "每个食物都有自己的特殊效果。老板好好搭配，它们就能发挥更大的作用！",
+                    "这里是本次营业需要达到的美味值，努力超过它吧！",
+                }));
+            Assert.That(
+                firstBattle.Steps[2].Anchors,
+                Is.EqualTo(new[] { TutorialAnchorId.Table, TutorialAnchorId.Discard }));
+            Assert.That(firstBattle.Steps[3].EnterCommand, Is.EqualTo(TutorialCommand.OpenInitialRecipe));
+            Assert.That(firstBattle.Steps[3].ExitCommand, Is.EqualTo(TutorialCommand.CloseInitialRecipe));
+            Assert.That(
+                firstBattle.Steps[3].Anchors,
+                Is.EqualTo(new[] { TutorialAnchorId.RecipePanel }));
+            Assert.That(firstBattle.Steps[4].EnterCommand, Is.EqualTo(TutorialCommand.ShowPreparedFoodTips));
+            Assert.That(firstBattle.Steps[4].ExitCommand, Is.EqualTo(TutorialCommand.HidePreparedFoodTips));
+
+            TutorialSequenceDefinition timeline = TutorialCatalog.Get(TutorialId.TimelineNode);
+            Assert.That(timeline.Steps.Count, Is.EqualTo(1));
+            Assert.That(
+                timeline.Steps[0].Message,
+                Is.EqualTo("普通行动推进时间轴时，经过的节点会依次触发。"));
+            Assert.That(timeline.Steps[0].Mode, Is.EqualTo(TutorialAdvanceMode.Continue));
+            Assert.That(timeline.Steps[0].Signal, Is.Empty);
+            Assert.That(timeline.Steps[0].AllowTargetInteraction, Is.False);
+            Assert.That(
+                timeline.Steps[0].Anchors,
+                Is.EqualTo(new[] { TutorialAnchorId.ActionAxis }));
+        }
+
+        [Test]
+        public void TutorialCatalog_UsesCondensedSettlementAndFailureCopy()
+        {
+            Assert.That(
+                TutorialCatalog.Get(TutorialId.FirstBattleSettleHint).Steps[0].Message,
+                Is.EqualTo("等你准备好了，点击「结算」就可以完成本次经营！"));
+            Assert.That(
+                TutorialCatalog.Get(TutorialId.FirstBattleSettlementOrderHint).Steps[0].Message,
+                Is.EqualTo("食物会从上到下，从左到右开始结算。合理摆放位置可以发挥更大的作用！"));
+            Assert.That(
+                TutorialCatalog.Get(TutorialId.Settlement).Steps[0].Message,
+                Is.EqualTo("这是本次营业的结果。总美味值达到目标即为成功，否则营业失败。"));
+
+            TutorialSequenceDefinition failure = TutorialCatalog.Get(TutorialId.FirstFailureHeart);
+            Assert.That(failure.Steps.Count, Is.EqualTo(2));
+            Assert.That(
+                new[] { failure.Steps[0].Message, failure.Steps[1].Message },
+                Is.EqualTo(new[]
+                {
+                    "别灰心，老板！这次没有达到目标，我们会损失1颗红心。",
+                    "营业失败会损失红心，红心归零本局就会结束。",
+                }));
+        }
+
+        [Test]
+        public void TutorialCatalog_ContainsTwentyOneStepsAndNoRemovedSequences()
+        {
+            string[] activeIds =
+            {
+                TutorialId.FirstAction,
+                TutorialId.FirstBattle,
+                TutorialId.FirstBattleSettleHint,
+                TutorialId.FirstBattleSettlementOrderHint,
+                TutorialId.Settlement,
+                TutorialId.SecondAction,
+                TutorialId.TimelineNode,
+                TutorialId.Flavor,
+                TutorialId.Adjustment,
+                TutorialId.Boss,
+                TutorialId.FirstFailureHeart,
+                TutorialId.PassiveItem,
+            };
+
+            int stepCount = 0;
+            foreach (string id in activeIds)
+            {
+                TutorialSequenceDefinition sequence = TutorialCatalog.Get(id);
+                Assert.That(sequence, Is.Not.Null, id);
+                stepCount += sequence.Steps.Count;
+            }
+
+            Assert.That(stepCount, Is.EqualTo(21));
+            Assert.That(TutorialCatalog.Get("tutorial.prelude.direction_selection"), Is.Null);
+            Assert.That(TutorialCatalog.Get("tutorial.core.reward_summary"), Is.Null);
+            Assert.That(TutorialCatalog.Get("tutorial.hook.result_heart"), Is.Null);
+            Assert.That(TutorialCatalog.Get(TutorialId.Failure), Is.Null);
+        }
+
+        [Test]
+        public void RemovedPendingTutorials_AreRetiredWithoutPlayback()
+        {
+            Assert.That(
+                TutorialRuntime.ShouldRetirePendingTutorial("tutorial.core.reward_summary"),
+                Is.True);
+            Assert.That(TutorialRuntime.ShouldRetirePendingTutorial(TutorialId.Failure), Is.True);
+            Assert.That(TutorialRuntime.ShouldRetirePendingTutorial(TutorialId.FirstAction), Is.False);
+            Assert.That(TutorialRuntime.ShouldRetirePendingTutorial(TutorialId.PassiveItem), Is.False);
+        }
+
+        [Test]
         public void AcquireItem_NotifiesOnlyAfterAnItemIsStored()
         {
             GameRun run = CreateRun();

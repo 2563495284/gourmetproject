@@ -328,7 +328,7 @@ namespace GourmetProject.Gameplay.Scoring
                     // 每份食物只按自己的子技能条目数量获得倍率，不把其他食物的技能算进来。
                     foreach (DishInstance d in ctx.Snapshot.DishesInDefaultOrder)
                     {
-                        float add = value * SkillConditionEvaluator.CountSubSkills(d, ctx.Db);
+                        float add = value * SkillConditionEvaluator.CountSubSkills(d, ctx.Db, ctx);
                         if (Math.Abs(add) > 0.0001f)
                         {
                             ctx.AddMultFlatTo(d, add);

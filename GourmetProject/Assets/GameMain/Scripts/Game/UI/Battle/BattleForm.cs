@@ -3700,7 +3700,6 @@ namespace GourmetProject.Game.UI.Battle
         /// <summary>玩家点击时间轴节点卡片。</summary>
         private void OnTimelineNodePicked(Action onPick)
         {
-            TutorialRuntime.Publish(TutorialSignal.TimelineNodePicked);
             ClearTimelineNodeCard();
             _deck?.HideThenDestroy(() =>
             {
@@ -5808,7 +5807,6 @@ namespace GourmetProject.Game.UI.Battle
             TutorialAnchorRegistry.Register(TutorialAnchorId.ScoreMeter, _infoColumn?.ScoreMeterRect);
             TutorialAnchorRegistry.Register(TutorialAnchorId.Hearts, _infoColumn?.HeartsRect);
             TutorialAnchorRegistry.Register(TutorialAnchorId.Recipe, _infoColumn?.ViewRecipeButtonRect);
-            TutorialAnchorRegistry.Register(TutorialAnchorId.ViewTable, _infoColumn?.ViewTableButtonRect);
             TutorialAnchorRegistry.Register(
                 TutorialAnchorId.RecipePanel,
                 _inspectionLayer?.RecipeView != null ? _inspectionLayer.RecipeView.transform as RectTransform : null);
@@ -5829,7 +5827,6 @@ namespace GourmetProject.Game.UI.Battle
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.ScoreMeter);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.Hearts);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.Recipe);
-            TutorialAnchorRegistry.Unregister(TutorialAnchorId.ViewTable);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.RecipePanel);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.FoodTips);
             TutorialAnchorRegistry.Unregister(TutorialAnchorId.FoodInfo);

@@ -34,7 +34,7 @@ namespace GourmetProject.Gameplay.Scoring
             /// <summary>技能复制请求：由 BattleSession 用注入的随机流从候选池挑选并加到目标实例。</summary>
             public IReadOnlyList<CopySkillRequest> CopySkillRequests { get; }
 
-            /// <summary>甜蜜传递请求：由 BattleSession 用随机流在候选目标中均权取 N 个并追加技能（带来源标签）。</summary>
+            /// <summary>甜蜜传递请求：由 BattleSession 按流派/占格权重无放回取 N 个候选目标并追加技能（带来源标签）。</summary>
             public IReadOnlyList<SkillTransferRequest> TransferRequests { get; }
         }
 

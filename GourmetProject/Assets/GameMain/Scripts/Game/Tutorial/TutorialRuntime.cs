@@ -215,8 +215,8 @@ namespace GourmetProject.Game.Tutorial
             if (IsPlaying || !TutorialProgressService.IsCompleted(TutorialId.CoreComplete)) return;
             foreach (string id in TutorialProgressService.Pending())
             {
-                // 旧版失败说明只为存档兼容保留，不再单独播放。
-                if (string.Equals(id, TutorialId.Failure, StringComparison.Ordinal))
+                // 已移除的教程只为旧存档兼容保留进度，不再单独播放。
+                if (ShouldRetirePendingTutorial(id))
                 {
                     TutorialProgressService.Complete(id);
                     continue;
@@ -225,6 +225,10 @@ namespace GourmetProject.Game.Tutorial
                 if (!TutorialId.IsCore(id) && Play(id, DrainPending)) return;
             }
         }
+
+        internal static bool ShouldRetirePendingTutorial(string id) =>
+            string.Equals(id, TutorialId.Failure, StringComparison.Ordinal)
+            || (TutorialId.IsCore(id) && TutorialCatalog.Get(id) == null);
 
         public static void CloseForPageChange()
         {

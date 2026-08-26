@@ -1,6 +1,5 @@
 using System;
 using DG.Tweening;
-using GourmetProject.Game.Tutorial;
 using GourmetProject.Game.UI.Common;
 using GourmetProject.Runtime;
 using GourmetProject.Runtime.UI;
@@ -43,7 +42,6 @@ namespace GourmetProject.Game.UI.Meta
             _completed = false;
             _closing = false;
             _onComplete = args.OnComplete;
-            TutorialAnchorRegistry.Register(TutorialAnchorId.HeartBreak, _transitionPanel);
             Bind(args);
             GameApp.Audio.PlayLossFanfare();
             Play();
@@ -56,7 +54,6 @@ namespace GourmetProject.Game.UI.Meta
             _heartRow?.StopAndReset();
             _onComplete = null;
             _closing = false;
-            TutorialAnchorRegistry.Unregister(TutorialAnchorId.HeartBreak, _transitionPanel);
             base.OnClose(isShutdown, userData);
         }
 

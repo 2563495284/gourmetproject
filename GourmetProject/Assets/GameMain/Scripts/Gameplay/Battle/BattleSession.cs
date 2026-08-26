@@ -109,7 +109,7 @@ namespace GourmetProject.Gameplay.Battle
         private readonly GameplayDatabase _db;
         private readonly IRandomStream _rng;
         private readonly ScoreCalculator _calculator;
-        private readonly SolverPreviewSampler _solverPreviewSampler = new SolverPreviewSampler();
+        private readonly SolverPreviewSampler _solverPreviewSampler;
         private readonly List<RecipeSlot> _slots;
         private readonly List<string> _recipeBaseIds = new List<string>();
         private readonly List<TrackedRecipeEntry> _trackedRecipeEntries = new List<TrackedRecipeEntry>();
@@ -172,6 +172,7 @@ namespace GourmetProject.Gameplay.Battle
             _slots = new List<RecipeSlot>(slots ?? Array.Empty<RecipeSlot>());
             RequiredScore = requiredScore;
             _calculator = calculator ?? new ScoreCalculator();
+            _solverPreviewSampler = new SolverPreviewSampler(SweetTransferTargetWeight);
 
             if (runSettledCounts != null)
             {
@@ -1174,24 +1175,41 @@ namespace GourmetProject.Gameplay.Battle
             return selected;
         }
 
-        private static IReadOnlyList<T> SelectTransferSample<T>(
-            IReadOnlyList<T> candidates,
+        private static IReadOnlyList<int> SelectWeightedTransferTargets(
+            IReadOnlyList<int> candidates,
             int count,
-            int offset)
+            Func<int, float> weightOf,
+            Func<IReadOnlyList<float>, int> selectIndex)
         {
             if (candidates == null || candidates.Count == 0 || count <= 0)
             {
-                return Array.Empty<T>();
+                return Array.Empty<int>();
             }
 
-            // 正式传递仅在候选数大于目标数时洗牌。候选全取时保持原顺序，避免
-            // 求解器制造正式规则里不存在的“随机执行顺序”。
-            if (count >= candidates.Count)
+            int take = Math.Min(count, candidates.Count);
+            if (take >= candidates.Count)
             {
                 return candidates;
             }
 
-            return SelectRotatingSample(candidates, count, offset);
+            var remaining = new List<int>(candidates);
+            var selected = new List<int>(take);
+            var weights = new List<float>(remaining.Count);
+            while (selected.Count < take && remaining.Count > 0)
+            {
+                weights.Clear();
+                for (int i = 0; i < remaining.Count; i++)
+                {
+                    weights.Add(Math.Max(1f, weightOf?.Invoke(remaining[i]) ?? 1f));
+                }
+
+                int index = selectIndex != null ? selectIndex(weights) : 0;
+                index = Math.Max(0, Math.Min(index, remaining.Count - 1));
+                selected.Add(remaining[index]);
+                remaining.RemoveAt(index);
+            }
+
+            return selected;
         }
 
         private static int SelectStratifiedInteger(
@@ -1223,12 +1241,14 @@ namespace GourmetProject.Gameplay.Battle
         private sealed class SolverPreviewSampler
         {
             private const int IntegerStratumCount = 4;
+            private readonly Func<int, float> _transferTargetWeight;
             private int _copyCall;
             private int _transferCall;
             private int _integerCall;
 
-            public SolverPreviewSampler()
+            public SolverPreviewSampler(Func<int, float> transferTargetWeight)
             {
+                _transferTargetWeight = transferTargetWeight;
                 CopySkillSelector = SelectCopySkills;
                 TransferTargetSelector = SelectTransferTargets;
                 RandomIntegerSelector = SelectInteger;
@@ -1251,7 +1271,37 @@ namespace GourmetProject.Gameplay.Battle
                 => SelectRotatingSample(candidates, count, _copyCall++);
 
             private IReadOnlyList<int> SelectTransferTargets(IReadOnlyList<int> candidates, int count)
-                => SelectTransferSample(candidates, count, _transferCall++);
+                => SelectWeightedTransferTargets(
+                    candidates,
+                    count,
+                    _transferTargetWeight,
+                    SelectWeightedTransferIndex);
+
+            private int SelectWeightedTransferIndex(IReadOnlyList<float> weights)
+            {
+                int totalWeight = 0;
+                for (int i = 0; i < weights.Count; i++)
+                {
+                    totalWeight += Math.Max(1, (int)Math.Round(weights[i], MidpointRounding.AwayFromZero));
+                }
+
+                int ticket = SelectStratifiedInteger(
+                    0,
+                    Math.Max(0, totalWeight - 1),
+                    _transferCall++,
+                    IntegerStratumCount);
+                int accumulated = 0;
+                for (int i = 0; i < weights.Count; i++)
+                {
+                    accumulated += Math.Max(1, (int)Math.Round(weights[i], MidpointRounding.AwayFromZero));
+                    if (ticket < accumulated)
+                    {
+                        return i;
+                    }
+                }
+
+                return Math.Max(0, weights.Count - 1);
+            }
 
             private int SelectInteger(int minimum, int maximum)
                 => SelectStratifiedInteger(
@@ -1492,19 +1542,26 @@ namespace GourmetProject.Gameplay.Battle
 
         private IReadOnlyList<int> SelectTransferTargets(IReadOnlyList<int> candidates, int count)
         {
-            if (candidates == null || candidates.Count == 0 || count <= 0)
-            {
-                return Array.Empty<int>();
-            }
+            return SelectWeightedTransferTargets(
+                candidates,
+                count,
+                SweetTransferTargetWeight,
+                _rng.WeightedPickIndex);
+        }
 
-            var targets = new List<int>(candidates);
-            if (targets.Count > count)
-            {
-                _rng.Shuffle(targets);
-                targets = targets.GetRange(0, count);
-            }
-
-            return targets;
+        /// <summary>
+        /// 非甜蜜传递流派目标固定权重 1；甜蜜传递流派目标按食物本体占格数加权。
+        /// 流派点数只用于判定是否大于 0，不直接参与权重。
+        /// </summary>
+        private float SweetTransferTargetWeight(int targetInstanceId)
+        {
+            DishDef dish = FindInstance(targetInstanceId)?.Def;
+            bool belongsToSweetTransfer = dish?.ArchetypeWeights != null
+                && dish.ArchetypeWeights.Count > 0
+                && dish.ArchetypeWeights[0] > 0f;
+            return belongsToSweetTransfer
+                ? Math.Max(1, dish.Shape.CellCount)
+                : 1f;
         }
 
         private int SelectRandomInteger(int minInclusive, int maxInclusive)
@@ -1968,7 +2025,7 @@ namespace GourmetProject.Gameplay.Battle
             }
         }
 
-        /// <summary>甜蜜传递落地：对每个请求，用随机流在候选目标中均权取 Count 个（0=全部），把技能追加给它们并标注来源。</summary>
+        /// <summary>甜蜜传递落地：对每个请求，用随机流按流派/占格权重无放回取 Count 个（0=全部），把技能追加给它们并标注来源。</summary>
         private void ApplyTransferRequests(IReadOnlyList<SkillTransferRequest> requests)
         {
             if (requests == null || requests.Count == 0)
@@ -1983,12 +2040,9 @@ namespace GourmetProject.Gameplay.Battle
                     continue;
                 }
 
-                var targets = new List<int>(request.CandidateTargetIds);
-                if (request.Count > 0 && targets.Count > request.Count)
-                {
-                    _rng.Shuffle(targets);
-                    targets = targets.GetRange(0, request.Count);
-                }
+                IReadOnlyList<int> targets = request.Count <= 0
+                    ? request.CandidateTargetIds
+                    : SelectTransferTargets(request.CandidateTargetIds, request.Count);
 
                 foreach (int targetId in targets)
                 {

@@ -24,7 +24,6 @@ using GourmetProject.Game.UI.Meta;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Game.UI.Tooltips;
 using TMPro;
-using GourmetProject.Game.Tutorial;
 
 namespace GourmetProject.Game.UI.Meta
 {
@@ -303,19 +302,11 @@ namespace GourmetProject.Game.UI.Meta
             if (!_isClosing)
             {
                 PlayOpenTransition();
-                TutorialAnchorRegistry.Register(TutorialAnchorId.RewardList, _rewardListContent);
-                TutorialAnchorRegistry.Register(TutorialAnchorId.RewardContinue, _continueButton.transform as RectTransform);
-                if (_run.IsTutorialRun
-                    && actionContext?.RunStepIndex == 0
-                    && !TutorialProgressService.IsCompleted(TutorialId.CoreComplete))
-                    TutorialRuntime.Play(TutorialId.RewardSummary);
             }
         }
 
         protected override void OnClose(bool isShutdown, object userData)
         {
-            TutorialAnchorRegistry.Unregister(TutorialAnchorId.RewardList, _rewardListContent);
-            TutorialAnchorRegistry.Unregister(TutorialAnchorId.RewardContinue, _continueButton != null ? _continueButton.transform as RectTransform : null);
             if (_peekHidden)
             {
                 RestorePeekChildren();
