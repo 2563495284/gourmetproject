@@ -21,6 +21,14 @@ namespace GourmetProject.Game.UI.Common
         public const string PureWhiteColor = "#FFFFFF";
         public const string MultiplyMaterialName = "DescriptionMultiplyOutline";
 
+        // 供不使用富文本标签的 UI 复用同一套语义色，避免表现层另配近似颜色。
+        public static readonly Color ScoreTextColor = ParseColor(ScoreColor);
+        public static readonly Color PermanentScoreTextColor = ParseColor(PermanentScoreColor);
+        public static readonly Color MultiplierAddTextColor = ParseColor(MultiplierAddColor);
+        public static readonly Color MultiplierMultiplyTextColor = ParseColor(MultiplyFaceColor);
+        public static readonly Color GoldTextColor = ParseColor(GoldColor);
+        public static readonly Color TermTextColor = ParseColor(TermColor);
+
         private static readonly TagDefinition[] Definitions =
         {
             new TagDefinition("strong", "<b>", "</b>"),
@@ -38,6 +46,13 @@ namespace GourmetProject.Game.UI.Common
             Colored("term", TermColor),
             Colored("benefit", TermColor),
         };
+
+        private static Color ParseColor(string htmlColor)
+        {
+            return ColorUtility.TryParseHtmlString(htmlColor, out Color color)
+                ? color
+                : Color.white;
+        }
 
         /// <summary>将语义标签转换为 TMP 富文本；null 会转换为空字符串。</summary>
         public static string Format(string source)

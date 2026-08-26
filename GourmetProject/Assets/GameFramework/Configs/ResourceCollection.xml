@@ -114,9 +114,11 @@
       <Asset Guid="208d8aaeec2d3415fae3ea7a31de50bd" ResourceName="sprites/items" />
       <Asset Guid="20c33e847da214240a7ec286e7fca677" ResourceName="sprites/ui" />
       <Asset Guid="21208ee30db944af698612d45e9bd826" ResourceName="prefabs/battle" />
+      <Asset Guid="213099309374e4da0ac20be6a796d8c9" ResourceName="sprites/ui" />
       <Asset Guid="216ed70fe896a43e3905d7620b85a07e" ResourceName="sprites/dishes" />
       <Asset Guid="21df71fc00d92488c8810843f0767912" ResourceName="sprites/ui" />
       <Asset Guid="226885eafde263a73df96141cfa5bc3c" ResourceName="sprites/dishes" />
+      <Asset Guid="23045469df4af4aed8f9f47e8aa1bde4" ResourceName="sprites/ui" />
       <Asset Guid="232c3ef87dd174dc5ad2cbe9f78f8101" ResourceName="prefabs/ui" />
       <Asset Guid="2349fa486bad14634b5f1a335d14ea0d" ResourceName="sprites/ui" />
       <Asset Guid="23a8288714a37457fa0f6c43b704e6fb" ResourceName="sprites/ui" />
@@ -124,6 +126,7 @@
       <Asset Guid="23e892aee7d93413fb3876a992b6a862" ResourceName="sprites/ui" />
       <Asset Guid="23ed16ef0c23e4593a8af87d641cf5ca" ResourceName="sprites/dishes" />
       <Asset Guid="241a01fbeaa254133aa68e3a381a78f2" ResourceName="sprites/ui" />
+      <Asset Guid="24fbf87b643624c38b598a34e23b372d" ResourceName="sprites/ui" />
       <Asset Guid="24fc6bb46659e43099afa280c3ebd256" ResourceName="sprites/ui" />
       <Asset Guid="2529e15f097f74b98826e32d5451acf3" ResourceName="prefabs/ui" />
       <Asset Guid="254ad3a5fab66494eaf127b80697ae47" ResourceName="sprites/ui" />
@@ -246,6 +249,7 @@
       <Asset Guid="4d8a7e9c31b64f6f91d25e087bcd4a62" ResourceName="sprites/ui" />
       <Asset Guid="4de7515f9ac545d6b225e7b943641299" ResourceName="sprites/items" />
       <Asset Guid="4dfb7018cc0114946bd5c39a9778de8e" ResourceName="sprites/ui" />
+      <Asset Guid="4e53abc18d6724562ac9c4fb8519348b" ResourceName="sprites/ui" />
       <Asset Guid="4e632312d52414bfdb7e11695e21398f" ResourceName="sprites/items" />
       <Asset Guid="4edefa3405a2d4d8a8a1e44230334a1d" ResourceName="shaders/runtime" />
       <Asset Guid="4edf1b6eb0aa24735a8a0cd3325b373c" ResourceName="sprites/ui" />
@@ -262,6 +266,7 @@
       <Asset Guid="53d0037b3b333407b859c329d5ae6813" ResourceName="sprites/dishes" />
       <Asset Guid="53dccb88ff6a840ff9d2186c3e5db02d" ResourceName="sprites/items" />
       <Asset Guid="54025a4ba090443fea9ad4064b01046b" ResourceName="sprites/dishes" />
+      <Asset Guid="54093d939baa04b2faca9543b095a0d8" ResourceName="sprites/ui" />
       <Asset Guid="542885fa764484bb3b4b4b6959f03b25" ResourceName="sprites/items" />
       <Asset Guid="56657334b613d455abdce20e1cecbffe" ResourceName="sprites/ui" />
       <Asset Guid="56bd54ecaf7744bcc990bc0e4ae6cd07" ResourceName="shaders/runtime" />
@@ -283,6 +288,7 @@
       <Asset Guid="5d1a08d691d674842847da66e364f2b5" ResourceName="sprites/items" />
       <Asset Guid="5d3ac76b14e0b4590b5b183070ee7fdb" ResourceName="sprites/ui" />
       <Asset Guid="5d6bebbe8c21c463fa9ca8584814a018" ResourceName="prefabs/ui" />
+      <Asset Guid="5d7ff2e48a3c8484c9ade72931bc3b7c" ResourceName="sprites/ui" />
       <Asset Guid="5d85522b9367e41669028f8661701efb" ResourceName="sprites/ui" />
       <Asset Guid="5d96028c85c754a62b978909c5ae524e" ResourceName="sprites/ui" />
       <Asset Guid="5db89fb45649d4e1aaea312479e840ac" ResourceName="sprites/ui" />
@@ -300,6 +306,7 @@
       <Asset Guid="635cb81a471894b76be96691279c6fa7" ResourceName="sprites/ui" />
       <Asset Guid="63728031f0e51449fa29ca6e073a2d14" ResourceName="sprites/dishes" />
       <Asset Guid="6431cb609d69c448895cdbe8e8c9f26f" ResourceName="sprites/items" />
+      <Asset Guid="649809e10e15449c898c5fd9ace30d5d" ResourceName="sprites/ui" />
       <Asset Guid="64b58749d625a44a1b40e9e24161dc91" ResourceName="sprites/ui" />
       <Asset Guid="64bc4f42ef9e34c3aaa512a3014634bb" ResourceName="prefabs/ui" />
       <Asset Guid="65557c86e8a4942ac992b46aff90fd67" ResourceName="prefabs/ui" />
@@ -499,6 +506,7 @@
       <Asset Guid="aceb70362604a46b384fe9cf919c3ff0" ResourceName="sprites/items" />
       <Asset Guid="ad1777ef101e441d297b80fa65f31371" ResourceName="sprites/ui" />
       <Asset Guid="ad45cca7a20f64d8cb8618eea562e0a0" ResourceName="sprites/items" />
+      <Asset Guid="ae10a820d66594ebcb49d36f4a2a7fd4" ResourceName="sprites/ui" />
       <Asset Guid="ae253cca2931a47e3b27593eb0ab66c5" ResourceName="sprites/ui" />
       <Asset Guid="aeadc08e49c884030861cc6e9c3b7578" ResourceName="audio/sounds" />
       <Asset Guid="aec8454fce3d78093ec978f9c4a0b397" ResourceName="sprites/dishes" />
@@ -626,6 +634,7 @@
       <Asset Guid="da9e89f9c553e4136ac5634ccd65511f" ResourceName="sprites/items" />
       <Asset Guid="db0a2f730fd8a472ba167ce557048758" ResourceName="sprites/ui" />
       <Asset Guid="dbd274a43071c4782a77f4c90fda1015" ResourceName="sprites/items" />
+      <Asset Guid="dbda230171ebd40268b98ffadefd9a20" ResourceName="sprites/ui" />
       <Asset Guid="dc251107ae0de46549a3d8dadd3a683f" ResourceName="sprites/ui" />
       <Asset Guid="dc5eedffa2ad649a3b33efd77898a2bf" ResourceName="sprites/items" />
       <Asset Guid="dccfd913bec8e46a2b9a4f94a893cdc2" ResourceName="sprites/dishes" />
@@ -737,6 +746,7 @@
       <Asset Guid="fd89539ddd614f30b384c21b1232a905" ResourceName="textures/effects" />
       <Asset Guid="fe0b55ff3d796409b9a2536f409665f8" ResourceName="sprites/ui" />
       <Asset Guid="fed5df0cda4874f709c3eee295ab6a33" ResourceName="prefabs/ui" />
+      <Asset Guid="fefa0f99ccac646c99aae070f228b4f4" ResourceName="sprites/ui" />
       <Asset Guid="ff1395a655f704abe4653c5bfd089b19" ResourceName="sprites/dishes" />
     </Assets>
   </ResourceCollection>

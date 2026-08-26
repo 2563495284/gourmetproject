@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BreakInfinity;
+using GourmetProject.Game.UI.Common;
 using GourmetProject.Gameplay.Scoring;
 using UnityEngine;
 
@@ -66,6 +67,29 @@ namespace GourmetProject.Game.Presentation.Battle
         public static Color TextFor(Color theme)
         {
             return Color.Lerp(theme, TextLight, 0.30f);
+        }
+
+        /// <summary>
+        /// ScoreMeter 的总分变化不使用富文本，直接取餐桌结算数字所用的同一套语义色。
+        /// </summary>
+        public static Color ScoreDeltaTextFor(ScoreLineKind kind)
+        {
+            return kind switch
+            {
+                ScoreLineKind.DishBase
+                    or ScoreLineKind.DishFlat
+                    or ScoreLineKind.FinalFlat => SemanticDescriptionFormatter.ScoreTextColor,
+                ScoreLineKind.DishPermanentFlat =>
+                    SemanticDescriptionFormatter.PermanentScoreTextColor,
+                ScoreLineKind.DishMultiplierAdd =>
+                    SemanticDescriptionFormatter.MultiplierAddTextColor,
+                ScoreLineKind.DishMultiplier
+                    or ScoreLineKind.FinalMultiplier =>
+                    SemanticDescriptionFormatter.MultiplierMultiplyTextColor,
+                ScoreLineKind.Gold => SemanticDescriptionFormatter.GoldTextColor,
+                ScoreLineKind.ExtraSettlement => SemanticDescriptionFormatter.TermTextColor,
+                _ => TextFor(For(kind)),
+            };
         }
 
         public static Color ResultHeaderTextFor(Color semanticColor)

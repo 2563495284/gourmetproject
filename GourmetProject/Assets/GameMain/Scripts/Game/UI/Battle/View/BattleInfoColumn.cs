@@ -431,7 +431,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public void QueueSettlementScoreBeat(SettlementBeatSignal signal)
         {
-            if (signal.Kind != SettlementBeatKind.ResultApplied || !signal.HasScoreChange)
+            if (!ShouldQueueSettlementScoreBeat(signal))
             {
                 return;
             }
@@ -459,6 +459,16 @@ namespace GourmetProject.Game.UI.Battle.View
                 _pendingLineKind = signal.LineKind;
             }
         }
+
+        internal static bool ShouldQueueSettlementScoreBeat(SettlementBeatSignal signal)
+        {
+            return signal.Kind == SettlementBeatKind.ResultApplied
+                && signal.HasScoreChange
+                && HasVisibleSettlementScoreDelta(signal.ScoreDelta);
+        }
+
+        internal static bool HasVisibleSettlementScoreDelta(BigDouble delta) =>
+            delta != BigDouble.Zero;
 
         public void EndSettlementScorePresentation()
         {
@@ -540,6 +550,13 @@ namespace GourmetProject.Game.UI.Battle.View
             _pendingReachedTarget = false;
             _pendingSettlementSpeed = 1f;
 
+            // 同一帧内的多条变化可能正负抵消；最终净变化为 0 时也不显示 +0。
+            if (!HasVisibleSettlementScoreDelta(delta))
+            {
+                _scoreCurrentText.text = ScoreNumberFormatter.Format(after);
+                return;
+            }
+
             _settlementScoreBeatSequence?.Kill();
             RectTransform scoreRect = _scoreCurrentText.rectTransform;
             RectTransform deltaRect = _settlementDeltaText.rectTransform;
@@ -550,9 +567,7 @@ namespace GourmetProject.Game.UI.Battle.View
             deltaRect.localScale = Vector3.one * 0.82f;
             deltaRect.anchoredPosition = _settlementDeltaBasePosition;
 
-            Color semantic = SettlementColorPalette.For(lineKind);
-            Color deltaColor = SettlementColorPalette.TextFor(semantic);
-            _settlementDeltaText.color = deltaColor;
+            _settlementDeltaText.color = SettlementColorPalette.ScoreDeltaTextFor(lineKind);
             _settlementDeltaText.text = FormatSignedScore(delta);
             _settlementDeltaText.gameObject.SetActive(true);
             _scoreCurrentText.text = ScoreNumberFormatter.Format(before);
