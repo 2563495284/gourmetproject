@@ -42,11 +42,14 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>本次结算使用的实际「视为食物数」（含 live AddCountAs 与全局加成）。</summary>
         public int EffectiveCountAs { get; }
 
+        /// <summary>
+        /// 旧版“完整额外结算”的独立贡献，仅用于恢复历史待领奖存档；新结算始终为 0。
+        /// </summary>
         public BigDouble ExtraSettlementContribution { get; }
 
         public int ExtraSettlementCount { get; }
 
-        /// <summary>本食物最终贡献 = 主结算向上取整贡献 + 各次咸味独立额外结算贡献。</summary>
+        /// <summary>本食物最终贡献；历史待领奖存档可能仍附带旧版咸味独立贡献。</summary>
         public BigDouble Contribution => CeilContribution(BaseValue + FlatBonus, Multiplier)
             + ExtraSettlementContribution;
 

@@ -32,6 +32,7 @@ namespace GourmetProject.Gameplay.Scoring
                     }
 
                     string sourceLabel = dish.GetSkillSource(skillId);
+                    SkillExecutionKind skillKind = TraceKindForSourceLabel(sourceLabel);
                     ScoreSource source = string.IsNullOrEmpty(sourceLabel)
                         ? ScoreSource.DishSkill(skill, dish)
                         : ScoreSource.TransferredDishSkill(skill, dish, sourceLabel);
@@ -60,10 +61,11 @@ namespace GourmetProject.Gameplay.Scoring
                                     dish,
                                     skill,
                                     rule,
-                                    TraceKindForSourceLabel(sourceLabel),
+                                    skillKind,
                                     sourceLabel,
                                     SkillScopeVisualMode.ResolvedTargets)
-                                : null));
+                                : null,
+                            skillKind));
                     }
                 }
 
@@ -110,7 +112,8 @@ namespace GourmetProject.Gameplay.Scoring
                                     rule,
                                     SkillExecutionKind.SweetTransfer,
                                     transferred.SourceLabel,
-                                    SkillScopeVisualMode.ResolvedTargets)));
+                                    SkillScopeVisualMode.ResolvedTargets),
+                        SkillExecutionKind.SweetTransfer));
                 }
             }
         }
@@ -495,6 +498,7 @@ namespace GourmetProject.Gameplay.Scoring
                         && transferRule.ActionType == SkillActionType.TransferSkills)
                     {
                         string sourceLabel = source.GetSkillSource(skillId);
+                        SkillExecutionKind skillKind = SkillRuleEffectSource.TraceKindForSourceLabel(sourceLabel);
                         ScoreSource scoreSource = string.IsNullOrEmpty(sourceLabel)
                             ? ScoreSource.DishSkill(skill, source)
                             : ScoreSource.TransferredDishSkill(skill, source, sourceLabel);
@@ -517,10 +521,11 @@ namespace GourmetProject.Gameplay.Scoring
                                     source,
                                     skill,
                                     transferRule,
-                                    SkillRuleEffectSource.TraceKindForSourceLabel(sourceLabel),
+                                    skillKind,
                                     sourceLabel,
                                     SkillScopeVisualMode.CandidateScope)
-                                : null);
+                                : null,
+                            skillKind);
                         ctx.ResolveTransferredEffect(entry);
                     }
                 }
@@ -829,7 +834,8 @@ namespace GourmetProject.Gameplay.Scoring
                 null,
                 buff.Rule.Order,
                 boardOrder,
-                trace);
+                trace,
+                SkillExecutionKind.SweetTransfer);
             ctx.ResolveTransferredEffect(entry);
         }
 
@@ -928,7 +934,8 @@ namespace GourmetProject.Gameplay.Scoring
                     null,
                     rule.Order,
                     boardOrder,
-                    trace);
+                    trace,
+                    SkillExecutionKind.SweetTransfer);
                 ctx.ResolveTransferredEffect(entry);
             }
         }

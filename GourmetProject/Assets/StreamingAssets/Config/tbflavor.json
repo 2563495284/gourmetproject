@@ -44,7 +44,7 @@
   {
     "id": "t_sour",
     "name": "酸",
-    "desc": "[context]结算开始[/context]时，若仍在食谱中\n场上食物[strong]倍率[/strong] [multadd]+0.5[/multadd]",
+    "desc": "[context]结算开始[/context]时\n若仍在食谱中\n场上食物[strong]倍率[/strong] [multadd]+0.5[/multadd]",
     "effectType": 10,
     "effectParam": [],
     "effectValue": [
