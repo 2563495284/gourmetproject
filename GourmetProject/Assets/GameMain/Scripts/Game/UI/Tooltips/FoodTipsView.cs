@@ -168,7 +168,6 @@ namespace GourmetProject.Game.UI.Tooltips
             SeparateScoreFromTarget(canvasRect, targetRect);
             PlaceSummaryGroup(targetRect, canvasRect);
             SeparateSummaryGroupFromPrimaryModules(canvasRect, targetRect);
-            PlaceExternalSkillsOutsideSummary(targetRect, canvasRect);
         }
 
         public void PlaceAroundRectTransform(RectTransform target, Canvas canvas)
@@ -198,20 +197,33 @@ namespace GourmetProject.Game.UI.Tooltips
             SeparateScoreFromTarget(canvasRect, targetRect);
             PlaceSummaryGroup(targetRect, canvasRect);
             SeparateSummaryGroupFromPrimaryModules(canvasRect, targetRect);
-            PlaceExternalSkillsOutsideSummary(targetRect, canvasRect);
         }
 
         private void PlaceSummaryGroup(Rect targetRect, RectTransform canvasRect)
         {
             RectTransform summaryRect = _summaryView.transform as RectTransform;
-            PlaceRightTop(summaryRect, targetRect, canvasRect.rect);
+            bool placeOnRight = ShouldPlaceSummaryGroupOnRight(
+                targetRect,
+                canvasRect.rect,
+                summaryRect);
+            PlaceSummaryTopSide(summaryRect, targetRect, placeOnRight);
 
             // Detail lists belong to the summary card. Keep their intended relative positions
-            // first, then clamp the complete group so a long flavor list moves the whole column
-            // upward instead of being clamped into (and overlapping) the summary card.
+            // first. Align their target-facing edges instead of their centers so a wide detail
+            // card grows away from the food and cannot drag the narrower summary card with it.
             PlaceBelow(_flavorDetailsRoot, summaryRect);
             PlaceAbove(_specialTagsRoot, summaryRect);
-            PlaceRight(_externalSkillsRoot, summaryRect);
+            AlignToTargetSide(_flavorDetailsRoot, targetRect, placeOnRight);
+            AlignToTargetSide(_specialTagsRoot, targetRect, placeOnRight);
+            if (placeOnRight)
+            {
+                PlaceRight(_externalSkillsRoot, summaryRect);
+            }
+            else
+            {
+                PlaceLeft(_externalSkillsRoot, summaryRect);
+            }
+
             Canvas.ForceUpdateCanvases();
             ClampSummaryGroupToBounds(canvasRect, canvasRect.rect, summaryRect);
         }
@@ -417,7 +429,7 @@ namespace GourmetProject.Game.UI.Tooltips
             SetCenter(rect, Clamp(center, size, bounds));
         }
 
-        private void PlaceRightTop(RectTransform rect, Rect target, Rect bounds)
+        private void PlaceSummaryTopSide(RectTransform rect, Rect target, bool placeOnRight)
         {
             if (rect == null || !rect.gameObject.activeSelf)
             {
@@ -425,8 +437,75 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             Vector2 size = PreferredSize(rect);
-            Vector2 center = new Vector2(target.xMax + _targetGap + size.x * 0.5f, target.yMax - size.y * 0.5f);
-            SetCenter(rect, Clamp(center, size, bounds));
+            float centerX = placeOnRight
+                ? target.xMax + _targetGap + size.x * 0.5f
+                : target.xMin - _targetGap - size.x * 0.5f;
+            SetCenter(rect, new Vector2(centerX, target.yMax - size.y * 0.5f));
+        }
+
+        private bool ShouldPlaceSummaryGroupOnRight(
+            Rect target,
+            Rect bounds,
+            RectTransform summaryRect)
+        {
+            float groupWidth = SummaryGroupSideWidth(summaryRect);
+            float rightSpace = bounds.xMax
+                - _screenPadding
+                - target.xMax
+                - _targetGap;
+            float leftSpace = target.xMin
+                - _targetGap
+                - bounds.xMin
+                - _screenPadding;
+            bool fitsRight = groupWidth <= rightSpace;
+            bool fitsLeft = groupWidth <= leftSpace;
+            if (fitsRight != fitsLeft)
+            {
+                return fitsRight;
+            }
+
+            // Preserve the established right-side placement when both sides fit.
+            // If neither side fits, use the roomier side to minimize later clamping.
+            return fitsRight || rightSpace >= leftSpace;
+        }
+
+        private float SummaryGroupSideWidth(RectTransform summaryRect)
+        {
+            float summaryWidth = ActiveWidth(summaryRect);
+            float columnWidth = Mathf.Max(
+                summaryWidth,
+                Mathf.Max(ActiveWidth(_flavorDetailsRoot), ActiveWidth(_specialTagsRoot)));
+            float externalWidth = ActiveWidth(_externalSkillsRoot);
+            if (externalWidth > 0f)
+            {
+                columnWidth = Mathf.Max(
+                    columnWidth,
+                    summaryWidth + _detailGap + externalWidth);
+            }
+
+            return columnWidth;
+        }
+
+        private float ActiveWidth(RectTransform rect)
+        {
+            return rect != null && rect.gameObject.activeSelf
+                ? PreferredSize(rect).x
+                : 0f;
+        }
+
+        private void AlignToTargetSide(RectTransform rect, Rect target, bool placeOnRight)
+        {
+            if (rect == null || !rect.gameObject.activeSelf)
+            {
+                return;
+            }
+
+            Vector2 size = PreferredSize(rect);
+            Vector2 center = RectCenterInParent(rect);
+            center.x = placeOnRight
+                ? target.xMax + _targetGap + size.x * 0.5f
+                : target.xMin - _targetGap - size.x * 0.5f;
+            SetCenter(rect, center);
         }
 
         private void PlaceBelow(RectTransform rect, RectTransform anchor)
@@ -483,30 +562,6 @@ namespace GourmetProject.Game.UI.Tooltips
             Vector2 anchorSize = PreferredSize(anchor);
             Vector2 center = new Vector2(anchorCenter.x - anchorSize.x * 0.5f - _detailGap - size.x * 0.5f, anchorCenter.y);
             SetCenter(rect, center);
-        }
-
-        private void PlaceExternalSkillsOutsideSummary(Rect targetRect, RectTransform canvasRect)
-        {
-            RectTransform summaryRect = _summaryView.transform as RectTransform;
-            if (summaryRect == null
-                || _externalSkillsRoot == null
-                || !_externalSkillsRoot.gameObject.activeSelf)
-            {
-                return;
-            }
-
-            Rect summaryBounds = RectTransformToLocalRect(summaryRect, canvasRect);
-            if (summaryBounds.center.x < targetRect.center.x)
-            {
-                PlaceLeft(_externalSkillsRoot, summaryRect);
-            }
-            else
-            {
-                PlaceRight(_externalSkillsRoot, summaryRect);
-            }
-
-            Canvas.ForceUpdateCanvases();
-            ClampSummaryGroupToBounds(canvasRect, canvasRect.rect, summaryRect);
         }
 
         private void ClampSummaryGroupToBounds(RectTransform canvasRect, Rect bounds, RectTransform summaryRect)
