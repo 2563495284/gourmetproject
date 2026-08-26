@@ -15,44 +15,46 @@ namespace GourmetProject.Tests.EditMode
 {
     public sealed class SweetTransferGrowthTests
     {
+        private const double FloatTolerance = 1e-6;
+
         private static readonly MethodInfo ApplyTransferRequestsMethod = typeof(BattleSession).GetMethod(
             "ApplyTransferRequests",
             BindingFlags.Instance | BindingFlags.NonPublic);
 
         [Test]
-        public void TargetGrowth_IsAdditiveAndPreviewDoesNotMutate()
+        public void TargetMultiplier_IsTemporaryAndIncludedInPreviewAndSettlement()
         {
             Fixture fixture = CreateFixture(targetCount: 1, transferCount: 1);
             fixture.Session.SweetTransferTargetMultiplier = 0.4f;
 
             ScoreResult preview = fixture.Session.PreviewScore();
+            DishScore previewTarget = ScoreFor(preview, fixture.Targets[0]);
 
             Assert.That(preview.SkillTransfers, Has.Count.EqualTo(1));
+            Assert.That(Value(previewTarget.Multiplier), Is.EqualTo(2.4d).Within(FloatTolerance));
             Assert.That(Value(fixture.Targets[0].PermanentMultBonus), Is.EqualTo(2d).Within(1e-9));
             Assert.That(fixture.Session.LastRecipeScoreMultiplierDeltas, Is.Empty);
 
-            fixture.Session.Settle();
+            ScoreResult settled = fixture.Session.Settle();
+            DishScore settledTarget = ScoreFor(settled, fixture.Targets[0]);
 
-            Assert.That(Value(fixture.Targets[0].PermanentMultBonus), Is.EqualTo(2.4d).Within(1e-9));
-            Assert.That(fixture.Session.LastRecipeScoreMultiplierDeltas, Has.Count.EqualTo(1));
-            Assert.That(
-                Value(fixture.Session.LastRecipeScoreMultiplierDeltas[0].Multiplier),
-                Is.EqualTo(1.2d).Within(1e-9));
+            Assert.That(Value(settledTarget.Multiplier), Is.EqualTo(2.4d).Within(FloatTolerance));
+            Assert.That(Value(fixture.Targets[0].PermanentMultBonus), Is.EqualTo(2d).Within(1e-9));
+            Assert.That(fixture.Session.LastRecipeScoreMultiplierDeltas, Is.Empty);
         }
 
         [Test]
-        public void SourceGrowth_PerSuccessfulTargetTelescopesWithoutCompounding()
+        public void SourceMultiplier_AddsOncePerSuccessfulTargetWithoutPersisting()
         {
             Fixture fixture = CreateFixture(targetCount: 2, transferCount: 2);
             fixture.Session.SweetTransferSourceMultiplier = 0.5f;
 
-            fixture.Session.Settle();
+            ScoreResult settled = fixture.Session.Settle();
+            DishScore sourceScore = ScoreFor(settled, fixture.Source);
 
-            Assert.That(Value(fixture.Source.PermanentMultBonus), Is.EqualTo(3d).Within(1e-9));
-            Assert.That(fixture.Session.LastRecipeScoreMultiplierDeltas, Has.Count.EqualTo(2));
-            double writtenBack = fixture.Session.LastRecipeScoreMultiplierDeltas
-                .Aggregate(2d, (value, delta) => value * Value(delta.Multiplier));
-            Assert.That(writtenBack, Is.EqualTo(3d).Within(1e-9));
+            Assert.That(Value(sourceScore.Multiplier), Is.EqualTo(3d).Within(1e-9));
+            Assert.That(Value(fixture.Source.PermanentMultBonus), Is.EqualTo(2d).Within(1e-9));
+            Assert.That(fixture.Session.LastRecipeScoreMultiplierDeltas, Is.Empty);
         }
 
         [Test]
@@ -68,19 +70,20 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void DishWithoutRecipeSource_GrowsOnlyItsRuntimeInstance()
+        public void DishWithoutRecipeSource_StillReceivesTemporaryMultiplier()
         {
             Fixture fixture = CreateFixture(targetCount: 1, transferCount: 1, targetsHaveRecipeSource: false);
             fixture.Session.SweetTransferTargetMultiplier = 0.4f;
 
-            fixture.Session.Settle();
+            ScoreResult settled = fixture.Session.Settle();
 
-            Assert.That(Value(fixture.Targets[0].PermanentMultBonus), Is.EqualTo(2.4d).Within(1e-9));
+            Assert.That(Value(ScoreFor(settled, fixture.Targets[0]).Multiplier), Is.EqualTo(2.4d).Within(FloatTolerance));
+            Assert.That(Value(fixture.Targets[0].PermanentMultBonus), Is.EqualTo(2d).Within(1e-9));
             Assert.That(fixture.Session.LastRecipeScoreMultiplierDeltas, Is.Empty);
         }
 
         [Test]
-        public void OnServeGrowth_IsPreservedByFormalSettlement()
+        public void OnServeTransfer_UsesRuntimeMultiplierWithoutRecipeGrowth()
         {
             Fixture fixture = CreateFixture(targetCount: 1, transferCount: 0);
             fixture.Session.SweetTransferTargetMultiplier = 0.4f;
@@ -92,27 +95,16 @@ namespace GourmetProject.Tests.EditMode
                 count: 1);
 
             InvokeApplyTransferRequests(fixture.Session, new[] { request });
-            Assert.That(fixture.Session.LastRecipeScoreMultiplierDeltas, Has.Count.EqualTo(1));
+            Assert.That(Value(fixture.Targets[0].ServeMultiplierFlatBonus), Is.EqualTo(0.4d).Within(FloatTolerance));
+            Assert.That(Value(fixture.Targets[0].PermanentMultBonus), Is.EqualTo(2d).Within(1e-9));
+            Assert.That(fixture.Session.LastRecipeScoreMultiplierDeltas, Is.Empty);
 
-            fixture.Session.Settle();
+            ScoreResult settled = fixture.Session.Settle();
 
-            Assert.That(Value(fixture.Targets[0].PermanentMultBonus), Is.EqualTo(2.4d).Within(1e-9));
-            Assert.That(fixture.Session.LastRecipeScoreMultiplierDeltas, Has.Count.EqualTo(1));
-            Assert.That(
-                Value(fixture.Session.LastRecipeScoreMultiplierDeltas[0].Multiplier),
-                Is.EqualTo(1.2d).Within(1e-9));
-        }
-
-        [Test]
-        public void RecipeGrowthMarker_IsIdempotent()
-        {
-            Fixture fixture = CreateFixture(targetCount: 1, transferCount: 1);
-            fixture.Session.SweetTransferTargetMultiplier = 0.4f;
-            fixture.Session.Settle();
-
-            Assert.That(fixture.Session.TryMarkRunRecipeGrowthApplied(), Is.True);
-            Assert.That(fixture.Session.TryMarkRunRecipeGrowthApplied(), Is.False);
-            Assert.That(fixture.Session.LastRecipeScoreMultiplierDeltas, Has.Count.EqualTo(1));
+            // ActionCount=0 的结算技能会再向全部合法目标传递一次，因此本次结算再临时 +0.4。
+            Assert.That(Value(ScoreFor(settled, fixture.Targets[0]).Multiplier), Is.EqualTo(2.8d).Within(FloatTolerance));
+            Assert.That(Value(fixture.Targets[0].PermanentMultBonus), Is.EqualTo(2d).Within(1e-9));
+            Assert.That(fixture.Session.LastRecipeScoreMultiplierDeltas, Is.Empty);
         }
 
         private static Fixture CreateFixture(
@@ -264,6 +256,9 @@ namespace GourmetProject.Tests.EditMode
         }
 
         private static double Value(BigDouble value) => value.ToDouble();
+
+        private static DishScore ScoreFor(ScoreResult result, DishInstance dish)
+            => result.DishScores.Single(score => score.DishInstanceId == dish.Id);
 
         private sealed class Fixture
         {

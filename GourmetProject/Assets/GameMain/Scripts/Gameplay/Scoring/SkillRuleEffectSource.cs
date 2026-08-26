@@ -463,6 +463,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             ApplyRegisteredSweetTransferBuffs(ctx, buffs, targets, resolvedBuffExtraTargets);
+            ApplyItemSweetTransferMultiplierBonuses(ctx, targets);
 
             string sourceName = CurrentSkillSourceName(ctx);
             int handoffExecutionGroupId = ctx.CurrentExecutionGroupId;
@@ -482,6 +483,31 @@ namespace GourmetProject.Gameplay.Scoring
                     handoffExecutionGroupId,
                     _rule.SkillId,
                     effects.Count);
+            }
+        }
+
+        private void ApplyItemSweetTransferMultiplierBonuses(
+            ScoreContext ctx,
+            IReadOnlyList<DishInstance> transferTargets)
+        {
+            if (ctx == null || transferTargets == null || transferTargets.Count == 0)
+            {
+                return;
+            }
+
+            float targetBonus = ctx.Snapshot.SweetTransferTargetMultiplierFlat;
+            if (Math.Abs(targetBonus) >= 0.0001f)
+            {
+                foreach (DishInstance target in transferTargets)
+                {
+                    ctx.AddMultFlatTo(target, targetBonus);
+                }
+            }
+
+            float sourceBonus = ctx.Snapshot.SweetTransferSourceMultiplierFlat * transferTargets.Count;
+            if (Math.Abs(sourceBonus) >= 0.0001f)
+            {
+                ctx.AddMultFlatTo(_self, sourceBonus);
             }
         }
 

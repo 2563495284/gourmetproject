@@ -318,14 +318,14 @@ namespace GourmetProject.Game.Meta.Passives
         {
         }
 
-        /// <summary>每传递到一个目标时，该目标永久倍率的累加值。</summary>
+        /// <summary>每传递到一个目标时，该目标在本次结算获得的倍率加值。</summary>
         public virtual bool TryGetSweetTransferTargetMultiplier(out float value)
         {
             value = 0f;
             return false;
         }
 
-        /// <summary>每传递到一个目标时，来源永久倍率的累加值。</summary>
+        /// <summary>每传递到一个目标时，来源在本次结算获得的倍率加值。</summary>
         public virtual bool TryGetSweetTransferSourceMultiplier(out float value)
         {
             value = 0f;

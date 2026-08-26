@@ -42,10 +42,12 @@ namespace GourmetProject.Gameplay.Scoring
             int passiveItemCount = 0,
             int remainingFoodDiscards = 0,
             int sweetTransferExtraTargetCount = 0,
+            float sweetTransferTargetMultiplierFlat = 0f,
+            float sweetTransferSourceMultiplierFlat = 0f,
             bool captureDiagnostics = true)
         {
             IScoreEffectSource[] sources = MergeSources(extraSources);
-            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction, reverseDishOrder, unservedRecipeDishes, copySkillSelector, transferTargetSelector, randomIntegerSelector, passiveItemCount, remainingFoodDiscards, sweetTransferExtraTargetCount, captureDiagnostics));
+            return Calculate(new ScoreSnapshot(board, db, finalFlat, finalMultiplier, sources, history, initialHappyCakeLayers, extraCountAsPerDish, cakeLayerThresholdReduction, reverseDishOrder, unservedRecipeDishes, copySkillSelector, transferTargetSelector, randomIntegerSelector, passiveItemCount, remainingFoodDiscards, sweetTransferExtraTargetCount, sweetTransferTargetMultiplierFlat, sweetTransferSourceMultiplierFlat, captureDiagnostics));
         }
 
         public ScoreResult Calculate(ScoreSnapshot snapshot)

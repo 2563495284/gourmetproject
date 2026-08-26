@@ -67,17 +67,36 @@ namespace GourmetProject.Game.UI.Tooltips
                 return;
             }
 
-            data ??= new FoodTipsData(null, null, null, null, null);
+            // TMP keeps preferred-size caches while the whole tips object is inactive. Rebinding
+            // in that state can therefore size 4_SpecialTags from the previously shown food.
+            // Activate only for the synchronous bind/layout pass, then restore the hidden state.
+            bool restoreInactive = !gameObject.activeSelf;
+            if (restoreInactive)
+            {
+                gameObject.SetActive(true);
+            }
 
-            _scoreView.Bind(data.Score);
-            _summaryView.Bind(data.Summary);
-            BuildFlavorDetails(data.FlavorDetails);
-            BuildInfoCards(
-                _specialTagsRoot,
-                BuildSpecialTagsWithCountAs(data.SpecialTags, data.Summary.CountAs),
-                "SpecialTag",
-                MinimumTermCardWidth);
-            BuildInfoCards(_externalSkillsRoot, data.ExternalSkills, "ExternalSkill");
+            try
+            {
+                data ??= new FoodTipsData(null, null, null, null, null);
+
+                _scoreView.Bind(data.Score);
+                _summaryView.Bind(data.Summary);
+                BuildFlavorDetails(data.FlavorDetails);
+                BuildInfoCards(
+                    _specialTagsRoot,
+                    BuildSpecialTagsWithCountAs(data.SpecialTags, data.Summary.CountAs),
+                    "SpecialTag",
+                    MinimumTermCardWidth);
+                BuildInfoCards(_externalSkillsRoot, data.ExternalSkills, "ExternalSkill");
+            }
+            finally
+            {
+                if (restoreInactive)
+                {
+                    gameObject.SetActive(false);
+                }
+            }
         }
 
         public void Show()
@@ -301,7 +320,9 @@ namespace GourmetProject.Game.UI.Tooltips
                 card.Bind(entry.Title, entry.Desc);
                 if (minimumWidth > 0f)
                 {
-                    preferredWidth = Mathf.Max(preferredWidth, card.PreferredSingleLineWidth);
+                    preferredWidth = Mathf.Max(
+                        preferredWidth,
+                        card.PreferredSingleLineWidthFor(entry.Title, entry.Desc));
                 }
             }
 

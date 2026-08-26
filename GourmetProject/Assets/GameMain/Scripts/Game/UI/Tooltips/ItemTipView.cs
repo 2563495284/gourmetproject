@@ -41,9 +41,25 @@ namespace GourmetProject.Game.UI.Tooltips
             Sprite icon = null,
             IReadOnlyList<FoodInfoEntry> specialTags = null)
         {
-            ApplyTexts(itemName, desc);
-            ApplyFooter(null);
-            BuildInfoCards(_specialTagsRoot, specialTags, "SpecialTag");
+            bool restoreInactive = !gameObject.activeSelf;
+            if (restoreInactive)
+            {
+                gameObject.SetActive(true);
+            }
+
+            try
+            {
+                ApplyTexts(itemName, desc);
+                ApplyFooter(null);
+                BuildInfoCards(_specialTagsRoot, specialTags, "SpecialTag");
+            }
+            finally
+            {
+                if (restoreInactive)
+                {
+                    gameObject.SetActive(false);
+                }
+            }
         }
 
         public void OnPlacedAroundTarget(bool placedLeftOfTarget)
@@ -99,7 +115,9 @@ namespace GourmetProject.Game.UI.Tooltips
                 FoodTipCardView card = Instantiate(_infoCardPrefab, root, false);
                 card.name = $"{prefix}_{i}";
                 card.Bind(entry.Title, entry.Desc);
-                preferredWidth = Mathf.Max(preferredWidth, card.PreferredSingleLineWidth);
+                preferredWidth = Mathf.Max(
+                    preferredWidth,
+                    card.PreferredSingleLineWidthFor(entry.Title, entry.Desc));
             }
 
             root.SetSizeWithCurrentAnchors(

@@ -23,19 +23,20 @@ namespace GourmetProject.Game.UI.Tooltips
 
         /// <summary>
         /// 标题或描述中最长单行完整显示时，卡片所需的宽度（包含布局留白）。
+        /// 按待绑定文本测量而非读取当前排版结果；调用方应在 activeInHierarchy 状态调用。
         /// </summary>
-        internal float PreferredSingleLineWidth
+        internal float PreferredSingleLineWidthFor(string title, string desc)
         {
-            get
-            {
-                float rootPadding = HorizontalPadding(GetComponent<VerticalLayoutGroup>());
-                float descPadding = _descText != null
-                    ? HorizontalPadding(_descText.GetComponentInParent<HorizontalLayoutGroup>())
-                    : 0f;
-                return SingleLineWidthGuard + rootPadding + Mathf.Max(
-                    PreferredTitleWidth,
-                    PreferredDescWidth + descPadding);
-            }
+            float rootPadding = HorizontalPadding(GetComponent<VerticalLayoutGroup>());
+            float descPadding = _descText != null
+                ? HorizontalPadding(_descText.GetComponentInParent<HorizontalLayoutGroup>())
+                : 0f;
+            float titleWidth = _titleText != null && !string.IsNullOrEmpty(title)
+                ? _titleText.GetPreferredValues(title).x
+                : 0f;
+            return SingleLineWidthGuard + rootPadding + Mathf.Max(
+                titleWidth,
+                PreferredDescWidthFor(desc) + descPadding);
         }
 
         public float PreferredDescWidthFor(string value)

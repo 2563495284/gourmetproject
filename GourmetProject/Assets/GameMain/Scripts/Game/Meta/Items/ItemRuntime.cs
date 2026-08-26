@@ -384,7 +384,7 @@ namespace GourmetProject.Game.Meta
             return rewards;
         }
 
-        /// <summary>每次成功传递时，目标永久倍率的累加值。</summary>
+        /// <summary>每次成功传递时，目标在本次结算获得的倍率加值。</summary>
         public float SweetTransferTargetMultiplier()
         {
             float total = 0f;
@@ -399,7 +399,7 @@ namespace GourmetProject.Game.Meta
             return total;
         }
 
-        /// <summary>每次成功传递时，来源永久倍率的累加值。</summary>
+        /// <summary>每次成功传递时，来源在本次结算获得的倍率加值。</summary>
         public float SweetTransferSourceMultiplier()
         {
             float total = 0f;

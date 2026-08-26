@@ -666,10 +666,10 @@ namespace GourmetProject.Gameplay.Battle
             return true;
         }
 
-        /// <summary>每次传递给目标永久倍率累加的数值（如 0.1）。</summary>
+        /// <summary>每次成功传递时，被传递方在本次结算获得的倍率加值（如 0.1）。</summary>
         public float SweetTransferTargetMultiplier { get; set; }
 
-        /// <summary>每成功传递一个目标，给来源永久倍率累加的数值（如 0.1）。</summary>
+        /// <summary>每成功传递一个目标，传递方在本次结算获得的倍率加值（如 0.1）。</summary>
         public float SweetTransferSourceMultiplier { get; set; }
 
         /// <summary>装饰品为每次甜蜜传递追加的目标数量。</summary>
@@ -1582,7 +1582,7 @@ namespace GourmetProject.Gameplay.Battle
             Func<int, int, int> randomIntegerSelector,
             bool captureDiagnostics = true)
         {
-            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: copySkillSelector, transferTargetSelector: transferTargetSelector, randomIntegerSelector: randomIntegerSelector, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount, captureDiagnostics: captureDiagnostics);
+            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: copySkillSelector, transferTargetSelector: transferTargetSelector, randomIntegerSelector: randomIntegerSelector, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount, sweetTransferTargetMultiplierFlat: SweetTransferTargetMultiplier, sweetTransferSourceMultiplierFlat: SweetTransferSourceMultiplier, captureDiagnostics: captureDiagnostics);
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
@@ -1592,7 +1592,7 @@ namespace GourmetProject.Gameplay.Battle
             _passiveSettlementPresentationOccurrences.Clear();
             ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
                 ? ZeroScoreResult()
-                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets, randomIntegerSelector: SelectRandomInteger, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount);
+                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets, randomIntegerSelector: SelectRandomInteger, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount, sweetTransferTargetMultiplierFlat: SweetTransferTargetMultiplier, sweetTransferSourceMultiplierFlat: SweetTransferSourceMultiplier);
             _capturesPassiveSettlementPresentation = true;
             try
             {
@@ -2012,7 +2012,8 @@ namespace GourmetProject.Gameplay.Battle
                     FindInstance(transfer.TargetInstanceId),
                     transfer.Effects,
                     transfer.SourceName,
-                    transfer.HandoffExecutionGroupId);
+                    applyRuntimeMultiplierBonuses: false,
+                    handoffExecutionGroupId: transfer.HandoffExecutionGroupId);
             }
 
             // 技能复制：结算阶段只登记候选池，正式结算后由会话随机流落地，避免预览消耗 RNG。
@@ -2124,7 +2125,8 @@ namespace GourmetProject.Gameplay.Battle
                         request.SourceInstanceId,
                         FindInstance(targetId),
                         request.Effects,
-                        request.SourceName);
+                        request.SourceName,
+                        applyRuntimeMultiplierBonuses: true);
                 }
             }
         }
@@ -2138,6 +2140,7 @@ namespace GourmetProject.Gameplay.Battle
             DishInstance target,
             IReadOnlyList<SkillEffect> effects,
             string sourceName,
+            bool applyRuntimeMultiplierBonuses,
             int handoffExecutionGroupId = 0)
         {
             if (target == null || target.Id == sourceInstanceId || effects == null || effects.Count == 0)
@@ -2151,7 +2154,10 @@ namespace GourmetProject.Gameplay.Battle
                 target.AddTransferredSkill(effect, sourceLabel, sourceInstanceId);
             }
 
-            ApplySweetTransferGrowth(FindInstance(sourceInstanceId), target);
+            ApplySweetTransferGrowth(
+                FindInstance(sourceInstanceId),
+                target,
+                applyRuntimeMultiplierBonuses);
             SweetTransferTriggered?.Invoke(new SweetTransferOccurrence(
                 sourceInstanceId,
                 target.Id,
@@ -2175,33 +2181,28 @@ namespace GourmetProject.Gameplay.Battle
             };
         }
 
-        private void ApplySweetTransferGrowth(DishInstance source, DishInstance target)
+        private void ApplySweetTransferGrowth(
+            DishInstance source,
+            DishInstance target,
+            bool applyRuntimeMultiplierBonuses)
         {
-            ApplySweetTransferPermanentGrowth(
-                target,
-                SweetTransferTargetMultiplier,
-                SweetTransferTargetFlat);
-            ApplySweetTransferPermanentGrowth(
-                source,
-                SweetTransferSourceMultiplier,
-                SweetTransferSourceFlat);
+            if (applyRuntimeMultiplierBonuses)
+            {
+                AddServeMultiplierFlat(target, SweetTransferTargetMultiplier);
+                AddServeMultiplierFlat(source, SweetTransferSourceMultiplier);
+            }
+
+            ApplySweetTransferPermanentFlatGrowth(target, SweetTransferTargetFlat);
+            ApplySweetTransferPermanentFlatGrowth(source, SweetTransferSourceFlat);
         }
 
-        private void ApplySweetTransferPermanentGrowth(
+        private void ApplySweetTransferPermanentFlatGrowth(
             DishInstance instance,
-            float multiplierBonus,
             float flatBonus)
         {
             if (instance == null)
             {
                 return;
-            }
-
-            if (multiplierBonus > 0f)
-            {
-                BigDouble before = instance.PermanentMultBonus;
-                instance.AddPermanentMultBonus(multiplierBonus);
-                RecordRecipeMultiplierDelta(instance, before, instance.PermanentMultBonus);
             }
 
             if (Math.Abs(flatBonus) >= 0.0001f)
@@ -2222,26 +2223,6 @@ namespace GourmetProject.Gameplay.Battle
                 inst.SourceSlotIndex,
                 inst.SourceDishIndex,
                 amount));
-        }
-
-        private void RecordRecipeMultiplierDelta(
-            DishInstance instance,
-            BigDouble before,
-            BigDouble after)
-        {
-            if (instance == null
-                || instance.SourceSlotIndex < 0
-                || instance.SourceDishIndex < 0
-                || before <= BigDouble.Zero
-                || after <= BigDouble.Zero)
-            {
-                return;
-            }
-
-            _lastRecipeScoreMultiplierDeltas.Add(new RecipeScoreMultiplierDelta(
-                instance.SourceSlotIndex,
-                instance.SourceDishIndex,
-                after / before));
         }
 
         /// <summary>技能复制落地：对每个请求，用随机流从候选池挑选 Count 个不同技能加到目标实例。</summary>
