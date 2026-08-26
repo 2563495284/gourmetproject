@@ -43,6 +43,7 @@ namespace GourmetProject.Tests.EditMode
 
             Assert.That(BattleInfoColumn.ShouldQueueSettlementScoreBeat(zeroDelta), Is.False);
             Assert.That(BattleInfoColumn.ShouldQueueSettlementScoreBeat(positiveDelta), Is.True);
+            Assert.That(BattleInfoColumn.HasVisibleSettlementScoreDelta(5 - 5), Is.False);
         }
 
         [Test]
