@@ -468,7 +468,12 @@ namespace GourmetProject.Gameplay.Scoring
             int handoffExecutionGroupId = ctx.CurrentExecutionGroupId;
             foreach (DishInstance target in targets)
             {
-                ctx.RecordSkillTransfer(target, effects, sourceName, _self.Id);
+                ctx.RecordSkillTransfer(
+                    target,
+                    effects,
+                    sourceName,
+                    _self.Id,
+                    handoffExecutionGroupId);
                 ResolveTransferredEffects(
                     ctx,
                     target,

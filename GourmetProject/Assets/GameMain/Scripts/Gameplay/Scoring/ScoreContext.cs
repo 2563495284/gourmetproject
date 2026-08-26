@@ -731,14 +731,24 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         /// <summary>登记技能传递（副作用，正式结算后应用到实例的运行时技能集）。</summary>
-        public void RecordSkillTransfer(DishInstance target, IReadOnlyList<SkillEffect> effects, string sourceName = null, int sourceInstanceId = 0)
+        public void RecordSkillTransfer(
+            DishInstance target,
+            IReadOnlyList<SkillEffect> effects,
+            string sourceName = null,
+            int sourceInstanceId = 0,
+            int handoffExecutionGroupId = 0)
         {
             if (target == null || effects == null || effects.Count == 0)
             {
                 return;
             }
 
-            _skillTransfers.Add(new SkillTransferSideEffect(target.Id, effects, sourceName, sourceInstanceId));
+            _skillTransfers.Add(new SkillTransferSideEffect(
+                target.Id,
+                effects,
+                sourceName,
+                sourceInstanceId,
+                handoffExecutionGroupId));
             if (CaptureDiagnostics)
             {
                 EmitEvent(ScoreEventType.CommandExecuted, $"技能传递给 {target.Def.Name}（{effects.Count} 个）");
@@ -1587,12 +1597,18 @@ namespace GourmetProject.Gameplay.Scoring
     /// <summary>技能传递副作用：把外来子技能(Effects) 追加给某目标实例（可带来源名，用于「源名&lt;甜蜜传递&gt;」展示）。</summary>
     public sealed class SkillTransferSideEffect
     {
-        public SkillTransferSideEffect(int targetInstanceId, IReadOnlyList<SkillEffect> effects, string sourceName = null, int sourceInstanceId = 0)
+        public SkillTransferSideEffect(
+            int targetInstanceId,
+            IReadOnlyList<SkillEffect> effects,
+            string sourceName = null,
+            int sourceInstanceId = 0,
+            int handoffExecutionGroupId = 0)
         {
             TargetInstanceId = targetInstanceId;
             Effects = effects ?? Array.Empty<SkillEffect>();
             SourceName = sourceName ?? string.Empty;
             SourceInstanceId = sourceInstanceId;
+            HandoffExecutionGroupId = handoffExecutionGroupId;
         }
 
         public int TargetInstanceId { get; }
@@ -1603,6 +1619,9 @@ namespace GourmetProject.Gameplay.Scoring
         public string SourceName { get; }
 
         public int SourceInstanceId { get; }
+
+        /// <summary>发起本次真实传递的 TransferSkills 根效果执行批次；0 表示旧入口未提供。</summary>
+        public int HandoffExecutionGroupId { get; }
     }
 
     /// <summary>

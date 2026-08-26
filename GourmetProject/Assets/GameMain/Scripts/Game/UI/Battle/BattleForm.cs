@@ -61,6 +61,7 @@ namespace GourmetProject.Game.UI.Battle
         private const float RandomizedItemFlyDuration = 0.42f;
         private const float RecipeCopySpriteSize = 250f;
         private const float RecipeCopyCenterMargin = 64f;
+        private const string GoldOnTransferItemId = "item_gold_on_transfer";
         private enum FoodTipsHoverOwner
         {
             None,
@@ -224,6 +225,11 @@ namespace GourmetProject.Game.UI.Battle
         private int _displayedCakeLayers;
         private int? _pendingSettlementCakeLayers;
         private int _pendingSettlementCakeLayerBonus;
+        private bool _settlementPassivePresentationActive;
+        private int _settlementPresentedGold;
+        private int _settlementSuppressedPassiveGold;
+        private readonly Dictionary<string, RunItemSlotView> _settlementPassivePresentationSlots =
+            new(StringComparer.Ordinal);
         private readonly PassivePresentationScheduler _passivePresentations = new();
         private Sequence _passivePresentationDelay;
         private CanvasGroup _passivePresentationInputBlocker;
@@ -364,6 +370,7 @@ namespace GourmetProject.Game.UI.Battle
             UnregisterTutorialCommands();
             UnregisterTutorialAnchors();
             ClearTutorialAcquiredItemAnchor();
+            FinalizeSettlementAndEndPassivePresentation();
             if (Active == this)
             {
                 Active = null;
@@ -5688,6 +5695,7 @@ namespace GourmetProject.Game.UI.Battle
             _pendingSettlementCakeLayers = null;
             _pendingSettlementCakeLayerBonus = 0;
 
+            BeginSettlementPassivePresentation();
             ScoreResult result = _session.Settle();
             _pendingSettlementCakeLayerBonus = Mathf.Max(
                 0,
@@ -5705,6 +5713,7 @@ namespace GourmetProject.Game.UI.Battle
                     _infoColumn != null ? _infoColumn.ScoreFire : null,
                     OnSettlementReveal,
                     OnSettlementPassiveTriggered,
+                    OnSettlementPassivePresentation,
                     OnSettlementBeat,
                     () => OnSettlementComplete(result));
                 _world.SetFoodSettlementLayoutBusy(false);
@@ -5772,10 +5781,7 @@ namespace GourmetProject.Game.UI.Battle
 
             }
 
-            if (_run != null && _session != null)
-            {
-                BattleSettlementApplier.ApplyFinal(_run, _session);
-            }
+            FinalizeSettlementAndEndPassivePresentation();
 
             // 领奖期间允许隐藏奖励页查看本场结果，因此保留最终美味值；
             // 奖励全部领取并离开营业时，HideBattleWorld 会再将其清空。
@@ -6010,6 +6016,44 @@ namespace GourmetProject.Game.UI.Battle
 
         private void OnGoldChanged(int before, int after)
         {
+            if (_settlementPassivePresentationActive)
+            {
+                // ApplyFinal 会先标记 session，再把待入账金币搬进 Run.Gold；金币栏已经包含这部分目标。
+                if (_session?.IsRunSettlementApplied == true)
+                {
+                    return;
+                }
+
+                int delta = after - before;
+                int recordedPassiveGold = 0;
+                IReadOnlyList<PassiveSettlementPresentationOccurrence> occurrences =
+                    _session?.PassiveSettlementPresentationOccurrences;
+                if (occurrences != null)
+                {
+                    for (int i = 0; i < occurrences.Count; i++)
+                    {
+                        recordedPassiveGold += occurrences[i].GoldDelta;
+                    }
+                }
+
+                if (delta > 0
+                    && recordedPassiveGold - _settlementSuppressedPassiveGold >= delta)
+                {
+                    _settlementSuppressedPassiveGold += delta;
+                    return;
+                }
+
+                // 其它来源的直接金币仍按原节奏展示，但基于表现目标推进，不能带出尚未揭示的传菜铃金币。
+                _settlementPresentedGold = Mathf.Max(0, _settlementPresentedGold + delta);
+                if (delta > 0)
+                {
+                    GameApp.Audio.PlayRandomCoin();
+                }
+
+                _infoColumn?.PresentGoldTarget(_settlementPresentedGold);
+                return;
+            }
+
             if (after > before)
             {
                 GameApp.Audio.PlayRandomCoin();
@@ -6026,6 +6070,15 @@ namespace GourmetProject.Game.UI.Battle
         {
             if (_run == null || !IsPendingGoldVisible())
             {
+                return;
+            }
+
+            if (_settlementPassivePresentationActive)
+            {
+                int displayedDelta = (int)Math.Round(after, MidpointRounding.AwayFromZero)
+                    - (int)Math.Round(before, MidpointRounding.AwayFromZero);
+                _settlementPresentedGold = Mathf.Max(0, _settlementPresentedGold + displayedDelta);
+                _infoColumn?.PresentGoldTarget(_settlementPresentedGold);
                 return;
             }
 
@@ -6047,6 +6100,11 @@ namespace GourmetProject.Game.UI.Battle
             if (ReferenceEquals(_session, session))
             {
                 return;
+            }
+
+            if (_settlementPassivePresentationActive)
+            {
+                FinalizeSettlementAndEndPassivePresentation();
             }
 
             if (_session != null)
@@ -6168,6 +6226,109 @@ namespace GourmetProject.Game.UI.Battle
 
             new ItemRuntime(_run).FlashTriggered(model =>
                 string.Equals(model.ItemId, itemId, StringComparison.Ordinal));
+        }
+
+        private void BeginSettlementPassivePresentation()
+        {
+            EndSettlementPassivePresentation();
+            RunItemState state = _run?.GetItemState(GoldOnTransferItemId);
+            if (state == null)
+            {
+                return;
+            }
+
+            _settlementPassivePresentationActive = true;
+            int fallbackGold = BattleInfoColumn.ResolveDisplayedGold(
+                _run.Gold,
+                _session != null ? _session.PendingGold : 0f,
+                IsPendingGoldVisible());
+            _settlementPresentedGold = _infoColumn != null
+                ? _infoColumn.ResolveGoldPresentationTarget(fallbackGold)
+                : fallbackGold;
+
+            RunItemSlotView slot = _itemsColumn?.GetItemSlot(
+                GoldOnTransferItemId,
+                cfg.ItemKind.Passive,
+                revealPassive: false);
+            if (slot == null)
+            {
+                return;
+            }
+
+            slot.BeginPassivePresentationOverride(state.Model?.InfoText ?? string.Empty);
+            _settlementPassivePresentationSlots[GoldOnTransferItemId] = slot;
+        }
+
+        private void OnSettlementPassivePresentation(PassiveSettlementPresentationBatch batch)
+        {
+            if (_discardSettlementCallbacks
+                || Active != this
+                || !_settlementPassivePresentationActive
+                || string.IsNullOrEmpty(batch.ItemId))
+            {
+                return;
+            }
+
+            if (!_settlementPassivePresentationSlots.TryGetValue(
+                    batch.ItemId,
+                    out RunItemSlotView slot)
+                || slot == null)
+            {
+                slot = _itemsColumn?.GetItemSlot(
+                    batch.ItemId,
+                    cfg.ItemKind.Passive,
+                    revealPassive: false);
+                if (slot != null)
+                {
+                    slot.BeginPassivePresentationOverride(batch.InfoTextBefore);
+                    _settlementPassivePresentationSlots[batch.ItemId] = slot;
+                }
+            }
+
+            slot?.SetPassivePresentationInfoText(batch.InfoTextAfter);
+            if (batch.ShouldPulse)
+            {
+                slot?.PlayPassivePulse();
+            }
+
+            if (batch.GoldDelta == 0)
+            {
+                return;
+            }
+
+            _settlementPresentedGold = Mathf.Max(0, _settlementPresentedGold + batch.GoldDelta);
+            if (batch.GoldDelta > 0)
+            {
+                GameApp.Audio.PlayRandomCoin();
+            }
+
+            _infoColumn?.PresentGoldTarget(_settlementPresentedGold);
+        }
+
+        private void EndSettlementPassivePresentation()
+        {
+            foreach (RunItemSlotView slot in _settlementPassivePresentationSlots.Values)
+            {
+                if (slot != null)
+                {
+                    slot.EndPassivePresentationOverride();
+                }
+            }
+
+            _settlementPassivePresentationSlots.Clear();
+            _settlementPassivePresentationActive = false;
+            _settlementPresentedGold = 0;
+            _settlementSuppressedPassiveGold = 0;
+        }
+
+        private void FinalizeSettlementAndEndPassivePresentation()
+        {
+            if (_run != null && _session?.IsSettled == true)
+            {
+                BattleSettlementApplier.ApplyFinal(_run, _session);
+            }
+
+            EndSettlementPassivePresentation();
         }
 
         private void RefreshAll()

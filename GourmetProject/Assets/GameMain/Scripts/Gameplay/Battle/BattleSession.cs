@@ -58,15 +58,57 @@ namespace GourmetProject.Gameplay.Battle
     /// <summary>一次已经实际落到单个目标的甜蜜传递。</summary>
     public readonly struct SweetTransferOccurrence
     {
-        public SweetTransferOccurrence(int sourceInstanceId, int targetInstanceId)
+        public SweetTransferOccurrence(
+            int sourceInstanceId,
+            int targetInstanceId,
+            int handoffExecutionGroupId = 0)
         {
             SourceInstanceId = sourceInstanceId;
             TargetInstanceId = targetInstanceId;
+            HandoffExecutionGroupId = handoffExecutionGroupId;
         }
 
         public int SourceInstanceId { get; }
 
         public int TargetInstanceId { get; }
+
+        /// <summary>发起本次传递的 TransferSkills 根效果执行批次；0 表示旧入口未提供。</summary>
+        public int HandoffExecutionGroupId { get; }
+    }
+
+    /// <summary>
+    /// 正式结算时已落地、但应随对应甜蜜传递动画逐步揭示的一次被动装饰品表现。
+    /// 真实状态在记录前已经完成修改，本结构只控制 HUD 的揭示时机。
+    /// </summary>
+    public readonly struct PassiveSettlementPresentationOccurrence
+    {
+        public PassiveSettlementPresentationOccurrence(
+            string itemId,
+            SweetTransferOccurrence transfer,
+            string infoTextBefore,
+            string infoTextAfter,
+            int goldDelta,
+            bool shouldPulse)
+        {
+            ItemId = itemId ?? string.Empty;
+            Transfer = transfer;
+            InfoTextBefore = infoTextBefore ?? string.Empty;
+            InfoTextAfter = infoTextAfter ?? string.Empty;
+            GoldDelta = goldDelta;
+            ShouldPulse = shouldPulse;
+        }
+
+        public string ItemId { get; }
+
+        public SweetTransferOccurrence Transfer { get; }
+
+        public string InfoTextBefore { get; }
+
+        public string InfoTextAfter { get; }
+
+        public int GoldDelta { get; }
+
+        public bool ShouldPulse { get; }
     }
 
     /// <summary>一次成功丢弃及其在局外食谱中的来源。</summary>
@@ -122,11 +164,14 @@ namespace GourmetProject.Gameplay.Battle
         private readonly List<RecipeScoreFlatDelta> _lastRecipeScoreFlatDeltas = new List<RecipeScoreFlatDelta>();
         private readonly List<RecipeScoreMultiplierDelta> _lastRecipeScoreMultiplierDeltas = new List<RecipeScoreMultiplierDelta>();
         private readonly List<RecipeRemovalOutcome> _lastRecipeRemovalOutcomes = new List<RecipeRemovalOutcome>();
+        private readonly List<PassiveSettlementPresentationOccurrence> _passiveSettlementPresentationOccurrences =
+            new List<PassiveSettlementPresentationOccurrence>();
         private readonly List<DishInstance> _temporaryAreaDishes = new List<DishInstance>();
         private readonly Dictionary<int, PendingDishPlacement> _pendingDishPlacements =
             new Dictionary<int, PendingDishPlacement>();
         private bool _runRecipeGrowthApplied;
         private bool _runSettlementApplied;
+        private bool _capturesPassiveSettlementPresentation;
         private int _nextInstanceId = 1;
         private int _appetizerRemoved;
         private float _settlementDishMultiplierFlat;
@@ -406,6 +451,25 @@ namespace GourmetProject.Gameplay.Battle
         public IReadOnlyList<RecipeScoreMultiplierDelta> LastRecipeScoreMultiplierDeltas => _lastRecipeScoreMultiplierDeltas;
 
         public IReadOnlyList<RecipeRemovalOutcome> LastRecipeRemovalOutcomes => _lastRecipeRemovalOutcomes;
+
+        /// <summary>本次正式结算产生的被动表现记录，按实际副作用发生顺序排列。</summary>
+        public IReadOnlyList<PassiveSettlementPresentationOccurrence> PassiveSettlementPresentationOccurrences
+            => _passiveSettlementPresentationOccurrences;
+
+        /// <summary>
+        /// 仅在正式结算应用副作用期间接受表现记录；预览、上菜阶段和结算结束后调用均会被忽略。
+        /// </summary>
+        public bool TryRecordPassiveSettlementPresentation(
+            PassiveSettlementPresentationOccurrence occurrence)
+        {
+            if (!_capturesPassiveSettlementPresentation || string.IsNullOrEmpty(occurrence.ItemId))
+            {
+                return false;
+            }
+
+            _passiveSettlementPresentationOccurrences.Add(occurrence);
+            return true;
+        }
 
         /// <summary>Game 层是否已把本场食谱成长写回 GameRun。</summary>
         public bool IsRunRecipeGrowthApplied => _runRecipeGrowthApplied;
@@ -1525,10 +1589,19 @@ namespace GourmetProject.Gameplay.Battle
         public ScoreResult Settle()
         {
             ConfirmAllPendingTableDishes();
+            _passiveSettlementPresentationOccurrences.Clear();
             ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
                 ? ZeroScoreResult()
                 : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets, randomIntegerSelector: SelectRandomInteger, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount);
-            ApplySideEffects(result);
+            _capturesPassiveSettlementPresentation = true;
+            try
+            {
+                ApplySideEffects(result);
+            }
+            finally
+            {
+                _capturesPassiveSettlementPresentation = false;
+            }
             LastResult = result;
             IsSettled = true;
             ResolveRecipeRemovalRequests(result.RecipeRemovalRequests);
@@ -1938,7 +2011,8 @@ namespace GourmetProject.Gameplay.Battle
                     transfer.SourceInstanceId,
                     FindInstance(transfer.TargetInstanceId),
                     transfer.Effects,
-                    transfer.SourceName);
+                    transfer.SourceName,
+                    transfer.HandoffExecutionGroupId);
             }
 
             // 技能复制：结算阶段只登记候选池，正式结算后由会话随机流落地，避免预览消耗 RNG。
@@ -2063,7 +2137,8 @@ namespace GourmetProject.Gameplay.Battle
             int sourceInstanceId,
             DishInstance target,
             IReadOnlyList<SkillEffect> effects,
-            string sourceName)
+            string sourceName,
+            int handoffExecutionGroupId = 0)
         {
             if (target == null || target.Id == sourceInstanceId || effects == null || effects.Count == 0)
             {
@@ -2077,7 +2152,10 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             ApplySweetTransferGrowth(FindInstance(sourceInstanceId), target);
-            SweetTransferTriggered?.Invoke(new SweetTransferOccurrence(sourceInstanceId, target.Id));
+            SweetTransferTriggered?.Invoke(new SweetTransferOccurrence(
+                sourceInstanceId,
+                target.Id,
+                handoffExecutionGroupId));
             return true;
         }
 

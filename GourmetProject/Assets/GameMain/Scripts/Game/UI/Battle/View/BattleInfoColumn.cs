@@ -254,6 +254,9 @@ namespace GourmetProject.Game.UI.Battle.View
             PresentGoldChange(before, after);
         }
 
+        internal int ResolveGoldPresentationTarget(int fallback)
+            => _goldPresentationInitialized ? _goldPresentationTarget : fallback;
+
         private void SyncGold(int value)
         {
             if (!_goldPresentationInitialized)

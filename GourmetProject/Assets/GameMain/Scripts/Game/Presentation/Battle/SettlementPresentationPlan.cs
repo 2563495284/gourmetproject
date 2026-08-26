@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BreakInfinity;
 using GourmetProject.Game.UI.Common;
+using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Scoring;
 using UnityEngine;
 
@@ -280,6 +281,165 @@ namespace GourmetProject.Game.Presentation.Battle
                 trace.SweetTransferHandoffExecutionGroupId,
                 trace.SweetTransferHandoffSkillId,
                 trace.SweetTransferHandoffPayloadCount);
+        }
+    }
+
+    /// <summary>同一波甜蜜传递抵达后，向 HUD 一次性揭示的一件被动装饰品表现。</summary>
+    public readonly struct PassiveSettlementPresentationBatch
+    {
+        public PassiveSettlementPresentationBatch(
+            string itemId,
+            string infoTextBefore,
+            string infoTextAfter,
+            int goldDelta,
+            bool shouldPulse)
+        {
+            ItemId = itemId ?? string.Empty;
+            InfoTextBefore = infoTextBefore ?? string.Empty;
+            InfoTextAfter = infoTextAfter ?? string.Empty;
+            GoldDelta = goldDelta;
+            ShouldPulse = shouldPulse;
+        }
+
+        public string ItemId { get; }
+
+        public string InfoTextBefore { get; }
+
+        public string InfoTextAfter { get; }
+
+        public int GoldDelta { get; }
+
+        public bool ShouldPulse { get; }
+    }
+
+    /// <summary>
+    /// 把正式结算时已经落地的被动表现记录，按甜蜜传递粒子的真实交接批次消费。
+    /// 每条记录最多消费一次；同一波同一装饰品合并成一个 HUD 更新。
+    /// </summary>
+    internal sealed class PassiveSettlementPlaybackLedger
+    {
+        private sealed class BatchBuilder
+        {
+            public string ItemId;
+            public string InfoTextBefore;
+            public string InfoTextAfter;
+            public int GoldDelta;
+            public bool ShouldPulse;
+
+            public PassiveSettlementPresentationBatch Build()
+                => new PassiveSettlementPresentationBatch(
+                    ItemId,
+                    InfoTextBefore,
+                    InfoTextAfter,
+                    GoldDelta,
+                    ShouldPulse);
+        }
+
+        private readonly IReadOnlyList<PassiveSettlementPresentationOccurrence> _occurrences;
+        private readonly bool[] _consumed;
+
+        public PassiveSettlementPlaybackLedger(
+            IReadOnlyList<PassiveSettlementPresentationOccurrence> occurrences)
+        {
+            _occurrences = occurrences ?? Array.Empty<PassiveSettlementPresentationOccurrence>();
+            _consumed = new bool[_occurrences.Count];
+        }
+
+        public int UnconsumedCount
+        {
+            get
+            {
+                int count = 0;
+                for (int i = 0; i < _consumed.Length; i++)
+                {
+                    if (!_consumed[i])
+                    {
+                        count++;
+                    }
+                }
+
+                return count;
+            }
+        }
+
+        public IReadOnlyList<PassiveSettlementPresentationBatch> ConsumeWave(
+            IReadOnlyList<SettlementSweetTransferPresentationContext> handoffs)
+        {
+            if (handoffs == null || handoffs.Count == 0 || _occurrences.Count == 0)
+            {
+                return Array.Empty<PassiveSettlementPresentationBatch>();
+            }
+
+            var builders = new List<BatchBuilder>();
+            var builderIndexByItemId = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (int occurrenceIndex = 0; occurrenceIndex < _occurrences.Count; occurrenceIndex++)
+            {
+                if (_consumed[occurrenceIndex])
+                {
+                    continue;
+                }
+
+                PassiveSettlementPresentationOccurrence occurrence = _occurrences[occurrenceIndex];
+                if (!MatchesAny(occurrence.Transfer, handoffs))
+                {
+                    continue;
+                }
+
+                _consumed[occurrenceIndex] = true;
+                if (!builderIndexByItemId.TryGetValue(occurrence.ItemId, out int builderIndex))
+                {
+                    builderIndex = builders.Count;
+                    builderIndexByItemId.Add(occurrence.ItemId, builderIndex);
+                    builders.Add(new BatchBuilder
+                    {
+                        ItemId = occurrence.ItemId,
+                        InfoTextBefore = occurrence.InfoTextBefore,
+                        InfoTextAfter = occurrence.InfoTextAfter,
+                    });
+                }
+
+                BatchBuilder builder = builders[builderIndex];
+                builder.InfoTextAfter = occurrence.InfoTextAfter;
+                builder.GoldDelta += occurrence.GoldDelta;
+                builder.ShouldPulse |= occurrence.ShouldPulse;
+            }
+
+            if (builders.Count == 0)
+            {
+                return Array.Empty<PassiveSettlementPresentationBatch>();
+            }
+
+            var result = new PassiveSettlementPresentationBatch[builders.Count];
+            for (int i = 0; i < builders.Count; i++)
+            {
+                result[i] = builders[i].Build();
+            }
+
+            return result;
+        }
+
+        private static bool MatchesAny(
+            SweetTransferOccurrence occurrence,
+            IReadOnlyList<SettlementSweetTransferPresentationContext> handoffs)
+        {
+            for (int i = 0; i < handoffs.Count; i++)
+            {
+                SettlementSweetTransferPresentationContext handoff = handoffs[i];
+                if (occurrence.SourceInstanceId != handoff.SourceDishInstanceId
+                    || occurrence.TargetInstanceId != handoff.ExecutorDishInstanceId)
+                {
+                    continue;
+                }
+
+                if (occurrence.HandoffExecutionGroupId <= 0
+                    || handoff.HandoffExecutionGroupId <= 0
+                    || occurrence.HandoffExecutionGroupId == handoff.HandoffExecutionGroupId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 

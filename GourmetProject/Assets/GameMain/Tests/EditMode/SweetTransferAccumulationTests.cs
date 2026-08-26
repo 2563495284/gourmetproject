@@ -1,14 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Serialization;
 using BreakInfinity;
 using GourmetProject.Core.Rng;
+using GourmetProject.Game.Meta;
+using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Presentation.Battle;
+using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Data;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
+using Luban.SimpleJSON;
 using NUnit.Framework;
 
 namespace GourmetProject.Tests.EditMode
@@ -41,6 +47,7 @@ namespace GourmetProject.Tests.EditMode
             DishScore targetScore = result.DishScores.Single(score => score.DishInstanceId == target.Id);
             Assert.That(Value(targetScore.FlatBonus), Is.EqualTo(10d).Within(1e-9));
             Assert.That(result.SkillTransfers, Has.Count.EqualTo(1));
+            Assert.That(result.SkillTransfers[0].HandoffExecutionGroupId, Is.GreaterThan(0));
             Assert.That(target.TransferredSkills, Is.Empty, "预览计算不得提前提交传递技能");
         }
 
@@ -133,6 +140,13 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 sourceBHandoffLines[0].Trace.SweetTransferHandoffExecutionGroupId,
                 Is.Not.EqualTo(sourceCHandoffLines[0].Trace.SweetTransferHandoffExecutionGroupId));
+            foreach (SkillTransferSideEffect transfer in result.SkillTransfers)
+            {
+                int expectedGroupId = transfer.SourceInstanceId == sourceB.Id
+                    ? sourceBHandoffLines[0].Trace.SweetTransferHandoffExecutionGroupId
+                    : sourceCHandoffLines[0].Trace.SweetTransferHandoffExecutionGroupId;
+                Assert.That(transfer.HandoffExecutionGroupId, Is.EqualTo(expectedGroupId));
+            }
 
             var sourceCGroups = sourceCHandoffLines
                 .Select(line => new SettlementEffectGroup(line))
@@ -208,6 +222,217 @@ namespace GourmetProject.Tests.EditMode
                     && context.HandoffExecutionGroupId == 102),
                 Is.True,
                 "同一来源对同一目标的下一次真实传递不能被合并");
+        }
+
+        [Test]
+        public void PassivePresentationLedger_ConsumesExactTransfersAndBatchesEachWave()
+        {
+            const string itemId = "item_gold_on_transfer";
+            const int sourceId = 3;
+            const int targetAId = 4;
+            const int targetBId = 5;
+            ScoreLine firstTarget = CreatePresentationLine(
+                ownerId: sourceId,
+                executorId: targetAId,
+                skillId: "source_skill",
+                handoffSourceId: sourceId,
+                handoffGroupId: 101);
+            ScoreLine secondTarget = CreatePresentationLine(
+                ownerId: sourceId,
+                executorId: targetBId,
+                skillId: "source_skill",
+                handoffSourceId: sourceId,
+                handoffGroupId: 101);
+            ScoreLine repeatedTarget = CreatePresentationLine(
+                ownerId: sourceId,
+                executorId: targetAId,
+                skillId: "source_skill",
+                handoffSourceId: sourceId,
+                handoffGroupId: 102);
+
+            var ledger = new PassiveSettlementPlaybackLedger(new[]
+            {
+                new PassiveSettlementPresentationOccurrence(
+                    itemId,
+                    new SweetTransferOccurrence(sourceId, targetAId, 101),
+                    "8",
+                    "9",
+                    0,
+                    false),
+                new PassiveSettlementPresentationOccurrence(
+                    itemId,
+                    new SweetTransferOccurrence(sourceId, targetBId, 101),
+                    "9",
+                    "0",
+                    15,
+                    true),
+                new PassiveSettlementPresentationOccurrence(
+                    itemId,
+                    new SweetTransferOccurrence(sourceId, targetAId, 102),
+                    "0",
+                    "1",
+                    0,
+                    false),
+            });
+            var firstWaveGroups = new[]
+            {
+                new SettlementEffectGroup(firstTarget),
+                new SettlementEffectGroup(secondTarget),
+            };
+            IReadOnlyList<SettlementSweetTransferPresentationContext> firstWave =
+                SettlementSequencer.CollectWaveHandoffs(
+                    firstWaveGroups,
+                    0,
+                    firstWaveGroups.Length);
+
+            IReadOnlyList<PassiveSettlementPresentationBatch> firstBatches =
+                ledger.ConsumeWave(firstWave);
+
+            Assert.That(firstBatches.Count, Is.EqualTo(1));
+            Assert.That(firstBatches[0].ItemId, Is.EqualTo(itemId));
+            Assert.That(firstBatches[0].InfoTextBefore, Is.EqualTo("8"));
+            Assert.That(firstBatches[0].InfoTextAfter, Is.EqualTo("0"));
+            Assert.That(firstBatches[0].GoldDelta, Is.EqualTo(15));
+            Assert.That(firstBatches[0].ShouldPulse, Is.True);
+            Assert.That(ledger.UnconsumedCount, Is.EqualTo(1));
+            Assert.That(ledger.ConsumeWave(firstWave), Is.Empty, "已抵达的传递不能重复消费");
+
+            var repeatedGroups = new[] { new SettlementEffectGroup(repeatedTarget) };
+            IReadOnlyList<PassiveSettlementPresentationBatch> repeatedBatches =
+                ledger.ConsumeWave(SettlementSequencer.CollectWaveHandoffs(
+                    repeatedGroups,
+                    0,
+                    repeatedGroups.Length));
+
+            Assert.That(repeatedBatches.Count, Is.EqualTo(1));
+            Assert.That(repeatedBatches[0].InfoTextAfter, Is.EqualTo("1"));
+            Assert.That(repeatedBatches[0].GoldDelta, Is.Zero);
+            Assert.That(repeatedBatches[0].ShouldPulse, Is.False);
+            Assert.That(ledger.UnconsumedCount, Is.Zero);
+        }
+
+        [TestCase(9, 1, 15, "0", true)]
+        [TestCase(8, 1, 0, "9", false)]
+        [TestCase(8, 3, 15, "1", true)]
+        [TestCase(9, 11, 30, "0", true)]
+        public void FormalSettlement_BrassBellAppliesImmediatelyAndRecordsDeferredPresentation(
+            int initialCount,
+            int targetCount,
+            int expectedGoldDelta,
+            string expectedFinalInfo,
+            bool expectedPulse)
+        {
+            (GameRun run, GoldOnTransferCountModel bell) = CreateBrassBellRun(initialCount);
+
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef sourceSkill = CreateTransferSkill("source_skill", 10f, targetCount);
+            DishDef sourceDef = CreateDish("source", "来源", shape, new[] { sourceSkill.Id });
+            var dishDefs = new List<DishDef> { sourceDef };
+            for (int i = 0; i < targetCount; i++)
+            {
+                dishDefs.Add(CreateDish(
+                    $"target_{i}",
+                    $"目标{i}",
+                    shape,
+                    Array.Empty<string>()));
+            }
+
+            var database = new GameplayDatabase(
+                dishDefs,
+                new[] { sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(dishDefs.Count, 1);
+            for (int i = 0; i < dishDefs.Count; i++)
+            {
+                board.Place(CreateInstance(i + 1, dishDefs[i], shape, i));
+            }
+
+            var session = new BattleSession(
+                board,
+                database,
+                new Xoshiro256SS(20260826UL),
+                Array.Empty<RecipeSlot>(),
+                requiredScore: 0);
+            bell.ApplyToBattle(session);
+            int goldBefore = run.Gold;
+
+            ScoreResult settled = session.Settle();
+
+            Assert.That(run.Gold - goldBefore, Is.EqualTo(expectedGoldDelta));
+            Assert.That(bell.InfoText, Is.EqualTo(expectedFinalInfo));
+            Assert.That(bell.CaptureState(), Is.EqualTo($"count:{expectedFinalInfo}"));
+            Assert.That(
+                session.PassiveSettlementPresentationOccurrences,
+                Has.Count.EqualTo(targetCount));
+            Assert.That(
+                session.PassiveSettlementPresentationOccurrences.Sum(entry => entry.GoldDelta),
+                Is.EqualTo(expectedGoldDelta));
+            Assert.That(
+                session.PassiveSettlementPresentationOccurrences.Any(entry => entry.ShouldPulse),
+                Is.EqualTo(expectedPulse));
+            Assert.That(
+                session.PassiveSettlementPresentationOccurrences.All(entry =>
+                    entry.Transfer.HandoffExecutionGroupId > 0),
+                Is.True);
+
+            SettlementEffectGroup[] transferGroups = settled.ScoreLines
+                .Where(line => line.Trace?.SweetTransferHandoffExecutionGroupId > 0)
+                .Select(line => new SettlementEffectGroup(line))
+                .ToArray();
+            IReadOnlyList<SettlementSweetTransferPresentationContext> handoffs =
+                SettlementSequencer.CollectWaveHandoffs(
+                    transferGroups,
+                    0,
+                    transferGroups.Length);
+            IReadOnlyList<PassiveSettlementPresentationBatch> batches =
+                new PassiveSettlementPlaybackLedger(
+                    session.PassiveSettlementPresentationOccurrences)
+                .ConsumeWave(handoffs);
+            Assert.That(batches.Count, Is.EqualTo(1));
+            Assert.That(batches[0].InfoTextBefore, Is.EqualTo(initialCount.ToString()));
+            Assert.That(batches[0].InfoTextAfter, Is.EqualTo(expectedFinalInfo));
+            Assert.That(batches[0].GoldDelta, Is.EqualTo(expectedGoldDelta));
+            Assert.That(batches[0].ShouldPulse, Is.EqualTo(expectedPulse));
+        }
+
+        private static (GameRun Run, GoldOnTransferCountModel Bell) CreateBrassBellRun(
+            int initialCount)
+        {
+            const string definitionJson =
+                "{"
+                + "\"id\":\"item_gold_on_transfer\","
+                + "\"name\":\"黄铜传菜铃\","
+                + "\"desc\":\"\","
+                + "\"quality\":0,"
+                + "\"specialTags\":0,"
+                + "\"effectValue\":15,"
+                + "\"effectParam\":\"count:10\","
+                + "\"baseWeight\":100,"
+                + "\"targetScoreHiddenOffset\":0,"
+                + "\"dishHiddenOffset\":0,"
+                + "\"itemLuckOffset\":0,"
+                + "\"fragmentHiddenOffset\":0,"
+                + "\"termId\":\"term_sweet_transfer\","
+                + "\"price\":60,"
+                + "\"archetypeTags\":[0]"
+                + "}";
+            var state = new RunItemState("item_gold_on_transfer", 1);
+            var items = new List<RunItemState> { state };
+#pragma warning disable SYSLIB0050
+            var run = (GameRun)FormatterServices.GetUninitializedObject(typeof(GameRun));
+#pragma warning restore SYSLIB0050
+            typeof(GameRun)
+                .GetField("_items", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(run, items);
+            var bell = new GoldOnTransferCountModel();
+            bell.Bind(
+                run,
+                ItemDefinition.From(new cfg.PassiveItem(JSON.Parse(definitionJson))),
+                state);
+            state.Model = bell;
+            bell.RestoreState($"count:{initialCount}");
+            return (run, bell);
         }
 
         [Test]
