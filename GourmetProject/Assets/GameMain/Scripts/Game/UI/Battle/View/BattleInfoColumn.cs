@@ -431,7 +431,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public void QueueSettlementScoreBeat(SettlementBeatSignal signal)
         {
-            if (signal.Kind != SettlementBeatKind.ResultApplied || !signal.HasScoreChange)
+            if (!ShouldQueueSettlementScoreBeat(signal))
             {
                 return;
             }
@@ -458,6 +458,13 @@ namespace GourmetProject.Game.UI.Battle.View
                 _pendingImpactTier = signal.ImpactTier;
                 _pendingLineKind = signal.LineKind;
             }
+        }
+
+        internal static bool ShouldQueueSettlementScoreBeat(SettlementBeatSignal signal)
+        {
+            return signal.Kind == SettlementBeatKind.ResultApplied
+                && signal.HasScoreChange
+                && signal.ScoreDelta != BigDouble.Zero;
         }
 
         public void EndSettlementScorePresentation()
@@ -550,9 +557,7 @@ namespace GourmetProject.Game.UI.Battle.View
             deltaRect.localScale = Vector3.one * 0.82f;
             deltaRect.anchoredPosition = _settlementDeltaBasePosition;
 
-            Color semantic = SettlementColorPalette.For(lineKind);
-            Color deltaColor = SettlementColorPalette.TextFor(semantic);
-            _settlementDeltaText.color = deltaColor;
+            _settlementDeltaText.color = SettlementColorPalette.ScoreDeltaTextFor(lineKind);
             _settlementDeltaText.text = FormatSignedScore(delta);
             _settlementDeltaText.gameObject.SetActive(true);
             _scoreCurrentText.text = ScoreNumberFormatter.Format(before);

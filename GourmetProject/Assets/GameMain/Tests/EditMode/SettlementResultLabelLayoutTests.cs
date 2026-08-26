@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using GourmetProject.Game.Presentation.Battle;
+using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
 using UnityEngine;
@@ -11,6 +12,63 @@ namespace GourmetProject.Tests.EditMode
     {
         private static readonly Vector2 Footprint = new(1.8f, 0.48f);
         private const float ViewportPadding = 0.035f;
+
+        [Test]
+        public void ScoreDeltaBeat_RequiresANonZeroTotalChange()
+        {
+            var zeroDelta = new SettlementBeatSignal(
+                SettlementBeatKind.ResultApplied,
+                "金币",
+                0,
+                1f,
+                0.5f,
+                ScoreLineKind.Gold,
+                10,
+                10,
+                SettlementImpactTier.Normal,
+                1,
+                reachedTarget: false);
+            var positiveDelta = new SettlementBeatSignal(
+                SettlementBeatKind.ResultApplied,
+                "技能",
+                1,
+                1f,
+                0.5f,
+                ScoreLineKind.DishFlat,
+                10,
+                15,
+                SettlementImpactTier.Normal,
+                1,
+                reachedTarget: false);
+
+            Assert.That(BattleInfoColumn.ShouldQueueSettlementScoreBeat(zeroDelta), Is.False);
+            Assert.That(BattleInfoColumn.ShouldQueueSettlementScoreBeat(positiveDelta), Is.True);
+        }
+
+        [Test]
+        public void ScoreDeltaColors_MatchSettlementSemanticValueColors()
+        {
+            Assert.That(
+                SettlementColorPalette.ScoreDeltaTextFor(ScoreLineKind.DishFlat),
+                Is.EqualTo((Color)new Color32(40, 102, 156, 255))
+                    .Using(ColorEqualityComparer.Instance));
+            Assert.That(
+                SettlementColorPalette.ScoreDeltaTextFor(ScoreLineKind.DishPermanentFlat),
+                Is.EqualTo((Color)new Color32(51, 125, 181, 255))
+                    .Using(ColorEqualityComparer.Instance));
+            Assert.That(
+                SettlementColorPalette.ScoreDeltaTextFor(ScoreLineKind.DishMultiplierAdd),
+                Is.EqualTo((Color)new Color32(178, 58, 72, 255))
+                    .Using(ColorEqualityComparer.Instance));
+            Assert.That(
+                SettlementColorPalette.ScoreDeltaTextFor(ScoreLineKind.DishMultiplier),
+                Is.EqualTo((Color)new Color32(225, 90, 100, 255))
+                    .Using(ColorEqualityComparer.Instance));
+            Assert.That(
+                SettlementColorPalette.ScoreDeltaTextFor(ScoreLineKind.ExtraSettlement),
+                Is.EqualTo((Color)new Color32(118, 86, 168, 255))
+                    .Using(ColorEqualityComparer.Instance));
+        }
 
         [Test]
         public void BatchVisibility_SkipsNonVisualSourceLines()
