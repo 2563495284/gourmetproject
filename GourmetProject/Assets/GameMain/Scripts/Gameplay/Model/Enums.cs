@@ -11,7 +11,7 @@ namespace GourmetProject.Gameplay.Model
         PerOccupiedCell = 5,
         PerDishOnBoard = 6,
 
-        /// <summary>鲜：同一食谱槽中优先从可摆放的鲜味食物候选里出菜。</summary>
+        /// <summary>鲜：开战生成固定出菜序列时，同一食谱槽中优先排列鲜味食物。</summary>
         ServePriority = 7,
 
         /// <summary>贡献 EffectValue 到该菜结算优先级层级（甜=+1、苦=-1）。不产生分数效果，由结算前排序读取。</summary>

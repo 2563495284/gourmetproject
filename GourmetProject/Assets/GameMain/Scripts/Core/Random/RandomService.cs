@@ -76,31 +76,26 @@ namespace GourmetProject.Core.Rng
         /// </summary>
         public IRandomStream DomainStream(string domain, string instanceKey)
         {
-            if (!IsInitialized)
-            {
-                throw new InvalidOperationException("RandomService.Init must be called before accessing streams.");
-            }
-
-            if (string.IsNullOrEmpty(domain))
-            {
-                throw new ArgumentException("Domain must not be empty.", nameof(domain));
-            }
-
-            if (string.IsNullOrEmpty(instanceKey))
-            {
-                throw new ArgumentException("Instance key must not be empty.", nameof(instanceKey));
-            }
+            ValidateDomainStreamArguments(domain, instanceKey);
 
             string cacheKey = domain + DomainKeySeparator + instanceKey;
             if (!_streams.TryGetValue(cacheKey, out Xoshiro256SS stream))
             {
-                ulong domainSeed = DeriveStreamSeed(MasterSeed, domain);
-                ulong instanceSeed = DeriveStreamSeed(domainSeed, instanceKey);
-                stream = new Xoshiro256SS(instanceSeed);
+                stream = new Xoshiro256SS(DeriveDomainStreamSeed(domain, instanceKey));
                 _streams.Add(cacheKey, stream);
             }
 
             return stream;
+        }
+
+        /// <summary>
+        /// 创建一条不缓存、也不参与随机快照的域实例流。每次调用都会从主种子、域和实例 key
+        /// 重新派生到相同初始状态，适合“重进同一内容仍需得到同一预生成结果”的场景。
+        /// </summary>
+        public IRandomStream CreateDomainStream(string domain, string instanceKey)
+        {
+            ValidateDomainStreamArguments(domain, instanceKey);
+            return new Xoshiro256SS(DeriveDomainStreamSeed(domain, instanceKey));
         }
 
         /// <summary>
@@ -197,6 +192,30 @@ namespace GourmetProject.Core.Rng
                 ulong combined = masterSeed;
                 combined ^= nameHash + 0x9E3779B97F4A7C15UL + (combined << 6) + (combined >> 2);
                 return SplitMix64.Mix(combined);
+            }
+        }
+
+        private ulong DeriveDomainStreamSeed(string domain, string instanceKey)
+        {
+            ulong domainSeed = DeriveStreamSeed(MasterSeed, domain);
+            return DeriveStreamSeed(domainSeed, instanceKey);
+        }
+
+        private void ValidateDomainStreamArguments(string domain, string instanceKey)
+        {
+            if (!IsInitialized)
+            {
+                throw new InvalidOperationException("RandomService.Init must be called before accessing streams.");
+            }
+
+            if (string.IsNullOrEmpty(domain))
+            {
+                throw new ArgumentException("Domain must not be empty.", nameof(domain));
+            }
+
+            if (string.IsNullOrEmpty(instanceKey))
+            {
+                throw new ArgumentException("Instance key must not be empty.", nameof(instanceKey));
             }
         }
 

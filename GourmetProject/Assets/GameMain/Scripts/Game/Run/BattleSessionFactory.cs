@@ -72,11 +72,22 @@ namespace GourmetProject.Game.Run
             CaptureDisabledPresentation(presentation, board, disabledBefore);
 
             var battleStream = run.Random.DomainStream(SeedDomains.Combat, key);
+            var serveSequenceStream = run.Random.CreateDomainStream(
+                SeedDomains.Combat,
+                $"{key}_serve_sequence");
 
             // 结算类装饰品（逐菜/条件/顺序）作为效果来源注入结算器。
             // FinalFlat/Multiplier 目前只保留存档和结算器兼容入口，没有现行配置产出。
             var calculator = new ScoreCalculator(effectSources: ItemScoreEffectAdapter.BuildScoreSources(run));
-            var session = new BattleSession(board, run.Database, battleStream, slots, requiredScore, calculator, runSettledCounts: run.RunSettledCounts);
+            var session = new BattleSession(
+                board,
+                run.Database,
+                battleStream,
+                slots,
+                requiredScore,
+                calculator,
+                runSettledCounts: run.RunSettledCounts,
+                serveSequenceRng: serveSequenceStream);
             session.AttachBossDebuffPresentation(presentation);
             session.PassiveItemCount = run.PassiveItemStates.Count();
             var itemRuntime = new ItemRuntime(run);
@@ -108,6 +119,7 @@ namespace GourmetProject.Game.Run
             bossDebuffModel?.ApplyToBattle(session);
 
             ApplyPassiveItems(run, session);
+            session.InitializeServeSequence();
             return session;
         }
 
@@ -164,7 +176,8 @@ namespace GourmetProject.Game.Run
                 System.Array.Empty<RecipeSlot>(),
                 requiredScore,
                 calculator,
-                run.RunSettledCounts);
+                run.RunSettledCounts,
+                serveSequenceRng: new Xoshiro256SS(random.State));
             var itemRuntime = new ItemRuntime(run);
             session.PassiveItemCount = run.PassiveItemStates.Count();
             session.CakeLayerThresholdReduction = itemRuntime.CakeThresholdReduction();
@@ -181,6 +194,7 @@ namespace GourmetProject.Game.Run
             BossDebuffModel bossModel = bossDebuff != null ? BossDebuffModelRegistry.Create(run, bossDebuff) : null;
             bossModel?.ApplyToBattle(session);
             ApplyPassiveItems(run, session);
+            session.InitializeServeSequence();
             return session;
         }
 
