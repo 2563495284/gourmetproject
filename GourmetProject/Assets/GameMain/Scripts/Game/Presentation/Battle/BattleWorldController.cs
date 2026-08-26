@@ -4183,6 +4183,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementScoreFireView scoreFire,
             Action<SettlementRevealSignal> onReveal,
             Action<string> onPassiveTriggered,
+            Action<PassiveSettlementPresentationBatch> onPassivePresentation,
             Action<SettlementBeatSignal> onBeat,
             Action onComplete)
         {
@@ -4209,6 +4210,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     onReveal,
                     OnSettlementScope,
                     onPassiveTriggered,
+                    onPassivePresentation,
                     onBeat,
                     baselineSnapshot,
                     _tableVisualScale,

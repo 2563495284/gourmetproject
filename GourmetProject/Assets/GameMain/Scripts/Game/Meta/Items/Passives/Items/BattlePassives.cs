@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using GourmetProject.Gameplay.Battle;
+using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using UnityEngine.Scripting;
 using Log = GourmetProject.Core.Diagnostics.Log;
@@ -128,9 +130,18 @@ namespace GourmetProject.Game.Meta.Passives
             }
 
             _transferCount++;
-            Flash();
+            if (ShouldFlashOnTransferEvent(occurrence))
+            {
+                Flash();
+            }
             RefreshInfoText();
         }
+
+        /// <summary>
+        /// OnSettle 的响应式计分装饰品由结算明细在正确节拍触发闪烁；
+        /// OnServe 没有结算播放，仍在事件到达时立即闪烁。
+        /// </summary>
+        protected virtual bool ShouldFlashOnTransferEvent(SweetTransferOccurrence occurrence) => true;
 
         public override string CaptureState()
             => JoinState(CaptureIconState(), $"count:{_transferCount.ToString(CultureInfo.InvariantCulture)}");
@@ -173,6 +184,19 @@ namespace GourmetProject.Game.Meta.Passives
             value = Value;
             return value > 0f;
         }
+
+        public override IEnumerable<ItemScoreSpec> BuildScoreSpecs()
+        {
+            yield return new ItemScoreSpec(
+                ItemScoreEffectType.SweetTransferTargetPermanentFlat,
+                Value,
+                Param,
+                ItemId,
+                Def?.Name ?? ItemId);
+        }
+
+        protected override bool ShouldFlashOnTransferEvent(SweetTransferOccurrence occurrence)
+            => occurrence.HandoffExecutionGroupId <= 0;
     }
 
     [Preserve]
@@ -184,5 +208,18 @@ namespace GourmetProject.Game.Meta.Passives
             value = Value;
             return value > 0f;
         }
+
+        public override IEnumerable<ItemScoreSpec> BuildScoreSpecs()
+        {
+            yield return new ItemScoreSpec(
+                ItemScoreEffectType.SweetTransferSourcePermanentFlat,
+                Value,
+                Param,
+                ItemId,
+                Def?.Name ?? ItemId);
+        }
+
+        protected override bool ShouldFlashOnTransferEvent(SweetTransferOccurrence occurrence)
+            => occurrence.HandoffExecutionGroupId <= 0;
     }
 }

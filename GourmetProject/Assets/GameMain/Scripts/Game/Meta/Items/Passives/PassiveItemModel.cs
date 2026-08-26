@@ -349,6 +349,12 @@ namespace GourmetProject.Game.Meta.Passives
         /// <summary>每次甜蜜传递额外选择的目标数。</summary>
         public virtual int SweetTransferExtraTargetCount() => 0;
 
+        /// <summary>每次甜蜜传递独立判定的额外目标加权随机规格。</summary>
+        public virtual IEnumerable<SweetTransferExtraTargetRollSpec> SweetTransferExtraTargetRolls()
+        {
+            yield break;
+        }
+
         /// <summary>贡献逐菜/条件/顺序类结算规格（替代 ItemScoreEffectAdapter 的 effectType 映射）。</summary>
         public virtual IEnumerable<ItemScoreSpec> BuildScoreSpecs()
         {

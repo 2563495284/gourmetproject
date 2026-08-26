@@ -36,6 +36,9 @@ namespace GourmetProject.Game.UI.Hud
         private Tween _pulseTween;
         private PassiveItemModel _boundPassiveModel;
         private string _fallbackInfoText = string.Empty;
+        private bool _hasPassivePresentationOverride;
+        private bool _suppressPassiveModelPulse;
+        private string _passivePresentationInfoText = string.Empty;
 
         private void Awake()
         {
@@ -95,6 +98,9 @@ namespace GourmetProject.Game.UI.Hud
             bool usePassiveShader = false)
         {
             EnsureRefs();
+            _hasPassivePresentationOverride = false;
+            _suppressPassiveModelPulse = false;
+            _passivePresentationInfoText = string.Empty;
             _fallbackInfoText = badge ?? string.Empty;
             BindPassiveModel(usePassiveShader ? state?.Model : null);
             RefreshInfoText();
@@ -191,6 +197,38 @@ namespace GourmetProject.Game.UI.Hud
                     material.SetFloat(PulseId, 0f);
                 }
             }, true).SetUpdate(true).SetTarget(this);
+        }
+
+        /// <summary>
+        /// 在结算演出期间冻结被动角标，并屏蔽模型已提前落地产生的闪烁。
+        /// 后续由对应表现批次显式推进角标和闪烁。
+        /// </summary>
+        public void BeginPassivePresentationOverride(string infoText)
+        {
+            _hasPassivePresentationOverride = true;
+            _suppressPassiveModelPulse = true;
+            _passivePresentationInfoText = infoText ?? string.Empty;
+            RefreshInfoText();
+        }
+
+        public void SetPassivePresentationInfoText(string infoText)
+        {
+            if (!_hasPassivePresentationOverride)
+            {
+                BeginPassivePresentationOverride(infoText);
+                return;
+            }
+
+            _passivePresentationInfoText = infoText ?? string.Empty;
+            RefreshInfoText();
+        }
+
+        public void EndPassivePresentationOverride()
+        {
+            _hasPassivePresentationOverride = false;
+            _suppressPassiveModelPulse = false;
+            _passivePresentationInfoText = string.Empty;
+            RefreshInfoText();
         }
 
         /// <summary>
@@ -413,6 +451,11 @@ namespace GourmetProject.Game.UI.Hud
                 return;
             }
 
+            if (_suppressPassiveModelPulse)
+            {
+                return;
+            }
+
             PlayPassivePulse();
         }
 
@@ -443,7 +486,11 @@ namespace GourmetProject.Game.UI.Hud
                 return;
             }
 
-            string text = _boundPassiveModel != null ? _boundPassiveModel.InfoText : _fallbackInfoText;
+            string text = _hasPassivePresentationOverride
+                ? _passivePresentationInfoText
+                : _boundPassiveModel != null
+                    ? _boundPassiveModel.InfoText
+                    : _fallbackInfoText;
             _info.text = text ?? string.Empty;
         }
 

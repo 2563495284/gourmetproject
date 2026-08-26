@@ -287,24 +287,45 @@ namespace GourmetProject.Game.Meta.Passives
         {
             if (session != null)
             {
-                session.SweetTransferTriggered += OnSweetTransferTriggered;
+                session.SweetTransferTriggered += occurrence =>
+                    HandleSweetTransferTriggered(session, occurrence);
             }
         }
 
         public override void OnSweetTransferTriggered(SweetTransferOccurrence occurrence)
+            => HandleSweetTransferTriggered(null, occurrence);
+
+        private void HandleSweetTransferTriggered(
+            BattleSession session,
+            SweetTransferOccurrence occurrence)
         {
             if (!IsStillHeld)
             {
                 return;
             }
 
+            int before = _transferCount;
             _transferCount++;
             int threshold = System.Math.Max(1, PassiveParam.ParseInt(Param, "count", DefaultTransferCount));
+            int goldDelta = 0;
             if (_transferCount >= threshold)
             {
                 int rewardCount = _transferCount / threshold;
                 _transferCount %= threshold;
-                Run.Gold += System.Math.Max(0, GoldAmount) * rewardCount;
+                goldDelta = System.Math.Max(0, GoldAmount) * rewardCount;
+            }
+
+            session?.TryRecordPassiveSettlementPresentation(
+                new PassiveSettlementPresentationOccurrence(
+                    ItemId,
+                    occurrence,
+                    before.ToString(CultureInfo.InvariantCulture),
+                    _transferCount.ToString(CultureInfo.InvariantCulture),
+                    goldDelta,
+                    goldDelta > 0));
+            if (goldDelta > 0)
+            {
+                Run.Gold += goldDelta;
                 Flash();
             }
 

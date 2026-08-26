@@ -8,6 +8,69 @@ using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 
 namespace GourmetProject.Gameplay.Scoring
 {
+    /// <summary>每轮甜蜜传递额外目标数的二选一加权随机规格。</summary>
+    public readonly struct SweetTransferExtraTargetRollSpec
+    {
+        private const int RollScale = 10000;
+
+        public SweetTransferExtraTargetRollSpec(
+            int firstCount,
+            int secondCount,
+            int firstWeight,
+            int secondWeight)
+        {
+            FirstCount = Math.Max(0, firstCount);
+            SecondCount = Math.Max(0, secondCount);
+            FirstWeight = Math.Max(0, firstWeight);
+            SecondWeight = Math.Max(0, secondWeight);
+        }
+
+        public int FirstCount { get; }
+
+        public int SecondCount { get; }
+
+        public int FirstWeight { get; }
+
+        public int SecondWeight { get; }
+
+        public bool IsValid => FirstWeight + SecondWeight > 0;
+
+        /// <summary>有随机流时按权重抽取；纯预计算取权重更高者，同权重时取较小值。</summary>
+        public int Resolve(Func<int, int, int> randomIntegerSelector)
+        {
+            if (!IsValid)
+            {
+                return 0;
+            }
+
+            if (FirstCount == SecondCount)
+            {
+                return FirstCount;
+            }
+
+            if (randomIntegerSelector == null)
+            {
+                if (FirstWeight == SecondWeight)
+                {
+                    return Math.Min(FirstCount, SecondCount);
+                }
+
+                return FirstWeight > SecondWeight ? FirstCount : SecondCount;
+            }
+
+            int totalWeight = FirstWeight + SecondWeight;
+            int firstThreshold = Math.Max(
+                0,
+                Math.Min(
+                    RollScale,
+                    (int)Math.Round(
+                        FirstWeight / (double)totalWeight * RollScale,
+                        MidpointRounding.AwayFromZero)));
+            int roll = Math.Max(0, Math.Min(RollScale - 1, randomIntegerSelector(0, RollScale - 1)));
+            return roll < firstThreshold ? FirstCount : SecondCount;
+        }
+    }
+
     /// <summary>一次结算开始时捕获的只读输入。</summary>
     public sealed class ScoreSnapshot
     {
@@ -31,7 +94,8 @@ namespace GourmetProject.Gameplay.Scoring
             int sweetTransferExtraTargetCount = 0,
             float sweetTransferTargetMultiplierFlat = 0f,
             float sweetTransferSourceMultiplierFlat = 0f,
-            bool captureDiagnostics = true)
+            bool captureDiagnostics = true,
+            IReadOnlyList<SweetTransferExtraTargetRollSpec> sweetTransferExtraTargetRolls = null)
         {
             DiningTable = board ?? throw new ArgumentNullException(nameof(board));
             Db = db ?? throw new ArgumentNullException(nameof(db));
@@ -49,6 +113,10 @@ namespace GourmetProject.Gameplay.Scoring
             PassiveItemCount = Math.Max(0, passiveItemCount);
             RemainingFoodDiscards = Math.Max(0, remainingFoodDiscards);
             SweetTransferExtraTargetCount = Math.Max(0, sweetTransferExtraTargetCount);
+            SweetTransferExtraTargetRolls = (sweetTransferExtraTargetRolls
+                ?? Array.Empty<SweetTransferExtraTargetRollSpec>())
+                .Where(spec => spec.IsValid)
+                .ToArray();
             SweetTransferTargetMultiplierFlat = Math.Max(0f, sweetTransferTargetMultiplierFlat);
             SweetTransferSourceMultiplierFlat = Math.Max(0f, sweetTransferSourceMultiplierFlat);
             CaptureDiagnostics = captureDiagnostics;
@@ -163,6 +231,9 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>装饰品为每次甜蜜传递额外增加的目标数。</summary>
         public int SweetTransferExtraTargetCount { get; }
+
+        /// <summary>装饰品为每次甜蜜传递独立判定的额外目标加权随机规格。</summary>
+        public IReadOnlyList<SweetTransferExtraTargetRollSpec> SweetTransferExtraTargetRolls { get; }
 
         /// <summary>每次成功甜蜜传递时，被传递方在本次结算获得的倍率加值。</summary>
         public float SweetTransferTargetMultiplierFlat { get; }

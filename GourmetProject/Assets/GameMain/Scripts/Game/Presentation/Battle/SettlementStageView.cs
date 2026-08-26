@@ -313,7 +313,8 @@ namespace GourmetProject.Game.Presentation.Battle
         /// 同一波甜蜜传递的所有 source→executor 粒子同时起飞，只等待最长飞行时间。
         /// 不再逐目标弹出「技能来源 / 接收并执行」舞台字。
         /// </summary>
-        internal async Awaitable PlaySweetTransferHandoffsAsync(
+        internal async Awaitable<IReadOnlyList<SettlementSweetTransferPresentationContext>>
+            PlaySweetTransferHandoffsAsync(
             IReadOnlyList<SweetTransferHandoffVisual> handoffs,
             SweetTransferParticleView particlePrefab,
             float travelDuration,
@@ -322,10 +323,11 @@ namespace GourmetProject.Game.Presentation.Battle
             EndGroupImmediate();
             if (handoffs == null || handoffs.Count == 0)
             {
-                return;
+                return System.Array.Empty<SettlementSweetTransferPresentationContext>();
             }
 
             var flights = new List<SweetTransferParticleView>(handoffs.Count);
+            var arrivedContexts = new List<SettlementSweetTransferPresentationContext>(handoffs.Count);
             try
             {
                 for (int i = 0; i < handoffs.Count; i++)
@@ -363,6 +365,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     if (flight != null)
                     {
                         flights.Add(flight);
+                        arrivedContexts.Add(handoff.Context);
                     }
 
                     source.SetSettlementFocus(
@@ -377,6 +380,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         Mathf.Max(0.0001f, travelDuration),
                         cancellationToken);
                 }
+
+                return arrivedContexts;
             }
             finally
             {

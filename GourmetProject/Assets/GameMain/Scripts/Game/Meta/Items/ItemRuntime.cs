@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Run;
+using GourmetProject.Gameplay.Scoring;
 
 namespace GourmetProject.Game.Meta
 {
@@ -446,6 +447,23 @@ namespace GourmetProject.Game.Meta
 
         public int SweetTransferExtraTargetCount()
             => System.Math.Max(0, SumInt(m => m.SweetTransferExtraTargetCount()));
+
+        public IReadOnlyList<SweetTransferExtraTargetRollSpec> SweetTransferExtraTargetRolls()
+        {
+            var result = new List<SweetTransferExtraTargetRollSpec>();
+            foreach (PassiveItemModel model in Models)
+            {
+                foreach (SweetTransferExtraTargetRollSpec spec in model.SweetTransferExtraTargetRolls())
+                {
+                    if (spec.IsValid)
+                    {
+                        result.Add(spec);
+                    }
+                }
+            }
+
+            return result;
+        }
 
         // ================= 事件 / 行动概率族 =================
 

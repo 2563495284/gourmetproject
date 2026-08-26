@@ -196,6 +196,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Action<SettlementRevealSignal> onReveal,
             Action<SettlementScopeSignal> onScope,
             Action<string> onPassiveTriggered,
+            Action<PassiveSettlementPresentationBatch> onPassivePresentation,
             Action<SettlementBeatSignal> onBeat,
             SettlementBaselineSnapshot baselineSnapshot,
             float visualScale,
@@ -225,6 +226,8 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearRetainedDishValueBadges();
             ClearSweetTransferBuffMarkers(dishViews);
             var sweetTransferPlayback = new SweetTransferPlaybackState();
+            var passiveSettlementPlayback = new PassiveSettlementPlaybackLedger(
+                session?.PassiveSettlementPresentationOccurrences);
             bool completed = false;
             ResetPlaybackPauseState();
             using CancellationTokenSource debugScorePauseCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -275,9 +278,11 @@ namespace GourmetProject.Game.Presentation.Battle
                     onReveal,
                     onScope,
                     onPassiveTriggered,
+                    onPassivePresentation,
                     onBeat,
                     baselineSnapshot,
                     sweetTransferPlayback,
+                    passiveSettlementPlayback,
                     cancellationToken);
 
                 for (int chapterIndex = 0; chapterIndex < plan.DishChapters.Count; chapterIndex++)
@@ -341,9 +346,11 @@ namespace GourmetProject.Game.Presentation.Battle
                             onReveal,
                             onScope,
                             onPassiveTriggered,
+                            onPassivePresentation,
                             onBeat,
                             baselineSnapshot,
                             sweetTransferPlayback,
+                            passiveSettlementPlayback,
                             cancellationToken);
                     }
 
@@ -383,10 +390,19 @@ namespace GourmetProject.Game.Presentation.Battle
                     onReveal,
                     onScope,
                     onPassiveTriggered,
+                    onPassivePresentation,
                     onBeat,
                     baselineSnapshot,
                     sweetTransferPlayback,
+                    passiveSettlementPlayback,
                     cancellationToken);
+
+                if (passiveSettlementPlayback.UnconsumedCount > 0 && Debug.isDebugBuild)
+                {
+                    Debug.LogWarning(
+                        $"{nameof(SettlementSequencer)} 有 {passiveSettlementPlayback.UnconsumedCount} 条被动结算表现未匹配到甜蜜传递动画。",
+                        this);
+                }
 
                 await WaitWhilePlaybackPausedAsync(cancellationToken);
                 ClearSweetTransferVisuals(sweetTransferPlayback, dishViews);
@@ -543,9 +559,11 @@ namespace GourmetProject.Game.Presentation.Battle
             Action<SettlementRevealSignal> onReveal,
             Action<SettlementScopeSignal> onScope,
             Action<string> onPassiveTriggered,
+            Action<PassiveSettlementPresentationBatch> onPassivePresentation,
             Action<SettlementBeatSignal> onBeat,
             SettlementBaselineSnapshot baselineSnapshot,
             SweetTransferPlaybackState sweetTransferPlayback,
+            PassiveSettlementPlaybackLedger passiveSettlementPlayback,
             CancellationToken cancellationToken)
         {
             if (groups == null || groups.Count == 0)
@@ -573,9 +591,11 @@ namespace GourmetProject.Game.Presentation.Battle
                         onReveal,
                         onScope,
                         onPassiveTriggered,
+                        onPassivePresentation,
                         onBeat,
                         baselineSnapshot,
                         sweetTransferPlayback,
+                        passiveSettlementPlayback,
                         groupIndex,
                         waveLength,
                         preserveDishChapterFocus,
@@ -1272,9 +1292,11 @@ namespace GourmetProject.Game.Presentation.Battle
             Action<SettlementRevealSignal> onReveal,
             Action<SettlementScopeSignal> onScope,
             Action<string> onPassiveTriggered,
+            Action<PassiveSettlementPresentationBatch> onPassivePresentation,
             Action<SettlementBeatSignal> onBeat,
             SettlementBaselineSnapshot baselineSnapshot,
             SweetTransferPlaybackState sweetTransferPlayback,
+            PassiveSettlementPlaybackLedger passiveSettlementPlayback,
             int startIndex,
             int waveLength,
             bool preserveDishChapterFocus,
@@ -1512,13 +1534,23 @@ namespace GourmetProject.Game.Presentation.Battle
                     resultDurationOverride: announceDuration);
             }
 
+            IReadOnlyList<SettlementSweetTransferPresentationContext> arrivedHandoffContexts =
+                Array.Empty<SettlementSweetTransferPresentationContext>();
             if (handoffs.Count > 0)
             {
-                await _stage.PlaySweetTransferHandoffsAsync(
+                arrivedHandoffContexts = await _stage.PlaySweetTransferHandoffsAsync(
                     handoffs,
                     _sweetTransferParticlePrefab,
                     ScaleSettlementDuration(_sweetTransferTravelDuration),
                     cancellationToken);
+            }
+
+            IReadOnlyList<PassiveSettlementPresentationBatch> passiveBatches =
+                passiveSettlementPlayback?.ConsumeWave(arrivedHandoffContexts)
+                ?? Array.Empty<PassiveSettlementPresentationBatch>();
+            for (int i = 0; i < passiveBatches.Count; i++)
+            {
+                onPassivePresentation?.Invoke(passiveBatches[i]);
             }
 
             int waveTargetCount = Mathf.Max(1, targetIds.Count);

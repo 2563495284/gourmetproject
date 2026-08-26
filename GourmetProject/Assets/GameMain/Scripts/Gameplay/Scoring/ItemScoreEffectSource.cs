@@ -74,6 +74,8 @@ namespace GourmetProject.Gameplay.Scoring
                     ItemScoreEffectType.AllDishFlatPerEmptyCell => ScorePhase.BeforeAll,
                     ItemScoreEffectType.SameBaseDishMultFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.CountThresholdFinalMult => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.SweetTransferTargetPermanentFlat => ScorePhase.BeforeAll,
+                    ItemScoreEffectType.SweetTransferSourcePermanentFlat => ScorePhase.BeforeAll,
                     ItemScoreEffectType.PerDishPermanentFlat => ScorePhase.BeforeDish,
                     ItemScoreEffectType.PerDishFlatTimesOwnCountAs => ScorePhase.AfterAllDishes,
                     ItemScoreEffectType.PerDishMultFlatTimesOwnCountAs => ScorePhase.AfterAllDishes,
@@ -125,6 +127,11 @@ namespace GourmetProject.Gameplay.Scoring
 
             switch (_spec.Type)
             {
+                case ItemScoreEffectType.SweetTransferTargetPermanentFlat:
+                case ItemScoreEffectType.SweetTransferSourcePermanentFlat:
+                    ctx.RegisterSweetTransferPermanentFlat(_spec.Type, value);
+                    break;
+
                 case ItemScoreEffectType.AllDishFlat:
                     if (Math.Abs(value) > 0.0001f)
                     {

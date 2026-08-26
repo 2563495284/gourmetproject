@@ -14,7 +14,65 @@ namespace GourmetProject.Game.Meta.Passives
     public sealed class SweetTransferExtraTargetsModel : PassiveItemModel
     {
         public override int SweetTransferExtraTargetCount()
+            => TryBuildRollSpec(out _) ? 0 : FixedExtraTargetCount();
+
+        public override IEnumerable<SweetTransferExtraTargetRollSpec> SweetTransferExtraTargetRolls()
+        {
+            if (TryBuildRollSpec(out SweetTransferExtraTargetRollSpec spec))
+            {
+                yield return spec;
+            }
+        }
+
+        private int FixedExtraTargetCount()
             => Math.Max(0, (int)Math.Round(Value, MidpointRounding.AwayFromZero));
+
+        private bool TryBuildRollSpec(out SweetTransferExtraTargetRollSpec spec)
+        {
+            spec = default;
+            if (!TryParsePair(Param, "range:", out int firstCount, out int secondCount)
+                || !TryParsePair(Param, "weights:", out int firstWeight, out int secondWeight))
+            {
+                return false;
+            }
+
+            spec = new SweetTransferExtraTargetRollSpec(
+                firstCount,
+                secondCount,
+                firstWeight,
+                secondWeight);
+            return spec.IsValid;
+        }
+
+        private static bool TryParsePair(
+            string param,
+            string prefix,
+            out int first,
+            out int second)
+        {
+            first = 0;
+            second = 0;
+            if (string.IsNullOrWhiteSpace(param) || string.IsNullOrEmpty(prefix))
+            {
+                return false;
+            }
+
+            foreach (string rawPart in param.Split(';'))
+            {
+                string part = rawPart.Trim();
+                if (!part.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                string[] values = part.Substring(prefix.Length).Split(',');
+                return values.Length == 2
+                    && int.TryParse(values[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out first)
+                    && int.TryParse(values[1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out second);
+            }
+
+            return false;
+        }
     }
 
     [Preserve]
