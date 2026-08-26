@@ -871,7 +871,6 @@ namespace GourmetProject.Game.Presentation.Battle
             public BigDouble Base;
             public BigDouble Flat;
             public BigDouble Multiplier = BigDouble.One;
-            public BigDouble ExtraContribution;
             public bool HasBase;
         }
 
@@ -916,8 +915,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     if (state.HasBase)
                     {
-                        raw += DishScore.CeilContribution(state.Base + state.Flat, state.Multiplier)
-                            + state.ExtraContribution;
+                        raw += DishScore.CeilContribution(state.Base + state.Flat, state.Multiplier);
                     }
                 }
 
@@ -957,10 +955,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     state = EnsureDish(line.DishInstanceId);
                     state.Multiplier = line.After;
                     break;
-                case ScoreLineKind.ExtraSettlement:
-                    state = EnsureDish(line.DishInstanceId);
-                    state.ExtraContribution = line.After;
-                    break;
                 case ScoreLineKind.FinalFlat:
                     _finalFlat = line.After;
                     break;
@@ -979,8 +973,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return BigDouble.Zero;
             }
 
-            return DishScore.CeilContribution(state.Base + state.Flat, state.Multiplier)
-                + state.ExtraContribution;
+            return DishScore.CeilContribution(state.Base + state.Flat, state.Multiplier);
         }
 
         private DishState EnsureDish(int dishInstanceId)

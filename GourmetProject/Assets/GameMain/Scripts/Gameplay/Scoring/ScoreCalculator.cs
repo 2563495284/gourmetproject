@@ -68,8 +68,6 @@ namespace GourmetProject.Gameplay.Scoring
 
             foreach (DishInstance dish in snapshot.DishesInDefaultOrder)
             {
-                BigDouble flatBaseline = ctx.CurrentFlatOf(dish);
-                BigDouble multiplierBaseline = ctx.GetCurrentMultiplier(dish);
                 RunDishSettlement(ctx, entries, dish, recordBase: true);
 
                 if (snapshot.RandomIntegerSelector == null)
@@ -92,9 +90,8 @@ namespace GourmetProject.Gameplay.Scoring
                         continue;
                     }
 
-                    ctx.BeginExtraSettlement(dish, flatBaseline, multiplierBaseline);
-                    RunDishSettlement(ctx, entries, dish, recordBase: false);
-                    ctx.CompleteExtraSettlement(dish, salty);
+                    ctx.RecordExtraSettlementTrigger(dish, salty);
+                    RunNativeDishSkills(ctx, entries, dish);
                 }
             }
 
@@ -170,6 +167,26 @@ namespace GourmetProject.Gameplay.Scoring
             foreach (ScoreEffectEntry entry in entries)
             {
                 if (entry.Phase == phase && (entry.Dish == null || entry.Dish.Id == dish.Id))
+                {
+                    ctx.Apply(entry);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 咸味“额外结算”只重触发本菜原生 OnSettle 技能。基础分、风味、外来技能和逐菜外部效果
+        /// 都不会重复；技能产生的数值与副作用直接保留在当前结算上下文中。
+        /// </summary>
+        private static void RunNativeDishSkills(
+            ScoreContext ctx,
+            IEnumerable<ScoreEffectEntry> entries,
+            DishInstance dish)
+        {
+            foreach (ScoreEffectEntry entry in entries)
+            {
+                if (entry.Phase == ScorePhase.DishSkills
+                    && entry.Dish?.Id == dish.Id
+                    && entry.SkillKind == SkillExecutionKind.NativeSkill)
                 {
                     ctx.Apply(entry);
                 }

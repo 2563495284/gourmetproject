@@ -9,6 +9,8 @@ namespace GourmetProject.Game.UI.Tooltips
     /// <summary>食物 Tips 内复用的小卡片：标题 + 描述。</summary>
     public sealed class FoodTipCardView : MonoBehaviour
     {
+        private const float SingleLineWidthGuard = 2f;
+
         [SerializeField] private TMP_Text _titleText;
         [SerializeField] private TMP_Text _descText;
         [SerializeField] private Outline _outline;
@@ -32,7 +34,7 @@ namespace GourmetProject.Game.UI.Tooltips
             float titleWidth = _titleText != null && !string.IsNullOrEmpty(title)
                 ? _titleText.GetPreferredValues(title).x
                 : 0f;
-            return rootPadding + Mathf.Max(
+            return SingleLineWidthGuard + rootPadding + Mathf.Max(
                 titleWidth,
                 PreferredDescWidthFor(desc) + descPadding);
         }

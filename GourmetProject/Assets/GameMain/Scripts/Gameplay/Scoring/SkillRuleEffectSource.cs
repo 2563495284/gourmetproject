@@ -32,6 +32,11 @@ namespace GourmetProject.Gameplay.Scoring
                     }
 
                     string sourceLabel = dish.GetSkillSource(skillId);
+                    SkillExecutionKind skillKind = KindForDishSkill(dish, skillId, sourceLabel);
+                    if (skillKind == SkillExecutionKind.NativeSkill)
+                    {
+                        sourceLabel = null;
+                    }
                     ScoreSource source = string.IsNullOrEmpty(sourceLabel)
                         ? ScoreSource.DishSkill(skill, dish)
                         : ScoreSource.TransferredDishSkill(skill, dish, sourceLabel);
@@ -60,10 +65,11 @@ namespace GourmetProject.Gameplay.Scoring
                                     dish,
                                     skill,
                                     rule,
-                                    TraceKindForSourceLabel(sourceLabel),
+                                    skillKind,
                                     sourceLabel,
                                     SkillScopeVisualMode.ResolvedTargets)
-                                : null));
+                                : null,
+                            skillKind));
                     }
                 }
 
@@ -110,7 +116,8 @@ namespace GourmetProject.Gameplay.Scoring
                                     rule,
                                     SkillExecutionKind.SweetTransfer,
                                     transferred.SourceLabel,
-                                    SkillScopeVisualMode.ResolvedTargets)));
+                                    SkillScopeVisualMode.ResolvedTargets),
+                        SkillExecutionKind.SweetTransfer));
                 }
             }
         }
@@ -125,6 +132,20 @@ namespace GourmetProject.Gameplay.Scoring
             return sourceLabel.IndexOf("技能复制", StringComparison.OrdinalIgnoreCase) >= 0
                 ? SkillExecutionKind.CopiedSkill
                 : SkillExecutionKind.SweetTransfer;
+        }
+
+        internal static SkillExecutionKind KindForDishSkill(
+            DishInstance dish,
+            string skillId,
+            string sourceLabel)
+        {
+            if (dish?.Def?.SkillIds != null
+                && dish.Def.SkillIds.Any(id => string.Equals(id, skillId, StringComparison.Ordinal)))
+            {
+                return SkillExecutionKind.NativeSkill;
+            }
+
+            return TraceKindForSourceLabel(sourceLabel);
         }
 
         private static DishInstance FindDish(GpTable board, int instanceId)
@@ -431,12 +452,8 @@ namespace GourmetProject.Gameplay.Scoring
 
             IReadOnlyList<SweetTransferBuffRegistration> buffs = ctx.SweetTransferBuffsFor(_self);
             int itemExtraTargetCount = Math.Max(0, ctx.Snapshot.SweetTransferExtraTargetCount);
-            int fixedBuffExtraTargetCount = FixedExtraTargetCount(buffs);
-            int chanceRollCount = _rule.ActionCount <= 0
-                ? 0
-                : _rule.ActionCount + itemExtraTargetCount + fixedBuffExtraTargetCount;
             IReadOnlyDictionary<SweetTransferBuffRegistration, int> resolvedBuffExtraTargets =
-                ResolveBuffExtraTargetCounts(ctx, buffs, chanceRollCount);
+                ResolveBuffExtraTargetCounts(ctx, buffs);
             int extraTargetCount = itemExtraTargetCount + resolvedBuffExtraTargets.Values.Sum();
             IReadOnlyList<DishInstance> targets = SelectTransferTargets(ctx, candidates, extraTargetCount);
             if (targets.Count == 0)
@@ -521,6 +538,14 @@ namespace GourmetProject.Gameplay.Scoring
                         && transferRule.ActionType == SkillActionType.TransferSkills)
                     {
                         string sourceLabel = source.GetSkillSource(skillId);
+                        SkillExecutionKind skillKind = SkillRuleEffectSource.KindForDishSkill(
+                            source,
+                            skillId,
+                            sourceLabel);
+                        if (skillKind == SkillExecutionKind.NativeSkill)
+                        {
+                            sourceLabel = null;
+                        }
                         ScoreSource scoreSource = string.IsNullOrEmpty(sourceLabel)
                             ? ScoreSource.DishSkill(skill, source)
                             : ScoreSource.TransferredDishSkill(skill, source, sourceLabel);
@@ -543,10 +568,11 @@ namespace GourmetProject.Gameplay.Scoring
                                     source,
                                     skill,
                                     transferRule,
-                                    SkillRuleEffectSource.TraceKindForSourceLabel(sourceLabel),
+                                    skillKind,
                                     sourceLabel,
                                     SkillScopeVisualMode.CandidateScope)
-                                : null);
+                                : null,
+                            skillKind);
                         ctx.ResolveTransferredEffect(entry);
                     }
                 }
@@ -622,39 +648,9 @@ namespace GourmetProject.Gameplay.Scoring
             return result;
         }
 
-        private static int FixedExtraTargetCount(IReadOnlyList<SweetTransferBuffRegistration> buffs)
-        {
-            int extra = 0;
-            if (buffs == null)
-            {
-                return extra;
-            }
-
-            foreach (SweetTransferBuffRegistration buff in buffs)
-            {
-                SkillRuleDef rule = buff?.Rule;
-                if (rule == null
-                    || rule.ActionType != SkillActionType.TriggerSweetTransfer
-                    || !HasActionParam(rule, "modifier:add-targets")
-                    || HasActionParam(rule, "chance:"))
-                {
-                    continue;
-                }
-
-                extra += Math.Max(
-                    0,
-                    (int)Math.Round(
-                        rule.ActionValue * buff.ConditionCount,
-                        MidpointRounding.AwayFromZero));
-            }
-
-            return extra;
-        }
-
         private static IReadOnlyDictionary<SweetTransferBuffRegistration, int> ResolveBuffExtraTargetCounts(
             ScoreContext ctx,
-            IReadOnlyList<SweetTransferBuffRegistration> buffs,
-            int chanceRollCount)
+            IReadOnlyList<SweetTransferBuffRegistration> buffs)
         {
             var resolved = new Dictionary<SweetTransferBuffRegistration, int>();
             if (buffs == null)
@@ -683,25 +679,21 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
+                // 每条概率修饰器在一次甜蜜传递中只判定一次，与基础及固定额外目标数无关。
                 TryParseChance(rule, out float chance);
-                int successExtra = 0;
                 if (amountPerSuccess > 0
-                    && chanceRollCount > 0
                     && ctx.Snapshot.RandomIntegerSelector != null)
                 {
                     int threshold = Math.Max(
                         0,
                         Math.Min(10000, (int)Math.Round(chance * 10000f)));
-                    for (int i = 0; i < chanceRollCount; i++)
-                    {
-                        if (ctx.Snapshot.RandomIntegerSelector(0, 9999) < threshold)
-                        {
-                            successExtra += amountPerSuccess;
-                        }
-                    }
+                    resolved[buff] = ctx.Snapshot.RandomIntegerSelector(0, 9999) < threshold
+                        ? amountPerSuccess
+                        : 0;
+                    continue;
                 }
 
-                resolved[buff] = successExtra;
+                resolved[buff] = 0;
             }
 
             return resolved;
@@ -855,7 +847,8 @@ namespace GourmetProject.Gameplay.Scoring
                 null,
                 buff.Rule.Order,
                 boardOrder,
-                trace);
+                trace,
+                SkillExecutionKind.SweetTransfer);
             ctx.ResolveTransferredEffect(entry);
         }
 
@@ -954,7 +947,8 @@ namespace GourmetProject.Gameplay.Scoring
                     null,
                     rule.Order,
                     boardOrder,
-                    trace);
+                    trace,
+                    SkillExecutionKind.SweetTransfer);
                 ctx.ResolveTransferredEffect(entry);
             }
         }

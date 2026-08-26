@@ -22,7 +22,7 @@ namespace GourmetProject.Gameplay.Scoring
         SweetTransferFailed = 15,
         /// <summary>当次计入加法区、结算后写回食物实例的永久分数。</summary>
         DishPermanentFlat = 16,
-        /// <summary>咸味触发的一次独立额外结算贡献。</summary>
+        /// <summary>咸味成功触发一次原生技能重放；Value=1，Before/After 为累计触发次数。</summary>
         ExtraSettlement = 17,
         /// <summary>主动技能在本次结算中修改食物有效份数。</summary>
         CountAs = 18,

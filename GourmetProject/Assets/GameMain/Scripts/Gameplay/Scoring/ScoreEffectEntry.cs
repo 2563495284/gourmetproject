@@ -16,7 +16,8 @@ namespace GourmetProject.Gameplay.Scoring
             GridPos? cell = null,
             int priority = 0,
             int boardOrder = 0,
-            SkillExecutionTrace trace = null)
+            SkillExecutionTrace trace = null,
+            SkillExecutionKind? skillKind = null)
         {
             Phase = phase;
             Source = source ?? throw new ArgumentNullException(nameof(source));
@@ -27,6 +28,7 @@ namespace GourmetProject.Gameplay.Scoring
             Priority = priority;
             BoardOrder = boardOrder;
             Trace = trace;
+            SkillKind = skillKind;
         }
 
         public ScorePhase Phase { get; }
@@ -47,6 +49,12 @@ namespace GourmetProject.Gameplay.Scoring
         public int BoardOrder { get; }
 
         public SkillExecutionTrace Trace { get; }
+
+        /// <summary>
+        /// 技能效果的稳定来源分类；非技能效果为空。该字段不依赖诊断 Trace，
+        /// 因此关闭结算明细时仍可区分原生、复制与甜蜜传递技能。
+        /// </summary>
+        public SkillExecutionKind? SkillKind { get; }
 
         public int Sequence { get; internal set; }
     }
