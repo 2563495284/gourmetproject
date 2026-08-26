@@ -7,16 +7,12 @@ namespace GourmetProject.Game.Presentation.Battle
     internal readonly struct ResultLabelLayoutOccurrence
     {
         public ResultLabelLayoutOccurrence(
-            SettlementEffectGroup group,
             DishPieceView target,
             int targetKey)
         {
-            Group = group;
             Target = target;
             TargetKey = targetKey;
         }
-
-        public SettlementEffectGroup Group { get; }
 
         public DishPieceView Target { get; }
 
@@ -27,42 +23,36 @@ namespace GourmetProject.Game.Presentation.Battle
     {
         public ResultLabelLayoutRequest(
             int targetKey,
-            Vector3 baseAnchor,
-            Vector3 targetPosition,
-            Vector3 sourcePosition,
-            bool hasSource)
+            Vector3 baseAnchor)
         {
             TargetKey = targetKey;
             BaseAnchor = baseAnchor;
-            TargetPosition = targetPosition;
-            SourcePosition = sourcePosition;
-            HasSource = hasSource;
         }
 
         public int TargetKey { get; }
 
         public Vector3 BaseAnchor { get; }
-
-        public Vector3 TargetPosition { get; }
-
-        public Vector3 SourcePosition { get; }
-
-        public bool HasSource { get; }
     }
 
     internal readonly struct ResultLabelLayoutPlacement
     {
-        public ResultLabelLayoutPlacement(Vector3 position, float verticalDirection)
+        public ResultLabelLayoutPlacement(
+            Vector3 position,
+            float verticalDirection,
+            int stackIndex)
         {
             Position = position;
             VerticalDirection = Mathf.Approximately(verticalDirection, 0f)
                 ? 0f
                 : verticalDirection < 0f ? -1f : 1f;
+            StackIndex = Mathf.Max(0, stackIndex);
         }
 
         public Vector3 Position { get; }
 
         public float VerticalDirection { get; }
+
+        public int StackIndex { get; }
     }
 
     internal sealed class ResultLabelLayoutPlan
@@ -88,9 +78,6 @@ namespace GourmetProject.Game.Presentation.Battle
         internal const float FirstVerticalOffsetRatio = 0.45f;
         internal const float VerticalPitchRatio = 0.80f;
 
-        private const float DirectionDeadZone = 0.02f;
-        private const float ViewportCenterBand = 0.05f;
-
         public static ResultLabelLayoutPlan ResolveBatch(
             Camera camera,
             IReadOnlyList<ResultLabelLayoutRequest> requests,
@@ -112,7 +99,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 ? camera.transform.up.normalized
                 : Vector3.up;
             var placements = new ResultLabelLayoutPlacement[requests.Count];
-            var laneCounts = new Dictionary<LaneKey, int>();
             var targetGroups = new Dictionary<int, List<int>>();
             var targetOccurrenceCounts = new Dictionary<int, int>();
 
@@ -129,34 +115,27 @@ namespace GourmetProject.Game.Presentation.Battle
                     // 每个目标的第一条完全锁定原演出锚点，不参与位置漂移。
                     placements[i] = new ResultLabelLayoutPlacement(
                         request.BaseAnchor,
-                        0f);
+                        0f,
+                        0);
                     continue;
                 }
 
-                ResolveDirections(
-                    camera,
-                    request,
-                    i,
-                    out float horizontalDirection,
-                    out float verticalDirection);
-
-                var laneKey = new LaneKey(request.TargetKey, verticalDirection);
-                laneCounts.TryGetValue(laneKey, out int laneIndex);
-                laneCounts[laneKey] = laneIndex + 1;
+                int offsetIndex = targetOccurrenceIndex - 1;
 
                 float horizontalOffset = Mathf.Min(
                     MaximumHorizontalOffsetRatio * width,
                     (FirstHorizontalOffsetRatio
-                        + HorizontalStaggerRatio * laneIndex) * width);
+                        + HorizontalStaggerRatio * offsetIndex) * width);
                 float verticalOffset = (
                     FirstVerticalOffsetRatio
-                    + VerticalPitchRatio * laneIndex) * height;
+                    + VerticalPitchRatio * offsetIndex) * height;
                 Vector3 rawPosition = request.BaseAnchor
-                    + horizontalAxis * (horizontalDirection * horizontalOffset)
-                    + verticalAxis * (verticalDirection * verticalOffset);
+                    + horizontalAxis * horizontalOffset
+                    - verticalAxis * verticalOffset;
                 placements[i] = new ResultLabelLayoutPlacement(
                     rawPosition,
-                    verticalDirection);
+                    -1f,
+                    targetOccurrenceIndex);
 
                 if (!targetGroups.TryGetValue(
                         request.TargetKey,
@@ -186,123 +165,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             return new ResultLabelLayoutPlan(placements);
-        }
-
-        private static void ResolveDirections(
-            Camera camera,
-            ResultLabelLayoutRequest request,
-            int detailIndex,
-            out float horizontalDirection,
-            out float verticalDirection)
-        {
-            bool hasTargetViewport = TryGetViewportPoint(
-                camera,
-                request.TargetPosition,
-                out Vector3 targetViewport);
-            Vector3 sourceViewport = default;
-            bool hasSourceViewport = request.HasSource
-                && TryGetViewportPoint(
-                    camera,
-                    request.SourcePosition,
-                    out sourceViewport);
-
-            float relativeX;
-            float relativeY;
-            float deadZone;
-            if (hasTargetViewport && hasSourceViewport)
-            {
-                relativeX = sourceViewport.x - targetViewport.x;
-                relativeY = sourceViewport.y - targetViewport.y;
-                deadZone = DirectionDeadZone;
-            }
-            else if (request.HasSource)
-            {
-                Vector3 relativeWorld = request.SourcePosition
-                    - request.TargetPosition;
-                relativeX = relativeWorld.x;
-                relativeY = relativeWorld.y;
-                deadZone = 0.0001f;
-            }
-            else
-            {
-                relativeX = 0f;
-                relativeY = 0f;
-                deadZone = DirectionDeadZone;
-            }
-
-            if (Mathf.Abs(relativeX) > deadZone)
-            {
-                horizontalDirection = -Mathf.Sign(relativeX);
-            }
-            else
-            {
-                horizontalDirection = ResolveFallbackHorizontalDirection(
-                    hasTargetViewport,
-                    targetViewport.x,
-                    request.TargetPosition.x,
-                    request.TargetKey,
-                    detailIndex);
-            }
-
-            if (Mathf.Abs(relativeY) > deadZone)
-            {
-                verticalDirection = -Mathf.Sign(relativeY);
-                return;
-            }
-
-            float targetVerticalPosition = hasTargetViewport
-                ? targetViewport.y - 0.5f
-                : request.TargetPosition.y;
-            if (targetVerticalPosition > ViewportCenterBand)
-            {
-                verticalDirection = -1f;
-                return;
-            }
-
-            if (targetVerticalPosition < -ViewportCenterBand)
-            {
-                verticalDirection = 1f;
-                return;
-            }
-
-            if (Mathf.Abs(relativeX) > deadZone)
-            {
-                // 来源在左边时标签放上方，来源在右边时放下方。
-                verticalDirection = relativeX < 0f ? 1f : -1f;
-                return;
-            }
-
-            verticalDirection = StableAlternatingDirection(
-                request.TargetKey,
-                detailIndex);
-        }
-
-        private static float ResolveFallbackHorizontalDirection(
-            bool hasTargetViewport,
-            float targetViewportX,
-            float targetWorldX,
-            int targetKey,
-            int detailIndex)
-        {
-            float centeredX = hasTargetViewport
-                ? targetViewportX - 0.5f
-                : targetWorldX;
-            if (centeredX > ViewportCenterBand)
-            {
-                return -1f;
-            }
-
-            if (centeredX < -ViewportCenterBand)
-            {
-                return 1f;
-            }
-
-            return StableAlternatingDirection(targetKey, detailIndex);
-        }
-
-        private static float StableAlternatingDirection(int targetKey, int detailIndex)
-        {
-            return ((targetKey ^ detailIndex) & 1) == 0 ? 1f : -1f;
         }
 
         private static bool TryGetViewportPoint(
@@ -403,7 +265,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     viewport.z));
                 placements[placementIndex] = new ResultLabelLayoutPlacement(
                     resolved,
-                    placement.VerticalDirection);
+                    placement.VerticalDirection,
+                    placement.StackIndex);
             }
         }
 
@@ -523,36 +386,5 @@ namespace GourmetProject.Game.Presentation.Battle
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
-        private readonly struct LaneKey : IEquatable<LaneKey>
-        {
-            public LaneKey(int targetKey, float verticalDirection)
-            {
-                TargetKey = targetKey;
-                VerticalDirection = verticalDirection < 0f ? -1 : 1;
-            }
-
-            private int TargetKey { get; }
-
-            private int VerticalDirection { get; }
-
-            public bool Equals(LaneKey other)
-            {
-                return TargetKey == other.TargetKey
-                    && VerticalDirection == other.VerticalDirection;
-            }
-
-            public override bool Equals(object obj)
-            {
-                return obj is LaneKey other && Equals(other);
-            }
-
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    return (TargetKey * 397) ^ VerticalDirection;
-                }
-            }
-        }
     }
 }

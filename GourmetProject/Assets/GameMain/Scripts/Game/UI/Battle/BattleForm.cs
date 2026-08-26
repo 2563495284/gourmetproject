@@ -3355,6 +3355,7 @@ namespace GourmetProject.Game.UI.Battle
             _shopItemFlyInFlight = Mathf.Max(0, _shopItemFlyInFlight - 1);
             if (_shopItemFlyInFlight <= 0)
             {
+                RefreshItems();
                 CompleteTutorialAcquiredItemPresentation();
             }
         }
