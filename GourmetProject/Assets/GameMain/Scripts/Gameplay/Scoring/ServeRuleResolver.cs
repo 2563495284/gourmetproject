@@ -45,7 +45,9 @@ namespace GourmetProject.Gameplay.Scoring
             IScoreHistory history,
             DishInstance served,
             int currentHappyCakeLayers,
-            int itemExtraTargetCount = 0)
+            int itemExtraTargetCount = 0,
+            IReadOnlyList<SweetTransferExtraTargetRollSpec> itemExtraTargetRolls = null,
+            System.Func<int, int, int> randomIntegerSelector = null)
         {
             if (served == null)
             {
@@ -92,6 +94,8 @@ namespace GourmetProject.Gameplay.Scoring
                         count,
                         running,
                         itemExtraTargetCount,
+                        itemExtraTargetRolls,
+                        randomIntegerSelector,
                         ref gold,
                         ref layerDelta,
                         ref copyRequests,
@@ -106,6 +110,8 @@ namespace GourmetProject.Gameplay.Scoring
             GpTable board, GameplayDatabase db, IScoreHistory history, SkillRuleDef rule, DishInstance self,
             string sourceName, int count,
             int runningLayers, int itemExtraTargetCount,
+            IReadOnlyList<SweetTransferExtraTargetRollSpec> itemExtraTargetRolls,
+            System.Func<int, int, int> randomIntegerSelector,
             ref float gold, ref int layerDelta, ref List<CopySkillRequest> copyRequests,
             ref List<SkillTransferRequest> transferRequests)
         {
@@ -183,7 +189,10 @@ namespace GourmetProject.Gameplay.Scoring
                                     history,
                                     self,
                                     runningLayers,
-                                    rule.Trigger) + System.Math.Max(0, itemExtraTargetCount));
+                                    rule.Trigger) + ResolveItemExtraTargetCount(
+                                        itemExtraTargetCount,
+                                        itemExtraTargetRolls,
+                                        randomIntegerSelector));
                             transferRequests ??= new List<SkillTransferRequest>();
                             transferRequests.Add(new SkillTransferRequest(
                                 self.Id,
@@ -209,6 +218,8 @@ namespace GourmetProject.Gameplay.Scoring
                             sourceName,
                             runningLayers,
                             itemExtraTargetCount,
+                            itemExtraTargetRolls,
+                            randomIntegerSelector,
                             ref transferRequests);
                     }
 
@@ -246,6 +257,8 @@ namespace GourmetProject.Gameplay.Scoring
             string sourceName,
             int runningLayers,
             int itemExtraTargetCount,
+            IReadOnlyList<SweetTransferExtraTargetRollSpec> itemExtraTargetRolls,
+            System.Func<int, int, int> randomIntegerSelector,
             ref List<SkillTransferRequest> transferRequests)
         {
             foreach (string skillId in source.SkillIds)
@@ -304,7 +317,10 @@ namespace GourmetProject.Gameplay.Scoring
                             history,
                             source,
                             runningLayers,
-                            transferRule.Trigger) + System.Math.Max(0, itemExtraTargetCount));
+                            transferRule.Trigger) + ResolveItemExtraTargetCount(
+                                itemExtraTargetCount,
+                                itemExtraTargetRolls,
+                                randomIntegerSelector));
                     transferRequests ??= new List<SkillTransferRequest>();
                     transferRequests.Add(new SkillTransferRequest(
                         source.Id,
@@ -544,6 +560,25 @@ namespace GourmetProject.Gameplay.Scoring
 
         private static int EffectiveTransferTargetCount(int configured, int extra)
             => configured <= 0 ? 0 : configured + System.Math.Max(0, extra);
+
+        private static int ResolveItemExtraTargetCount(
+            int fixedExtraTargetCount,
+            IReadOnlyList<SweetTransferExtraTargetRollSpec> rolls,
+            System.Func<int, int, int> randomIntegerSelector)
+        {
+            int result = System.Math.Max(0, fixedExtraTargetCount);
+            if (rolls == null)
+            {
+                return result;
+            }
+
+            foreach (SweetTransferExtraTargetRollSpec spec in rolls)
+            {
+                result += spec.Resolve(randomIntegerSelector);
+            }
+
+            return result;
+        }
 
         private static IEnumerable<SkillRuleDef> RulesOf(GameplayDatabase db, DishInstance dish)
         {

@@ -451,9 +451,9 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             IReadOnlyList<SweetTransferBuffRegistration> buffs = ctx.SweetTransferBuffsFor(_self);
-            int itemExtraTargetCount = Math.Max(0, ctx.Snapshot.SweetTransferExtraTargetCount);
             IReadOnlyDictionary<SweetTransferBuffRegistration, int> resolvedBuffExtraTargets =
                 ResolveBuffExtraTargetCounts(ctx, buffs);
+            int itemExtraTargetCount = ResolveItemExtraTargetCount(ctx);
             int extraTargetCount = itemExtraTargetCount + resolvedBuffExtraTargets.Values.Sum();
             IReadOnlyList<DishInstance> targets = SelectTransferTargets(ctx, candidates, extraTargetCount);
             if (targets.Count == 0)
@@ -484,6 +484,21 @@ namespace GourmetProject.Gameplay.Scoring
                     _rule.SkillId,
                     effects.Count);
             }
+
+            // 等整波交接和接收方外来技能都执行完后，再揭示永久分装饰品结果。
+            // 这样同一轮多目标传递仍保持一个完整动画波次，后续规则又能立即读到成长后的分数。
+            ctx.ApplySweetTransferPermanentFlats(_self, targets);
+        }
+
+        private static int ResolveItemExtraTargetCount(ScoreContext ctx)
+        {
+            int result = Math.Max(0, ctx.Snapshot.SweetTransferExtraTargetCount);
+            foreach (SweetTransferExtraTargetRollSpec spec in ctx.Snapshot.SweetTransferExtraTargetRolls)
+            {
+                result += spec.Resolve(ctx.Snapshot.RandomIntegerSelector);
+            }
+
+            return result;
         }
 
         private void ApplyItemSweetTransferMultiplierBonuses(

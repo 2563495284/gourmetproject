@@ -675,6 +675,18 @@ namespace GourmetProject.Gameplay.Battle
         /// <summary>装饰品为每次甜蜜传递追加的目标数量。</summary>
         public int SweetTransferExtraTargetCount { get; set; }
 
+        /// <summary>装饰品为每次甜蜜传递独立判定的额外目标加权随机规格。</summary>
+        public IReadOnlyList<SweetTransferExtraTargetRollSpec> SweetTransferExtraTargetRolls { get; private set; }
+            = Array.Empty<SweetTransferExtraTargetRollSpec>();
+
+        public void ConfigureSweetTransferExtraTargetRolls(
+            IEnumerable<SweetTransferExtraTargetRollSpec> rolls)
+        {
+            SweetTransferExtraTargetRolls = (rolls ?? Array.Empty<SweetTransferExtraTargetRollSpec>())
+                .Where(spec => spec.IsValid)
+                .ToArray();
+        }
+
         /// <summary>每次传递给目标永久分数累加的数值。</summary>
         public float SweetTransferTargetFlat { get; set; }
 
@@ -1429,7 +1441,9 @@ namespace GourmetProject.Gameplay.Battle
                         BuildHistory(),
                         instance,
                         HappyCakeLayers,
-                        SweetTransferExtraTargetCount);
+                        SweetTransferExtraTargetCount,
+                        SweetTransferExtraTargetRolls,
+                        SelectRandomInteger);
                 PendingGold += serveResult.Gold;
                 SetHappyCakeLayers(HappyCakeLayers + serveResult.HappyCakeLayerDelta + AccelFor(serveResult.HappyCakeLayerDelta));
                 ApplyTransferRequests(serveResult.TransferRequests);
@@ -1582,7 +1596,7 @@ namespace GourmetProject.Gameplay.Battle
             Func<int, int, int> randomIntegerSelector,
             bool captureDiagnostics = true)
         {
-            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: copySkillSelector, transferTargetSelector: transferTargetSelector, randomIntegerSelector: randomIntegerSelector, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount, sweetTransferTargetMultiplierFlat: SweetTransferTargetMultiplier, sweetTransferSourceMultiplierFlat: SweetTransferSourceMultiplier, captureDiagnostics: captureDiagnostics);
+            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: copySkillSelector, transferTargetSelector: transferTargetSelector, randomIntegerSelector: randomIntegerSelector, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount, sweetTransferTargetMultiplierFlat: SweetTransferTargetMultiplier, sweetTransferSourceMultiplierFlat: SweetTransferSourceMultiplier, captureDiagnostics: captureDiagnostics, sweetTransferExtraTargetRolls: SweetTransferExtraTargetRolls);
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
@@ -1592,7 +1606,7 @@ namespace GourmetProject.Gameplay.Battle
             _passiveSettlementPresentationOccurrences.Clear();
             ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
                 ? ZeroScoreResult()
-                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets, randomIntegerSelector: SelectRandomInteger, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount, sweetTransferTargetMultiplierFlat: SweetTransferTargetMultiplier, sweetTransferSourceMultiplierFlat: SweetTransferSourceMultiplier);
+                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets, randomIntegerSelector: SelectRandomInteger, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount, sweetTransferTargetMultiplierFlat: SweetTransferTargetMultiplier, sweetTransferSourceMultiplierFlat: SweetTransferSourceMultiplier, sweetTransferExtraTargetRolls: SweetTransferExtraTargetRolls);
             _capturesPassiveSettlementPresentation = true;
             try
             {
@@ -2186,12 +2200,16 @@ namespace GourmetProject.Gameplay.Battle
             DishInstance target,
             bool applyRuntimeMultiplierBonuses)
         {
-            if (applyRuntimeMultiplierBonuses)
+            if (!applyRuntimeMultiplierBonuses)
             {
-                AddServeMultiplierFlat(target, SweetTransferTargetMultiplier);
-                AddServeMultiplierFlat(source, SweetTransferSourceMultiplier);
+                // OnSettle 的倍率和永久分已经在纯计算上下文中即时计入；
+                // 正式落地这里只追加技能并广播事件，永久分随后由 PermanentFlatDeltas 统一写回。
+                return;
             }
 
+            // OnServe 不经过 ScoreContext，继续在传递成功时直接应用运行时成长。
+            AddServeMultiplierFlat(target, SweetTransferTargetMultiplier);
+            AddServeMultiplierFlat(source, SweetTransferSourceMultiplier);
             ApplySweetTransferPermanentFlatGrowth(target, SweetTransferTargetFlat);
             ApplySweetTransferPermanentFlatGrowth(source, SweetTransferSourceFlat);
         }

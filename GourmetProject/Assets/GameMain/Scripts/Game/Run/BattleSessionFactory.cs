@@ -104,6 +104,7 @@ namespace GourmetProject.Game.Run
             session.SweetTransferTargetFlat = itemRuntime.SweetTransferTargetFlat();
             session.SweetTransferSourceFlat = itemRuntime.SweetTransferSourceFlat();
             session.SweetTransferExtraTargetCount = itemRuntime.SweetTransferExtraTargetCount();
+            session.ConfigureSweetTransferExtraTargetRolls(itemRuntime.SweetTransferExtraTargetRolls());
 
             bossDebuffModel?.ApplyToBattle(session);
 
@@ -174,6 +175,7 @@ namespace GourmetProject.Game.Run
             session.SweetTransferTargetFlat = itemRuntime.SweetTransferTargetFlat();
             session.SweetTransferSourceFlat = itemRuntime.SweetTransferSourceFlat();
             session.SweetTransferExtraTargetCount = itemRuntime.SweetTransferExtraTargetCount();
+            session.ConfigureSweetTransferExtraTargetRolls(itemRuntime.SweetTransferExtraTargetRolls());
             session.ConfigureFoodDiscardLimit(itemRuntime.FoodDiscardCapacity());
             session.SeedHappyCakeLayers(System.Math.Max(0, initialHappyCakeLayers + itemRuntime.CakeInitialLayers()));
 

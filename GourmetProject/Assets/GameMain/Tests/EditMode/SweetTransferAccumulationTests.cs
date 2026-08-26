@@ -572,6 +572,186 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(result.SkillTransfers, Has.Count.EqualTo(6));
         }
 
+        [TestCase(0, 1)]
+        [TestCase(6999, 1)]
+        [TestCase(7000, 2)]
+        [TestCase(9999, 2)]
+        public void WeightedItemExtraTargets_UsesSeventyThirtyThreshold(
+            int roll,
+            int expectedExtraTargetCount)
+        {
+            ChanceModifierFixture fixture = CreateChanceModifierFixture(
+                baseTargetCount: 1,
+                chanceModifierCount: 0,
+                fixedExtraTargetCount: 0,
+                plainTargetCount: 4);
+            int randomCallCount = 0;
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                fixture.Board,
+                fixture.Database,
+                transferTargetSelector: (candidates, count) => candidates.Take(count).ToArray(),
+                randomIntegerSelector: (min, max) =>
+                {
+                    Assert.That(min, Is.EqualTo(0));
+                    Assert.That(max, Is.EqualTo(9999));
+                    randomCallCount++;
+                    return roll;
+                },
+                sweetTransferExtraTargetRolls: TowerExtraTargetRolls());
+
+            Assert.That(randomCallCount, Is.EqualTo(1));
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(1 + expectedExtraTargetCount));
+        }
+
+        [Test]
+        public void WeightedItemExtraTargets_PurePreviewUsesMostLikelyChoiceAndStacksWithFixedTargets()
+        {
+            ChanceModifierFixture fixture = CreateChanceModifierFixture(
+                baseTargetCount: 1,
+                chanceModifierCount: 0,
+                fixedExtraTargetCount: 0,
+                plainTargetCount: 5);
+
+            ScoreResult preview = new ScoreCalculator().Calculate(
+                fixture.Board,
+                fixture.Database,
+                transferTargetSelector: (candidates, count) => candidates.Take(count).ToArray(),
+                sweetTransferExtraTargetCount: 2,
+                sweetTransferExtraTargetRolls: TowerExtraTargetRolls());
+
+            Assert.That(preview.SkillTransfers, Has.Count.EqualTo(4));
+        }
+
+        [Test]
+        public void WeightedItemExtraTargets_TriggeredAndNativeTransfersRollIndependently()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef triggerSkill = CreateTriggerTransferSkill("trigger_skill");
+            SkillDef sourceSkill = CreateTransferSkill("source_skill", 10f);
+            DishDef triggerDef = CreateDish("trigger", "代触发者", shape, new[] { triggerSkill.Id });
+            DishDef sourceDef = CreateDish("source", "来源", shape, new[] { sourceSkill.Id });
+            DishDef targetADef = CreateDish("target_a", "目标A", shape, Array.Empty<string>());
+            DishDef targetBDef = CreateDish("target_b", "目标B", shape, Array.Empty<string>());
+            DishDef targetCDef = CreateDish("target_c", "目标C", shape, Array.Empty<string>());
+            var database = new GameplayDatabase(
+                new[] { triggerDef, sourceDef, targetADef, targetBDef, targetCDef },
+                new[] { triggerSkill, sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(5, 1);
+            board.Place(CreateInstance(1, triggerDef, shape, 0));
+            board.Place(CreateInstance(2, sourceDef, shape, 1));
+            board.Place(CreateInstance(3, targetADef, shape, 2));
+            board.Place(CreateInstance(4, targetBDef, shape, 3));
+            board.Place(CreateInstance(5, targetCDef, shape, 4));
+            int randomCallCount = 0;
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                board,
+                database,
+                transferTargetSelector: (candidates, count) => candidates.Take(count).ToArray(),
+                randomIntegerSelector: (min, max) => randomCallCount++ == 0 ? 0 : 7000,
+                sweetTransferExtraTargetRolls: TowerExtraTargetRolls());
+
+            Assert.That(randomCallCount, Is.EqualTo(2));
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(5));
+        }
+
+        [Test]
+        public void WeightedItemExtraTargets_OnServeUsesTheSameThreshold()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef sourceSkill = CreateTransferSkill(
+                "source_skill",
+                value: 10f,
+                targetCount: 1,
+                trigger: SkillTrigger.OnServe);
+            DishDef sourceDef = CreateDish("source", "来源", shape, new[] { sourceSkill.Id });
+            DishDef targetADef = CreateDish("target_a", "目标A", shape, Array.Empty<string>());
+            DishDef targetBDef = CreateDish("target_b", "目标B", shape, Array.Empty<string>());
+            DishDef targetCDef = CreateDish("target_c", "目标C", shape, Array.Empty<string>());
+            var database = new GameplayDatabase(
+                new[] { sourceDef, targetADef, targetBDef, targetCDef },
+                new[] { sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(4, 1);
+            DishInstance source = CreateInstance(1, sourceDef, shape, 0);
+            board.Place(source);
+            board.Place(CreateInstance(2, targetADef, shape, 1));
+            board.Place(CreateInstance(3, targetBDef, shape, 2));
+            board.Place(CreateInstance(4, targetCDef, shape, 3));
+            int randomCallCount = 0;
+
+            ServeRuleResolver.ServeResolveResult result = ServeRuleResolver.ResolveOnServe(
+                board,
+                database,
+                EmptyScoreHistory.Instance,
+                source,
+                currentHappyCakeLayers: 0,
+                itemExtraTargetRolls: TowerExtraTargetRolls(),
+                randomIntegerSelector: (min, max) =>
+                {
+                    randomCallCount++;
+                    return 7000;
+                });
+
+            Assert.That(randomCallCount, Is.EqualTo(1));
+            Assert.That(result.TransferRequests, Has.Count.EqualTo(1));
+            Assert.That(result.TransferRequests[0].Count, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void WeightedItemExtraTargets_FailedOrEmptyTransferDoesNotConsumeRandom()
+        {
+            ChanceModifierFixture noCandidates = CreateChanceModifierFixture(
+                baseTargetCount: 1,
+                chanceModifierCount: 0,
+                fixedExtraTargetCount: 0,
+                plainTargetCount: 0);
+            int randomCallCount = 0;
+
+            ScoreResult failed = new ScoreCalculator().Calculate(
+                noCandidates.Board,
+                noCandidates.Database,
+                randomIntegerSelector: (min, max) =>
+                {
+                    randomCallCount++;
+                    return 0;
+                },
+                sweetTransferExtraTargetRolls: TowerExtraTargetRolls());
+
+            Assert.That(failed.SkillTransfers, Is.Empty);
+            Assert.That(randomCallCount, Is.EqualTo(0));
+
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef emptyTransferSkill = CreateEmptyTransferSkill("empty_transfer");
+            DishDef sourceDef = CreateDish("empty_source", "空载来源", shape, new[] { emptyTransferSkill.Id });
+            DishDef targetDef = CreateDish("target", "目标", shape, Array.Empty<string>());
+            var database = new GameplayDatabase(
+                new[] { sourceDef, targetDef },
+                new[] { emptyTransferSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(2, 1);
+            board.Place(CreateInstance(1, sourceDef, shape, 0));
+            board.Place(CreateInstance(2, targetDef, shape, 1));
+
+            ScoreResult empty = new ScoreCalculator().Calculate(
+                board,
+                database,
+                randomIntegerSelector: (min, max) =>
+                {
+                    randomCallCount++;
+                    return 0;
+                },
+                sweetTransferExtraTargetRolls: TowerExtraTargetRolls());
+
+            Assert.That(empty.SkillTransfers, Is.Empty);
+            Assert.That(randomCallCount, Is.EqualTo(0));
+        }
+
         [Test]
         public void ChanceExtraTarget_IsCappedByLegalCandidates()
         {
@@ -714,14 +894,18 @@ namespace GourmetProject.Tests.EditMode
         private static SkillDef CreateTransferSkill(string skillId, float value)
             => CreateTransferSkill(skillId, value, targetCount: 1);
 
-        private static SkillDef CreateTransferSkill(string skillId, float value, int targetCount)
+        private static SkillDef CreateTransferSkill(
+            string skillId,
+            float value,
+            int targetCount,
+            SkillTrigger trigger = SkillTrigger.OnSettle)
         {
             SkillRuleDef payload = CreateAddFlatRule($"{skillId}_payload", skillId, value);
             SkillRuleDef transfer = new SkillRuleDef(
                 $"{skillId}_transfer",
                 skillId,
                 order: 1,
-                SkillTrigger.OnSettle,
+                trigger,
                 SkillConditionType.None,
                 SkillScope.Self,
                 CountUnit.Instances,
@@ -740,6 +924,35 @@ namespace GourmetProject.Tests.EditMode
                 new[] { payload, transfer },
                 new[] { payload.Id, transfer.Id });
         }
+
+        private static SkillDef CreateEmptyTransferSkill(string skillId)
+        {
+            var transfer = new SkillRuleDef(
+                $"{skillId}_transfer",
+                skillId,
+                order: 0,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Per,
+                string.Empty,
+                SkillActionType.TransferSkills,
+                SkillScope.All,
+                actionCount: 1,
+                new[] { 0f },
+                Array.Empty<string>());
+            return new SkillDef(
+                skillId,
+                skillId,
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { transfer },
+                new[] { transfer.Id });
+        }
+
+        private static IReadOnlyList<SweetTransferExtraTargetRollSpec> TowerExtraTargetRolls()
+            => new[] { new SweetTransferExtraTargetRollSpec(1, 2, 70, 30) };
 
         private static SkillDef CreateSkillCountTransferSkill(string skillId, float value)
         {

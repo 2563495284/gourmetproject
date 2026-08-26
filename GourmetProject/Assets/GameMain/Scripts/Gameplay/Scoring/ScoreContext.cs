@@ -36,6 +36,8 @@ namespace GourmetProject.Gameplay.Scoring
         private readonly Queue<PendingScoreCommand> _commands = new Queue<PendingScoreCommand>();
         private int _happyCakeLayerDelta;
         private readonly List<SkillTransferSideEffect> _skillTransfers = new List<SkillTransferSideEffect>();
+        private readonly List<SweetTransferPermanentFlatRegistration> _sweetTransferPermanentFlats =
+            new List<SweetTransferPermanentFlatRegistration>();
         private readonly List<SweetTransferBuffRegistration> _sweetTransferBuffs = new List<SweetTransferBuffRegistration>();
         private readonly List<CopySkillRequest> _copySkillRequests = new List<CopySkillRequest>();
         private readonly Dictionary<int, BigDouble> _permanentFlatDeltas = new Dictionary<int, BigDouble>();
@@ -704,6 +706,12 @@ namespace GourmetProject.Gameplay.Scoring
         /// 目标食物「永久加法分」+value：本次结算即计入加法区，并登记持久增量（正式结算后写回实例，之后每次结算叠加进基础分）。
         /// </summary>
         public void AddPermanentFlatTo(DishInstance target, BigDouble value)
+            => AddPermanentFlatTo(target, value, null);
+
+        private void AddPermanentFlatTo(
+            DishInstance target,
+            BigDouble value,
+            ScoreSource sourceOverride)
         {
             if (target == null || BigDouble.Abs(value) < 0.0001d)
             {
@@ -712,7 +720,61 @@ namespace GourmetProject.Gameplay.Scoring
 
             _permanentFlatDeltas.TryGetValue(target.Id, out BigDouble cur);
             _permanentFlatDeltas[target.Id] = cur + value;
-            SubmitCommand(new AddDishPermanentFlatCommand(target.Id, value));
+            SubmitCommand(new AddDishPermanentFlatCommand(target.Id, value), sourceOverride);
+        }
+
+        /// <summary>
+        /// 登记甜蜜传递成功后才响应的永久分装饰品。登记本身不改分，来源保留为当前装饰品，
+        /// 供真正触发时生成可解释明细和驱动装饰品演出。
+        /// </summary>
+        internal void RegisterSweetTransferPermanentFlat(ItemScoreEffectType type, BigDouble value)
+        {
+            if ((type != ItemScoreEffectType.SweetTransferTargetPermanentFlat
+                 && type != ItemScoreEffectType.SweetTransferSourcePermanentFlat)
+                || BigDouble.Abs(value) < 0.0001d)
+            {
+                return;
+            }
+
+            _sweetTransferPermanentFlats.Add(new SweetTransferPermanentFlatRegistration(
+                type,
+                value,
+                Source));
+        }
+
+        /// <summary>
+        /// 一轮甜蜜传递的全部交接与外来技能执行完后应用永久分：接收方逐个增加，
+        /// 传递方按本轮成功目标数累计。此时提交标准永久分命令，因此本轮计分立即包含并登记持久增量。
+        /// </summary>
+        internal void ApplySweetTransferPermanentFlats(
+            DishInstance transferSource,
+            IReadOnlyList<DishInstance> transferTargets)
+        {
+            if (transferSource == null
+                || transferTargets == null
+                || transferTargets.Count == 0
+                || _sweetTransferPermanentFlats.Count == 0)
+            {
+                return;
+            }
+
+            foreach (SweetTransferPermanentFlatRegistration registration in _sweetTransferPermanentFlats)
+            {
+                if (registration.Type == ItemScoreEffectType.SweetTransferTargetPermanentFlat)
+                {
+                    foreach (DishInstance target in transferTargets)
+                    {
+                        AddPermanentFlatTo(target, registration.Value, registration.Source);
+                    }
+                }
+                else if (registration.Type == ItemScoreEffectType.SweetTransferSourcePermanentFlat)
+                {
+                    AddPermanentFlatTo(
+                        transferSource,
+                        registration.Value * transferTargets.Count,
+                        registration.Source);
+                }
+            }
         }
 
         /// <summary>
@@ -1172,6 +1234,9 @@ namespace GourmetProject.Gameplay.Scoring
         }
 
         public void SubmitCommand(IScoreCommand command)
+            => SubmitCommand(command, null);
+
+        private void SubmitCommand(IScoreCommand command, ScoreSource sourceOverride)
         {
             if (command == null)
             {
@@ -1181,7 +1246,7 @@ namespace GourmetProject.Gameplay.Scoring
             _commands.Enqueue(new PendingScoreCommand(
                 command,
                 Phase,
-                Source,
+                sourceOverride ?? Source,
                 CurrentCell,
                 EffectDef,
                 Trace,
@@ -1560,6 +1625,25 @@ namespace GourmetProject.Gameplay.Scoring
 
             public int ExecutionGroupId { get; }
         }
+    }
+
+    internal readonly struct SweetTransferPermanentFlatRegistration
+    {
+        public SweetTransferPermanentFlatRegistration(
+            ItemScoreEffectType type,
+            BigDouble value,
+            ScoreSource source)
+        {
+            Type = type;
+            Value = value;
+            Source = source;
+        }
+
+        public ItemScoreEffectType Type { get; }
+
+        public BigDouble Value { get; }
+
+        public ScoreSource Source { get; }
     }
 
     /// <summary>结算期甜蜜传递 Buff。仅存于 ScoreContext，不写入食物实例或存档。</summary>

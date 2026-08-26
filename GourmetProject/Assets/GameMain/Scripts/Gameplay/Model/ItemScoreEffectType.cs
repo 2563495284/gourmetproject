@@ -90,5 +90,11 @@ namespace GourmetProject.Gameplay.Model
 
         /// <summary>每结算一道当时视为蛋糕的食物，欢乐蛋糕层数 +value。</summary>
         CakeLayersPerCakeDish = 27,
+
+        /// <summary>每次甜蜜传递成功落到一个目标后，该目标永久分数 +value。</summary>
+        SweetTransferTargetPermanentFlat = 28,
+
+        /// <summary>每次甜蜜传递成功落到一个目标后，传递来源永久分数 +value。</summary>
+        SweetTransferSourcePermanentFlat = 29,
     }
 }

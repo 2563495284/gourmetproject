@@ -107,13 +107,133 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(fixture.Session.LastRecipeScoreMultiplierDeltas, Is.Empty);
         }
 
+        [Test]
+        public void PermanentFlatItems_AffectPreviewImmediatelyWithoutMutatingInstances()
+        {
+            Fixture fixture = CreateFixture(
+                targetCount: 2,
+                transferCount: 2,
+                itemSpecs: PermanentFlatSpecs());
+
+            ScoreResult preview = fixture.Session.PreviewScore();
+
+            Assert.That(Value(ScoreFor(preview, fixture.Source).FlatBonus), Is.EqualTo(10d).Within(FloatTolerance));
+            Assert.That(Value(ScoreFor(preview, fixture.Targets[0]).FlatBonus), Is.EqualTo(3d).Within(FloatTolerance));
+            Assert.That(Value(ScoreFor(preview, fixture.Targets[1]).FlatBonus), Is.EqualTo(3d).Within(FloatTolerance));
+            Assert.That(Value(preview.PermanentFlatDeltas[fixture.Source.Id]), Is.EqualTo(10d).Within(FloatTolerance));
+            Assert.That(Value(preview.PermanentFlatDeltas[fixture.Targets[0].Id]), Is.EqualTo(3d).Within(FloatTolerance));
+            Assert.That(Value(preview.PermanentFlatDeltas[fixture.Targets[1].Id]), Is.EqualTo(3d).Within(FloatTolerance));
+            Assert.That(Value(fixture.Source.PermanentFlatBonus), Is.EqualTo(0d).Within(FloatTolerance));
+            Assert.That(
+                fixture.Targets.All(target => Math.Abs(Value(target.PermanentFlatBonus)) <= FloatTolerance),
+                Is.True);
+            Assert.That(fixture.Session.LastRecipeScoreFlatDeltas, Is.Empty);
+        }
+
+        [Test]
+        public void PermanentFlatItems_FormalSettlementPersistsExactlyOncePerSuccessfulTarget()
+        {
+            Fixture fixture = CreateFixture(
+                targetCount: 2,
+                transferCount: 2,
+                itemSpecs: PermanentFlatSpecs());
+
+            ScoreResult settled = fixture.Session.Settle();
+
+            Assert.That(Value(ScoreFor(settled, fixture.Source).FlatBonus), Is.EqualTo(10d).Within(FloatTolerance));
+            Assert.That(Value(fixture.Source.PermanentFlatBonus), Is.EqualTo(10d).Within(FloatTolerance));
+            Assert.That(Value(fixture.Targets[0].PermanentFlatBonus), Is.EqualTo(3d).Within(FloatTolerance));
+            Assert.That(Value(fixture.Targets[1].PermanentFlatBonus), Is.EqualTo(3d).Within(FloatTolerance));
+            Assert.That(RecipeFlatDeltaFor(fixture.Session, dishIndex: 0), Is.EqualTo(10d).Within(FloatTolerance));
+            Assert.That(RecipeFlatDeltaFor(fixture.Session, dishIndex: 1), Is.EqualTo(3d).Within(FloatTolerance));
+            Assert.That(RecipeFlatDeltaFor(fixture.Session, dishIndex: 2), Is.EqualTo(3d).Within(FloatTolerance));
+        }
+
+        [Test]
+        public void PermanentFlatItems_PlayAfterSweetTransferResultsWithRelicAttribution()
+        {
+            Fixture fixture = CreateFixture(
+                targetCount: 1,
+                transferCount: 1,
+                itemSpecs: PermanentFlatSpecs(),
+                payloadAddsScore: true);
+
+            ScoreResult result = fixture.Session.PreviewScore();
+            List<ScoreLine> lines = result.ScoreLines.ToList();
+            int transferResultIndex = lines.FindIndex(line =>
+                line.Kind == ScoreLineKind.DishFlat
+                && line.Trace?.Kind == SkillExecutionKind.SweetTransfer);
+            int firstPermanentIndex = lines.FindIndex(line => line.Kind == ScoreLineKind.DishPermanentFlat);
+            ScoreLine targetLine = lines.Single(line =>
+                line.Kind == ScoreLineKind.DishPermanentFlat
+                && line.Source?.Id == "item_transfer_target_flat");
+            ScoreLine sourceLine = lines.Single(line =>
+                line.Kind == ScoreLineKind.DishPermanentFlat
+                && line.Source?.Id == "item_transfer_source_flat");
+
+            Assert.That(transferResultIndex, Is.GreaterThanOrEqualTo(0));
+            Assert.That(firstPermanentIndex, Is.GreaterThan(transferResultIndex));
+            Assert.That(targetLine.Source.Type, Is.EqualTo(ScoreSourceType.Relic));
+            Assert.That(targetLine.DishInstanceId, Is.EqualTo(fixture.Targets[0].Id));
+            Assert.That(sourceLine.Source.Type, Is.EqualTo(ScoreSourceType.Relic));
+            Assert.That(sourceLine.DishInstanceId, Is.EqualTo(fixture.Source.Id));
+        }
+
+        [Test]
+        public void PermanentFlatItems_FailedTransferCreatesNoGrowth()
+        {
+            Fixture fixture = CreateFixture(
+                targetCount: 0,
+                transferCount: 1,
+                itemSpecs: PermanentFlatSpecs());
+
+            ScoreResult result = fixture.Session.Settle();
+
+            Assert.That(result.PermanentFlatDeltas, Is.Empty);
+            Assert.That(result.ScoreLines.Any(line => line.Kind == ScoreLineKind.DishPermanentFlat), Is.False);
+            Assert.That(Value(fixture.Source.PermanentFlatBonus), Is.EqualTo(0d).Within(FloatTolerance));
+            Assert.That(fixture.Session.LastRecipeScoreFlatDeltas, Is.Empty);
+        }
+
+        [Test]
+        public void OnServePermanentFlatGrowth_RemainsImmediateAndOnSettleDoesNotDoubleCommit()
+        {
+            Fixture fixture = CreateFixture(
+                targetCount: 1,
+                transferCount: 1,
+                itemSpecs: PermanentFlatSpecs());
+            fixture.Session.SweetTransferTargetFlat = 3f;
+            fixture.Session.SweetTransferSourceFlat = 5f;
+            var request = new SkillTransferRequest(
+                fixture.Source.Id,
+                fixture.Source.Def.Name,
+                new[] { fixture.Targets[0].Id },
+                new[] { CreateNoOpEffect() },
+                count: 1);
+
+            InvokeApplyTransferRequests(fixture.Session, new[] { request });
+
+            Assert.That(Value(fixture.Source.PermanentFlatBonus), Is.EqualTo(5d).Within(FloatTolerance));
+            Assert.That(Value(fixture.Targets[0].PermanentFlatBonus), Is.EqualTo(3d).Within(FloatTolerance));
+
+            fixture.Session.Settle();
+
+            // OnServe 和 OnSettle 各发生一次真实传递；OnSettle 的持久化只提交一次。
+            Assert.That(Value(fixture.Source.PermanentFlatBonus), Is.EqualTo(10d).Within(FloatTolerance));
+            Assert.That(Value(fixture.Targets[0].PermanentFlatBonus), Is.EqualTo(6d).Within(FloatTolerance));
+            Assert.That(RecipeFlatDeltaFor(fixture.Session, dishIndex: 0), Is.EqualTo(10d).Within(FloatTolerance));
+            Assert.That(RecipeFlatDeltaFor(fixture.Session, dishIndex: 1), Is.EqualTo(6d).Within(FloatTolerance));
+        }
+
         private static Fixture CreateFixture(
             int targetCount,
             int transferCount,
-            bool targetsHaveRecipeSource = true)
+            bool targetsHaveRecipeSource = true,
+            IReadOnlyList<ItemScoreSpec> itemSpecs = null,
+            bool payloadAddsScore = false)
         {
             DishShape shape = DishShape.FromRows(new[] { "X" });
-            SkillDef transferSkill = CreateTransferSkill(transferCount);
+            SkillDef transferSkill = CreateTransferSkill(transferCount, payloadAddsScore);
             var defs = new List<DishDef>
             {
                 CreateDish("source", "来源", shape, new[] { transferSkill.Id }),
@@ -143,12 +263,16 @@ namespace GourmetProject.Tests.EditMode
                 targets.Add(target);
             }
 
+            ScoreCalculator calculator = itemSpecs != null
+                ? new ScoreCalculator(effectSources: new[] { new ItemScoreEffectSource(itemSpecs) })
+                : null;
             var session = new BattleSession(
                 board,
                 database,
                 new Xoshiro256SS(20260825UL),
                 Array.Empty<RecipeSlot>(),
-                requiredScore: 0);
+                requiredScore: 0,
+                calculator: calculator);
             return new Fixture(session, source, targets);
         }
 
@@ -189,15 +313,16 @@ namespace GourmetProject.Tests.EditMode
             return instance;
         }
 
-        private static SkillDef CreateTransferSkill(int transferCount)
+        private static SkillDef CreateTransferSkill(int transferCount, bool payloadAddsScore = false)
         {
             const string skillId = "test_sweet_transfer";
             SkillRuleDef transferableRule = CreateRule(
                 "test_transfer_payload",
                 skillId,
                 order: 0,
-                SkillActionType.None,
-                actionCount: 0);
+                payloadAddsScore ? SkillActionType.AddFlat : SkillActionType.None,
+                actionCount: 0,
+                actionValues: payloadAddsScore ? new[] { 1f } : null);
             SkillRuleDef transferRule = CreateRule(
                 "test_transfer",
                 skillId,
@@ -230,7 +355,8 @@ namespace GourmetProject.Tests.EditMode
             int order,
             SkillActionType actionType,
             int actionCount,
-            SkillTrigger trigger = SkillTrigger.OnSettle)
+            SkillTrigger trigger = SkillTrigger.OnSettle,
+            IReadOnlyList<float> actionValues = null)
             => new SkillRuleDef(
                 id,
                 skillId,
@@ -244,8 +370,25 @@ namespace GourmetProject.Tests.EditMode
                 actionType,
                 SkillScope.All,
                 actionCount,
-                Array.Empty<float>(),
+                actionValues ?? Array.Empty<float>(),
                 Array.Empty<string>());
+
+        private static IReadOnlyList<ItemScoreSpec> PermanentFlatSpecs()
+            => new[]
+            {
+                new ItemScoreSpec(
+                    ItemScoreEffectType.SweetTransferTargetPermanentFlat,
+                    3f,
+                    string.Empty,
+                    "item_transfer_target_flat",
+                    "传糖果签"),
+                new ItemScoreSpec(
+                    ItemScoreEffectType.SweetTransferSourcePermanentFlat,
+                    5f,
+                    string.Empty,
+                    "item_transfer_source_flat",
+                    "传菜糖罐"),
+            };
 
         private static void InvokeApplyTransferRequests(
             BattleSession session,
@@ -256,6 +399,11 @@ namespace GourmetProject.Tests.EditMode
         }
 
         private static double Value(BigDouble value) => value.ToDouble();
+
+        private static double RecipeFlatDeltaFor(BattleSession session, int dishIndex)
+            => session.LastRecipeScoreFlatDeltas
+                .Where(delta => delta.DishIndex == dishIndex)
+                .Sum(delta => Value(delta.Delta));
 
         private static DishScore ScoreFor(ScoreResult result, DishInstance dish)
             => result.DishScores.Single(score => score.DishInstanceId == dish.Id);
