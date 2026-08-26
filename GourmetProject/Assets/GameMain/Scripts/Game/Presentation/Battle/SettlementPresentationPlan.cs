@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using BreakInfinity;
-using GourmetProject.Game.UI.Common;
 using GourmetProject.Gameplay.Scoring;
 using UnityEngine;
 
@@ -69,29 +68,6 @@ namespace GourmetProject.Game.Presentation.Battle
             return Color.Lerp(theme, TextLight, 0.30f);
         }
 
-        /// <summary>
-        /// ScoreMeter 的总分变化不使用富文本，直接取餐桌结算数字所用的同一套语义色。
-        /// </summary>
-        public static Color ScoreDeltaTextFor(ScoreLineKind kind)
-        {
-            return kind switch
-            {
-                ScoreLineKind.DishBase
-                    or ScoreLineKind.DishFlat
-                    or ScoreLineKind.FinalFlat => SemanticDescriptionFormatter.ScoreTextColor,
-                ScoreLineKind.DishPermanentFlat =>
-                    SemanticDescriptionFormatter.PermanentScoreTextColor,
-                ScoreLineKind.DishMultiplierAdd =>
-                    SemanticDescriptionFormatter.MultiplierAddTextColor,
-                ScoreLineKind.DishMultiplier
-                    or ScoreLineKind.FinalMultiplier =>
-                    SemanticDescriptionFormatter.MultiplierMultiplyTextColor,
-                ScoreLineKind.Gold => SemanticDescriptionFormatter.GoldTextColor,
-                ScoreLineKind.ExtraSettlement => SemanticDescriptionFormatter.TermTextColor,
-                _ => TextFor(For(kind)),
-            };
-        }
-
         public static Color ResultHeaderTextFor(Color semanticColor)
         {
             return Color.Lerp(semanticColor, TextLight, 0.18f);
@@ -101,6 +77,248 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             color.a = Mathf.Clamp01(alpha);
             return color;
+        }
+    }
+
+    internal enum SettlementScoreFeedbackStep
+    {
+        None = 0,
+        Subtle = 1,
+        Clear = 2,
+        Strong = 3,
+        Burst = 4,
+        Peak = 5,
+    }
+
+    internal enum SettlementScoreFireFeedback
+    {
+        None = 0,
+        TransientSpark = 1,
+        IgnitedBurst = 2,
+    }
+
+    /// <summary>由本帧净分数解析出的 HUD 飘字、面板和普通火焰反馈参数。</summary>
+    internal readonly struct SettlementScoreFeedbackProfile
+    {
+        public SettlementScoreFeedbackProfile(
+            SettlementScoreFeedbackStep step,
+            float stepProgress,
+            float intensity,
+            bool isPositive,
+            Color textColor,
+            Color outlineColor,
+            float outlineWidth,
+            float startScale,
+            float peakScale,
+            float travelDistance,
+            float scorePunch,
+            float panelPunch,
+            float shakeStrength,
+            float rollDuration,
+            float fadeDuration,
+            float fireStrength,
+            bool allowsTransientSpark,
+            bool allowsIgnitedBurst)
+        {
+            Step = step;
+            StepProgress = stepProgress;
+            Intensity = intensity;
+            IsPositive = isPositive;
+            TextColor = textColor;
+            OutlineColor = outlineColor;
+            OutlineWidth = outlineWidth;
+            StartScale = startScale;
+            PeakScale = peakScale;
+            TravelDistance = travelDistance;
+            ScorePunch = scorePunch;
+            PanelPunch = panelPunch;
+            ShakeStrength = shakeStrength;
+            RollDuration = rollDuration;
+            FadeDuration = fadeDuration;
+            FireStrength = fireStrength;
+            AllowsTransientSpark = allowsTransientSpark;
+            AllowsIgnitedBurst = allowsIgnitedBurst;
+        }
+
+        public SettlementScoreFeedbackStep Step { get; }
+        public float StepProgress { get; }
+        public float Intensity { get; }
+        public bool IsPositive { get; }
+        public bool IsNegative => Visible && !IsPositive;
+        public bool Visible => Step != SettlementScoreFeedbackStep.None;
+        public Color TextColor { get; }
+        public Color OutlineColor { get; }
+        public float OutlineWidth { get; }
+        public float StartScale { get; }
+        public float PeakScale { get; }
+        public float TravelDistance { get; }
+        public float ScorePunch { get; }
+        public float PanelPunch { get; }
+        public float ShakeStrength { get; }
+        public float RollDuration { get; }
+        public float FadeDuration { get; }
+        public float FireStrength { get; }
+        public bool AllowsTransientSpark { get; }
+        public bool AllowsIgnitedBurst { get; }
+    }
+
+    /// <summary>
+    /// 固定分数阶梯：1 / 50 / 200 / 1000 / 5000。仅由净分数决定，
+    /// 不读取目标分、周目、结算行语义或 ImpactTier。
+    /// </summary>
+    internal static class SettlementScoreFeedbackResolver
+    {
+        private static readonly Color[] PositiveColors =
+        {
+            new Color32(0x73, 0xCF, 0xFF, 0xFF),
+            new Color32(0x58, 0xE1, 0xDE, 0xFF),
+            new Color32(0xFF, 0xD4, 0x5B, 0xFF),
+            new Color32(0xFF, 0x87, 0x2F, 0xFF),
+            new Color32(0xFF, 0xF3, 0xD0, 0xFF),
+        };
+
+        private static readonly Color[] PositiveOutlines =
+        {
+            new Color32(0x27, 0x5C, 0x91, 0xFF),
+            new Color32(0x14, 0x7A, 0x78, 0xFF),
+            new Color32(0xA7, 0x63, 0x00, 0xFF),
+            new Color32(0xB9, 0x33, 0x12, 0xFF),
+            new Color32(0xD9, 0x4B, 0x19, 0xFF),
+        };
+
+        private static readonly Color[] NegativeColors =
+        {
+            new Color32(0xF2, 0xA1, 0xAE, 0xFF),
+            new Color32(0xFF, 0x74, 0x85, 0xFF),
+            new Color32(0xFF, 0x48, 0x5E, 0xFF),
+            new Color32(0xF1, 0x26, 0x46, 0xFF),
+            new Color32(0xFF, 0x12, 0x3D, 0xFF),
+        };
+
+        private static readonly Color[] NegativeOutlines =
+        {
+            new Color32(0x7B, 0x2A, 0x3D, 0xFF),
+            new Color32(0x8E, 0x1F, 0x38, 0xFF),
+            new Color32(0x8D, 0x10, 0x2B, 0xFF),
+            new Color32(0x76, 0x00, 0x18, 0xFF),
+            new Color32(0x5E, 0x00, 0x14, 0xFF),
+        };
+
+        public static SettlementScoreFeedbackProfile Resolve(BigDouble delta)
+        {
+            if (delta == BigDouble.Zero)
+            {
+                return default;
+            }
+
+            bool isPositive = delta > BigDouble.Zero;
+            BigDouble magnitude = BigDouble.Abs(delta);
+            int segment;
+            float stepProgress;
+            SettlementScoreFeedbackStep step;
+            if (magnitude >= 5000d)
+            {
+                segment = 4;
+                stepProgress = 1f;
+                step = SettlementScoreFeedbackStep.Peak;
+            }
+            else if (magnitude >= 1000d)
+            {
+                segment = 3;
+                stepProgress = SmoothStep(InverseLerp(1000f, 5000f, magnitude));
+                step = SettlementScoreFeedbackStep.Burst;
+            }
+            else if (magnitude >= 200d)
+            {
+                segment = 2;
+                stepProgress = SmoothStep(InverseLerp(200f, 1000f, magnitude));
+                step = SettlementScoreFeedbackStep.Strong;
+            }
+            else if (magnitude >= 50d)
+            {
+                segment = 1;
+                stepProgress = SmoothStep(InverseLerp(50f, 200f, magnitude));
+                step = SettlementScoreFeedbackStep.Clear;
+            }
+            else
+            {
+                segment = 0;
+                stepProgress = SmoothStep(InverseLerp(1f, 50f, magnitude));
+                step = SettlementScoreFeedbackStep.Subtle;
+            }
+
+            float intensity = segment >= 4
+                ? 1f
+                : (segment + stepProgress) / 4f;
+            Color[] colors = isPositive ? PositiveColors : NegativeColors;
+            Color[] outlines = isPositive ? PositiveOutlines : NegativeOutlines;
+            Color textColor = segment >= 4
+                ? colors[4]
+                : Color.Lerp(colors[segment], colors[segment + 1], stepProgress);
+            Color outlineColor = segment >= 4
+                ? outlines[4]
+                : Color.Lerp(outlines[segment], outlines[segment + 1], stepProgress);
+            float travelDistance = isPositive
+                ? Mathf.Lerp(14f, 42f, intensity)
+                : -Mathf.Lerp(10f, 30f, intensity);
+            float panelPunch = isPositive
+                ? magnitude >= 50d ? Mathf.Lerp(0.04f, 0.16f, intensity) : 0f
+                : Mathf.Lerp(0.025f, 0.10f, intensity);
+
+            return new SettlementScoreFeedbackProfile(
+                step,
+                stepProgress,
+                intensity,
+                isPositive,
+                textColor,
+                outlineColor,
+                Mathf.Lerp(0.08f, 0.18f, intensity),
+                Mathf.Lerp(0.88f, 0.72f, intensity),
+                Mathf.Lerp(1.04f, 1.30f, intensity),
+                travelDistance,
+                isPositive
+                    ? Mathf.Lerp(0.05f, 0.20f, intensity)
+                    : Mathf.Lerp(0.03f, 0.12f, intensity),
+                panelPunch,
+                isPositive ? 0f : Mathf.Lerp(2f, 10f, intensity),
+                Mathf.Lerp(0.22f, 0.36f, intensity),
+                Mathf.Lerp(0.13f, 0.20f, intensity),
+                isPositive ? Mathf.Lerp(0.20f, 1f, intensity) : 0f,
+                isPositive && magnitude >= 200d,
+                isPositive && magnitude >= 50d);
+        }
+
+        public static SettlementScoreFireFeedback ResolveFireFeedback(
+            SettlementScoreFeedbackProfile profile,
+            SettlementPacePhase phase)
+        {
+            if (!profile.Visible || !profile.IsPositive)
+            {
+                return SettlementScoreFireFeedback.None;
+            }
+
+            if (phase == SettlementPacePhase.BelowTarget)
+            {
+                return profile.AllowsTransientSpark
+                    ? SettlementScoreFireFeedback.TransientSpark
+                    : SettlementScoreFireFeedback.None;
+            }
+
+            return profile.AllowsIgnitedBurst
+                ? SettlementScoreFireFeedback.IgnitedBurst
+                : SettlementScoreFireFeedback.None;
+        }
+
+        private static float InverseLerp(float lower, float upper, BigDouble value)
+        {
+            double clamped = Math.Max(lower, Math.Min(upper, value.ToDouble()));
+            return Mathf.InverseLerp(lower, upper, (float)clamped);
+        }
+
+        private static float SmoothStep(float value)
+        {
+            float clamped = Mathf.Clamp01(value);
+            return clamped * clamped * (3f - 2f * clamped);
         }
     }
 

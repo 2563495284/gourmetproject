@@ -49,6 +49,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private int _burstDelayFrames;
         private uint _randomState = 0x7A4D21E9u;
         private bool _particlesConfigured;
+        private bool _transientSparkActive;
         private bool _visible;
 
         internal SettlementPacePhase Phase => _phase;
@@ -70,6 +71,8 @@ namespace GourmetProject.Game.Presentation.Battle
         internal bool TongueEmitterRunning => IsRunning(_tongueParticles);
 
         internal bool EmberEmitterRunning => IsRunning(_emberParticles);
+
+        internal bool TransientSparkActive => _transientSparkActive;
 
         internal SettlementFeverScreenView ScreenFever => _screenFever;
 
@@ -136,6 +139,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _screenFever?.SetPhase(phase, _effectiveSpeed);
 
             bool ignited = phase != SettlementPacePhase.BelowTarget;
+            _transientSparkActive = false;
             _glowGraphic.gameObject.SetActive(ignited);
             _bodyGraphic.gameObject.SetActive(ignited);
             if (!ignited)
@@ -148,7 +152,8 @@ namespace GourmetProject.Game.Presentation.Battle
             StartParticleSystem(_coreParticles);
             StartParticleSystem(_tongueParticles);
             StartParticleSystem(_emberParticles);
-            if (!wasIgnited && ActiveMoteCount == 0)
+            if (!wasIgnited
+                && ParticleCount(_coreParticles) + ParticleCount(_tongueParticles) == 0)
             {
                 // 立即提供连续火种；正式爆燃仍在下一帧经过一次压缩后发生。
                 EmitCore(7, 0.72f);
@@ -181,10 +186,47 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplyPulseScale();
         }
 
+        /// <summary>
+        /// 未达标阶段的大额正分只喷出一次火星。不会切换燃烧阶段，也不会触发全屏 Fever。
+        /// 已点燃时退化为普通爆燃，便于调用方保持单一强度入口。
+        /// </summary>
+        internal void BurstTransient(float strength)
+        {
+            EnsureParticleRenderer();
+            if (_phase != SettlementPacePhase.BelowTarget)
+            {
+                Burst(strength);
+                return;
+            }
+
+            if (!_visible)
+            {
+                gameObject.SetActive(true);
+                _visible = true;
+            }
+
+            float clamped = Mathf.Clamp01(strength);
+            _glowGraphic.gameObject.SetActive(false);
+            _bodyGraphic.gameObject.SetActive(true);
+            StartParticleSystem(_emberParticles);
+            EmitEmber(
+                Mathf.RoundToInt(Mathf.Lerp(3f, 14f, clamped)),
+                Mathf.Lerp(0.25f, 1f, clamped));
+            StopEmitting(_emberParticles);
+            _transientSparkActive = ActiveMoteCount > 0;
+            RefreshGraphics();
+        }
+
         private void Update()
         {
-            if (!_visible || _phase == SettlementPacePhase.BelowTarget)
+            if (!_visible)
             {
+                return;
+            }
+
+            if (_phase == SettlementPacePhase.BelowTarget)
+            {
+                UpdateTransientSpark();
                 return;
             }
 
@@ -210,6 +252,31 @@ namespace GourmetProject.Game.Presentation.Battle
             _burstCompression = Mathf.MoveTowards(_burstCompression, 0f, animationDelta * 2.4f);
             _burstPulse = Mathf.MoveTowards(_burstPulse, 0f, animationDelta * 2.9f);
             ApplyPulseScale();
+        }
+
+        private void UpdateTransientSpark()
+        {
+            if (!_transientSparkActive)
+            {
+                return;
+            }
+
+            RefreshGraphics();
+            if (ActiveMoteCount > 0)
+            {
+                return;
+            }
+
+            _transientSparkActive = false;
+            if (_glowGraphic != null)
+            {
+                _glowGraphic.gameObject.SetActive(false);
+            }
+
+            if (_bodyGraphic != null)
+            {
+                _bodyGraphic.gameObject.SetActive(false);
+            }
         }
 
         private void EmitContinuous(float animationDelta)
@@ -703,6 +770,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _burstPulse = 0f;
             _queuedBurstStrength = 0f;
             _burstDelayFrames = 0;
+            _transientSparkActive = false;
             ApplyPulseScale();
         }
 
@@ -727,6 +795,14 @@ namespace GourmetProject.Game.Presentation.Battle
             if (system != null && !system.isPlaying)
             {
                 system.Play(true);
+            }
+        }
+
+        private static void StopEmitting(ParticleSystem system)
+        {
+            if (system != null)
+            {
+                system.Stop(true, ParticleSystemStopBehavior.StopEmitting);
             }
         }
 

@@ -67,11 +67,12 @@ namespace GourmetProject.Game.UI.Battle.View
         private BigDouble _pendingScoreBefore;
         private BigDouble _pendingScoreAfter;
         private BigDouble _pendingScoreDelta;
-        private SettlementImpactTier _pendingImpactTier;
-        private ScoreLineKind _pendingLineKind;
         private bool _pendingReachedTarget;
         private float _pendingSettlementSpeed = 1f;
         private Vector2 _settlementDeltaBasePosition;
+        private Vector2 _scoreCurrentBasePosition;
+        private bool _scoreCurrentBasePositionCaptured;
+        private Material _settlementDeltaMaterial;
         private Tween _goldRollTween;
         private Tween _goldPulseTween;
         private int _goldPresentationValue;
@@ -177,6 +178,25 @@ namespace GourmetProject.Game.UI.Battle.View
             CancelWeekIndexChange(complete: true);
             EndSettlementScorePresentation();
             ResetBossStatPresentation();
+        }
+
+        private void OnDestroy()
+        {
+            if (_settlementDeltaMaterial == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(_settlementDeltaMaterial);
+            }
+            else
+            {
+                DestroyImmediate(_settlementDeltaMaterial);
+            }
+
+            _settlementDeltaMaterial = null;
         }
 
         internal static int ResolveDisplayedGold(int runGold, float pendingGold, bool includePending)
@@ -420,6 +440,8 @@ namespace GourmetProject.Game.UI.Battle.View
             EndSettlementScorePresentation();
             if (_scoreCurrentText != null)
             {
+                _scoreCurrentBasePosition = _scoreCurrentText.rectTransform.anchoredPosition;
+                _scoreCurrentBasePositionCaptured = true;
                 _scoreCurrentText.rectTransform.localScale = Vector3.one;
             }
 
@@ -442,8 +464,6 @@ namespace GourmetProject.Game.UI.Battle.View
                 _pendingScoreBefore = signal.BeforeScore;
                 _pendingScoreAfter = signal.AfterScore;
                 _pendingScoreDelta = signal.ScoreDelta;
-                _pendingImpactTier = signal.ImpactTier;
-                _pendingLineKind = signal.LineKind;
                 _pendingReachedTarget = signal.ReachedTarget;
                 _pendingSettlementSpeed = Mathf.Max(0.0001f, signal.Speed);
                 return;
@@ -453,11 +473,6 @@ namespace GourmetProject.Game.UI.Battle.View
             _pendingScoreDelta += signal.ScoreDelta;
             _pendingReachedTarget |= signal.ReachedTarget;
             _pendingSettlementSpeed = Mathf.Max(0.0001f, signal.Speed);
-            if (signal.ImpactTier > _pendingImpactTier)
-            {
-                _pendingImpactTier = signal.ImpactTier;
-                _pendingLineKind = signal.LineKind;
-            }
         }
 
         internal static bool ShouldQueueSettlementScoreBeat(SettlementBeatSignal signal)
@@ -476,7 +491,6 @@ namespace GourmetProject.Game.UI.Battle.View
             _pendingScoreBefore = BigDouble.Zero;
             _pendingScoreAfter = BigDouble.Zero;
             _pendingScoreDelta = BigDouble.Zero;
-            _pendingImpactTier = SettlementImpactTier.Base;
             _pendingReachedTarget = false;
             _pendingSettlementSpeed = 1f;
             _settlementScoreBeatSequence?.Kill();
@@ -486,6 +500,10 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 _scoreCurrentText.rectTransform.DOKill();
                 _scoreCurrentText.rectTransform.localScale = Vector3.one;
+                if (_scoreCurrentBasePositionCaptured)
+                {
+                    _scoreCurrentText.rectTransform.anchoredPosition = _scoreCurrentBasePosition;
+                }
             }
 
             if (_scoreTitlePanel != null)
@@ -521,6 +539,16 @@ namespace GourmetProject.Game.UI.Battle.View
             _settlementDeltaText.fontSizeMin = 24f;
             _settlementDeltaText.fontSizeMax = 42f;
             _settlementDeltaText.alignment = TextAlignmentOptions.Center;
+            Material sourceMaterial = _settlementDeltaText.fontSharedMaterial;
+            if (sourceMaterial != null)
+            {
+                _settlementDeltaMaterial = new Material(sourceMaterial)
+                {
+                    name = "Settlement Score Delta Runtime Material",
+                    hideFlags = HideFlags.HideAndDontSave,
+                };
+                _settlementDeltaText.fontSharedMaterial = _settlementDeltaMaterial;
+            }
             RectTransform deltaRect = _settlementDeltaText.rectTransform;
             deltaRect.anchoredPosition = _scoreCurrentText.rectTransform.anchoredPosition
                 + new Vector2(0f, 64f);
@@ -542,8 +570,6 @@ namespace GourmetProject.Game.UI.Battle.View
             BigDouble before = _pendingScoreBefore;
             BigDouble after = _pendingScoreAfter;
             BigDouble delta = _pendingScoreDelta;
-            SettlementImpactTier impact = _pendingImpactTier;
-            ScoreLineKind lineKind = _pendingLineKind;
             bool reachedTarget = _pendingReachedTarget;
             float presentationSpeed = Mathf.Max(0.0001f, _pendingSettlementSpeed);
             _pendingScoreDelta = BigDouble.Zero;
@@ -557,6 +583,14 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
+            SettlementScoreFeedbackProfile feedback =
+                SettlementScoreFeedbackResolver.Resolve(delta);
+            if (!feedback.Visible)
+            {
+                _scoreCurrentText.text = ScoreNumberFormatter.Format(after);
+                return;
+            }
+
             _settlementScoreBeatSequence?.Kill();
             RectTransform scoreRect = _scoreCurrentText.rectTransform;
             RectTransform deltaRect = _settlementDeltaText.rectTransform;
@@ -564,28 +598,25 @@ namespace GourmetProject.Game.UI.Battle.View
             deltaRect.DOKill();
             _settlementDeltaText.DOKill();
             scoreRect.localScale = Vector3.one;
-            deltaRect.localScale = Vector3.one * 0.82f;
+            if (!_scoreCurrentBasePositionCaptured)
+            {
+                _scoreCurrentBasePosition = scoreRect.anchoredPosition;
+                _scoreCurrentBasePositionCaptured = true;
+            }
+            scoreRect.anchoredPosition = _scoreCurrentBasePosition;
+            deltaRect.localScale = Vector3.one * feedback.StartScale;
             deltaRect.anchoredPosition = _settlementDeltaBasePosition;
 
-            _settlementDeltaText.color = SettlementColorPalette.ScoreDeltaTextFor(lineKind);
+            _settlementDeltaText.color = feedback.TextColor;
+            _settlementDeltaText.outlineColor = feedback.OutlineColor;
+            _settlementDeltaText.outlineWidth = feedback.OutlineWidth;
             _settlementDeltaText.text = FormatSignedScore(delta);
             _settlementDeltaText.gameObject.SetActive(true);
             _scoreCurrentText.text = ScoreNumberFormatter.Format(before);
+            PlaySettlementScoreFire(feedback);
 
-            float rollDuration = (impact switch
-            {
-                SettlementImpactTier.Base => 0.12f,
-                SettlementImpactTier.Normal => 0.14f,
-                SettlementImpactTier.Strong => 0.17f,
-                _ => 0.20f,
-            }) / presentationSpeed;
-            float punch = impact switch
-            {
-                SettlementImpactTier.Base => 0.06f,
-                SettlementImpactTier.Normal => 0.10f,
-                SettlementImpactTier.Strong => 0.15f,
-                _ => 0.20f,
-            };
+            float rollDuration = feedback.RollDuration / presentationSpeed;
+            float feedbackDuration = (feedback.RollDuration + 0.10f) / presentationSpeed;
 
             Sequence sequence = DOTween.Sequence()
                 .Append(DOVirtual.Float(0f, 1f, rollDuration, progress =>
@@ -596,18 +627,50 @@ namespace GourmetProject.Game.UI.Battle.View
                         _scoreCurrentText.text = ScoreNumberFormatter.Format(displayed);
                     })
                     .SetEase(Ease.OutCubic))
-                .Join(scoreRect.DOPunchScale(
-                    Vector3.one * punch,
-                    rollDuration + 0.08f / presentationSpeed,
-                    vibrato: 7,
-                    elasticity: 0.68f))
                 .Join(deltaRect.DOScale(
-                    1.08f + punch * 0.5f,
-                    0.09f / presentationSpeed).SetEase(Ease.OutBack))
+                    feedback.PeakScale,
+                    Mathf.Min(rollDuration, 0.12f / presentationSpeed)).SetEase(Ease.OutBack))
                 .Join(deltaRect.DOAnchorPosY(
-                    _settlementDeltaBasePosition.y + 18f,
-                    rollDuration + 0.10f / presentationSpeed).SetEase(Ease.OutCubic))
-                .Append(_settlementDeltaText.DOFade(0f, 0.15f / presentationSpeed));
+                    _settlementDeltaBasePosition.y + feedback.TravelDistance,
+                    feedbackDuration).SetEase(Ease.OutCubic));
+
+            if (feedback.IsPositive)
+            {
+                sequence.Join(scoreRect.DOPunchScale(
+                    Vector3.one * feedback.ScorePunch,
+                    feedbackDuration,
+                    vibrato: 7,
+                    elasticity: 0.68f));
+            }
+            else
+            {
+                sequence
+                    .Join(scoreRect.DOPunchScale(
+                        -Vector3.one * feedback.ScorePunch,
+                        feedbackDuration,
+                        vibrato: 7,
+                        elasticity: 0.48f))
+                    .Join(scoreRect.DOPunchAnchorPos(
+                        new Vector2(feedback.ShakeStrength, 0f),
+                        feedbackDuration,
+                        vibrato: Mathf.RoundToInt(Mathf.Lerp(5f, 10f, feedback.Intensity)),
+                        elasticity: 0.24f,
+                        snapping: false));
+            }
+
+            if (_scoreTitlePanel != null && feedback.PanelPunch > 0f)
+            {
+                Vector3 panelPunch = Vector3.one * feedback.PanelPunch;
+                sequence.Join(_scoreTitlePanel.DOPunchScale(
+                    feedback.IsPositive ? panelPunch : -panelPunch,
+                    feedbackDuration,
+                    vibrato: 7,
+                    elasticity: feedback.IsPositive ? 0.65f : 0.40f));
+            }
+
+            sequence.Append(_settlementDeltaText.DOFade(
+                0f,
+                feedback.FadeDuration / presentationSpeed));
 
             if (reachedTarget)
             {
@@ -617,6 +680,8 @@ namespace GourmetProject.Game.UI.Battle.View
                         _settlementDeltaText.gameObject.SetActive(true);
                         _settlementDeltaText.text = "达标!";
                         _settlementDeltaText.color = SettlementColorPalette.FinalScore;
+                        _settlementDeltaText.outlineColor = new Color32(140, 63, 0, 255);
+                        _settlementDeltaText.outlineWidth = 0.14f;
                         deltaRect.anchoredPosition = _settlementDeltaBasePosition;
                         deltaRect.localScale = Vector3.one * 0.78f;
                     })
@@ -643,6 +708,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 {
                     _scoreCurrentText.text = ScoreNumberFormatter.Format(after);
                     scoreRect.localScale = Vector3.one;
+                    scoreRect.anchoredPosition = _scoreCurrentBasePosition;
                 }
 
                 if (_scoreTitlePanel != null)
@@ -659,6 +725,26 @@ namespace GourmetProject.Game.UI.Battle.View
 
                 _settlementScoreBeatSequence = null;
             });
+        }
+
+        private void PlaySettlementScoreFire(SettlementScoreFeedbackProfile feedback)
+        {
+            if (_scoreFire == null)
+            {
+                return;
+            }
+
+            switch (SettlementScoreFeedbackResolver.ResolveFireFeedback(
+                        feedback,
+                        _scoreFire.Phase))
+            {
+                case SettlementScoreFireFeedback.TransientSpark:
+                    _scoreFire.BurstTransient(feedback.FireStrength);
+                    break;
+                case SettlementScoreFireFeedback.IgnitedBurst:
+                    _scoreFire.Burst(feedback.FireStrength);
+                    break;
+            }
         }
 
         private static string FormatSignedScore(BigDouble value)

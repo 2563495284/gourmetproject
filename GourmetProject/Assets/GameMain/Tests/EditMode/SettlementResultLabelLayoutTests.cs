@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using BreakInfinity;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Gameplay.Scoring;
@@ -46,29 +47,120 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(BattleInfoColumn.HasVisibleSettlementScoreDelta(5 - 5), Is.False);
         }
 
-        [Test]
-        public void ScoreDeltaColors_MatchSettlementSemanticValueColors()
+        [TestCase(1, SettlementScoreFeedbackStep.Subtle)]
+        [TestCase(49, SettlementScoreFeedbackStep.Subtle)]
+        [TestCase(50, SettlementScoreFeedbackStep.Clear)]
+        [TestCase(199, SettlementScoreFeedbackStep.Clear)]
+        [TestCase(200, SettlementScoreFeedbackStep.Strong)]
+        [TestCase(999, SettlementScoreFeedbackStep.Strong)]
+        [TestCase(1000, SettlementScoreFeedbackStep.Burst)]
+        [TestCase(4999, SettlementScoreFeedbackStep.Burst)]
+        [TestCase(5000, SettlementScoreFeedbackStep.Peak)]
+        public void ScoreDeltaFeedback_UsesFixedScoreSteps(
+            int delta,
+            SettlementScoreFeedbackStep expected)
         {
+            SettlementScoreFeedbackProfile profile =
+                SettlementScoreFeedbackResolver.Resolve(delta);
+
+            Assert.That(profile.Step, Is.EqualTo(expected));
+            Assert.That(profile.Visible, Is.True);
+        }
+
+        [Test]
+        public void ScoreDeltaFeedback_UsesPositiveAndNegativeColorAnchors()
+        {
+            AssertColor(1, new Color32(0x73, 0xCF, 0xFF, 0xFF));
+            AssertColor(50, new Color32(0x58, 0xE1, 0xDE, 0xFF));
+            AssertColor(200, new Color32(0xFF, 0xD4, 0x5B, 0xFF));
+            AssertColor(1000, new Color32(0xFF, 0x87, 0x2F, 0xFF));
+            AssertColor(5000, new Color32(0xFF, 0xF3, 0xD0, 0xFF));
+
+            AssertColor(-1, new Color32(0xF2, 0xA1, 0xAE, 0xFF));
+            AssertColor(-50, new Color32(0xFF, 0x74, 0x85, 0xFF));
+            AssertColor(-200, new Color32(0xFF, 0x48, 0x5E, 0xFF));
+            AssertColor(-1000, new Color32(0xF1, 0x26, 0x46, 0xFF));
+            AssertColor(-5000, new Color32(0xFF, 0x12, 0x3D, 0xFF));
+        }
+
+        [Test]
+        public void ScoreDeltaFeedback_IsContinuousAtStepBoundariesAndCapsHugeValues()
+        {
+            SettlementScoreFeedbackProfile below =
+                SettlementScoreFeedbackResolver.Resolve(49.999d);
+            SettlementScoreFeedbackProfile boundary =
+                SettlementScoreFeedbackResolver.Resolve(50d);
+            SettlementScoreFeedbackProfile huge =
+                SettlementScoreFeedbackResolver.Resolve(BigDouble.Normalize(1d, 100));
+
             Assert.That(
-                SettlementColorPalette.ScoreDeltaTextFor(ScoreLineKind.DishFlat),
-                Is.EqualTo((Color)new Color32(40, 102, 156, 255))
-                    .Using(ColorEqualityComparer.Instance));
-            Assert.That(
-                SettlementColorPalette.ScoreDeltaTextFor(ScoreLineKind.DishPermanentFlat),
-                Is.EqualTo((Color)new Color32(51, 125, 181, 255))
-                    .Using(ColorEqualityComparer.Instance));
-            Assert.That(
-                SettlementColorPalette.ScoreDeltaTextFor(ScoreLineKind.DishMultiplierAdd),
-                Is.EqualTo((Color)new Color32(178, 58, 72, 255))
-                    .Using(ColorEqualityComparer.Instance));
-            Assert.That(
-                SettlementColorPalette.ScoreDeltaTextFor(ScoreLineKind.DishMultiplier),
-                Is.EqualTo((Color)new Color32(225, 90, 100, 255))
-                    .Using(ColorEqualityComparer.Instance));
-            Assert.That(
-                SettlementColorPalette.ScoreDeltaTextFor(ScoreLineKind.ExtraSettlement),
-                Is.EqualTo((Color)new Color32(118, 86, 168, 255))
-                    .Using(ColorEqualityComparer.Instance));
+                Vector4.Distance(below.TextColor, boundary.TextColor),
+                Is.LessThan(0.001f));
+            Assert.That(below.Intensity, Is.LessThanOrEqualTo(boundary.Intensity));
+            Assert.That(huge.Step, Is.EqualTo(SettlementScoreFeedbackStep.Peak));
+            Assert.That(huge.Intensity, Is.EqualTo(1f));
+            Assert.That(huge.PeakScale, Is.EqualTo(1.30f).Within(0.0001f));
+        }
+
+        [Test]
+        public void ScoreDeltaFeedback_UsesNetDeltaAndSeparatesPositiveFromNegativeMotion()
+        {
+            SettlementScoreFeedbackProfile positive =
+                SettlementScoreFeedbackResolver.Resolve(500d);
+            SettlementScoreFeedbackProfile negative =
+                SettlementScoreFeedbackResolver.Resolve(-500d);
+            SettlementScoreFeedbackProfile cancelled =
+                SettlementScoreFeedbackResolver.Resolve(500d - 500d);
+
+            Assert.That(positive.Intensity, Is.EqualTo(negative.Intensity).Within(0.0001f));
+            Assert.That(positive.TravelDistance, Is.GreaterThan(0f));
+            Assert.That(positive.ShakeStrength, Is.Zero);
+            Assert.That(negative.TravelDistance, Is.LessThan(0f));
+            Assert.That(negative.ShakeStrength, Is.GreaterThan(0f));
+            Assert.That(negative.FireStrength, Is.Zero);
+            Assert.That(cancelled.Visible, Is.False);
+        }
+
+        [Test]
+        public void ScoreDeltaFireFeedback_FollowsFixedPositiveThresholdsAndPace()
+        {
+            AssertFire(49, SettlementPacePhase.DoubleTarget, SettlementScoreFireFeedback.None);
+            AssertFire(50, SettlementPacePhase.BelowTarget, SettlementScoreFireFeedback.None);
+            AssertFire(50, SettlementPacePhase.TargetReached, SettlementScoreFireFeedback.IgnitedBurst);
+            AssertFire(199, SettlementPacePhase.BelowTarget, SettlementScoreFireFeedback.None);
+            AssertFire(200, SettlementPacePhase.BelowTarget, SettlementScoreFireFeedback.TransientSpark);
+            AssertFire(200, SettlementPacePhase.TargetReached, SettlementScoreFireFeedback.IgnitedBurst);
+            AssertFire(5000, SettlementPacePhase.DoubleTarget, SettlementScoreFireFeedback.IgnitedBurst);
+            AssertFire(-5000, SettlementPacePhase.DoubleTarget, SettlementScoreFireFeedback.None);
+            AssertFire(0, SettlementPacePhase.DoubleTarget, SettlementScoreFireFeedback.None);
+        }
+
+        [Test]
+        public void ScoreFire_TransientBurstEmitsSparksWithoutIgnitingContinuousFire()
+        {
+            var fireObject = new GameObject(
+                "SettlementScoreFireTransientTest",
+                typeof(RectTransform));
+            try
+            {
+                SettlementScoreFireView fire =
+                    fireObject.AddComponent<SettlementScoreFireView>();
+                fire.Show();
+                fire.SetPhase(SettlementPacePhase.BelowTarget, 1f);
+
+                fire.BurstTransient(1f);
+
+                Assert.That(fire.Phase, Is.EqualTo(SettlementPacePhase.BelowTarget));
+                Assert.That(fire.TransientSparkActive, Is.True);
+                Assert.That(fire.ActiveMoteCount, Is.GreaterThan(0));
+                Assert.That(fire.CoreEmissionRate, Is.Zero);
+                Assert.That(fire.TongueEmissionRate, Is.Zero);
+                Assert.That(fire.EmberEmissionRate, Is.Zero);
+            }
+            finally
+            {
+                Object.DestroyImmediate(fireObject);
+            }
         }
 
         [Test]
@@ -395,6 +487,27 @@ namespace GourmetProject.Tests.EditMode
                     viewport.y + halfHeight,
                     Is.LessThanOrEqualTo(1f - ViewportPadding + 0.0001f));
             }
+        }
+
+        private static void AssertColor(BigDouble delta, Color32 expected)
+        {
+            SettlementScoreFeedbackProfile profile =
+                SettlementScoreFeedbackResolver.Resolve(delta);
+            Assert.That(
+                profile.TextColor,
+                Is.EqualTo((Color)expected).Using(ColorEqualityComparer.Instance));
+        }
+
+        private static void AssertFire(
+            BigDouble delta,
+            SettlementPacePhase phase,
+            SettlementScoreFireFeedback expected)
+        {
+            SettlementScoreFeedbackProfile profile =
+                SettlementScoreFeedbackResolver.Resolve(delta);
+            Assert.That(
+                SettlementScoreFeedbackResolver.ResolveFireFeedback(profile, phase),
+                Is.EqualTo(expected));
         }
 
         private static ScoreLine CreateLine(ScoreLineKind kind)

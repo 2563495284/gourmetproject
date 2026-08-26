@@ -625,14 +625,14 @@ namespace GourmetProject.Game.Presentation.Battle
                     resultLineBatches.Count);
                 if (!repeatImpactPerBatch)
                 {
-                    PlayImpactFeedback(groupImpact, groupTargetCount, scoreFire);
+                    PlayImpactFeedback(groupImpact, groupTargetCount);
                 }
 
                 for (int batchIndex = 0; batchIndex < resultLineBatches.Count; batchIndex++)
                 {
                     if (repeatImpactPerBatch)
                     {
-                        PlayImpactFeedback(groupImpact, groupTargetCount, scoreFire);
+                        PlayImpactFeedback(groupImpact, groupTargetCount);
                     }
 
                     await PlayResultLineBatchAsync(
@@ -1533,10 +1533,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _cameraFeedback.PlayImpact(waveImpact, waveTargetCount);
-            if (waveImpact >= SettlementImpactTier.Strong)
-            {
-                scoreFire?.Burst(waveImpact >= SettlementImpactTier.Chain ? 0.72f : 0.46f);
-            }
 
             await RevealScopeAndPlayResultsAsync(
                 settleLines,
@@ -2149,14 +2145,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void PlayImpactFeedback(
             SettlementImpactTier impact,
-            int targetCount,
-            SettlementScoreFireView scoreFire)
+            int targetCount)
         {
             _cameraFeedback.PlayImpact(impact, targetCount);
-            if (impact >= SettlementImpactTier.Strong)
-            {
-                scoreFire?.Burst(impact >= SettlementImpactTier.Chain ? 0.72f : 0.46f);
-            }
         }
 
         internal static bool ShouldRepeatImpactPerResultBatch(
