@@ -1240,11 +1240,13 @@
     "actionScope": 0,
     "actionCount": 0,
     "actionValue": [
-      1.3
+      0.2
     ],
-    "actionParam": [],
+    "actionParam": [
+      "linear"
+    ],
     "signed": false,
-    "descTemplate": "每有1{unit}技能\n[strong]倍率[/strong][multmul]×{0}[/multmul]",
+    "descTemplate": "[strong]倍率[/strong][multmul]×1[/multmul]\n（每有1{unit}技能[multadd]+{0}[/multadd]）",
     "termId": ""
   },
   {
