@@ -1046,7 +1046,7 @@
       "modifier:add-targets;chance:0.6"
     ],
     "signed": false,
-    "descTemplate": "[context]结算[/context]后\n所有食物发动[term]甜蜜传递[/term]时\n有60%概率[benefit]额外选择[/benefit] 1 个目标",
+    "descTemplate": "[context]结算[/context]后\n所有食物发动[term]甜蜜传递[/term]时\n有50%概率[benefit]额外选择[/benefit] 1 个目标",
     "termId": "term_sweet_transfer"
   },
   {
@@ -1482,7 +1482,7 @@
     "actionScope": 13,
     "actionCount": 0,
     "actionValue": [
-      3
+      2
     ],
     "actionParam": [
       "modifier:add-targets"
