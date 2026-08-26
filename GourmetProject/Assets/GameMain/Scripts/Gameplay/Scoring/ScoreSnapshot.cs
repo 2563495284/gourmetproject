@@ -29,6 +29,8 @@ namespace GourmetProject.Gameplay.Scoring
             int passiveItemCount = 0,
             int remainingFoodDiscards = 0,
             int sweetTransferExtraTargetCount = 0,
+            float sweetTransferTargetMultiplierFlat = 0f,
+            float sweetTransferSourceMultiplierFlat = 0f,
             bool captureDiagnostics = true)
         {
             DiningTable = board ?? throw new ArgumentNullException(nameof(board));
@@ -47,6 +49,8 @@ namespace GourmetProject.Gameplay.Scoring
             PassiveItemCount = Math.Max(0, passiveItemCount);
             RemainingFoodDiscards = Math.Max(0, remainingFoodDiscards);
             SweetTransferExtraTargetCount = Math.Max(0, sweetTransferExtraTargetCount);
+            SweetTransferTargetMultiplierFlat = Math.Max(0f, sweetTransferTargetMultiplierFlat);
+            SweetTransferSourceMultiplierFlat = Math.Max(0f, sweetTransferSourceMultiplierFlat);
             CaptureDiagnostics = captureDiagnostics;
 
             // 结算优先级层级（甜=+1、苦=-1，多风味累加）：层级高者先结算；同层再按棋盘从上到下、从左到右。
@@ -159,6 +163,12 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>装饰品为每次甜蜜传递额外增加的目标数。</summary>
         public int SweetTransferExtraTargetCount { get; }
+
+        /// <summary>每次成功甜蜜传递时，被传递方在本次结算获得的倍率加值。</summary>
+        public float SweetTransferTargetMultiplierFlat { get; }
+
+        /// <summary>每成功传递一个目标时，传递方在本次结算获得的倍率加值。</summary>
+        public float SweetTransferSourceMultiplierFlat { get; }
 
         /// <summary>本次结算时仍未上菜的食谱条目（槽索引 + dishId），供酸/咸在结算开始时遍历。</summary>
         public IReadOnlyList<UnservedRecipeDish> UnservedRecipeDishes { get; }

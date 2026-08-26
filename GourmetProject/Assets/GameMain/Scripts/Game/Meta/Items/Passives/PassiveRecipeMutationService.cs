@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BreakInfinity;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Run;
 using GourmetProject.Gameplay.Model;
@@ -109,10 +110,29 @@ namespace GourmetProject.Game.Meta.Passives
             });
         }
 
-        public static RecipeMutationResult RemoveFlavorDoubleScore(GameRun run, string title, float multiplier, IRandomStream rng)
+        public static RecipeMutationResult RemoveFlavorDoubleScore(GameRun run, string title, float scoreFactor, IRandomStream rng)
         {
             return RemoveFlavor(run, title, rng, target =>
-                run.MultiplyRecipeScore(target.DishIndex, multiplier));
+                AddScoreFactorAsFlat(run, target, scoreFactor));
+        }
+
+        private static bool AddScoreFactorAsFlat(
+            GameRun run,
+            RecipeTarget target,
+            float scoreFactor)
+        {
+            RecipeBookSlot slot = Slot(run, target);
+            DishDef dish = Dish(run, target);
+            if (slot == null || dish == null || scoreFactor <= 1f)
+            {
+                return false;
+            }
+
+            // 用等额永久加分实现“当前分数 ×scoreFactor”，不改动食谱倍率。
+            // 旧存档若已带有倍率，倍率会同时作用于新增加分，仍能保持翻倍结果。
+            BigDouble currentBaseScore = dish.Deliciousness + slot.ScoreFlatBonus;
+            BigDouble scoreIncrease = currentBaseScore * (scoreFactor - 1f);
+            return run.AddRecipeScoreFlat(target.DishIndex, scoreIncrease);
         }
 
         public static RecipeMutationResult ContagionFlavor(GameRun run, string title, IRandomStream rng)

@@ -1,6 +1,7 @@
 using System;
 using GourmetProject.Game.UI.Tooltips;
 using NUnit.Framework;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
 
@@ -75,6 +76,61 @@ namespace GourmetProject.Tests.EditMode
 
                 UnityEngine.Object.DestroyImmediate(canvasObject);
             }
+        }
+
+        [Test]
+        public void Bind_LongSpecialTagAfterShortTag_KeepsConfiguredLineBreaks()
+        {
+            var canvasObject = new GameObject(
+                "FoodTipsPlacementTests_Canvas",
+                typeof(RectTransform),
+                typeof(Canvas));
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(FoodTipsPath);
+
+            try
+            {
+                Assert.That(prefab, Is.Not.Null);
+                RectTransform canvasRect = canvasObject.transform as RectTransform;
+                Assert.That(canvasRect, Is.Not.Null);
+                canvasRect.sizeDelta = new Vector2(1200f, 800f);
+
+                GameObject instance = UnityEngine.Object.Instantiate(prefab, canvasRect, false);
+                Assert.That(instance.TryGetComponent(out FoodTipsView tips), Is.True);
+
+                tips.Bind(DataWithSpecialTag("短", "短"));
+                tips.Show();
+                Canvas.ForceUpdateCanvases();
+                tips.Hide();
+                Assert.That(tips.gameObject.activeSelf, Is.False);
+                tips.Bind(DataWithSpecialTag(
+                    "甜蜜传递",
+                    "使随机食物获得此技能\n并结算其获得的\n所有甜蜜传递技能"));
+                tips.Show();
+                Canvas.ForceUpdateCanvases();
+
+                Transform specialTagsRoot = instance.transform.Find("4_SpecialTags");
+                Assert.That(specialTagsRoot, Is.Not.Null);
+                TMP_Text[] texts = specialTagsRoot.GetComponentsInChildren<TMP_Text>(true);
+                TMP_Text desc = Array.Find(texts, text => text.gameObject.name == "Desc");
+                Assert.That(desc, Is.Not.Null);
+                desc.ForceMeshUpdate();
+
+                Assert.That(desc.textInfo.lineCount, Is.EqualTo(3));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(canvasObject);
+            }
+        }
+
+        private static FoodTipsData DataWithSpecialTag(string title, string desc)
+        {
+            return new FoodTipsData(
+                FoodSummaryTipsData.Empty,
+                FoodScoreTipsData.Empty,
+                Array.Empty<FoodInfoEntry>(),
+                Array.Empty<FoodInfoEntry>(),
+                new[] { new FoodInfoEntry(title, desc) });
         }
 
         private static Rect BoundsIn(RectTransform parent, RectTransform child)
