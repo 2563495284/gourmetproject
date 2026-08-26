@@ -19,8 +19,7 @@ namespace GourmetProject.Game.UI.Meta
     public sealed class RecipeEditDishView : MonoBehaviour, IPointerDownHandler, IInitializePotentialDragHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
         private const float ReturnFlyDuration = 0.22f;
-        private const float RemovalTransitionDuration = 0.24f;
-        private const float RemovalTransitionScale = 0.72f;
+        private const float FallbackRemovalDuration = 0.85f;
         private const float FinishedDishAlpha = 0.35f;
         private static readonly Vector2 FloatingAnchor = new(0.5f, 0.5f);
         private static readonly Color WaitingForPlacementOverlayColor =
@@ -482,40 +481,50 @@ namespace GourmetProject.Game.UI.Meta
                 _canvasGroup.alpha = 1f;
             }
 
-            var sequence = DOTween.Sequence()
-                .SetUpdate(true)
-                .SetTarget(_rect != null ? (object)_rect : this)
-                .SetLink(gameObject);
-            if (_canvasGroup != null)
+            if (_dishPreview == null)
             {
-                sequence.Join(_canvasGroup
-                    .DOFade(0f, RemovalTransitionDuration)
-                    .SetEase(Ease.InCubic));
+                PlayFallbackRemoval(onComplete);
+                return;
             }
 
-            if (_rect != null)
+            Tween dissolveTween = null;
+            dissolveTween = _dishPreview.PlayDissolve(() =>
             {
-                sequence.Join(_rect
-                    .DOScale(Vector3.one * RemovalTransitionScale, RemovalTransitionDuration)
-                    .SetEase(Ease.InCubic));
-            }
-
-            if (_canvasGroup == null && _rect == null)
-            {
-                sequence.AppendInterval(RemovalTransitionDuration);
-            }
-
-            _removalTween = sequence;
-            sequence.OnComplete(() =>
+                if (!ReferenceEquals(_removalTween, dissolveTween))
                 {
-                    if (_canvasGroup != null)
-                    {
-                        _canvasGroup.alpha = 0f;
-                    }
+                    return;
+                }
 
-                    if (_rect != null)
+                _removalTween = null;
+                if (_canvasGroup != null)
+                {
+                    _canvasGroup.alpha = 0f;
+                }
+
+                onComplete?.Invoke();
+            });
+            _removalTween = dissolveTween;
+        }
+
+        private void PlayFallbackRemoval(Action onComplete)
+        {
+            if (_canvasGroup == null)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            Tween fadeTween = _canvasGroup
+                .DOFade(0f, FallbackRemovalDuration)
+                .SetEase(Ease.InSine)
+                .SetUpdate(true)
+                .SetLink(gameObject);
+            _removalTween = fadeTween;
+            fadeTween.OnComplete(() =>
+                {
+                    if (!ReferenceEquals(_removalTween, fadeTween))
                     {
-                        _rect.localScale = Vector3.one * RemovalTransitionScale;
+                        return;
                     }
 
                     _removalTween = null;
@@ -523,7 +532,7 @@ namespace GourmetProject.Game.UI.Meta
                 })
                 .OnKill(() =>
                 {
-                    if (ReferenceEquals(_removalTween, sequence))
+                    if (ReferenceEquals(_removalTween, fadeTween))
                     {
                         _removalTween = null;
                     }
@@ -724,6 +733,7 @@ namespace GourmetProject.Game.UI.Meta
             Tween removalTween = _removalTween;
             _removalTween = null;
             removalTween?.Kill();
+            _dishPreview?.StopCurrentTransition();
             if (!restoreVisuals)
             {
                 return;

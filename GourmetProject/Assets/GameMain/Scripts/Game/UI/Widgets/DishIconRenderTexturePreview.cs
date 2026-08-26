@@ -608,14 +608,14 @@ namespace GourmetProject.Game.UI.Widgets
                 });
         }
 
-        public void PlayDissolve(Action onComplete)
+        public Tween PlayDissolve(Action onComplete)
         {
             EnsureRefs();
             KillTransformSequence();
             if (_targetImage == null)
             {
                 onComplete?.Invoke();
-                return;
+                return null;
             }
 
             if (!BeginDissolveMaterial())
@@ -643,7 +643,7 @@ namespace GourmetProject.Game.UI.Widgets
                         _targetImage.color = faded;
                         onComplete?.Invoke();
                     });
-                return;
+                return _transformSequence;
             }
 
             ApplyDissolveProgress(0f);
@@ -662,6 +662,13 @@ namespace GourmetProject.Game.UI.Widgets
                     ApplyDissolveProgress(1f);
                     onComplete?.Invoke();
                 });
+            return _transformSequence;
+        }
+
+        internal void StopCurrentTransition()
+        {
+            EnsureRefs();
+            KillTransformSequence();
         }
 
         public void Hide()
