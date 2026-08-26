@@ -6,7 +6,8 @@ using System.Linq;
 namespace GourmetProject.Gameplay.Battle
 {
     /// <summary>
-    /// 一个「食谱」槽位（image1 的食谱1/食谱2）：持有一组待上菜的食物 id，点击「上菜」时从中随机取出一道。
+    /// 一个「食谱」槽位（image1 的食谱1/食谱2）：持有一组待上菜的具体食谱条目。
+    /// 本场出菜优先顺序由 BattleSession 开战时另行固定生成。
     /// </summary>
     public sealed class RecipeSlot
     {

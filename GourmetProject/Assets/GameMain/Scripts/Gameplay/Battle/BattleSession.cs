@@ -150,9 +150,12 @@ namespace GourmetProject.Gameplay.Battle
     {
         private readonly GameplayDatabase _db;
         private readonly IRandomStream _rng;
+        private readonly IRandomStream _serveSequenceRng;
         private readonly ScoreCalculator _calculator;
         private readonly SolverPreviewSampler _solverPreviewSampler;
         private readonly List<RecipeSlot> _slots;
+        private readonly List<ServeSequenceToken> _remainingServeSequence =
+            new List<ServeSequenceToken>();
         private readonly List<string> _recipeBaseIds = new List<string>();
         private readonly List<TrackedRecipeEntry> _trackedRecipeEntries = new List<TrackedRecipeEntry>();
         private readonly Dictionary<RecipeSlotEntry, TrackedRecipeEntry> _trackedRecipeEntriesBySource =
@@ -195,8 +198,8 @@ namespace GourmetProject.Gameplay.Battle
         private string _insertDishId = string.Empty;
         private int _insertDishWindowSize;
         private int _insertDishCountPerWindow;
-        private int _successfulBellPrepares;
-        private readonly HashSet<int> _insertDishPositions = new HashSet<int>();
+        private bool _serveSequenceInitialized;
+        private bool _serveSequenceStarted;
         private int _serveCookiePityCount;
         private int _consecutiveCookiePrepares;
         private readonly HashSet<string> _serveCookieDishIds =
@@ -209,11 +212,13 @@ namespace GourmetProject.Gameplay.Battle
             IEnumerable<RecipeSlot> slots,
             int requiredScore,
             ScoreCalculator calculator = null,
-            IReadOnlyDictionary<string, int> runSettledCounts = null)
+            IReadOnlyDictionary<string, int> runSettledCounts = null,
+            IRandomStream serveSequenceRng = null)
         {
             DiningTable = board ?? throw new ArgumentNullException(nameof(board));
             _db = db ?? throw new ArgumentNullException(nameof(db));
             _rng = rng ?? throw new ArgumentNullException(nameof(rng));
+            _serveSequenceRng = serveSequenceRng ?? _rng;
             _slots = new List<RecipeSlot>(slots ?? Array.Empty<RecipeSlot>());
             RequiredScore = requiredScore;
             _calculator = calculator ?? new ScoreCalculator();
@@ -342,6 +347,7 @@ namespace GourmetProject.Gameplay.Battle
         /// </summary>
         public void ConfigureCookieServePity(int count, IEnumerable<string> cookieDishIds)
         {
+            EnsureServeSequenceConfigurable();
             _serveCookiePityCount = Math.Max(0, count);
             _consecutiveCookiePrepares = 0;
             _serveCookieDishIds.Clear();
@@ -583,11 +589,193 @@ namespace GourmetProject.Gameplay.Battle
         /// </summary>
         public void ConfigureInsertedDishSequence(string dishId, int windowSize, int countPerWindow)
         {
+            EnsureServeSequenceConfigurable();
             _insertDishId = dishId ?? string.Empty;
             _insertDishWindowSize = Math.Max(0, windowSize);
-            _insertDishCountPerWindow = Math.Max(0, Math.Min(countPerWindow, _insertDishWindowSize));
-            _successfulBellPrepares = 0;
-            GenerateInsertDishPositions();
+            _insertDishCountPerWindow = Math.Max(
+                0,
+                Math.Min(countPerWindow, _insertDishWindowSize));
+        }
+
+        /// <summary>
+        /// 用独立随机流一次性生成本场固定出菜优先序列。序列只依赖开战时的食谱和配置，
+        /// 不读取餐桌空间；真正出菜时会从剩余序列头部实时跳过当前放不下的条目。
+        /// </summary>
+        public void InitializeServeSequence()
+        {
+            if (_serveSequenceInitialized)
+            {
+                return;
+            }
+
+            _remainingServeSequence.Clear();
+            for (int slotIndex = 0; slotIndex < _slots.Count; slotIndex++)
+            {
+                BuildServeSequenceForSlot(slotIndex, includeInsertedDishes: slotIndex == 0);
+            }
+
+            _serveSequenceInitialized = true;
+        }
+
+        private void BuildServeSequenceForSlot(int slotIndex, bool includeInsertedDishes)
+        {
+            RecipeSlot slot = _slots[slotIndex];
+            var candidates = new List<ServeSequenceToken>(slot.Entries.Count);
+            foreach (RecipeSlotEntry entry in slot.Entries)
+            {
+                DishDef dish = entry != null ? _db.GetDish(entry.DishId) : null;
+                if (dish != null)
+                {
+                    candidates.Add(new ServeSequenceToken(
+                        slotIndex,
+                        entry,
+                        dish,
+                        isBossInsertedDish: false,
+                        automaticOnly: false));
+                }
+            }
+
+            int plannedConsecutiveCookies = 0;
+            int plannedOutputPosition = 1;
+            int insertedDishTokensGenerated = 0;
+            int fullWindowInsertionSafetyLimit = FullWindowInsertionSafetyLimit(candidates.Count);
+            var insertPositionsInWindow = new HashSet<int>();
+            while (true)
+            {
+                bool insertAtPosition = includeInsertedDishes
+                    && insertedDishTokensGenerated < fullWindowInsertionSafetyLimit
+                    && IsInsertedDishPosition(plannedOutputPosition, insertPositionsInWindow);
+                if (insertAtPosition)
+                {
+                    DishDef insertedDish = _db.GetDish(_insertDishId);
+                    var insertedEntry = new RecipeSlotEntry(_insertDishId);
+                    _remainingServeSequence.Add(new ServeSequenceToken(
+                        slotIndex,
+                        insertedEntry,
+                        insertedDish,
+                        isBossInsertedDish: true,
+                        automaticOnly: true));
+                    insertedDishTokensGenerated++;
+                    plannedConsecutiveCookies = PlannedConsecutiveCookieCount(
+                        plannedConsecutiveCookies,
+                        insertedDish);
+                    plannedOutputPosition++;
+                    continue;
+                }
+
+                if (candidates.Count == 0)
+                {
+                    break;
+                }
+
+                List<ServeSequenceToken> rollCandidates = PlannedCookieCandidates(
+                    candidates,
+                    plannedConsecutiveCookies);
+                List<ServeSequenceToken> freshCandidates = rollCandidates
+                    .Where(candidate => HasFlavorEffect(
+                        candidate.Dish,
+                        candidate.Entry,
+                        FlavorEffectType.ServePriority))
+                    .ToList();
+                if (freshCandidates.Count > 0)
+                {
+                    rollCandidates = freshCandidates;
+                }
+
+                var weights = new List<float>(rollCandidates.Count);
+                foreach (ServeSequenceToken candidate in rollCandidates)
+                {
+                    weights.Add(Math.Max(1, candidate.Dish.Shape.CellCount));
+                }
+
+                ServeSequenceToken chosen = rollCandidates[_serveSequenceRng.WeightedPickIndex(weights)];
+                _remainingServeSequence.Add(chosen);
+                candidates.Remove(chosen);
+                plannedConsecutiveCookies = PlannedConsecutiveCookieCount(
+                    plannedConsecutiveCookies,
+                    chosen.Dish);
+                plannedOutputPosition++;
+            }
+        }
+
+        private int FullWindowInsertionSafetyLimit(int recipeEntryCount)
+        {
+            if (_insertDishWindowSize <= 0
+                || _insertDishCountPerWindow < _insertDishWindowSize)
+            {
+                return int.MaxValue;
+            }
+
+            // count == windowSize 时旧规则会让每个位置都成为插菜，无法生成有限计划。
+            // 每个食谱条目最多配一个完整插菜窗口，之后强制让普通条目进入序列。
+            long limit = (long)Math.Max(1, recipeEntryCount) * _insertDishCountPerWindow;
+            return (int)Math.Min(int.MaxValue, limit);
+        }
+
+        private bool IsInsertedDishPosition(
+            int outputPosition,
+            HashSet<int> positionsInWindow)
+        {
+            if (_insertDishWindowSize <= 0
+                || _insertDishCountPerWindow <= 0
+                || string.IsNullOrEmpty(_insertDishId))
+            {
+                return false;
+            }
+
+            int positionInWindow = (outputPosition - 1) % _insertDishWindowSize + 1;
+            if (positionInWindow == 1)
+            {
+                positionsInWindow.Clear();
+                var positions = new List<int>(_insertDishWindowSize);
+                for (int position = 1; position <= _insertDishWindowSize; position++)
+                {
+                    positions.Add(position);
+                }
+
+                _serveSequenceRng.Shuffle(positions);
+                for (int i = 0; i < _insertDishCountPerWindow; i++)
+                {
+                    positionsInWindow.Add(positions[i]);
+                }
+            }
+
+            return positionsInWindow.Contains(positionInWindow);
+        }
+
+        private List<ServeSequenceToken> PlannedCookieCandidates(
+            List<ServeSequenceToken> candidates,
+            int plannedConsecutiveCookies)
+        {
+            if (_serveCookiePityCount <= 0
+                || plannedConsecutiveCookies < _serveCookiePityCount
+                || _serveCookieDishIds.Count == 0)
+            {
+                return candidates;
+            }
+
+            var nonCookieCandidates = new List<ServeSequenceToken>();
+            foreach (ServeSequenceToken candidate in candidates)
+            {
+                if (!IsCookieDish(candidate.Dish))
+                {
+                    nonCookieCandidates.Add(candidate);
+                }
+            }
+
+            return nonCookieCandidates.Count > 0 ? nonCookieCandidates : candidates;
+        }
+
+        private int PlannedConsecutiveCookieCount(int current, DishDef dish)
+            => IsCookieDish(dish) ? current + 1 : 0;
+
+        private void EnsureServeSequenceConfigurable()
+        {
+            if (_serveSequenceInitialized || _serveSequenceStarted)
+            {
+                throw new InvalidOperationException(
+                    "Serve sequence configuration must be completed before InitializeServeSequence.");
+            }
         }
 
         /// <summary>
@@ -863,78 +1051,61 @@ namespace GourmetProject.Gameplay.Battle
                 return ServePrepareResult.Fail(ServePrepareOutcome.LimitReached);
             }
 
+            InitializeServeSequence();
+            _serveSequenceStarted = true;
             RecipeSlot slot = _slots[slotIndex];
-            bool insertConfiguredDish = triggeredByAutomaticOutput && ShouldInsertDishOnNextBellPrepare();
-            RecipeSlotEntry entry;
-            DishDef servedDish;
-            IReadOnlyList<Placement> placements;
+            ServeSequenceToken chosen = null;
+            int chosenIndex = -1;
+            IReadOnlyList<Placement> placements = null;
+            bool hasEligibleSequenceToken = false;
 
-            if (insertConfiguredDish)
+            // 每次都从剩余序列头部开始，最多检查初始化时存在的 token 数量一次。
+            // 放不下的 token 不移除、不推进随机流，餐桌变化后可在下一次调用重新命中。
+            int scanLimit = _remainingServeSequence.Count;
+            for (int i = 0; i < scanLimit; i++)
             {
-                servedDish = _db.GetDish(_insertDishId);
-                if (servedDish == null)
+                ServeSequenceToken candidate = _remainingServeSequence[i];
+                if (candidate.SlotIndex != slotIndex
+                    || (candidate.AutomaticOnly && !triggeredByAutomaticOutput))
                 {
-                    return ServePrepareResult.Fail(ServePrepareOutcome.NoFittingDish);
+                    continue;
                 }
 
-                entry = new RecipeSlotEntry(_insertDishId);
-                placements = FindServePlacements(servedDish, entry);
-                if (placements.Count == 0)
+                hasEligibleSequenceToken = true;
+                if (candidate.Dish == null)
                 {
-                    return ServePrepareResult.Fail(ServePrepareOutcome.NoFittingDish);
+                    continue;
                 }
+
+                IReadOnlyList<Placement> candidatePlacements =
+                    FindServePlacements(candidate.Dish, candidate.Entry);
+                if (candidatePlacements.Count == 0)
+                {
+                    continue;
+                }
+
+                chosen = candidate;
+                chosenIndex = i;
+                placements = candidatePlacements;
+                break;
             }
-            else
+
+            if (chosen == null)
             {
-                if (slot.IsEmpty)
-                {
-                    return ServePrepareResult.Fail(ServePrepareOutcome.SlotEmpty);
-                }
-
-                var candidates = new List<ServeCandidate>();
-                for (int i = 0; i < slot.Entries.Count; i++)
-                {
-                    DishDef dish = _db.GetDish(slot.Entries[i].DishId);
-                    if (dish == null)
-                    {
-                        continue;
-                    }
-
-                    // 抽菜权重只依赖食物占格数，不依赖合法位置数量。候选阶段只需判断
-                    // 能否放下；正式 RNG 选中后再为唯一一道菜生成完整位置列表。
-                    if (CanServeDish(dish, slot.Entries[i]))
-                    {
-                        candidates.Add(new ServeCandidate(i, dish, placements: null));
-                    }
-                }
-
-                if (candidates.Count == 0)
-                {
-                    return ServePrepareResult.Fail(ServePrepareOutcome.NoFittingDish);
-                }
-
-                List<ServeCandidate> rollCandidates = PreferNonCookieCandidates(candidates);
-                List<ServeCandidate> freshCandidates = rollCandidates
-                    .Where(candidate => HasFlavorEffect(
-                        candidate.Dish,
-                        slot.Entries[candidate.SlotEntryIndex],
-                        FlavorEffectType.ServePriority))
-                    .ToList();
-                if (freshCandidates.Count > 0)
-                {
-                    rollCandidates = freshCandidates;
-                }
-                var weights = new List<float>(rollCandidates.Count);
-                foreach (ServeCandidate candidate in rollCandidates)
-                {
-                    weights.Add(Math.Max(1, candidate.Dish.Shape.CellCount));
-                }
-
-                ServeCandidate chosen = rollCandidates[_rng.WeightedPickIndex(weights)];
-                entry = slot.RemoveEntryAt(chosen.SlotEntryIndex);
-                servedDish = chosen.Dish;
-                placements = FindServePlacements(servedDish, entry);
+                return ServePrepareResult.Fail(
+                    hasEligibleSequenceToken || !slot.IsEmpty
+                        ? ServePrepareOutcome.NoFittingDish
+                        : ServePrepareOutcome.SlotEmpty);
             }
+
+            _remainingServeSequence.RemoveAt(chosenIndex);
+            if (!chosen.IsBossInsertedDish)
+            {
+                RemoveRecipeEntryByReference(slot, chosen.Entry);
+            }
+
+            RecipeSlotEntry entry = chosen.Entry;
+            DishDef servedDish = chosen.Dish;
 
             Placement initialPlacement = placements[0];
             List<string> skills = ComposeServeSkills(servedDish, entry);
@@ -952,36 +1123,23 @@ namespace GourmetProject.Gameplay.Battle
                 entry,
                 instance,
                 placements,
-                isBossInsertedDish: insertConfiguredDish);
+                isBossInsertedDish: chosen.IsBossInsertedDish);
             SetTrackedStatus(entry, BattleRecipeEntryStatus.WaitingForPlacement);
             RecordPreparedDishForCookiePity(servedDish);
-            if (triggeredByAutomaticOutput)
-            {
-                AdvanceBellPrepareSequence();
-            }
 
             return new ServePrepareResult(ServePrepareOutcome.Prepared, PreparedServe);
         }
 
-        private List<ServeCandidate> PreferNonCookieCandidates(List<ServeCandidate> candidates)
+        private static void RemoveRecipeEntryByReference(RecipeSlot slot, RecipeSlotEntry entry)
         {
-            if (_serveCookiePityCount <= 0
-                || _consecutiveCookiePrepares < _serveCookiePityCount
-                || _serveCookieDishIds.Count == 0)
+            for (int i = 0; i < slot.Entries.Count; i++)
             {
-                return candidates;
-            }
-
-            var nonCookieCandidates = new List<ServeCandidate>();
-            foreach (ServeCandidate candidate in candidates)
-            {
-                if (!IsCookieDish(candidate.Dish))
+                if (ReferenceEquals(slot.Entries[i], entry))
                 {
-                    nonCookieCandidates.Add(candidate);
+                    slot.RemoveEntryAt(i);
+                    return;
                 }
             }
-
-            return nonCookieCandidates.Count > 0 ? nonCookieCandidates : candidates;
         }
 
         private void RecordPreparedDishForCookiePity(DishDef dish)
@@ -1024,51 +1182,6 @@ namespace GourmetProject.Gameplay.Battle
             }
 
             return false;
-        }
-
-        private bool ShouldInsertDishOnNextBellPrepare()
-        {
-            if (_insertDishWindowSize <= 0
-                || _insertDishCountPerWindow <= 0
-                || string.IsNullOrEmpty(_insertDishId))
-            {
-                return false;
-            }
-
-            int positionInWindow = _successfulBellPrepares % _insertDishWindowSize + 1;
-            return _insertDishPositions.Contains(positionInWindow);
-        }
-
-        private void AdvanceBellPrepareSequence()
-        {
-            _successfulBellPrepares++;
-            if (_insertDishWindowSize > 0 && _successfulBellPrepares % _insertDishWindowSize == 0)
-            {
-                GenerateInsertDishPositions();
-            }
-        }
-
-        private void GenerateInsertDishPositions()
-        {
-            _insertDishPositions.Clear();
-            if (_insertDishWindowSize <= 0
-                || _insertDishCountPerWindow <= 0
-                || string.IsNullOrEmpty(_insertDishId))
-            {
-                return;
-            }
-
-            var positions = new List<int>(_insertDishWindowSize);
-            for (int position = 1; position <= _insertDishWindowSize; position++)
-            {
-                positions.Add(position);
-            }
-
-            _rng.Shuffle(positions);
-            for (int i = 0; i < _insertDishCountPerWindow; i++)
-            {
-                _insertDishPositions.Add(positions[i]);
-            }
         }
 
         /// <summary>
@@ -1515,20 +1628,6 @@ namespace GourmetProject.Gameplay.Battle
             return numbSteps > 0
                 ? DiningTable.FindValidPlacementsRotatedCcw(dish, numbSteps)
                 : DiningTable.FindValidPlacements(dish);
-        }
-
-        private bool CanServeDish(DishDef dish, RecipeSlotEntry entry)
-        {
-            // 与 FindServePlacements 保持相同的「麻」旋转规则，
-            // 但只寻找第一个合法位置，避免为未被抽中的菜构造完整 Placement 列表。
-            int numbSteps = NumbStepsFor(ComposeServeFlavors(dish, entry));
-            if (numbSteps > 0)
-            {
-                int rotationIndex = (4 - (numbSteps % 4)) % 4;
-                return DiningTable.CanFit(dish.Shape.RotatedBy(rotationIndex));
-            }
-
-            return DiningTable.CanFit(dish.Shape);
         }
 
         /// <summary>枚举刚上桌且尚未锁定的食物在当前餐桌上的合法重定位位置。</summary>
@@ -2735,29 +2834,17 @@ namespace GourmetProject.Gameplay.Battle
                 return false;
             }
 
-            if (ShouldInsertDishOnNextBellPrepare())
+            InitializeServeSequence();
+            foreach (ServeSequenceToken token in _remainingServeSequence)
             {
-                DishDef insertedDish = _db.GetDish(_insertDishId);
-                if (insertedDish != null && DiningTable.CanFit(insertedDish))
-                {
-                    return true;
-                }
-            }
-
-            foreach (RecipeSlot slot in _slots)
-            {
-                if (slot.IsEmpty)
+                if (token.Dish == null)
                 {
                     continue;
                 }
 
-                foreach (string dishId in slot.Remaining)
+                if (FindServePlacements(token.Dish, token.Entry).Count > 0)
                 {
-                    DishDef def = _db.GetDish(dishId);
-                    if (def != null && DiningTable.CanFit(def))
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 
@@ -2930,20 +3017,31 @@ namespace GourmetProject.Gameplay.Battle
             }
         }
 
-        private readonly struct ServeCandidate
+        private sealed class ServeSequenceToken
         {
-            public ServeCandidate(int slotEntryIndex, DishDef dish, IReadOnlyList<Placement> placements)
+            public ServeSequenceToken(
+                int slotIndex,
+                RecipeSlotEntry entry,
+                DishDef dish,
+                bool isBossInsertedDish,
+                bool automaticOnly)
             {
-                SlotEntryIndex = slotEntryIndex;
+                SlotIndex = slotIndex;
+                Entry = entry;
                 Dish = dish;
-                Placements = placements;
+                IsBossInsertedDish = isBossInsertedDish;
+                AutomaticOnly = automaticOnly;
             }
 
-            public int SlotEntryIndex { get; }
+            public int SlotIndex { get; }
+
+            public RecipeSlotEntry Entry { get; }
 
             public DishDef Dish { get; }
 
-            public IReadOnlyList<Placement> Placements { get; }
+            public bool IsBossInsertedDish { get; }
+
+            public bool AutomaticOnly { get; }
         }
     }
 }
