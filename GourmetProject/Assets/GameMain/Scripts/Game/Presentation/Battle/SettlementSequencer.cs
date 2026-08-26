@@ -15,6 +15,23 @@ using UnityEngine.InputSystem;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
+    internal readonly struct SettlementBatchPaceDecision
+    {
+        public SettlementBatchPaceDecision(
+            SettlementPacePhase nextPhase,
+            int milestoneLineIndex,
+            bool reachedTarget)
+        {
+            NextPhase = nextPhase;
+            MilestoneLineIndex = milestoneLineIndex;
+            ReachedTarget = reachedTarget;
+        }
+
+        public SettlementPacePhase NextPhase { get; }
+        public int MilestoneLineIndex { get; }
+        public bool ReachedTarget { get; }
+    }
+
     /// <summary>
     /// 背包乱斗式的结算演出：点「吃」后，按真实结算明细顺序播放来源 cue，
     /// 最后在分数汇总阶段滚到总分。消费结算结果与结算前基线，不改动任何计分逻辑。
@@ -1795,6 +1812,17 @@ namespace GourmetProject.Game.Presentation.Battle
             ResultLabelLayoutPlan resultLabelPlan =
                 _stage.BuildResultLabelLayoutPlan(resultLabelOccurrences);
             int resultLabelIndex = 0;
+            var batchScoreLines = new List<ScoreLine>(lines.Count);
+            for (int i = 0; i < lines.Count; i++)
+            {
+                batchScoreLines.Add(lines[i].Line);
+            }
+
+            SettlementBatchPaceDecision batchPace = ResolveBatchPaceDecision(
+                ledger,
+                batchScoreLines,
+                session?.RequiredScore ?? 0,
+                _currentPacePhase);
 
             // 同一批次的计分明细仍按原顺序写入账本与发出事件，但所有结果动画
             // 在同一帧启动。这样保留正式因果顺序，同时恢复“一起触发”的节奏。
@@ -1856,12 +1884,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 BigDouble beforeTotal = ledger.CurrentTotal;
                 BigDouble contribution = ledger.Apply(line);
                 SettlementImpactTier impactTier = ImpactFor(line, targetCount);
-                SettlementPacePhase nextPhase = ResolvePacePhase(
-                    ledger.CurrentTotal,
-                    session?.RequiredScore ?? 0,
-                    _currentPacePhase);
-                bool reachedTarget = _currentPacePhase < SettlementPacePhase.TargetReached
-                    && nextPhase >= SettlementPacePhase.TargetReached;
+                bool reachedTarget = batchPace.ReachedTarget
+                    && i == batchPace.MilestoneLineIndex;
                 bool playPrimaryFeedback = primaryFeedbackLines.TryGetValue(
                         line.DishInstanceId,
                         out int primaryIndex)
@@ -1940,9 +1964,11 @@ namespace GourmetProject.Game.Presentation.Battle
                         }
                     }
                 }
-
-                PromoteSettlementPace(playback, nextPhase);
             }
+
+            // 里程碑必须按这一批同帧明细的最终净结果判定。这样先跨线再被扣回时，
+            // 不会提前点火或把持续燃烧阶段永久升级。
+            PromoteSettlementPace(playback, batchPace.NextPhase);
 
             for (int resultIndex = 0; resultIndex < resultTasks.Count; resultIndex++)
             {
@@ -3178,6 +3204,42 @@ namespace GourmetProject.Game.Presentation.Battle
                     ? SettlementPacePhase.TargetReached
                     : SettlementPacePhase.BelowTarget;
             return resolved > currentPhase ? resolved : currentPhase;
+        }
+
+        internal static SettlementBatchPaceDecision ResolveBatchPaceDecision(
+            SettlementRunningLedger ledger,
+            IReadOnlyList<ScoreLine> lines,
+            int requiredScore,
+            SettlementPacePhase currentPhase)
+        {
+            if (ledger == null || lines == null || lines.Count == 0)
+            {
+                return new SettlementBatchPaceDecision(currentPhase, -1, false);
+            }
+
+            SettlementRunningLedger preview = ledger.Clone();
+            int lastChangingLineIndex = -1;
+            for (int i = 0; i < lines.Count; i++)
+            {
+                BigDouble before = preview.CurrentTotal;
+                preview.Apply(lines[i]);
+                if (preview.CurrentTotal != before)
+                {
+                    lastChangingLineIndex = i;
+                }
+            }
+
+            SettlementPacePhase nextPhase = ResolvePacePhase(
+                preview.CurrentTotal,
+                requiredScore,
+                currentPhase);
+            bool reachedTarget = lastChangingLineIndex >= 0
+                && currentPhase < SettlementPacePhase.TargetReached
+                && nextPhase >= SettlementPacePhase.TargetReached;
+            return new SettlementBatchPaceDecision(
+                nextPhase,
+                reachedTarget ? lastChangingLineIndex : -1,
+                reachedTarget);
         }
 
         internal static float DefaultSpeedForPhase(

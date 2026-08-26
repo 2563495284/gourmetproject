@@ -74,6 +74,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal bool TransientSparkActive => _transientSparkActive;
 
+        internal float QueuedBurstStrength => _queuedBurstStrength;
+
         internal SettlementFeverScreenView ScreenFever => _screenFever;
 
         private void Awake()
@@ -179,7 +181,6 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             float clamped = Mathf.Clamp01(strength);
-            _screenFever?.Burst(clamped);
             _queuedBurstStrength = Mathf.Max(_queuedBurstStrength, clamped);
             _burstCompression = Mathf.Max(_burstCompression, Mathf.Lerp(0.10f, 0.14f, clamped));
             _burstDelayFrames = Mathf.Max(_burstDelayFrames, 1);
@@ -244,6 +245,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
             else if (_queuedBurstStrength > 0f)
             {
+                _screenFever?.Burst(_queuedBurstStrength);
                 EmitBurst(_queuedBurstStrength);
                 _queuedBurstStrength = 0f;
                 _burstCompression = 0f;

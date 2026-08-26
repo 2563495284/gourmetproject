@@ -14,6 +14,76 @@ using TMPro;
 
 namespace GourmetProject.Game.UI.Battle.View
 {
+    internal readonly struct SettlementScoreBeatAggregate
+    {
+        public SettlementScoreBeatAggregate(
+            BigDouble beforeScore,
+            BigDouble afterScore,
+            BigDouble delta,
+            bool reachedTarget,
+            float speed)
+        {
+            BeforeScore = beforeScore;
+            AfterScore = afterScore;
+            Delta = delta;
+            ReachedTarget = reachedTarget;
+            Speed = speed;
+        }
+
+        public BigDouble BeforeScore { get; }
+        public BigDouble AfterScore { get; }
+        public BigDouble Delta { get; }
+        public bool ReachedTarget { get; }
+        public float Speed { get; }
+    }
+
+    internal struct SettlementScoreBeatAccumulator
+    {
+        private BigDouble _beforeScore;
+        private BigDouble _afterScore;
+        private BigDouble _delta;
+        private bool _reachedTarget;
+        private float _speed;
+
+        public bool HasPending { get; private set; }
+
+        public void Add(SettlementBeatSignal signal)
+        {
+            if (!HasPending)
+            {
+                HasPending = true;
+                _beforeScore = signal.BeforeScore;
+                _afterScore = signal.AfterScore;
+                _delta = signal.ScoreDelta;
+                _reachedTarget = signal.ReachedTarget;
+                _speed = Mathf.Max(0.0001f, signal.Speed);
+                return;
+            }
+
+            _afterScore = signal.AfterScore;
+            _delta += signal.ScoreDelta;
+            _reachedTarget |= signal.ReachedTarget;
+            _speed = Mathf.Max(0.0001f, signal.Speed);
+        }
+
+        public SettlementScoreBeatAggregate Consume()
+        {
+            var aggregate = new SettlementScoreBeatAggregate(
+                _beforeScore,
+                _afterScore,
+                _delta,
+                _reachedTarget,
+                Mathf.Max(0.0001f, _speed));
+            this = default;
+            return aggregate;
+        }
+
+        public void Reset()
+        {
+            this = default;
+        }
+    }
+
     /// <summary>
     /// 常驻壳左栏信息组件：周/金币/分数要求，以及「查看食谱」「查看餐桌」「设置」按钮。
     /// 数据刷新与「查看餐桌」按钮文案/可点态集中在此，点击通过 <see cref="Bind"/> 回调壳。
@@ -63,12 +133,7 @@ namespace GourmetProject.Game.UI.Battle.View
         private RectTransform _scoreMeter;
         private TMP_Text _settlementDeltaText;
         private Sequence _settlementScoreBeatSequence;
-        private bool _settlementScoreBeatPending;
-        private BigDouble _pendingScoreBefore;
-        private BigDouble _pendingScoreAfter;
-        private BigDouble _pendingScoreDelta;
-        private bool _pendingReachedTarget;
-        private float _pendingSettlementSpeed = 1f;
+        private SettlementScoreBeatAccumulator _settlementScoreBeatAccumulator;
         private Vector2 _settlementDeltaBasePosition;
         private Vector2 _scoreCurrentBasePosition;
         private bool _scoreCurrentBasePositionCaptured;
@@ -166,7 +231,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void LateUpdate()
         {
-            if (_settlementScoreBeatPending)
+            if (_settlementScoreBeatAccumulator.HasPending)
             {
                 FlushSettlementScoreBeat();
             }
@@ -461,21 +526,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 return;
             }
 
-            if (!_settlementScoreBeatPending)
-            {
-                _settlementScoreBeatPending = true;
-                _pendingScoreBefore = signal.BeforeScore;
-                _pendingScoreAfter = signal.AfterScore;
-                _pendingScoreDelta = signal.ScoreDelta;
-                _pendingReachedTarget = signal.ReachedTarget;
-                _pendingSettlementSpeed = Mathf.Max(0.0001f, signal.Speed);
-                return;
-            }
-
-            _pendingScoreAfter = signal.AfterScore;
-            _pendingScoreDelta += signal.ScoreDelta;
-            _pendingReachedTarget |= signal.ReachedTarget;
-            _pendingSettlementSpeed = Mathf.Max(0.0001f, signal.Speed);
+            _settlementScoreBeatAccumulator.Add(signal);
         }
 
         internal static bool ShouldQueueSettlementScoreBeat(SettlementBeatSignal signal)
@@ -490,12 +541,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
         public void EndSettlementScorePresentation()
         {
-            _settlementScoreBeatPending = false;
-            _pendingScoreBefore = BigDouble.Zero;
-            _pendingScoreAfter = BigDouble.Zero;
-            _pendingScoreDelta = BigDouble.Zero;
-            _pendingReachedTarget = false;
-            _pendingSettlementSpeed = 1f;
+            _settlementScoreBeatAccumulator.Reset();
             _settlementScoreBeatSequence?.Kill();
             _settlementScoreBeatSequence = null;
 
@@ -563,21 +609,18 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void FlushSettlementScoreBeat()
         {
-            _settlementScoreBeatPending = false;
+            SettlementScoreBeatAggregate aggregate = _settlementScoreBeatAccumulator.Consume();
             EnsureSettlementDeltaText();
             if (_scoreCurrentText == null || _settlementDeltaText == null)
             {
                 return;
             }
 
-            BigDouble before = _pendingScoreBefore;
-            BigDouble after = _pendingScoreAfter;
-            BigDouble delta = _pendingScoreDelta;
-            bool reachedTarget = _pendingReachedTarget;
-            float presentationSpeed = Mathf.Max(0.0001f, _pendingSettlementSpeed);
-            _pendingScoreDelta = BigDouble.Zero;
-            _pendingReachedTarget = false;
-            _pendingSettlementSpeed = 1f;
+            BigDouble before = aggregate.BeforeScore;
+            BigDouble after = aggregate.AfterScore;
+            BigDouble delta = aggregate.Delta;
+            bool reachedTarget = aggregate.ReachedTarget;
+            float presentationSpeed = aggregate.Speed;
 
             // 同一帧内的多条变化可能正负抵消；最终净变化为 0 时也不显示 +0。
             if (!HasVisibleSettlementScoreDelta(delta))

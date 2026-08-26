@@ -47,23 +47,23 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(BattleInfoColumn.HasVisibleSettlementScoreDelta(5 - 5), Is.False);
         }
 
-        [TestCase(1, SettlementScoreFeedbackStep.Subtle)]
-        [TestCase(49, SettlementScoreFeedbackStep.Subtle)]
-        [TestCase(50, SettlementScoreFeedbackStep.Clear)]
-        [TestCase(199, SettlementScoreFeedbackStep.Clear)]
-        [TestCase(200, SettlementScoreFeedbackStep.Strong)]
-        [TestCase(999, SettlementScoreFeedbackStep.Strong)]
-        [TestCase(1000, SettlementScoreFeedbackStep.Burst)]
-        [TestCase(4999, SettlementScoreFeedbackStep.Burst)]
-        [TestCase(5000, SettlementScoreFeedbackStep.Peak)]
+        [TestCase(1, (int)SettlementScoreFeedbackStep.Subtle)]
+        [TestCase(49, (int)SettlementScoreFeedbackStep.Subtle)]
+        [TestCase(50, (int)SettlementScoreFeedbackStep.Clear)]
+        [TestCase(199, (int)SettlementScoreFeedbackStep.Clear)]
+        [TestCase(200, (int)SettlementScoreFeedbackStep.Strong)]
+        [TestCase(999, (int)SettlementScoreFeedbackStep.Strong)]
+        [TestCase(1000, (int)SettlementScoreFeedbackStep.Burst)]
+        [TestCase(4999, (int)SettlementScoreFeedbackStep.Burst)]
+        [TestCase(5000, (int)SettlementScoreFeedbackStep.Peak)]
         public void ScoreDeltaFeedback_UsesFixedScoreSteps(
             int delta,
-            SettlementScoreFeedbackStep expected)
+            int expectedStep)
         {
             SettlementScoreFeedbackProfile profile =
                 SettlementScoreFeedbackResolver.Resolve(delta);
 
-            Assert.That(profile.Step, Is.EqualTo(expected));
+            Assert.That((int)profile.Step, Is.EqualTo(expectedStep));
             Assert.That(profile.Visible, Is.True);
         }
 
@@ -83,23 +83,56 @@ namespace GourmetProject.Tests.EditMode
             AssertColor(-5000, new Color32(0xFF, 0x12, 0x3D, 0xFF));
         }
 
-        [Test]
-        public void ScoreDeltaFeedback_IsContinuousAtStepBoundariesAndCapsHugeValues()
+        [TestCase(49.999d, 50d)]
+        [TestCase(199.999d, 200d)]
+        [TestCase(999.999d, 1000d)]
+        [TestCase(4999.999d, 5000d)]
+        public void ScoreDeltaFeedback_IsContinuousAtEveryStepBoundary(
+            double justBelow,
+            double boundaryScore)
         {
             SettlementScoreFeedbackProfile below =
-                SettlementScoreFeedbackResolver.Resolve(49.999d);
+                SettlementScoreFeedbackResolver.Resolve(justBelow);
             SettlementScoreFeedbackProfile boundary =
-                SettlementScoreFeedbackResolver.Resolve(50d);
-            SettlementScoreFeedbackProfile huge =
-                SettlementScoreFeedbackResolver.Resolve(BigDouble.Normalize(1d, 100));
+                SettlementScoreFeedbackResolver.Resolve(boundaryScore);
 
             Assert.That(
                 Vector4.Distance(below.TextColor, boundary.TextColor),
                 Is.LessThan(0.001f));
             Assert.That(below.Intensity, Is.LessThanOrEqualTo(boundary.Intensity));
+        }
+
+        [Test]
+        public void ScoreDeltaFeedback_CapsHugeValues()
+        {
+            SettlementScoreFeedbackProfile huge =
+                SettlementScoreFeedbackResolver.Resolve(BigDouble.Normalize(1d, 100));
+
             Assert.That(huge.Step, Is.EqualTo(SettlementScoreFeedbackStep.Peak));
             Assert.That(huge.Intensity, Is.EqualTo(1f));
             Assert.That(huge.PeakScale, Is.EqualTo(1.30f).Within(0.0001f));
+        }
+
+        [Test]
+        public void ScoreBeatAccumulator_MergesCrossStepAndNetZeroBatches()
+        {
+            var accumulator = new SettlementScoreBeatAccumulator();
+            accumulator.Add(CreateScoreBeat(0, 49));
+            accumulator.Add(CreateScoreBeat(49, 50));
+
+            SettlementScoreBeatAggregate crossStep = accumulator.Consume();
+
+            Assert.That(crossStep.BeforeScore, Is.EqualTo((BigDouble)0));
+            Assert.That(crossStep.AfterScore, Is.EqualTo((BigDouble)50));
+            Assert.That(crossStep.Delta, Is.EqualTo((BigDouble)50));
+            Assert.That(accumulator.HasPending, Is.False);
+
+            accumulator.Add(CreateScoreBeat(0, 200));
+            accumulator.Add(CreateScoreBeat(200, 0));
+            SettlementScoreBeatAggregate cancelled = accumulator.Consume();
+
+            Assert.That(cancelled.Delta, Is.EqualTo(BigDouble.Zero));
+            Assert.That(BattleInfoColumn.HasVisibleSettlementScoreDelta(cancelled.Delta), Is.False);
         }
 
         [Test]
@@ -160,6 +193,41 @@ namespace GourmetProject.Tests.EditMode
             finally
             {
                 Object.DestroyImmediate(fireObject);
+            }
+        }
+
+        [Test]
+        public void ScoreFire_CoalescesRepeatedBurstRequestsBeforeScreenFeverEmission()
+        {
+            var rootObject = new GameObject("SettlementBurstRoot", typeof(RectTransform));
+            var meterObject = new GameObject("ScoreMeter", typeof(RectTransform));
+            var scoreObject = new GameObject("Score", typeof(RectTransform));
+            var fireObject = new GameObject("SettlementScoreFire", typeof(RectTransform));
+            try
+            {
+                meterObject.transform.SetParent(rootObject.transform, false);
+                scoreObject.transform.SetParent(meterObject.transform, false);
+                fireObject.transform.SetParent(rootObject.transform, false);
+                var fire = fireObject.AddComponent<SettlementScoreFireView>();
+                fire.BindToScore(
+                    scoreObject.GetComponent<RectTransform>(),
+                    rootObject.GetComponent<RectTransform>());
+                fire.Show();
+                fire.SetPhase(SettlementPacePhase.TargetReached, 1f);
+                int feverMotesBeforeBurst = fire.ScreenFever.ActiveMoteCount;
+
+                fire.Burst(0.35f);
+                fire.Burst(0.90f);
+
+                Assert.That(fire.QueuedBurstStrength, Is.EqualTo(0.90f).Within(0.0001f));
+                Assert.That(
+                    fire.ScreenFever.ActiveMoteCount,
+                    Is.EqualTo(feverMotesBeforeBurst),
+                    "Fever 粒子应在合并后的爆燃真正执行时只发射一次");
+            }
+            finally
+            {
+                Object.DestroyImmediate(rootObject);
             }
         }
 
@@ -508,6 +576,26 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 SettlementScoreFeedbackResolver.ResolveFireFeedback(profile, phase),
                 Is.EqualTo(expected));
+        }
+
+        private static SettlementBeatSignal CreateScoreBeat(
+            BigDouble before,
+            BigDouble after,
+            bool reachedTarget = false,
+            float speed = 1f)
+        {
+            return new SettlementBeatSignal(
+                SettlementBeatKind.ResultApplied,
+                "测试",
+                1,
+                speed,
+                0.5f,
+                ScoreLineKind.DishFlat,
+                before,
+                after,
+                SettlementImpactTier.Normal,
+                1,
+                reachedTarget);
         }
 
         private static ScoreLine CreateLine(ScoreLineKind kind)

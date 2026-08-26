@@ -107,6 +107,54 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(Value(multiplierLedger.CurrentTotal), Is.EqualTo(600d).Within(1e-9));
         }
 
+        [Test]
+        public void BatchPaceDecision_UsesFinalNetScoreWithoutMutatingLiveLedger()
+        {
+            var score = new DishScore(1, "dish", 90f, 0f, 1f);
+            var ledger = CreateLedger(score);
+            ScoreLine[] lines =
+            {
+                CreateDishLine(ScoreLineKind.DishFlat, 0f, 20f, "+20"),
+                CreateDishLine(ScoreLineKind.DishFlat, 20f, 0f, "-20"),
+            };
+
+            SettlementBatchPaceDecision decision =
+                SettlementSequencer.ResolveBatchPaceDecision(
+                    ledger,
+                    lines,
+                    requiredScore: 100,
+                    currentPhase: SettlementPacePhase.BelowTarget);
+
+            Assert.That(decision.NextPhase, Is.EqualTo(SettlementPacePhase.BelowTarget));
+            Assert.That(decision.ReachedTarget, Is.False);
+            Assert.That(decision.MilestoneLineIndex, Is.EqualTo(-1));
+            Assert.That(Value(ledger.CurrentTotal), Is.EqualTo(90d).Within(1e-9));
+        }
+
+        [Test]
+        public void BatchPaceDecision_MarksLastChangingLineWhenFinalNetReachesTarget()
+        {
+            var score = new DishScore(1, "dish", 90f, 0f, 1f);
+            var ledger = CreateLedger(score);
+            ScoreLine[] lines =
+            {
+                CreateDishLine(ScoreLineKind.DishFlat, 0f, 20f, "+20"),
+                CreateDishLine(ScoreLineKind.DishFlat, 0f, -5f, "-5"),
+            };
+
+            SettlementBatchPaceDecision decision =
+                SettlementSequencer.ResolveBatchPaceDecision(
+                    ledger,
+                    lines,
+                    requiredScore: 100,
+                    currentPhase: SettlementPacePhase.BelowTarget);
+
+            Assert.That(decision.NextPhase, Is.EqualTo(SettlementPacePhase.TargetReached));
+            Assert.That(decision.ReachedTarget, Is.True);
+            Assert.That(decision.MilestoneLineIndex, Is.EqualTo(1));
+            Assert.That(Value(ledger.CurrentTotal), Is.EqualTo(90d).Within(1e-9));
+        }
+
         private static SettlementRunningLedger CreateLedger(DishScore score)
         {
             var ledger = new SettlementRunningLedger(new[] { score }, baselineSnapshot: null);

@@ -1256,6 +1256,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private BigDouble _finalFlat;
         private BigDouble _finalMultiplier = BigDouble.One;
 
+        private SettlementRunningLedger()
+        {
+        }
+
         public SettlementRunningLedger(
             IReadOnlyList<DishScore> scores,
             SettlementBaselineSnapshot baselineSnapshot)
@@ -1301,6 +1305,28 @@ namespace GourmetProject.Game.Presentation.Battle
                     (raw + _finalFlat) * _finalMultiplier,
                     MidpointRounding.AwayFromZero);
             }
+        }
+
+        internal SettlementRunningLedger Clone()
+        {
+            var clone = new SettlementRunningLedger
+            {
+                _finalFlat = _finalFlat,
+                _finalMultiplier = _finalMultiplier,
+            };
+            foreach (KeyValuePair<int, DishState> entry in _dishes)
+            {
+                DishState state = entry.Value;
+                clone._dishes.Add(entry.Key, new DishState
+                {
+                    Base = state.Base,
+                    Flat = state.Flat,
+                    Multiplier = state.Multiplier,
+                    HasBase = state.HasBase,
+                });
+            }
+
+            return clone;
         }
 
         public BigDouble ApplyBase(int dishInstanceId, BigDouble baseValue)
