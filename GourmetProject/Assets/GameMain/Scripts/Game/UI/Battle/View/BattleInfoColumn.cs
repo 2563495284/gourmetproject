@@ -464,8 +464,11 @@ namespace GourmetProject.Game.UI.Battle.View
         {
             return signal.Kind == SettlementBeatKind.ResultApplied
                 && signal.HasScoreChange
-                && signal.ScoreDelta != BigDouble.Zero;
+                && HasVisibleSettlementScoreDelta(signal.ScoreDelta);
         }
+
+        internal static bool HasVisibleSettlementScoreDelta(BigDouble delta) =>
+            delta != BigDouble.Zero;
 
         public void EndSettlementScorePresentation()
         {
@@ -546,6 +549,13 @@ namespace GourmetProject.Game.UI.Battle.View
             _pendingScoreDelta = BigDouble.Zero;
             _pendingReachedTarget = false;
             _pendingSettlementSpeed = 1f;
+
+            // 同一帧内的多条变化可能正负抵消；最终净变化为 0 时也不显示 +0。
+            if (!HasVisibleSettlementScoreDelta(delta))
+            {
+                _scoreCurrentText.text = ScoreNumberFormatter.Format(after);
+                return;
+            }
 
             _settlementScoreBeatSequence?.Kill();
             RectTransform scoreRect = _scoreCurrentText.rectTransform;
