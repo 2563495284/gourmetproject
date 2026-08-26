@@ -100,6 +100,24 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void NativeSkill_RemainsNativeWhenDuplicateAcquisitionAddsASourceLabel()
+        {
+            SkillDef nativeSkill = CreateAddFlatSkill("native", 10f);
+            FlavorDef salty = CreateFlavor("salty", FlavorEffectType.ExtraSettlementChance, 1f);
+            TestBoard test = CreateSingleDishBoard(30, new[] { nativeSkill }, new[] { salty });
+            test.Dish.AddSkill(nativeSkill.Id, "重复来源<技能复制>");
+
+            ScoreResult result = CalculateHit(test);
+
+            DishScore score = result.DishScores.Single();
+            Assert.That(Value(score.FlatBonus), Is.EqualTo(20d).Within(1e-9));
+            Assert.That(
+                result.ScoreLines.Count(line => line.Kind == ScoreLineKind.DishFlat
+                    && line.Trace?.Kind == SkillExecutionKind.NativeSkill),
+                Is.EqualTo(2));
+        }
+
+        [Test]
         public void MultipleHits_ReplayNativeSkillEachTimeEvenWithoutDiagnostics()
         {
             SkillDef nativeSkill = CreateAddFlatSkill("native", 10f);

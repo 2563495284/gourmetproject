@@ -263,6 +263,176 @@ namespace GourmetProject.Tests.EditMode
                 Is.True);
         }
 
+        [TestCase(1, 0, 2)]
+        [TestCase(1, 9999, 1)]
+        [TestCase(5, 0, 6)]
+        [TestCase(5, 9999, 5)]
+        public void ChanceExtraTarget_RollsOnceRegardlessOfBaseTargetCount(
+            int baseTargetCount,
+            int roll,
+            int expectedTransferCount)
+        {
+            ChanceModifierFixture fixture = CreateChanceModifierFixture(
+                baseTargetCount,
+                chanceModifierCount: 1,
+                fixedExtraTargetCount: 0,
+                plainTargetCount: 6);
+            int randomCallCount = 0;
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                fixture.Board,
+                fixture.Database,
+                transferTargetSelector: (candidates, count) => candidates.Take(count).ToArray(),
+                randomIntegerSelector: (min, max) =>
+                {
+                    randomCallCount++;
+                    return roll;
+                });
+
+            Assert.That(randomCallCount, Is.EqualTo(1));
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(expectedTransferCount));
+        }
+
+        [TestCase(0, 0, 7)]
+        [TestCase(0, 9999, 6)]
+        [TestCase(9999, 9999, 5)]
+        public void MultipleChanceExtraTargets_EachRollOnceAndAccumulate(
+            int firstRoll,
+            int secondRoll,
+            int expectedTransferCount)
+        {
+            ChanceModifierFixture fixture = CreateChanceModifierFixture(
+                baseTargetCount: 5,
+                chanceModifierCount: 2,
+                fixedExtraTargetCount: 0,
+                plainTargetCount: 6);
+            int randomCallCount = 0;
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                fixture.Board,
+                fixture.Database,
+                transferTargetSelector: (candidates, count) => candidates.Take(count).ToArray(),
+                randomIntegerSelector: (min, max) =>
+                {
+                    randomCallCount++;
+                    return randomCallCount == 1 ? firstRoll : secondRoll;
+                });
+
+            Assert.That(randomCallCount, Is.EqualTo(2));
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(expectedTransferCount));
+        }
+
+        [Test]
+        public void FixedExtraTargets_DoNotIncreaseChanceRollCount()
+        {
+            ChanceModifierFixture fixture = CreateChanceModifierFixture(
+                baseTargetCount: 1,
+                chanceModifierCount: 1,
+                fixedExtraTargetCount: 2,
+                plainTargetCount: 5);
+            int randomCallCount = 0;
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                fixture.Board,
+                fixture.Database,
+                transferTargetSelector: (candidates, count) => candidates.Take(count).ToArray(),
+                randomIntegerSelector: (min, max) =>
+                {
+                    randomCallCount++;
+                    return 0;
+                },
+                sweetTransferExtraTargetCount: 2);
+
+            Assert.That(randomCallCount, Is.EqualTo(1));
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(6));
+        }
+
+        [Test]
+        public void ChanceExtraTarget_IsCappedByLegalCandidates()
+        {
+            ChanceModifierFixture fixture = CreateChanceModifierFixture(
+                baseTargetCount: 5,
+                chanceModifierCount: 1,
+                fixedExtraTargetCount: 0,
+                plainTargetCount: 1);
+            int randomCallCount = 0;
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                fixture.Board,
+                fixture.Database,
+                transferTargetSelector: (candidates, count) => candidates.Take(count).ToArray(),
+                randomIntegerSelector: (min, max) =>
+                {
+                    randomCallCount++;
+                    return 0;
+                });
+
+            Assert.That(randomCallCount, Is.EqualTo(1));
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(2));
+        }
+
+        [Test]
+        public void ChanceExtraTarget_IsNotGrantedWithoutRandomSelector()
+        {
+            ChanceModifierFixture fixture = CreateChanceModifierFixture(
+                baseTargetCount: 1,
+                chanceModifierCount: 1,
+                fixedExtraTargetCount: 0,
+                plainTargetCount: 2);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                fixture.Board,
+                fixture.Database,
+                transferTargetSelector: (candidates, count) => candidates.Take(count).ToArray());
+
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(1));
+            Assert.That(
+                result.ScoreLines.Any(line => line.Kind == ScoreLineKind.SweetTransferBuffTriggered),
+                Is.False);
+        }
+
+        [Test]
+        public void TriggeredAndNativeTransfers_EachRollChanceExtraTargetOnce()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef modifierSkill = CreateExtraTargetModifierSkill(
+                "chance_modifier",
+                extraTargetCount: 1,
+                probabilistic: true);
+            SkillDef triggerSkill = CreateTriggerTransferSkill("trigger_skill");
+            SkillDef sourceSkill = CreateTransferSkill("source_skill", 10f);
+            DishDef modifierDef = CreateDish("modifier", "松露", shape, new[] { modifierSkill.Id });
+            DishDef triggerDef = CreateDish("trigger", "代触发者", shape, new[] { triggerSkill.Id });
+            DishDef sourceDef = CreateDish("source", "来源", shape, new[] { sourceSkill.Id });
+            DishDef targetADef = CreateDish("target_a", "目标A", shape, Array.Empty<string>());
+            DishDef targetBDef = CreateDish("target_b", "目标B", shape, Array.Empty<string>());
+            var database = new GameplayDatabase(
+                new[] { modifierDef, triggerDef, sourceDef, targetADef, targetBDef },
+                new[] { modifierSkill, triggerSkill, sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(5, 1);
+            board.Place(CreateInstance(1, modifierDef, shape, 0));
+            board.Place(CreateInstance(2, triggerDef, shape, 1));
+            board.Place(CreateInstance(3, sourceDef, shape, 2));
+            board.Place(CreateInstance(4, targetADef, shape, 3));
+            board.Place(CreateInstance(5, targetBDef, shape, 4));
+            int randomCallCount = 0;
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                board,
+                database,
+                transferTargetSelector: (candidates, count) => candidates.Take(count).ToArray(),
+                randomIntegerSelector: (min, max) =>
+                {
+                    randomCallCount++;
+                    return 0;
+                });
+
+            Assert.That(randomCallCount, Is.EqualTo(2));
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(4));
+        }
+
         [Test]
         public void FormalSettlement_CommitsOnlyTheNewSkillOnceAfterPurePreview()
         {
@@ -317,6 +487,9 @@ namespace GourmetProject.Tests.EditMode
                 new[] { payload.Id });
 
         private static SkillDef CreateTransferSkill(string skillId, float value)
+            => CreateTransferSkill(skillId, value, targetCount: 1);
+
+        private static SkillDef CreateTransferSkill(string skillId, float value, int targetCount)
         {
             SkillRuleDef payload = CreateAddFlatRule($"{skillId}_payload", skillId, value);
             SkillRuleDef transfer = new SkillRuleDef(
@@ -331,7 +504,7 @@ namespace GourmetProject.Tests.EditMode
                 string.Empty,
                 SkillActionType.TransferSkills,
                 SkillScope.All,
-                actionCount: 1,
+                actionCount: targetCount,
                 new[] { 0f },
                 Array.Empty<string>());
             return new SkillDef(
@@ -408,6 +581,102 @@ namespace GourmetProject.Tests.EditMode
                 Array.Empty<string>(),
                 new[] { trigger },
                 new[] { trigger.Id });
+        }
+
+        private static SkillDef CreateExtraTargetModifierSkill(
+            string skillId,
+            int extraTargetCount,
+            bool probabilistic)
+        {
+            var modifier = new SkillRuleDef(
+                $"{skillId}_modifier",
+                skillId,
+                order: 0,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Per,
+                string.Empty,
+                SkillActionType.TriggerSweetTransfer,
+                SkillScope.All,
+                actionCount: 0,
+                new[] { (float)extraTargetCount },
+                new[]
+                {
+                    probabilistic
+                        ? "modifier:add-targets;chance:0.6"
+                        : "modifier:add-targets",
+                });
+            return new SkillDef(
+                skillId,
+                skillId,
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { modifier },
+                new[] { modifier.Id });
+        }
+
+        private static ChanceModifierFixture CreateChanceModifierFixture(
+            int baseTargetCount,
+            int chanceModifierCount,
+            int fixedExtraTargetCount,
+            int plainTargetCount)
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            var skills = new List<SkillDef>();
+            var dishDefs = new List<DishDef>();
+            for (int i = 0; i < chanceModifierCount; i++)
+            {
+                SkillDef skill = CreateExtraTargetModifierSkill(
+                    $"chance_modifier_{i}",
+                    extraTargetCount: 1,
+                    probabilistic: true);
+                skills.Add(skill);
+                dishDefs.Add(CreateDish(
+                    $"chance_owner_{i}",
+                    $"松露{i}",
+                    shape,
+                    new[] { skill.Id }));
+            }
+
+            if (fixedExtraTargetCount > 0)
+            {
+                SkillDef skill = CreateExtraTargetModifierSkill(
+                    "fixed_modifier",
+                    fixedExtraTargetCount,
+                    probabilistic: false);
+                skills.Add(skill);
+                dishDefs.Add(CreateDish("fixed_owner", "固定增目标", shape, new[] { skill.Id }));
+            }
+
+            SkillDef transferSkill = CreateTransferSkill(
+                "source_skill",
+                value: 10f,
+                targetCount: baseTargetCount);
+            skills.Add(transferSkill);
+            dishDefs.Add(CreateDish("source", "来源", shape, new[] { transferSkill.Id }));
+            for (int i = 0; i < plainTargetCount; i++)
+            {
+                dishDefs.Add(CreateDish(
+                    $"target_{i}",
+                    $"目标{i}",
+                    shape,
+                    Array.Empty<string>()));
+            }
+
+            var database = new GameplayDatabase(
+                dishDefs,
+                skills,
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(dishDefs.Count, 1);
+            for (int i = 0; i < dishDefs.Count; i++)
+            {
+                board.Place(CreateInstance(i + 1, dishDefs[i], shape, i));
+            }
+
+            return new ChanceModifierFixture(board, database);
         }
 
         private static ScoreLine CreatePresentationLine(
@@ -498,5 +767,18 @@ namespace GourmetProject.Tests.EditMode
                 Array.Empty<string>());
 
         private static double Value(BigDouble value) => value.ToDouble();
+
+        private sealed class ChanceModifierFixture
+        {
+            public ChanceModifierFixture(DiningTable board, GameplayDatabase database)
+            {
+                Board = board;
+                Database = database;
+            }
+
+            public DiningTable Board { get; }
+
+            public GameplayDatabase Database { get; }
+        }
     }
 }

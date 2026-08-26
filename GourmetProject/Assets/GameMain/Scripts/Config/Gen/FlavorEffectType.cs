@@ -40,10 +40,9 @@ namespace cfg
         /// </summary>
         RecipeAddMultFlat = 10,
         /// <summary>
-        /// 咸：每层独立按概率使本菜额外完整结算1次
+        /// 咸：每层独立按概率再次触发本菜原生OnSettle技能；不重复基础分、风味或外来技能
         /// </summary>
         ExtraSettlementChance = 11,
     }
 
 } 
-

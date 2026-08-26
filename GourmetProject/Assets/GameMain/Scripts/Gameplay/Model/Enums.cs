@@ -23,7 +23,7 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>酸：结算开始时，未上菜则使场上全部食物倍率 +EffectValue。由未上菜结算源读取。</summary>
         RecipeAddMultFlat = 10,
 
-        /// <summary>咸：每层独立按 EffectValue 概率令本菜额外完整结算一次。</summary>
+        /// <summary>咸：每层独立按 EffectValue 概率再次触发本菜的原生 OnSettle 技能。</summary>
         ExtraSettlementChance = 11,
     }
 
