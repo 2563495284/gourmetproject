@@ -1108,18 +1108,22 @@ namespace GourmetProject.Game.Presentation.Battle
                 case ScoreLineKind.DishFlat:
                 case ScoreLineKind.DishPermanentFlat:
                     state = EnsureDish(line.DishInstanceId);
-                    state.Flat = line.After;
+                    // 结算演出会为了语义节奏重排部分明细（例如先播甜蜜传递结果、
+                    // 再播跳跳糖响应）。Before/After 属于正式计算时的绝对快照，
+                    // 重排后直接写 After 会用旧快照覆盖较新的状态，制造虚假扣分。
+                    // 演出账本只消费这条明细在正式计算中实际产生的变化量。
+                    state.Flat += line.After - line.Before;
                     break;
                 case ScoreLineKind.DishMultiplier:
                 case ScoreLineKind.DishMultiplierAdd:
                     state = EnsureDish(line.DishInstanceId);
-                    state.Multiplier = line.After;
+                    state.Multiplier += line.After - line.Before;
                     break;
                 case ScoreLineKind.FinalFlat:
-                    _finalFlat = line.After;
+                    _finalFlat += line.After - line.Before;
                     break;
                 case ScoreLineKind.FinalMultiplier:
-                    _finalMultiplier = line.After;
+                    _finalMultiplier += line.After - line.Before;
                     break;
             }
 
