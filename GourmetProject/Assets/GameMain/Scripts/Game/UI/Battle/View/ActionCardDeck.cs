@@ -347,7 +347,6 @@ namespace GourmetProject.Game.UI.Battle.View
             _cards.Add(card);
             int index = _cards.Count - 1;
             TutorialAnchorRegistry.Register($"action.card.{index}", card.CardRect);
-            TutorialAnchorRegistry.Register($"action.reward.{index}", card.RewardRect);
             TutorialAnchorRegistry.Register(TutorialAnchorId.ActionDeck, _cardsContainer);
         }
 
@@ -358,7 +357,6 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 WeekEventCardView card = _cards[i];
                 TutorialAnchorRegistry.Unregister($"action.card.{i}", card != null ? card.CardRect : null);
-                TutorialAnchorRegistry.Unregister($"action.reward.{i}", card != null ? card.RewardRect : null);
             }
         }
 

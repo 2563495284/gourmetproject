@@ -164,10 +164,10 @@ namespace GourmetProject.Gameplay.Scoring
                         }
                         return flavors;
                     }
-                    return CountSubSkills(self, db) + self.FlavorIds.Count;
+                    return CountSubSkills(self, db, ctx) + self.FlavorIds.Count;
 
                 case SkillConditionType.SkillCount:
-                    return CountSkills(ConditionScopeDishes(rule, board, self, ctx), db);
+                    return CountSkills(ConditionScopeDishes(rule, board, self, ctx), db, ctx);
 
                 case SkillConditionType.ShapeMatch:
                     return CountShapeMatch(ConditionScopeDishes(rule, board, self, ctx), rule.CondParam, rule.CondUnit, countAsOf);
@@ -199,7 +199,10 @@ namespace GourmetProject.Gameplay.Scoring
             }
         }
 
-        private static int CountSkills(IEnumerable<DishInstance> dishes, GameplayDatabase db)
+        private static int CountSkills(
+            IEnumerable<DishInstance> dishes,
+            GameplayDatabase db,
+            ScoreContext ctx)
         {
             int count = 0;
             var seen = new HashSet<int>();
@@ -207,7 +210,7 @@ namespace GourmetProject.Gameplay.Scoring
             {
                 if (dish != null && seen.Add(dish.Id))
                 {
-                    count += CountSubSkills(dish, db);
+                    count += CountSubSkills(dish, db, ctx);
                 }
             }
 
@@ -219,13 +222,21 @@ namespace GourmetProject.Gameplay.Scoring
         /// 甜蜜传递获得的每条 TransferredSkill 也算 1。
         /// </summary>
         internal static int CountSubSkills(DishInstance dish, GameplayDatabase db)
+            => CountSubSkills(dish, db, null);
+
+        /// <summary>
+        /// 结算中传入 <paramref name="ctx"/> 时，同时统计本轮已经发生、尚未提交到实例的甜蜜传递；
+        /// 无上下文的调用仍只读取实例上已经落地的技能。
+        /// </summary>
+        internal static int CountSubSkills(DishInstance dish, GameplayDatabase db, ScoreContext ctx)
         {
             if (dish == null)
             {
                 return 0;
             }
 
-            int count = dish.TransferredSkills.Count;
+            int count = ctx?.TransferredSkillsForCurrentCalculation(dish).Count
+                ?? dish.TransferredSkills.Count;
             foreach (string skillId in dish.SkillIds)
             {
                 SkillDef skill = db?.GetSkill(skillId);

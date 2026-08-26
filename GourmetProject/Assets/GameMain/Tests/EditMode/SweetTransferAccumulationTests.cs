@@ -16,6 +16,35 @@ namespace GourmetProject.Tests.EditMode
     public sealed class SweetTransferAccumulationTests
     {
         [Test]
+        public void NewlyReceivedSkill_IsIncludedInSkillCountDuringCurrentSettlement()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef sourceSkill = CreateSkillCountTransferSkill("source_skill", 10f);
+            DishDef sourceDef = CreateDish("source", "来源", shape, new[] { sourceSkill.Id });
+            DishDef targetDef = CreateDish("target", "目标", shape, Array.Empty<string>());
+            var database = new GameplayDatabase(
+                new[] { sourceDef, targetDef },
+                new[] { sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(2, 1);
+            DishInstance source = CreateInstance(1, sourceDef, shape, 0);
+            DishInstance target = CreateInstance(2, targetDef, shape, 1);
+            board.Place(source);
+            board.Place(target);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                board,
+                database,
+                transferTargetSelector: (candidates, count) => new[] { target.Id });
+
+            DishScore targetScore = result.DishScores.Single(score => score.DishInstanceId == target.Id);
+            Assert.That(Value(targetScore.FlatBonus), Is.EqualTo(10d).Within(1e-9));
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(1));
+            Assert.That(target.TransferredSkills, Is.Empty, "预览计算不得提前提交传递技能");
+        }
+
+        [Test]
         public void RepeatedReceives_ReplayAllCommittedAndPendingSkillsWithOriginalSources()
         {
             DishShape shape = DishShape.FromRows(new[] { "X" });
@@ -291,6 +320,47 @@ namespace GourmetProject.Tests.EditMode
         {
             SkillRuleDef payload = CreateAddFlatRule($"{skillId}_payload", skillId, value);
             SkillRuleDef transfer = new SkillRuleDef(
+                $"{skillId}_transfer",
+                skillId,
+                order: 1,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Per,
+                string.Empty,
+                SkillActionType.TransferSkills,
+                SkillScope.All,
+                actionCount: 1,
+                new[] { 0f },
+                Array.Empty<string>());
+            return new SkillDef(
+                skillId,
+                skillId,
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { payload, transfer },
+                new[] { payload.Id, transfer.Id });
+        }
+
+        private static SkillDef CreateSkillCountTransferSkill(string skillId, float value)
+        {
+            var payload = new SkillRuleDef(
+                $"{skillId}_payload",
+                skillId,
+                order: 0,
+                SkillTrigger.OnSettle,
+                SkillConditionType.SkillCount,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Per,
+                string.Empty,
+                SkillActionType.AddFlat,
+                SkillScope.Self,
+                actionCount: 0,
+                new[] { value },
+                Array.Empty<string>());
+            var transfer = new SkillRuleDef(
                 $"{skillId}_transfer",
                 skillId,
                 order: 1,

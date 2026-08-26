@@ -144,7 +144,7 @@
     "actionScope": 23,
     "actionCount": 0,
     "actionValue": [
-      4
+      6
     ],
     "actionParam": [],
     "signed": true,
@@ -258,7 +258,7 @@
     "actionScope": 22,
     "actionCount": 0,
     "actionValue": [
-      0.3
+      0.4
     ],
     "actionParam": [],
     "signed": true,
@@ -296,7 +296,7 @@
     "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
-      6
+      8
     ],
     "actionParam": [],
     "signed": true,
@@ -467,7 +467,7 @@
     "actionScope": 23,
     "actionCount": 0,
     "actionValue": [
-      0.6
+      0.8
     ],
     "actionParam": [],
     "signed": true,
@@ -484,7 +484,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 2,
+    "actionCount": 3,
     "actionValue": [
       0
     ],
@@ -602,7 +602,7 @@
     "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
-      30
+      40
     ],
     "actionParam": [],
     "signed": true,
@@ -758,7 +758,7 @@
     "actionScope": 13,
     "actionCount": 0,
     "actionValue": [
-      45
+      60
     ],
     "actionParam": [
       "when:receive-transfer;resultscope:BuffTargets"
@@ -840,7 +840,7 @@
     "actionScope": 14,
     "actionCount": 0,
     "actionValue": [
-      1
+      1.5
     ],
     "actionParam": [
       "when:transfer;resultscope:BuffTargets"
@@ -861,7 +861,7 @@
     "actionScope": 12,
     "actionCount": 0,
     "actionValue": [
-      15
+      20
     ],
     "actionParam": [],
     "signed": true,
@@ -878,7 +878,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 1,
+    "actionCount": 3,
     "actionValue": [
       0
     ],
@@ -1043,10 +1043,10 @@
       1
     ],
     "actionParam": [
-      "modifier:add-targets;chance:0.4"
+      "modifier:add-targets;chance:0.6"
     ],
     "signed": false,
-    "descTemplate": "[context]结算[/context]后\n所有食物发动[term]甜蜜传递[/term]时\n有40%概率[benefit]额外选择[/benefit] 1 个目标",
+    "descTemplate": "[context]结算[/context]后\n所有食物发动[term]甜蜜传递[/term]时\n有60%概率[benefit]额外选择[/benefit] 1 个目标",
     "termId": "term_sweet_transfer"
   },
   {
@@ -1078,7 +1078,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 4,
+    "actionCount": 6,
     "actionValue": [
       0
     ],
@@ -1257,7 +1257,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 3,
+    "actionCount": 4,
     "actionValue": [
       0
     ],
@@ -1377,7 +1377,7 @@
     "condParam": "",
     "actionType": 5,
     "actionScope": 15,
-    "actionCount": 3,
+    "actionCount": 4,
     "actionValue": [
       0
     ],

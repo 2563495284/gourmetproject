@@ -946,7 +946,8 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>
         /// 甜蜜传递来源候选：作用域内「带甜蜜传递」的其它食物。
-        /// <c>actionCount&gt;0</c> 时从候选中取 N 个（有 TransferTargetSelector 则走随机，否则棋盘序）。
+        /// <c>actionCount&gt;0</c> 时均权无放回取 N 个来源；这不是传递接收者选择，
+        /// 因此不使用按甜蜜传递流派/占格数加权的 TransferTargetSelector。
         /// </summary>
         private IReadOnlyList<DishInstance> SweetTransferSources(ScoreContext ctx)
         {
@@ -982,29 +983,21 @@ namespace GourmetProject.Gameplay.Scoring
                 return ordered;
             }
 
-            var candidateIds = ordered
-                .Select(dish => dish.Id)
-                .ToList();
             int count = _rule.ActionCount;
-            IReadOnlyList<int> selectedIds = ctx.Snapshot.TransferTargetSelector != null
-                ? ctx.Snapshot.TransferTargetSelector(candidateIds, count)
-                : candidateIds.Take(count).ToArray();
-
-            var selected = new List<DishInstance>();
-            if (selectedIds != null)
+            var selected = new List<DishInstance>(count);
+            if (ctx.Snapshot.RandomIntegerSelector == null)
             {
-                foreach (int id in selectedIds)
+                selected.AddRange(ordered.Take(count));
+            }
+            else
+            {
+                var remaining = new List<DishInstance>(ordered);
+                while (selected.Count < count && remaining.Count > 0)
                 {
-                    DishInstance dish = ordered.FirstOrDefault(d => d.Id == id);
-                    if (dish != null && !selected.Any(d => d.Id == dish.Id))
-                    {
-                        selected.Add(dish);
-                    }
-
-                    if (selected.Count >= count)
-                    {
-                        break;
-                    }
+                    int index = ctx.Snapshot.RandomIntegerSelector(0, remaining.Count - 1);
+                    index = Math.Max(0, Math.Min(index, remaining.Count - 1));
+                    selected.Add(remaining[index]);
+                    remaining.RemoveAt(index);
                 }
             }
 
