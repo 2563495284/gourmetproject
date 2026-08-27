@@ -38,6 +38,9 @@ namespace GourmetProject.Game.Presentation.Battle
         TemporaryCategoryApplied = 19,
         DishChapterStarted = 20,
         DishChapterCompleted = 21,
+        CakeLayerFlatBurst = 22,
+        CakeLayerMultiplierAddBurst = 23,
+        CakeLayerMultiplierBurst = 24,
     }
 
     public readonly struct DishGrabVisualSnapshot
@@ -1796,6 +1799,60 @@ namespace GourmetProject.Game.Presentation.Battle
                         sideInCells: 0.065f,
                         rotationDegrees: 5f,
                         color: SettlementColorPalette.WithAlpha(SettlementColorPalette.AddMultiplier, 0.98f));
+
+                case SettlementDishFeedbackKind.CakeLayerFlatBurst:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.40f,
+                        anticipationScale: 0.93f,
+                        peakScale: new Vector2(1.20f, 1.22f),
+                        liftInCells: 0.10f,
+                        sideInCells: 0f,
+                        rotationDegrees: 2f,
+                        rotationCycles: 1f,
+                        pulseCount: 1f,
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.BaseScore, 0.98f),
+                        glowWidth: 0.12f,
+                        glowInflate: 1.10f,
+                        glowFillAlpha: 0.07f,
+                        glowPulseSpeed: 10f,
+                        glowPulseAmplitude: 0.22f,
+                        anticipationFraction: 0.20f);
+
+                case SettlementDishFeedbackKind.CakeLayerMultiplierAddBurst:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.44f,
+                        anticipationScale: 0.90f,
+                        peakScale: new Vector2(1.26f, 1.11f),
+                        liftInCells: 0.05f,
+                        sideInCells: 0.07f,
+                        rotationDegrees: 5f,
+                        rotationCycles: 1.5f,
+                        pulseCount: 1.5f,
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.AddMultiplier, 0.98f),
+                        glowWidth: 0.135f,
+                        glowInflate: 1.115f,
+                        glowFillAlpha: 0.08f,
+                        glowPulseSpeed: 12f,
+                        glowPulseAmplitude: 0.25f,
+                        anticipationFraction: 0.20f);
+
+                case SettlementDishFeedbackKind.CakeLayerMultiplierBurst:
+                    return new SettlementFeedbackProfile(
+                        duration: 0.50f,
+                        anticipationScale: 0.87f,
+                        peakScale: new Vector2(1.34f, 1.34f),
+                        liftInCells: 0.07f,
+                        sideInCells: 0.035f,
+                        rotationDegrees: 10f,
+                        rotationCycles: 2f,
+                        pulseCount: 2f,
+                        glowColor: SettlementColorPalette.WithAlpha(SettlementColorPalette.MultiplyMultiplier, 1f),
+                        glowWidth: 0.15f,
+                        glowInflate: 1.13f,
+                        glowFillAlpha: 0.10f,
+                        glowPulseSpeed: 14f,
+                        glowPulseAmplitude: 0.28f,
+                        anticipationFraction: 0.22f);
 
                 case SettlementDishFeedbackKind.CountAsChanged:
                     return new SettlementFeedbackProfile(

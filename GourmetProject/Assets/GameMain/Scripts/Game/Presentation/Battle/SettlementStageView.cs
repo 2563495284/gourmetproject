@@ -242,7 +242,8 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementEffectGroup group,
             float duration,
             CancellationToken cancellationToken,
-            bool actorAlreadyIntroduced = false)
+            bool actorAlreadyIntroduced = false,
+            int cakeLayerCount = -1)
         {
             EndGroupImmediate();
             if (group == null)
@@ -282,10 +283,14 @@ namespace GourmetProject.Game.Presentation.Battle
 
             await SpawnLabelAsync(
                 anchor,
-                "技能触发",
-                group.Trace?.Kind == SkillExecutionKind.SweetTransfer
-                    ? ReadableName(group.Trace.SkillName, group.SourceName)
-                    : group.SourceName,
+                cakeLayerCount >= 0
+                    ? $"欢乐蛋糕 ×{cakeLayerCount}"
+                    : "技能触发",
+                cakeLayerCount >= 0
+                    ? "层数 Buff 爆发"
+                    : group.Trace?.Kind == SkillExecutionKind.SweetTransfer
+                        ? ReadableName(group.Trace.SkillName, group.SourceName)
+                        : group.SourceName,
                 theme,
                 duration,
                 cancellationToken,
@@ -536,6 +541,217 @@ namespace GourmetProject.Game.Presentation.Battle
             await Awaitable.WaitForSecondsAsync(Mathf.Max(0.0001f, duration), cancellationToken);
         }
 
+        internal async Awaitable PlayCakeLayerChargeAsync(
+            float duration,
+            CancellationToken cancellationToken)
+        {
+            Vector3 center = _mapper.Center;
+            Color chargeColor = SettlementColorPalette.WithAlpha(
+                SettlementColorPalette.CakeLayer,
+                0.42f);
+            GameObject outer = CreateSprite(
+                "CakeLayerBuffChargeOuter",
+                center,
+                chargeColor,
+                -5);
+            GameObject inner = CreateSprite(
+                "CakeLayerBuffChargeInner",
+                center,
+                SettlementColorPalette.WithAlpha(chargeColor, 0.58f),
+                -4);
+            if (outer == null || inner == null)
+            {
+                try
+                {
+                    await Awaitable.WaitForSecondsAsync(
+                        Mathf.Max(0.0001f, duration),
+                        cancellationToken);
+                }
+                finally
+                {
+                    if (outer != null)
+                    {
+                        Destroy(outer);
+                    }
+                    if (inner != null)
+                    {
+                        Destroy(inner);
+                    }
+                }
+
+                return;
+            }
+
+            SpriteRenderer outerRenderer = outer.GetComponent<SpriteRenderer>();
+            SpriteRenderer innerRenderer = inner.GetComponent<SpriteRenderer>();
+            Color outerInitial = outerRenderer.color;
+            Color innerInitial = innerRenderer.color;
+            outer.transform.localScale = Vector3.one * (3.4f * _visualScale);
+            inner.transform.localScale = Vector3.one * (2.2f * _visualScale);
+            Tween tween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), progress =>
+                {
+                    if (outer == null || inner == null)
+                    {
+                        return;
+                    }
+
+                    float eased = progress * progress * progress;
+                    outer.transform.localScale = Vector3.one
+                        * (Mathf.Lerp(3.4f, 0.62f, eased) * _visualScale);
+                    inner.transform.localScale = Vector3.one
+                        * (Mathf.Lerp(2.2f, 0.34f, eased) * _visualScale);
+                    outerRenderer.color = SettlementColorPalette.WithAlpha(
+                        outerInitial,
+                        Mathf.Lerp(0.16f, outerInitial.a, eased));
+                    innerRenderer.color = SettlementColorPalette.WithAlpha(
+                        innerInitial,
+                        Mathf.Lerp(0.08f, innerInitial.a, eased));
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(outer);
+
+            try
+            {
+                await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
+            }
+            finally
+            {
+                tween?.Kill();
+                if (outer != null)
+                {
+                    Destroy(outer);
+                }
+                if (inner != null)
+                {
+                    Destroy(inner);
+                }
+            }
+        }
+
+        internal void PlayCakeLayerBurstImpact(
+            CakeLayerBurstStepProfile profile,
+            Color theme,
+            float duration,
+            CancellationToken cancellationToken)
+        {
+            _ = PlayCakeLayerBurstImpactSafelyAsync(
+                profile,
+                theme,
+                duration,
+                cancellationToken);
+        }
+
+        private async Awaitable PlayCakeLayerBurstImpactSafelyAsync(
+            CakeLayerBurstStepProfile profile,
+            Color theme,
+            float duration,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                await PlayCakeLayerBurstImpactAsync(
+                    profile,
+                    theme,
+                    duration,
+                    cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // 结算被中断时，临时冲击波由舞台清理流程统一回收。
+            }
+        }
+
+        private async Awaitable PlayCakeLayerBurstImpactAsync(
+            CakeLayerBurstStepProfile profile,
+            Color theme,
+            float duration,
+            CancellationToken cancellationToken)
+        {
+            Vector3 center = _mapper.Center;
+            float strength = Mathf.Clamp01(profile.Progress);
+            duration = Mathf.Max(0.0001f, duration);
+            float endScale = Mathf.Lerp(2.6f, 5.4f, strength) * _visualScale;
+            Color primaryColor = SettlementColorPalette.WithAlpha(
+                theme,
+                Mathf.Lerp(0.34f, 0.62f, strength));
+            GameObject primary = CreateSprite(
+                "CakeLayerBuffTableImpact",
+                center,
+                primaryColor,
+                -3);
+            GameObject echo = profile.ImpactTier >= SettlementImpactTier.Chain
+                ? CreateSprite(
+                    "CakeLayerBuffTableImpactEcho",
+                    center,
+                    SettlementColorPalette.WithAlpha(primaryColor, primaryColor.a * 0.58f),
+                    -4)
+                : null;
+            if (primary == null)
+            {
+                if (echo != null)
+                {
+                    Destroy(echo);
+                }
+                return;
+            }
+
+            SpriteRenderer primaryRenderer = primary.GetComponent<SpriteRenderer>();
+            SpriteRenderer echoRenderer = echo != null
+                ? echo.GetComponent<SpriteRenderer>()
+                : null;
+            primary.transform.localScale = Vector3.one * (0.30f * _visualScale);
+            if (echo != null)
+            {
+                echo.transform.localScale = Vector3.one * (0.22f * _visualScale);
+            }
+
+            Tween tween = DOVirtual.Float(0f, 1f, duration, progress =>
+                {
+                    float eased = Mathf.SmoothStep(0f, 1f, progress);
+                    if (primary != null)
+                    {
+                        primary.transform.localScale = Vector3.one
+                            * Mathf.Lerp(0.30f * _visualScale, endScale, eased);
+                        primaryRenderer.color = SettlementColorPalette.WithAlpha(
+                            primaryColor,
+                            primaryColor.a * (1f - eased));
+                    }
+
+                    if (echo != null)
+                    {
+                        float echoProgress = Mathf.Clamp01((progress - 0.14f) / 0.86f);
+                        float echoEased = Mathf.SmoothStep(0f, 1f, echoProgress);
+                        echo.transform.localScale = Vector3.one
+                            * Mathf.Lerp(
+                                0.22f * _visualScale,
+                                endScale * 1.16f,
+                                echoEased);
+                        echoRenderer.color = SettlementColorPalette.WithAlpha(
+                            primaryColor,
+                            primaryColor.a * 0.58f * (1f - echoEased));
+                    }
+                })
+                .SetEase(Ease.Linear)
+                .SetLink(primary);
+
+            try
+            {
+                await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
+            }
+            finally
+            {
+                tween?.Kill();
+                if (primary != null)
+                {
+                    Destroy(primary);
+                }
+                if (echo != null)
+                {
+                    Destroy(echo);
+                }
+            }
+        }
+
         internal static Vector3 ResultLabelScatterOffset(float visualScale, float xUnit, float yUnit)
         {
             float scale = Mathf.Max(0.0001f, visualScale);
@@ -655,7 +871,8 @@ namespace GourmetProject.Game.Presentation.Battle
             bool playTargetFeedback,
             ResultLabelLayoutPlacement layoutPlacement,
             CancellationToken cancellationToken,
-            bool holdUntilCleared = false)
+            bool holdUntilCleared = false,
+            CakeLayerBurstStepProfile? cakeLayerBurstStep = null)
         {
             if (!ShouldShowResultLabel(line))
             {
@@ -665,13 +882,16 @@ namespace GourmetProject.Game.Presentation.Battle
             Color theme = ResultThemeFor(line);
             if (target != null)
             {
-                PlayResultHitSoundIfNeeded(group, audioPitch);
+                if (!cakeLayerBurstStep.HasValue)
+                {
+                    PlayResultHitSoundIfNeeded(group, audioPitch);
+                }
                 target.SetSettlementFocus(1f);
                 if (playTargetFeedback)
                 {
                     _ = PlayFeedbackSafelyAsync(
                         target,
-                        FeedbackFor(line),
+                        cakeLayerBurstStep?.DishFeedbackKind ?? FeedbackFor(line),
                         cancellationToken,
                         durationScale: Mathf.Max(0.05f, duration / 0.80f));
                 }
@@ -683,7 +903,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 : default;
             await SpawnLabelAsync(
                 anchor,
-                ResultHeader(line),
+                cakeLayerBurstStep.HasValue
+                    ? CakeLayerBurstResultHeader(line, cakeLayerBurstStep.Value)
+                    : ResultHeader(line),
                 ResultText(line, dishContribution, runningTotal),
                 theme,
                 duration,
@@ -692,7 +914,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 headerSemanticColor: ResultHeaderSemanticColorFor(line, theme),
                 sortingOrder: WorldLabelSorting.NextOrder()
                     + layoutPlacement.StackIndex,
-                verticalDriftDirection: layoutPlacement.VerticalDirection);
+                verticalDriftDirection: layoutPlacement.VerticalDirection,
+                impactScale: cakeLayerBurstStep.HasValue
+                    ? Mathf.Lerp(1.02f, 1.10f, cakeLayerBurstStep.Value.Progress)
+                    : 1f);
             if (playTargetFeedback)
             {
                 await impactTask;
@@ -1176,7 +1401,8 @@ namespace GourmetProject.Game.Presentation.Battle
             float visualScaleOverride = -1f,
             Color? headerSemanticColor = null,
             int sortingOrder = -1,
-            float verticalDriftDirection = 1f)
+            float verticalDriftDirection = 1f,
+            float impactScale = 1f)
         {
             SettlementStageLabelView prefab = finalStamp ? _finaleLabelPrefab : _labelPrefab;
             if (prefab == null)
@@ -1201,6 +1427,7 @@ namespace GourmetProject.Game.Presentation.Battle
             float visualScale = visualScaleOverride > 0f
                 ? visualScaleOverride
                 : _visualScale;
+            visualScale *= Mathf.Max(0.01f, impactScale);
             Vector3 targetScale = new Vector3(
                 visualScale,
                 visualScale,
@@ -1465,6 +1692,20 @@ namespace GourmetProject.Game.Presentation.Battle
                 ScoreLineKind.ExtraSettlement => "咸味",
                 _ => "结算结果",
             };
+        }
+
+        internal static string CakeLayerBurstResultHeader(
+            ScoreLine line,
+            CakeLayerBurstStepProfile profile)
+        {
+            string effect = line?.Kind switch
+            {
+                ScoreLineKind.DishFlat => "加分",
+                ScoreLineKind.DishMultiplierAdd => "倍率 +",
+                ScoreLineKind.DishMultiplier => "倍率 ×",
+                _ => ResultHeader(line),
+            };
+            return $"{profile.StepNumber}/{profile.StepCount} {effect}";
         }
 
         internal static string ResultText(ScoreLine line, BigDouble dishContribution, BigDouble runningTotal)

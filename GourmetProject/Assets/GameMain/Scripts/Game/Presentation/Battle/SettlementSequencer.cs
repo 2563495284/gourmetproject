@@ -32,6 +32,44 @@ namespace GourmetProject.Game.Presentation.Battle
         public bool ReachedTarget { get; }
     }
 
+    /// <summary>欢乐蛋糕层数 Buff 单拍的纯表现参数；不参与计分。</summary>
+    internal readonly struct CakeLayerBurstStepProfile
+    {
+        public CakeLayerBurstStepProfile(
+            int stepIndex,
+            int stepCount,
+            float progress,
+            float anticipationDuration,
+            float audioPitch,
+            float cakePulseStrength,
+            float cameraImpactStrength,
+            SettlementImpactTier impactTier,
+            SettlementDishFeedbackKind dishFeedbackKind)
+        {
+            StepIndex = stepIndex;
+            StepCount = stepCount;
+            Progress = progress;
+            AnticipationDuration = anticipationDuration;
+            AudioPitch = audioPitch;
+            CakePulseStrength = cakePulseStrength;
+            CameraImpactStrength = cameraImpactStrength;
+            ImpactTier = impactTier;
+            DishFeedbackKind = dishFeedbackKind;
+        }
+
+        public int StepIndex { get; }
+        public int StepNumber => StepIndex + 1;
+        public int StepCount { get; }
+        public float Progress { get; }
+        public float AnticipationDuration { get; }
+        public float AudioPitch { get; }
+        public float CakePulseStrength { get; }
+        public float CameraImpactStrength { get; }
+        public SettlementImpactTier ImpactTier { get; }
+        public SettlementDishFeedbackKind DishFeedbackKind { get; }
+        public bool IsFinale => ImpactTier == SettlementImpactTier.Finale;
+    }
+
     /// <summary>
     /// 背包乱斗式的结算演出：点「吃」后，按真实结算明细顺序播放来源 cue，
     /// 最后在分数汇总阶段滚到总分。消费结算结果与结算前基线，不改动任何计分逻辑。
@@ -52,6 +90,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float SweetTransferParticleDuration = 0.34f;
         private const float SweetTransferFailureDuration = 0.34f;
         private const float MinimumDishBoundaryDuration = 0.08f;
+        internal const float CakeLayerChargeDuration = 0.28f;
+        internal const float CakeLayerPulseDuration = 0.34f;
         private const string InitialDishBaseBatchKey = "initial:dish-bases";
 
         [Header("结算常驻三阶段速度")]
@@ -88,6 +128,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _settlementDoubleSpeed;
         private SettlementStageView _stage;
         private SettlementCameraFeedback _cameraFeedback;
+        private CakeLayerWorldFx _cakeLayerWorldFx;
         private bool _externalPlaybackPaused;
         private bool _playbackHasSavedTimeScale;
         private float _playbackSavedTimeScale = 1f;
@@ -209,6 +250,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Transform fxRoot,
             Camera worldCamera,
             SettlementScoreFireView scoreFire,
+            CakeLayerWorldFx cakeLayerWorldFx,
             Action<BigDouble> renderScore,
             Action<SettlementRevealSignal> onReveal,
             Action<SettlementScopeSignal> onScope,
@@ -231,6 +273,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             renderScore?.Invoke(0);
             _visualScale = Mathf.Max(0.0001f, visualScale);
+            _cakeLayerWorldFx = cakeLayerWorldFx;
             _stage.Configure(
                 dishViews,
                 mapper,
@@ -456,6 +499,8 @@ namespace GourmetProject.Game.Presentation.Battle
             }
             finally
             {
+                _cakeLayerWorldFx?.ResetBuffBurstVisuals();
+                _cakeLayerWorldFx = null;
                 ClearSweetTransferVisuals(sweetTransferPlayback, dishViews);
                 ClearSweetTransferBuffMarkers(dishViews);
                 onScope?.Invoke(default);
@@ -494,12 +539,14 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void OnDisable()
         {
+            _cakeLayerWorldFx?.ResetBuffBurstVisuals();
             ForceRestorePlaybackTimeScale();
             RestoreSettlementPace();
         }
 
         private void OnDestroy()
         {
+            _cakeLayerWorldFx?.ResetBuffBurstVisuals();
             ForceRestorePlaybackTimeScale();
             RestoreSettlementPace();
             ClearRetainedDishValueBadges();
@@ -623,6 +670,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 SettlementEffectGroup group = groups[groupIndex];
+                bool cakeLayerBurst = IsCakeLayerBuffGroup(group);
                 EmitBeat(
                     onBeat,
                     SettlementBeatKind.SourceStarted,
@@ -636,7 +684,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 await _stage.FocusSourceAsync(
                     group,
                     ScaleSettlementDuration(_sourceFocusDuration),
-                    cancellationToken);
+                    cancellationToken,
+                    cakeLayerCount: cakeLayerBurst
+                        ? Mathf.Max(0, session?.HappyCakeLayers ?? 0)
+                        : -1);
 
                 SettlementScopeSignal scope = ScopeFor(group);
                 EmitScope(onScope, scope);
@@ -660,14 +711,61 @@ namespace GourmetProject.Game.Presentation.Battle
                 bool repeatImpactPerBatch = ShouldRepeatImpactPerResultBatch(
                     group,
                     resultLineBatches.Count);
-                if (!repeatImpactPerBatch)
+                if (cakeLayerBurst)
+                {
+                    float chargeDuration = ScaleSettlementDuration(CakeLayerChargeDuration);
+                    GameApp.Audio.PlayCakeLayerBurstCharge();
+                    _cakeLayerWorldFx?.BeginBuffCharge(chargeDuration);
+                    await _stage.PlayCakeLayerChargeAsync(
+                        chargeDuration,
+                        cancellationToken);
+                }
+                if (!repeatImpactPerBatch && !cakeLayerBurst)
                 {
                     PlayImpactFeedback(groupImpact, groupTargetCount);
                 }
 
                 for (int batchIndex = 0; batchIndex < resultLineBatches.Count; batchIndex++)
                 {
-                    if (repeatImpactPerBatch)
+                    CakeLayerBurstStepProfile? cakeLayerBurstStep = null;
+                    if (cakeLayerBurst)
+                    {
+                        List<int> batch = resultLineBatches[batchIndex];
+                        ScoreLineKind batchKind = batch.Count > 0
+                            ? group.Lines[batch[0]].Kind
+                            : default;
+                        CakeLayerBurstStepProfile profile = ResolveCakeLayerBurstStepProfile(
+                            batchIndex,
+                            resultLineBatches.Count,
+                            batchKind);
+                        cakeLayerBurstStep = profile;
+                        await WaitWhilePlaybackPausedAsync(cancellationToken);
+                        await Awaitable.WaitForSecondsAsync(
+                            ScaleSettlementDuration(profile.AnticipationDuration),
+                            cancellationToken);
+                        Color burstTheme = CakeLayerBurstTheme(batchKind);
+                        _cakeLayerWorldFx?.PlayBuffPulse(
+                            profile.CakePulseStrength,
+                            burstTheme,
+                            ScaleSettlementDuration(CakeLayerPulseDuration));
+                        _stage.PlayCakeLayerBurstImpact(
+                            profile,
+                            burstTheme,
+                            ScaleSettlementDuration(Mathf.Lerp(
+                                0.22f,
+                                0.36f,
+                                profile.Progress)),
+                            cancellationToken);
+                        _cameraFeedback.PlayCakeLayerImpact(
+                            profile.CameraImpactStrength,
+                            groupTargetCount,
+                            profile.IsFinale);
+                        GameApp.Audio.PlayCakeLayerBurstStep(
+                            groupTargetCount,
+                            profile.AudioPitch,
+                            profile.IsFinale);
+                    }
+                    else if (repeatImpactPerBatch)
                     {
                         PlayImpactFeedback(groupImpact, groupTargetCount);
                     }
@@ -686,7 +784,13 @@ namespace GourmetProject.Game.Presentation.Battle
                         onBeat,
                         sweetTransferPlayback,
                         skipTransferTravel: false,
-                        cancellationToken);
+                        cancellationToken,
+                        cakeLayerBurstStep: cakeLayerBurstStep);
+                }
+
+                if (cakeLayerBurst)
+                {
+                    _cakeLayerWorldFx?.ResetBuffBurstVisuals();
                 }
 
                 if (group.Lines.Count > 0)
@@ -1783,7 +1887,8 @@ namespace GourmetProject.Game.Presentation.Battle
             bool skipTransferTravel,
             CancellationToken cancellationToken,
             bool holdResultLabels = false,
-            float resultDurationOverride = -1f)
+            float resultDurationOverride = -1f,
+            CakeLayerBurstStepProfile? cakeLayerBurstStep = null)
         {
             if (lines == null || lines.Count == 0)
             {
@@ -1885,6 +1990,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 BigDouble beforeTotal = ledger.CurrentTotal;
                 BigDouble contribution = ledger.Apply(line);
                 SettlementImpactTier impactTier = ImpactFor(line, targetCount);
+                if (cakeLayerBurstStep.HasValue)
+                {
+                    impactTier = cakeLayerBurstStep.Value.ImpactTier;
+                }
                 bool reachedTarget = batchPace.ReachedTarget
                     && i == batchPace.MilestoneLineIndex;
                 bool playPrimaryFeedback = primaryFeedbackLines.TryGetValue(
@@ -1939,7 +2048,8 @@ namespace GourmetProject.Game.Presentation.Battle
                             playPrimaryFeedback,
                             layoutPlacement,
                             cancellationToken,
-                            holdUntilCleared));
+                            holdUntilCleared,
+                            cakeLayerBurstStep));
                     }
                     else
                     {
@@ -1961,7 +2071,8 @@ namespace GourmetProject.Game.Presentation.Battle
                                 playPrimaryFeedback,
                                 layoutPlacement,
                                 cancellationToken,
-                                holdUntilCleared));
+                                holdUntilCleared,
+                                cakeLayerBurstStep));
                         }
                     }
                 }
@@ -2213,6 +2324,54 @@ namespace GourmetProject.Game.Presentation.Battle
             SettlementEffectGroup group,
             int batchCount) =>
             batchCount > 1 && IsCakeLayerBuffGroup(group);
+
+        internal static CakeLayerBurstStepProfile ResolveCakeLayerBurstStepProfile(
+            int stepIndex,
+            int stepCount,
+            ScoreLineKind lineKind)
+        {
+            int safeStepCount = Mathf.Max(1, stepCount);
+            int safeStepIndex = Mathf.Clamp(stepIndex, 0, safeStepCount - 1);
+            float progress = safeStepCount == 1
+                ? 0.5f
+                : (float)safeStepIndex / (safeStepCount - 1);
+            SettlementImpactTier impactTier = safeStepCount == 1
+                ? SettlementImpactTier.Strong
+                : safeStepIndex == safeStepCount - 1
+                    ? SettlementImpactTier.Finale
+                    : safeStepIndex == 0
+                        ? SettlementImpactTier.Strong
+                        : SettlementImpactTier.Chain;
+            SettlementDishFeedbackKind dishFeedback = lineKind switch
+            {
+                ScoreLineKind.DishFlat => SettlementDishFeedbackKind.CakeLayerFlatBurst,
+                ScoreLineKind.DishMultiplierAdd => SettlementDishFeedbackKind.CakeLayerMultiplierAddBurst,
+                ScoreLineKind.DishMultiplier => SettlementDishFeedbackKind.CakeLayerMultiplierBurst,
+                _ => SettlementDishFeedbackKind.GenericValueChanged,
+            };
+
+            return new CakeLayerBurstStepProfile(
+                safeStepIndex,
+                safeStepCount,
+                progress,
+                Mathf.Lerp(0.08f, 0.16f, progress),
+                Mathf.Lerp(0.92f, 1.22f, progress),
+                Mathf.Lerp(0.35f, 1f, progress),
+                Mathf.Lerp(0.025f, 0.070f, progress),
+                impactTier,
+                dishFeedback);
+        }
+
+        internal static Color CakeLayerBurstTheme(ScoreLineKind lineKind)
+        {
+            return lineKind switch
+            {
+                ScoreLineKind.DishFlat => SettlementColorPalette.BaseScore,
+                ScoreLineKind.DishMultiplierAdd => SettlementColorPalette.AddMultiplier,
+                ScoreLineKind.DishMultiplier => SettlementColorPalette.MultiplyMultiplier,
+                _ => SettlementColorPalette.CakeLayer,
+            };
+        }
 
         internal static List<List<int>> BuildResultLineBatches(SettlementEffectGroup group)
         {
@@ -4763,6 +4922,66 @@ namespace GourmetProject.Game.Presentation.Battle
                         impactDuration).SetEase(Ease.InOutSine))
                     .SetLink(_camera.gameObject);
                 _motion = sequence.OnComplete(() => _motion = null);
+            }
+
+            /// <summary>蛋糕 Buff 专属脉冲不受达标阶段门槛限制，未达标时也保持三拍可感知。</summary>
+            public void PlayCakeLayerImpact(
+                float strength,
+                int targetCount,
+                bool finale)
+            {
+                if (!_active || _camera == null)
+                {
+                    return;
+                }
+
+                float scaledStrength = Mathf.Clamp(strength, 0.02f, 0.10f);
+                if (targetCount > 1)
+                {
+                    scaledStrength = Mathf.Min(0.11f, scaledStrength * 1.12f);
+                }
+
+                _motion?.Kill();
+                _camera.transform.position = _focusPosition;
+                float normalized = Mathf.InverseLerp(0.02f, 0.10f, scaledStrength);
+                float pulseFactor = Mathf.Lerp(0.994f, 0.978f, normalized);
+                float pulseSize = _focusOrthographicSize * pulseFactor;
+                float pulseInDuration = Mathf.Clamp(Scaled(0.075f), 0.055f, 0.095f);
+                float pulseOutDuration = Mathf.Clamp(Scaled(0.12f), 0.08f, 0.15f);
+                float impactDuration = pulseInDuration + pulseOutDuration;
+                Sequence sequence = DOTween.Sequence()
+                    .Append(DOVirtual.Float(
+                            _camera.orthographicSize,
+                            pulseSize,
+                            pulseInDuration,
+                            value => SetOrthographicSize(value))
+                        .SetEase(Ease.OutCubic))
+                    .Append(DOVirtual.Float(
+                            pulseSize,
+                            _focusOrthographicSize,
+                            pulseOutDuration,
+                            value => SetOrthographicSize(value))
+                        .SetEase(Ease.OutBack));
+                if (finale)
+                {
+                    sequence.Insert(0f, _camera.transform.DOShakePosition(
+                        impactDuration,
+                        Mathf.Lerp(0.025f, 0.055f, normalized),
+                        vibrato: 10,
+                        randomness: 24f,
+                        snapping: false,
+                        fadeOut: true));
+                }
+
+                sequence.SetLink(_camera.gameObject);
+                _motion = sequence.OnComplete(() =>
+                {
+                    if (_camera != null)
+                    {
+                        _camera.transform.position = _focusPosition;
+                    }
+                    _motion = null;
+                });
             }
 
             public void ReturnHome(float duration)

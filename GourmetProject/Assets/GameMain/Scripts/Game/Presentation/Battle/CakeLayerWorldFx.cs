@@ -41,6 +41,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly int DigestSeedId = Shader.PropertyToID("_DigestSeed");
 
         private readonly List<SpriteRenderer> _cakes = new();
+        private readonly Dictionary<SpriteRenderer, BuffBurstVisualState> _buffBurstStates = new();
+        private readonly List<Tween> _buffBurstTweens = new();
         [Header("Prefab Refs")]
         [SerializeField] private Transform _root;
         [SerializeField] private SpriteRenderer _cakePrefab;
@@ -57,6 +59,19 @@ namespace GourmetProject.Game.Presentation.Battle
         private BattleWorldController _owner;
         private Camera _camera;
         private System.Random _random;
+        private int _buffBurstVersion;
+
+        private readonly struct BuffBurstVisualState
+        {
+            public BuffBurstVisualState(Vector3 scale, Color color)
+            {
+                Scale = scale;
+                Color = color;
+            }
+
+            public Vector3 Scale { get; }
+            public Color Color { get; }
+        }
 
         public void Configure(BattleWorldController owner, Camera camera)
         {
@@ -73,6 +88,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
+            ResetBuffBurstVisuals();
             SetVisible(true);
             if (delta > 0)
             {
@@ -94,6 +110,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void Clear()
         {
+            ResetBuffBurstVisuals();
             if (_root == null)
             {
                 return;
@@ -104,6 +121,16 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 Destroy(_root.GetChild(i).gameObject);
             }
+        }
+
+        private void OnDisable()
+        {
+            ResetBuffBurstVisuals();
+        }
+
+        private void OnDestroy()
+        {
+            ResetBuffBurstVisuals();
         }
 
         public List<CakeLayerVisualState> CaptureState()
@@ -171,6 +198,173 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _root.gameObject.SetActive(visible);
             }
+        }
+
+        /// <summary>让当前已经存在于场外的蛋糕进入短暂收缩、提亮的 Buff 聚能态。</summary>
+        public void BeginBuffCharge(float duration)
+        {
+            ResetBuffBurstVisuals();
+            CaptureBuffBurstStates();
+            if (_buffBurstStates.Count == 0)
+            {
+                return;
+            }
+
+            int version = _buffBurstVersion;
+            float safeDuration = Mathf.Max(0.02f, duration);
+            float delayStep = Mathf.Min(0.008f, safeDuration * 0.04f);
+            float maxStagger = Mathf.Min(0.12f, safeDuration * 0.42f);
+            int cakeIndex = 0;
+            for (int i = 0; i < _cakes.Count; i++)
+            {
+                SpriteRenderer cake = _cakes[i];
+                if (cake == null
+                    || !_buffBurstStates.TryGetValue(cake, out BuffBurstVisualState state))
+                {
+                    continue;
+                }
+
+                float delay = Mathf.Min(cakeIndex * delayStep, maxStagger);
+                float tweenDuration = Mathf.Max(0.01f, safeDuration - delay);
+                Color chargedColor = Color.Lerp(
+                    state.Color,
+                    new Color(1f, 0.78f, 0.42f, state.Color.a),
+                    0.58f);
+                Sequence sequence = DOTween.Sequence()
+                    .AppendInterval(delay)
+                    .Append(cake.transform.DOScale(state.Scale * 0.92f, tweenDuration)
+                        .SetEase(Ease.InCubic))
+                    .Join(cake.DOColor(chargedColor, tweenDuration)
+                        .SetEase(Ease.InOutSine))
+                    .SetAutoKill(false)
+                    .SetLink(cake.gameObject)
+                    .OnKill(() => RestoreBuffBurstStateIfCurrent(cake, state, version));
+                _buffBurstTweens.Add(sequence);
+                cakeIndex++;
+            }
+        }
+
+        /// <summary>按三连爆发的当前强度脉冲所有场外蛋糕；不会创建新的世界物件。</summary>
+        public void PlayBuffPulse(float strength, Color theme, float duration)
+        {
+            if (_buffBurstStates.Count == 0)
+            {
+                CaptureBuffBurstStates();
+            }
+
+            if (_buffBurstStates.Count == 0)
+            {
+                return;
+            }
+
+            KillBuffBurstTweens(restoreVisuals: true, clearStates: false);
+            int version = _buffBurstVersion;
+            float clampedStrength = Mathf.Clamp01(strength);
+            float safeDuration = Mathf.Max(0.025f, duration);
+            float delayStep = Mathf.Min(0.006f, safeDuration * 0.03f);
+            float maxStagger = Mathf.Min(0.08f, safeDuration * 0.30f);
+            float peakScale = Mathf.Lerp(1.08f, 1.20f, clampedStrength);
+            int cakeIndex = 0;
+            for (int i = 0; i < _cakes.Count; i++)
+            {
+                SpriteRenderer cake = _cakes[i];
+                if (cake == null
+                    || !_buffBurstStates.TryGetValue(cake, out BuffBurstVisualState state))
+                {
+                    continue;
+                }
+
+                float delay = Mathf.Min(cakeIndex * delayStep, maxStagger);
+                float activeDuration = Mathf.Max(0.015f, safeDuration - delay);
+                Color peakColor = Color.Lerp(
+                    state.Color,
+                    SettlementColorPalette.TextFor(theme),
+                    Mathf.Lerp(0.34f, 0.68f, clampedStrength));
+                Sequence sequence = DOTween.Sequence()
+                    .AppendInterval(delay)
+                    .Append(cake.transform.DOScale(
+                            state.Scale * peakScale,
+                            activeDuration * 0.42f)
+                        .SetEase(Ease.OutBack))
+                    .Join(cake.DOColor(peakColor, activeDuration * 0.42f)
+                        .SetEase(Ease.OutCubic))
+                    .Append(cake.transform.DOScale(state.Scale, activeDuration * 0.58f)
+                        .SetEase(Ease.OutCubic))
+                    .Join(cake.DOColor(state.Color, activeDuration * 0.58f)
+                        .SetEase(Ease.OutCubic))
+                    .SetLink(cake.gameObject)
+                    .OnComplete(() => RestoreBuffBurstStateIfCurrent(cake, state, version))
+                    .OnKill(() => RestoreBuffBurstStateIfCurrent(cake, state, version));
+                _buffBurstTweens.Add(sequence);
+                cakeIndex++;
+            }
+        }
+
+        /// <summary>中断或结束结算时恢复每块蛋糕进入爆发前的随机缩放与颜色。</summary>
+        public void ResetBuffBurstVisuals()
+        {
+            _buffBurstVersion++;
+            KillBuffBurstTweens(restoreVisuals: true, clearStates: true);
+        }
+
+        private void CaptureBuffBurstStates()
+        {
+            _buffBurstVersion++;
+            _buffBurstStates.Clear();
+            for (int i = 0; i < _cakes.Count; i++)
+            {
+                SpriteRenderer cake = _cakes[i];
+                if (cake == null)
+                {
+                    continue;
+                }
+
+                _buffBurstStates[cake] = new BuffBurstVisualState(
+                    cake.transform.localScale,
+                    cake.color);
+            }
+        }
+
+        private void KillBuffBurstTweens(bool restoreVisuals, bool clearStates)
+        {
+            for (int i = 0; i < _buffBurstTweens.Count; i++)
+            {
+                _buffBurstTweens[i]?.Kill();
+            }
+            _buffBurstTweens.Clear();
+
+            if (restoreVisuals)
+            {
+                foreach (KeyValuePair<SpriteRenderer, BuffBurstVisualState> pair in _buffBurstStates)
+                {
+                    if (pair.Key == null)
+                    {
+                        continue;
+                    }
+
+                    pair.Key.transform.localScale = pair.Value.Scale;
+                    pair.Key.color = pair.Value.Color;
+                }
+            }
+
+            if (clearStates)
+            {
+                _buffBurstStates.Clear();
+            }
+        }
+
+        private void RestoreBuffBurstStateIfCurrent(
+            SpriteRenderer cake,
+            BuffBurstVisualState state,
+            int version)
+        {
+            if (cake == null || version != _buffBurstVersion)
+            {
+                return;
+            }
+
+            cake.transform.localScale = state.Scale;
+            cake.color = state.Color;
         }
 
         private SpriteRenderer CreateCake(Vector3 landing, bool animate, int staggerIndex)

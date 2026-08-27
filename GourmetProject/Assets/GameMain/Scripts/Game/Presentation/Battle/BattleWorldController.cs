@@ -4195,6 +4195,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _settling = true;
             _scopeHighlights?.ClearAll();
+            EnsureCakeLayerFx();
             CancellationToken token = GetPresentationToken();
             try
             {
@@ -4206,6 +4207,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     _fxRoot,
                     WorldCamera,
                     scoreFire,
+                    _cakeLayerFx,
                     RenderSettlementScore,
                     onReveal,
                     OnSettlementScope,
