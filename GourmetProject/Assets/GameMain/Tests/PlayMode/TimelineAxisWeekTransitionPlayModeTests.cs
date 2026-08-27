@@ -87,13 +87,13 @@ namespace GourmetProject.Tests.PlayMode
                 Assert.That(weekTitleGroup.alpha, Is.EqualTo(1f).Within(0.02f));
                 Assert.That(rig.Group.alpha, Is.Zero.Within(0.001f));
 
-                yield return new WaitForSecondsRealtime(0.20f);
+                yield return new WaitForSecondsRealtime(0.10f);
                 Assert.That(weekTitle.gameObject.activeSelf, Is.True);
                 Assert.That(weekTitleGroup.alpha, Is.GreaterThan(0f));
                 Assert.That(weekTitleGroup.alpha, Is.LessThan(1f));
                 Assert.That(rig.Group.alpha, Is.Zero.Within(0.001f));
 
-                yield return new WaitForSecondsRealtime(0.20f);
+                yield return new WaitForSecondsRealtime(0.30f);
                 Assert.That(weekTitle.gameObject.activeSelf, Is.False);
                 Assert.That(rig.Group.alpha, Is.GreaterThan(0f));
                 Assert.That(rig.Group.alpha, Is.LessThan(rig.RestAlpha));
