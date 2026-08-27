@@ -47,10 +47,15 @@ namespace GourmetProject.Game.UI.Battle.View
         /// <summary>行动 n 选一：无行动可选时改显跳过按钮。卡片与跳过都回调 onPick（跳过传 null）。</summary>
         public void ShowActionChoices(IReadOnlyList<ActionChoice> choices, Action<ActionChoice> onPick)
         {
-            ShowActionChoices(choices, onPick, null, 0);
+            ShowActionChoices(choices, onPick, null, 0, false);
         }
 
-        public void ShowActionChoices(IReadOnlyList<ActionChoice> choices, Action<ActionChoice> onPick, Action onReroll, int rerollCount)
+        public void ShowActionChoices(
+            IReadOnlyList<ActionChoice> choices,
+            Action<ActionChoice> onPick,
+            Action onReroll,
+            int rerollCount,
+            bool nextBusinessRewardDoubleActive = false)
         {
             EnsureRefs();
             Clear();
@@ -74,8 +79,27 @@ namespace GourmetProject.Game.UI.Battle.View
             {
                 float minX = gap + i * (cardW + gap);
                 ActionChoice captured = choices[i];
-                SpawnCard(minX, minX + cardW, card => card.Bind(captured, () => onPick?.Invoke(captured)));
+                bool showRewardDoubleTicket = ShouldShowNextBusinessRewardDoubleTicket(
+                    GameApp.Config.Tables,
+                    captured?.Action,
+                    nextBusinessRewardDoubleActive);
+                SpawnCard(
+                    minX,
+                    minX + cardW,
+                    card => card.Bind(
+                        captured,
+                        showRewardDoubleTicket,
+                        () => onPick?.Invoke(captured)));
             }
+        }
+
+        internal static bool ShouldShowNextBusinessRewardDoubleTicket(
+            cfg.Tables tables,
+            cfg.GameAction action,
+            bool buffActive)
+        {
+            return buffActive
+                && RewardGranter.IsNextBusinessRewardDoubleEligible(tables, action);
         }
 
         /// <summary>事件 n 选一：每个选项一张卡，点击回调选项序号；无法构建时走 onEmpty 兜底。</summary>

@@ -82,6 +82,9 @@ namespace GourmetProject.Game.UI.Meta
         private const float DefaultHideDuration = 0.2f;
         private const float DefaultPickEffectHold = 0.5f;
         private const float HalfCostEmphasisDuration = 0.4f;
+        private const float RewardDoubleTicketEmphasisDuration = 0.18f;
+        private const string RewardDoubleTicketIconPath = "Sprites/Items/active_reroll_action";
+        internal const string RewardDoubleTicketText = "待触发\n随机奖励 ×2";
 
         private static readonly Color PanelColor = new Color(1f, 0.94f, 0.78f, 0.9f);
         private static readonly Color NodePanelColor = new Color(0.24f, 0.55f, 0.82f, 0.88f);
@@ -109,6 +112,11 @@ namespace GourmetProject.Game.UI.Meta
         [SerializeField] private TMP_Text _halfCostOriginalText;
         [SerializeField] private TMP_Text _halfCostEffectiveText;
         [SerializeField] private Image _halfCostStrikeImage;
+
+        [Header("Next Business Reward Double")]
+        [SerializeField] private RectTransform _rewardDoubleTicketRoot;
+        [SerializeField] private Image _rewardDoubleTicketIconImage;
+        [SerializeField] private TMP_Text _rewardDoubleTicketText;
 
         [SerializeField] private Image _cardBackingImage;
         [SerializeField] private RectTransform _artViewport;
@@ -153,11 +161,13 @@ namespace GourmetProject.Game.UI.Meta
         private Tween _scaleTween;
         private Tween _pickDelayTween;
         private Tween _halfCostTween;
+        private Tween _rewardDoubleTicketTween;
         private Material _glowMat;
         private ItemTipView _rewardTip;
         private CardSkin _cardSkin;
         private bool _rewardVisible;
         private bool _hasHalfCostPresentation;
+        private bool _rewardDoubleTicketVisible;
         private bool _isHotBusiness;
         private bool _isStarEvaluation;
         private bool _effectsVisible;
@@ -309,6 +319,12 @@ namespace GourmetProject.Game.UI.Meta
         /// <summary>行动组候选绑定，使用本次选择快照中的耗时。</summary>
         public void Bind(ActionChoice choice, Action onPick)
         {
+            Bind(choice, false, onPick);
+        }
+
+        /// <summary>行动组候选绑定，并按本次运行态标记外挂的奖励翻倍票券。</summary>
+        public void Bind(ActionChoice choice, bool showRewardDoubleTicket, Action onPick)
+        {
             if (choice == null || choice.Action == null)
             {
                 Bind(string.Empty, string.Empty, 0, onPick);
@@ -323,6 +339,7 @@ namespace GourmetProject.Game.UI.Meta
             ConfigurePresentationFor(choice.Action);
             SetArt(CardSpriteFor(choice.Action));
             SetFoodRewardBadge(choice.Action);
+            SetNextBusinessRewardDoubleTicket(showRewardDoubleTicket);
         }
 
         private static cfg.Food ResolveFood(cfg.GameAction action) => FoodService.Resolve(GameApp.Config.Tables, action);
@@ -359,6 +376,7 @@ namespace GourmetProject.Game.UI.Meta
             bool formatTitleAsDescription = false)
         {
             ResetHalfCostPresentation();
+            SetNextBusinessRewardDoubleTicket(false);
             ApplyCardSkin(CardSkin.Event);
             if (formatTitleAsDescription)
             {
@@ -378,6 +396,32 @@ namespace GourmetProject.Game.UI.Meta
             {
                 _pickButton.onClick.RemoveAllListeners();
                 _pickButton.onClick.AddListener(OnPickClicked);
+            }
+        }
+
+        internal void SetNextBusinessRewardDoubleTicket(bool visible)
+        {
+            _rewardDoubleTicketVisible = visible;
+            KillRewardDoubleTicketTween();
+
+            if (_rewardDoubleTicketRoot == null)
+            {
+                return;
+            }
+
+            _rewardDoubleTicketRoot.gameObject.SetActive(visible);
+            _rewardDoubleTicketRoot.localScale = Vector3.one;
+            SetText(_rewardDoubleTicketText, RewardDoubleTicketText);
+
+            if (_rewardDoubleTicketIconImage != null)
+            {
+                if (visible && _rewardDoubleTicketIconImage.sprite == null)
+                {
+                    _rewardDoubleTicketIconImage.sprite =
+                        Resources.Load<Sprite>(RewardDoubleTicketIconPath);
+                }
+
+                _rewardDoubleTicketIconImage.color = Color.white;
             }
         }
 
@@ -1031,6 +1075,7 @@ namespace GourmetProject.Game.UI.Meta
         private void OnEnable()
         {
             KillHalfCostTween();
+            KillRewardDoubleTicketTween();
             _picking = false;
             _hover = false;
             _selectedGlow = false;
@@ -1050,6 +1095,7 @@ namespace GourmetProject.Game.UI.Meta
             KillScaleTween();
             KillPickDelayTween();
             KillHalfCostTween();
+            KillRewardDoubleTicketTween();
             _effectsVisible = false;
             _hotEmbers?.SetHot(false);
             _starburst?.SetStarEvaluation(false);
@@ -1114,6 +1160,68 @@ namespace GourmetProject.Game.UI.Meta
             {
                 _footerBackingImage.color = _footerStableColor;
             }
+        }
+
+        private void KillRewardDoubleTicketTween()
+        {
+            if (_rewardDoubleTicketTween != null)
+            {
+                _rewardDoubleTicketTween.Kill();
+                _rewardDoubleTicketTween = null;
+            }
+
+            if (_rewardDoubleTicketRoot != null)
+            {
+                _rewardDoubleTicketRoot.localScale = Vector3.one;
+            }
+
+            if (_rewardDoubleTicketIconImage != null)
+            {
+                _rewardDoubleTicketIconImage.color = Color.white;
+            }
+        }
+
+        private void PlayRewardDoubleTicketEmphasis()
+        {
+            if (!_rewardDoubleTicketVisible
+                || _rewardDoubleTicketRoot == null
+                || !_rewardDoubleTicketRoot.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            KillRewardDoubleTicketTween();
+            _rewardDoubleTicketRoot.localScale = Vector3.one * 0.82f;
+            if (_rewardDoubleTicketIconImage != null)
+            {
+                _rewardDoubleTicketIconImage.color = new Color(1f, 0.9f, 0.45f, 0.48f);
+            }
+
+            Sequence sequence = DOTween.Sequence().SetUpdate(true);
+            sequence.Append(_rewardDoubleTicketRoot
+                .DOScale(1f, RewardDoubleTicketEmphasisDuration)
+                .SetEase(Ease.OutBack));
+            if (_rewardDoubleTicketIconImage != null)
+            {
+                sequence.Join(_rewardDoubleTicketIconImage
+                    .DOColor(Color.white, RewardDoubleTicketEmphasisDuration)
+                    .SetEase(Ease.OutQuad));
+            }
+
+            _rewardDoubleTicketTween = sequence.OnComplete(() =>
+            {
+                if (_rewardDoubleTicketRoot != null)
+                {
+                    _rewardDoubleTicketRoot.localScale = Vector3.one;
+                }
+
+                if (_rewardDoubleTicketIconImage != null)
+                {
+                    _rewardDoubleTicketIconImage.color = Color.white;
+                }
+
+                _rewardDoubleTicketTween = null;
+            });
         }
 
         private void PlayHalfCostEmphasis()
@@ -1268,6 +1376,7 @@ namespace GourmetProject.Game.UI.Meta
                     SetPickInteractable(true);
                     _scaleTween = null;
                     PlayHalfCostEmphasis();
+                    PlayRewardDoubleTicketEmphasis();
                 });
             return _scaleTween;
         }
@@ -1283,6 +1392,7 @@ namespace GourmetProject.Game.UI.Meta
 
             KillScaleTween();
             KillHalfCostTween();
+            KillRewardDoubleTicketTween();
             SetPickInteractable(false);
             _effectsVisible = false;
             _hotEmbers?.SetHot(false);

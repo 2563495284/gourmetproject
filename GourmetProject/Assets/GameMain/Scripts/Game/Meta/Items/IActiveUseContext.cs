@@ -112,10 +112,10 @@ namespace GourmetProject.Game.Meta
         /// <summary>能力：删除指定尚未结算、尚未开始执行的时间轴节点。</summary>
         bool DeleteTimelineNode(string nodeId);
 
-        /// <summary>能力：为下一次普通行动增加一层半日 Buff。</summary>
+        /// <summary>能力：为下一次普通行动增加一次待触发的耗时减半。</summary>
         bool AddNextActionHalfCostStack();
 
-        /// <summary>能力：为下一次日常或火热营业增加一层随机奖励翻倍。</summary>
+        /// <summary>能力：为下一次日常或火热营业增加一次待触发的随机奖励翻倍。</summary>
         bool AddNextBusinessRewardDoubleStack();
     }
 }

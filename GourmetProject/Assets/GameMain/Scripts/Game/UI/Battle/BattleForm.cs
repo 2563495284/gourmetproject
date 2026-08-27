@@ -2862,10 +2862,6 @@ namespace GourmetProject.Game.UI.Battle
                     _session?.Database?.CakeLayerBuffs ?? _run?.Database?.CakeLayerBuffs,
                     _tips != null ? _tips.Item : null);
             }
-
-            _cakeLayerBuffHud.BindHalfDayCost(
-                _run != null ? _run.NextDailyActionHalfCostStacks : 0,
-                _tips != null ? _tips.Item : null);
         }
 
         private void RefreshFoodActions()
@@ -3542,7 +3538,9 @@ namespace GourmetProject.Game.UI.Battle
                 choices,
                 OnActionSelectionPicked,
                 OnActionRerollClicked,
-                _run != null ? _run.ActionRerollCount : 0);
+                _run != null ? _run.ActionRerollCount : 0,
+                nextBusinessRewardDoubleActive:
+                    _run != null && _run.NextBusinessRewardDoubleStacks > 0);
         }
 
         private void TrackTimelineNodeCard(cfg.TimelineNode node, int? interestMaxGain, Action onPick)
