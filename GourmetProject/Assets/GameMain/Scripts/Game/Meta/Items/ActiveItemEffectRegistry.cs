@@ -137,7 +137,11 @@ namespace GourmetProject.Game.Meta
 
                 case ItemEffectTypes.DoubleNextBusinessReward:
                     return ctx.AddNextBusinessRewardDoubleStack()
-                        ? new ActiveItemUseResult(true, false, $"{item.Name}：下一次营业将随机额外重抽一类奖励。")
+                        ? new ActiveItemUseResult(
+                            true,
+                            false,
+                            $"{item.Name}：下一次营业将随机额外重抽一类奖励。",
+                            actionChoicesChanged: true)
                         : new ActiveItemUseResult(false, false, $"{item.Name}：现在无法使用。");
 
                 case ItemEffectTypes.HalfNextActionCost:

@@ -66,6 +66,10 @@ namespace GourmetProject.Tests.EditMode
                 item,
                 Array.Empty<ActiveTarget>());
             Assert.That(result.Success, Is.True, result.Message);
+            Assert.That(
+                result.ActionChoicesChanged,
+                Is.True,
+                $"{item.Id} must use the full action-card hide/show refresh.");
 
             if (item.EffectType == ItemEffectTypes.DoubleNextBusinessReward)
             {
