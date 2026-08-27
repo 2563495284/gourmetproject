@@ -963,7 +963,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 int discardCount = session != null && !session.IsSettled
                     ? session.FoodDiscardsRemaining
                     : new ItemRuntime(run).FoodDiscardCapacity();
-                _discardCountText.text = discardCount.ToString("D2");
+                _discardCountText.text = discardCount.ToString("D1");
             }
         }
 
