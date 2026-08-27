@@ -81,6 +81,7 @@ namespace GourmetProject.Game.UI.Meta
         private const float GlowPadding = 48f;
         private const float DefaultHideDuration = 0.2f;
         private const float DefaultPickEffectHold = 0.5f;
+        private const float HalfCostEmphasisDuration = 0.4f;
 
         private static readonly Color PanelColor = new Color(1f, 0.94f, 0.78f, 0.9f);
         private static readonly Color NodePanelColor = new Color(0.24f, 0.55f, 0.82f, 0.88f);
@@ -95,11 +96,20 @@ namespace GourmetProject.Game.UI.Meta
         private static readonly Color StarGlowColor = new Color32(255, 183, 35, 255);
         private static readonly Color StarPulseGlowColor = new Color32(196, 70, 255, 255);
         private static readonly Color StarHoverGlowColor = new Color32(255, 242, 164, 255);
+        private static readonly Color HalfCostFlashColor = new Color32(255, 231, 214, 255);
 
         [SerializeField] private TMP_Text _nameText;
         [SerializeField] private TmpTextVertexAnimator _nameAnimator;
         [SerializeField] private TMP_Text _descText;
         [SerializeField] private TMP_Text _timeText;
+
+        [Header("Action Cost Discount")]
+        [SerializeField] private RectTransform _halfCostRoot;
+        [SerializeField] private TMP_Text _halfCostLabelText;
+        [SerializeField] private TMP_Text _halfCostOriginalText;
+        [SerializeField] private TMP_Text _halfCostEffectiveText;
+        [SerializeField] private Image _halfCostStrikeImage;
+
         [SerializeField] private Image _cardBackingImage;
         [SerializeField] private RectTransform _artViewport;
         [SerializeField] private AspectRatioFitter _artAspectFitter;
@@ -142,13 +152,17 @@ namespace GourmetProject.Game.UI.Meta
         private Sprite _particleSprite;
         private Tween _scaleTween;
         private Tween _pickDelayTween;
+        private Tween _halfCostTween;
         private Material _glowMat;
         private ItemTipView _rewardTip;
         private CardSkin _cardSkin;
         private bool _rewardVisible;
+        private bool _hasHalfCostPresentation;
         private bool _isHotBusiness;
         private bool _isStarEvaluation;
         private bool _effectsVisible;
+        private string _footerStableText = string.Empty;
+        private Color _footerStableColor = Color.white;
         private WeekEventCardEmberGraphic _hotEmbers;
         private static readonly int QuadSizeId = Shader.PropertyToID("_QuadSize");
 
@@ -302,6 +316,10 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             Bind(CardName(choice.Action), string.Empty, choice.CostDays, onPick);
+            SetActionCostFooter(
+                choice.CostDays,
+                choice.HalfDayBuffApplied,
+                choice.CostBeforeHalfDays);
             ConfigurePresentationFor(choice.Action);
             SetArt(CardSpriteFor(choice.Action));
             SetFoodRewardBadge(choice.Action);
@@ -331,14 +349,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             ApplyCommon(name, desc, onPick);
             ConfigurePresentation(ActionDisplayKind.Event);
-            if (costDays > 0f)
-            {
-                SetFooter($"用时：{costDays.ToString("0.#", CultureInfo.InvariantCulture)}天", true, FooterActionColor);
-            }
-            else
-            {
-                SetFooter(string.Empty, false, FooterActionColor);
-            }
+            SetActionCostFooter(costDays, false, costDays);
         }
 
         private void ApplyCommon(
@@ -347,6 +358,7 @@ namespace GourmetProject.Game.UI.Meta
             Action onPick,
             bool formatTitleAsDescription = false)
         {
+            ResetHalfCostPresentation();
             ApplyCardSkin(CardSkin.Event);
             if (formatTitleAsDescription)
             {
@@ -472,25 +484,131 @@ namespace GourmetProject.Game.UI.Meta
 
         private void SetFooter(string text, bool visible, Color backingColor)
         {
-            SetText(_timeText, text);
+            _hasHalfCostPresentation = false;
+            SetHalfCostRootActive(false);
+            _footerStableText = text ?? string.Empty;
+            SetText(_timeText, _footerStableText);
             if (_timeText != null)
             {
                 _timeText.gameObject.SetActive(visible);
                 _timeText.color = _cardSkin == CardSkin.Node ? NodeFooterTextColor : EventTextColor;
             }
 
-            if (_footerBackingImage != null)
+            SetFooterBacking(visible, backingColor);
+        }
+
+        private void SetFooterBacking(bool visible, Color backingColor)
+        {
+            if (_footerBackingImage == null)
             {
-                _footerBackingImage.sprite = LoadSkinSprite(
-                    _isStarEvaluation
-                        ? StarFooterPath
-                        : _cardSkin == CardSkin.Node ? NodeFooterPath : EventFooterPath);
-                _footerBackingImage.type = Image.Type.Sliced;
-                SetBacking(
-                    _footerBackingImage,
-                    visible,
-                    _footerBackingImage.sprite != null ? Color.white : backingColor);
+                return;
             }
+
+            _footerBackingImage.sprite = LoadSkinSprite(
+                _isStarEvaluation
+                    ? StarFooterPath
+                    : _cardSkin == CardSkin.Node ? NodeFooterPath : EventFooterPath);
+            _footerBackingImage.type = Image.Type.Sliced;
+            _footerStableColor = _footerBackingImage.sprite != null
+                ? Color.white
+                : backingColor;
+            SetBacking(
+                _footerBackingImage,
+                visible,
+                _footerStableColor);
+        }
+
+        internal void SetActionCostFooter(
+            float costDays,
+            bool halfDayBuffApplied,
+            float costBeforeHalfDays)
+        {
+            string text = FormatActionCostFooter(costDays);
+            bool visible = !string.IsNullOrEmpty(text);
+            bool showHalfCost = visible
+                && halfDayBuffApplied
+                && HasReducedActionCost(costDays, costBeforeHalfDays);
+            if (!showHalfCost || !CanShowHalfCostFooter())
+            {
+                SetFooter(text, visible, FooterActionColor);
+                return;
+            }
+
+            _footerStableText = string.Empty;
+            _hasHalfCostPresentation = true;
+            SetText(_timeText, string.Empty);
+            if (_timeText != null)
+            {
+                _timeText.gameObject.SetActive(false);
+            }
+
+            SetHalfCostRootActive(true);
+            SetText(_halfCostLabelText, "用时：");
+            SetText(_halfCostOriginalText, FormatActionCostDays(costBeforeHalfDays));
+            SetText(_halfCostEffectiveText, FormatActionCostDays(costDays));
+            UpdateHalfCostStrikeWidth();
+            SetFooterBacking(true, FooterActionColor);
+        }
+
+        internal static string FormatActionCostFooter(float costDays)
+        {
+            string costText = FormatActionCostDays(costDays);
+            return string.IsNullOrEmpty(costText)
+                ? string.Empty
+                : $"用时：{costText}";
+        }
+
+        internal static string FormatActionCostDays(float costDays)
+        {
+            float cost = TimelineMath.Quantize(Mathf.Max(0f, costDays));
+            if (cost <= 0f)
+            {
+                return string.Empty;
+            }
+
+            return $"{cost.ToString("0.#", CultureInfo.InvariantCulture)}天";
+        }
+
+        private static bool HasReducedActionCost(float costDays, float costBeforeHalfDays)
+        {
+            float effectiveCost = TimelineMath.Quantize(Mathf.Max(0f, costDays));
+            float originalCost = TimelineMath.Quantize(Mathf.Max(0f, costBeforeHalfDays));
+            return originalCost > effectiveCost;
+        }
+
+        private bool CanShowHalfCostFooter()
+        {
+            return _halfCostRoot != null
+                && _halfCostLabelText != null
+                && _halfCostOriginalText != null
+                && _halfCostEffectiveText != null
+                && _halfCostStrikeImage != null;
+        }
+
+        private void SetHalfCostRootActive(bool active)
+        {
+            if (_halfCostRoot != null)
+            {
+                _halfCostRoot.gameObject.SetActive(active);
+            }
+        }
+
+        private void UpdateHalfCostStrikeWidth()
+        {
+            if (_halfCostOriginalText == null || _halfCostStrikeImage == null)
+            {
+                return;
+            }
+
+            _halfCostOriginalText.ForceMeshUpdate(
+                ignoreActiveState: true,
+                forceTextReparsing: true);
+            float availableWidth = Mathf.Max(4f, _halfCostOriginalText.rectTransform.rect.width);
+            float preferredWidth = Mathf.Ceil(_halfCostOriginalText.preferredWidth) + 4f;
+            float strikeWidth = Mathf.Clamp(preferredWidth, 4f, availableWidth);
+            _halfCostStrikeImage.rectTransform.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Horizontal,
+                strikeWidth);
         }
 
         private void ApplyCardSkin(CardSkin skin)
@@ -912,6 +1030,7 @@ namespace GourmetProject.Game.UI.Meta
 
         private void OnEnable()
         {
+            KillHalfCostTween();
             _picking = false;
             _hover = false;
             _selectedGlow = false;
@@ -930,6 +1049,7 @@ namespace GourmetProject.Game.UI.Meta
         {
             KillScaleTween();
             KillPickDelayTween();
+            KillHalfCostTween();
             _effectsVisible = false;
             _hotEmbers?.SetHot(false);
             _starburst?.SetStarEvaluation(false);
@@ -957,6 +1077,100 @@ namespace GourmetProject.Game.UI.Meta
                 _pickDelayTween.Kill();
                 _pickDelayTween = null;
             }
+        }
+
+        private void ResetHalfCostPresentation()
+        {
+            KillHalfCostTween();
+            _hasHalfCostPresentation = false;
+            SetHalfCostRootActive(false);
+        }
+
+        private void KillHalfCostTween()
+        {
+            if (_halfCostTween != null)
+            {
+                _halfCostTween.Kill();
+                _halfCostTween = null;
+            }
+
+            if (_timeText != null)
+            {
+                _timeText.rectTransform.localScale = Vector3.one;
+                SetText(_timeText, _footerStableText);
+            }
+
+            if (_halfCostEffectiveText != null)
+            {
+                _halfCostEffectiveText.rectTransform.localScale = Vector3.one;
+            }
+
+            if (_halfCostStrikeImage != null)
+            {
+                _halfCostStrikeImage.rectTransform.localScale = Vector3.one;
+            }
+
+            if (_footerBackingImage != null)
+            {
+                _footerBackingImage.color = _footerStableColor;
+            }
+        }
+
+        private void PlayHalfCostEmphasis()
+        {
+            if (!_hasHalfCostPresentation
+                || _halfCostRoot == null
+                || !_halfCostRoot.gameObject.activeInHierarchy
+                || _halfCostEffectiveText == null
+                || _halfCostStrikeImage == null)
+            {
+                return;
+            }
+
+            KillHalfCostTween();
+            RectTransform effectiveRect = _halfCostEffectiveText.rectTransform;
+            RectTransform strikeRect = _halfCostStrikeImage.rectTransform;
+            effectiveRect.localScale = Vector3.one * 0.92f;
+            strikeRect.localScale = new Vector3(0f, 1f, 1f);
+
+            bool hasFooter = _footerBackingImage != null
+                && _footerBackingImage.gameObject.activeInHierarchy;
+            if (hasFooter)
+            {
+                _footerBackingImage.color = HalfCostFlashColor;
+            }
+
+            const float strikeDuration = 0.12f;
+            const float riseDuration = 0.12f;
+            float settleDuration = HalfCostEmphasisDuration - strikeDuration - riseDuration;
+            Sequence sequence = DOTween.Sequence().SetUpdate(true);
+            sequence.Append(strikeRect
+                .DOScaleX(1f, strikeDuration)
+                .SetEase(Ease.OutQuad));
+            sequence.Append(effectiveRect
+                .DOScale(1.08f, riseDuration)
+                .SetEase(Ease.OutQuad));
+            sequence.Append(effectiveRect
+                .DOScale(1f, settleDuration)
+                .SetEase(Ease.OutBack));
+            if (hasFooter)
+            {
+                sequence.Insert(0f, _footerBackingImage
+                    .DOColor(_footerStableColor, HalfCostEmphasisDuration)
+                    .SetEase(Ease.OutQuad));
+            }
+
+            _halfCostTween = sequence.OnComplete(() =>
+            {
+                effectiveRect.localScale = Vector3.one;
+                strikeRect.localScale = Vector3.one;
+                if (_footerBackingImage != null)
+                {
+                    _footerBackingImage.color = _footerStableColor;
+                }
+
+                _halfCostTween = null;
+            });
         }
 
         private void Update()
@@ -1037,6 +1251,7 @@ namespace GourmetProject.Game.UI.Meta
         public Tween PlayShow()
         {
             KillScaleTween();
+            KillHalfCostTween();
             _isHidden = false;
             _effectsVisible = true;
             _hotEmbers?.SetHot(_isHotBusiness);
@@ -1052,6 +1267,7 @@ namespace GourmetProject.Game.UI.Meta
                     transform.localScale = Vector3.one;
                     SetPickInteractable(true);
                     _scaleTween = null;
+                    PlayHalfCostEmphasis();
                 });
             return _scaleTween;
         }
@@ -1066,6 +1282,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             KillScaleTween();
+            KillHalfCostTween();
             SetPickInteractable(false);
             _effectsVisible = false;
             _hotEmbers?.SetHot(false);

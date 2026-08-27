@@ -101,7 +101,8 @@ namespace GourmetProject.Game.Meta
                     choice.RunStepIndex,
                     applyHalfDay ? run.PreviewDailyActionCost(choice.CostDays) : choice.CostDays,
                     halfDayBuffApplied: applyHalfDay,
-                    timelineStopChance: choice.TimelineStopChance));
+                    timelineStopChance: choice.TimelineStopChance,
+                    costBeforeHalfDays: choice.CostDays));
             }
 
             return result;

@@ -13,13 +13,16 @@ namespace GourmetProject.Game.Meta
             int runStepIndex,
             float costDays,
             bool halfDayBuffApplied = false,
-            float timelineStopChance = 0f)
+            float timelineStopChance = 0f,
+            float? costBeforeHalfDays = null)
         {
             Action = action;
             ActionGroupId = actionGroupId ?? string.Empty;
             WeekStepIndex = Math.Max(0, weekStepIndex);
             RunStepIndex = Math.Max(0, runStepIndex);
             CostDays = TimelineMath.Quantize(Math.Max(0f, costDays));
+            CostBeforeHalfDays = TimelineMath.Quantize(
+                Math.Max(0f, costBeforeHalfDays ?? CostDays));
             HalfDayBuffApplied = halfDayBuffApplied;
             TimelineStopChance = Math.Max(0f, Math.Min(1f, timelineStopChance));
         }
@@ -33,6 +36,9 @@ namespace GourmetProject.Game.Meta
         public int RunStepIndex { get; }
 
         public float CostDays { get; }
+
+        /// <summary>半日券应用前的行动耗时快照；仅用于本次候选的表现，不进入存档。</summary>
+        public float CostBeforeHalfDays { get; }
 
         public bool HalfDayBuffApplied { get; }
 
