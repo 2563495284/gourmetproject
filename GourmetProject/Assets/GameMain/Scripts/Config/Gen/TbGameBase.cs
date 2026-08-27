@@ -159,6 +159,10 @@ public partial class TbGameBase
     /// 连续同流派且未出现目标食物的多选一组数；达到后下一组保底（0=关闭）
     /// </summary>
      public int DishChoiceArchetypePityCount => _data.DishChoiceArchetypePityCount;
+    /// <summary>
+    /// 商店随机食物隐藏分临时修正
+    /// </summary>
+     public int ShopDishHiddenScoreOffset => _data.ShopDishHiddenScoreOffset;
     
     public void ResolveRef(Tables tables)
     {

@@ -1,17 +1,21 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GourmetProject.Core.Rng;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Battle;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
+using GourmetProject.Gameplay.Data;
+using GourmetProject.Gameplay.Model;
 using GourmetProject.Runtime;
 
 namespace GourmetProject.Game.DevConsole.Commands
 {
     /// <summary>
-    /// 把出餐口食物随机摆到餐桌，直到当前食物放不下或出餐口没有食物。
+    /// 无参数时把出餐口食物随机摆到餐桌；指定食物 id 时直接生成尽可能多的该食物。
     /// 出餐口抽菜仍走 <see cref="BattleSession.PrepareServeAutomatically"/>，摆位使用独立随机流。
+    /// 指定食物模式不消耗食谱、出餐口或上菜次数，也不触发正常上菜事件。
     /// </summary>
     public sealed class PlaceCommand : ConsoleCommand
     {
@@ -21,12 +25,19 @@ namespace GourmetProject.Game.DevConsole.Commands
 
         public override string CmdName => "place";
 
-        public override string Args => string.Empty;
+        public override string Args => "[dish-id:string]";
 
-        public override string Description => "随机把出餐口食物摆到餐桌，直到放不下或出餐口没有食物。";
+        public override string Description =>
+            "无参数时随机摆放出餐口食物；指定 id 时直接放置最大数量的相同食物。";
 
         public override CmdResult Execute(string[] args)
         {
+            args ??= Array.Empty<string>();
+            if (args.Length > 1)
+            {
+                return CmdResult.Fail("用法：place [dish-id]");
+            }
+
             BattleForm battle = BattleForm.Active;
             BattleSession session = battle?.Session;
             if (battle == null || session == null || !battle.InBattle)
@@ -50,9 +61,106 @@ namespace GourmetProject.Game.DevConsole.Commands
                 return CmdResult.Fail("当前正在演出或拖拽，请结束后再摆放。");
             }
 
+            if (args.Length == 1)
+            {
+                SpecifiedPlaceResult specified = FillSpecified(session, args[0]);
+                if (specified.StopReason == SpecifiedPlaceStopReason.DishNotFound)
+                {
+                    return CmdResult.Fail($"找不到食物 '{args[0]}'。");
+                }
+
+                battle.RefreshAfterActiveItem(boardChanged: true);
+                return FormatMessage(specified);
+            }
+
             RandomPlaceResult result = Fill(session, CreatePlacementRandom());
             battle.RefreshAfterActiveItem(boardChanged: true);
             return CmdResult.Ok(FormatMessage(result));
+        }
+
+        public override IReadOnlyList<string> GetCompletions(string[] args)
+        {
+            GameplayDatabase database = BattleForm.Active?.Session?.Database;
+            if (database == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            string partial = args == null || args.Length == 0
+                ? string.Empty
+                : args[args.Length - 1];
+            return CompleteDishIds(database, partial);
+        }
+
+        internal static IReadOnlyList<string> AllDishIds(GameplayDatabase database)
+        {
+            if (database == null)
+            {
+                return Array.Empty<string>();
+            }
+
+            return database.AllDishes
+                .Select(dish => dish.Id)
+                .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        internal static IReadOnlyList<string> CompleteDishIds(
+            GameplayDatabase database,
+            string partial)
+            => Match(AllDishIds(database), partial);
+
+        internal static SpecifiedPlaceResult FillSpecified(BattleSession session, string dishId)
+        {
+            if (session == null)
+            {
+                throw new ArgumentNullException(nameof(session));
+            }
+
+            var result = new SpecifiedPlaceResult();
+            if (session.IsSettled)
+            {
+                result.StopReason = SpecifiedPlaceStopReason.Settled;
+                return result;
+            }
+
+            DishDef dish = session.Database.GetDish(dishId);
+            if (dish == null)
+            {
+                result.StopReason = SpecifiedPlaceStopReason.DishNotFound;
+                return result;
+            }
+
+            result.Dish = dish;
+            if (session.HasPendingTablePlacements)
+            {
+                IReadOnlyList<PendingDishConfirmResult> confirmed =
+                    session.ConfirmAllPendingTableDishes();
+                result.ConfirmedPendingCount = confirmed.Count;
+            }
+
+            IReadOnlyList<Placement> plan = RepeatedDishPlacementSolver.Solve(
+                session.DiningTable,
+                dish);
+            if (plan.Count == 0)
+            {
+                result.StopReason = SpecifiedPlaceStopReason.NoLegalPlacement;
+                return result;
+            }
+
+            foreach (Placement placement in plan)
+            {
+                if (!session.GenerateDishAt(dish.Id, placement.Origin))
+                {
+                    result.StopReason = SpecifiedPlaceStopReason.GenerateFailed;
+                    return result;
+                }
+
+                result.PlacedCount++;
+            }
+
+            result.StopReason = SpecifiedPlaceStopReason.Completed;
+            return result;
         }
 
         internal static RandomPlaceResult Fill(BattleSession session, IRandomStream placementRandom)
@@ -150,6 +258,27 @@ namespace GourmetProject.Game.DevConsole.Commands
                     return placed + "。";
             }
         }
+
+        private static CmdResult FormatMessage(SpecifiedPlaceResult result)
+        {
+            string identity = result.Dish == null
+                ? "指定食物"
+                : $"'{result.Dish.Id}'（{result.Dish.Name}）";
+            switch (result.StopReason)
+            {
+                case SpecifiedPlaceStopReason.Completed:
+                    return CmdResult.Ok($"已放置 {result.PlacedCount} 个 {identity}。");
+                case SpecifiedPlaceStopReason.NoLegalPlacement:
+                    return CmdResult.Fail($"{identity} 当前在餐桌上没有合法位置。");
+                case SpecifiedPlaceStopReason.GenerateFailed:
+                    return CmdResult.Fail(
+                        $"放置 {identity} 时发生状态变化，已成功放置 {result.PlacedCount} 个。");
+                case SpecifiedPlaceStopReason.Settled:
+                    return CmdResult.Fail("当前经营挑战已经结算。");
+                default:
+                    return CmdResult.Fail($"无法放置 {identity}。");
+            }
+        }
     }
 
     internal enum RandomPlaceStopReason
@@ -170,5 +299,23 @@ namespace GourmetProject.Game.DevConsole.Commands
         public RandomPlaceStopReason StopReason;
         public ServePrepareOutcome LastPrepareOutcome;
         public ServeOutcome LastServeOutcome;
+    }
+
+    internal enum SpecifiedPlaceStopReason
+    {
+        None,
+        Completed,
+        DishNotFound,
+        NoLegalPlacement,
+        GenerateFailed,
+        Settled,
+    }
+
+    internal sealed class SpecifiedPlaceResult
+    {
+        public DishDef Dish;
+        public int PlacedCount;
+        public int ConfirmedPendingCount;
+        public SpecifiedPlaceStopReason StopReason;
     }
 }

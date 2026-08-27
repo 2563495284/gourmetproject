@@ -58,6 +58,10 @@ namespace GourmetProject.Game.Presentation.Battle
         // —— 场景内摆好的静态引用 ——
         [Header("Scene Refs")]
         [SerializeField] private Camera _camera;
+        [Tooltip("全屏桌布背景；局内保留场景原图，局外切换为独立底板。")]
+        [SerializeField] private SpriteRenderer _backgroundRenderer;
+        [Tooltip("行动选择、商店、事件等局外页面使用的背景底板。")]
+        [SerializeField] private Sprite _metaBackgroundSprite;
         [SerializeField] private DiningTableView _boardView;
         [SerializeField] private Transform _piecesRoot;
         [SerializeField] private Transform _fxRoot;
@@ -146,6 +150,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private Vector2 _dragPointerVelocity;
         private bool _dragPointerSampled;
         private WorldMode _worldMode = WorldMode.Hidden;
+        private Sprite _battleBackgroundSprite;
 
         private Action<string> _messageSink;
         private Action<BigDouble> _settlementScoreSink;
@@ -411,6 +416,13 @@ namespace GourmetProject.Game.Presentation.Battle
         private void Awake()
         {
             Instance = this;
+
+            if (_backgroundRenderer != null)
+            {
+                _battleBackgroundSprite = _backgroundRenderer.sprite;
+            }
+
+            SetBattleBackdropVisible(false);
 
             EnsureTableEdit();
             EnsureScopeHighlights();
@@ -1132,6 +1144,8 @@ namespace GourmetProject.Game.Presentation.Battle
             Action<int> pendingDishConfirmRequested = null,
             bool prepareNextDish = true)
         {
+            SetBattleBackdropVisible(true);
+
             if (_session != null)
             {
                 _session.ServeTriggerCueRaised -= OnServeTriggerCueRaised;
@@ -1198,6 +1212,29 @@ namespace GourmetProject.Game.Presentation.Battle
             // 餐桌编辑会把蛋糕根藏起来，进 Food 局必须重新打开，否则加层会生成在隐藏节点上。
             _cakeLayerFx?.Clear();
             _cakeLayerFx?.SetVisible(true);
+        }
+
+        /// <summary>
+        /// 在局内餐桌原图与局外界面底板之间切换。
+        /// 局内图在 Awake 时从场景引用捕获，避免为现有资源再增加一份序列化配置。
+        /// </summary>
+        public void SetBattleBackdropVisible(bool visible)
+        {
+            if (_backgroundRenderer == null)
+            {
+                return;
+            }
+
+            if (_battleBackgroundSprite == null && _backgroundRenderer.sprite != _metaBackgroundSprite)
+            {
+                _battleBackgroundSprite = _backgroundRenderer.sprite;
+            }
+
+            Sprite target = visible ? _battleBackgroundSprite : _metaBackgroundSprite;
+            if (target != null && _backgroundRenderer.sprite != target)
+            {
+                _backgroundRenderer.sprite = target;
+            }
         }
 
         public void SetDishHoverCallbacks(Action<DishPieceView> entered, Action<DishPieceView> exited)

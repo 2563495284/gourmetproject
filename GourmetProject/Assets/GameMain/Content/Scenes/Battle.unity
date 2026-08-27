@@ -343,6 +343,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.Gameplay.Presentation.BattleWorldController
   _camera: {fileID: 788870930}
+  _backgroundRenderer: {fileID: 1013392160}
+  _metaBackgroundSprite: {fileID: 21300000, guid: 964972045a864a799eae3451f17b635a, type: 3}
   _boardView: {fileID: 1262458495}
   _piecesRoot: {fileID: 943415253}
   _fxRoot: {fileID: 6451825}

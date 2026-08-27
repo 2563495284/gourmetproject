@@ -2057,7 +2057,7 @@
     "desc": "[term]丢弃[/term]的食物\n[strong]分数[/strong]永久[score]+20[/score]",
     "quality": 0,
     "specialTags": 0,
-    "effectValue": 15,
+    "effectValue": 20,
     "effectParam": "",
     "baseWeight": 300,
     "targetScoreHiddenOffset": 0,

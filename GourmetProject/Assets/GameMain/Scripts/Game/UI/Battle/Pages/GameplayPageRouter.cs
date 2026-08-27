@@ -261,6 +261,8 @@ namespace GourmetProject.Game.UI.Battle.Pages
             bool eventPage = view == GameplayView.Event;
             bool worldView = view == GameplayView.Food;
 
+            _host.World?.SetBattleBackdropVisible(worldView);
+
             SetActive(_host.ActionSelectionPanel, actionSelect);
             SetActive(_host.ShopPanel, shop);
             SetActive(_host.RecipeReadonlyBookView, recipeSelection);

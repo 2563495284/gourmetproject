@@ -1931,6 +1931,7 @@ namespace GourmetProject.Game.Run
                 SlotSpinsUsed = 0,
                 SlotStage = SlotExecutionStage.Ready,
                 SlotRewardKey = string.Empty,
+                SlotFragmentRewardGranted = false,
             };
         }
 
@@ -1967,6 +1968,23 @@ namespace GourmetProject.Game.Run
             _pendingActionExecution.SlotSpinsUsed = System.Math.Max(0, spinsUsed);
             _pendingActionExecution.SlotStage = stage;
             _pendingActionExecution.SlotRewardKey = rewardKey ?? string.Empty;
+            return true;
+        }
+
+        /// <summary>
+        /// 原子标记当前抽奖机行动已经出现过餐桌格奖励。奖励一经抽出即占用额度，
+        /// 后续领奖或跳过流程只切换 SlotStage，不会清除此标记。
+        /// </summary>
+        public bool TryMarkPendingSlotFragmentRewardGranted()
+        {
+            if (_pendingActionExecution == null
+                || _pendingActionExecution.OutcomeKind != ActionOutcomeKind.Slot
+                || _pendingActionExecution.SlotFragmentRewardGranted)
+            {
+                return false;
+            }
+
+            _pendingActionExecution.SlotFragmentRewardGranted = true;
             return true;
         }
 
@@ -3412,6 +3430,7 @@ namespace GourmetProject.Game.Run
                 SlotSpinsUsed = System.Math.Max(0, data.SlotSpinsUsed),
                 SlotStage = data.SlotStage,
                 SlotRewardKey = data.SlotRewardKey ?? string.Empty,
+                SlotFragmentRewardGranted = data.SlotFragmentRewardGranted,
             };
         }
 

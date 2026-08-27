@@ -50,10 +50,15 @@ namespace GourmetProject.Game.Meta
     /// <summary>一次纯随机抽取的结果；金币扣除和 pending 状态由编排层原子提交。</summary>
     public sealed class SlotSpinResult
     {
-        private SlotSpinResult(bool isEmpty, RewardOffer offer, string error)
+        private SlotSpinResult(
+            bool isEmpty,
+            RewardOffer offer,
+            cfg.RewardKind rewardKind,
+            string error)
         {
             IsEmpty = isEmpty;
             Offer = offer;
+            RewardKind = rewardKind;
             Error = error ?? string.Empty;
         }
 
@@ -61,19 +66,22 @@ namespace GourmetProject.Game.Meta
 
         public RewardOffer Offer { get; }
 
+        public cfg.RewardKind RewardKind { get; }
+
         public string Error { get; }
 
         public bool Success => string.IsNullOrEmpty(Error);
 
-        public static SlotSpinResult Empty() => new SlotSpinResult(true, null, string.Empty);
+        public static SlotSpinResult Empty() =>
+            new SlotSpinResult(true, null, cfg.RewardKind.None, string.Empty);
 
-        public static SlotSpinResult Reward(RewardOffer offer) =>
+        public static SlotSpinResult Reward(RewardOffer offer, cfg.RewardKind rewardKind) =>
             offer != null
-                ? new SlotSpinResult(false, offer, string.Empty)
+                ? new SlotSpinResult(false, offer, rewardKind, string.Empty)
                 : Failed("奖励配置未生成有效奖励。");
 
         public static SlotSpinResult Failed(string error) =>
-            new SlotSpinResult(false, null, error);
+            new SlotSpinResult(false, null, cfg.RewardKind.None, error);
     }
 
     /// <summary>
@@ -285,14 +293,18 @@ namespace GourmetProject.Game.Meta
             GameRun run,
             SlotMachineConfig config,
             IRandomStream rng,
-            ActionExecutionContext actionContext = null)
+            ActionExecutionContext actionContext = null,
+            bool fragmentRewardAlreadyGranted = false)
         {
             if (run == null || config == null || rng == null)
             {
                 return SlotSpinResult.Failed("抽奖机随机参数不完整。");
             }
 
-            List<float> weights = BuildRollWeights(run, config);
+            List<float> weights = BuildRollWeights(
+                run,
+                config,
+                fragmentRewardAlreadyGranted);
 
             int index = rng.WeightedPickIndex(weights);
             if (index == 0)
@@ -302,14 +314,17 @@ namespace GourmetProject.Game.Meta
 
             cfg.RewardSlot chosen = config.RewardSlots[index - 1];
             RewardOffer offer = RewardGranter.BuildConfigOffer(run, rng, chosen, actionContext);
-            return SlotSpinResult.Reward(offer);
+            return SlotSpinResult.Reward(offer, chosen.Kind);
         }
 
         /// <summary>
         /// 第 0 项是空奖，后续项与 RewardSlots 同序。装饰品先将归一后的总中奖率
         /// 乘以 (1 + bonus)，奖励槽内部比例保持不变，空奖占剩余概率。
         /// </summary>
-        internal static List<float> BuildRollWeights(GameRun run, SlotMachineConfig config)
+        internal static List<float> BuildRollWeights(
+            GameRun run,
+            SlotMachineConfig config,
+            bool fragmentRewardAlreadyGranted = false)
         {
             var baseWeights = new List<float>(config.RewardProbabilities.Count + 1)
             {
@@ -321,7 +336,52 @@ namespace GourmetProject.Game.Meta
             }
 
             float bonus = new ItemRuntime(run).SlotWinChanceBonus();
-            return ApplyWinChanceBonus(baseWeights, bonus, config.Event?.Id);
+            List<float> adjusted = ApplyWinChanceBonus(baseWeights, bonus, config.Event?.Id);
+            return ApplyFragmentRewardLimit(
+                adjusted,
+                config.RewardSlots,
+                fragmentRewardAlreadyGranted);
+        }
+
+        /// <summary>
+        /// 同一台抽奖机已经出现过格子奖励后，将所有格子奖励槽的最终权重转为空奖。
+        /// 该步骤在中奖率加成之后执行，因此其它奖励的最终权重保持不变。
+        /// </summary>
+        internal static List<float> ApplyFragmentRewardLimit(
+            IReadOnlyList<float> weights,
+            IReadOnlyList<cfg.RewardSlot> rewardSlots,
+            bool fragmentRewardAlreadyGranted)
+        {
+            var result = new List<float>(weights?.Count ?? 0);
+            if (weights == null)
+            {
+                return result;
+            }
+
+            for (int i = 0; i < weights.Count; i++)
+            {
+                result.Add(Math.Max(0f, weights[i]));
+            }
+
+            if (!fragmentRewardAlreadyGranted || result.Count == 0 || rewardSlots == null)
+            {
+                return result;
+            }
+
+            int count = Math.Min(rewardSlots.Count, result.Count - 1);
+            for (int i = 0; i < count; i++)
+            {
+                if (rewardSlots[i]?.Kind != cfg.RewardKind.FragmentChoice)
+                {
+                    continue;
+                }
+
+                int weightIndex = i + 1;
+                result[0] += result[weightIndex];
+                result[weightIndex] = 0f;
+            }
+
+            return result;
         }
 
         internal static List<float> ApplyWinChanceBonus(

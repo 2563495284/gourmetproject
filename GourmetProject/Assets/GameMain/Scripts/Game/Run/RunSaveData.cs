@@ -432,6 +432,8 @@ namespace GourmetProject.Game.Run
         public int SlotSpinsUsed;
         public SlotExecutionStage SlotStage;
         public string SlotRewardKey;
+        /// <summary>本次抽奖机行动是否已经出现过餐桌格奖励。</summary>
+        public bool SlotFragmentRewardGranted;
     }
 
     [Serializable]

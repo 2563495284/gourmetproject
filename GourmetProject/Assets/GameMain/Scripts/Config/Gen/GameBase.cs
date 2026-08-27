@@ -49,6 +49,7 @@ public sealed partial class GameBase : Luban.BeanBase
         { if(!_buf["archetypePrimaryMinShare"].IsNumber) { throw new SerializationException(); }  ArchetypePrimaryMinShare = _buf["archetypePrimaryMinShare"]; }
         { if(!_buf["archetypePrimaryMinLead"].IsNumber) { throw new SerializationException(); }  ArchetypePrimaryMinLead = _buf["archetypePrimaryMinLead"]; }
         { if(!_buf["dishChoiceArchetypePityCount"].IsNumber) { throw new SerializationException(); }  DishChoiceArchetypePityCount = _buf["dishChoiceArchetypePityCount"]; }
+        { if(!_buf["shopDishHiddenScoreOffset"].IsNumber) { throw new SerializationException(); }  ShopDishHiddenScoreOffset = _buf["shopDishHiddenScoreOffset"]; }
     }
 
     public static GameBase DeserializeGameBase(JSONNode _buf)
@@ -184,6 +185,10 @@ public sealed partial class GameBase : Luban.BeanBase
     /// 连续同流派且未出现目标食物的多选一组数；达到后下一组保底（0=关闭）
     /// </summary>
     public readonly int DishChoiceArchetypePityCount;
+    /// <summary>
+    /// 商店随机食物隐藏分临时修正
+    /// </summary>
+    public readonly int ShopDishHiddenScoreOffset;
    
     public const int __ID__ = -1705057789;
     public override int GetTypeId() => __ID__;
@@ -227,6 +232,7 @@ public sealed partial class GameBase : Luban.BeanBase
         + "archetypePrimaryMinShare:" + ArchetypePrimaryMinShare + ","
         + "archetypePrimaryMinLead:" + ArchetypePrimaryMinLead + ","
         + "dishChoiceArchetypePityCount:" + DishChoiceArchetypePityCount + ","
+        + "shopDishHiddenScoreOffset:" + ShopDishHiddenScoreOffset + ","
         + "}";
     }
 }

@@ -18,6 +18,7 @@ namespace GourmetProject.Runtime.Camera
 
         private float _lastOrthoSize;
         private float _lastAspect;
+        private Sprite _lastSprite;
         private bool _fitted;
 
         private UnityEngine.Camera CachedCamera
@@ -77,7 +78,11 @@ namespace GourmetProject.Runtime.Camera
                 return;
             }
 
-            if (!force && _fitted && Mathf.Approximately(orthoSize, _lastOrthoSize) && Mathf.Approximately(aspect, _lastAspect))
+            if (!force
+                && _fitted
+                && renderer.sprite == _lastSprite
+                && Mathf.Approximately(orthoSize, _lastOrthoSize)
+                && Mathf.Approximately(aspect, _lastAspect))
             {
                 return;
             }
@@ -101,6 +106,7 @@ namespace GourmetProject.Runtime.Camera
 
             _lastOrthoSize = orthoSize;
             _lastAspect = aspect;
+            _lastSprite = renderer.sprite;
             _fitted = true;
         }
     }

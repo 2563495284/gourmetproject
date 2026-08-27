@@ -46,6 +46,7 @@
     "slotMaxSpins": 5,
     "archetypePrimaryMinShare": 0.4,
     "archetypePrimaryMinLead": 0.1,
-    "dishChoiceArchetypePityCount": 2
+    "dishChoiceArchetypePityCount": 2,
+    "shopDishHiddenScoreOffset": 5
   }
 ]

@@ -138,12 +138,10 @@ namespace GourmetProject.Game.Meta
         {
             tables ??= GameApp.Config.Tables;
             var stock = new List<ShopEntry>();
-            int dishHidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
             int fragmentHidden = HiddenScoreService.FragmentHiddenScore(run, run.LastActionContext);
             int passiveCount = ConfiguredSlotCount(tables.TbGameBase.ShopPassiveItemSaleSlotCount);
             int activeCount = ConfiguredSlotCount(tables.TbGameBase.ShopActiveItemSaleSlotCount);
             int dishCount = ConfiguredSlotCount(tables.TbGameBase.ShopFoodSaleSlotCount);
-            int distanceFloor = HiddenScoreDistanceFloor(tables);
             int passiveSlotIndex = 0;
             int activeSlotIndex = 0;
             int dishSlotIndex = 0;
@@ -182,7 +180,7 @@ namespace GourmetProject.Game.Meta
                 }
             }
 
-            foreach (cfg.DishVariant variant in RollDishVariants(tables, run, dishHidden, rng, dishCount))
+            foreach (cfg.DishVariant variant in RollDishVariants(tables, run, rng, dishCount))
             {
                 cfg.DishBase baseDish = tables.TbDishBase.GetOrDefault(variant.BaseId);
                 string name = baseDish != null ? baseDish.Name : variant.Id;
@@ -284,11 +282,9 @@ namespace GourmetProject.Game.Meta
                     }
                 case ShopEntryKind.Dish:
                     {
-                        int hidden = HiddenScoreService.DishHiddenScore(run, run.LastActionContext);
                         foreach (cfg.DishVariant variant in RollDishVariants(
                                      tables,
                                      run,
-                                     hidden,
                                      rng,
                                      ExistingStockedCount(existingStock, kind) + 1))
                         {
@@ -677,8 +673,13 @@ namespace GourmetProject.Game.Meta
             return run != null && run.MoveBonusDish(dishIndex, toDishIndex);
         }
 
-        private static List<cfg.DishVariant> RollDishVariants(cfg.Tables tables, GameRun run, int hidden, IRandomStream rng, int count)
+        private static List<cfg.DishVariant> RollDishVariants(
+            cfg.Tables tables,
+            GameRun run,
+            IRandomStream rng,
+            int count)
         {
+            int hidden = ResolveShopDishHiddenScore(tables, run);
             var candidates = new List<cfg.DishVariant>();
             foreach (cfg.DishVariant variant in tables.TbDishVariant.DataList)
             {
@@ -690,6 +691,18 @@ namespace GourmetProject.Game.Meta
 
             int distanceFloor = HiddenScoreDistanceFloor(tables);
             return WeightedTake(candidates, v => RewardPoolService.HiddenScoreWeight(v.BaseWeight, HiddenMean(v.HiddenRange), hidden, distanceFloor), count, rng, DefaultRandomWeight(tables));
+        }
+
+        /// <summary>
+        /// 商店食物随机专用隐藏分。配置修正只存在于本次候选筛选与权重计算中，
+        /// 不写回运行状态，也不会影响奖励系统使用的食物隐藏分。
+        /// </summary>
+        internal static int ResolveShopDishHiddenScore(cfg.Tables tables, GameRun run)
+        {
+            tables ??= run?.Tables ?? GameApp.Config.Tables;
+            int hidden = HiddenScoreService.DishHiddenScore(run, run?.LastActionContext);
+            int offset = tables?.TbGameBase?.ShopDishHiddenScoreOffset ?? 0;
+            return hidden + offset;
         }
 
         /// <summary>开一份商店碎片包：候选数量读取 reward_slot(fragment_choice_3).choiceCount。</summary>

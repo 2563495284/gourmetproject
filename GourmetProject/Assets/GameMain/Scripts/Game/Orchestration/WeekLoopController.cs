@@ -1848,7 +1848,12 @@ namespace GourmetProject.Game.Orchestration
             int spinIndex = expectedSpinsUsed + 1;
             string spinKey = SlotService.BuildSpinKey(_run, context, spinIndex);
             IRandomStream rng = _run.Random?.DomainStream(SeedDomains.Slot, spinKey);
-            SlotSpinResult result = SlotService.Roll(_run, config, rng, context);
+            SlotSpinResult result = SlotService.Roll(
+                _run,
+                config,
+                rng,
+                context,
+                data.SlotFragmentRewardGranted);
             if (!result.Success)
             {
                 _view.ShowNotice(
@@ -1872,6 +1877,11 @@ namespace GourmetProject.Game.Orchestration
                 _run?.RequestSave();
                 ShowSlotEmptyResult(context, config, spinIndex, onDone);
                 return;
+            }
+
+            if (result.RewardKind == cfg.RewardKind.FragmentChoice)
+            {
+                _run.TryMarkPendingSlotFragmentRewardGranted();
             }
 
             string rewardKey = $"slot_{spinKey}";
