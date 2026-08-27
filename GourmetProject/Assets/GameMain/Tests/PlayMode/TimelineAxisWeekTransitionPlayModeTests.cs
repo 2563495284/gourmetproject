@@ -75,7 +75,13 @@ namespace GourmetProject.Tests.PlayMode
                 Transform weekTitle = rig.Root.transform.Find("TimelineAxisWeekLabel");
                 Assert.That(weekTitle, Is.Not.Null);
                 Assert.That(weekTitle.gameObject.activeSelf, Is.True);
-                Assert.That(weekTitle.GetComponent<TMP_Text>().text, Is.EqualTo("第2周"));
+                TMP_Text weekTitleText = weekTitle.GetComponent<TMP_Text>();
+                Assert.That(weekTitleText.text, Is.EqualTo("第2周"));
+                Assert.That(
+                    weekTitleText.color,
+                    Is.EqualTo(Color.white).Using(ColorEqualityComparer.Instance));
+                Assert.That(weekTitleText.outlineColor, Is.EqualTo(new Color32(0, 0, 0, 220)));
+                Assert.That(weekTitleText.outlineWidth, Is.EqualTo(0.18f).Within(0.001f));
 
                 yield return new WaitForSecondsRealtime(0.22f);
                 CanvasGroup weekTitleGroup = weekTitle.GetComponent<CanvasGroup>();
