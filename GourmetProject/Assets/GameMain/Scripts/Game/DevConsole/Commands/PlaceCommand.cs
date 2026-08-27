@@ -139,9 +139,13 @@ namespace GourmetProject.Game.DevConsole.Commands
                 result.ConfirmedPendingCount = confirmed.Count;
             }
 
-            IReadOnlyList<Placement> plan = RepeatedDishPlacementSolver.Solve(
+            RepeatedDishPlacementResult placementResult =
+                RepeatedDishPlacementSolver.SolveWithDiagnostics(
                 session.DiningTable,
                 dish);
+            IReadOnlyList<Placement> plan = placementResult.Placements;
+            result.SearchTruncated = placementResult.Truncated;
+            result.SearchNodes = placementResult.SearchNodes;
             if (plan.Count == 0)
             {
                 result.StopReason = SpecifiedPlaceStopReason.NoLegalPlacement;
@@ -267,7 +271,11 @@ namespace GourmetProject.Game.DevConsole.Commands
             switch (result.StopReason)
             {
                 case SpecifiedPlaceStopReason.Completed:
-                    return CmdResult.Ok($"已放置 {result.PlacedCount} 个 {identity}。");
+                    string searchNote = result.SearchTruncated
+                        ? "（搜索达到上限，已采用当前找到的最多布局）"
+                        : string.Empty;
+                    return CmdResult.Ok(
+                        $"已放置 {result.PlacedCount} 个 {identity}{searchNote}。");
                 case SpecifiedPlaceStopReason.NoLegalPlacement:
                     return CmdResult.Fail($"{identity} 当前在餐桌上没有合法位置。");
                 case SpecifiedPlaceStopReason.GenerateFailed:
@@ -316,6 +324,8 @@ namespace GourmetProject.Game.DevConsole.Commands
         public DishDef Dish;
         public int PlacedCount;
         public int ConfirmedPendingCount;
+        public int SearchNodes;
+        public bool SearchTruncated;
         public SpecifiedPlaceStopReason StopReason;
     }
 }
