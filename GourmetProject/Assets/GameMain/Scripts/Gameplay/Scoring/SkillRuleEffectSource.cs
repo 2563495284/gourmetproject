@@ -777,11 +777,23 @@ namespace GourmetProject.Gameplay.Scoring
                         buff.Owner,
                         ParseResultScope(rule, SkillScope.RowAndSelf));
                 }
+                bool scaleByTransferTargetCount = HasActionParam(
+                    rule,
+                    "scale:transfer-target-count");
+                int transferTargetScale = scaleByTransferTargetCount
+                    ? transferTargets?.Count ?? 0
+                    : 1;
+                if (transferTargetScale <= 0)
+                {
+                    continue;
+                }
+
+                int scaledConditionCount = buff.ConditionCount * transferTargetScale;
                 float value = rule.ActionType == SkillActionType.AddMultFlat
-                    ? rule.ActionValue * buff.ConditionCount
+                    ? rule.ActionValue * scaledConditionCount
                     : HasActionParam(rule, "linear")
-                        ? 1f + rule.ActionValue * buff.ConditionCount
-                        : (float)Math.Pow(rule.ActionValue, buff.ConditionCount);
+                        ? 1f + rule.ActionValue * scaledConditionCount
+                        : (float)Math.Pow(rule.ActionValue, scaledConditionCount);
                 ResolveSweetTransferBuffTrigger(ctx, buff, resultTargets, value, rule.ActionType);
             }
 

@@ -176,8 +176,8 @@ namespace GourmetProject.Game.Meta.Passives
 
         public virtual int FoodFlavorLimitBonus() => 0;
 
-        /// <summary>普通行动耗时倍率；节点行动和休息不调用。</summary>
-        public virtual float DailyActionCostMultiplier() => 1f;
+        /// <summary>普通行动固定增加的耗时天数；节点行动和休息不调用。</summary>
+        public virtual float DailyActionCostBonusDays() => 0f;
 
         /// <summary>自然经过的非 星级评鉴节点执行次数。</summary>
         public virtual int TimelineNodeRepeatCount() => 1;

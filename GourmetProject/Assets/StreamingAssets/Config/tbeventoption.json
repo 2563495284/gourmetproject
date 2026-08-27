@@ -256,7 +256,7 @@
     "eventId": "ev_midnight_tasting",
     "parentId": "opt_midnight_sample",
     "text": "对食物的理解加深了！后续更容易获得更好的食物",
-    "resultText": "食物奖励隐藏分永久 +5。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -277,7 +277,7 @@
     "eventId": "ev_midnight_tasting",
     "parentId": "opt_midnight_menu",
     "text": "心情大好，下次营业获得的[gold]金币[/gold]额外[gold]+60%[/gold]",
-    "resultText": "下一次营业基础[gold]金币[/gold] ×1.6。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -297,15 +297,15 @@
     "id": "opt_midnight_tasting_choice_3",
     "eventId": "ev_midnight_tasting",
     "parentId": "opt_midnight_leave",
-    "text": "[context]所有[/context]食物[strong]分数[/strong][score]+2[/score]！这就是知识的力量",
-    "resultText": "触发时食谱中已有的全部食物永久[strong]分数[/strong] [score]+2[/score]。",
+    "text": "[context]所有[/context]食物[strong]分数[/strong][score]+10[/score]！知识的力量",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
       31
     ],
     "effectValues": [
-      2
+      10
     ],
     "effectParams": [
       "-"
@@ -319,7 +319,7 @@
     "eventId": "ev_ancestral_recipe_page",
     "parentId": "opt_recipe_page_sell",
     "text": "本周后续营业的[gold]金币[/gold]奖励提升[gold]30%[/gold]",
-    "resultText": "本周后续营业基础[gold]金币[/gold] ×1.3。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -340,7 +340,7 @@
     "eventId": "ev_ancestral_recipe_page",
     "parentId": "opt_recipe_page_body",
     "text": "获得两个调味相关的[term]消耗品[/term]",
-    "resultText": "从六种调味箱中放回随机获得 2 个。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -361,7 +361,7 @@
     "eventId": "ev_ancestral_recipe_page",
     "parentId": "opt_recipe_page_cover",
     "text": "[context]星级评鉴[/context]美味值要求提升20%，[gold]金币[/gold]奖励翻倍",
-    "resultText": "后续[context]星级评鉴[/context]目标 ×1.2，基础[gold]金币[/gold] ×2。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -385,7 +385,7 @@
     "eventId": "ev_kitchen_god_statue",
     "parentId": "opt_statue_gold",
     "text": "获得1个[term]装饰品[/term]",
-    "resultText": "支付 [gold]30 金币[/gold]，随机获得 1 个非诅咒[term]装饰品[/term]。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -409,7 +409,7 @@
     "eventId": "ev_kitchen_god_statue",
     "parentId": "opt_statue_dish",
     "text": "获得[gold]100金币[/gold]和1个负面[term]装饰品[/term]",
-    "resultText": "获得 [gold]100 金币[/gold]和 1 个诅咒[term]装饰品[/term]。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -433,7 +433,7 @@
     "eventId": "ev_kitchen_god_statue",
     "parentId": "opt_statue_steal",
     "text": "下次营业[gold]金币-40%[/gold]",
-    "resultText": "获得 [gold]100 金币[/gold]和 1 个随机[term]消耗品[/term]；下一次营业基础[gold]金币[/gold] ×0.6。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -475,7 +475,7 @@
     "eventId": "ev_new_event",
     "parentId": "opt_new_event_choice",
     "text": "为随机两个食物添加风味",
-    "resultText": "为随机 2 个不同食物添加随机风味，优先选择没有风味的食物。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -538,7 +538,7 @@
     "eventId": "ev_new_event",
     "parentId": "opt_new_event_choice_3",
     "text": "对食物的理解提升了！更容易获得更好的食物",
-    "resultText": "食物奖励隐藏分永久 +5。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -601,7 +601,7 @@
     "eventId": "ev_new_event",
     "parentId": "opt_new_event_choice_6",
     "text": "获得两个调整单类的[term]消耗品[/term]",
-    "resultText": "从全部调整单中放回随机获得 2 个。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -622,7 +622,7 @@
     "eventId": "ev_new_event",
     "parentId": "opt_new_event_choice_7",
     "text": "获得一个[term]装饰品[/term]",
-    "resultText": "随机获得 1 个非诅咒[term]装饰品[/term]。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -685,7 +685,7 @@
     "eventId": "ev_crossroad_sign",
     "parentId": "opt_sign_secondhand",
     "text": "参与奖：[gold]金币+50[/gold]",
-    "resultText": "获得 [gold]50 金币[/gold]。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -706,7 +706,7 @@
     "eventId": "ev_crossroad_sign",
     "parentId": "opt_sign_food_street",
     "text": "去抢救，[gold]金币-20[/gold]",
-    "resultText": "你被紧急送往医院抢救。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -790,7 +790,7 @@
     "eventId": "ev_crossroad_sign",
     "parentId": "opt_mushroom_try_red",
     "text": "去抢救，[gold]金币-40[/gold]",
-    "resultText": "毒性来势汹汹，你再次被送往医院抢救。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -874,7 +874,7 @@
     "eventId": "ev_crossroad_sign",
     "parentId": "opt_mushroom_try_green",
     "text": "去icu抢救，[gold]金币-60[/gold]",
-    "resultText": "你倒在餐桌旁，被火速送往医院抢救。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -895,7 +895,7 @@
     "eventId": "ev_crossroad_sign",
     "parentId": "opt_mushroom_try_green",
     "text": "大获成功！获得传奇[term]装饰品[/term]",
-    "resultText": "你完整记住了三种蘑菇的风味，并获得 1 个传奇[term]装饰品[/term]。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -937,7 +937,7 @@
     "eventId": "ev_last_supper",
     "parentId": "opt_last_supper_toast",
     "text": "下次营业[gold]金币+60%[/gold]",
-    "resultText": "众厨师如约来访。下一次营业获得的基础[gold]金币[/gold]提高[gold]60%[/gold]。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -979,7 +979,7 @@
     "eventId": "ev_last_supper",
     "parentId": "opt_last_supper_accuse",
     "text": "金币+100",
-    "resultText": "获得[gold]100金币[/gold]。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -1021,7 +1021,7 @@
     "eventId": "ev_last_supper",
     "parentId": "opt_last_supper_share",
     "text": "获得两个食物3选1",
-    "resultText": "十二位厨师依次端上拿手菜。你从两组三道回礼中各选一道，加入食谱。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -1066,7 +1066,7 @@
     "eventId": "ev_twin_peaks_diner",
     "parentId": "opt_twin_peaks_coffee",
     "text": "下两次营业[gold]金币+60%[/gold]",
-    "resultText": "下两次营业基础[gold]金币[/gold]×1.6。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -1108,7 +1108,7 @@
     "eventId": "ev_twin_peaks_diner",
     "parentId": "opt_twin_peaks_pie",
     "text": "恢复1颗红心",
-    "resultText": "恢复1颗红心，不超过红心上限。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -1150,7 +1150,7 @@
     "eventId": "ev_twin_peaks_diner",
     "parentId": "opt_twin_peaks_log",
     "text": "[context]所有[/context]食物[strong]分数[/strong]永久[score]+15[/score]",
-    "resultText": "触发时食谱中已有的全部食物永久[strong]分数[/strong][score]+15[/score]",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -1192,7 +1192,7 @@
     "eventId": "ev_chuka_ichiban_trial",
     "parentId": "opt_chuka_ichiban_fried_rice",
     "text": "收下[gold]80金币[/gold]赏钱",
-    "resultText": "旅人因黄金炒饭心满意足，留下[gold]80金币[/gold]。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -1234,7 +1234,7 @@
     "eventId": "ev_chuka_ichiban_trial",
     "parentId": "opt_chuka_ichiban_mapo_tofu",
     "text": "获得2个风味强化箱",
-    "resultText": "你从“酥”的灵感中举一反三，从六种风味强化箱中随机获得2个，可能重复。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [
@@ -1276,7 +1276,7 @@
     "eventId": "ev_chuka_ichiban_trial",
     "parentId": "opt_chuka_ichiban_dumpling",
     "text": "恢复1颗红心",
-    "resultText": "大家分享烧卖后重新打起精神。恢复1颗红心，不超过红心上限。",
+    "resultText": "",
     "condition": "",
     "conditionText": "",
     "effectTypes": [

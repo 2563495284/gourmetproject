@@ -1070,12 +1070,12 @@ namespace GourmetProject.Game.Run
             return GourmetProject.Game.Meta.TimelineMath.Quantize(cost);
         }
 
-        /// <summary>生成普通行动选项时快照持有被动的耗时倍率；之后获得/失去装饰品和消耗品不追溯。</summary>
+        /// <summary>生成普通行动选项时快照持有被动的固定耗时增量；之后获得/失去装饰品和消耗品不追溯。</summary>
         public float SnapshotDailyActionCost(float baseCostDays)
         {
-            float multiplier = new ItemRuntime(this).DailyActionCostMultiplier();
+            float bonusDays = new ItemRuntime(this).DailyActionCostBonusDays();
             return GourmetProject.Game.Meta.TimelineMath.Quantize(
-                System.Math.Max(0f, baseCostDays) * System.Math.Max(0f, multiplier));
+                System.Math.Max(0f, baseCostDays + bonusDays));
         }
 
         public float SnapshotTimelineStopChance() => new ItemRuntime(this).TimelineStopChance();

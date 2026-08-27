@@ -1304,10 +1304,22 @@ namespace GourmetProject.Game.Orchestration
                 return;
             }
 
-            int repeatTotal = FoodService.IsBossAction(_run?.Tables, action)
-                ? 1
-                : new ItemRuntime(_run).TimelineNodeRepeatCount(action.Behavior);
+            int repeatTotal = ResolveNaturalTimelineNodeRepeatCount(_run, action);
             ExecutePlacedActionPass(node, action, 1, repeatTotal, ProcessNextNode);
+        }
+
+        /// <summary>
+        /// 决定自然时间轴节点的总执行次数。星级评鉴不受节点重复类被动影响；
+        /// 特殊接口触发的临时额外执行走 <see cref="ExecuteExtraTimelineNode"/>，不会调用这里。
+        /// </summary>
+        internal static int ResolveNaturalTimelineNodeRepeatCount(GameRun run, cfg.GameAction action)
+        {
+            if (action == null || FoodService.IsBossAction(run?.Tables, action))
+            {
+                return 1;
+            }
+
+            return new ItemRuntime(run).TimelineNodeRepeatCount(action.Behavior);
         }
 
         private void ExecutePlacedActionPass(

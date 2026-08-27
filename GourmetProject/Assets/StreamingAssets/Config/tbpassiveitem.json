@@ -1294,10 +1294,10 @@
   {
     "id": "item_double_daily_cost_repeat_node",
     "name": "双栏排班板",
-    "desc": "普通行动消耗天数+0.5\n商店与幸运事件节点\n可以额外执行1次",
+    "desc": "普通行动消耗天数+0.5\n除[context]星级评鉴[/context]外\n所有节点行动额外执行1次",
     "quality": 2,
     "specialTags": 0,
-    "effectValue": 1.5,
+    "effectValue": 0.5,
     "effectParam": "repeat:2",
     "baseWeight": 300,
     "targetScoreHiddenOffset": 0,
