@@ -270,7 +270,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 isPositive,
                 textColor,
                 outlineColor,
-                Mathf.Lerp(0.08f, 0.18f, intensity),
+                Mathf.Lerp(0.16f, 0.24f, intensity),
                 Mathf.Lerp(1.25f, 1.75f, intensity),
                 1f,
                 Mathf.Lerp(0.14f, 0.22f, intensity),

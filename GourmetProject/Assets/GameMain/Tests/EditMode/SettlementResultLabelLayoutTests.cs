@@ -4,6 +4,7 @@ using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Battle.View;
 using GourmetProject.Gameplay.Scoring;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.TestTools.Utils;
 
@@ -200,6 +201,101 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(burst.ImpactScale, Is.GreaterThan(strong.ImpactScale));
             Assert.That(peak.ImpactScale, Is.EqualTo(1.75f).Within(0.0001f));
             Assert.That(peak.SettleScale, Is.EqualTo(1f).Within(0.0001f));
+        }
+
+        [Test]
+        public void ScoreDeltaFeedback_UsesReadableOutlineWidthsAtEveryIntensity()
+        {
+            SettlementScoreFeedbackProfile subtle =
+                SettlementScoreFeedbackResolver.Resolve(1d);
+            SettlementScoreFeedbackProfile peak =
+                SettlementScoreFeedbackResolver.Resolve(5000d);
+
+            Assert.That(subtle.OutlineWidth, Is.EqualTo(0.16f).Within(0.0001f));
+            Assert.That(peak.OutlineWidth, Is.EqualTo(0.24f).Within(0.0001f));
+            Assert.That(peak.OutlineWidth, Is.GreaterThan(subtle.OutlineWidth));
+        }
+
+        [Test]
+        public void ScoreDeltaOutline_EnablesTmpOutlineShaderKeyword()
+        {
+            var textObject = new GameObject(
+                "SettlementScoreDeltaOutlineTest",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+            Material runtimeMaterial = null;
+            try
+            {
+                var text = textObject.GetComponent<TextMeshProUGUI>();
+                TMP_FontAsset font = Resources.Load<TMP_FontAsset>(
+                    "Fonts/AlimamaShuHeiTi-Bold SDF");
+                Assert.That(font, Is.Not.Null);
+                runtimeMaterial = new Material(font.material);
+                text.font = font;
+                text.fontSharedMaterial = runtimeMaterial;
+                var outlineColor = new Color32(0x6E, 0x45, 0x15, 0xFF);
+
+                BattleInfoColumn.ApplySettlementScoreDeltaOutline(
+                    text,
+                    outlineColor,
+                    0.20f);
+
+                Material configuredMaterial = text.fontSharedMaterial;
+                Assert.That(
+                    configuredMaterial.IsKeywordEnabled(ShaderUtilities.Keyword_Outline),
+                    Is.True);
+                Assert.That(
+                    configuredMaterial.GetFloat(ShaderUtilities.ID_OutlineWidth),
+                    Is.EqualTo(0.20f).Within(0.0001f));
+                Assert.That(
+                    configuredMaterial.GetColor(ShaderUtilities.ID_OutlineColor),
+                    Is.EqualTo((Color)outlineColor)
+                        .Using(ColorEqualityComparer.Instance));
+            }
+            finally
+            {
+                Object.DestroyImmediate(textObject);
+                if (runtimeMaterial != null)
+                {
+                    Object.DestroyImmediate(runtimeMaterial);
+                }
+            }
+        }
+
+        [Test]
+        public void ScoreDeltaLayer_IsReparentedAboveBossStatWithoutMoving()
+        {
+            var root = new GameObject("BattleInfoColumn", typeof(RectTransform));
+            var scoreMeter = new GameObject("ScoreMeter", typeof(RectTransform));
+            var delta = new GameObject("SettlementScoreDeltaText", typeof(RectTransform));
+            var bossStat = new GameObject("BossStat", typeof(RectTransform));
+            try
+            {
+                scoreMeter.transform.SetParent(root.transform, false);
+                delta.transform.SetParent(scoreMeter.transform, false);
+                bossStat.transform.SetParent(root.transform, false);
+                delta.transform.position = new Vector3(23f, 47f, 0f);
+                Vector3 worldPosition = delta.transform.position;
+
+                BattleInfoColumn.PlaceSettlementScoreDeltaAboveBossStat(
+                    delta.GetComponent<RectTransform>(),
+                    bossStat.transform,
+                    root.transform);
+
+                Assert.That(delta.transform.parent, Is.SameAs(root.transform));
+                Assert.That(
+                    delta.transform.GetSiblingIndex(),
+                    Is.GreaterThan(bossStat.transform.GetSiblingIndex()));
+                Assert.That(
+                    delta.transform.position,
+                    Is.EqualTo(worldPosition)
+                        .Using(Vector3ComparerWithEqualsOperator.Instance));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
         }
 
         [Test]
