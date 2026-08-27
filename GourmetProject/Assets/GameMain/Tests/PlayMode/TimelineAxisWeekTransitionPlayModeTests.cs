@@ -80,6 +80,8 @@ namespace GourmetProject.Tests.PlayMode
                 Assert.That(
                     weekTitleText.color,
                     Is.EqualTo(Color.white).Using(ColorEqualityComparer.Instance));
+                Assert.That(weekTitleText.fontStyle, Is.EqualTo(FontStyles.Normal));
+                Assert.That(weekTitleText.fontWeight, Is.EqualTo(FontWeight.Regular));
                 Assert.That(weekTitleText.outlineColor, Is.EqualTo(new Color32(0, 0, 0, 220)));
                 Assert.That(weekTitleText.outlineWidth, Is.EqualTo(0.18f).Within(0.001f));
 
@@ -256,6 +258,7 @@ namespace GourmetProject.Tests.PlayMode
             styleSourceObject.transform.SetParent(axis, false);
             TMP_Text styleSource = styleSourceObject.GetComponent<TMP_Text>();
             styleSource.fontSize = 20f;
+            styleSource.fontStyle = FontStyles.Bold;
             styleSource.color = Color.white;
             styleSource.raycastTarget = false;
             var after = new GameObject("After", typeof(RectTransform));

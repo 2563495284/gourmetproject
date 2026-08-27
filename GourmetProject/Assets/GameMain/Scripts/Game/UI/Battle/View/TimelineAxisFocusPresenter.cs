@@ -324,6 +324,8 @@ namespace GourmetProject.Game.UI.Battle.View
             _weekTitleText.alignment = TextAlignmentOptions.Center;
             _weekTitleText.enableAutoSizing = false;
             _weekTitleText.fontSize = 56f;
+            _weekTitleText.fontStyle = FontStyles.Normal;
+            _weekTitleText.fontWeight = FontWeight.Regular;
             _weekTitleText.color = Color.white;
             _weekTitleText.outlineColor = WeekTitleOutlineColor;
             _weekTitleText.outlineWidth = WeekTitleOutlineWidth;
@@ -360,6 +362,8 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _weekTitleText.text = $"第{Mathf.Max(1, weekIndex)}周";
+            _weekTitleText.fontStyle = FontStyles.Normal;
+            _weekTitleText.fontWeight = FontWeight.Regular;
             _weekTitleText.color = Color.white;
             _weekTitleText.outlineColor = WeekTitleOutlineColor;
             _weekTitleText.outlineWidth = WeekTitleOutlineWidth;
