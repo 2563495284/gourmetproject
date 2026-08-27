@@ -109,9 +109,9 @@ namespace GourmetProject.Game.Presentation.Battle
             Color textColor,
             Color outlineColor,
             float outlineWidth,
-            float startScale,
-            float peakScale,
-            float travelDistance,
+            float impactScale,
+            float settleScale,
+            float settleDuration,
             float scorePunch,
             float panelPunch,
             float shakeStrength,
@@ -128,9 +128,9 @@ namespace GourmetProject.Game.Presentation.Battle
             TextColor = textColor;
             OutlineColor = outlineColor;
             OutlineWidth = outlineWidth;
-            StartScale = startScale;
-            PeakScale = peakScale;
-            TravelDistance = travelDistance;
+            ImpactScale = impactScale;
+            SettleScale = settleScale;
+            SettleDuration = settleDuration;
             ScorePunch = scorePunch;
             PanelPunch = panelPunch;
             ShakeStrength = shakeStrength;
@@ -150,9 +150,9 @@ namespace GourmetProject.Game.Presentation.Battle
         public Color TextColor { get; }
         public Color OutlineColor { get; }
         public float OutlineWidth { get; }
-        public float StartScale { get; }
-        public float PeakScale { get; }
-        public float TravelDistance { get; }
+        public float ImpactScale { get; }
+        public float SettleScale { get; }
+        public float SettleDuration { get; }
         public float ScorePunch { get; }
         public float PanelPunch { get; }
         public float ShakeStrength { get; }
@@ -171,20 +171,20 @@ namespace GourmetProject.Game.Presentation.Battle
     {
         private static readonly Color[] PositiveColors =
         {
-            new Color32(0x73, 0xCF, 0xFF, 0xFF),
-            new Color32(0x58, 0xE1, 0xDE, 0xFF),
+            new Color32(0xE8, 0xB8, 0x57, 0xFF),
             new Color32(0xFF, 0xD4, 0x5B, 0xFF),
-            new Color32(0xFF, 0x87, 0x2F, 0xFF),
+            new Color32(0xFF, 0xAA, 0x3D, 0xFF),
+            new Color32(0xFF, 0x6A, 0x2A, 0xFF),
             new Color32(0xFF, 0xF3, 0xD0, 0xFF),
         };
 
         private static readonly Color[] PositiveOutlines =
         {
-            new Color32(0x27, 0x5C, 0x91, 0xFF),
-            new Color32(0x14, 0x7A, 0x78, 0xFF),
-            new Color32(0xA7, 0x63, 0x00, 0xFF),
-            new Color32(0xB9, 0x33, 0x12, 0xFF),
-            new Color32(0xD9, 0x4B, 0x19, 0xFF),
+            new Color32(0x6E, 0x45, 0x15, 0xFF),
+            new Color32(0x8A, 0x4D, 0x00, 0xFF),
+            new Color32(0x92, 0x3B, 0x00, 0xFF),
+            new Color32(0x8C, 0x22, 0x0B, 0xFF),
+            new Color32(0xC2, 0x3B, 0x12, 0xFF),
         };
 
         private static readonly Color[] NegativeColors =
@@ -259,9 +259,6 @@ namespace GourmetProject.Game.Presentation.Battle
             Color outlineColor = segment >= 4
                 ? outlines[4]
                 : Color.Lerp(outlines[segment], outlines[segment + 1], stepProgress);
-            float travelDistance = isPositive
-                ? Mathf.Lerp(14f, 42f, intensity)
-                : -Mathf.Lerp(10f, 30f, intensity);
             float panelPunch = isPositive
                 ? magnitude >= 50d ? Mathf.Lerp(0.04f, 0.16f, intensity) : 0f
                 : Mathf.Lerp(0.025f, 0.10f, intensity);
@@ -273,10 +270,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 isPositive,
                 textColor,
                 outlineColor,
-                Mathf.Lerp(0.08f, 0.18f, intensity),
-                Mathf.Lerp(0.88f, 0.72f, intensity),
-                Mathf.Lerp(1.04f, 1.30f, intensity),
-                travelDistance,
+                Mathf.Lerp(0.16f, 0.24f, intensity),
+                Mathf.Lerp(1.25f, 1.75f, intensity),
+                1f,
+                Mathf.Lerp(0.14f, 0.22f, intensity),
                 isPositive
                     ? Mathf.Lerp(0.05f, 0.20f, intensity)
                     : Mathf.Lerp(0.03f, 0.12f, intensity),

@@ -573,7 +573,13 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private void EnsureSettlementDeltaText()
         {
-            if (_settlementDeltaText != null || _scoreCurrentText == null)
+            if (_settlementDeltaText != null)
+            {
+                EnsureSettlementDeltaAboveBossStat();
+                return;
+            }
+
+            if (_scoreCurrentText == null)
             {
                 return;
             }
@@ -596,14 +602,56 @@ namespace GourmetProject.Game.UI.Battle.View
                     name = "Settlement Score Delta Runtime Material",
                     hideFlags = HideFlags.HideAndDontSave,
                 };
+                _settlementDeltaMaterial.EnableKeyword(ShaderUtilities.Keyword_Outline);
                 _settlementDeltaText.fontSharedMaterial = _settlementDeltaMaterial;
             }
             RectTransform deltaRect = _settlementDeltaText.rectTransform;
             deltaRect.anchoredPosition = _scoreCurrentText.rectTransform.anchoredPosition
                 + new Vector2(0f, 64f);
             deltaRect.sizeDelta = new Vector2(190f, 54f);
+            EnsureSettlementDeltaAboveBossStat();
             _settlementDeltaBasePosition = deltaRect.anchoredPosition;
             _settlementDeltaText.gameObject.SetActive(false);
+        }
+
+        private void EnsureSettlementDeltaAboveBossStat()
+        {
+            if (_settlementDeltaText == null)
+            {
+                return;
+            }
+
+            PlaceSettlementScoreDeltaAboveBossStat(
+                _settlementDeltaText.rectTransform,
+                _bossStat != null ? _bossStat.transform : null,
+                transform);
+        }
+
+        internal static void PlaceSettlementScoreDeltaAboveBossStat(
+            RectTransform deltaRect,
+            Transform bossStat,
+            Transform fallbackParent)
+        {
+            if (deltaRect == null)
+            {
+                return;
+            }
+
+            Transform overlayParent = bossStat != null && bossStat.parent != null
+                ? bossStat.parent
+                : fallbackParent;
+            if (overlayParent == null)
+            {
+                return;
+            }
+
+            if (deltaRect.parent != overlayParent)
+            {
+                // 保持当前世界坐标，避免从 ScoreMeter 提升到 BossStat 同级时发生跳位。
+                deltaRect.SetParent(overlayParent, worldPositionStays: true);
+            }
+
+            // uGUI 同一 Canvas 下后绘制的同级节点在上方，确保加减分永远盖住 BossStat。
             deltaRect.SetAsLastSibling();
         }
 
@@ -650,12 +698,14 @@ namespace GourmetProject.Game.UI.Battle.View
                 _scoreCurrentBasePositionCaptured = true;
             }
             scoreRect.anchoredPosition = _scoreCurrentBasePosition;
-            deltaRect.localScale = Vector3.one * feedback.StartScale;
+            deltaRect.localScale = Vector3.one * feedback.ImpactScale;
             deltaRect.anchoredPosition = _settlementDeltaBasePosition;
 
             _settlementDeltaText.color = feedback.TextColor;
-            _settlementDeltaText.outlineColor = feedback.OutlineColor;
-            _settlementDeltaText.outlineWidth = feedback.OutlineWidth;
+            ApplySettlementScoreDeltaOutline(
+                _settlementDeltaText,
+                feedback.OutlineColor,
+                feedback.OutlineWidth);
             _settlementDeltaText.text = FormatSignedScore(delta);
             _settlementDeltaText.gameObject.SetActive(true);
             _scoreCurrentText.text = ScoreNumberFormatter.Format(before);
@@ -674,11 +724,11 @@ namespace GourmetProject.Game.UI.Battle.View
                     })
                     .SetEase(Ease.OutCubic))
                 .Join(deltaRect.DOScale(
-                    feedback.PeakScale,
-                    Mathf.Min(rollDuration, 0.12f / presentationSpeed)).SetEase(Ease.OutBack))
-                .Join(deltaRect.DOAnchorPosY(
-                    _settlementDeltaBasePosition.y + feedback.TravelDistance,
-                    feedbackDuration).SetEase(Ease.OutCubic));
+                    feedback.SettleScale,
+                    Mathf.Min(
+                        rollDuration,
+                        feedback.SettleDuration / presentationSpeed))
+                    .SetEase(Ease.OutCubic));
 
             if (feedback.IsPositive)
             {
@@ -726,18 +776,16 @@ namespace GourmetProject.Game.UI.Battle.View
                         _settlementDeltaText.gameObject.SetActive(true);
                         _settlementDeltaText.text = "达标!";
                         _settlementDeltaText.color = SettlementColorPalette.FinalScore;
-                        _settlementDeltaText.outlineColor = new Color32(140, 63, 0, 255);
-                        _settlementDeltaText.outlineWidth = 0.14f;
+                        ApplySettlementScoreDeltaOutline(
+                            _settlementDeltaText,
+                            new Color32(140, 63, 0, 255),
+                            0.22f);
                         deltaRect.anchoredPosition = _settlementDeltaBasePosition;
-                        deltaRect.localScale = Vector3.one * 0.78f;
+                        deltaRect.localScale = Vector3.one * 1.55f;
                     })
-                    .AppendInterval(0.07f / presentationSpeed)
                     .Append(deltaRect.DOScale(
-                        1.22f,
-                        0.12f / presentationSpeed).SetEase(Ease.OutBack))
-                    .Join(deltaRect.DOAnchorPosY(
-                        _settlementDeltaBasePosition.y + 24f,
-                        0.20f / presentationSpeed).SetEase(Ease.OutCubic))
+                        1f,
+                        0.18f / presentationSpeed).SetEase(Ease.OutCubic))
                     .Join(_scoreTitlePanel != null
                         ? _scoreTitlePanel.DOPunchScale(
                             Vector3.one * 0.18f,
@@ -745,6 +793,7 @@ namespace GourmetProject.Game.UI.Battle.View
                             vibrato: 8,
                             elasticity: 0.72f)
                         : DOVirtual.DelayedCall(0.01f, () => { }))
+                    .AppendInterval(0.08f / presentationSpeed)
                     .Append(_settlementDeltaText.DOFade(0f, 0.16f / presentationSpeed));
             }
 
@@ -771,6 +820,33 @@ namespace GourmetProject.Game.UI.Battle.View
 
                 _settlementScoreBeatSequence = null;
             });
+        }
+
+        internal static void ApplySettlementScoreDeltaOutline(
+            TMP_Text text,
+            Color outlineColor,
+            float outlineWidth)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            float clampedWidth = Mathf.Clamp01(outlineWidth);
+            text.outlineColor = outlineColor;
+            text.outlineWidth = clampedWidth;
+
+            Material material = text.fontSharedMaterial;
+            if (material != null)
+            {
+                // TMP 的运行时材质不会仅因写入 OutlineWidth 自动开启 shader 变体。
+                material.EnableKeyword(ShaderUtilities.Keyword_Outline);
+                material.SetColor(ShaderUtilities.ID_OutlineColor, outlineColor);
+                material.SetFloat(ShaderUtilities.ID_OutlineWidth, clampedWidth);
+            }
+
+            text.UpdateMeshPadding();
+            text.SetMaterialDirty();
         }
 
         private void PlaySettlementScoreFire(SettlementScoreFeedbackProfile feedback)

@@ -84,6 +84,7 @@ namespace GourmetProject.Game.UI.Hud
         public bool HasPreview => _previewBubble != null;
         public int PreviewDay => _previewDay;
         public float DisplayedDay => _displayedDay;
+        internal TMP_Text WeekTransitionTextStyle => _currentDayText;
         public bool IsPresenting => _cueBusy || _cueQueue.Count > 0;
         public bool HasActivePresentationTweens
         {

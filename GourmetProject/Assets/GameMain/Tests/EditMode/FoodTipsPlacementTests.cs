@@ -79,6 +79,75 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void PlaceAroundRectTransform_OversizedExternalSkillsKeepSummaryTopAlignedWithFood()
+        {
+            var canvasObject = new GameObject(
+                "FoodTipsPlacementTests_Canvas",
+                typeof(RectTransform));
+            var targetObject = new GameObject("Food", typeof(RectTransform));
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(FoodTipsPath);
+
+            try
+            {
+                Assert.That(prefab, Is.Not.Null);
+                RectTransform canvasRect = canvasObject.transform as RectTransform;
+                Assert.That(canvasRect, Is.Not.Null);
+                canvasRect.sizeDelta = new Vector2(1600f, 780f);
+
+                RectTransform target = targetObject.transform as RectTransform;
+                Assert.That(target, Is.Not.Null);
+                target.SetParent(canvasRect, false);
+                target.anchorMin = new Vector2(0.5f, 0.5f);
+                target.anchorMax = new Vector2(0.5f, 0.5f);
+                target.pivot = new Vector2(0.5f, 0.5f);
+                target.sizeDelta = new Vector2(120f, 110f);
+                target.anchoredPosition = new Vector2(0f, 170f);
+
+                GameObject instance = UnityEngine.Object.Instantiate(prefab, canvasRect, false);
+                Assert.That(instance.TryGetComponent(out FoodTipsView tips), Is.True);
+                tips.Bind(new FoodTipsData(
+                    new FoodSummaryTipsData(
+                        "馒头",
+                        Array.Empty<FoodInfoEntry>(),
+                        Array.Empty<string>()),
+                    new FoodScoreTipsData(524f, 139.7f),
+                    Array.Empty<FoodInfoEntry>(),
+                    new[]
+                    {
+                        new FoodInfoEntry("糖豆<甜蜜传递>", "右侧及自身\n每有1个技能，分数+6"),
+                        new FoodInfoEntry("拐杖糖<甜蜜传递>", "倍率×1\n(每有1个技能+0.2)"),
+                        new FoodInfoEntry("牛轧糖<甜蜜传递>", "本列分数+40"),
+                        new FoodInfoEntry("拐杖糖<甜蜜传递>", "倍率×1\n(每有1个技能+0.2)"),
+                        new FoodInfoEntry("拐杖糖<甜蜜传递>", "倍率×1\n(每有1个技能+0.2)"),
+                    },
+                    Array.Empty<FoodInfoEntry>()));
+                tips.Show();
+                Canvas.ForceUpdateCanvases();
+
+                tips.PlaceAroundRectTransform(target, null);
+                Canvas.ForceUpdateCanvases();
+
+                Rect summaryBounds = BoundsIn(canvasRect, tips.SummaryView.transform as RectTransform);
+                Rect targetBounds = BoundsIn(canvasRect, target);
+                Transform externalSkills = instance.transform.Find("4_TransferredSubSkills");
+                Assert.That(externalSkills, Is.Not.Null);
+                Rect externalBounds = BoundsIn(canvasRect, externalSkills as RectTransform);
+
+                Assert.That(externalBounds.height, Is.GreaterThan(canvasRect.rect.height - 32f));
+                Assert.That(summaryBounds.yMax, Is.EqualTo(targetBounds.yMax).Within(0.5f));
+            }
+            finally
+            {
+                if (targetObject != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(targetObject);
+                }
+
+                UnityEngine.Object.DestroyImmediate(canvasObject);
+            }
+        }
+
+        [Test]
         public void Bind_LongSpecialTagAfterShortTag_KeepsConfiguredLineBreaks()
         {
             var canvasObject = new GameObject(
