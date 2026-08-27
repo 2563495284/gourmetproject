@@ -56,7 +56,7 @@ namespace GourmetProject.Game.Meta
                 || context.Rng == null
                 || run.NextBusinessRewardDoubleStacks <= 0
                 || actionContext?.IsDailyAction != true
-                || !IsNormalOrSuperBusiness(run.Tables, actionContext.Action))
+                || !IsNextBusinessRewardDoubleEligible(run.Tables, actionContext.Action))
             {
                 return;
             }
@@ -116,7 +116,9 @@ namespace GourmetProject.Game.Meta
                 sourceSlotId: doubled.SourceSlotId));
         }
 
-        private static bool IsNormalOrSuperBusiness(cfg.Tables tables, cfg.GameAction action)
+        internal static bool IsNextBusinessRewardDoubleEligible(
+            cfg.Tables tables,
+            cfg.GameAction action)
         {
             cfg.Food food = FoodService.Resolve(tables, action);
             return food != null
@@ -358,9 +360,9 @@ namespace GourmetProject.Game.Meta
             cfg.Food food = FoodService.Resolve(
                 run.Tables,
                 (actionContext ?? run.LastActionContext)?.Action);
-            bool isBusiness = food != null
-                && (food.ActionKind == cfg.FoodActionKind.Normal
-                    || food.ActionKind == cfg.FoodActionKind.Super);
+            bool isBusiness = IsNextBusinessRewardDoubleEligible(
+                run.Tables,
+                (actionContext ?? run.LastActionContext)?.Action);
             bool isBoss = food != null && food.ActionKind == cfg.FoodActionKind.Feast;
             float itemMultiplier = isBusiness ? itemRuntime.MealRewardGoldMultiplier() : 1f;
             float eventMultiplier = isBusiness

@@ -823,8 +823,7 @@ namespace GourmetProject.Game.UI.Battle
                 return false;
             }
 
-            if ((item.EffectType == ItemEffectTypes.RerollAction
-                    || item.EffectType == ItemEffectTypes.DoubleNextBusinessReward)
+            if (item.EffectType == ItemEffectTypes.RerollAction
                 && !_host.IsDailyActionSelectionActive)
             {
                 reason = "只能在普通行动选择时使用。";
@@ -841,13 +840,6 @@ namespace GourmetProject.Game.UI.Battle
             if (contextKind == ActiveUseContextKind.Battle && (_host.ActiveSession == null || _host.ActiveSession.IsSettled))
             {
                 reason = "经营挑战已经结束。";
-                return false;
-            }
-
-            if (item.EffectType == ItemEffectTypes.HalfNextActionCost
-                && contextKind == ActiveUseContextKind.Battle)
-            {
-                reason = "经营挑战中不能使用。";
                 return false;
             }
 

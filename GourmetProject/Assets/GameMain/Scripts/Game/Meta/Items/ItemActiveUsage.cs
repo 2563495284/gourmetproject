@@ -66,11 +66,6 @@ namespace GourmetProject.Game.Meta
                 return false;
             }
 
-            if (item.EffectType == ItemEffectTypes.HalfNextActionCost)
-            {
-                return ctx != ActiveUseContextKind.Battle;
-            }
-
             if (IsTimelineAxisTargetEffect(item.EffectType))
             {
                 return IsActionAxisContext(ctx);
@@ -132,7 +127,7 @@ namespace GourmetProject.Game.Meta
             return item != null && item.EffectType == ItemEffectTypes.AddFlavor;
         }
 
-        /// <summary>排程小票效果（操作时间轴/Boss，局外/地图专用）。</summary>
+        /// <summary>排程类小票效果；每种效果的实际使用情境由 <see cref="IsScheduleUsableIn"/> 判断。</summary>
         public static bool IsScheduleEffect(string effectType)
         {
             switch (effectType)
@@ -160,8 +155,9 @@ namespace GourmetProject.Game.Meta
             switch (effectType)
             {
                 case ItemEffectTypes.RerollAction:
-                case ItemEffectTypes.DoubleNextBusinessReward:
                     return ctx == ActiveUseContextKind.ActionSelect;
+                case ItemEffectTypes.DoubleNextBusinessReward:
+                    return true;
                 case ItemEffectTypes.ResetBossDebuff:
                     return ctx == ActiveUseContextKind.ActionSelect
                         || ctx == ActiveUseContextKind.Shop
