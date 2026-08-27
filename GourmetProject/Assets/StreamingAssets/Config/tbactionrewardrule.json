@@ -44,9 +44,9 @@
     "rewardKind": 5,
     "fallbackWeights": [
       85,
-      85,
-      85,
-      85
+      80,
+      75,
+      75
     ],
     "minGuaranteeCounts": [
       [

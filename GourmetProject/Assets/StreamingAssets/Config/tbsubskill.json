@@ -843,10 +843,10 @@
       0.8
     ],
     "actionParam": [
-      "when:transfer;resultscope:BuffTargets"
+      "when:transfer;resultscope:BuffTargets;scale:transfer-target-count"
     ],
     "signed": true,
-    "descTemplate": "[context]结算[/context]后\n{cscope}发动[term]甜蜜传递[/term]时\n[strong]倍率[/strong] [multadd]{0}[/multadd]",
+    "descTemplate": "[context]结算[/context]后\n{cscope}发动[term]甜蜜传递[/term]时\n每成功传递 1 个目标\n[strong]倍率[/strong] [multadd]{0}[/multadd]",
     "termId": ""
   },
   {

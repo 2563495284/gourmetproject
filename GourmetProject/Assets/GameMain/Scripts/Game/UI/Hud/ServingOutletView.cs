@@ -38,9 +38,9 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private CanvasGroup _canvasGroup;
 
         [Header("State Colors")]
-        [SerializeField] private Color _readyColor = new Color(0.86f, 0.98f, 0.76f, 1f);
-        [SerializeField] private Color _dragColor = new Color(1f, 0.94f, 0.70f, 1f);
-        [SerializeField] private Color _blockedColor = new Color(0.72f, 0.72f, 0.68f, 1f);
+        [SerializeField] private Color _readyColor = new Color(0.66f, 0.72f, 0.50f, 0.16f);
+        [SerializeField] private Color _dragColor = new Color(1f, 1f, 1f, 0f);
+        [SerializeField] private Color _blockedColor = new Color(0.45f, 0.45f, 0.42f, 0.18f);
         [SerializeField] private Image _background;
 
         private Action<Vector2> _beginDrag;
@@ -60,6 +60,7 @@ namespace GourmetProject.Game.UI.Hud
         private Vector3 _preparedDishBaseScale = Vector3.one;
         private bool _statusAlphaCaptured;
         private float _statusBaseAlpha = 1f;
+        private bool _creamSageFrameReady;
 
         public ServingOutletState State { get; private set; }
 
@@ -544,6 +545,17 @@ namespace GourmetProject.Game.UI.Hud
         private void EnsureReferences()
         {
             _canvasGroup ??= GetComponent<CanvasGroup>();
+            if (!_creamSageFrameReady)
+            {
+                Image rootBackground = GetComponent<Image>();
+                Image stateFill = CreamSageHudPanelStyle.ApplyServingOutlet(rootBackground);
+                if (stateFill != null)
+                {
+                    _background = stateFill;
+                    _creamSageFrameReady = true;
+                }
+            }
+
             if (!_preparedDishScaleCaptured && _preparedDishRoot != null)
             {
                 _preparedDishBaseScale = _preparedDishRoot.localScale;

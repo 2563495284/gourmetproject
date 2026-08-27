@@ -1175,7 +1175,8 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         /// <summary>
-        /// 传递成功后的分数/倍率响应：跳跳糖在本列获得传递后加分，软糖在本列发动传递后加倍率。
+        /// 传递成功后的分数/倍率响应：跳跳糖在同行及自身范围收到传递后加分，
+        /// 软糖在同列及自身范围发动传递后按实际目标数加倍率。
         /// 被传食物的技能结果先播完，再播这一条汇总，不能同一拍弹出。
         /// </summary>
         internal static bool IsSweetTransferResponseLine(ScoreLine line)

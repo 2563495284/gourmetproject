@@ -2577,6 +2577,7 @@ namespace GourmetProject.Game.UI.Battle
             {
                 image.fillCenter = true;
                 image.raycastTarget = false;
+                CreamSageHudPanelStyle.ApplyTemporaryTable(image);
             }
 
             CanvasGroup group = _temporaryArea.GetComponent<CanvasGroup>();
@@ -2619,6 +2620,11 @@ namespace GourmetProject.Game.UI.Battle
                 group.interactable = false;
                 _temporaryAreaDishOverlay = go.GetComponent<TemporaryAreaDishOverlay>();
             }
+
+            _temporaryAreaDishOverlay.transform.SetSiblingIndex(
+                Mathf.Min(
+                    CreamSageHudPanelStyle.TemporaryTableContentSiblingIndex,
+                    _temporaryArea.childCount - 1));
 
             _temporaryAreaDishOverlay.Bind(_world ?? BattleWorldController.Instance);
         }

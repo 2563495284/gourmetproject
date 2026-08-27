@@ -106,12 +106,11 @@ namespace GourmetProject.Game.Meta.Passives
     [PassiveItemModel("item_double_daily_cost_repeat_node")]
     public sealed class DoubleDailyCostRepeatNodeModel : PassiveItemModel
     {
-        public override float DailyActionCostMultiplier() => Value > 0f ? Value : 1.5f;
+        public override float DailyActionCostBonusDays()
+            => Value > 0f && !float.IsInfinity(Value) ? Value : 0.5f;
 
-        public override int TimelineNodeRepeatCount(cfg.ActionBehavior behavior)
-            => behavior == cfg.ActionBehavior.Shop || behavior == cfg.ActionBehavior.Reward
-                ? System.Math.Max(1, PassiveParam.ParseInt(Param, "repeat", 2))
-                : 1;
+        public override int TimelineNodeRepeatCount()
+            => System.Math.Max(1, PassiveParam.ParseInt(Param, "repeat", 2));
     }
 
     [Preserve]

@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using BreakInfinity;
 using GourmetProject.Core.Rng;
+using GourmetProject.Game.Adapter;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Meta.Passives;
 using GourmetProject.Game.Presentation.Battle;
@@ -16,6 +18,7 @@ using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using Luban.SimpleJSON;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace GourmetProject.Tests.EditMode
 {
@@ -839,6 +842,301 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void TransferMultiplierModifier_ScalesByActualSuccessfulTargetCount()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef modifierSkill = CreateTransferMultiplierModifierSkill(
+                "gummy_modifier",
+                scaleByTransferTargetCount: true,
+                scope: SkillScope.ColumnAndSelf);
+            SkillDef sourceSkill = CreateTransferSkill("source_skill", value: 10f, targetCount: 2);
+            DishDef modifierDef = CreateDish("modifier", "软糖", shape, new[] { modifierSkill.Id });
+            DishDef sourceDef = CreateDish("source", "来源", shape, new[] { sourceSkill.Id });
+            DishDef targetADef = CreateDish("target_a", "目标A", shape, Array.Empty<string>());
+            DishDef targetBDef = CreateDish("target_b", "目标B", shape, Array.Empty<string>());
+            var database = new GameplayDatabase(
+                new[] { modifierDef, sourceDef, targetADef, targetBDef },
+                new[] { modifierSkill, sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(3, 2);
+            DishInstance modifier = CreateInstance(1, modifierDef, shape, 0, 0);
+            DishInstance source = CreateInstance(2, sourceDef, shape, 0, 1);
+            DishInstance targetA = CreateInstance(3, targetADef, shape, 1, 0);
+            DishInstance targetB = CreateInstance(4, targetBDef, shape, 2, 0);
+            board.Place(modifier);
+            board.Place(source);
+            board.Place(targetA);
+            board.Place(targetB);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                board,
+                database,
+                transferTargetSelector: (candidates, count) => new[] { targetA.Id, targetB.Id });
+
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(2));
+            Assert.That(Multiplier(result, modifier), Is.EqualTo(2.6d).Within(1e-6));
+            Assert.That(Multiplier(result, source), Is.EqualTo(2.6d).Within(1e-6));
+            Assert.That(Multiplier(result, targetA), Is.EqualTo(1d).Within(1e-9));
+            Assert.That(Multiplier(result, targetB), Is.EqualTo(1d).Within(1e-9));
+            IReadOnlyList<ScoreLine> responseLines = result.ScoreLines
+                .Where(line => line.Kind == ScoreLineKind.SweetTransferBuffTriggered)
+                .ToArray();
+            Assert.That(responseLines.Count, Is.EqualTo(1), "多目标传递只生成一条汇总响应");
+            Assert.That(Value(responseLines[0].Value), Is.EqualTo(1.6d).Within(1e-6));
+        }
+
+        [Test]
+        public void TransferMultiplierModifier_UsesSanitizedTargetsInsteadOfConfiguredCount()
+        {
+            TransferMultiplierFixture fixture = CreateTransferMultiplierFixture(
+                scaleByTransferTargetCount: true,
+                configuredTargetCount: 3,
+                plainTargetCount: 1);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                fixture.Board,
+                fixture.Database,
+                transferTargetSelector: (candidates, count) =>
+                    new[] { fixture.TargetIds[0], fixture.TargetIds[0], int.MaxValue });
+
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(1));
+            Assert.That(Multiplier(result, fixture.Modifier), Is.EqualTo(1.8d).Within(1e-6));
+            Assert.That(
+                result.ScoreLines.Count(line => line.Kind == ScoreLineKind.SweetTransferBuffTriggered),
+                Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TransferMultiplierModifier_WithoutScaleParamKeepsSingleActivationValue()
+        {
+            TransferMultiplierFixture fixture = CreateTransferMultiplierFixture(
+                scaleByTransferTargetCount: false,
+                configuredTargetCount: 2,
+                plainTargetCount: 2);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                fixture.Board,
+                fixture.Database,
+                transferTargetSelector: (candidates, count) => fixture.TargetIds);
+
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(2));
+            Assert.That(Multiplier(result, fixture.Modifier), Is.EqualTo(1.8d).Within(1e-6));
+            ScoreLine response = result.ScoreLines.Single(
+                line => line.Kind == ScoreLineKind.SweetTransferBuffTriggered);
+            Assert.That(Value(response.Value), Is.EqualTo(0.8d).Within(1e-6));
+        }
+
+        [Test]
+        public void TransferMultiplierModifier_EmptySelectionDoesNotTrigger()
+        {
+            TransferMultiplierFixture fixture = CreateTransferMultiplierFixture(
+                scaleByTransferTargetCount: true,
+                configuredTargetCount: 2,
+                plainTargetCount: 2);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                fixture.Board,
+                fixture.Database,
+                transferTargetSelector: (candidates, count) => Array.Empty<int>());
+
+            Assert.That(result.SkillTransfers, Is.Empty);
+            Assert.That(Multiplier(result, fixture.Modifier), Is.EqualTo(1d).Within(1e-9));
+            Assert.That(
+                result.ScoreLines.Any(line => line.Kind == ScoreLineKind.SweetTransferBuffTriggered),
+                Is.False);
+        }
+
+        [Test]
+        public void TransferMultiplierModifier_IncludesFixedAndProbabilisticExtraTargets()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef multiplierSkill = CreateTransferMultiplierModifierSkill(
+                "gummy_modifier",
+                scaleByTransferTargetCount: true);
+            SkillDef chanceSkill = CreateExtraTargetModifierSkill(
+                "chance_modifier",
+                extraTargetCount: 1,
+                probabilistic: true);
+            SkillDef sourceSkill = CreateTransferSkill("source_skill", value: 10f, targetCount: 1);
+            DishDef multiplierDef = CreateDish("multiplier", "软糖", shape, new[] { multiplierSkill.Id });
+            DishDef chanceDef = CreateDish("chance", "松露", shape, new[] { chanceSkill.Id });
+            DishDef sourceDef = CreateDish("source", "来源", shape, new[] { sourceSkill.Id });
+            DishDef targetADef = CreateDish("target_a", "目标A", shape, Array.Empty<string>());
+            DishDef targetBDef = CreateDish("target_b", "目标B", shape, Array.Empty<string>());
+            DishDef targetCDef = CreateDish("target_c", "目标C", shape, Array.Empty<string>());
+            var database = new GameplayDatabase(
+                new[] { multiplierDef, chanceDef, sourceDef, targetADef, targetBDef, targetCDef },
+                new[] { multiplierSkill, chanceSkill, sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(6, 1);
+            DishInstance multiplier = CreateInstance(1, multiplierDef, shape, 0);
+            DishInstance targetA = CreateInstance(4, targetADef, shape, 3);
+            DishInstance targetB = CreateInstance(5, targetBDef, shape, 4);
+            DishInstance targetC = CreateInstance(6, targetCDef, shape, 5);
+            board.Place(multiplier);
+            board.Place(CreateInstance(2, chanceDef, shape, 1));
+            board.Place(CreateInstance(3, sourceDef, shape, 2));
+            board.Place(targetA);
+            board.Place(targetB);
+            board.Place(targetC);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                board,
+                database,
+                transferTargetSelector: (candidates, count) =>
+                    new[] { targetA.Id, targetB.Id, targetC.Id }.Take(count).ToArray(),
+                randomIntegerSelector: (min, max) => 0,
+                sweetTransferExtraTargetCount: 1);
+
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(3));
+            Assert.That(Multiplier(result, multiplier), Is.EqualTo(3.4d).Within(1e-6));
+            ScoreLine response = result.ScoreLines.Single(line =>
+                line.Kind == ScoreLineKind.SweetTransferBuffTriggered
+                && line.DishInstanceId == multiplier.Id);
+            Assert.That(Value(response.Value), Is.EqualTo(2.4d).Within(1e-6));
+        }
+
+        [Test]
+        public void TransferMultiplierModifier_TriggeredAndNativeTransfersAccumulateSeparately()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef modifierSkill = CreateTransferMultiplierModifierSkill(
+                "gummy_modifier",
+                scaleByTransferTargetCount: true);
+            SkillDef triggerSkill = CreateTriggerTransferSkill("trigger_skill");
+            SkillDef sourceSkill = CreateTransferSkill("source_skill", value: 10f, targetCount: 2);
+            DishDef modifierDef = CreateDish("modifier", "软糖", shape, new[] { modifierSkill.Id });
+            DishDef triggerDef = CreateDish("trigger", "代触发者", shape, new[] { triggerSkill.Id });
+            DishDef sourceDef = CreateDish("source", "来源", shape, new[] { sourceSkill.Id });
+            DishDef targetADef = CreateDish("target_a", "目标A", shape, Array.Empty<string>());
+            DishDef targetBDef = CreateDish("target_b", "目标B", shape, Array.Empty<string>());
+            var database = new GameplayDatabase(
+                new[] { modifierDef, triggerDef, sourceDef, targetADef, targetBDef },
+                new[] { modifierSkill, triggerSkill, sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(5, 1);
+            DishInstance modifier = CreateInstance(1, modifierDef, shape, 0);
+            DishInstance targetA = CreateInstance(4, targetADef, shape, 3);
+            DishInstance targetB = CreateInstance(5, targetBDef, shape, 4);
+            board.Place(modifier);
+            board.Place(CreateInstance(2, triggerDef, shape, 1));
+            board.Place(CreateInstance(3, sourceDef, shape, 2));
+            board.Place(targetA);
+            board.Place(targetB);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                board,
+                database,
+                transferTargetSelector: (candidates, count) =>
+                    candidates.Where(id => id == targetA.Id || id == targetB.Id).Take(count).ToArray());
+
+            Assert.That(result.SkillTransfers, Has.Count.EqualTo(4));
+            Assert.That(Multiplier(result, modifier), Is.EqualTo(4.2d).Within(1e-6));
+            IReadOnlyList<ScoreLine> responses = result.ScoreLines
+                .Where(line => line.Kind == ScoreLineKind.SweetTransferBuffTriggered)
+                .ToArray();
+            Assert.That(responses.Count, Is.EqualTo(2));
+            Assert.That(responses.All(line => Math.Abs(Value(line.Value) - 1.6d) < 1e-6), Is.True);
+        }
+
+        [Test]
+        public void TransferMultiplierModifier_OverlappingRegistrationsStackIndependently()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef modifierASkill = CreateTransferMultiplierModifierSkill(
+                "gummy_modifier_a",
+                scaleByTransferTargetCount: true);
+            SkillDef modifierBSkill = CreateTransferMultiplierModifierSkill(
+                "gummy_modifier_b",
+                scaleByTransferTargetCount: true);
+            SkillDef sourceSkill = CreateTransferSkill("source_skill", value: 10f, targetCount: 1);
+            DishDef modifierADef = CreateDish("modifier_a", "软糖A", shape, new[] { modifierASkill.Id });
+            DishDef modifierBDef = CreateDish("modifier_b", "软糖B", shape, new[] { modifierBSkill.Id });
+            DishDef sourceDef = CreateDish("source", "来源", shape, new[] { sourceSkill.Id });
+            DishDef targetDef = CreateDish("target", "目标", shape, Array.Empty<string>());
+            var database = new GameplayDatabase(
+                new[] { modifierADef, modifierBDef, sourceDef, targetDef },
+                new[] { modifierASkill, modifierBSkill, sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(4, 1);
+            DishInstance modifierA = CreateInstance(1, modifierADef, shape, 0);
+            DishInstance modifierB = CreateInstance(2, modifierBDef, shape, 1);
+            DishInstance source = CreateInstance(3, sourceDef, shape, 2);
+            DishInstance target = CreateInstance(4, targetDef, shape, 3);
+            board.Place(modifierA);
+            board.Place(modifierB);
+            board.Place(source);
+            board.Place(target);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                board,
+                database,
+                transferTargetSelector: (candidates, count) => new[] { target.Id });
+
+            Assert.That(Multiplier(result, modifierA), Is.EqualTo(2.6d).Within(1e-6));
+            Assert.That(Multiplier(result, modifierB), Is.EqualTo(2.6d).Within(1e-6));
+            Assert.That(Multiplier(result, source), Is.EqualTo(2.6d).Within(1e-6));
+            Assert.That(Multiplier(result, target), Is.EqualTo(2.6d).Within(1e-6));
+            Assert.That(
+                result.ScoreLines.Count(line => line.Kind == ScoreLineKind.SweetTransferBuffTriggered),
+                Is.EqualTo(2));
+        }
+
+        [Test]
+        public void TransferMultiplierModifier_PreviewAndSettlementMatch()
+        {
+            TransferMultiplierFixture fixture = CreateTransferMultiplierFixture(
+                scaleByTransferTargetCount: true,
+                configuredTargetCount: 2,
+                plainTargetCount: 2);
+            var session = new BattleSession(
+                fixture.Board,
+                fixture.Database,
+                new Xoshiro256SS(20260827UL),
+                Array.Empty<RecipeSlot>(),
+                requiredScore: 0);
+
+            ScoreResult preview = session.PreviewScore();
+            ScoreResult settled = session.Settle();
+
+            Assert.That(Multiplier(preview, fixture.Modifier), Is.EqualTo(2.6d).Within(1e-6));
+            Assert.That(Multiplier(settled, fixture.Modifier), Is.EqualTo(2.6d).Within(1e-6));
+            Assert.That(
+                settled.ScoreLines.Count(line => line.Kind == ScoreLineKind.SweetTransferBuffTriggered),
+                Is.EqualTo(1));
+        }
+
+        [Test]
+        public void GummyConfiguration_UsesColumnScopeValueScaleParamAndFinalDescription()
+        {
+            string directory = Path.Combine(Application.streamingAssetsPath, "Config");
+            var tables = new cfg.Tables(name =>
+                JSON.Parse(File.ReadAllText(Path.Combine(directory, name + ".json"))));
+            GameplayDatabase database = GameplayContentBuilder.BuildDatabase(tables);
+
+            cfg.SubSkill configured = tables.TbSubSkill.GetOrDefault("sk_gummy_1");
+            Assert.That(configured, Is.Not.Null);
+            Assert.That((int)configured.ActionScope, Is.EqualTo((int)SkillScope.ColumnAndSelf));
+            Assert.That(configured.ActionValue.Single(), Is.EqualTo(0.8f).Within(1e-6));
+            Assert.That(
+                configured.ActionParam.Any(param =>
+                    param.IndexOf("scale:transfer-target-count", StringComparison.OrdinalIgnoreCase) >= 0),
+                Is.True);
+            Assert.That(configured.DescTemplate, Does.Contain("每成功传递 1 个目标"));
+
+            SkillDef skill = database.GetSkill("sk_gummy");
+            Assert.That(skill, Is.Not.Null);
+            Assert.That(skill.Rules, Has.Count.EqualTo(1));
+            Assert.That(skill.Rules[0].ActionType, Is.EqualTo(SkillActionType.AddMultFlat));
+            Assert.That(skill.Rules[0].ActionScope, Is.EqualTo(SkillScope.ColumnAndSelf));
+            Assert.That(skill.Desc, Does.Contain("每成功传递 1 个目标"));
+        }
+
+        [Test]
         public void FormalSettlement_CommitsOnlyTheNewSkillOnceAfterPurePreview()
         {
             DishShape shape = DishShape.FromRows(new[] { "X" });
@@ -1055,6 +1353,86 @@ namespace GourmetProject.Tests.EditMode
                 new[] { modifier.Id });
         }
 
+        private static SkillDef CreateTransferMultiplierModifierSkill(
+            string skillId,
+            bool scaleByTransferTargetCount,
+            SkillScope scope = SkillScope.All)
+        {
+            string actionParam = "when:transfer;resultscope:BuffTargets";
+            if (scaleByTransferTargetCount)
+            {
+                actionParam += ";scale:transfer-target-count";
+            }
+
+            var modifier = new SkillRuleDef(
+                $"{skillId}_modifier",
+                skillId,
+                order: 0,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Per,
+                string.Empty,
+                SkillActionType.AddMultFlat,
+                scope,
+                actionCount: 0,
+                new[] { 0.8f },
+                new[] { actionParam });
+            return new SkillDef(
+                skillId,
+                skillId,
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { modifier },
+                new[] { modifier.Id });
+        }
+
+        private static TransferMultiplierFixture CreateTransferMultiplierFixture(
+            bool scaleByTransferTargetCount,
+            int configuredTargetCount,
+            int plainTargetCount)
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef modifierSkill = CreateTransferMultiplierModifierSkill(
+                "gummy_modifier",
+                scaleByTransferTargetCount);
+            SkillDef transferSkill = CreateTransferSkill(
+                "source_skill",
+                value: 10f,
+                targetCount: configuredTargetCount);
+            DishDef modifierDef = CreateDish("modifier", "软糖", shape, new[] { modifierSkill.Id });
+            DishDef sourceDef = CreateDish("source", "来源", shape, new[] { transferSkill.Id });
+            var dishDefs = new List<DishDef> { modifierDef, sourceDef };
+            for (int i = 0; i < plainTargetCount; i++)
+            {
+                dishDefs.Add(CreateDish(
+                    $"target_{i}",
+                    $"目标{i}",
+                    shape,
+                    Array.Empty<string>()));
+            }
+
+            var database = new GameplayDatabase(
+                dishDefs,
+                new[] { modifierSkill, transferSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(dishDefs.Count, 1);
+            DishInstance modifier = CreateInstance(1, modifierDef, shape, 0);
+            board.Place(modifier);
+            board.Place(CreateInstance(2, sourceDef, shape, 1));
+            var targetIds = new List<int>(plainTargetCount);
+            for (int i = 0; i < plainTargetCount; i++)
+            {
+                int id = i + 3;
+                board.Place(CreateInstance(id, dishDefs[i + 2], shape, i + 2));
+                targetIds.Add(id);
+            }
+
+            return new TransferMultiplierFixture(board, database, modifier, targetIds);
+        }
+
         private static ChanceModifierFixture CreateChanceModifierFixture(
             int baseTargetCount,
             int chanceModifierCount,
@@ -1197,14 +1575,25 @@ namespace GourmetProject.Tests.EditMode
             DishDef def,
             DishShape shape,
             int x)
+            => CreateInstance(id, def, shape, x, y: 0);
+
+        private static DishInstance CreateInstance(
+            int id,
+            DishDef def,
+            DishShape shape,
+            int x,
+            int y)
             => new DishInstance(
                 id,
                 def,
-                new Placement(shape, rotationIndex: 0, new GridPos(x, 0)),
+                new Placement(shape, rotationIndex: 0, new GridPos(x, y)),
                 def.SkillIds,
                 Array.Empty<string>());
 
         private static double Value(BigDouble value) => value.ToDouble();
+
+        private static double Multiplier(ScoreResult result, DishInstance dish)
+            => Value(result.DishScores.Single(score => score.DishInstanceId == dish.Id).Multiplier);
 
         private sealed class ChanceModifierFixture
         {
@@ -1217,6 +1606,29 @@ namespace GourmetProject.Tests.EditMode
             public DiningTable Board { get; }
 
             public GameplayDatabase Database { get; }
+        }
+
+        private sealed class TransferMultiplierFixture
+        {
+            public TransferMultiplierFixture(
+                DiningTable board,
+                GameplayDatabase database,
+                DishInstance modifier,
+                IReadOnlyList<int> targetIds)
+            {
+                Board = board;
+                Database = database;
+                Modifier = modifier;
+                TargetIds = targetIds;
+            }
+
+            public DiningTable Board { get; }
+
+            public GameplayDatabase Database { get; }
+
+            public DishInstance Modifier { get; }
+
+            public IReadOnlyList<int> TargetIds { get; }
         }
     }
 }

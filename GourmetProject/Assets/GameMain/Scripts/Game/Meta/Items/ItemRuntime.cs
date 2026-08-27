@@ -238,16 +238,7 @@ namespace GourmetProject.Game.Meta
 
         public int FoodFlavorLimitBonus() => SumInt(m => m.FoodFlavorLimitBonus());
 
-        public float DailyActionCostMultiplier()
-        {
-            float multiplier = 1f;
-            foreach (PassiveItemModel m in Models)
-            {
-                multiplier *= System.Math.Max(0f, m.DailyActionCostMultiplier());
-            }
-
-            return multiplier;
-        }
+        public float DailyActionCostBonusDays() => SumFloat(m => m.DailyActionCostBonusDays());
 
         public int TimelineNodeRepeatCount() => System.Math.Max(1, MaxInt(m => m.TimelineNodeRepeatCount()));
 
