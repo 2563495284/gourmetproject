@@ -15,7 +15,7 @@ namespace GourmetProject.Game.UI.Battle.View
         private const float OldContentExitDuration = 0.42f;
         private const float OldContentExitScale = 0.82f;
         private const float WeekTitleEnterDuration = 0.2f;
-        private const float WeekTitleHoldDuration = 0.6f;
+        private const float WeekTitleHoldDuration = 1.2f;
         private const float WeekTitleExitDuration = 0.2f;
         private const float WeekTitleEnterScale = 0.9f;
         private const float WeekTitleExitScale = 1.05f;
