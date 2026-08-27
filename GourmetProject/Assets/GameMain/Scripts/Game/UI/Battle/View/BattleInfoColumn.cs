@@ -650,7 +650,7 @@ namespace GourmetProject.Game.UI.Battle.View
                 _scoreCurrentBasePositionCaptured = true;
             }
             scoreRect.anchoredPosition = _scoreCurrentBasePosition;
-            deltaRect.localScale = Vector3.one * feedback.StartScale;
+            deltaRect.localScale = Vector3.one * feedback.ImpactScale;
             deltaRect.anchoredPosition = _settlementDeltaBasePosition;
 
             _settlementDeltaText.color = feedback.TextColor;
@@ -674,11 +674,11 @@ namespace GourmetProject.Game.UI.Battle.View
                     })
                     .SetEase(Ease.OutCubic))
                 .Join(deltaRect.DOScale(
-                    feedback.PeakScale,
-                    Mathf.Min(rollDuration, 0.12f / presentationSpeed)).SetEase(Ease.OutBack))
-                .Join(deltaRect.DOAnchorPosY(
-                    _settlementDeltaBasePosition.y + feedback.TravelDistance,
-                    feedbackDuration).SetEase(Ease.OutCubic));
+                    feedback.SettleScale,
+                    Mathf.Min(
+                        rollDuration,
+                        feedback.SettleDuration / presentationSpeed))
+                    .SetEase(Ease.OutCubic));
 
             if (feedback.IsPositive)
             {
@@ -729,15 +729,11 @@ namespace GourmetProject.Game.UI.Battle.View
                         _settlementDeltaText.outlineColor = new Color32(140, 63, 0, 255);
                         _settlementDeltaText.outlineWidth = 0.14f;
                         deltaRect.anchoredPosition = _settlementDeltaBasePosition;
-                        deltaRect.localScale = Vector3.one * 0.78f;
+                        deltaRect.localScale = Vector3.one * 1.55f;
                     })
-                    .AppendInterval(0.07f / presentationSpeed)
                     .Append(deltaRect.DOScale(
-                        1.22f,
-                        0.12f / presentationSpeed).SetEase(Ease.OutBack))
-                    .Join(deltaRect.DOAnchorPosY(
-                        _settlementDeltaBasePosition.y + 24f,
-                        0.20f / presentationSpeed).SetEase(Ease.OutCubic))
+                        1f,
+                        0.18f / presentationSpeed).SetEase(Ease.OutCubic))
                     .Join(_scoreTitlePanel != null
                         ? _scoreTitlePanel.DOPunchScale(
                             Vector3.one * 0.18f,
@@ -745,6 +741,7 @@ namespace GourmetProject.Game.UI.Battle.View
                             vibrato: 8,
                             elasticity: 0.72f)
                         : DOVirtual.DelayedCall(0.01f, () => { }))
+                    .AppendInterval(0.08f / presentationSpeed)
                     .Append(_settlementDeltaText.DOFade(0f, 0.16f / presentationSpeed));
             }
 
