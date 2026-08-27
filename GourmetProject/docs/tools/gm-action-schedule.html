@@ -13,7 +13,7 @@
     .hint,small { color:var(--muted); }
     main { max-width:1500px; margin:auto; padding:22px 28px 48px; }
     .toolbar,.panel,.status,.week,.group { border:1px solid var(--line); border-radius:15px; background:rgba(34,26,22,.94); box-shadow:0 12px 34px rgba(0,0,0,.18); }
-    .toolbar { display:grid; grid-template-columns:repeat(7,minmax(120px,1fr)); gap:12px; align-items:end; padding:16px; }
+    .toolbar { display:grid; grid-template-columns:repeat(8,minmax(120px,1fr)); gap:12px; align-items:end; padding:16px; }
     label { display:grid; gap:5px; color:var(--muted); font-size:12px; }
     input,select,button { min-height:40px; border:1px solid var(--line); border-radius:9px; padding:8px 10px; color:var(--text); background:var(--panel2); font:inherit; }
     button { cursor:pointer; color:#27160b; border-color:#eea137; background:linear-gradient(#ffc36a,#e68d27); font-weight:700; }
@@ -42,6 +42,7 @@
     th,td { padding:8px 7px; border-bottom:1px solid rgba(75,57,47,.7); text-align:left; vertical-align:top; }
     th { white-space:nowrap; color:var(--muted); background:rgba(21,17,15,.5); }
     tr:last-child td { border-bottom:0; }
+    tr.selected-row td { background:rgba(105,211,160,.09); }
     code { color:#ffe1ad; }
     details { margin-top:10px; color:var(--muted); } summary { cursor:pointer; color:var(--accent); }
     pre { max-height:260px; overflow:auto; white-space:pre-wrap; padding:10px; border:1px solid var(--line); border-radius:9px; background:rgba(21,17,15,.6); }
@@ -59,7 +60,7 @@
 <body>
   <header>
     <h1>日常行动随机 GM</h1>
-    <p class="hint">按新规则展示行动数洗牌袋、逐卡类别/奖励上下限和本周累计次数；上保底达到后屏蔽，事件奖励固定为“未知”。</p>
+    <p class="hint">按新规则展示行动数洗牌袋、逐卡类别/奖励上下限和本周累计次数，并模拟玩家按奖励优先级进行 n 选 1。</p>
   </header>
   <main>
     <section class="toolbar">
@@ -67,6 +68,7 @@
       <label>每周生成组数<input id="groupsPerWeek" type="number" min="1" max="200" value="10"></label>
       <label>事件类别增幅（%）<input id="eventBonus" type="number" step="1" value="0"></label>
       <label>火热类别增幅（%）<input id="hotBonus" type="number" step="1" value="0"></label>
+      <label>玩家选择优先<select id="rewardPriority"><option value="0">随机选择</option><option value="5" selected>餐桌格优先</option><option value="3">装饰品优先</option><option value="6">强化箱优先</option><option value="7">调整单优先</option><option value="1">金币优先</option></select></label>
       <label>批量局数<select id="batchCount"><option>1000</option><option selected>10000</option><option>100000</option></select></label>
       <button id="reload" class="secondary">重新读取配置</button>
       <label class="wide">自动读取失败时选择 GourmetProject/Assets/StreamingAssets/Config 目录<input id="files" type="file" multiple webkitdirectory></label>
@@ -77,12 +79,12 @@
       <button id="batchTab">批量分布</button>
     </div>
     <section id="singlePanel" class="panel">
-      <div class="panel-head"><div><h2>逐组明细</h2><small>组内重复与累计上限屏蔽先于下保底；重跑等同新开局。</small></div><button id="runSingle">按当前参数重跑</button></div>
+      <div class="panel-head"><div><h2>逐组明细</h2><small>优先奖励出现时必选该奖励，否则在本组候选卡中随机选择；重跑等同新开局。</small></div><button id="runSingle">按当前参数重跑</button></div>
       <div id="singleStatus" class="status">配置加载后自动生成。</div>
       <div id="singleOutput"></div>
     </section>
     <section id="batchPanel" class="panel hidden">
-      <div class="panel-head"><div><h2>行动数、类别与奖励分布</h2><small>每局独立重置每周洗牌袋和累计计数。</small></div><button id="runBatch">开始统计</button></div>
+      <div class="panel-head"><div><h2>行动数、类别、奖励与玩家选择</h2><small>每局独立重置；“格子局数占比”按本局至少选择一次餐桌格计数，每局最多计 1 次。</small></div><button id="runBatch">开始统计</button></div>
       <div class="progress"><div id="progress"></div></div>
       <div id="batchStatus" class="status">选择局数后开始统计。</div>
       <div id="batchOutput"></div>
@@ -96,6 +98,7 @@
   const CATEGORY={Daily:1,Hot:2,Event:3};
   const CATEGORY_NAME={1:"日常",2:"火热",3:"事件"};
   const REWARD_NAME={1:"金币",3:"装饰品",5:"餐桌格",6:"强化箱",7:"调整单"};
+  const FRAGMENT_REWARD=5;
   const FOOD={Normal:0,Super:1,Feast:2};
   const EVENT_BEHAVIOR=0, FOOD_BEHAVIOR=1;
   const $=id=>document.getElementById(id);
@@ -175,19 +178,27 @@
     }
     return{serial:state.serial,choiceCount,bagBefore,bagAfter:[...state.bag],cards};
   }
-  function simulate(seed,groupsPerWeek,keepGroups=true){const master=seedOf(seed),weeks=[];for(let week=1;week<=4;week++){const state=newWeekState(week),groups=[];for(let g=0;g<groupsPerWeek;g++){const rng=new Rng(streamSeed(master,`action_w${week}_g${g+1}`)),group=generateGroup(state,rng);if(group&&keepGroups)groups.push(group);}weeks.push({state,groups});}return weeks;}
+  function selectGroupCard(group,rng,preferredReward){
+    const preferred=preferredReward?group.cards.filter(card=>card.reward===preferredReward):[];
+    const pool=preferred.length?preferred:group.cards;
+    if(!pool.length)return null;
+    group.selectedCard=pool[rng.range(0,pool.length)];
+    group.selectionReason=preferred.length?`${REWARD_NAME[preferredReward]}优先`:(preferredReward?`${REWARD_NAME[preferredReward]}未出现，随机选择`:"随机选择");
+    return group.selectedCard;
+  }
+  function simulate(seed,groupsPerWeek,keepGroups=true){const master=seedOf(seed),priority=+$('rewardPriority').value||0,weeks=[];for(let week=1;week<=4;week++){const state=newWeekState(week),groups=[];for(let g=0;g<groupsPerWeek;g++){const rng=new Rng(streamSeed(master,`action_w${week}_g${g+1}`)),group=generateGroup(state,rng);if(group){selectGroupCard(group,new Rng(streamSeed(master,`player_w${week}_g${g+1}`)),priority);if(keepGroups)groups.push(group);}}weeks.push({state,groups});}return weeks;}
   function countsText(map,names){return Array.from(map.entries()).sort((a,b)=>a[0]-b[0]).map(([k,v])=>`${names[k]||k} ${v}`).join(" · ")||"无";}
   function targetText(rule,week,index,bonus=0){const min=guarantee(rule,"minGuaranteeCounts",week,index,bonus),max=guarantee(rule,"maxGuaranteeCounts",week,index,bonus);return `${min===null?"—":min} / ${max===null?"—":max}`;}
   function diagHtml(){return diagnostics.length?`<details><summary>配置诊断 ${diagnostics.length} 条</summary><pre>${esc(diagnostics.join("\n"))}</pre></details>`:"";}
-  function renderSingle(){if(!tables)return;const groups=Math.max(1,Math.min(200,+$("groupsPerWeek").value||10)),weeks=simulate($("seed").value,groups,true);let html=diagHtml();for(const week of weeks){const s=week.state;html+=`<section class="week"><div class="week-head"><h3>第 ${week.state.week} 周</h3><div class="chips"><span class="chip">候选卡 ${s.candidate}</span><span class="chip">剩余袋 [${s.bag.join(", ")||"空"}]</span></div></div><div class="summary"><div class="card"><strong>${s.serial}</strong><small>生成组数</small></div><div class="card"><strong>${s.candidate}</strong><small>累计候选卡</small></div><div class="card"><strong>${esc(countsText(s.categoryCounts,CATEGORY_NAME))}</strong><small>类别累计</small></div><div class="card"><strong>${esc(countsText(s.rewardCounts,REWARD_NAME))}</strong><small>奖励累计</small></div></div>`;
-      for(const group of week.groups){html+=`<section class="group"><div class="group-head"><h3>组 ${group.serial} · ${group.choiceCount} 张</h3><div class="chips"><span class="chip">抽前 [${group.bagBefore.join(", ")}]</span><span class="chip active">抽后 [${group.bagAfter.join(", ")||"空"}]</span></div></div><div class="scroll"><table><thead><tr><th>卡/累计序号</th><th>类别阶段</th><th>类别计数→结果</th><th>类别目标 min/max</th><th>奖励阶段</th><th>奖励计数→结果</th><th>奖励目标 min/max</th><th>具体行动</th></tr></thead><tbody>`;
-        for(const card of group.cards){const cr=card.categoryPick.selected,rr=card.rewardPick?.selected;html+=`<tr><td>${card.slot} / ${card.index}</td><td><strong>${card.categoryPick.phase}</strong><br><small>${esc(card.categoryPick.pool.join(" · "))}</small></td><td>${CATEGORY_NAME[card.category]} ${card.categoryBefore}→${card.categoryBefore+1}</td><td>${targetText(cr,week.state.week,card.index-1,bonusFor(card.category))}</td><td>${card.rewardPick?`<strong>${card.rewardPick.phase}</strong><br><small>${esc(card.rewardPick.pool.join(" · "))}</small>`:"未知（不抽奖励）"}</td><td>${card.reward===null?"未知（不计数）":`${REWARD_NAME[card.reward]} ${card.rewardBefore}→${card.rewardBefore+1}`}</td><td>${rr?targetText(rr,week.state.week,card.index-1):"—"}</td><td><code>${esc(card.action.id)}</code></td></tr>`;}
+  function renderSingle(){if(!tables)return;const groups=Math.max(1,Math.min(200,+$("groupsPerWeek").value||10)),weeks=simulate($("seed").value,groups,true);let html=diagHtml();for(const week of weeks){const s=week.state,selected=week.groups.map(group=>group.selectedCard).filter(Boolean),selectedRewards=new Map();for(const card of selected)inc(selectedRewards,card.reward===null?"event":card.reward);const fragmentSelections=selected.filter(card=>card.reward===FRAGMENT_REWARD).length;html+=`<section class="week"><div class="week-head"><h3>第 ${week.state.week} 周</h3><div class="chips"><span class="chip">候选卡 ${s.candidate}</span><span class="chip">剩余袋 [${s.bag.join(", ")||"空"}]</span></div></div><div class="summary"><div class="card"><strong>${s.serial}</strong><small>生成组数</small></div><div class="card"><strong>${s.candidate}</strong><small>累计候选卡</small></div><div class="card"><strong>${fragmentSelections}</strong><small>选择餐桌格组数</small></div><div class="card"><strong>${esc(countsText(selectedRewards,{...REWARD_NAME,event:"事件"}))}</strong><small>玩家选择</small></div><div class="card"><strong>${esc(countsText(s.rewardCounts,REWARD_NAME))}</strong><small>候选奖励累计</small></div></div>`;
+      for(const group of week.groups){const chosen=group.selectedCard,chosenName=chosen?(chosen.reward===null?"事件":REWARD_NAME[chosen.reward]):"无";html+=`<section class="group"><div class="group-head"><h3>组 ${group.serial} · ${group.choiceCount} 张</h3><div class="chips"><span class="chip active">玩家选择：${esc(chosenName)}（${esc(group.selectionReason||"")}）</span><span class="chip">抽前 [${group.bagBefore.join(", ")}]</span><span class="chip">抽后 [${group.bagAfter.join(", ")||"空"}]</span></div></div><div class="scroll"><table><thead><tr><th>玩家选择</th><th>卡/累计序号</th><th>类别阶段</th><th>类别计数→结果</th><th>类别目标 min/max</th><th>奖励阶段</th><th>奖励计数→结果</th><th>奖励目标 min/max</th><th>具体行动</th></tr></thead><tbody>`;
+        for(const card of group.cards){const cr=card.categoryPick.selected,rr=card.rewardPick?.selected,isSelected=card===group.selectedCard;html+=`<tr class="${isSelected?"selected-row":""}"><td>${isSelected?"已选":"—"}</td><td>${card.slot} / ${card.index}</td><td><strong>${card.categoryPick.phase}</strong><br><small>${esc(card.categoryPick.pool.join(" · "))}</small></td><td>${CATEGORY_NAME[card.category]} ${card.categoryBefore}→${card.categoryBefore+1}</td><td>${targetText(cr,week.state.week,card.index-1,bonusFor(card.category))}</td><td>${card.rewardPick?`<strong>${card.rewardPick.phase}</strong><br><small>${esc(card.rewardPick.pool.join(" · "))}</small>`:"未知（不抽奖励）"}</td><td>${card.reward===null?"未知（不计数）":`${REWARD_NAME[card.reward]} ${card.rewardBefore}→${card.rewardBefore+1}`}</td><td>${rr?targetText(rr,week.state.week,card.index-1):"—"}</td><td><code>${esc(card.action.id)}</code></td></tr>`;}
         html+=`</tbody></table></div></section>`;}html+=`</section>`;}$("singleOutput").innerHTML=html;$("singleStatus").className="status ok";$("singleStatus").textContent=`已生成 4 周 × ${groups} 组。`;
   }
-  function emptyStats(){return Array.from({length:4},()=>({groups:0,cards:0,counts:new Map(),categories:new Map(),rewards:new Map()}));}
+  function emptyStats(){return Array.from({length:4},()=>({groups:0,cards:0,counts:new Map(),categories:new Map(),rewards:new Map(),selectedRewards:new Map(),fragmentRuns:0}));}
   function inc(map,key,n=1){map.set(key,(map.get(key)||0)+n);}
   function bars(map,names,total){const max=Math.max(1,...map.values());return `<div class="bars">${Array.from(map.entries()).sort((a,b)=>a[0]-b[0]).map(([key,value])=>`<div class="bar"><div><strong>${esc(names[key]||key)}</strong><br><small>${value.toLocaleString()} 次</small></div><div class="track"><div class="fill" style="width:${100*value/max}%"></div><div class="values">${total?`${(100*value/total).toFixed(2)}%`:"0%"}</div></div></div>`).join("")}</div>`;}
-  async function runBatch(){if(!tables)return;const runs=Math.max(1,+$("batchCount").value||1000),groups=Math.max(1,Math.min(200,+$("groupsPerWeek").value||10)),stats=emptyStats(),masterSeed=$("seed").value;$("runBatch").disabled=true;for(let runIndex=0;runIndex<runs;runIndex++){const weeks=simulate(`${masterSeed}#${runIndex}`,groups,true);weeks.forEach((week,i)=>{const st=stats[i];for(const group of week.groups){st.groups++;inc(st.counts,group.choiceCount);for(const card of group.cards){st.cards++;inc(st.categories,card.category);if(card.reward!==null)inc(st.rewards,card.reward);}}});if(runIndex%250===0){$("progress").style.width=`${100*runIndex/runs}%`;$("batchStatus").textContent=`已完成 ${runIndex.toLocaleString()} / ${runs.toLocaleString()} 局`;await new Promise(resolve=>setTimeout(resolve,0));}}$("progress").style.width="100%";$("batchStatus").className="status ok";$("batchStatus").textContent=`完成 ${runs.toLocaleString()} 局。`;$("batchOutput").innerHTML=stats.map((s,i)=>`<section class="week"><h3>第 ${i+1} 周</h3><div class="summary"><div class="card"><strong>${s.groups.toLocaleString()}</strong><small>行动组</small></div><div class="card"><strong>${s.cards.toLocaleString()}</strong><small>候选卡</small></div></div><h3>行动数</h3>${bars(s.counts,{2:"2 张",3:"3 张"},s.groups)}<h3 style="margin-top:14px">类别</h3>${bars(s.categories,CATEGORY_NAME,s.cards)}<h3 style="margin-top:14px">五种营业奖励</h3>${bars(s.rewards,REWARD_NAME,Array.from(s.rewards.values()).reduce((a,b)=>a+b,0))}</section>`).join("");$("runBatch").disabled=false;}
+  async function runBatch(){if(!tables)return;const runs=Math.max(1,+$("batchCount").value||1000),groups=Math.max(1,Math.min(200,+$("groupsPerWeek").value||10)),stats=emptyStats(),masterSeed=$("seed").value,priority=+$('rewardPriority').value||0;let fragmentRuns=0;$("runBatch").disabled=true;for(let runIndex=0;runIndex<runs;runIndex++){const weeks=simulate(`${masterSeed}#${runIndex}`,groups,true);let runHasFragment=false;weeks.forEach((week,i)=>{const st=stats[i];let weekHasFragment=false;for(const group of week.groups){st.groups++;inc(st.counts,group.choiceCount);for(const card of group.cards){st.cards++;inc(st.categories,card.category);if(card.reward!==null)inc(st.rewards,card.reward);}const selected=group.selectedCard;if(selected){inc(st.selectedRewards,selected.reward===null?"event":selected.reward);if(selected.reward===FRAGMENT_REWARD){weekHasFragment=true;runHasFragment=true;}}}if(weekHasFragment)st.fragmentRuns++;});if(runHasFragment)fragmentRuns++;if(runIndex%250===0){$("progress").style.width=`${100*runIndex/runs}%`;$("batchStatus").textContent=`已完成 ${runIndex.toLocaleString()} / ${runs.toLocaleString()} 局`;await new Promise(resolve=>setTimeout(resolve,0));}}$("progress").style.width="100%";$("batchStatus").className="status ok";$("batchStatus").textContent=`完成 ${runs.toLocaleString()} 局。`;const priorityName=priority?`${REWARD_NAME[priority]}优先`:"随机选择";const overall=`<section class="week"><div class="week-head"><h3>整局玩家选择统计</h3><span class="chip active">${esc(priorityName)}</span></div><div class="summary"><div class="card"><strong>${runs.toLocaleString()}</strong><small>总局数</small></div><div class="card"><strong>${fragmentRuns.toLocaleString()}</strong><small>选择过餐桌格的局数</small></div><div class="card"><strong>${(100*fragmentRuns/runs).toFixed(2)}%</strong><small>选择餐桌格的局数占比</small></div><div class="card"><strong>至少 1 次</strong><small>每局命中口径</small></div></div></section>`;$("batchOutput").innerHTML=overall+stats.map((s,i)=>`<section class="week"><h3>第 ${i+1} 周</h3><div class="summary"><div class="card"><strong>${s.groups.toLocaleString()}</strong><small>行动组</small></div><div class="card"><strong>${s.cards.toLocaleString()}</strong><small>候选卡</small></div><div class="card"><strong>${s.fragmentRuns.toLocaleString()} / ${runs.toLocaleString()}</strong><small>本周选择过餐桌格的局数</small></div><div class="card"><strong>${(100*s.fragmentRuns/runs).toFixed(2)}%</strong><small>本周格子局数占比</small></div></div><h3>玩家最终选择</h3>${bars(s.selectedRewards,{...REWARD_NAME,event:"事件"},s.groups)}<h3 style="margin-top:14px">行动数</h3>${bars(s.counts,{2:"2 张",3:"3 张"},s.groups)}<h3 style="margin-top:14px">候选类别</h3>${bars(s.categories,CATEGORY_NAME,s.cards)}<h3 style="margin-top:14px">候选五种营业奖励</h3>${bars(s.rewards,REWARD_NAME,Array.from(s.rewards.values()).reduce((a,b)=>a+b,0))}</section>`).join("");$("runBatch").disabled=false;}
   async function loadFetch(){const raw={};for(const name of FILES){const response=await fetch(`${DIR}${name}.json`,{cache:"no-store"});if(!response.ok)throw new Error(`${name}.json: HTTP ${response.status}`);raw[name]=await response.json();}tables=buildTables(raw);loaded();}
   function loaded(){const kind=diagnostics.length?"":" ok";$("configStatus").className=`status${kind}`;$("configStatus").innerHTML=`已读取 ${FILES.length} 张表。行动映射 ${tables.actionMap.size} 个，事件壳 ${tables.eventActions.length} 个。${diagnostics.length?` 有 ${diagnostics.length} 条配置诊断。`:" 配置校验通过。"}`;renderSingle();}
   function selectedFilePath(file){return String(file?.webkitRelativePath||file?.name||"").replaceAll("\\","/");}

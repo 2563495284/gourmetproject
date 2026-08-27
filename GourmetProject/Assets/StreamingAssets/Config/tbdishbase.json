@@ -406,7 +406,9 @@
     "category": "",
     "countAs": 1,
     "shapeRows": [
-      "XXX"
+      "X",
+      "X",
+      "X"
     ],
     "sortOrder": 300,
     "archetypeWeights": [
@@ -588,9 +590,7 @@
     "category": "",
     "countAs": 1,
     "shapeRows": [
-      "X",
-      "X",
-      "X"
+      "XXX"
     ],
     "sortOrder": 340,
     "archetypeWeights": [

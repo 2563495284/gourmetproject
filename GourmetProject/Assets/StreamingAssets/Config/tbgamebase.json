@@ -42,9 +42,9 @@
     "initialHeartCount": 3,
     "totalWeeks": 3,
     "slotFreeSpins": 1,
-    "slotPaidCost": 30,
+    "slotPaidCost": 40,
     "slotMaxSpins": 5,
-    "archetypePrimaryMinShare": 0.45,
+    "archetypePrimaryMinShare": 0.4,
     "archetypePrimaryMinLead": 0.1,
     "dishChoiceArchetypePityCount": 2
   }

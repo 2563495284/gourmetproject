@@ -653,7 +653,7 @@
     "kind": 1,
     "choiceCount": 1,
     "requiredPickCount": 1,
-    "weight": 35,
+    "weight": 30,
     "poolId": "",
     "dishHiddenOffset": [
       0,
@@ -680,7 +680,7 @@
     "kind": 5,
     "choiceCount": 3,
     "requiredPickCount": 1,
-    "weight": 15,
+    "weight": 5,
     "poolId": "pool_fragment",
     "dishHiddenOffset": [
       0,
@@ -707,7 +707,7 @@
     "kind": 4,
     "choiceCount": 1,
     "requiredPickCount": 1,
-    "weight": 5,
+    "weight": 10,
     "poolId": "pool_active",
     "dishHiddenOffset": [
       0,
@@ -734,7 +734,7 @@
     "kind": 3,
     "choiceCount": 2,
     "requiredPickCount": 1,
-    "weight": 5,
+    "weight": 10,
     "poolId": "pool_passive",
     "dishHiddenOffset": [
       0,
