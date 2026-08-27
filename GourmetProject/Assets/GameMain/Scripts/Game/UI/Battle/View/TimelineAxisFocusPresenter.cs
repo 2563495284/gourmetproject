@@ -25,6 +25,8 @@ namespace GourmetProject.Game.UI.Battle.View
         private const float PreExitDelay = 0.5f;
         private const float ExitDuration = 0.78f;
         private static readonly Color BackdropColor = new Color(0f, 0f, 0f, 0.76f);
+        private static readonly Color32 WeekTitleOutlineColor = new Color32(0, 0, 0, 220);
+        private const float WeekTitleOutlineWidth = 0.18f;
 
         private readonly RectTransform _axis;
         private readonly CanvasGroup _axisGroup;
@@ -322,6 +324,11 @@ namespace GourmetProject.Game.UI.Battle.View
             _weekTitleText.alignment = TextAlignmentOptions.Center;
             _weekTitleText.enableAutoSizing = false;
             _weekTitleText.fontSize = 56f;
+            _weekTitleText.fontStyle = FontStyles.Normal;
+            _weekTitleText.fontWeight = FontWeight.Regular;
+            _weekTitleText.color = Color.white;
+            _weekTitleText.outlineColor = WeekTitleOutlineColor;
+            _weekTitleText.outlineWidth = WeekTitleOutlineWidth;
             _weekTitleText.overflowMode = TextOverflowModes.Overflow;
             _weekTitleText.raycastTarget = false;
 
@@ -355,6 +362,11 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _weekTitleText.text = $"第{Mathf.Max(1, weekIndex)}周";
+            _weekTitleText.fontStyle = FontStyles.Normal;
+            _weekTitleText.fontWeight = FontWeight.Regular;
+            _weekTitleText.color = Color.white;
+            _weekTitleText.outlineColor = WeekTitleOutlineColor;
+            _weekTitleText.outlineWidth = WeekTitleOutlineWidth;
             _weekTitleGroup.alpha = 0f;
             _weekTitleRect.localScale = Vector3.one * WeekTitleEnterScale;
             _weekTitleText.gameObject.SetActive(true);

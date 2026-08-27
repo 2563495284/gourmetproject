@@ -75,7 +75,15 @@ namespace GourmetProject.Tests.PlayMode
                 Transform weekTitle = rig.Root.transform.Find("TimelineAxisWeekLabel");
                 Assert.That(weekTitle, Is.Not.Null);
                 Assert.That(weekTitle.gameObject.activeSelf, Is.True);
-                Assert.That(weekTitle.GetComponent<TMP_Text>().text, Is.EqualTo("第2周"));
+                TMP_Text weekTitleText = weekTitle.GetComponent<TMP_Text>();
+                Assert.That(weekTitleText.text, Is.EqualTo("第2周"));
+                Assert.That(
+                    weekTitleText.color,
+                    Is.EqualTo(Color.white).Using(ColorEqualityComparer.Instance));
+                Assert.That(weekTitleText.fontStyle, Is.EqualTo(FontStyles.Normal));
+                Assert.That(weekTitleText.fontWeight, Is.EqualTo(FontWeight.Regular));
+                Assert.That(weekTitleText.outlineColor, Is.EqualTo(new Color32(0, 0, 0, 220)));
+                Assert.That(weekTitleText.outlineWidth, Is.EqualTo(0.18f).Within(0.001f));
 
                 yield return new WaitForSecondsRealtime(0.22f);
                 CanvasGroup weekTitleGroup = weekTitle.GetComponent<CanvasGroup>();
@@ -87,13 +95,13 @@ namespace GourmetProject.Tests.PlayMode
                 Assert.That(weekTitleGroup.alpha, Is.EqualTo(1f).Within(0.02f));
                 Assert.That(rig.Group.alpha, Is.Zero.Within(0.001f));
 
-                yield return new WaitForSecondsRealtime(0.20f);
+                yield return new WaitForSecondsRealtime(0.10f);
                 Assert.That(weekTitle.gameObject.activeSelf, Is.True);
                 Assert.That(weekTitleGroup.alpha, Is.GreaterThan(0f));
                 Assert.That(weekTitleGroup.alpha, Is.LessThan(1f));
                 Assert.That(rig.Group.alpha, Is.Zero.Within(0.001f));
 
-                yield return new WaitForSecondsRealtime(0.20f);
+                yield return new WaitForSecondsRealtime(0.30f);
                 Assert.That(weekTitle.gameObject.activeSelf, Is.False);
                 Assert.That(rig.Group.alpha, Is.GreaterThan(0f));
                 Assert.That(rig.Group.alpha, Is.LessThan(rig.RestAlpha));
@@ -250,6 +258,7 @@ namespace GourmetProject.Tests.PlayMode
             styleSourceObject.transform.SetParent(axis, false);
             TMP_Text styleSource = styleSourceObject.GetComponent<TMP_Text>();
             styleSource.fontSize = 20f;
+            styleSource.fontStyle = FontStyles.Bold;
             styleSource.color = Color.white;
             styleSource.raycastTarget = false;
             var after = new GameObject("After", typeof(RectTransform));

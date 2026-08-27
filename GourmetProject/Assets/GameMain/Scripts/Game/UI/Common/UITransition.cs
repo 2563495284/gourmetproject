@@ -28,6 +28,7 @@ namespace GourmetProject.Game.UI.Common
     internal sealed class RewardFormTransitionSettings
     {
         [Min(0f)] public float BackgroundFade = 0.12f;
+        [Min(0f)] public float HandoffEdgeFade = 0.18f;
         [Min(0f)] public float CloseDuration = 0.10f;
         [Min(0f)] public float InitialRowsDelay = 0.02f;
         public StaggerTransitionSettings Rows = new StaggerTransitionSettings();

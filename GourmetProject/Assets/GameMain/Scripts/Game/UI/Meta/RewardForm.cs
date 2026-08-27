@@ -109,6 +109,7 @@ namespace GourmetProject.Game.UI.Meta
         [Header("Form Transition")]
         [SerializeField] private CanvasGroup _transitionGroup;
         [SerializeField] private RectTransform _transitionPanel;
+        [SerializeField] private CanvasGroup _handoffEdgeGroup;
         [SerializeField] private RewardFormTransitionSettings _transitionSettings = new RewardFormTransitionSettings();
 
         private const int NoExpandedChoicePackGroup = int.MinValue;
@@ -322,6 +323,7 @@ namespace GourmetProject.Game.UI.Meta
             HideTips();
             _transitionSequence?.Kill();
             _transitionSequence = null;
+            HideHandoffEdgeShade();
             _rewardRowsSequence?.Kill();
             _rewardRowsSequence = null;
             _hasBuiltRewardRows = false;
@@ -552,6 +554,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             _transitionSequence?.Kill();
+            HideHandoffEdgeShade();
             _transitionSequence = DOTween.Sequence().SetUpdate(true).SetTarget(this);
             RewardFormTransitionSettings settings = TransitionSettings;
             if (_transitionPanelGroup != null)
@@ -588,6 +591,7 @@ namespace GourmetProject.Game.UI.Meta
                 _transitionGroup,
                 _transitionPanelGroup,
                 IsHandoffArrival);
+            PrepareHandoffEdgeShade();
 
             if (_transitionPanel != null)
             {
@@ -632,10 +636,30 @@ namespace GourmetProject.Game.UI.Meta
                 {
                     _transitionSequence.Append(panelFade);
                 }
+
+                hasTransition = true;
+            }
+
+            if (_handoffEdgeGroup != null
+                && IsHandoffArrival
+                && _handoffEdgeGroup.gameObject.activeSelf)
+            {
+                Tween edgeFade = _handoffEdgeGroup
+                    .DOFade(0f, settings.HandoffEdgeFade)
+                    .SetEase(Ease.InOutSine);
+                if (hasTransition)
+                {
+                    _transitionSequence.Join(edgeFade);
+                }
+                else
+                {
+                    _transitionSequence.Append(edgeFade);
+                }
             }
 
             _transitionSequence.OnComplete(() =>
             {
+                HideHandoffEdgeShade();
                 if (_transitionGroup != null)
                 {
                     _transitionGroup.interactable = true;
@@ -702,6 +726,7 @@ namespace GourmetProject.Game.UI.Meta
                 : 1f;
             _transitionSequence?.Kill();
             _transitionSequence = null;
+            HideHandoffEdgeShade();
             _rewardRowsSequence?.Kill();
             _rewardRowsSequence = null;
             HideTips();
@@ -1063,6 +1088,7 @@ namespace GourmetProject.Game.UI.Meta
                 : 1f;
             _transitionSequence?.Kill();
             _transitionSequence = null;
+            HideHandoffEdgeShade();
             _rewardRowsSequence?.Kill();
             _rewardRowsSequence = null;
             HideTips();
@@ -1073,6 +1099,33 @@ namespace GourmetProject.Game.UI.Meta
                 _transitionGroup.interactable = false;
                 _transitionGroup.blocksRaycasts = false;
             }
+        }
+
+        private void PrepareHandoffEdgeShade()
+        {
+            if (_handoffEdgeGroup == null)
+            {
+                return;
+            }
+
+            bool visible = IsHandoffArrival;
+            _handoffEdgeGroup.gameObject.SetActive(visible);
+            _handoffEdgeGroup.alpha = visible ? 1f : 0f;
+            _handoffEdgeGroup.interactable = false;
+            _handoffEdgeGroup.blocksRaycasts = visible;
+        }
+
+        private void HideHandoffEdgeShade()
+        {
+            if (_handoffEdgeGroup == null)
+            {
+                return;
+            }
+
+            _handoffEdgeGroup.alpha = 0f;
+            _handoffEdgeGroup.interactable = false;
+            _handoffEdgeGroup.blocksRaycasts = false;
+            _handoffEdgeGroup.gameObject.SetActive(false);
         }
 
         internal void ResumeFromRewardSubflow()
