@@ -61,6 +61,23 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void RepeatedSolver_PathologicalSearchStopsAtHardNodeLimit()
+        {
+            DishDef lShape = CreateDish("large_l_shape", new[] { "X.", "XX" });
+
+            RepeatedDishPlacementResult result =
+                RepeatedDishPlacementSolver.SolveWithDiagnostics(
+                    new DiningTable(12, 12),
+                    lShape);
+
+            Assert.That(result.Truncated, Is.True);
+            Assert.That(result.SearchNodes,
+                Is.EqualTo(RepeatedDishPlacementSolver.SearchNodeLimit));
+            Assert.That(result.Placements, Has.Count.GreaterThan(0));
+            AssertPlacementsDoNotOverlap(result.Placements);
+        }
+
+        [Test]
         public void FillSpecified_DirectlyGeneratesConfiguredDishWithoutServing()
         {
             DishDef target = CreateDish(
@@ -212,6 +229,22 @@ namespace GourmetProject.Tests.EditMode
                 baseWeight: 1f,
                 skillIds ?? Array.Empty<string>(),
                 flavorId);
+
+        private static void AssertPlacementsDoNotOverlap(
+            IEnumerable<Placement> placements)
+        {
+            var occupied = new HashSet<GridPos>();
+            foreach (Placement placement in placements)
+            {
+                foreach (GridPos local in placement.Orientation.Cells)
+                {
+                    GridPos cell = local.Offset(
+                        placement.Origin.X,
+                        placement.Origin.Y);
+                    Assert.That(occupied.Add(cell), Is.True, $"重复占用了格子 {cell}");
+                }
+            }
+        }
     }
 }
 #endif
