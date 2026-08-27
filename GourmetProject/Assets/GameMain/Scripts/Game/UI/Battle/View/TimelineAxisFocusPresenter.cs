@@ -1,5 +1,6 @@
 using System;
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,6 +14,11 @@ namespace GourmetProject.Game.UI.Battle.View
         private const float EnterDuration = 0.64f;
         private const float OldContentExitDuration = 0.42f;
         private const float OldContentExitScale = 0.82f;
+        private const float WeekTitleEnterDuration = 0.2f;
+        private const float WeekTitleHoldDuration = 0.6f;
+        private const float WeekTitleExitDuration = 0.2f;
+        private const float WeekTitleEnterScale = 0.9f;
+        private const float WeekTitleExitScale = 1.05f;
         private const float HiddenSwapHoldDuration = 0.08f;
         private const float NewContentEnterDuration = 0.56f;
         private const float NewContentEnterScale = 1.08f;
@@ -22,8 +28,12 @@ namespace GourmetProject.Game.UI.Battle.View
 
         private readonly RectTransform _axis;
         private readonly CanvasGroup _axisGroup;
+        private readonly TMP_Text _weekTitleStyleSource;
         private RectTransform _backdropRect;
         private CanvasGroup _backdropGroup;
+        private RectTransform _weekTitleRect;
+        private TMP_Text _weekTitleText;
+        private CanvasGroup _weekTitleGroup;
         private Tween _transition;
         private Vector2 _restPosition;
         private Vector3 _restScale;
@@ -33,10 +43,14 @@ namespace GourmetProject.Game.UI.Battle.View
         private bool _restBlocksRaycasts;
         private bool _active;
 
-        public TimelineAxisFocusPresenter(RectTransform axis, CanvasGroup axisGroup)
+        public TimelineAxisFocusPresenter(
+            RectTransform axis,
+            CanvasGroup axisGroup,
+            TMP_Text weekTitleStyleSource = null)
         {
             _axis = axis;
             _axisGroup = axisGroup;
+            _weekTitleStyleSource = weekTitleStyleSource;
         }
 
         public bool CanPresent =>
@@ -54,6 +68,7 @@ namespace GourmetProject.Game.UI.Battle.View
 
             Cancel();
             EnsureBackdrop();
+            EnsureWeekTitle();
             if (_backdropRect == null || _backdropGroup == null)
             {
                 onComplete?.Invoke();
@@ -94,9 +109,9 @@ namespace GourmetProject.Game.UI.Battle.View
 
         /// <summary>
         /// 在时间轴保持居中的状态下，把旧内容完整退场；只有完全透明后才替换内容，
-        /// 再把新内容作为一整条时间轴淡入。替换期间不触碰时间轴内部的日期或游标数值。
+        /// 显示新周标题，再把新内容作为一整条时间轴淡入。
         /// </summary>
-        public void SwapContent(Action replaceContent, Action onComplete)
+        public void SwapWeekContent(int weekIndex, Action replaceContent, Action onComplete)
         {
             if (!_active || !CanPresent)
             {
@@ -106,6 +121,8 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _transition?.Kill(complete: false);
+            HideWeekTitle();
+            bool showWeekTitle = EnsureWeekTitle();
             Vector3 oldExitScale = ScaledRest(OldContentExitScale);
             Vector3 newEnterScale = ScaledRest(NewContentEnterScale);
             Vector3 newContentScale = newEnterScale;
@@ -132,7 +149,35 @@ namespace GourmetProject.Game.UI.Battle.View
                 {
                     _axisGroup.alpha = 0f;
                 }
+
+                if (showWeekTitle)
+                {
+                    ShowWeekTitle(weekIndex);
+                }
             });
+
+            if (showWeekTitle)
+            {
+                sequence.Append(_weekTitleGroup
+                    .DOFade(1f, WeekTitleEnterDuration)
+                    .SetEase(Ease.OutCubic));
+                sequence.Join(_weekTitleRect
+                    .DOScale(Vector3.one, WeekTitleEnterDuration)
+                    .SetEase(Ease.OutBack));
+                sequence.AppendInterval(WeekTitleHoldDuration);
+                sequence.Append(_weekTitleGroup
+                    .DOFade(0f, WeekTitleExitDuration)
+                    .SetEase(Ease.InCubic));
+                sequence.Join(_weekTitleRect
+                    .DOScale(Vector3.one * WeekTitleExitScale, WeekTitleExitDuration)
+                    .SetEase(Ease.InCubic));
+                sequence.AppendCallback(() =>
+                {
+                    HideWeekTitle();
+                    _axis.SetAsLastSibling();
+                });
+            }
+
             // 至少保留一个完整渲染帧的全透明状态，避免替换后同帧推进导致新轴首帧已经可见。
             sequence.AppendInterval(HiddenSwapHoldDuration);
             sequence.Append(DOTween.To(
@@ -175,6 +220,8 @@ namespace GourmetProject.Game.UI.Battle.View
             }
 
             _transition?.Kill(complete: false);
+            HideWeekTitle();
+            _axis.SetAsLastSibling();
             _transition = DOTween.Sequence()
                 .SetUpdate(true)
                 .SetTarget(_axis)
@@ -193,6 +240,7 @@ namespace GourmetProject.Game.UI.Battle.View
         {
             _transition?.Kill(complete: false);
             _transition = null;
+            HideWeekTitle();
             if (_active)
             {
                 RestoreImmediately();
@@ -243,9 +291,101 @@ namespace GourmetProject.Game.UI.Battle.View
             backdrop.SetActive(false);
         }
 
+        private bool EnsureWeekTitle()
+        {
+            if (_axis == null || !(_axis.parent is RectTransform parent))
+            {
+                return false;
+            }
+
+            if (_weekTitleRect != null && _weekTitleText != null && _weekTitleGroup != null)
+            {
+                if (_weekTitleRect.parent != parent)
+                {
+                    _weekTitleRect.SetParent(parent, false);
+                }
+
+                return true;
+            }
+
+            if (_weekTitleStyleSource == null)
+            {
+                return false;
+            }
+
+            _weekTitleText = UnityEngine.Object.Instantiate(
+                _weekTitleStyleSource,
+                parent,
+                false);
+            _weekTitleText.name = "TimelineAxisWeekLabel";
+            _weekTitleText.text = string.Empty;
+            _weekTitleText.alignment = TextAlignmentOptions.Center;
+            _weekTitleText.enableAutoSizing = false;
+            _weekTitleText.fontSize = 56f;
+            _weekTitleText.overflowMode = TextOverflowModes.Overflow;
+            _weekTitleText.raycastTarget = false;
+
+            _weekTitleRect = _weekTitleText.rectTransform;
+            _weekTitleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            _weekTitleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            _weekTitleRect.pivot = new Vector2(0.5f, 0.5f);
+            _weekTitleRect.anchoredPosition = Vector2.zero;
+            _weekTitleRect.sizeDelta = new Vector2(480f, 120f);
+            _weekTitleRect.localRotation = Quaternion.identity;
+            _weekTitleRect.localScale = Vector3.one;
+
+            _weekTitleGroup = _weekTitleText.GetComponent<CanvasGroup>();
+            if (_weekTitleGroup == null)
+            {
+                _weekTitleGroup = _weekTitleText.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            _weekTitleGroup.alpha = 0f;
+            _weekTitleGroup.interactable = false;
+            _weekTitleGroup.blocksRaycasts = false;
+            _weekTitleText.gameObject.SetActive(false);
+            return true;
+        }
+
+        private void ShowWeekTitle(int weekIndex)
+        {
+            if (_weekTitleText == null || _weekTitleRect == null || _weekTitleGroup == null)
+            {
+                return;
+            }
+
+            _weekTitleText.text = $"第{Mathf.Max(1, weekIndex)}周";
+            _weekTitleGroup.alpha = 0f;
+            _weekTitleRect.localScale = Vector3.one * WeekTitleEnterScale;
+            _weekTitleText.gameObject.SetActive(true);
+            _weekTitleRect.SetAsLastSibling();
+        }
+
+        private void HideWeekTitle()
+        {
+            if (_weekTitleGroup != null)
+            {
+                _weekTitleGroup.alpha = 0f;
+                _weekTitleGroup.interactable = false;
+                _weekTitleGroup.blocksRaycasts = false;
+            }
+
+            if (_weekTitleRect != null)
+            {
+                _weekTitleRect.localScale = Vector3.one;
+            }
+
+            if (_weekTitleText != null)
+            {
+                _weekTitleText.text = string.Empty;
+                _weekTitleText.gameObject.SetActive(false);
+            }
+        }
+
         private void RestoreImmediately()
         {
             _active = false;
+            HideWeekTitle();
             if (_axis != null)
             {
                 _axis.anchoredPosition = _restPosition;

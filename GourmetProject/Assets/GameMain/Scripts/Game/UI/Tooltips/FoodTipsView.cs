@@ -630,33 +630,22 @@ namespace GourmetProject.Game.UI.Tooltips
             float maxX = bounds.xMax - _screenPadding;
             float minY = bounds.yMin + _screenPadding;
             float maxY = bounds.yMax - _screenPadding;
-            Vector2 offset = Vector2.zero;
-
-            if (visibleRect.width > maxX - minX)
-            {
-                offset.x = bounds.center.x - visibleRect.center.x;
-            }
-            else if (visibleRect.xMax > maxX)
-            {
-                offset.x = maxX - visibleRect.xMax;
-            }
-            else if (visibleRect.xMin < minX)
-            {
-                offset.x = minX - visibleRect.xMin;
-            }
-
-            if (visibleRect.height > maxY - minY)
-            {
-                offset.y = bounds.center.y - visibleRect.center.y;
-            }
-            else if (visibleRect.yMax > maxY)
-            {
-                offset.y = maxY - visibleRect.yMax;
-            }
-            else if (visibleRect.yMin < minY)
-            {
-                offset.y = minY - visibleRect.yMin;
-            }
+            Rect summaryBounds = RectTransformToLocalRect(summaryRect, canvasRect);
+            Vector2 offset = new Vector2(
+                BoundsOffsetPreservingAnchor(
+                    visibleRect.xMin,
+                    visibleRect.xMax,
+                    summaryBounds.xMin,
+                    summaryBounds.xMax,
+                    minX,
+                    maxX),
+                BoundsOffsetPreservingAnchor(
+                    visibleRect.yMin,
+                    visibleRect.yMax,
+                    summaryBounds.yMin,
+                    summaryBounds.yMax,
+                    minY,
+                    maxY));
 
             for (int i = 0; i < group.Length; i++)
             {
@@ -711,7 +700,8 @@ namespace GourmetProject.Game.UI.Tooltips
             Vector2 bestOffset = BestSeparationOffset(
                 groupBounds,
                 obstacles,
-                InsetBounds(canvasRect.rect));
+                InsetBounds(canvasRect.rect),
+                preserveOversizedAxes: true);
             if (bestOffset.sqrMagnitude <= 0.01f)
             {
                 return;
@@ -730,7 +720,8 @@ namespace GourmetProject.Game.UI.Tooltips
         private static Vector2 BestSeparationOffset(
             Rect movingBounds,
             IReadOnlyList<Rect> obstacles,
-            Rect allowedBounds)
+            Rect allowedBounds,
+            bool preserveOversizedAxes = false)
         {
             var candidates = new List<Vector2>(5) { Vector2.zero };
             float moveRight = 0f;
@@ -775,7 +766,11 @@ namespace GourmetProject.Game.UI.Tooltips
             float bestScore = float.MaxValue;
             for (int i = 0; i < candidates.Count; i++)
             {
-                Vector2 offset = ClampGroupOffset(candidates[i], movingBounds, allowedBounds);
+                Vector2 offset = ClampGroupOffset(
+                    candidates[i],
+                    movingBounds,
+                    allowedBounds,
+                    preserveOversizedAxes);
                 Rect moved = Offset(movingBounds, offset);
                 float overlap = 0f;
                 for (int j = 0; j < obstacles.Count; j++)
@@ -860,11 +855,18 @@ namespace GourmetProject.Game.UI.Tooltips
             return rect;
         }
 
-        private static Vector2 ClampGroupOffset(Vector2 offset, Rect group, Rect bounds)
+        private static Vector2 ClampGroupOffset(
+            Vector2 offset,
+            Rect group,
+            Rect bounds,
+            bool preserveOversizedAxes)
         {
             if (group.width > bounds.width)
             {
-                offset.x = bounds.center.x - group.center.x;
+                if (!preserveOversizedAxes)
+                {
+                    offset.x = bounds.center.x - group.center.x;
+                }
             }
             else
             {
@@ -873,7 +875,10 @@ namespace GourmetProject.Game.UI.Tooltips
 
             if (group.height > bounds.height)
             {
-                offset.y = bounds.center.y - group.center.y;
+                if (!preserveOversizedAxes)
+                {
+                    offset.y = bounds.center.y - group.center.y;
+                }
             }
             else
             {
@@ -881,6 +886,50 @@ namespace GourmetProject.Game.UI.Tooltips
             }
 
             return offset;
+        }
+
+        private static float BoundsOffsetPreservingAnchor(
+            float visibleMin,
+            float visibleMax,
+            float anchorMin,
+            float anchorMax,
+            float allowedMin,
+            float allowedMax)
+        {
+            float allowedSize = allowedMax - allowedMin;
+            if (visibleMax - visibleMin > allowedSize)
+            {
+                // A long attached list cannot fit on this axis. Keep the summary next to the
+                // hovered food and only bring the summary itself back on-screen when necessary.
+                if (anchorMax - anchorMin > allowedSize)
+                {
+                    return (allowedMin + allowedMax - anchorMin - anchorMax) * 0.5f;
+                }
+
+                if (anchorMax > allowedMax)
+                {
+                    return allowedMax - anchorMax;
+                }
+
+                if (anchorMin < allowedMin)
+                {
+                    return allowedMin - anchorMin;
+                }
+
+                return 0f;
+            }
+
+            if (visibleMax > allowedMax)
+            {
+                return allowedMax - visibleMax;
+            }
+
+            if (visibleMin < allowedMin)
+            {
+                return allowedMin - visibleMin;
+            }
+
+            return 0f;
         }
 
         private static float OverlapArea(Rect a, Rect b)

@@ -22,7 +22,7 @@ namespace GourmetProject.Tests.EditMode
                 int completions = 0;
 
                 Assert.That(presenter.CanPresent, Is.False);
-                presenter.SwapContent(() => replacements++, () => completions++);
+                presenter.SwapWeekContent(2, () => replacements++, () => completions++);
 
                 Assert.That(replacements, Is.EqualTo(1));
                 Assert.That(completions, Is.EqualTo(1));

@@ -1,6 +1,7 @@
 using System.Collections;
 using GourmetProject.Game.UI.Battle.View;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.TestTools;
 using UnityEngine.TestTools.Utils;
@@ -10,7 +11,7 @@ namespace GourmetProject.Tests.PlayMode
     public sealed class TimelineAxisWeekTransitionPlayModeTests
     {
         [UnityTest]
-        public IEnumerator SwapContent_CentersThenReplacesOnlyWhileHidden_AndRestoresEverything()
+        public IEnumerator SwapWeekContent_ShowsNewWeekBetweenHiddenOldAndNewAxes_AndRestoresEverything()
         {
             TestRig rig = CreateRig();
             try
@@ -37,7 +38,8 @@ namespace GourmetProject.Tests.PlayMode
                     rig.Axis.anchoredPosition.y,
                     Is.EqualTo(TimelineAxisFocusPresenter.CenteredAnchoredY(rig.Axis)).Within(1f));
 
-                rig.Presenter.SwapContent(
+                rig.Presenter.SwapWeekContent(
+                    2,
                     () =>
                     {
                         replaced++;
@@ -70,13 +72,35 @@ namespace GourmetProject.Tests.PlayMode
                 Assert.That(rig.Axis.localScale.x, Is.EqualTo(rig.RestScale.x * 1.08f).Within(0.01f));
                 Assert.That(rig.Axis.localScale.y, Is.EqualTo(rig.RestScale.y * 1.08f).Within(0.01f));
 
-                yield return new WaitForSecondsRealtime(0.16f);
+                Transform weekTitle = rig.Root.transform.Find("TimelineAxisWeekLabel");
+                Assert.That(weekTitle, Is.Not.Null);
+                Assert.That(weekTitle.gameObject.activeSelf, Is.True);
+                Assert.That(weekTitle.GetComponent<TMP_Text>().text, Is.EqualTo("第2周"));
+
+                yield return new WaitForSecondsRealtime(0.22f);
+                CanvasGroup weekTitleGroup = weekTitle.GetComponent<CanvasGroup>();
+                Assert.That(weekTitleGroup.alpha, Is.EqualTo(1f).Within(0.02f));
+                Assert.That(rig.Group.alpha, Is.Zero.Within(0.001f));
+
+                yield return new WaitForSecondsRealtime(0.46f);
+                Assert.That(weekTitle.gameObject.activeSelf, Is.True);
+                Assert.That(weekTitleGroup.alpha, Is.EqualTo(1f).Within(0.02f));
+                Assert.That(rig.Group.alpha, Is.Zero.Within(0.001f));
+
+                yield return new WaitForSecondsRealtime(0.20f);
+                Assert.That(weekTitle.gameObject.activeSelf, Is.True);
+                Assert.That(weekTitleGroup.alpha, Is.GreaterThan(0f));
+                Assert.That(weekTitleGroup.alpha, Is.LessThan(1f));
+                Assert.That(rig.Group.alpha, Is.Zero.Within(0.001f));
+
+                yield return new WaitForSecondsRealtime(0.20f);
+                Assert.That(weekTitle.gameObject.activeSelf, Is.False);
                 Assert.That(rig.Group.alpha, Is.GreaterThan(0f));
                 Assert.That(rig.Group.alpha, Is.LessThan(rig.RestAlpha));
                 Assert.That(rig.Axis.localScale.x, Is.GreaterThan(rig.RestScale.x));
                 Assert.That(rig.Axis.localScale.y, Is.GreaterThan(rig.RestScale.y));
 
-                yield return new WaitForSecondsRealtime(0.52f);
+                yield return new WaitForSecondsRealtime(0.60f);
                 Assert.That(contentEntered, Is.EqualTo(1));
                 Assert.That(rig.Group.alpha, Is.EqualTo(rig.RestAlpha).Within(0.01f));
                 Assert.That(rig.Axis.localScale, Is.EqualTo(rig.RestScale).Using(Vector3ComparerWithEqualsOperator.Instance));
@@ -118,7 +142,7 @@ namespace GourmetProject.Tests.PlayMode
 
                 rig.Presenter.Enter(null);
                 yield return new WaitForSecondsRealtime(0.70f);
-                rig.Presenter.SwapContent(() => replacements++, () => completions++);
+                rig.Presenter.SwapWeekContent(2, () => replacements++, () => completions++);
                 yield return new WaitForSecondsRealtime(0.16f);
 
                 rig.Presenter.Cancel();
@@ -135,9 +159,59 @@ namespace GourmetProject.Tests.PlayMode
                 Transform backdrop = rig.Root.transform.Find("TimelineAxisFocusBackdrop");
                 Assert.That(backdrop, Is.Not.Null);
                 Assert.That(backdrop.gameObject.activeSelf, Is.False);
+                Transform weekTitle = rig.Root.transform.Find("TimelineAxisWeekLabel");
+                Assert.That(weekTitle, Is.Not.Null);
+                Assert.That(weekTitle.gameObject.activeSelf, Is.False);
 
                 yield return new WaitForSecondsRealtime(0.50f);
                 Assert.That(replacements, Is.Zero);
+                Assert.That(completions, Is.Zero);
+            }
+            finally
+            {
+                rig.Presenter.Cancel();
+                Object.DestroyImmediate(rig.Root);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator CancelDuringWeekTitleHold_HidesTitleAndRestoresAxisBackdropAndInput()
+        {
+            TestRig rig = CreateRig();
+            try
+            {
+                int replacements = 0;
+                int completions = 0;
+
+                rig.Presenter.Enter(null);
+                yield return new WaitForSecondsRealtime(0.70f);
+                rig.Presenter.SwapWeekContent(3, () => replacements++, () => completions++);
+                yield return new WaitForSecondsRealtime(0.75f);
+
+                Transform weekTitle = rig.Root.transform.Find("TimelineAxisWeekLabel");
+                Assert.That(replacements, Is.EqualTo(1));
+                Assert.That(completions, Is.Zero);
+                Assert.That(weekTitle, Is.Not.Null);
+                Assert.That(weekTitle.gameObject.activeSelf, Is.True);
+                Assert.That(weekTitle.GetComponent<TMP_Text>().text, Is.EqualTo("第3周"));
+                Assert.That(rig.Group.alpha, Is.Zero.Within(0.001f));
+
+                rig.Presenter.Cancel();
+
+                Assert.That(completions, Is.Zero);
+                Assert.That(weekTitle.gameObject.activeSelf, Is.False);
+                Assert.That(rig.Axis.anchoredPosition, Is.EqualTo(rig.RestPosition).Using(Vector2ComparerWithEqualsOperator.Instance));
+                Assert.That(rig.Axis.localScale, Is.EqualTo(rig.RestScale).Using(Vector3ComparerWithEqualsOperator.Instance));
+                Assert.That(rig.Group.alpha, Is.EqualTo(rig.RestAlpha).Within(0.001f));
+                Assert.That(rig.Group.interactable, Is.True);
+                Assert.That(rig.Group.blocksRaycasts, Is.True);
+                Assert.That(rig.Axis.GetSiblingIndex(), Is.EqualTo(rig.RestSiblingIndex));
+
+                Transform backdrop = rig.Root.transform.Find("TimelineAxisFocusBackdrop");
+                Assert.That(backdrop, Is.Not.Null);
+                Assert.That(backdrop.gameObject.activeSelf, Is.False);
+
+                yield return new WaitForSecondsRealtime(0.60f);
                 Assert.That(completions, Is.Zero);
             }
             finally
@@ -168,6 +242,16 @@ namespace GourmetProject.Tests.PlayMode
             group.alpha = 0.86f;
             group.interactable = true;
             group.blocksRaycasts = true;
+            var styleSourceObject = new GameObject(
+                "CurrentDayText",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+            styleSourceObject.transform.SetParent(axis, false);
+            TMP_Text styleSource = styleSourceObject.GetComponent<TMP_Text>();
+            styleSource.fontSize = 20f;
+            styleSource.color = Color.white;
+            styleSource.raycastTarget = false;
             var after = new GameObject("After", typeof(RectTransform));
             after.transform.SetParent(rootRect, false);
 
@@ -176,7 +260,7 @@ namespace GourmetProject.Tests.PlayMode
                 Root = root,
                 Axis = axis,
                 Group = group,
-                Presenter = new TimelineAxisFocusPresenter(axis, group),
+                Presenter = new TimelineAxisFocusPresenter(axis, group, styleSource),
                 RestPosition = axis.anchoredPosition,
                 RestScale = axis.localScale,
                 RestAlpha = group.alpha,

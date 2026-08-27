@@ -317,7 +317,8 @@ namespace GourmetProject.Game.UI.Battle
                 () => _tips != null ? _tips.Timeline : null);
             _timelineAxisFocus = new TimelineAxisFocusPresenter(
                 _timelineAxis != null ? _timelineAxis.transform as RectTransform : null,
-                ResolveActionAxisGroup());
+                ResolveActionAxisGroup(),
+                _timelineAxis != null ? _timelineAxis.WeekTransitionTextStyle : null);
             _deck?.SetRewardTip(() => _tips != null ? _tips.Item : null);
             _pageRouter = new GameplayPageRouter(this);
             _shopPage = new ShopPageCoordinator(this);
@@ -1038,7 +1039,8 @@ namespace GourmetProject.Game.UI.Battle
             }
 
             _timelineAxisFocus.Enter(() =>
-                _timelineAxisFocus.SwapContent(
+                _timelineAxisFocus.SwapWeekContent(
+                    _run.WeekIndex,
                     ReplaceHiddenTimeline,
                     () => _timelineAxisFocus.Exit(onDone)));
         }
