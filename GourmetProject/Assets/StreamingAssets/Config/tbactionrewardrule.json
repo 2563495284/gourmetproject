@@ -4,10 +4,10 @@
     "name": "金币",
     "rewardKind": 1,
     "fallbackWeights": [
-      1,
-      1,
-      1,
-      1
+      100,
+      100,
+      100,
+      100
     ],
     "minGuaranteeCounts": [
       [
@@ -43,10 +43,10 @@
     "name": "餐桌格",
     "rewardKind": 5,
     "fallbackWeights": [
-      1,
-      1,
-      1,
-      1
+      85,
+      85,
+      85,
+      85
     ],
     "minGuaranteeCounts": [
       [
@@ -234,10 +234,10 @@
     "name": "装饰品",
     "rewardKind": 3,
     "fallbackWeights": [
-      1,
-      1,
-      1,
-      1
+      100,
+      100,
+      100,
+      100
     ],
     "minGuaranteeCounts": [
       [
@@ -273,10 +273,10 @@
     "name": "强化箱",
     "rewardKind": 6,
     "fallbackWeights": [
-      1,
-      1,
-      1,
-      1
+      100,
+      100,
+      100,
+      100
     ],
     "minGuaranteeCounts": [
       [
@@ -312,10 +312,10 @@
     "name": "调整单",
     "rewardKind": 7,
     "fallbackWeights": [
-      1,
-      1,
-      1,
-      1
+      100,
+      100,
+      100,
+      100
     ],
     "minGuaranteeCounts": [
       [
