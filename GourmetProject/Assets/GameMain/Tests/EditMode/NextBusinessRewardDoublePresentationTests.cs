@@ -56,58 +56,73 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void TicketPrefab_IsExternalNonBlockingAndUsesFixedCopy()
+        public void TitleBadge_IsContainedNonBlockingAndUsesFixedCopy()
         {
             GameObject instance = InstantiateCard();
 
             try
             {
                 WeekEventCardView view = instance.GetComponent<WeekEventCardView>();
-                RectTransform cardRect = (RectTransform)instance.transform;
-                RectTransform ticketRoot = FindRect(instance, "RewardDoubleTicketRoot");
+                RectTransform badgeRoot = FindRect(instance, "RewardDoubleTitleBadgeRoot");
                 RectTransform titleBacking = FindRect(instance, "TitleBacking");
+                GameObject titleRuleRight = FindObject(instance, "TitleRuleRight");
 
-                Assert.That(ticketRoot.gameObject.activeSelf, Is.False);
+                Assert.That(badgeRoot.gameObject.activeSelf, Is.False);
+                Assert.That(titleRuleRight.activeSelf, Is.True);
                 view.SetNextBusinessRewardDoubleTicket(true);
                 Canvas.ForceUpdateCanvases();
 
-                Assert.That(ticketRoot.gameObject.activeSelf, Is.True);
-                Assert.That(ticketRoot.anchorMin, Is.EqualTo(new Vector2(1f, 0.78f)));
-                Assert.That(ticketRoot.anchorMax, Is.EqualTo(new Vector2(1f, 0.78f)));
-                Assert.That(ticketRoot.anchoredPosition.x, Is.EqualTo(12f).Within(0.01f));
-                Assert.That(ticketRoot.rect.size, Is.EqualTo(new Vector2(156f, 64f)));
+                Assert.That(badgeRoot.gameObject.activeSelf, Is.True);
+                Assert.That(titleRuleRight.activeSelf, Is.True);
+                Assert.That(badgeRoot.parent, Is.EqualTo(titleBacking));
+                Assert.That(badgeRoot.anchorMin, Is.EqualTo(new Vector2(1f, 0.5f)));
+                Assert.That(badgeRoot.anchorMax, Is.EqualTo(new Vector2(1f, 0.5f)));
+                Assert.That(badgeRoot.anchoredPosition, Is.EqualTo(new Vector2(-32f, 0f)));
+                Assert.That(badgeRoot.rect.size, Is.EqualTo(new Vector2(64f, 64f)));
+                Assert.That(badgeRoot.localRotation, Is.EqualTo(Quaternion.identity));
 
-                TMP_Text ticketText = FindText(instance, "RewardDoubleTicketText");
-                ticketText.ForceMeshUpdate(
+                TMP_Text badgeText = FindText(instance, "RewardDoubleTitleBadgeText");
+                badgeText.ForceMeshUpdate(
                     ignoreActiveState: true,
                     forceTextReparsing: true);
-                Assert.That(ticketText.text, Is.EqualTo(WeekEventCardView.RewardDoubleTicketText));
-                Assert.That(ticketText.text, Does.Not.Contain("余"));
-                Assert.That(ticketText.isTextOverflowing, Is.False);
+                Assert.That(badgeText.text, Is.EqualTo(WeekEventCardView.RewardDoubleTicketText));
+                Assert.That(badgeText.text, Is.EqualTo("待触发"));
+                Assert.That(badgeText.isTextOverflowing, Is.False);
                 Assert.That(
-                    ticketText.preferredWidth,
-                    Is.LessThanOrEqualTo(ticketText.rectTransform.rect.width));
+                    badgeText.preferredWidth,
+                    Is.LessThanOrEqualTo(badgeText.rectTransform.rect.width));
                 Assert.That(
-                    ticketText.preferredHeight,
-                    Is.LessThanOrEqualTo(ticketText.rectTransform.rect.height));
+                    badgeText.preferredHeight,
+                    Is.LessThanOrEqualTo(badgeText.rectTransform.rect.height));
 
-                Image ticketIcon = FindImage(instance, "RewardDoubleTicketIcon");
-                Assert.That(ticketIcon.sprite, Is.Not.Null);
-                Assert.That(ticketIcon.preserveAspect, Is.True);
+                Image badgeIcon = FindImage(instance, "RewardDoubleTitleBadgeIcon");
+                Assert.That(badgeIcon.sprite, Is.Not.Null);
+                Assert.That(badgeIcon.preserveAspect, Is.True);
+                Assert.That(badgeIcon.rectTransform.rect.size, Is.EqualTo(new Vector2(52f, 52f)));
+
+                Image badgeBacking = FindImage(instance, "RewardDoubleTitleBadgeBacking");
+                Assert.That(badgeBacking.sprite, Is.Not.Null);
+                Assert.That(badgeBacking.sprite.name, Does.StartWith("recipe_book_title_tab"));
                 Assert.That(
-                    ticketRoot.GetComponentsInChildren<Graphic>(true).All(graphic => !graphic.raycastTarget),
+                    badgeRoot.GetComponentsInChildren<Graphic>(true).All(graphic => !graphic.raycastTarget),
                     Is.True);
 
-                float ticketRight = RectEdgeInLocalSpace(cardRect, ticketRoot, right: true);
-                float ticketTop = RectVerticalEdgeInLocalSpace(cardRect, ticketRoot, top: true);
-                float titleBottom = RectVerticalEdgeInLocalSpace(cardRect, titleBacking, top: false);
                 Assert.That(
-                    ticketRight,
-                    Is.EqualTo(cardRect.rect.xMax + 12f).Within(0.01f));
-                Assert.That(ticketTop, Is.LessThan(titleBottom));
+                    RectEdgeInLocalSpace(titleBacking, badgeRoot, right: true),
+                    Is.LessThanOrEqualTo(titleBacking.rect.xMax + 0.01f));
+                Assert.That(
+                    RectEdgeInLocalSpace(titleBacking, badgeRoot, right: false),
+                    Is.GreaterThanOrEqualTo(titleBacking.rect.xMin - 0.01f));
+                Assert.That(
+                    RectVerticalEdgeInLocalSpace(titleBacking, badgeRoot, top: true),
+                    Is.LessThanOrEqualTo(titleBacking.rect.yMax + 0.01f));
+                Assert.That(
+                    RectVerticalEdgeInLocalSpace(titleBacking, badgeRoot, top: false),
+                    Is.GreaterThanOrEqualTo(titleBacking.rect.yMin - 0.01f));
 
                 view.BindEventOption("测试事件", onPick: null);
-                Assert.That(ticketRoot.gameObject.activeSelf, Is.False);
+                Assert.That(badgeRoot.gameObject.activeSelf, Is.False);
+                Assert.That(titleRuleRight.activeSelf, Is.True);
             }
             finally
             {
@@ -148,6 +163,14 @@ namespace GourmetProject.Tests.EditMode
             return root
                 .GetComponentsInChildren<Image>(true)
                 .Single(image => image.gameObject.name == name);
+        }
+
+        private static GameObject FindObject(GameObject root, string name)
+        {
+            return root
+                .GetComponentsInChildren<Transform>(true)
+                .Single(transform => transform.gameObject.name == name)
+                .gameObject;
         }
 
         private static float RectEdgeInLocalSpace(

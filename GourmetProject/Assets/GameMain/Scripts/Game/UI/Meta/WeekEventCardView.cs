@@ -84,7 +84,7 @@ namespace GourmetProject.Game.UI.Meta
         private const float HalfCostEmphasisDuration = 0.4f;
         private const float RewardDoubleTicketEmphasisDuration = 0.18f;
         private const string RewardDoubleTicketIconPath = "Sprites/Items/active_reroll_action";
-        internal const string RewardDoubleTicketText = "待触发\n随机奖励 ×2";
+        internal const string RewardDoubleTicketText = "待触发";
 
         private static readonly Color PanelColor = new Color(1f, 0.94f, 0.78f, 0.9f);
         private static readonly Color NodePanelColor = new Color(0.24f, 0.55f, 0.82f, 0.88f);
@@ -1191,7 +1191,7 @@ namespace GourmetProject.Game.UI.Meta
             }
 
             KillRewardDoubleTicketTween();
-            _rewardDoubleTicketRoot.localScale = Vector3.one * 0.82f;
+            _rewardDoubleTicketRoot.localScale = Vector3.one * 0.88f;
             if (_rewardDoubleTicketIconImage != null)
             {
                 _rewardDoubleTicketIconImage.color = new Color(1f, 0.9f, 0.45f, 0.48f);
