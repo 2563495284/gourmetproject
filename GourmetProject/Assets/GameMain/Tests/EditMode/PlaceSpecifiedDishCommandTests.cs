@@ -149,16 +149,24 @@ namespace GourmetProject.Tests.EditMode
             CollectionAssert.AreEqual(new[] { "jellyt_sweet" }, filtered);
         }
 
-        [TestCase(1, 144)]
-        [TestCase(3, 16)]
-        public void RepeatedSolver_HandlesMaximumTwelveByTwelveTable(
-            int squareSize,
+        [TestCase(1, 1, 144)]
+        [TestCase(2, 1, 72)]
+        [TestCase(1, 2, 72)]
+        [TestCase(3, 1, 48)]
+        [TestCase(1, 3, 48)]
+        [TestCase(2, 2, 36)]
+        [TestCase(3, 2, 24)]
+        [TestCase(2, 3, 24)]
+        [TestCase(3, 3, 16)]
+        public void RepeatedSolver_HandlesConfiguredShapesOnMaximumTable(
+            int dishWidth,
+            int dishHeight,
             int expectedCount)
         {
             string[] rows = Enumerable.Repeat(
-                new string('X', squareSize),
-                squareSize).ToArray();
-            DishDef dish = CreateDish($"square_{squareSize}", rows);
+                new string('X', dishWidth),
+                dishHeight).ToArray();
+            DishDef dish = CreateDish($"rect_{dishWidth}_{dishHeight}", rows);
 
             IReadOnlyList<Placement> result =
                 RepeatedDishPlacementSolver.Solve(new DiningTable(12, 12), dish);
