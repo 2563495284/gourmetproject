@@ -48,7 +48,7 @@
     ],
     "goldHiddenOffset": [
       0,
-      20
+      10
     ],
     "name": "金币",
     "ruleTemplate": "[gold]金币+ {requiredPickCount}[/gold]"
@@ -57,7 +57,7 @@
     "id": "slot_specific_fragment",
     "groupId": "specific_fragment",
     "kind": 5,
-    "choiceCount": 3,
+    "choiceCount": 2,
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_fragment",
@@ -300,7 +300,7 @@
     "id": "slot_boss_fragment",
     "groupId": "boss_fragment",
     "kind": 5,
-    "choiceCount": 3,
+    "choiceCount": 2,
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_fragment",
@@ -344,7 +344,7 @@
       0
     ],
     "goldHiddenOffset": [
-      50,
+      25,
       0
     ],
     "name": "金币",
