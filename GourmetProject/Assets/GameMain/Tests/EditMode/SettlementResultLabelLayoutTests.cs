@@ -1,4 +1,6 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
+using System.Reflection;
 using BreakInfinity;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Battle.View;
@@ -390,6 +392,236 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void CakeLayerBurstProfiles_ThreeStepsEscalateAndMapSemantics()
+        {
+            CakeLayerBurstStepProfile flat =
+                SettlementSequencer.ResolveCakeLayerBurstStepProfile(
+                    0,
+                    3,
+                    ScoreLineKind.DishFlat);
+            CakeLayerBurstStepProfile addMultiplier =
+                SettlementSequencer.ResolveCakeLayerBurstStepProfile(
+                    1,
+                    3,
+                    ScoreLineKind.DishMultiplierAdd);
+            CakeLayerBurstStepProfile multiply =
+                SettlementSequencer.ResolveCakeLayerBurstStepProfile(
+                    2,
+                    3,
+                    ScoreLineKind.DishMultiplier);
+
+            Assert.That(flat.ImpactTier, Is.EqualTo(SettlementImpactTier.Strong));
+            Assert.That(addMultiplier.ImpactTier, Is.EqualTo(SettlementImpactTier.Chain));
+            Assert.That(multiply.ImpactTier, Is.EqualTo(SettlementImpactTier.Finale));
+            Assert.That(flat.AudioPitch, Is.LessThan(addMultiplier.AudioPitch));
+            Assert.That(addMultiplier.AudioPitch, Is.LessThan(multiply.AudioPitch));
+            Assert.That(flat.CakePulseStrength, Is.LessThan(addMultiplier.CakePulseStrength));
+            Assert.That(addMultiplier.CakePulseStrength, Is.LessThan(multiply.CakePulseStrength));
+            Assert.That(flat.CameraImpactStrength, Is.LessThan(addMultiplier.CameraImpactStrength));
+            Assert.That(addMultiplier.CameraImpactStrength, Is.LessThan(multiply.CameraImpactStrength));
+            Assert.That(
+                SettlementSequencer.CameraImpactStrengthFor(
+                    SettlementPacePhase.BelowTarget,
+                    SettlementImpactTier.Finale),
+                Is.Zero,
+                "普通技能的未达标镜头规则不应被蛋糕专属脉冲改写");
+            Assert.That(flat.CameraImpactStrength, Is.GreaterThan(0f));
+            Assert.That(flat.AnticipationDuration, Is.EqualTo(0.08f).Within(0.0001f));
+            Assert.That(addMultiplier.AnticipationDuration, Is.EqualTo(0.12f).Within(0.0001f));
+            Assert.That(multiply.AnticipationDuration, Is.EqualTo(0.16f).Within(0.0001f));
+            Assert.That(flat.DishFeedbackKind, Is.EqualTo(SettlementDishFeedbackKind.CakeLayerFlatBurst));
+            Assert.That(addMultiplier.DishFeedbackKind, Is.EqualTo(SettlementDishFeedbackKind.CakeLayerMultiplierAddBurst));
+            Assert.That(multiply.DishFeedbackKind, Is.EqualTo(SettlementDishFeedbackKind.CakeLayerMultiplierBurst));
+            Assert.That(
+                SettlementSequencer.CakeLayerChargeDuration
+                + flat.AnticipationDuration
+                + addMultiplier.AnticipationDuration
+                + multiply.AnticipationDuration,
+                Is.LessThanOrEqualTo(0.8f));
+        }
+
+        [Test]
+        public void CakeLayerBurstProfiles_SingleAndDoubleStepUseStrongToFinaleFallbacks()
+        {
+            CakeLayerBurstStepProfile single =
+                SettlementSequencer.ResolveCakeLayerBurstStepProfile(
+                    0,
+                    1,
+                    ScoreLineKind.DishFlat);
+            CakeLayerBurstStepProfile doubleFirst =
+                SettlementSequencer.ResolveCakeLayerBurstStepProfile(
+                    0,
+                    2,
+                    ScoreLineKind.DishFlat);
+            CakeLayerBurstStepProfile doubleFinal =
+                SettlementSequencer.ResolveCakeLayerBurstStepProfile(
+                    1,
+                    2,
+                    ScoreLineKind.DishMultiplier);
+
+            Assert.That(single.ImpactTier, Is.EqualTo(SettlementImpactTier.Strong));
+            Assert.That(single.StepNumber, Is.EqualTo(1));
+            Assert.That(single.StepCount, Is.EqualTo(1));
+            Assert.That(doubleFirst.ImpactTier, Is.EqualTo(SettlementImpactTier.Strong));
+            Assert.That(doubleFinal.ImpactTier, Is.EqualTo(SettlementImpactTier.Finale));
+            Assert.That(doubleFirst.AudioPitch, Is.LessThan(doubleFinal.AudioPitch));
+        }
+
+        [Test]
+        public void CakeLayerBurstLabels_ExposeStepAndOperation()
+        {
+            CakeLayerBurstStepProfile flat =
+                SettlementSequencer.ResolveCakeLayerBurstStepProfile(
+                    0,
+                    3,
+                    ScoreLineKind.DishFlat);
+            CakeLayerBurstStepProfile addMultiplier =
+                SettlementSequencer.ResolveCakeLayerBurstStepProfile(
+                    1,
+                    3,
+                    ScoreLineKind.DishMultiplierAdd);
+            CakeLayerBurstStepProfile multiply =
+                SettlementSequencer.ResolveCakeLayerBurstStepProfile(
+                    2,
+                    3,
+                    ScoreLineKind.DishMultiplier);
+
+            Assert.That(
+                SettlementStageView.CakeLayerBurstResultHeader(
+                    CreateLine(ScoreLineKind.DishFlat),
+                    flat),
+                Is.EqualTo("1/3 加分"));
+            Assert.That(
+                SettlementStageView.CakeLayerBurstResultHeader(
+                    CreateLine(ScoreLineKind.DishMultiplierAdd),
+                    addMultiplier),
+                Is.EqualTo("2/3 倍率 +"));
+            Assert.That(
+                SettlementStageView.CakeLayerBurstResultHeader(
+                    CreateLine(ScoreLineKind.DishMultiplier),
+                    multiply),
+                Is.EqualTo("3/3 倍率 ×"));
+        }
+
+        [Test]
+        public void CakeLayerBurstBatching_PreservesEveryLineAndRealKindOrder()
+        {
+            ScoreSource source = ScoreSource.TableTag(
+                "cake_layer_buff",
+                "欢乐蛋糕层数");
+            var group = new SettlementEffectGroup(
+                CreateCakeLayerLine(source, ScoreLineKind.DishFlat, 1));
+            group.Append(CreateCakeLayerLine(source, ScoreLineKind.DishFlat, 2));
+            group.Append(CreateCakeLayerLine(source, ScoreLineKind.DishMultiplierAdd, 1));
+            group.Append(CreateCakeLayerLine(source, ScoreLineKind.DishMultiplierAdd, 2));
+            group.Append(CreateCakeLayerLine(source, ScoreLineKind.DishMultiplier, 1));
+            group.Append(CreateCakeLayerLine(source, ScoreLineKind.DishMultiplier, 2));
+
+            List<List<int>> batches = SettlementSequencer.BuildResultLineBatches(group);
+
+            Assert.That(batches.Count, Is.EqualTo(3));
+            Assert.That(batches[0], Is.EqualTo(new[] { 0, 1 }));
+            Assert.That(batches[1], Is.EqualTo(new[] { 2, 3 }));
+            Assert.That(batches[2], Is.EqualTo(new[] { 4, 5 }));
+            Assert.That(
+                batches[0].Count + batches[1].Count + batches[2].Count,
+                Is.EqualTo(group.Lines.Count));
+            Assert.That(
+                SettlementSequencer.ShouldRepeatImpactPerResultBatch(group, batches.Count),
+                Is.True);
+        }
+
+        [Test]
+        public void CakeLayerBurstBatching_DoesNotChangeOtherTableTagGroups()
+        {
+            ScoreSource source = ScoreSource.TableTag("other_buff", "其他 Buff");
+            var group = new SettlementEffectGroup(
+                CreateCakeLayerLine(source, ScoreLineKind.DishFlat, 1));
+            group.Append(CreateCakeLayerLine(
+                source,
+                ScoreLineKind.DishMultiplierAdd,
+                1));
+            group.Append(CreateCakeLayerLine(
+                source,
+                ScoreLineKind.DishMultiplier,
+                1));
+
+            List<List<int>> batches = SettlementSequencer.BuildResultLineBatches(group);
+
+            Assert.That(batches.Count, Is.EqualTo(1));
+            Assert.That(batches[0], Is.EqualTo(new[] { 0, 1, 2 }));
+            Assert.That(
+                SettlementSequencer.ShouldRepeatImpactPerResultBatch(group, 3),
+                Is.False);
+        }
+
+        [Test]
+        public void CakeLayerWorldFx_ResetAndDisableRestoreCapturedScaleAndColor()
+        {
+            var root = new GameObject("CakeLayerBurstResetTest");
+            var cakeObject = new GameObject(
+                "Cake",
+                typeof(SpriteRenderer));
+            try
+            {
+                var fx = root.AddComponent<CakeLayerWorldFx>();
+                var renderer = cakeObject.GetComponent<SpriteRenderer>();
+                cakeObject.transform.SetParent(root.transform, false);
+                cakeObject.transform.localScale = new Vector3(1.17f, 0.93f, 1f);
+                renderer.color = new Color(0.82f, 0.74f, 0.66f, 0.9f);
+                Vector3 originalScale = cakeObject.transform.localScale;
+                Color originalColor = renderer.color;
+                FieldInfo cakesField = typeof(CakeLayerWorldFx).GetField(
+                    "_cakes",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(cakesField, Is.Not.Null);
+                var cakes = (List<SpriteRenderer>)cakesField.GetValue(fx);
+                cakes.Add(renderer);
+
+                fx.BeginBuffCharge(0.28f);
+                cakeObject.transform.localScale = Vector3.one * 3f;
+                renderer.color = Color.magenta;
+                MethodInfo onDisable = typeof(CakeLayerWorldFx).GetMethod(
+                    "OnDisable",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(onDisable, Is.Not.Null);
+                onDisable.Invoke(fx, null);
+
+                Assert.That(
+                    cakeObject.transform.localScale,
+                    Is.EqualTo(originalScale)
+                        .Using(Vector3ComparerWithEqualsOperator.Instance));
+                Assert.That(
+                    renderer.color,
+                    Is.EqualTo(originalColor)
+                        .Using(ColorEqualityComparer.Instance));
+
+                fx.BeginBuffCharge(0.28f);
+                cakeObject.transform.localScale = Vector3.one * 3f;
+                renderer.color = Color.magenta;
+                fx.ResetBuffBurstVisuals();
+
+                Assert.That(
+                    cakeObject.transform.localScale,
+                    Is.EqualTo(originalScale)
+                        .Using(Vector3ComparerWithEqualsOperator.Instance));
+                Assert.That(
+                    renderer.color,
+                    Is.EqualTo(originalColor)
+                        .Using(ColorEqualityComparer.Instance));
+                Assert.DoesNotThrow(() => fx.PlayBuffPulse(
+                    1f,
+                    SettlementColorPalette.MultiplyMultiplier,
+                    0.34f));
+                fx.ResetBuffBurstVisuals();
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
         public void OneLabelPerTarget_KeepsOriginalAnchorWithoutDrift()
         {
             Camera camera = CreateCamera();
@@ -755,6 +987,25 @@ namespace GourmetProject.Tests.EditMode
                 0f,
                 1f,
                 string.Empty);
+        }
+
+        private static ScoreLine CreateCakeLayerLine(
+            ScoreSource source,
+            ScoreLineKind kind,
+            int dishInstanceId)
+        {
+            return new ScoreLine(
+                ScorePhase.AfterAllDishes,
+                kind,
+                source,
+                dishInstanceId,
+                $"dish_{dishInstanceId}",
+                null,
+                1f,
+                0f,
+                1f,
+                string.Empty,
+                executionGroupId: 77);
         }
     }
 }

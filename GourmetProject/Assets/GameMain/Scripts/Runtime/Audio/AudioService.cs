@@ -16,6 +16,7 @@ namespace GourmetProject.Runtime.Audio
         public const string GroupSound = "Sound";
 
         private const string SoundRoot = "Assets/GameMain/Content/Resources/Sounds/";
+        private const string JokerSoundRoot = "Assets/GameMain/Content/Resources/Sounds小丑牌/";
         private const string ResourceSoundRoot = "Sounds/";
         private const string ButtonSound = SoundRoot + "button.ogg";
         private const string CancelSound = SoundRoot + "cancel.ogg";
@@ -24,6 +25,8 @@ namespace GourmetProject.Runtime.Audio
         private const string LossFanfareSound = SoundRoot + "Fanfare_loss.mp3";
         private const string SingleSettlementHitSound = SoundRoot + "multhit1.ogg";
         private const string MultipleSettlementHitSound = SoundRoot + "multhit2.ogg";
+        private const string CakeLayerBurstChargeSound = JokerSoundRoot + "explosion_buildup1.ogg";
+        private const string CakeLayerBurstReleaseSound = JokerSoundRoot + "explosion_release1.ogg";
 
         private static readonly string[] CoinSounds =
         {
@@ -128,6 +131,25 @@ namespace GourmetProject.Runtime.Audio
             _settlementHitSource.volume = soundGroup?.Volume ?? 1f;
             _settlementHitSource.pitch = Mathf.Clamp(pitch, 0.75f, 1.35f);
             _settlementHitSource.PlayOneShot(clip);
+        }
+
+        /// <summary>播放欢乐蛋糕层数 Buff 的短聚能提示。</summary>
+        public int PlayCakeLayerBurstCharge()
+        {
+            return PlaySound(CakeLayerBurstChargeSound);
+        }
+
+        /// <summary>每个蛋糕 Buff 批次只调用一次；最终一拍额外叠加释放音。</summary>
+        public void PlayCakeLayerBurstStep(
+            int simultaneousTargetCount,
+            float pitch,
+            bool finale)
+        {
+            PlaySettlementHit(Math.Max(1, simultaneousTargetCount), pitch);
+            if (finale)
+            {
+                PlaySound(CakeLayerBurstReleaseSound);
+            }
         }
 
         private void PreloadSettlementHits()
