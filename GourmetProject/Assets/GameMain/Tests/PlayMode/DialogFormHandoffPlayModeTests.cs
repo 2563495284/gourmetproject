@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using DG.Tweening;
 using GourmetProject.Game.Presentation.Battle;
@@ -193,6 +194,7 @@ namespace GourmetProject.Tests.PlayMode
         {
             var root = new GameObject("DropDustPlayModePool");
             var prefabObject = new GameObject("DropDustPrefab");
+            prefabObject.SetActive(false);
             ParticleSystem particles = prefabObject.AddComponent<ParticleSystem>();
             DishDropDustView prefab = prefabObject.AddComponent<DishDropDustView>();
             SetField(prefab, "_particles", particles);
@@ -205,7 +207,6 @@ namespace GourmetProject.Tests.PlayMode
             ParticleSystem.EmissionModule emission = particles.emission;
             emission.rateOverTime = 0f;
             emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 1) });
-            prefabObject.SetActive(false);
 
             var pool = new GameObjectPool(
                 prefabObject,
@@ -295,6 +296,65 @@ namespace GourmetProject.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator CakeLayer_DisableStopsTweensAndReturnsDissolvingCake()
+        {
+            var cameraObject = new GameObject("CakeLayerTestCamera", typeof(Camera));
+            Camera camera = cameraObject.GetComponent<Camera>();
+            camera.orthographic = true;
+            camera.transform.position = new Vector3(0f, 0f, -10f);
+            var root = new GameObject("CakeLayerTestRoot");
+            var prefabObject = new GameObject("CakeLayerTestPrefab", typeof(SpriteRenderer));
+            prefabObject.SetActive(false);
+            var texture = new Texture2D(2, 2);
+            Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, 2f, 2f), Vector2.one * 0.5f);
+            prefabObject.GetComponent<SpriteRenderer>().sprite = sprite;
+            var fxObject = new GameObject("CakeLayerTestFx", typeof(CakeLayerWorldFx));
+            CakeLayerWorldFx fx = fxObject.GetComponent<CakeLayerWorldFx>();
+            SetField(fx, "_root", root.transform);
+            SetField(fx, "_cakePrefab", prefabObject.GetComponent<SpriteRenderer>());
+            SetField(fx, "_fallDuration", 1f);
+            SetField(fx, "_dissolveDuration", 1f);
+
+            try
+            {
+                fx.Configure(null, camera);
+                fx.PlayChange(0, 1);
+                yield return null;
+
+                Dictionary<SpriteRenderer, Tween> tweens =
+                    GetField<Dictionary<SpriteRenderer, Tween>>(fx, "_cakeTweens");
+                List<SpriteRenderer> cakes = GetField<List<SpriteRenderer>>(fx, "_cakes");
+                GameObjectPool pool = GetField<GameObjectPool>(fx, "_cakePool");
+                Assert.That(tweens.Count, Is.EqualTo(1));
+
+                fxObject.SetActive(false);
+                Assert.That(tweens.Count, Is.Zero);
+                Assert.That(cakes.Count, Is.EqualTo(1));
+                Assert.That(pool.CountActive, Is.EqualTo(1));
+
+                fxObject.SetActive(true);
+                fx.PlayChange(1, 0);
+                yield return null;
+                Assert.That(tweens.Count, Is.EqualTo(1));
+                Assert.That(cakes.Count, Is.Zero);
+
+                fxObject.SetActive(false);
+                Assert.That(tweens.Count, Is.Zero);
+                Assert.That(pool.CountActive, Is.Zero);
+                Assert.That(pool.CountInactive, Is.EqualTo(pool.CountAll));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(fxObject);
+                UnityEngine.Object.DestroyImmediate(prefabObject);
+                UnityEngine.Object.DestroyImmediate(root);
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+                UnityEngine.Object.DestroyImmediate(sprite);
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
         private static void SetField(object target, string name, object value)
         {
             FieldInfo field = target.GetType().GetField(
@@ -302,6 +362,15 @@ namespace GourmetProject.Tests.PlayMode
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(field, Is.Not.Null);
             field.SetValue(target, value);
+        }
+
+        private static T GetField<T>(object target, string name)
+        {
+            FieldInfo field = target.GetType().GetField(
+                name,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null);
+            return (T)field.GetValue(target);
         }
     }
 }

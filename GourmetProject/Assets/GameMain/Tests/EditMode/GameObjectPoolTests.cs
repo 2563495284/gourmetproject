@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using DG.Tweening;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
@@ -277,6 +278,11 @@ namespace GourmetProject.Tests.EditMode
             SettlementStageView stage = UnityEngine.Object.Instantiate(prefab);
             try
             {
+                MethodInfo ensurePools = typeof(SettlementStageView).GetMethod(
+                    "EnsurePools",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(ensurePools, Is.Not.Null);
+                ensurePools.Invoke(stage, null);
                 GameObjectPool spritePool = GetPrivateField<GameObjectPool>(stage, "_spritePool");
                 GameObjectPool labelPool = GetPrivateField<GameObjectPool>(stage, "_labelPool");
                 GameObjectPool finalePool = GetPrivateField<GameObjectPool>(stage, "_finaleLabelPool");
@@ -307,6 +313,166 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
+        [Test]
+        public void SettlementStage_OldGenerationCannotHoldReusedLabel()
+        {
+            SettlementStageView prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/GameMain/Content/Prefabs/Battle/Settlement/SettlementStage.prefab")
+                ?.GetComponent<SettlementStageView>();
+            Assert.That(prefab, Is.Not.Null);
+
+            SettlementStageView stage = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                MethodInfo ensurePools = typeof(SettlementStageView).GetMethod(
+                    "EnsurePools",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(ensurePools, Is.Not.Null);
+                ensurePools.Invoke(stage, null);
+                GameObjectPool labelPool = GetPrivateField<GameObjectPool>(stage, "_labelPool");
+                MethodInfo register = typeof(SettlementStageView).GetMethod(
+                    "RegisterTransient",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                MethodInfo generationOf = typeof(SettlementStageView).GetMethod(
+                    "TransientGeneration",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                MethodInfo tryHold = typeof(SettlementStageView).GetMethod(
+                    "TryHoldTransient",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(register, Is.Not.Null);
+                Assert.That(generationOf, Is.Not.Null);
+                Assert.That(tryHold, Is.Not.Null);
+
+                GameObject firstLease = labelPool.Get();
+                register.Invoke(stage, new object[] { firstLease, labelPool });
+                int oldGeneration = (int)generationOf.Invoke(stage, new object[] { firstLease });
+                stage.ClearImmediate();
+
+                GameObject reusedLease = labelPool.Get();
+                Assert.That(reusedLease, Is.SameAs(firstLease));
+                register.Invoke(stage, new object[] { reusedLease, labelPool });
+                int currentGeneration = (int)generationOf.Invoke(stage, new object[] { reusedLease });
+                Assert.That(currentGeneration, Is.Not.EqualTo(oldGeneration));
+
+                Assert.That(
+                    (bool)tryHold.Invoke(stage, new object[] { reusedLease, oldGeneration }),
+                    Is.False);
+                Assert.That(
+                    (bool)tryHold.Invoke(stage, new object[] { reusedLease, currentGeneration }),
+                    Is.True);
+
+                object heldLabels = GetPrivateField<object>(stage, "_heldLabels");
+                PropertyInfo count = heldLabels.GetType().GetProperty("Count");
+                Assert.That(count, Is.Not.Null);
+                Assert.That((int)count.GetValue(heldLabels), Is.EqualTo(1));
+
+                stage.ClearImmediate();
+                Assert.That(labelPool.CountActive, Is.Zero);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(stage.gameObject);
+            }
+        }
+
+        [Test]
+        public void BattleWorld_ClearDuringTemporaryFlyInInvalidatesOwnershipAndReleasesView()
+        {
+            var worldObject = new GameObject("BattleWorldFlyInPoolTest");
+            worldObject.SetActive(false);
+            BattleWorldController world = worldObject.AddComponent<BattleWorldController>();
+            var pieceObject = new GameObject("TemporaryFlyInPiece");
+            DishPieceView piece = pieceObject.AddComponent<DishPieceView>();
+            Tween tween = DOTween.Sequence()
+                .Append(piece.transform.DOMove(Vector3.one, 10f))
+                .SetLink(pieceObject);
+
+            try
+            {
+                Dictionary<int, DishPieceView> dishViews =
+                    GetPrivateField<Dictionary<int, DishPieceView>>(world, "_dishViewsById");
+                dishViews[42] = piece;
+                SetPrivateField(world, "_temporaryAreaFlyInPiece", piece);
+                SetPrivateField(world, "_temporaryAreaFlyInTween", tween);
+
+                MethodInfo clear = typeof(BattleWorldController).GetMethod(
+                    "ClearPlacedPieces",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(clear, Is.Not.Null);
+                clear.Invoke(world, null);
+
+                Assert.That(piece == null, Is.True);
+                Assert.That(
+                    GetPrivateField<DishPieceView>(world, "_temporaryAreaFlyInPiece"),
+                    Is.Null);
+                Assert.That(
+                    GetPrivateField<Tween>(world, "_temporaryAreaFlyInTween"),
+                    Is.Null);
+                Assert.That(
+                    GetPrivateField<int>(world, "_temporaryAreaFlyInVersion"),
+                    Is.GreaterThan(0));
+                Assert.That(dishViews, Is.Empty);
+            }
+            finally
+            {
+                tween?.Kill(false);
+                if (pieceObject != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(pieceObject);
+                }
+                UnityEngine.Object.DestroyImmediate(worldObject);
+            }
+        }
+
+        [Test]
+        public void DishPiece_ReusedGeometryRefreshesFlavorMaterial()
+        {
+            DishPieceView prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/GameMain/Content/Prefabs/Battle/Dishes/DishPiece.prefab")
+                ?.GetComponent<DishPieceView>();
+            Assert.That(prefab, Is.Not.Null);
+
+            DishPieceView view = UnityEngine.Object.Instantiate(prefab);
+            var texture = new Texture2D(2, 2);
+            Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, 2f, 2f), Vector2.one * 0.5f);
+            try
+            {
+                DishShape shape = DishShape.FromRows(new[] { "X" });
+                var definition = new DishDef(
+                    "pool_refresh_dish",
+                    "Pool Refresh Dish",
+                    10,
+                    shape,
+                    0,
+                    0,
+                    1f,
+                    Array.Empty<string>(),
+                    string.Empty);
+                var dish = new DishInstance(
+                    7,
+                    definition,
+                    new Placement(shape, 0, new GridPos(0, 0)),
+                    Array.Empty<string>(),
+                    Array.Empty<string>());
+
+                view.BuildPlaced(dish, sprite, 1f, 1.04f, null);
+                SpriteRenderer renderer = GetPrivateField<SpriteRenderer>(view, "_spriteRenderer");
+                Assert.That(renderer.sharedMaterial, Is.Not.SameAs(SpriteRenderStyle.SpriteFlavorOrganicMaterial));
+
+                dish.AddFlavor("t_sweet");
+                view.PrepareForReuse();
+                view.BuildPlaced(dish, sprite, 1f, 1.04f, null);
+
+                Assert.That(renderer.sharedMaterial, Is.SameAs(SpriteRenderStyle.SpriteFlavorOrganicMaterial));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(view.gameObject);
+                UnityEngine.Object.DestroyImmediate(sprite);
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
         private static T GetPrivateField<T>(object owner, string fieldName)
         {
             FieldInfo field = owner.GetType().GetField(
@@ -314,6 +480,15 @@ namespace GourmetProject.Tests.EditMode
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(field, Is.Not.Null);
             return (T)field.GetValue(owner);
+        }
+
+        private static void SetPrivateField(object owner, string fieldName, object value)
+        {
+            FieldInfo field = owner.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null);
+            field.SetValue(owner, value);
         }
     }
 }

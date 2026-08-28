@@ -63,7 +63,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private GameObject _chapterSpotlight;
         private Tween _chapterSpotlightTween;
         private int _chapterDishInstanceId;
-        private readonly List<GameObject> _heldLabels = new();
+        private readonly List<HeldTransient> _heldLabels = new();
         private SettlementEffectGroup _resultHitSoundGroup;
         private Camera _worldCamera;
         private GameObjectPool _spritePool;
@@ -80,6 +80,18 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             public GameObjectPool Pool { get; }
+            public int Generation { get; }
+        }
+
+        private readonly struct HeldTransient
+        {
+            public HeldTransient(GameObject root, int generation)
+            {
+                Root = root;
+                Generation = generation;
+            }
+
+            public GameObject Root { get; }
             public int Generation { get; }
         }
 
@@ -1474,6 +1486,42 @@ namespace GourmetProject.Game.Presentation.Battle
                     : 0;
         }
 
+        private bool TryHoldTransient(GameObject root, int expectedGeneration)
+        {
+            if (root == null
+                || expectedGeneration == 0
+                || !_transientPools.TryGetValue(root, out TransientRegistration registration)
+                || registration.Generation != expectedGeneration)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _heldLabels.Count; i++)
+            {
+                HeldTransient held = _heldLabels[i];
+                if (ReferenceEquals(held.Root, root) && held.Generation == expectedGeneration)
+                {
+                    return true;
+                }
+            }
+
+            _heldLabels.Add(new HeldTransient(root, expectedGeneration));
+            return true;
+        }
+
+        private void RemoveHeldTransient(GameObject root, int expectedGeneration)
+        {
+            for (int i = _heldLabels.Count - 1; i >= 0; i--)
+            {
+                HeldTransient held = _heldLabels[i];
+                if (ReferenceEquals(held.Root, root)
+                    && (expectedGeneration == 0 || held.Generation == expectedGeneration))
+                {
+                    _heldLabels.RemoveAt(i);
+                }
+            }
+        }
+
         private void ReleaseTransient(GameObject root, int expectedGeneration = 0)
         {
             if (root == null
@@ -1489,7 +1537,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 DOTween.Kill(root, false);
                 _transients.Remove(root);
-                _heldLabels.Remove(root);
+                RemoveHeldTransient(root, registration.Generation);
                 registration.Pool.Release(root);
             }
         }
@@ -1660,9 +1708,8 @@ namespace GourmetProject.Game.Presentation.Battle
             try
             {
                 await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
-                if (holdUntilCleared && root != null && _transientPools.ContainsKey(root))
+                if (holdUntilCleared && TryHoldTransient(root, generation))
                 {
-                    _heldLabels.Add(root);
                     held = true;
                 }
             }
@@ -1697,11 +1744,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 while (_heldLabels.Count > 0)
                 {
                     int lastIndex = _heldLabels.Count - 1;
-                    GameObject held = _heldLabels[lastIndex];
+                    HeldTransient held = _heldLabels[lastIndex];
                     _heldLabels.RemoveAt(lastIndex);
-                    if (held != null)
+                    if (held.Root != null)
                     {
-                        ReleaseTransient(held);
+                        ReleaseTransient(held.Root, held.Generation);
                     }
                 }
             }
