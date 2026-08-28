@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -5,20 +8,45 @@ using UnityEngine.UI;
 namespace GourmetProject.Game.UI.Meta
 {
     /// <summary>
-    /// 商店食物购买时的目标箭头。根节点铺满 Canvas，起点固定在商品卡，终点跟随鼠标。
+    /// 消耗品使用时的目标箭头。根节点铺满 Canvas，起点固定在消耗品图标，
+    /// 19 个箭身段沿二次贝塞尔曲线排列，箭头跟随鼠标。
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     public sealed class TargetArrowView : MonoBehaviour
     {
-        [SerializeField] private RectTransform _line;
-        [SerializeField] private RectTransform _head;
-        [SerializeField] private float _lineWidth = 8f;
-        [SerializeField] private float _headGap = 18f;
+        internal const int SegmentCount = 19;
+        internal const float SegmentScaleStart = 0.28f;
+        internal const float SegmentScaleEnd = 0.42f;
+        internal const float ReferenceHeight = 1080f;
+        internal const float HeadTargetOffset = 88f;
+        internal const float SegmentEndOffset = 40f;
+        internal const float HeadDefaultScale = 0.95f;
+        internal const float HeadHoverScale = 1.05f;
+
+        internal static readonly Color DefaultColor = new Color32(0x6F, 0xD8, 0xE8, 0xFF);
+        internal static readonly Color HighlightColor = new Color32(0x36, 0xC7, 0x8A, 0xFF);
+
+        [SerializeField] private Image _segmentTemplate;
+        [SerializeField] private Image _head;
+
+        private readonly Image[] _segments = new Image[SegmentCount];
+        private readonly Vector2[] _segmentPositions = new Vector2[SegmentCount];
+        private readonly float[] _segmentRotations = new float[SegmentCount];
+        private readonly float[] _segmentScales = new float[SegmentCount];
 
         private RectTransform _rect;
         private Canvas _canvas;
         private Camera _eventCamera;
         private Vector2 _startScreenPoint;
+        private float _headRotationDegrees;
+        private Tween _headTween;
+        private bool _highlighted;
+        private bool _segmentsBuilt;
+
+        internal IReadOnlyList<Image> Segments => _segments;
+        internal Image Head => _head;
+        internal Image SegmentTemplate => _segmentTemplate;
+        internal bool TargetHighlighted => _highlighted;
 
         private RectTransform Rect
         {
@@ -36,6 +64,7 @@ namespace GourmetProject.Game.UI.Meta
         private void Awake()
         {
             EnsureRefs();
+            BuildSegments();
             BindCanvas();
         }
 
@@ -49,46 +78,247 @@ namespace GourmetProject.Game.UI.Meta
             SetEndScreenPoint(Mouse.current.position.ReadValue());
         }
 
+        private void OnDestroy()
+        {
+            _headTween?.Kill();
+            _headTween = null;
+        }
+
         public void SetupArrow(Vector2 startScreenPoint)
         {
+            EnsureRefs();
+            BuildSegments();
             _startScreenPoint = startScreenPoint;
+            _headRotationDegrees = 0f;
             BindCanvas();
             StretchToParent();
+            ApplyHighlighting(highlighted: false, animate: false);
             SetEndScreenPoint(Mouse.current != null ? Mouse.current.position.ReadValue() : startScreenPoint);
         }
 
         public void SetEndScreenPoint(Vector2 endScreenPoint)
         {
             EnsureRefs();
-            if (_line == null || _head == null
+            BuildSegments();
+            if (_head == null
                 || !TryScreenToLocal(_startScreenPoint, out Vector2 startLocal)
                 || !TryScreenToLocal(endScreenPoint, out Vector2 endLocal))
             {
                 return;
             }
 
-            Vector2 delta = endLocal - startLocal;
-            float distance = delta.magnitude;
-            float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
-            Vector2 direction = distance > 0.001f ? delta / distance : Vector2.right;
+            float referenceScale = ReferenceScale();
+            bool fromBottomHalf = startLocal.y < Rect.rect.center.y;
+            CalculateGeometry(
+                startLocal,
+                endLocal,
+                _headRotationDegrees,
+                referenceScale,
+                fromBottomHalf,
+                _segmentPositions,
+                _segmentRotations,
+                _segmentScales,
+                out Vector2 headPosition,
+                out float headRotation,
+                out _,
+                out _);
 
-            _line.pivot = new Vector2(0f, 0.5f);
-            _line.anchorMin = new Vector2(0.5f, 0.5f);
-            _line.anchorMax = new Vector2(0.5f, 0.5f);
-            _line.anchoredPosition = startLocal;
-            _line.sizeDelta = new Vector2(Mathf.Max(0f, distance - _headGap), _lineWidth);
-            _line.localRotation = Quaternion.Euler(0f, 0f, angle);
+            for (int i = 0; i < SegmentCount; i++)
+            {
+                RectTransform segment = _segments[i].rectTransform;
+                segment.anchoredPosition = _segmentPositions[i];
+                segment.localRotation = Quaternion.Euler(0f, 0f, _segmentRotations[i]);
+                segment.localScale = Vector3.one * _segmentScales[i];
+            }
 
-            _head.anchorMin = new Vector2(0.5f, 0.5f);
-            _head.anchorMax = new Vector2(0.5f, 0.5f);
-            _head.anchoredPosition = endLocal - direction * (_headGap * 0.25f);
-            _head.localRotation = Quaternion.Euler(0f, 0f, angle);
+            RectTransform head = _head.rectTransform;
+            head.anchoredPosition = headPosition;
+            head.localRotation = Quaternion.Euler(0f, 0f, headRotation);
+            _headRotationDegrees = headRotation;
+        }
+
+        public void SetTargetHighlighted(bool highlighted)
+        {
+            EnsureRefs();
+            BuildSegments();
+            if (_highlighted == highlighted)
+            {
+                return;
+            }
+
+            ApplyHighlighting(highlighted, animate: highlighted);
+        }
+
+        internal static void CalculateGeometry(
+            Vector2 initialPosition,
+            Vector2 targetPosition,
+            float previousHeadRotationDegrees,
+            float referenceScale,
+            bool fromBottomHalf,
+            Vector2[] segmentPositions,
+            float[] segmentRotations,
+            float[] segmentScales,
+            out Vector2 headPosition,
+            out float headRotationDegrees,
+            out Vector2 controlPoint,
+            out Vector2 finalPosition)
+        {
+            if (segmentPositions == null || segmentPositions.Length < SegmentCount)
+            {
+                throw new ArgumentException($"至少需要 {SegmentCount} 个箭身位置。", nameof(segmentPositions));
+            }
+
+            if (segmentRotations == null || segmentRotations.Length < SegmentCount)
+            {
+                throw new ArgumentException($"至少需要 {SegmentCount} 个箭身旋转值。", nameof(segmentRotations));
+            }
+
+            if (segmentScales == null || segmentScales.Length < SegmentCount)
+            {
+                throw new ArgumentException($"至少需要 {SegmentCount} 个箭身缩放值。", nameof(segmentScales));
+            }
+
+            float scale = Mathf.Max(0.0001f, referenceScale);
+            headPosition = targetPosition
+                + Rotate(Vector2.down * (HeadTargetOffset * scale), previousHeadRotationDegrees);
+            finalPosition = targetPosition
+                + Rotate(Vector2.down * (SegmentEndOffset * scale), previousHeadRotationDegrees);
+            controlPoint = CalculateControlPoint(initialPosition, headPosition, fromBottomHalf);
+            headRotationDegrees = DirectionToUpRotation(targetPosition - controlPoint);
+
+            for (int i = 0; i < SegmentCount; i++)
+            {
+                float t = i / 20f;
+                segmentPositions[i] = QuadraticBezier(initialPosition, finalPosition, controlPoint, t);
+                segmentScales[i] = Mathf.LerpUnclamped(
+                    SegmentScaleStart,
+                    SegmentScaleEnd,
+                    i * 2f / SegmentCount) * scale;
+            }
+
+            segmentRotations[0] = DirectionToUpRotation(segmentPositions[1] - segmentPositions[0]);
+            for (int i = 1; i < SegmentCount; i++)
+            {
+                segmentRotations[i] = DirectionToUpRotation(
+                    segmentPositions[i] - segmentPositions[i - 1]);
+            }
+        }
+
+        internal static Vector2 CalculateControlPoint(
+            Vector2 initialPosition,
+            Vector2 headPosition,
+            bool fromBottomHalf)
+        {
+            Vector2 control = Vector2.zero;
+            control.x = initialPosition.x - (headPosition.x - initialPosition.x) * 0.25f;
+            control.y = fromBottomHalf
+                ? headPosition.y + (headPosition.y - initialPosition.y) * 0.5f
+                : headPosition.y * 0.75f + initialPosition.y * 0.25f;
+            return control;
+        }
+
+        internal static Vector2 QuadraticBezier(
+            Vector2 initialPosition,
+            Vector2 finalPosition,
+            Vector2 controlPoint,
+            float t)
+        {
+            float oneMinusT = 1f - t;
+            return oneMinusT * oneMinusT * initialPosition
+                + 2f * oneMinusT * t * controlPoint
+                + t * t * finalPosition;
+        }
+
+        private void ApplyHighlighting(bool highlighted, bool animate)
+        {
+            _highlighted = highlighted;
+            Color color = highlighted ? HighlightColor : DefaultColor;
+            for (int i = 0; i < SegmentCount; i++)
+            {
+                if (_segments[i] != null)
+                {
+                    _segments[i].color = color;
+                }
+            }
+
+            if (_head == null)
+            {
+                return;
+            }
+
+            _head.color = color;
+            _headTween?.Kill();
+            _headTween = null;
+
+            float targetScale = ReferenceScale()
+                * (highlighted ? HeadHoverScale : HeadDefaultScale);
+            if (!animate)
+            {
+                _head.rectTransform.localScale = Vector3.one * targetScale;
+                return;
+            }
+
+            _headTween = _head.rectTransform
+                .DOScale(Vector3.one * targetScale, 1f)
+                .SetEase(Ease.OutElastic)
+                .SetUpdate(true)
+                .SetLink(gameObject);
+        }
+
+        private void BuildSegments()
+        {
+            if (_segmentsBuilt || _segmentTemplate == null || _head == null)
+            {
+                return;
+            }
+
+            _segmentTemplate.gameObject.SetActive(false);
+            Transform parent = _segmentTemplate.transform.parent;
+            int firstSiblingIndex = _segmentTemplate.transform.GetSiblingIndex() + 1;
+            for (int i = 0; i < SegmentCount; i++)
+            {
+                Image segment = Instantiate(_segmentTemplate, parent);
+                segment.gameObject.name = $"Segment{i:00}";
+                segment.raycastTarget = false;
+                segment.gameObject.SetActive(true);
+                segment.transform.SetSiblingIndex(firstSiblingIndex + i);
+                _segments[i] = segment;
+            }
+
+            _head.raycastTarget = false;
+            _head.transform.SetAsLastSibling();
+            _segmentsBuilt = true;
+        }
+
+        private static float DirectionToUpRotation(Vector2 direction)
+        {
+            return Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
+        }
+
+        private static Vector2 Rotate(Vector2 vector, float degrees)
+        {
+            float radians = degrees * Mathf.Deg2Rad;
+            float sin = Mathf.Sin(radians);
+            float cos = Mathf.Cos(radians);
+            return new Vector2(
+                vector.x * cos - vector.y * sin,
+                vector.x * sin + vector.y * cos);
+        }
+
+        private float ReferenceScale()
+        {
+            float height = Rect.rect.height;
+            return height > 0.001f ? height / ReferenceHeight : 1f;
         }
 
         private bool TryScreenToLocal(Vector2 screenPoint, out Vector2 localPoint)
         {
             BindCanvas();
-            return RectTransformUtility.ScreenPointToLocalPointInRectangle(Rect, screenPoint, _eventCamera, out localPoint);
+            return RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                Rect,
+                screenPoint,
+                _eventCamera,
+                out localPoint);
         }
 
         private void BindCanvas()
@@ -117,26 +347,14 @@ namespace GourmetProject.Game.UI.Meta
 
         private void EnsureRefs()
         {
-            if (_line == null)
+            if (_segmentTemplate == null)
             {
-                Transform line = transform.Find("Line");
-                _line = line as RectTransform;
+                Debug.LogError($"{nameof(TargetArrowView)} prefab 缺少箭身模板绑定。", this);
             }
 
             if (_head == null)
             {
-                Transform head = transform.Find("Head");
-                _head = head as RectTransform;
-            }
-
-            if (_line == null)
-            {
-                Debug.LogError($"{nameof(TargetArrowView)} prefab 缺少 Line 子节点。", this);
-            }
-
-            if (_head == null)
-            {
-                Debug.LogError($"{nameof(TargetArrowView)} prefab 缺少 Head 子节点。", this);
+                Debug.LogError($"{nameof(TargetArrowView)} prefab 缺少箭头绑定。", this);
             }
         }
     }

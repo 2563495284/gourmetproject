@@ -65,7 +65,7 @@ namespace GourmetProject.Game.Balance
             {
                 result.HasLegalSolution = false;
                 result.Termination = AutoPlacementTerminationKind.MissingPolicyRandom;
-                result.Score = session.PreviewScore().Total;
+                result.Score = session.PreviewScore(captureDiagnostics: false).Total;
                 return result;
             }
 
@@ -241,7 +241,7 @@ namespace GourmetProject.Game.Balance
                 result.Termination = AutoPlacementTerminationKind.Completed;
             }
 
-            result.Score = session.PreviewScore().Total;
+            result.Score = session.PreviewScore(captureDiagnostics: false).Total;
             return result;
         }
 
