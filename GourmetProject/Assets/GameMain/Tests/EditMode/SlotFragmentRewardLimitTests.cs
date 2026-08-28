@@ -81,6 +81,50 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void FragmentHiddenScore_FloorsFractionalDayWithoutChangingOtherCurves()
+        {
+            GameRun run = CreateRun();
+            run.CurrentDay = 4.6f;
+
+            Assert.That(HiddenScoreService.FragmentHiddenScore(run), Is.EqualTo(24));
+            Assert.That(HiddenScoreService.DishHiddenScore(run), Is.EqualTo(25));
+            Assert.That(HiddenScoreService.TargetScore(run), Is.EqualTo(1000));
+        }
+
+        [Test]
+        public void BossFragmentReward_DoesNotUnlockFourCellBeforeIntegerBoundary()
+        {
+            GameRun run = CreateRun();
+            run.CurrentDay = 4.6f;
+            cfg.RewardSlot slot = _tables.TbRewardSlot.GetOrDefault("slot_boss_fragment");
+            RewardContext context = CreateBossRewardContext(run);
+
+            Assert.That(RewardPoolService.ResolveHiddenScoreForSlot(context, slot), Is.EqualTo(29));
+
+            List<RewardChoice> choices = RewardPoolService.RollChoices(context, slot);
+            Assert.That(choices, Has.Count.EqualTo(2));
+            Assert.That(
+                choices.Select(choice => _database.GetFragment(choice.Id).HiddenMin),
+                Has.All.LessThan(30));
+        }
+
+        [Test]
+        public void BossFragmentReward_UnlocksFourCellAtIntegerBoundary()
+        {
+            GameRun run = CreateRun();
+            run.CurrentDay = 5f;
+            cfg.RewardSlot slot = _tables.TbRewardSlot.GetOrDefault("slot_boss_fragment");
+            RewardContext context = CreateBossRewardContext(run);
+
+            Assert.That(RewardPoolService.ResolveHiddenScoreForSlot(context, slot), Is.EqualTo(30));
+
+            List<RewardChoice> choices = RewardPoolService.RollChoices(context, slot);
+            Assert.That(
+                choices.Select(choice => _database.GetFragment(choice.Id).HiddenMin),
+                Has.Some.EqualTo(30));
+        }
+
+        [Test]
         public void Roll_AfterFragmentRewardConvertsThatOutcomeToEmpty()
         {
             GameRun run = CreateRun();
@@ -206,6 +250,19 @@ namespace GourmetProject.Tests.EditMode
                 weekIndex: 1,
                 isTutorialRun: false);
 
+        private RewardContext CreateBossRewardContext(GameRun run)
+        {
+            cfg.GameAction action = _tables.TbAction.GetOrDefault("act_boss");
+            Assert.That(action, Is.Not.Null);
+            return new RewardContext(
+                _tables,
+                run,
+                week: null,
+                package: null,
+                rng: new LastCandidateRandomStream(),
+                actionContext: new ActionExecutionContext(action, stepIndex: 0));
+        }
+
         private SlotMachineConfig GetSlotConfig(GameRun run)
         {
             cfg.GameAction action = _tables.TbAction.GetOrDefault("act_slot");
@@ -279,6 +336,33 @@ namespace GourmetProject.Tests.EditMode
                         ? _preferredIndex
                         : 0;
             }
+        }
+
+        private sealed class LastCandidateRandomStream : IRandomStream
+        {
+            public RngState State { get; set; }
+
+            public uint NextUInt() => 0u;
+
+            public ulong NextULong() => 0UL;
+
+            public int Range(int minInclusive, int maxExclusive) => minInclusive;
+
+            public float Range(float minInclusive, float maxExclusive) => minInclusive;
+
+            public float NextFloat() => 0f;
+
+            public double NextDouble() => 0d;
+
+            public bool NextBool(double probability = 0.5d) => probability > 0d;
+
+            public void Shuffle<T>(IList<T> list)
+            {
+            }
+
+            public T Pick<T>(IReadOnlyList<T> list) => list[list.Count - 1];
+
+            public int WeightedPickIndex(IReadOnlyList<float> weights) => weights.Count - 1;
         }
     }
 }
