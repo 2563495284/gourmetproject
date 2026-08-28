@@ -30,17 +30,7 @@ namespace GourmetProject.Game.Presentation.Battle
             Color? headerSemanticColor = null,
             int sortingOrder = -1)
         {
-            _headerText.text = header ?? string.Empty;
-            SemanticDescriptionFormatter.Set(_bodyText, body);
-            _headerText.ForceMeshUpdate(true, true);
-            _bodyText.ForceMeshUpdate(true, true);
-
-            Color textColor = SettlementColorPalette.TextFor(theme);
-            Color headerColor = headerSemanticColor.HasValue
-                ? SettlementColorPalette.ResultHeaderTextFor(headerSemanticColor.Value)
-                : textColor;
-            _headerText.color = SettlementColorPalette.WithAlpha(headerColor, 1f);
-            _bodyText.color = textColor;
+            BindContent(header, body, theme, headerSemanticColor);
 
             int order = sortingOrder >= 0 ? sortingOrder : BattleSorting.OrderFloatingText;
             BattleSorting.Apply(
@@ -51,6 +41,33 @@ namespace GourmetProject.Game.Presentation.Battle
                 _bodyText,
                 BattleSorting.Fx,
                 order + 3);
+        }
+
+        internal void BindForBatch(
+            string header,
+            string body,
+            Color theme,
+            Color? headerSemanticColor)
+        {
+            BindContent(header, body, theme, headerSemanticColor);
+        }
+
+        private void BindContent(
+            string header,
+            string body,
+            Color theme,
+            Color? headerSemanticColor)
+        {
+            _headerText.text = header ?? string.Empty;
+            SemanticDescriptionFormatter.Set(_bodyText, body);
+            Color textColor = SettlementColorPalette.TextFor(theme);
+            Color headerColor = headerSemanticColor.HasValue
+                ? SettlementColorPalette.ResultHeaderTextFor(headerSemanticColor.Value)
+                : textColor;
+            _headerText.color = SettlementColorPalette.WithAlpha(headerColor, 1f);
+            _bodyText.color = textColor;
+            _headerText.ForceMeshUpdate(true, true);
+            _bodyText.ForceMeshUpdate(true, true);
         }
 
         internal void PrepareForReuse()

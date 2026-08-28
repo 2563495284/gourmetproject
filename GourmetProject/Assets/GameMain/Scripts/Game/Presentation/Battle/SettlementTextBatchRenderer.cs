@@ -80,6 +80,8 @@ namespace GourmetProject.Game.Presentation.Battle
     {
         internal const int InitialLabelCapacity = 64;
         internal const int InitialGlyphCapacity = 2048;
+        internal const int GeometryCacheCapacity = 256;
+        internal const long GeometryCacheByteCapacity = 8L * 1024L * 1024L;
 
         private const int VerticesPerGlyph = 4;
         internal const int InitialVertexCapacity =
@@ -90,10 +92,13 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private static readonly ProfilerMarker RebuildMarker =
             new("Gourmet.SettlementText.Rebuild");
+        private static readonly ProfilerMarker BakeMarker =
+            new("Gourmet.SettlementText.Bake");
         private static readonly ProfilerMarker JobMarker =
             new("Gourmet.SettlementText.Job");
         private static readonly ProfilerMarker UploadMarker =
             new("Gourmet.SettlementText.Upload");
+        private static readonly int SourceVertexSizeBytes = Marshal.SizeOf<SourceVertex>();
 
         private static readonly VertexAttributeDescriptor[] VertexLayout =
         {
@@ -109,6 +114,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly Dictionary<int, BatchSurface> _surfacesById = new();
         private readonly List<BatchSurface> _surfaceScratch = new();
         private readonly List<Material> _ownedMaterials = new();
+        private readonly Dictionary<LabelGeometryKey, GeometryCacheEntry> _geometryCache =
+            new(GeometryCacheCapacity);
 
         private FloatingTextView _effectTemplate;
         private SettlementStageLabelView _stageTemplate;
@@ -117,6 +124,13 @@ namespace GourmetProject.Game.Presentation.Battle
         private SettlementStageLabelView _stageTemplateSource;
         private SettlementStageLabelView _finaleTemplateSource;
         private Material _effectBackgroundMaterial;
+        private GeometryPart _effectBackgroundGeometry;
+        private Color _effectDefaultSourceColor;
+        private Color _effectDefaultTextColor;
+        private long _geometryCacheUseSequence;
+        private long _geometryCacheBytes;
+        private int _geometryBakeCount;
+        private int _geometryCacheHitCount;
         private int _nextSurfaceId;
         private bool _initialized;
         private bool _disposed;
@@ -136,6 +150,42 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         internal int SurfaceCount => _surfacesById.Count;
+
+        internal int GeometryCacheCount => _geometryCache.Count;
+
+        internal long GeometryCacheBytes => _geometryCacheBytes;
+
+        internal int GeometryBakeCount => _geometryBakeCount;
+
+        internal int GeometryCacheHitCount => _geometryCacheHitCount;
+
+        internal int RebuildCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (BatchSurface surface in _surfacesById.Values)
+                {
+                    count += surface.RebuildCount;
+                }
+
+                return count;
+            }
+        }
+
+        internal int UploadCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (BatchSurface surface in _surfacesById.Values)
+                {
+                    count += surface.UploadCount;
+                }
+
+                return count;
+            }
+        }
 
         internal int BatchRendererCount
         {
@@ -182,6 +232,20 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        internal int RetainedMaterialGroupCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (BatchSurface surface in _surfacesById.Values)
+                {
+                    count += surface.RetainedMaterialGroupCount;
+                }
+
+                return count;
+            }
+        }
+
         internal int VertexCapacity
         {
             get
@@ -190,6 +254,20 @@ namespace GourmetProject.Game.Presentation.Battle
                 foreach (BatchSurface surface in _surfacesById.Values)
                 {
                     capacity += surface.VertexCapacity;
+                }
+
+                return capacity;
+            }
+        }
+
+        internal int IndexCapacity
+        {
+            get
+            {
+                int capacity = 0;
+                foreach (BatchSurface surface in _surfacesById.Values)
+                {
+                    capacity += surface.IndexCapacity;
                 }
 
                 return capacity;
@@ -234,6 +312,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (!ValidateSourceTemplates(effectTemplate, stageTemplate, finaleTemplate))
             {
                 ClearAll();
+                InvalidateSurfaceMaterialLayouts();
                 DestroyTemplates();
                 _effectTemplateSource = null;
                 _stageTemplateSource = null;
@@ -243,6 +322,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             ClearAll();
+            InvalidateSurfaceMaterialLayouts();
             DestroyTemplates();
             _effectTemplateSource = effectTemplate;
             _stageTemplateSource = stageTemplate;
@@ -250,7 +330,10 @@ namespace GourmetProject.Game.Presentation.Battle
             _effectTemplate = CreateHiddenTemplate(effectTemplate, "Settlement Effect Layout Template");
             _stageTemplate = CreateHiddenTemplate(stageTemplate, "Settlement Stage Layout Template");
             _finaleTemplate = CreateHiddenTemplate(finaleTemplate, "Settlement Finale Layout Template");
+            _effectDefaultSourceColor = _effectTemplate.SourceText.color;
+            _effectDefaultTextColor = _effectTemplate.EffectText.color;
             PrepareBackgroundMaterial();
+            PrepareSharedEffectBackgroundGeometry();
             DisableTemplateRenderers();
             _initialized = true;
             return true;
@@ -277,13 +360,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 return default;
             }
 
-            LabelGeometry geometry = BakeStageGeometry(
+            LabelGeometry geometry = GetOrBakeStageGeometry(
                 template,
                 header,
                 body,
                 theme,
                 headerSemanticColor,
-                sortingOrder);
+                finalStamp);
             return AddLabel(
                 parent,
                 worldAnchor,
@@ -317,7 +400,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return default;
             }
 
-            LabelGeometry geometry = BakeFloatingGeometry(
+            LabelGeometry geometry = GetOrBakeFloatingGeometry(
                 sourceName,
                 effectText,
                 effectColor);
@@ -395,6 +478,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 scale,
                 rise * targetScale * enter,
                 alpha);
+        }
+
+        internal static bool IsSameEvaluationTime(float now, float lastEvaluatedTime)
+        {
+            return now == lastEvaluatedTime;
         }
 
         private void Update()
@@ -510,15 +598,21 @@ namespace GourmetProject.Game.Presentation.Battle
             string header,
             string body,
             Color theme,
-            Color? headerSemanticColor,
-            int sortingOrder)
+            Color? headerSemanticColor)
         {
             template.PrepareForReuse();
-            template.Bind(header, body, theme, headerSemanticColor, sortingOrder);
+            template.BindForBatch(header, body, theme, headerSemanticColor);
             var geometry = new LabelGeometry();
-            AppendTextGeometry(geometry, template.transform, template.HeaderText, renderLayer: 1);
-            AppendTextGeometry(geometry, template.transform, template.BodyText, renderLayer: 1);
-            DisableRenderers(template.gameObject);
+            AppendTextGeometry(
+                geometry,
+                template.transform,
+                template.HeaderText,
+                renderLayer: 1);
+            AppendTextGeometry(
+                geometry,
+                template.transform,
+                template.BodyText,
+                renderLayer: 1);
             return geometry;
         }
 
@@ -529,12 +623,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _effectTemplate.BindForBatch(sourceName, effectText, effectColor);
             var geometry = new LabelGeometry();
-            AppendSpriteGeometry(
-                geometry,
-                _effectTemplate.transform,
-                _effectTemplate.Background,
-                _effectBackgroundMaterial,
-                renderLayer: 0);
+            geometry.AddPart(_effectBackgroundGeometry, includeInCacheSize: false);
             if (!string.IsNullOrWhiteSpace(sourceName))
             {
                 AppendTextGeometry(
@@ -549,8 +638,145 @@ namespace GourmetProject.Game.Presentation.Battle
                 _effectTemplate.transform,
                 _effectTemplate.EffectText,
                 renderLayer: 1);
-            DisableRenderers(_effectTemplate.gameObject);
             return geometry;
+        }
+
+        private LabelGeometry GetOrBakeStageGeometry(
+            SettlementStageLabelView template,
+            string header,
+            string body,
+            Color theme,
+            Color? headerSemanticColor,
+            bool finalStamp)
+        {
+            Color bodyColor = SettlementColorPalette.TextFor(theme);
+            Color headerColor = headerSemanticColor.HasValue
+                ? SettlementColorPalette.ResultHeaderTextFor(headerSemanticColor.Value)
+                : bodyColor;
+            var key = LabelGeometryKey.Stage(
+                finalStamp,
+                header,
+                body,
+                headerColor,
+                bodyColor);
+            if (TryGetCachedGeometry(key, out LabelGeometry cached))
+            {
+                return cached;
+            }
+
+            LabelGeometry geometry;
+            using (BakeMarker.Auto())
+            {
+                geometry = BakeStageGeometry(
+                    template,
+                    header,
+                    body,
+                    theme,
+                    headerSemanticColor);
+            }
+
+            _geometryBakeCount++;
+            CacheGeometry(key, geometry);
+            return geometry;
+        }
+
+        private LabelGeometry GetOrBakeFloatingGeometry(
+            string sourceName,
+            string effectText,
+            Color? effectColor)
+        {
+            var key = LabelGeometryKey.Floating(
+                sourceName,
+                effectText,
+                _effectDefaultSourceColor,
+                effectColor ?? _effectDefaultTextColor);
+            if (TryGetCachedGeometry(key, out LabelGeometry cached))
+            {
+                return cached;
+            }
+
+            LabelGeometry geometry;
+            using (BakeMarker.Auto())
+            {
+                geometry = BakeFloatingGeometry(sourceName, effectText, effectColor);
+            }
+
+            _geometryBakeCount++;
+            CacheGeometry(key, geometry);
+            return geometry;
+        }
+
+        private bool TryGetCachedGeometry(
+            LabelGeometryKey key,
+            out LabelGeometry geometry)
+        {
+            if (!_geometryCache.TryGetValue(key, out GeometryCacheEntry entry))
+            {
+                geometry = null;
+                return false;
+            }
+
+            entry.LastUse = ++_geometryCacheUseSequence;
+            _geometryCache[key] = entry;
+            _geometryCacheHitCount++;
+            geometry = entry.Geometry;
+            return true;
+        }
+
+        private void CacheGeometry(LabelGeometryKey key, LabelGeometry geometry)
+        {
+            if (geometry == null || geometry.VertexCount == 0)
+            {
+                return;
+            }
+
+            long byteSize = geometry.EstimatedByteSize + key.EstimatedByteSize;
+            if (byteSize > GeometryCacheByteCapacity)
+            {
+                return;
+            }
+
+            while (_geometryCache.Count >= GeometryCacheCapacity
+                || _geometryCacheBytes > GeometryCacheByteCapacity - byteSize)
+            {
+                if (!EvictLeastRecentlyUsedGeometry())
+                {
+                    break;
+                }
+            }
+
+            _geometryCache[key] = new GeometryCacheEntry(
+                geometry,
+                ++_geometryCacheUseSequence,
+                byteSize);
+            _geometryCacheBytes += byteSize;
+        }
+
+        private bool EvictLeastRecentlyUsedGeometry()
+        {
+            LabelGeometryKey oldestKey = default;
+            long oldestUse = long.MaxValue;
+            bool found = false;
+            foreach (KeyValuePair<LabelGeometryKey, GeometryCacheEntry> pair in _geometryCache)
+            {
+                if (pair.Value.LastUse >= oldestUse)
+                {
+                    continue;
+                }
+
+                oldestKey = pair.Key;
+                oldestUse = pair.Value.LastUse;
+                found = true;
+            }
+
+            if (!found || !_geometryCache.TryGetValue(oldestKey, out GeometryCacheEntry oldest))
+            {
+                return false;
+            }
+
+            _geometryCache.Remove(oldestKey);
+            _geometryCacheBytes = Math.Max(0L, _geometryCacheBytes - oldest.ByteSize);
+            return true;
         }
 
         private static void AppendTextGeometry(
@@ -564,7 +790,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            text.ForceMeshUpdate(true, true);
             Matrix4x4 relative = templateRoot.worldToLocalMatrix * text.transform.localToWorldMatrix;
             TMP_MeshInfo[] meshInfos = text.textInfo?.meshInfo;
             if (meshInfos == null)
@@ -675,6 +900,29 @@ namespace GourmetProject.Game.Presentation.Battle
             _effectBackgroundMaterial.hideFlags = HideFlags.HideAndDontSave;
             _effectBackgroundMaterial.mainTexture = renderer.sprite.texture;
             _ownedMaterials.Add(_effectBackgroundMaterial);
+        }
+
+        private void PrepareSharedEffectBackgroundGeometry()
+        {
+            _effectBackgroundGeometry = null;
+            if (_effectTemplate == null
+                || _effectTemplate.Background == null
+                || _effectBackgroundMaterial == null)
+            {
+                return;
+            }
+
+            var geometry = new LabelGeometry();
+            AppendSpriteGeometry(
+                geometry,
+                _effectTemplate.transform,
+                _effectTemplate.Background,
+                _effectBackgroundMaterial,
+                renderLayer: 0);
+            if (geometry.Parts.Count > 0)
+            {
+                _effectBackgroundGeometry = geometry.Parts[0];
+            }
         }
 
         private bool ValidateTemplate(Component template, string label)
@@ -797,6 +1045,14 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        private void InvalidateSurfaceMaterialLayouts()
+        {
+            foreach (BatchSurface surface in _surfacesById.Values)
+            {
+                surface.InvalidateMaterialLayout();
+            }
+        }
+
         private void RemoveAndDisposeSurface(BatchSurface surface)
         {
             if (surface == null)
@@ -843,6 +1099,12 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void DestroyTemplates()
         {
+            _geometryCache.Clear();
+            _geometryCacheUseSequence = 0;
+            _geometryCacheBytes = 0;
+            _geometryBakeCount = 0;
+            _geometryCacheHitCount = 0;
+            _effectBackgroundGeometry = null;
             DestroyUnityObject(_effectTemplate != null ? _effectTemplate.gameObject : null);
             DestroyUnityObject(_stageTemplate != null ? _stageTemplate.gameObject : null);
             DestroyUnityObject(_finaleTemplate != null ? _finaleTemplate.gameObject : null);
@@ -857,6 +1119,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _ownedMaterials.Clear();
             _effectBackgroundMaterial = null;
+            _effectDefaultSourceColor = default;
+            _effectDefaultTextColor = default;
         }
 
         private static void DestroyUnityObject(UnityEngine.Object target)
@@ -887,6 +1151,111 @@ namespace GourmetProject.Game.Presentation.Battle
                 | (uint)color.g << 8
                 | (uint)color.b << 16
                 | (uint)color.a << 24;
+        }
+
+        private enum LabelGeometryTemplateKind : byte
+        {
+            Stage = 0,
+            Finale = 1,
+            Floating = 2,
+        }
+
+        private readonly struct LabelGeometryKey : IEquatable<LabelGeometryKey>
+        {
+            private LabelGeometryKey(
+                LabelGeometryTemplateKind kind,
+                string primaryText,
+                string secondaryText,
+                uint primaryColor,
+                uint secondaryColor)
+            {
+                Kind = kind;
+                PrimaryText = primaryText ?? string.Empty;
+                SecondaryText = secondaryText ?? string.Empty;
+                PrimaryColor = primaryColor;
+                SecondaryColor = secondaryColor;
+            }
+
+            private LabelGeometryTemplateKind Kind { get; }
+            private string PrimaryText { get; }
+            private string SecondaryText { get; }
+            private uint PrimaryColor { get; }
+            private uint SecondaryColor { get; }
+
+            public long EstimatedByteSize =>
+                ((long)PrimaryText.Length + SecondaryText.Length) * 2L;
+
+            public static LabelGeometryKey Stage(
+                bool finalStamp,
+                string header,
+                string body,
+                Color headerColor,
+                Color bodyColor)
+            {
+                return new LabelGeometryKey(
+                    finalStamp
+                        ? LabelGeometryTemplateKind.Finale
+                        : LabelGeometryTemplateKind.Stage,
+                    header,
+                    body,
+                    PackColor((Color32)headerColor),
+                    PackColor((Color32)bodyColor));
+            }
+
+            public static LabelGeometryKey Floating(
+                string sourceName,
+                string effectText,
+                Color sourceColor,
+                Color effectColor)
+            {
+                return new LabelGeometryKey(
+                    LabelGeometryTemplateKind.Floating,
+                    sourceName,
+                    effectText,
+                    PackColor((Color32)sourceColor),
+                    PackColor((Color32)effectColor));
+            }
+
+            public bool Equals(LabelGeometryKey other)
+            {
+                return Kind == other.Kind
+                    && PrimaryColor == other.PrimaryColor
+                    && SecondaryColor == other.SecondaryColor
+                    && string.Equals(PrimaryText, other.PrimaryText, StringComparison.Ordinal)
+                    && string.Equals(SecondaryText, other.SecondaryText, StringComparison.Ordinal);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is LabelGeometryKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = (int)Kind;
+                    hash = hash * 397 ^ StringComparer.Ordinal.GetHashCode(PrimaryText);
+                    hash = hash * 397 ^ StringComparer.Ordinal.GetHashCode(SecondaryText);
+                    hash = hash * 397 ^ (int)PrimaryColor;
+                    hash = hash * 397 ^ (int)SecondaryColor;
+                    return hash;
+                }
+            }
+        }
+
+        private struct GeometryCacheEntry
+        {
+            public GeometryCacheEntry(LabelGeometry geometry, long lastUse, long byteSize)
+            {
+                Geometry = geometry;
+                LastUse = lastUse;
+                ByteSize = byteSize;
+            }
+
+            public LabelGeometry Geometry { get; }
+            public long ByteSize { get; }
+            public long LastUse;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -1014,6 +1383,9 @@ namespace GourmetProject.Game.Presentation.Battle
             private readonly Stack<int> _freeSlots = new(InitialLabelCapacity);
             private readonly Dictionary<Material, MaterialGroup> _materialGroups = new();
             private readonly List<MaterialGroup> _sortedMaterialGroups = new();
+            private readonly List<int> _indexScratch = new(InitialIndexCapacity);
+            private readonly List<Material> _materialScratch = new(8);
+            private readonly List<SubMeshDescriptor> _subMeshScratch = new(8);
             private readonly NativeList<BaseAnimatedVertex> _baseVertices;
             private readonly NativeList<StaticVertex> _staticVertices;
             private readonly NativeList<DynamicVertex> _dynamicVertices;
@@ -1030,6 +1402,8 @@ namespace GourmetProject.Game.Presentation.Battle
             private int _vertexBufferCapacity;
             private int _indexBufferCapacity;
             private int _visibleVertexCount;
+            private int _rebuildCount;
+            private int _uploadCount;
 
             public BatchSurface(int id, Transform parent)
             {
@@ -1074,7 +1448,11 @@ namespace GourmetProject.Game.Presentation.Battle
             public int ActiveLabelCount => _activeSlots.Count;
             public int VisibleVertexCount => _visibleVertexCount;
             public int MaterialGroupCount => _sortedMaterialGroups.Count;
+            public int RetainedMaterialGroupCount => _materialGroups.Count;
             public int VertexCapacity => _vertexBufferCapacity;
+            public int IndexCapacity => _indexBufferCapacity;
+            public int RebuildCount => _rebuildCount;
+            public int UploadCount => _uploadCount;
 
             public SettlementTextBatchHandle Add(LabelRecord record)
             {
@@ -1098,6 +1476,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 slot.Record = record;
+                slot.Active = true;
                 slot.ActiveIndex = _activeSlots.Count;
                 _activeSlots.Add(slotIndex);
                 _structureDirty = true;
@@ -1110,7 +1489,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return handle.SurfaceId == Id
                     && handle.Slot >= 0
                     && handle.Slot < _slots.Count
-                    && _slots[handle.Slot].Record != null
+                    && _slots[handle.Slot].Active
                     && _slots[handle.Slot].Generation == handle.Generation;
             }
 
@@ -1135,6 +1514,18 @@ namespace GourmetProject.Game.Presentation.Battle
                 RebuildIfNeeded();
             }
 
+            public void InvalidateMaterialLayout()
+            {
+                CompleteJob();
+                _materialGroups.Clear();
+                _sortedMaterialGroups.Clear();
+                _indexScratch.Clear();
+                _materialScratch.Clear();
+                _subMeshScratch.Clear();
+                Renderer.enabled = false;
+                Renderer.SetSharedMaterials(_materialScratch);
+            }
+
             public void Schedule(float now)
             {
                 if (_disposed)
@@ -1150,7 +1541,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     return;
                 }
 
-                if (!_needsEvaluation && Mathf.Approximately(now, _lastEvaluatedTime))
+                if (!RequiresEvaluation(now))
                 {
                     return;
                 }
@@ -1197,6 +1588,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         | MeshUpdateFlags.DontValidateIndices
                         | MeshUpdateFlags.DontNotifyMeshUsers);
                 }
+
+                _uploadCount++;
             }
 
             public void Dispose()
@@ -1222,8 +1615,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     int slotIndex = _activeSlots[activeIndex];
                     LabelRecord record = _slots[slotIndex].Record;
-                    if (record != null
-                        && record.AutoRelease
+                    if (record.AutoRelease
                         && now >= record.StartTime + record.Duration)
                     {
                         ReleaseSlot(slotIndex);
@@ -1234,7 +1626,7 @@ namespace GourmetProject.Game.Presentation.Battle
             private void ReleaseSlot(int slotIndex)
             {
                 LabelSlot slot = _slots[slotIndex];
-                if (slot.Record == null)
+                if (!slot.Active)
                 {
                     return;
                 }
@@ -1249,7 +1641,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     _slots[movedSlotIndex].ActiveIndex = activeIndex;
                 }
 
-                slot.Record = null;
+                slot.Record = default;
+                slot.Active = false;
                 slot.ActiveIndex = -1;
                 _freeSlots.Push(slotIndex);
                 _structureDirty = true;
@@ -1270,7 +1663,10 @@ namespace GourmetProject.Game.Presentation.Battle
                     _staticVertices.Clear();
                     _dynamicVertices.Clear();
                     _states.Clear();
-                    _materialGroups.Clear();
+                    foreach (MaterialGroup group in _materialGroups.Values)
+                    {
+                        group.ResetForRebuild();
+                    }
                     _sortedMaterialGroups.Clear();
                     _sortedSlots.Clear();
                     _sortedSlots.AddRange(_activeSlots);
@@ -1282,11 +1678,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     for (int sortedIndex = 0; sortedIndex < _sortedSlots.Count; sortedIndex++)
                     {
                         LabelRecord record = _slots[_sortedSlots[sortedIndex]].Record;
-                        if (record == null)
-                        {
-                            continue;
-                        }
-
                         int stateIndex = _states.Length;
                         _states.Add(new LabelAnimationState(record));
                         AppendRecord(record, stateIndex, ref bounds, ref hasBounds);
@@ -1299,7 +1690,46 @@ namespace GourmetProject.Game.Presentation.Battle
                     Renderer.sortingOrder = highestSortingOrder + 2;
                     _structureDirty = false;
                     _needsEvaluation = _visibleVertexCount > 0;
+                    if (_visibleVertexCount == 0)
+                    {
+                        _lastEvaluatedTime = float.NaN;
+                    }
+
+                    _rebuildCount++;
                 }
+            }
+
+            private bool RequiresEvaluation(float now)
+            {
+                if (_needsEvaluation
+                    || float.IsNaN(_lastEvaluatedTime)
+                    || now < _lastEvaluatedTime)
+                {
+                    return true;
+                }
+
+                if (IsSameEvaluationTime(now, _lastEvaluatedTime))
+                {
+                    return false;
+                }
+
+                for (int activeIndex = 0; activeIndex < _activeSlots.Count; activeIndex++)
+                {
+                    LabelRecord record = _slots[_activeSlots[activeIndex]].Record;
+                    float endTime = record.StartTime + record.Duration;
+                    if (now >= record.StartTime && now < endTime)
+                    {
+                        return true;
+                    }
+
+                    if ((_lastEvaluatedTime < record.StartTime && now >= record.StartTime)
+                        || (_lastEvaluatedTime < endTime && now >= endTime))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
 
             private int CompareSlots(int leftSlot, int rightSlot)
@@ -1328,6 +1758,11 @@ namespace GourmetProject.Game.Presentation.Battle
                     {
                         group = new MaterialGroup(part.Material, part.RenderLayer, _materialGroups.Count);
                         _materialGroups.Add(part.Material, group);
+                    }
+
+                    if (!group.Active)
+                    {
+                        group.Active = true;
                         _sortedMaterialGroups.Add(group);
                     }
 
@@ -1393,11 +1828,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 if (_visibleVertexCount == 0 || indexCount == 0)
                 {
-                    _mesh.subMeshCount = 0;
-                    // Unity 会在移除最后一个 SubMesh 时释放索引缓冲区；同步清空缓存容量，
-                    // 这样下次重新出现文字时 EnsureIndexBufferCapacity 会重新创建缓冲区。
-                    _indexBufferCapacity = 0;
-                    Renderer.sharedMaterials = Array.Empty<Material>();
+                    // 仅关闭渲染，保留已扩容的 GPU 缓冲、SubMesh 与材质布局。
+                    // 下一波文字会完整覆写有效区域，避免每轮结算反复释放和重建缓冲。
                     Renderer.enabled = false;
                     return;
                 }
@@ -1414,19 +1846,20 @@ namespace GourmetProject.Game.Presentation.Battle
                     | MeshUpdateFlags.DontValidateIndices
                     | MeshUpdateFlags.DontNotifyMeshUsers);
 
-                var indices = new int[indexCount];
-                var materials = new Material[_sortedMaterialGroups.Count];
+                _indexScratch.Clear();
+                _materialScratch.Clear();
+                _subMeshScratch.Clear();
                 int indexOffset = 0;
                 for (int groupIndex = 0; groupIndex < _sortedMaterialGroups.Count; groupIndex++)
                 {
                     MaterialGroup group = _sortedMaterialGroups[groupIndex];
-                    group.Indices.CopyTo(indices, indexOffset);
-                    materials[groupIndex] = group.Material;
+                    _indexScratch.AddRange(group.Indices);
+                    _materialScratch.Add(group.Material);
                     indexOffset += group.Indices.Count;
                 }
 
                 _mesh.SetIndexBufferData(
-                    indices,
+                    _indexScratch,
                     0,
                     0,
                     indexCount,
@@ -1439,30 +1872,29 @@ namespace GourmetProject.Game.Presentation.Battle
                 meshBounds.Expand(0.10f);
                 // 写入 SubMesh 描述前先设置有效总 Bounds，避免 Unity 转换无效 MinMaxAABB。
                 _mesh.bounds = meshBounds;
-                var subMeshes = new SubMeshDescriptor[_sortedMaterialGroups.Count];
                 indexOffset = 0;
                 for (int groupIndex = 0; groupIndex < _sortedMaterialGroups.Count; groupIndex++)
                 {
                     int groupIndexCount = _sortedMaterialGroups[groupIndex].Indices.Count;
-                    subMeshes[groupIndex] =
+                    _subMeshScratch.Add(
                         new SubMeshDescriptor(indexOffset, groupIndexCount, MeshTopology.Triangles)
                         {
                             baseVertex = 0,
                             firstVertex = 0,
                             vertexCount = _visibleVertexCount,
                             bounds = meshBounds,
-                        };
+                        });
                     indexOffset += groupIndexCount;
                 }
 
                 _mesh.SetSubMeshes(
-                    subMeshes,
+                    _subMeshScratch,
                     0,
-                    subMeshes.Length,
+                    _subMeshScratch.Count,
                     MeshUpdateFlags.DontRecalculateBounds
                     | MeshUpdateFlags.DontValidateIndices
                     | MeshUpdateFlags.DontNotifyMeshUsers);
-                Renderer.sharedMaterials = materials;
+                Renderer.SetSharedMaterials(_materialScratch);
                 Renderer.enabled = true;
             }
 
@@ -1526,10 +1958,11 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             public int Generation;
             public int ActiveIndex = -1;
+            public bool Active;
             public LabelRecord Record;
         }
 
-        private sealed class LabelRecord
+        private readonly struct LabelRecord
         {
             public LabelRecord(
                 LabelGeometry geometry,
@@ -1571,8 +2004,9 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             public readonly List<GeometryPart> Parts = new();
             public int VertexCount { get; private set; }
+            public long EstimatedByteSize { get; private set; }
 
-            public void AddPart(GeometryPart part)
+            public void AddPart(GeometryPart part, bool includeInCacheSize = true)
             {
                 if (part == null || part.Vertices.Length == 0)
                 {
@@ -1581,6 +2015,10 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 Parts.Add(part);
                 VertexCount += part.Vertices.Length;
+                if (includeInCacheSize)
+                {
+                    EstimatedByteSize += part.EstimatedByteSize;
+                }
             }
         }
 
@@ -1602,6 +2040,9 @@ namespace GourmetProject.Game.Presentation.Battle
             public SourceVertex[] Vertices { get; }
             public int[] Triangles { get; }
             public int RenderLayer { get; }
+            public long EstimatedByteSize =>
+                (long)Vertices.Length * SourceVertexSizeBytes
+                + (long)Triangles.Length * sizeof(int);
         }
 
         private readonly struct SourceVertex
@@ -1643,6 +2084,13 @@ namespace GourmetProject.Game.Presentation.Battle
             public int RenderLayer { get; }
             public int CreationOrder { get; }
             public List<int> Indices { get; } = new();
+            public bool Active { get; set; }
+
+            public void ResetForRebuild()
+            {
+                Active = false;
+                Indices.Clear();
+            }
 
             public static int Compare(MaterialGroup left, MaterialGroup right)
             {
