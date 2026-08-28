@@ -1394,6 +1394,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 if (_visibleVertexCount == 0 || indexCount == 0)
                 {
                     _mesh.subMeshCount = 0;
+                    // Unity 会在移除最后一个 SubMesh 时释放索引缓冲区；同步清空缓存容量，
+                    // 这样下次重新出现文字时 EnsureIndexBufferCapacity 会重新创建缓冲区。
+                    _indexBufferCapacity = 0;
                     Renderer.sharedMaterials = Array.Empty<Material>();
                     Renderer.enabled = false;
                     return;

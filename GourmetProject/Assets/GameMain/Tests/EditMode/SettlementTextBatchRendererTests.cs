@@ -151,6 +151,35 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void ClearThenSpawnAgain_RecreatesIndexBufferAndRenders()
+        {
+            SettlementTextBatchHandle first = SpawnStage("第一次");
+            _batch.AdvanceForTests(Time.time);
+            Mesh mesh = _batch.GetSurfaceMeshForTests(_surfaceParent.transform);
+            MeshRenderer renderer =
+                _batch.GetSurfaceRendererForTests(_surfaceParent.transform);
+
+            Assert.That(_batch.IsAlive(first), Is.True);
+            Assert.That(mesh.subMeshCount, Is.GreaterThan(0));
+
+            _batch.ClearAll();
+
+            Assert.That(mesh.subMeshCount, Is.Zero);
+            Assert.That(renderer.enabled, Is.False);
+
+            SettlementTextBatchHandle second = SpawnStage("第二次");
+            Assert.DoesNotThrow(() => _batch.AdvanceForTests(Time.time));
+
+            Assert.That(_batch.IsAlive(second), Is.True);
+            Assert.That(mesh.subMeshCount, Is.GreaterThan(0));
+            Assert.That(
+                Enumerable.Range(0, mesh.subMeshCount)
+                    .Sum(index => (long)mesh.GetIndexCount(index)),
+                Is.GreaterThan(0));
+            Assert.That(renderer.enabled, Is.True);
+        }
+
+        [Test]
         public void FloatingLifetime_IncludesDelayAndExpiresWithoutDroppingEarly()
         {
             float beforeSpawn = Time.time;
