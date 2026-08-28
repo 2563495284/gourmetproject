@@ -9,11 +9,17 @@ using UnityEngine;
 using GpTable = GourmetProject.Gameplay.Board.DiningTable;
 using GourmetProject.Game.Meta;
 using GourmetProject.Game.Run;
+using GourmetProject.Runtime.Pooling;
+using Unity.Profiling;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
     public sealed class DiningTableView : MonoBehaviour
     {
+        private static readonly ProfilerMarker BuildMarker = new("Gourmet.Table.Build");
+        private const int CellPoolPrewarm = 16;
+        private const int CellPoolMaxInactive = 192;
+        private const int OutlinePoolMaxInactive = 8;
         // 空格直接露出格子贴图本色（白色不染色）；虚格压暗。
         private static readonly Color EmptyColor = Color.white;
         private static readonly Color VoidColor = new Color(0.07f, 0.04f, 0.03f, 0.0f);
@@ -38,12 +44,18 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly HashSet<GridPos> _presentationSuppressedDisabledCells = new HashSet<GridPos>();
         private readonly HashSet<GridPos> _presentationRemovedTombstones = new HashSet<GridPos>();
         private readonly HashSet<GridPos> _presentationNormalRemovedCells = new HashSet<GridPos>();
+        private readonly List<GridPos> _staleCellPositions = new List<GridPos>();
+        private readonly Dictionary<GridPos, GridPlacementFeedbackState> _dragFeedbackStates = new Dictionary<GridPos, GridPlacementFeedbackState>();
+        private GameObjectPool _cellPool;
+        private GameObjectPool _scopeOutlinePool;
         private DiningTableCellSprites _cellSprites;
         private float _cellSize;
         private GpTable _board;
         private Action<GridPos> _clicked;
         private Action<DiningTableCellView> _cellHoverEntered;
         private Action<DiningTableCellView> _cellHoverExited;
+        private Action<DiningTableCellView> _cellHoverEnterHandler;
+        private Action<DiningTableCellView> _cellHoverExitHandler;
 
         public DiningTableCoordinateMapper Mapper { get; private set; }
 
@@ -53,52 +65,86 @@ namespace GourmetProject.Game.Presentation.Battle
         /// </summary>
         public void Build(GpTable board, float cellSize, float gap, Action<GridPos> clicked, DiningTableCellView cellPrefab = null)
         {
-            Clear();
-            _board = board ?? throw new ArgumentNullException(nameof(board));
-            _clicked = clicked;
-            if (cellPrefab != null)
+            using (BuildMarker.Auto())
             {
-                _cellPrefab = cellPrefab;
-            }
-
-            Mapper = new DiningTableCoordinateMapper(board.Width, board.Height, cellSize, gap, transform);
-            _cellSize = cellSize;
-            _cellSprites = DiningTableCellSpriteResources.LoadDefault();
-            if (!_cellSprites.IsValid)
-            {
-                throw new InvalidOperationException("默认餐桌格 Sprite 缺失。");
-            }
-
-            for (int y = 0; y < board.Height; y++)
-            {
-                for (int x = 0; x < board.Width; x++)
+                GpTable nextBoard = board ?? throw new ArgumentNullException(nameof(board));
+                ReleaseTransientViews();
+                if (cellPrefab != null && cellPrefab != _cellPrefab)
                 {
-                    var pos = new GridPos(x, y);
-                    DiningTableCellView cell = InstantiateCell();
-                    if (cell == null)
-                    {
-                        continue;
-                    }
-
-                    cell.Configure(pos, Mapper.CellCenterLocal(pos), cellSize, _cellSprites, _clicked);
-                    cell.SetHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
-                    _cells[pos] = cell;
+                    ReleaseAllCells();
+                    _cellPool?.Clear();
+                    _cellPool = null;
+                    _cellPrefab = cellPrefab;
                 }
-            }
 
-            Sync();
+                _board = nextBoard;
+                _clicked = clicked;
+                EnsureCellPool();
+
+                if (Mapper == null)
+                {
+                    Mapper = new DiningTableCoordinateMapper(
+                        nextBoard.Width,
+                        nextBoard.Height,
+                        cellSize,
+                        gap,
+                        transform);
+                }
+                else
+                {
+                    Mapper.Configure(nextBoard.Width, nextBoard.Height, cellSize, gap, transform);
+                }
+                _cellSize = cellSize;
+                _cellSprites = DiningTableCellSpriteResources.LoadDefault();
+                if (!_cellSprites.IsValid)
+                {
+                    throw new InvalidOperationException("默认餐桌格 Sprite 缺失。");
+                }
+
+                _staleCellPositions.Clear();
+                foreach (GridPos existingPosition in _cells.Keys)
+                {
+                    if (!nextBoard.InBounds(existingPosition))
+                    {
+                        _staleCellPositions.Add(existingPosition);
+                    }
+                }
+
+                for (int i = 0; i < _staleCellPositions.Count; i++)
+                {
+                    GridPos stalePosition = _staleCellPositions[i];
+                    ReturnCell(_cells[stalePosition]);
+                    _cells.Remove(stalePosition);
+                }
+
+                for (int y = 0; y < nextBoard.Height; y++)
+                {
+                    for (int x = 0; x < nextBoard.Width; x++)
+                    {
+                        var pos = new GridPos(x, y);
+                        if (!_cells.TryGetValue(pos, out DiningTableCellView cell) || cell == null)
+                        {
+                            cell = RentCell(transform);
+                            if (cell == null)
+                            {
+                                continue;
+                            }
+
+                            _cells[pos] = cell;
+                        }
+
+                        cell.Configure(pos, Mapper.CellCenterLocal(pos), cellSize, _cellSprites, _clicked);
+                        cell.SetHoverCallbacks(_cellHoverEnterHandler, _cellHoverExitHandler);
+                    }
+                }
+
+                Sync();
+            }
         }
 
         private DiningTableCellView InstantiateCell()
         {
-            if (_cellPrefab != null)
-            {
-                DiningTableCellView cell = Instantiate(_cellPrefab, transform);
-                return cell;
-            }
-
-            Debug.LogError($"{nameof(DiningTableView)} 缺少 DiningTableCell prefab。", this);
-            return null;
+            return RentCell(transform);
         }
 
         /// <summary>餐桌编辑页开关：把胃外虚格显示为浅色占位（最大网格提示）。需再次 Sync 生效。</summary>
@@ -331,28 +377,28 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            var display = new Dictionary<GridPos, GridPlacementFeedbackState>();
+            _dragFeedbackStates.Clear();
             foreach (GridPlacementFeedbackCell cell in result.Cells)
             {
-                display[cell.Position] = cell.State;
+                _dragFeedbackStates[cell.Position] = cell.State;
             }
 
             // 餐桌格仍显示中心格的整体状态；食物只映射其实际占用格，
             // 避免中心格覆盖单格反馈或在不规则形状的空洞中多画一格。
             if (!dishPlacement)
             {
-                display[result.CenterCell] = result.OverallState;
+                _dragFeedbackStates[result.CenterCell] = result.OverallState;
             }
 
-            EnsureDragFeedbackCount(display.Count);
-            if (_dragFeedbackCells.Count < display.Count)
+            EnsureDragFeedbackCount(_dragFeedbackStates.Count);
+            if (_dragFeedbackCells.Count < _dragFeedbackStates.Count)
             {
                 ClearDragPlacementFeedback();
                 return;
             }
 
             int index = 0;
-            foreach (KeyValuePair<GridPos, GridPlacementFeedbackState> entry in display)
+            foreach (KeyValuePair<GridPos, GridPlacementFeedbackState> entry in _dragFeedbackStates)
             {
                 DiningTableCellView overlay = _dragFeedbackCells[index++];
                 Color color = dishPlacement
@@ -552,7 +598,86 @@ namespace GourmetProject.Game.Presentation.Battle
                 materialOverride);
         }
 
-        private void Clear()
+        private void Awake()
+        {
+            _cellHoverEnterHandler = OnCellHoverEntered;
+            _cellHoverExitHandler = OnCellHoverExited;
+            EnsureCellPool();
+            EnsureScopeOutlinePool();
+        }
+
+        private void OnDestroy()
+        {
+            _cellPool?.Clear();
+            _scopeOutlinePool?.Clear();
+        }
+
+        internal DiningTableCellView RentCell(Transform parent)
+        {
+            EnsureCellPool();
+            if (_cellPool == null)
+            {
+                Debug.LogError($"{nameof(DiningTableView)} 缺少 DiningTableCell prefab。", this);
+                return null;
+            }
+
+            return _cellPool.Get<DiningTableCellView>(parent != null ? parent : transform);
+        }
+
+        internal void ReturnCell(DiningTableCellView cell)
+        {
+            if (cell == null)
+            {
+                return;
+            }
+
+            EnsureCellPool();
+            if (_cellPool != null)
+            {
+                _cellPool.Release(cell);
+            }
+            else if (Application.isPlaying)
+            {
+                Destroy(cell.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(cell.gameObject);
+            }
+        }
+
+        private void EnsureCellPool()
+        {
+            if (_cellPool != null || _cellPrefab == null)
+            {
+                return;
+            }
+
+            _cellPool = new GameObjectPool(
+                _cellPrefab.gameObject,
+                transform,
+                CellPoolPrewarm,
+                CellPoolMaxInactive,
+                onGet: go => go.GetComponent<DiningTableCellView>()?.PrepareForReuse(),
+                onRelease: go => go.GetComponent<DiningTableCellView>()?.ResetForPool());
+        }
+
+        private void EnsureScopeOutlinePool()
+        {
+            if (_scopeOutlinePool != null || _scopeRegionOutlinePrefab == null)
+            {
+                return;
+            }
+
+            _scopeOutlinePool = new GameObjectPool(
+                _scopeRegionOutlinePrefab.gameObject,
+                transform,
+                prewarm: 0,
+                maxInactive: OutlinePoolMaxInactive,
+                onRelease: go => go.GetComponent<BattleScopeRegionOutlineView>()?.ResetForPool());
+        }
+
+        private void ReleaseTransientViews()
         {
             _presentationHiddenCells.Clear();
             _presentationSuppressedDisabledCells.Clear();
@@ -562,7 +687,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 if (overlay != null)
                 {
-                    Destroy(overlay.gameObject);
+                    ReturnCell(overlay);
                 }
             }
 
@@ -571,16 +696,20 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 if (outline != null)
                 {
-                    Destroy(outline.gameObject);
+                    _scopeOutlinePool?.Release(outline);
                 }
             }
 
             _scopeRegionOutlines.Clear();
+        }
+
+        private void ReleaseAllCells()
+        {
             foreach (DiningTableCellView cell in _cells.Values)
             {
                 if (cell != null)
                 {
-                    Destroy(cell.gameObject);
+                    ReturnCell(cell);
                 }
             }
 
@@ -621,7 +750,15 @@ namespace GourmetProject.Game.Presentation.Battle
                 return null;
             }
 
-            BattleScopeRegionOutlineView outline = Instantiate(_scopeRegionOutlinePrefab, transform);
+            EnsureScopeOutlinePool();
+            BattleScopeRegionOutlineView outline = _scopeOutlinePool != null
+                ? _scopeOutlinePool.Get<BattleScopeRegionOutlineView>(transform)
+                : null;
+            if (outline == null)
+            {
+                return null;
+            }
+
             outline.name = $"ScopeRegion_{channel}_{layer}";
             outline.Hide();
             _scopeRegionOutlines[key] = outline;

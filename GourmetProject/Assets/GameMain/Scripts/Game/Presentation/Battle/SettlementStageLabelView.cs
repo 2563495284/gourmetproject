@@ -1,4 +1,5 @@
 using GourmetProject.Game.UI.Common;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
@@ -13,6 +14,15 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public TextMeshPro HeaderText => _headerText;
         public TextMeshPro BodyText => _bodyText;
+
+        private Color _defaultHeaderColor;
+        private Color _defaultBodyColor;
+
+        private void Awake()
+        {
+            _defaultHeaderColor = _headerText != null ? _headerText.color : Color.white;
+            _defaultBodyColor = _bodyText != null ? _bodyText.color : Color.white;
+        }
 
         public void Bind(
             string header,
@@ -42,6 +52,34 @@ namespace GourmetProject.Game.Presentation.Battle
                 _bodyText,
                 BattleSorting.Fx,
                 order + 3);
+        }
+
+        internal void PrepareForReuse()
+        {
+            ResetReusableState();
+        }
+
+        internal void ResetForPool()
+        {
+            ResetReusableState();
+        }
+
+        private void ResetReusableState()
+        {
+            transform.DOKill(false);
+            if (_headerText != null)
+            {
+                _headerText.DOKill(false);
+                _headerText.text = string.Empty;
+                _headerText.color = _defaultHeaderColor;
+            }
+
+            if (_bodyText != null)
+            {
+                _bodyText.DOKill(false);
+                _bodyText.text = string.Empty;
+                _bodyText.color = _defaultBodyColor;
+            }
         }
     }
 }

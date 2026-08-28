@@ -8,6 +8,8 @@ using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
+using GourmetProject.Runtime.Pooling;
+using Unity.Profiling;
 using UnityEngine;
 using TMPro;
 
@@ -20,8 +22,17 @@ namespace GourmetProject.Game.Presentation.Battle
     public sealed class SettlementStageView : MonoBehaviour
     {
         internal const float DefaultPendingDishBrightness = 0.28f;
+        private const int SpritePoolPrewarm = 12;
+        private const int SpritePoolMaxInactive = 32;
+        private const int LabelPoolPrewarm = 8;
+        private const int LabelPoolMaxInactive = 24;
+        private const int FinaleLabelPoolPrewarm = 1;
+        private const int FinaleLabelPoolMaxInactive = 2;
+        private static readonly ProfilerMarker TransientsMarker =
+            new("Gourmet.Settlement.Transients");
 
         private readonly List<GameObject> _transients = new();
+        private readonly Dictionary<GameObject, TransientRegistration> _transientPools = new();
         private readonly HashSet<int> _completedDishInstanceIds = new();
         private IReadOnlyDictionary<int, DishPieceView> _dishViews;
         private DiningTableCoordinateMapper _mapper;
@@ -55,8 +66,29 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly List<GameObject> _heldLabels = new();
         private SettlementEffectGroup _resultHitSoundGroup;
         private Camera _worldCamera;
+        private GameObjectPool _spritePool;
+        private GameObjectPool _labelPool;
+        private GameObjectPool _finaleLabelPool;
+        private int _nextTransientGeneration;
+
+        private readonly struct TransientRegistration
+        {
+            public TransientRegistration(GameObjectPool pool, int generation)
+            {
+                Pool = pool;
+                Generation = generation;
+            }
+
+            public GameObjectPool Pool { get; }
+            public int Generation { get; }
+        }
 
         internal float PendingDishBrightness => _pendingDishBrightness;
+
+        private void Awake()
+        {
+            EnsurePools();
+        }
 
         public void Configure(
             IReadOnlyDictionary<int, DishPieceView> dishViews,
@@ -322,6 +354,7 @@ namespace GourmetProject.Game.Presentation.Battle
             PlaySweetTransferHandoffsAsync(
             IReadOnlyList<SweetTransferHandoffVisual> handoffs,
             SweetTransferParticleView particlePrefab,
+            GameObjectPool particlePool,
             float travelDuration,
             CancellationToken cancellationToken)
         {
@@ -366,7 +399,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         source.WorldBounds.center,
                         executor.WorldBounds.center,
                         travelDuration,
-                        visualScale: _visualScale);
+                        visualScale: _visualScale,
+                        pool: particlePool);
                     if (flight != null)
                     {
                         flights.Add(flight);
@@ -395,7 +429,14 @@ namespace GourmetProject.Game.Presentation.Battle
                     SweetTransferParticleView flight = flights[i];
                     if (flight != null)
                     {
-                        Destroy(flight.gameObject);
+                        if (particlePool != null)
+                        {
+                            particlePool.Release(flight);
+                        }
+                        else
+                        {
+                            Destroy(flight.gameObject);
+                        }
                     }
                 }
             }
@@ -446,6 +487,7 @@ namespace GourmetProject.Game.Presentation.Battle
             DishPieceView transferSource,
             DishPieceView buffOwner,
             SweetTransferParticleView particlePrefab,
+            GameObjectPool particlePool,
             float duration,
             CancellationToken cancellationToken)
         {
@@ -463,7 +505,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 duration,
                 cancellationToken,
                 theme,
-                _visualScale);
+                _visualScale,
+                particlePool);
             await PlayFeedbackSafelyAsync(
                 buffOwner,
                 SettlementDishFeedbackKind.GenericSkillTriggered,
@@ -475,6 +518,7 @@ namespace GourmetProject.Game.Presentation.Battle
         internal async Awaitable PlaySweetTransferFailureAsync(
             DishPieceView source,
             SweetTransferParticleView particlePrefab,
+            GameObjectPool particlePool,
             float duration,
             CancellationToken cancellationToken)
         {
@@ -494,7 +538,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 source.WorldBounds.center,
                 duration,
                 cancellationToken,
-                _visualScale);
+                _visualScale,
+                particlePool);
         }
 
         internal async Awaitable ShowScopeAsync(
@@ -559,6 +604,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 center,
                 SettlementColorPalette.WithAlpha(chargeColor, 0.58f),
                 -4);
+            int outerGeneration = TransientGeneration(outer);
+            int innerGeneration = TransientGeneration(inner);
             if (outer == null || inner == null)
             {
                 try
@@ -571,11 +618,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     if (outer != null)
                     {
-                        Destroy(outer);
+                        ReleaseTransient(outer, outerGeneration);
                     }
                     if (inner != null)
                     {
-                        Destroy(inner);
+                        ReleaseTransient(inner, innerGeneration);
                     }
                 }
 
@@ -608,6 +655,7 @@ namespace GourmetProject.Game.Presentation.Battle
                         Mathf.Lerp(0.08f, innerInitial.a, eased));
                 })
                 .SetEase(Ease.Linear)
+                .SetId(outer)
                 .SetLink(outer);
 
             try
@@ -619,11 +667,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 tween?.Kill();
                 if (outer != null)
                 {
-                    Destroy(outer);
+                    ReleaseTransient(outer, outerGeneration);
                 }
                 if (inner != null)
                 {
-                    Destroy(inner);
+                    ReleaseTransient(inner, innerGeneration);
                 }
             }
         }
@@ -686,11 +734,13 @@ namespace GourmetProject.Game.Presentation.Battle
                     SettlementColorPalette.WithAlpha(primaryColor, primaryColor.a * 0.58f),
                     -4)
                 : null;
+            int primaryGeneration = TransientGeneration(primary);
+            int echoGeneration = TransientGeneration(echo);
             if (primary == null)
             {
                 if (echo != null)
                 {
-                    Destroy(echo);
+                    ReleaseTransient(echo, echoGeneration);
                 }
                 return;
             }
@@ -732,6 +782,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     }
                 })
                 .SetEase(Ease.Linear)
+                .SetId(primary)
                 .SetLink(primary);
 
             try
@@ -743,11 +794,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 tween?.Kill();
                 if (primary != null)
                 {
-                    Destroy(primary);
+                    ReleaseTransient(primary, primaryGeneration);
                 }
                 if (echo != null)
                 {
-                    Destroy(echo);
+                    ReleaseTransient(echo, echoGeneration);
                 }
             }
         }
@@ -995,6 +1046,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 center,
                 SettlementColorPalette.WithAlpha(SettlementColorPalette.FinalScore, 0.42f),
                 -4);
+            int ringGeneration = TransientGeneration(ring);
             Awaitable labelTask = SpawnLabelAsync(
                 center + Vector3.up * (0.62f * _visualScale),
                 "本桌结算",
@@ -1029,10 +1081,17 @@ namespace GourmetProject.Game.Presentation.Battle
                     renderer.color = color;
                 })
                 .SetEase(Ease.Linear)
+                .SetId(ring)
                 .SetLink(ring);
-
-            await PresentationTween.AwaitCompletionAsync(ringTween, cancellationToken);
-            await labelTask;
+            try
+            {
+                await PresentationTween.AwaitCompletionAsync(ringTween, cancellationToken);
+                await labelTask;
+            }
+            finally
+            {
+                ReleaseTransient(ring, ringGeneration);
+            }
         }
 
         public void ClearImmediate()
@@ -1059,16 +1118,14 @@ namespace GourmetProject.Game.Presentation.Battle
 
             DestroyGroupSpotlight();
             DestroyChapterSpotlight();
-            for (int i = 0; i < _transients.Count; i++)
+            while (_transients.Count > 0)
             {
-                GameObject transient = _transients[i];
-                if (transient != null)
-                {
-                    Destroy(transient);
-                }
+                int lastIndex = _transients.Count - 1;
+                GameObject transient = _transients[lastIndex];
+                _transients.RemoveAt(lastIndex);
+                ReleaseTransient(transient);
             }
-
-            _transients.Clear();
+            _transientPools.Clear();
         }
 
         private void ApplyFocus(int actorDishInstanceId, IReadOnlyCollection<int> targetDishIds)
@@ -1221,6 +1278,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     renderer.color = WithAlpha(SettlementColorPalette.BaseScore, alpha);
                 })
                 .SetEase(Ease.Linear)
+                .SetId(spotlight)
                 .SetLink(spotlight)
                 .OnComplete(() => StartChapterSpotlightBreath(spotlight, renderer, settledScale));
         }
@@ -1252,6 +1310,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 })
                 .SetEase(Ease.InOutSine)
                 .SetLoops(-1, LoopType.Yoyo)
+                .SetId(spotlight)
                 .SetLink(spotlight);
         }
 
@@ -1300,15 +1359,139 @@ namespace GourmetProject.Game.Presentation.Battle
                 return null;
             }
 
-            SpriteRenderer renderer = Instantiate(_spritePrefab, _fxRoot);
+            EnsurePools();
+            SpriteRenderer renderer = _spritePool?.Get<SpriteRenderer>(_fxRoot);
+            if (renderer == null)
+            {
+                return null;
+            }
+
             GameObject root = renderer.gameObject;
             root.name = name;
             root.transform.position = worldPosition;
             renderer.sprite = BattleShadow.SoftShadowSprite;
             renderer.color = color;
             BattleSorting.Apply(renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText + orderOffset);
-            _transients.Add(root);
+            RegisterTransient(root, _spritePool);
             return root;
+        }
+
+        private void EnsurePools()
+        {
+            if (_spritePool == null && _spritePrefab != null)
+            {
+                _spritePool = new GameObjectPool(
+                    _spritePrefab.gameObject,
+                    transform,
+                    SpritePoolPrewarm,
+                    SpritePoolMaxInactive,
+                    onGet: PrepareSpriteForReuse,
+                    onRelease: ResetSpriteForPool);
+            }
+
+            if (_labelPool == null && _labelPrefab != null)
+            {
+                _labelPool = new GameObjectPool(
+                    _labelPrefab.gameObject,
+                    transform,
+                    LabelPoolPrewarm,
+                    LabelPoolMaxInactive,
+                    onGet: go => go.GetComponent<SettlementStageLabelView>()?.PrepareForReuse(),
+                    onRelease: go => go.GetComponent<SettlementStageLabelView>()?.ResetForPool());
+            }
+
+            if (_finaleLabelPool == null && _finaleLabelPrefab != null)
+            {
+                _finaleLabelPool = new GameObjectPool(
+                    _finaleLabelPrefab.gameObject,
+                    transform,
+                    FinaleLabelPoolPrewarm,
+                    FinaleLabelPoolMaxInactive,
+                    onGet: go => go.GetComponent<SettlementStageLabelView>()?.PrepareForReuse(),
+                    onRelease: go => go.GetComponent<SettlementStageLabelView>()?.ResetForPool());
+            }
+        }
+
+        private void PrepareSpriteForReuse(GameObject root)
+        {
+            ResetSpriteVisual(root);
+        }
+
+        private void ResetSpriteForPool(GameObject root)
+        {
+            ResetSpriteVisual(root);
+        }
+
+        private void ResetSpriteVisual(GameObject root)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            root.transform.DOKill(false);
+            SpriteRenderer renderer = root.GetComponent<SpriteRenderer>();
+            if (renderer == null || _spritePrefab == null)
+            {
+                return;
+            }
+
+            renderer.DOKill(false);
+            renderer.SetPropertyBlock(null);
+            renderer.sprite = _spritePrefab.sprite;
+            renderer.sharedMaterial = _spritePrefab.sharedMaterial;
+            renderer.color = _spritePrefab.color;
+            renderer.flipX = _spritePrefab.flipX;
+            renderer.flipY = _spritePrefab.flipY;
+            renderer.enabled = _spritePrefab.enabled;
+        }
+
+        private void RegisterTransient(GameObject root, GameObjectPool pool)
+        {
+            if (root == null || pool == null)
+            {
+                return;
+            }
+
+            using (TransientsMarker.Auto())
+            {
+                _transients.Add(root);
+                int generation = ++_nextTransientGeneration;
+                if (generation == 0)
+                {
+                    generation = ++_nextTransientGeneration;
+                }
+
+                _transientPools[root] = new TransientRegistration(pool, generation);
+            }
+        }
+
+        private int TransientGeneration(GameObject root)
+        {
+            return root != null
+                && _transientPools.TryGetValue(root, out TransientRegistration registration)
+                    ? registration.Generation
+                    : 0;
+        }
+
+        private void ReleaseTransient(GameObject root, int expectedGeneration = 0)
+        {
+            if (root == null
+                || !_transientPools.TryGetValue(root, out TransientRegistration registration)
+                || (expectedGeneration != 0 && registration.Generation != expectedGeneration))
+            {
+                return;
+            }
+
+            _transientPools.Remove(root);
+
+            using (TransientsMarker.Auto())
+            {
+                DOTween.Kill(root, false);
+                _transients.Remove(root);
+                _heldLabels.Remove(root);
+                registration.Pool.Release(root);
+            }
         }
 
         private async Awaitable PlayImpactRingAsync(
@@ -1333,8 +1516,11 @@ namespace GourmetProject.Game.Presentation.Battle
             GameObject secondary = tier >= SettlementImpactTier.Chain
                 ? CreateSprite("SettlementImpactRingEcho", center, WithAlpha(initialColor, initialColor.a * 0.68f), -3)
                 : null;
+            int primaryGeneration = TransientGeneration(primary);
+            int secondaryGeneration = TransientGeneration(secondary);
             if (primary == null)
             {
+                ReleaseTransient(secondary, secondaryGeneration);
                 return;
             }
 
@@ -1374,17 +1560,16 @@ namespace GourmetProject.Game.Presentation.Battle
                     }
                 })
                 .SetEase(Ease.Linear)
+                .SetId(primary)
                 .SetLink(primary);
-
-            await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
-            if (primary != null)
+            try
             {
-                Destroy(primary);
+                await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
             }
-
-            if (secondary != null)
+            finally
             {
-                Destroy(secondary);
+                ReleaseTransient(primary, primaryGeneration);
+                ReleaseTransient(secondary, secondaryGeneration);
             }
         }
 
@@ -1411,13 +1596,20 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            SettlementStageLabelView label = Instantiate(
-                prefab,
+            EnsurePools();
+            GameObjectPool pool = finalStamp ? _finaleLabelPool : _labelPool;
+            SettlementStageLabelView label = pool?.Get<SettlementStageLabelView>(
                 parentOverride != null ? parentOverride : _fxRoot);
+            if (label == null)
+            {
+                return;
+            }
+
             GameObject root = label.gameObject;
             root.name = finalStamp ? "SettlementFinaleLabel" : "SettlementStageLabel";
             root.transform.position = anchor;
-            _transients.Add(root);
+            RegisterTransient(root, pool);
+            int generation = TransientGeneration(root);
             label.Bind(header, body, theme, headerSemanticColor, sortingOrder);
 
             TextMeshPro headerText = label.HeaderText;
@@ -1461,17 +1653,25 @@ namespace GourmetProject.Game.Presentation.Battle
                     bodyText.color = WithAlpha(bodyColor, alpha);
                 })
                 .SetEase(Ease.Linear)
+                .SetId(root)
                 .SetLink(root);
 
-            await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
-            if (holdUntilCleared && root != null)
+            bool held = false;
+            try
             {
-                _heldLabels.Add(root);
+                await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
+                if (holdUntilCleared && root != null && _transientPools.ContainsKey(root))
+                {
+                    _heldLabels.Add(root);
+                    held = true;
+                }
             }
-
-            if (!holdUntilCleared && root != null)
+            finally
             {
-                Destroy(root);
+                if (!held)
+                {
+                    ReleaseTransient(root, generation);
+                }
             }
         }
 
@@ -1488,22 +1688,22 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             if (_groupSpotlight != null)
             {
-                Destroy(_groupSpotlight);
+                ReleaseTransient(_groupSpotlight);
                 _groupSpotlight = null;
             }
 
             if (_heldLabels.Count > 0)
             {
-                for (int i = 0; i < _heldLabels.Count; i++)
+                while (_heldLabels.Count > 0)
                 {
-                    GameObject held = _heldLabels[i];
+                    int lastIndex = _heldLabels.Count - 1;
+                    GameObject held = _heldLabels[lastIndex];
+                    _heldLabels.RemoveAt(lastIndex);
                     if (held != null)
                     {
-                        Destroy(held);
+                        ReleaseTransient(held);
                     }
                 }
-
-                _heldLabels.Clear();
             }
         }
 
@@ -1516,7 +1716,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            Destroy(_chapterSpotlight);
+            ReleaseTransient(_chapterSpotlight);
             _chapterSpotlight = null;
         }
 
@@ -1953,6 +2153,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private void OnDestroy()
         {
             ClearImmediate();
+            _spritePool?.Clear();
+            _labelPool?.Clear();
+            _finaleLabelPool?.Clear();
         }
     }
 }

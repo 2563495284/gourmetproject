@@ -1,5 +1,6 @@
 using DG.Tweening;
 using GourmetProject.Game.UI.Common;
+using GourmetProject.Runtime.Pooling;
 using UnityEngine;
 using TMPro;
 
@@ -21,6 +22,21 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private Tween _tween;
         private int _sortingOrder = BattleSorting.OrderFloatingText;
+        private GameObjectPool _pool;
+        private Vector3 _defaultLocalScale;
+        private Color _defaultBackgroundColor;
+        private Color _defaultSourceColor;
+        private Color _defaultEffectColor;
+        private bool _defaultSourceActive;
+
+        private void Awake()
+        {
+            _defaultLocalScale = transform.localScale;
+            _defaultBackgroundColor = _background != null ? _background.color : Color.white;
+            _defaultSourceColor = _sourceText != null ? _sourceText.color : Color.white;
+            _defaultEffectColor = _effectText != null ? _effectText.color : Color.white;
+            _defaultSourceActive = _sourceText != null && _sourceText.gameObject.activeSelf;
+        }
 
         public static void Spawn(
             FloatingTextView prefab,
@@ -29,7 +45,8 @@ namespace GourmetProject.Game.Presentation.Battle
             string text,
             float? rise = null,
             float? duration = null,
-            float visualScale = 1f)
+            float visualScale = 1f,
+            GameObjectPool pool = null)
         {
             SpawnEffect(
                 prefab,
@@ -39,7 +56,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 text,
                 rise,
                 duration,
-                visualScale: visualScale);
+                visualScale: visualScale,
+                pool: pool);
         }
 
         public static void SpawnEffect(
@@ -52,7 +70,8 @@ namespace GourmetProject.Game.Presentation.Battle
             float? duration = null,
             Color? effectColor = null,
             float delay = 0f,
-            float visualScale = 1f)
+            float visualScale = 1f,
+            GameObjectPool pool = null)
         {
             if (prefab == null)
             {
@@ -60,7 +79,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            FloatingTextView view = Instantiate(prefab, parent);
+            FloatingTextView view = pool != null
+                ? pool.Get<FloatingTextView>(parent)
+                : Instantiate(prefab, parent);
+            view._pool = pool;
             view.transform.position = worldPos;
             float safeScale = Mathf.Max(0.0001f, visualScale);
             view.transform.localScale *= safeScale;
@@ -97,6 +119,16 @@ namespace GourmetProject.Game.Presentation.Battle
         private void OnDestroy()
         {
             KillAnimation();
+        }
+
+        internal void PrepareForReuse()
+        {
+            ResetReusableState();
+        }
+
+        internal void ResetForPool()
+        {
+            ResetReusableState();
         }
 
         private void ConfigureSourceText(string sourceName)
@@ -194,9 +226,45 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     if (this != null)
                     {
-                        Destroy(gameObject);
+                        _tween = null;
+                        GameObjectPool pool = _pool;
+                        _pool = null;
+                        if (pool != null)
+                        {
+                            pool.Release(this);
+                        }
+                        else
+                        {
+                            Destroy(gameObject);
+                        }
                     }
                 });
+        }
+
+        private void ResetReusableState()
+        {
+            KillAnimation();
+            _pool = null;
+            _sortingOrder = BattleSorting.OrderFloatingText;
+            transform.localScale = _defaultLocalScale;
+            if (_background != null)
+            {
+                _background.color = _defaultBackgroundColor;
+                _background.SetPropertyBlock(null);
+            }
+
+            if (_sourceText != null)
+            {
+                _sourceText.color = _defaultSourceColor;
+                _sourceText.text = string.Empty;
+                _sourceText.gameObject.SetActive(_defaultSourceActive);
+            }
+
+            if (_effectText != null)
+            {
+                _effectText.color = _defaultEffectColor;
+                _effectText.text = string.Empty;
+            }
         }
 
         private void KillAnimation()

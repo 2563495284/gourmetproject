@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DG.Tweening;
+using GourmetProject.Runtime.Pooling;
 using UnityEngine;
 
 namespace GourmetProject.Game.Presentation.Battle
@@ -34,6 +35,8 @@ namespace GourmetProject.Game.Presentation.Battle
     /// <summary>欢乐蛋糕层数的世界表现：增加时从画面上方落下，消耗时随机溶解已有蛋糕。</summary>
     public sealed class CakeLayerWorldFx : MonoBehaviour
     {
+        private const int CakePoolPrewarm = 8;
+        private const int CakePoolMaxInactive = 32;
         private static readonly int SpriteUvRectId = Shader.PropertyToID("_SpriteUvRect");
         private static readonly int DigestProgressId = Shader.PropertyToID("_DigestProgress");
         private static readonly int DigestCenterId = Shader.PropertyToID("_DigestCenter");
@@ -41,6 +44,10 @@ namespace GourmetProject.Game.Presentation.Battle
         private static readonly int DigestSeedId = Shader.PropertyToID("_DigestSeed");
 
         private readonly List<SpriteRenderer> _cakes = new();
+        private readonly HashSet<SpriteRenderer> _rentedCakes = new();
+        private readonly List<SpriteRenderer> _releaseBuffer = new();
+        private readonly Dictionary<SpriteRenderer, Tween> _cakeTweens = new();
+        private readonly Dictionary<SpriteRenderer, MaterialPropertyBlock> _cakePropertyBlocks = new();
         private readonly Dictionary<SpriteRenderer, BuffBurstVisualState> _buffBurstStates = new();
         private readonly List<Tween> _buffBurstTweens = new();
         [Header("Prefab Refs")]
@@ -60,6 +67,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private Camera _camera;
         private System.Random _random;
         private int _buffBurstVersion;
+        private GameObjectPool _cakePool;
 
         private readonly struct BuffBurstVisualState
         {
@@ -78,6 +86,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _owner = owner;
             _camera = camera != null ? camera : Camera.main;
             _random ??= new System.Random();
+            EnsurePool();
         }
 
         public void PlayChange(int before, int after)
@@ -111,16 +120,14 @@ namespace GourmetProject.Game.Presentation.Battle
         public void Clear()
         {
             ResetBuffBurstVisuals();
-            if (_root == null)
-            {
-                return;
-            }
-
             _cakes.Clear();
-            for (int i = _root.childCount - 1; i >= 0; i--)
+            _releaseBuffer.Clear();
+            _releaseBuffer.AddRange(_rentedCakes);
+            for (int i = 0; i < _releaseBuffer.Count; i++)
             {
-                Destroy(_root.GetChild(i).gameObject);
+                ReleaseCake(_releaseBuffer[i]);
             }
+            _releaseBuffer.Clear();
         }
 
         private void OnDisable()
@@ -131,6 +138,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private void OnDestroy()
         {
             ResetBuffBurstVisuals();
+            _cakePool?.Clear();
         }
 
         public List<CakeLayerVisualState> CaptureState()
@@ -375,7 +383,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 return null;
             }
 
-            SpriteRenderer renderer = Instantiate(_cakePrefab, _root, false);
+            EnsurePool();
+            SpriteRenderer renderer = _cakePool?.Get<SpriteRenderer>(_root);
+            if (renderer == null)
+            {
+                return null;
+            }
+
+            _rentedCakes.Add(renderer);
             GameObject cakeObject = renderer.gameObject;
             cakeObject.name = $"CakeLayer_{_cakes.Count + 1}";
             float scale = Mathf.Lerp(_randomScaleMultiplier.x, _randomScaleMultiplier.y, (float)_random.NextDouble());
@@ -395,10 +410,12 @@ namespace GourmetProject.Game.Presentation.Battle
             start.y = _camera.ViewportToWorldPoint(new Vector3(0.5f, 1.15f, Mathf.Abs(_camera.transform.position.z))).y;
             cakeObject.transform.position = start;
             float delay = Mathf.Min(staggerIndex * _fallStagger, _maxFallStagger);
-            cakeObject.transform.DOMove(landing, _fallDuration)
+            Tween fallTween = cakeObject.transform.DOMove(landing, _fallDuration)
                 .SetDelay(delay)
                 .SetEase(Ease.OutBounce)
-                .SetLink(cakeObject);
+                .SetLink(cakeObject)
+                .OnComplete(() => ForgetCakeTween(renderer));
+            _cakeTweens[renderer] = fallTween;
             return renderer;
         }
 
@@ -467,7 +484,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (material == null)
             {
                 Color startColor = cake.color;
-                DOVirtual.Float(startColor.a, 0f, _dissolveDuration, alpha =>
+                Tween fadeTween = DOVirtual.Float(startColor.a, 0f, _dissolveDuration, alpha =>
                     {
                         if (cake == null) return;
                         Color color = startColor;
@@ -475,12 +492,21 @@ namespace GourmetProject.Game.Presentation.Battle
                         cake.color = color;
                     })
                     .SetDelay(delay).SetLink(cake.gameObject)
-                    .OnComplete(() => Destroy(cake.gameObject));
+                    .OnComplete(() => CompleteCakeTweenAndRelease(cake));
+                _cakeTweens[cake] = fadeTween;
                 return;
             }
 
             cake.sharedMaterial = material;
-            var block = new MaterialPropertyBlock();
+            if (!_cakePropertyBlocks.TryGetValue(cake, out MaterialPropertyBlock block))
+            {
+                block = new MaterialPropertyBlock();
+                _cakePropertyBlocks[cake] = block;
+            }
+            else
+            {
+                block.Clear();
+            }
             Sprite sprite = cake.sprite;
             Texture texture = sprite.texture;
             Rect rect = sprite.textureRect;
@@ -493,7 +519,7 @@ namespace GourmetProject.Game.Presentation.Battle
             block.SetFloat(DigestProgressId, 0f);
             cake.SetPropertyBlock(block);
 
-            DOVirtual.Float(0f, 1f, _dissolveDuration, value =>
+            Tween dissolveTween = DOVirtual.Float(0f, 1f, _dissolveDuration, value =>
                 {
                     if (cake == null) return;
                     block.SetFloat(DigestProgressId, Mathf.SmoothStep(0f, 1f, value));
@@ -502,7 +528,109 @@ namespace GourmetProject.Game.Presentation.Battle
                 .SetDelay(delay)
                 .SetEase(Ease.Linear)
                 .SetLink(cake.gameObject)
-                .OnComplete(() => { if (cake != null) Destroy(cake.gameObject); });
+                .OnComplete(() => CompleteCakeTweenAndRelease(cake));
+            _cakeTweens[cake] = dissolveTween;
+        }
+
+        private void EnsurePool()
+        {
+            if (_cakePool != null || _root == null || _cakePrefab == null)
+            {
+                return;
+            }
+
+            _cakePool = new GameObjectPool(
+                _cakePrefab.gameObject,
+                _root,
+                CakePoolPrewarm,
+                CakePoolMaxInactive,
+                onGet: PrepareCakeForReuse,
+                onRelease: ResetCakeForPool);
+        }
+
+        private void PrepareCakeForReuse(GameObject cakeObject)
+        {
+            ResetCakeVisual(cakeObject);
+        }
+
+        private void ResetCakeForPool(GameObject cakeObject)
+        {
+            if (cakeObject == null)
+            {
+                return;
+            }
+
+            SpriteRenderer renderer = cakeObject.GetComponent<SpriteRenderer>();
+            if (renderer != null && _cakeTweens.Remove(renderer, out Tween tween))
+            {
+                tween?.Kill(false);
+            }
+
+            _rentedCakes.Remove(renderer);
+            _cakes.Remove(renderer);
+            ResetCakeVisual(cakeObject);
+        }
+
+        private void ResetCakeVisual(GameObject cakeObject)
+        {
+            if (cakeObject == null)
+            {
+                return;
+            }
+
+            cakeObject.transform.DOKill(false);
+            SpriteRenderer renderer = cakeObject.GetComponent<SpriteRenderer>();
+            if (renderer == null || _cakePrefab == null)
+            {
+                return;
+            }
+
+            renderer.DOKill(false);
+            renderer.SetPropertyBlock(null);
+            if (_cakePropertyBlocks.TryGetValue(renderer, out MaterialPropertyBlock block))
+            {
+                block.Clear();
+            }
+            renderer.sprite = _cakePrefab.sprite;
+            renderer.sharedMaterial = _cakePrefab.sharedMaterial;
+            renderer.color = _cakePrefab.color;
+            renderer.flipX = _cakePrefab.flipX;
+            renderer.flipY = _cakePrefab.flipY;
+            renderer.enabled = _cakePrefab.enabled;
+        }
+
+        private void ReleaseCake(SpriteRenderer cake)
+        {
+            if (cake == null || !_rentedCakes.Contains(cake))
+            {
+                return;
+            }
+
+            if (_cakeTweens.Remove(cake, out Tween tween))
+            {
+                tween?.Kill(false);
+            }
+
+            _cakePool?.Release(cake);
+        }
+
+        private void CompleteCakeTweenAndRelease(SpriteRenderer cake)
+        {
+            if (cake == null)
+            {
+                return;
+            }
+
+            _cakeTweens.Remove(cake);
+            ReleaseCake(cake);
+        }
+
+        private void ForgetCakeTween(SpriteRenderer cake)
+        {
+            if (cake != null)
+            {
+                _cakeTweens.Remove(cake);
+            }
         }
     }
 }

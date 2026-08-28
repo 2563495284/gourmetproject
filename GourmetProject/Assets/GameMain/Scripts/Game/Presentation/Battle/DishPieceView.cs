@@ -240,6 +240,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _triggerSweetTransferActivatorActive;
         private readonly Dictionary<SpriteRenderer, Color> _activeItemDimColors = new Dictionary<SpriteRenderer, Color>();
         private readonly Dictionary<SpriteRenderer, Color> _settlementFocusColors = new Dictionary<SpriteRenderer, Color>();
+        private readonly List<SpriteRenderer> _bodyRenderers = new List<SpriteRenderer>();
         private Tween _settlementFocusTween;
         private float _settlementFocusBrightness = 1f;
         private MaterialPropertyBlock _activeItemTransformBlock;
@@ -296,15 +297,29 @@ namespace GourmetProject.Game.Presentation.Battle
         public void BuildPlaced(DishInstance instance, Sprite sprite, float cellSize, float pitch, Action<DishInstance> clicked)
         {
             _scopeTargetGlowStates.Clear();
-            Instance = instance ?? throw new ArgumentNullException(nameof(instance));
+            DishInstance nextInstance = instance ?? throw new ArgumentNullException(nameof(instance));
+            DishShape nextShape = nextInstance.Placement.Orientation;
+            bool reuseLayout = ReferenceEquals(Instance, nextInstance)
+                && CurrentShape == nextShape
+                && _sprite == sprite
+                && Mathf.Approximately(_cellSize, cellSize)
+                && Mathf.Approximately(_pitch, pitch);
+            if (!ReferenceEquals(Instance, nextInstance))
+            {
+                _dishValueBadgePresenter?.Bind(nextInstance);
+            }
+
+            Instance = nextInstance;
             _sprite = sprite;
             _cellSize = cellSize;
             _pitch = pitch;
             _clicked = clicked;
-            _dishValueBadgePresenter?.Bind(instance);
-            RotationIndex = instance.Placement.RotationIndex;
-            CurrentShape = instance.Placement.Orientation;
-            RebuildCells(CurrentShape);
+            RotationIndex = nextInstance.Placement.RotationIndex;
+            CurrentShape = nextShape;
+            if (!reuseLayout)
+            {
+                RebuildCells(CurrentShape);
+            }
             HideScopeTargetGlow();
         }
 
@@ -834,22 +849,24 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private IEnumerable<SpriteRenderer> EnumerateBodyRenderers()
+        private List<SpriteRenderer> EnumerateBodyRenderers()
         {
-            if (_spriteRenderer == null)
+            if (_bodyRenderers.Count > 0 || _spriteRenderer == null)
             {
-                yield break;
+                return _bodyRenderers;
             }
 
-            foreach (SpriteRenderer renderer in _spriteRenderer.GetComponentsInChildren<SpriteRenderer>(true))
+            _spriteRenderer.GetComponentsInChildren(true, _bodyRenderers);
+            for (int i = _bodyRenderers.Count - 1; i >= 0; i--)
             {
+                SpriteRenderer renderer = _bodyRenderers[i];
                 if (renderer == null || renderer == _placementGlow || renderer == _scopeTargetGlow)
                 {
-                    continue;
+                    _bodyRenderers.RemoveAt(i);
                 }
-
-                yield return renderer;
             }
+
+            return _bodyRenderers;
         }
 
         /// <summary>
@@ -2829,6 +2846,69 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 _hoverExited?.Invoke(this);
             }
+        }
+
+        internal void PrepareForReuse()
+        {
+            ResetReusableState(clearInstance: false, clearBadgeBinding: false);
+        }
+
+        internal void ResetForPool()
+        {
+            ResetReusableState(clearInstance: true, clearBadgeBinding: true);
+        }
+
+        private void ResetReusableState(bool clearInstance, bool clearBadgeBinding)
+        {
+            EnsureRefs();
+            transform.DOKill(false);
+            _visualPivot?.DOKill(false);
+            _spriteRenderer?.transform.DOKill(false);
+            _activeItemFlavorSequence?.Kill(false);
+            _activeItemFlavorSequence = null;
+            ApplyActiveItemTransformEffect(0f);
+            _scopeAffectedVersion++;
+            StopScopeAffectedShake(restoreTransform: true);
+            _settlementFeedbackVersion++;
+            StopSettlementFeedback(restoreTransform: true);
+            _dishValueBadgePresenter?.ResetForReuse(clearBadgeBinding);
+            ClearAllScopeTargetGlows();
+            ClearSweetTransferBuffMarkers();
+            ClearSettlementFocus();
+            SetActiveItemTargetDimmed(false);
+            SetDragPresentation(false);
+            SetPlacementGlow(false, false);
+            SetGhost(false);
+            SetBodyAlpha(1f);
+            _sortingOrderOffset = 0;
+            SetFlying(false);
+            _clicked = null;
+            _hoverEntered = null;
+            _hoverExited = null;
+            _moveBegin = null;
+            _moveUpdate = null;
+            _moveEnd = null;
+            _pointerHitFilter = null;
+            _moveDragging = false;
+            _clickEnabled = true;
+            _suppressPrimaryUntilReleased = false;
+            _debuffVisualSuppressed = false;
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+            transform.localScale = Vector3.one;
+            SetHovered(false);
+
+            if (!clearInstance)
+            {
+                return;
+            }
+
+            Instance = null;
+            CurrentShape = null;
+            RotationIndex = 0;
+            _sprite = null;
+            _cellSize = 0f;
+            _pitch = 0f;
         }
 
         private void OnDisable()

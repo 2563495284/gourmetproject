@@ -217,6 +217,19 @@ namespace GourmetProject.Game.Presentation.Battle
             StartFadeOut();
         }
 
+        internal void ResetForPool()
+        {
+            HideImmediate();
+            ActiveChannel = BattleScopeHighlightChannel.Persistent;
+            _fadeElapsed = 0f;
+            _fadeDuration = 0f;
+            _visibilityAnimating = false;
+            if (_renderer != null)
+            {
+                _renderer.SetPropertyBlock(null);
+            }
+        }
+
         internal static bool UsesImmediateVisibility(BattleScopeHighlightChannel channel)
         {
             return channel == BattleScopeHighlightChannel.Persistent;

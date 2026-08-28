@@ -9,6 +9,7 @@ using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
+using GourmetProject.Runtime.Pooling;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.InputSystem;
@@ -93,6 +94,10 @@ namespace GourmetProject.Game.Presentation.Battle
         internal const float CakeLayerChargeDuration = 0.28f;
         internal const float CakeLayerPulseDuration = 0.34f;
         private const string InitialDishBaseBatchKey = "initial:dish-bases";
+        private const int SweetTransferPoolPrewarm = 4;
+        private const int SweetTransferPoolMaxInactive = 16;
+        private const int FloatingTextPoolPrewarm = 8;
+        private const int FloatingTextPoolMaxInactive = 24;
 
         [Header("结算常驻三阶段速度")]
         [SerializeField] private float _belowTargetSpeed = 1f;
@@ -129,6 +134,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private SettlementStageView _stage;
         private SettlementCameraFeedback _cameraFeedback;
         private CakeLayerWorldFx _cakeLayerWorldFx;
+        private GameObjectPool _sweetTransferParticlePool;
+        private GameObjectPool _floatingTextPool;
         private bool _externalPlaybackPaused;
         private bool _playbackHasSavedTimeScale;
         private float _playbackSavedTimeScale = 1f;
@@ -155,6 +162,9 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 EnsureStage();
             }
+
+            EnsureSweetTransferParticlePool();
+            EnsureFloatingTextPool();
         }
 
         /// <summary>暂停当前结算演出并保存进入暂停前的世界时间倍率。重复调用不会重复保存。</summary>
@@ -215,7 +225,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 text,
                 rise,
                 duration,
-                visualScale);
+                visualScale,
+                _floatingTextPool);
         }
 
         public void PlayFloatingEffect(
@@ -550,6 +561,8 @@ namespace GourmetProject.Game.Presentation.Battle
             ForceRestorePlaybackTimeScale();
             RestoreSettlementPace();
             ClearRetainedDishValueBadges();
+            _sweetTransferParticlePool?.Clear();
+            _floatingTextPool?.Clear();
         }
 
         private bool EnsureStage()
@@ -1663,6 +1676,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 arrivedHandoffContexts = await _stage.PlaySweetTransferHandoffsAsync(
                     handoffs,
                     _sweetTransferParticlePrefab,
+                    _sweetTransferParticlePool,
                     ScaleSettlementDuration(_sweetTransferTravelDuration),
                     cancellationToken);
             }
@@ -2465,7 +2479,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     cue.Rise,
                     ScaleSettlementDuration(cue.Duration),
                     effectColor: cue.EffectColor,
-                    visualScale: _visualScale);
+                    visualScale: _visualScale,
+                    pool: _floatingTextPool);
             }
 
             await view.PlaySettlementFeedbackAsync(cue.FeedbackKind, cancellationToken);
@@ -2554,7 +2569,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         cue.Rise,
                         ScaleSettlementDuration(cue.Duration),
                         effectColor: cue.EffectColor,
-                        visualScale: _visualScale);
+                        visualScale: _visualScale,
+                        pool: _floatingTextPool);
                 }
 
                 _ = PlayFeedbackSafelyAsync(view, cue.FeedbackKind, cancellationToken);
@@ -2824,7 +2840,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 receiver.WorldBounds.center,
                 ScaleSettlementDuration(SweetTransferParticleDuration),
                 cancellationToken,
-                visualScale: _visualScale);
+                visualScale: _visualScale,
+                pool: _sweetTransferParticlePool);
         }
 
         private static void ApplySweetTransferBuffMarkers(
@@ -2863,6 +2880,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 source,
                 owner,
                 _sweetTransferParticlePrefab,
+                _sweetTransferParticlePool,
                 ScaleSettlementDuration(SweetTransferParticleDuration),
                 cancellationToken);
         }
@@ -2877,8 +2895,41 @@ namespace GourmetProject.Game.Presentation.Battle
             await _stage.PlaySweetTransferFailureAsync(
                 source,
                 _sweetTransferParticlePrefab,
+                _sweetTransferParticlePool,
                 ScaleSettlementDuration(SweetTransferFailureDuration),
                 cancellationToken);
+        }
+
+        private void EnsureSweetTransferParticlePool()
+        {
+            if (_sweetTransferParticlePool != null || _sweetTransferParticlePrefab == null)
+            {
+                return;
+            }
+
+            _sweetTransferParticlePool = new GameObjectPool(
+                _sweetTransferParticlePrefab.gameObject,
+                transform,
+                SweetTransferPoolPrewarm,
+                SweetTransferPoolMaxInactive,
+                onGet: go => go.GetComponent<SweetTransferParticleView>()?.PrepareForReuse(),
+                onRelease: go => go.GetComponent<SweetTransferParticleView>()?.WarmupForPool());
+        }
+
+        private void EnsureFloatingTextPool()
+        {
+            if (_floatingTextPool != null || _settlementEffectLabelPrefab == null)
+            {
+                return;
+            }
+
+            _floatingTextPool = new GameObjectPool(
+                _settlementEffectLabelPrefab.gameObject,
+                transform,
+                FloatingTextPoolPrewarm,
+                FloatingTextPoolMaxInactive,
+                onGet: go => go.GetComponent<FloatingTextView>()?.PrepareForReuse(),
+                onRelease: go => go.GetComponent<FloatingTextView>()?.ResetForPool());
         }
 
         private static void ClearSweetTransferBuffMarkers(
@@ -3213,7 +3264,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     $"总分 {total}",
                     FinalScorePopupRise,
                     ScaleSettlementDuration(FinalScorePopupDuration),
-                    visualScale: _visualScale);
+                    visualScale: _visualScale,
+                    pool: _floatingTextPool);
             }
 
             await Awaitable.WaitForSecondsAsync(ScaleSettlementDuration(FinalScorePopupHold), cancellationToken);
@@ -3250,7 +3302,8 @@ namespace GourmetProject.Game.Presentation.Battle
                         cue.Rise,
                         ScaleSettlementDuration(cue.Duration),
                         effectColor: cue.EffectColor,
-                        visualScale: _visualScale);
+                        visualScale: _visualScale,
+                        pool: _floatingTextPool);
                 }
 
                 await Awaitable.WaitForSecondsAsync(ScaleSettlementDuration(FinalCueInterval), cancellationToken);

@@ -47,6 +47,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _visualScaleCaptured;
         private bool _plateFeedbackActive;
         private bool _hovered;
+        private bool _hasPosition;
         private Sequence _transformSequence;
         private Action _transformOnComplete;
 
@@ -93,9 +94,13 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             EnsureRefs();
 
-            gameObject.name = $"Cell_{position.X}_{position.Y}";
+            if (!_hasPosition || !_position.Equals(position))
+            {
+                gameObject.name = $"Cell_{position.X}_{position.Y}";
+            }
             transform.localPosition = localPosition;
             _position = position;
+            _hasPosition = true;
             _clicked = clicked;
 
             SetSprites(sprites, size);
@@ -271,6 +276,44 @@ namespace GourmetProject.Game.Presentation.Battle
                 _hoverExited = null;
                 SetHovered(false);
             }
+        }
+
+        internal void PrepareForReuse()
+        {
+            EnsureRefs();
+            KillTransformSequence(resetMaterial: true);
+            _clicked = null;
+            _hoverEntered = null;
+            _hoverExited = null;
+            _baseColor = Color.white;
+            _plateFeedbackColor = Color.white;
+            _plateFeedbackActive = false;
+            _configuredSprites = default;
+            _configuredSize = 0f;
+            _hasPosition = false;
+            transform.localRotation = Quaternion.identity;
+            SetRendererDebuffed(_plateRenderer, false);
+            _collider.enabled = true;
+            ApplyColors();
+        }
+
+        internal void ResetForPool()
+        {
+            EnsureRefs();
+            KillTransformSequence(resetMaterial: true);
+            _clicked = null;
+            _hoverEntered = null;
+            _hoverExited = null;
+            _plateFeedbackActive = false;
+            _baseColor = Color.white;
+            _plateFeedbackColor = Color.white;
+            _configuredSprites = default;
+            _configuredSize = 0f;
+            _hasPosition = false;
+            SetRendererDebuffed(_plateRenderer, false);
+            _collider.enabled = false;
+            SetHovered(false);
+            ApplyColors();
         }
 
         private void ApplyColors()

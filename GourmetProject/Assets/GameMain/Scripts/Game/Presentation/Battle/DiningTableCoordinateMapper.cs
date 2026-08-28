@@ -12,6 +12,11 @@ namespace GourmetProject.Game.Presentation.Battle
     {
         public DiningTableCoordinateMapper(int width, int height, float cellSize, float gap, Transform root)
         {
+            Configure(width, height, cellSize, gap, root);
+        }
+
+        internal void Configure(int width, int height, float cellSize, float gap, Transform root)
+        {
             Width = width;
             Height = height;
             CellSize = cellSize;
@@ -19,16 +24,16 @@ namespace GourmetProject.Game.Presentation.Battle
             Root = root;
         }
 
-        public int Width { get; }
+        public int Width { get; private set; }
 
-        public int Height { get; }
+        public int Height { get; private set; }
 
-        public float CellSize { get; }
+        public float CellSize { get; private set; }
 
-        public float Gap { get; }
+        public float Gap { get; private set; }
 
         /// <summary>餐桌局部帧的锚点（cells / pieces 均挂在其下，以 localPosition 摆放）。</summary>
-        public Transform Root { get; }
+        public Transform Root { get; private set; }
 
         public float Pitch => CellSize + Gap;
 
