@@ -201,7 +201,7 @@
     "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
-      6
+      8
     ],
     "actionParam": [],
     "signed": true,
@@ -220,7 +220,7 @@
     "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
-      3
+      4
     ],
     "actionParam": [],
     "signed": true,
@@ -372,7 +372,7 @@
     "actionScope": 16,
     "actionCount": 0,
     "actionValue": [
-      6
+      8
     ],
     "actionParam": [],
     "signed": true,
@@ -937,7 +937,7 @@
     "condParam": "",
     "actionType": 21,
     "actionScope": 17,
-    "actionCount": 1,
+    "actionCount": 2,
     "actionValue": [
       0
     ],
@@ -945,7 +945,7 @@
       "cat:cake;target:random"
     ],
     "signed": false,
-    "descTemplate": "左侧随机1个食物视为[term]蛋糕[/term]",
+    "descTemplate": "左侧随机2个食物视为[term]蛋糕[/term]",
     "termId": ""
   },
   {
