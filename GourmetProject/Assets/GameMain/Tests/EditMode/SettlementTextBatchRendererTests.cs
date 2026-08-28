@@ -172,6 +172,7 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(_batch.VertexCapacity, Is.EqualTo(vertexCapacity));
             Assert.That(_batch.IndexCapacity, Is.EqualTo(indexCapacity));
             Assert.That(mesh.subMeshCount, Is.EqualTo(subMeshCount));
+            Assert.That(renderer.sharedMaterials, Is.Empty);
 
             SettlementTextBatchHandle second = SpawnStage("第二次");
             Assert.DoesNotThrow(() => _batch.AdvanceForTests(Time.time));
@@ -183,6 +184,29 @@ namespace GourmetProject.Tests.EditMode
                     .Sum(index => (long)mesh.GetIndexCount(index)),
                 Is.GreaterThan(0));
             Assert.That(renderer.enabled, Is.True);
+        }
+
+        [Test]
+        public void DisableEnableThenSpawn_ForcesFreshMaterialLayoutAndUpload()
+        {
+            SettlementTextBatchHandle first = SpawnStage("禁用前");
+            _batch.AdvanceForTests(Time.time);
+            MeshRenderer renderer =
+                _batch.GetSurfaceRendererForTests(_surfaceParent.transform);
+            Assert.That(first.IsValid, Is.True);
+            Assert.That(renderer.enabled, Is.True);
+
+            _host.SetActive(false);
+            _host.SetActive(true);
+
+            SettlementTextBatchHandle second = SpawnStage("恢复后");
+            _batch.AdvanceForTests(Time.time + 0.01f);
+
+            Assert.That(second.IsValid, Is.True);
+            Assert.That(renderer.enabled, Is.True);
+            Assert.That(_batch.VisibleVertexCount, Is.GreaterThan(0));
+            Assert.That(renderer.sharedMaterials, Is.Not.Empty);
+            Assert.That(renderer.sharedMaterials.All(material => material != null), Is.True);
         }
 
         [Test]
@@ -368,6 +392,64 @@ namespace GourmetProject.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(alternateEffect.gameObject);
             }
+        }
+
+        [Test]
+        public void GeometryCache_OwnsStableMaterialsAcrossTemplateRebinds()
+        {
+            const string cachedText = "[strong]稳定缓存[/strong] [multmul]×2[/multmul]";
+            SettlementTextBatchHandle first = _batch.SpawnFloating(
+                _surfaceParent.transform,
+                Vector3.zero,
+                "来源",
+                cachedText,
+                effectColor: null,
+                rise: 0f,
+                duration: 10f,
+                delay: 0f,
+                visualScale: 1f,
+                sortingOrder: 20);
+            _batch.AdvanceForTests(Time.time);
+            _batch.Release(first);
+
+            int registeredAfterFirstBake = _batch.RegisteredMaterialCount;
+            for (int i = 0; i < 32; i++)
+            {
+                SettlementTextBatchHandle transient = _batch.SpawnFloating(
+                    _surfaceParent.transform,
+                    Vector3.zero,
+                    string.Empty,
+                    $"变化文本 {i}",
+                    effectColor: null,
+                    rise: 0f,
+                    duration: 10f,
+                    delay: 0f,
+                    visualScale: 1f,
+                    sortingOrder: 30 + i);
+                _batch.Release(transient);
+            }
+
+            SettlementTextBatchHandle cached = _batch.SpawnFloating(
+                _surfaceParent.transform,
+                Vector3.zero,
+                "来源",
+                cachedText,
+                effectColor: null,
+                rise: 0f,
+                duration: 10f,
+                delay: 0f,
+                visualScale: 1f,
+                sortingOrder: 100);
+            _batch.AdvanceForTests(Time.time + 0.01f);
+            MeshRenderer renderer =
+                _batch.GetSurfaceRendererForTests(_surfaceParent.transform);
+
+            Assert.That(cached.IsValid, Is.True);
+            Assert.That(_batch.GeometryCacheHitCount, Is.GreaterThanOrEqualTo(1));
+            Assert.That(_batch.RegisteredMaterialCount, Is.GreaterThanOrEqualTo(registeredAfterFirstBake));
+            Assert.That(renderer.enabled, Is.True);
+            Assert.That(renderer.sharedMaterials, Is.Not.Empty);
+            Assert.That(renderer.sharedMaterials.All(material => material != null), Is.True);
         }
 
         [Test]
@@ -697,6 +779,50 @@ namespace GourmetProject.Tests.EditMode
                 _host.GetComponentsInChildren<Transform>(true).Length,
                 Is.EqualTo(childCountAtCapacity));
             Assert.That(_batch.BatchRendererCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void MoreLabelsWithSameVisualMaterials_DoNotAddDrawCallGroups()
+        {
+            for (int i = 0; i < 32; i++)
+            {
+                _batch.SpawnFloating(
+                    _surfaceParent.transform,
+                    Vector3.zero,
+                    "来源",
+                    $"分数 [score]+{i}[/score]",
+                    effectColor: null,
+                    rise: 0f,
+                    duration: 10f,
+                    delay: 0f,
+                    visualScale: 1f,
+                    sortingOrder: 20 + i);
+            }
+
+            _batch.AdvanceForTests(Time.time);
+            int materialGroups = _batch.MaterialGroupCount;
+            Assert.That(materialGroups, Is.GreaterThan(0));
+            Assert.That(_batch.BatchRendererCount, Is.EqualTo(1));
+
+            for (int i = 0; i < 96; i++)
+            {
+                _batch.SpawnFloating(
+                    _surfaceParent.transform,
+                    Vector3.zero,
+                    "来源",
+                    $"分数 [score]+{i % 10}[/score]",
+                    effectColor: null,
+                    rise: 0f,
+                    duration: 10f,
+                    delay: 0f,
+                    visualScale: 1f,
+                    sortingOrder: 100 + i);
+            }
+
+            _batch.AdvanceForTests(Time.time + 0.01f);
+            Assert.That(_batch.ActiveLabelCount, Is.EqualTo(128));
+            Assert.That(_batch.BatchRendererCount, Is.EqualTo(1));
+            Assert.That(_batch.MaterialGroupCount, Is.EqualTo(materialGroups));
         }
 
         private SettlementTextBatchHandle SpawnStage(string body)

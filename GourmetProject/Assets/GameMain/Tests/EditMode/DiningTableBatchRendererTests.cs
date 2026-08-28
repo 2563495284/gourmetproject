@@ -1,8 +1,11 @@
+using DG.Tweening;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using NUnit.Framework;
+using System.Collections.Generic;
+using System.Threading;
 using UnityEditor;
 using UnityEngine;
 
@@ -158,6 +161,90 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(batch.TryGetCellState(position, out _, out _, out feedback, out pulse), Is.True);
             Assert.That(feedback, Is.False);
             Assert.That(pulse, Is.EqualTo(0f).Within(0.0001f));
+        }
+
+        [Test]
+        public void PulseBatch_UpdatesManyCellsWithOneStreamUpload()
+        {
+            var first = new GridPos(0, 0);
+            var second = new GridPos(1, 0);
+            _view.Build(
+                new DiningTable(2, 1, new[] { first, second }),
+                1f,
+                0.04f,
+                null,
+                _cellPrefab);
+            DiningTableBatchRenderer batch = _root.GetComponent<DiningTableBatchRenderer>();
+            int uploads = batch.StreamUploadCount;
+            var updates = new List<PulseUpdate>
+            {
+                new PulseUpdate(first, 0.25f),
+                new PulseUpdate(second, 0.75f),
+            };
+
+            batch.SetPulseBatch(updates);
+            batch.FlushPendingChanges();
+
+            Assert.That(batch.StreamUploadCount, Is.EqualTo(uploads + 1));
+            Assert.That(batch.TryGetCellState(first, out _, out _, out _, out float firstPulse), Is.True);
+            Assert.That(batch.TryGetCellState(second, out _, out _, out _, out float secondPulse), Is.True);
+            Assert.That(firstPulse, Is.EqualTo(0.25f).Within(0.0001f));
+            Assert.That(secondPulse, Is.EqualTo(0.75f).Within(0.0001f));
+        }
+
+        [Test]
+        public void SettlementPulseCurve_PreservesRiseFallAndStagger()
+        {
+            Assert.That(DiningTableView.EvaluateSettlementPulse(0f, 0f), Is.Zero);
+            Assert.That(DiningTableView.EvaluateSettlementPulse(0.09f, 0f), Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(DiningTableView.EvaluateSettlementPulse(0.165f, 0f), Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(DiningTableView.EvaluateSettlementPulse(0.24f, 0f), Is.Zero);
+            Assert.That(DiningTableView.EvaluateSettlementPulse(0.05f, 0.075f), Is.Zero);
+            Assert.That(
+                DiningTableView.EvaluateSettlementPulse(0.075f + 0.045f, 0.075f),
+                Is.GreaterThan(0f));
+        }
+
+        [Test]
+        public void LargeBoardSettlementHint_UsesOneTweenInsteadOfPerCellSequences()
+        {
+            const int size = 12;
+            var positions = new List<GridPos>(size * size);
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    positions.Add(new GridPos(x, y));
+                }
+            }
+
+            _view.Build(
+                new DiningTable(size, size, positions),
+                1f,
+                0.04f,
+                null,
+                _cellPrefab);
+            int activeBefore = DOTween.TotalActiveTweens();
+            using var cancellation = new CancellationTokenSource();
+
+            _ = _view.PlaySettlementOrderHintAsync(
+                reverseOrder: false,
+                cancellationToken: cancellation.Token);
+
+            Assert.That(_view.ActiveSettlementPulseTweenCount, Is.EqualTo(1));
+            Assert.That(DOTween.TotalActiveTweens() - activeBefore, Is.LessThanOrEqualTo(1));
+
+            cancellation.Cancel();
+            _view.CancelSettlementPulses();
+            Assert.That(_view.ActiveSettlementPulseTweenCount, Is.Zero);
+            DiningTableBatchRenderer batch = _root.GetComponent<DiningTableBatchRenderer>();
+            foreach (GridPos position in positions)
+            {
+                Assert.That(
+                    batch.TryGetCellState(position, out _, out _, out _, out float pulse),
+                    Is.True);
+                Assert.That(pulse, Is.Zero.Within(0.0001f));
+            }
         }
 
         [Test]

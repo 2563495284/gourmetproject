@@ -48,7 +48,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly HashSet<GridPos> _presentationRemovedTombstones = new HashSet<GridPos>();
         private readonly HashSet<GridPos> _presentationNormalRemovedCells = new HashSet<GridPos>();
         private readonly Dictionary<GridPos, GridPlacementFeedbackState> _dragFeedbackStates = new Dictionary<GridPos, GridPlacementFeedbackState>();
-        private readonly List<Tween> _settlementPulseTweens = new List<Tween>();
+        private readonly List<GridPos> _settlementPulsePositions = new List<GridPos>();
+        private readonly List<PulseUpdate> _settlementPulseUpdates = new List<PulseUpdate>();
+        private Tween _settlementPulseTween;
         private GameObjectPool _cellPool;
         private GameObjectPool _scopeOutlinePool;
         private DiningTableBatchRenderer _batchRenderer;
@@ -62,6 +64,9 @@ namespace GourmetProject.Game.Presentation.Battle
         private Camera _hoverCamera;
 
         public DiningTableCoordinateMapper Mapper { get; private set; }
+
+        internal int ActiveSettlementPulseTweenCount =>
+            _settlementPulseTween != null && _settlementPulseTween.IsActive() ? 1 : 0;
 
         /// <summary>
         /// 生成餐桌批次。餐桌以本组件 transform 为局部帧（BoardRoot），
@@ -221,23 +226,32 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             CancelSettlementPulses();
+            _settlementPulsePositions.AddRange(positions);
+            if (_settlementPulseUpdates.Capacity < positions.Count)
+            {
+                _settlementPulseUpdates.Capacity = positions.Count;
+            }
+
             float stagger = positions.Count > 1
                 ? Mathf.Min(
                     SettlementOrderPreferredStagger,
                     SettlementOrderMaximumStartSpan / (positions.Count - 1))
                 : 0f;
-            for (int i = 0; i < positions.Count; i++)
-            {
-                StartSettlementPulse(positions[i], i * stagger);
-            }
-
             float totalDuration = (positions.Count - 1) * stagger + SettlementOrderPulseDuration;
-            Tween timer = DOVirtual.DelayedCall(totalDuration, () => { })
+            ApplySettlementPulseFrame(0f, stagger);
+            _settlementPulseTween = DOVirtual.Float(
+                    0f,
+                    totalDuration,
+                    totalDuration,
+                    elapsed => ApplySettlementPulseFrame(elapsed, stagger))
+                .SetEase(Ease.Linear)
                 .SetUpdate(true)
                 .SetLink(gameObject);
             try
             {
-                await PresentationTween.AwaitCompletionAsync(timer, cancellationToken);
+                await PresentationTween.AwaitCompletionAsync(
+                    _settlementPulseTween,
+                    cancellationToken);
             }
             finally
             {
@@ -728,46 +742,53 @@ namespace GourmetProject.Game.Presentation.Battle
                 visualMatrix);
         }
 
-        private void StartSettlementPulse(GridPos position, float delaySeconds)
+        internal static float EvaluateSettlementPulse(float elapsed, float delaySeconds)
         {
-            float pulse = 0f;
-            Sequence sequence = DOTween.Sequence()
-                .SetDelay(Mathf.Max(0f, delaySeconds))
-                .SetUpdate(true)
-                .SetLink(gameObject)
-                .Append(DOTween.To(
-                        () => pulse,
-                        value =>
-                        {
-                            pulse = value;
-                            _batchRenderer?.SetPulse(position, value);
-                        },
-                        1f,
-                        SettlementOrderPulseRiseDuration)
-                    .SetEase(Ease.OutCubic))
-                .Append(DOTween.To(
-                        () => pulse,
-                        value =>
-                        {
-                            pulse = value;
-                            _batchRenderer?.SetPulse(position, value);
-                        },
-                        0f,
-                        SettlementOrderPulseDuration - SettlementOrderPulseRiseDuration)
-                    .SetEase(Ease.InOutSine));
-            sequence.OnComplete(() => _batchRenderer?.SetPulse(position, 0f));
-            sequence.OnKill(() => _batchRenderer?.SetPulse(position, 0f));
-            _settlementPulseTweens.Add(sequence);
+            float localTime = elapsed - Mathf.Max(0f, delaySeconds);
+            if (localTime <= 0f || localTime >= SettlementOrderPulseDuration)
+            {
+                return 0f;
+            }
+
+            if (localTime < SettlementOrderPulseRiseDuration)
+            {
+                float t = Mathf.Clamp01(localTime / SettlementOrderPulseRiseDuration);
+                float inverse = 1f - t;
+                return 1f - inverse * inverse * inverse;
+            }
+
+            float fallDuration = SettlementOrderPulseDuration
+                - SettlementOrderPulseRiseDuration;
+            float fall = Mathf.Clamp01(
+                (localTime - SettlementOrderPulseRiseDuration) / fallDuration);
+            float eased = -(Mathf.Cos(Mathf.PI * fall) - 1f) * 0.5f;
+            return 1f - eased;
+        }
+
+        private void ApplySettlementPulseFrame(float elapsed, float stagger)
+        {
+            _settlementPulseUpdates.Clear();
+            for (int i = 0; i < _settlementPulsePositions.Count; i++)
+            {
+                _settlementPulseUpdates.Add(new PulseUpdate(
+                    _settlementPulsePositions[i],
+                    EvaluateSettlementPulse(elapsed, i * stagger)));
+            }
+
+            _batchRenderer?.SetPulseBatch(_settlementPulseUpdates);
         }
 
         internal void CancelSettlementPulses()
         {
-            for (int i = 0; i < _settlementPulseTweens.Count; i++)
+            Tween tween = _settlementPulseTween;
+            _settlementPulseTween = null;
+            if (tween != null && tween.IsActive())
             {
-                _settlementPulseTweens[i]?.Kill(false);
+                tween.Kill(false);
             }
 
-            _settlementPulseTweens.Clear();
+            _settlementPulsePositions.Clear();
+            _settlementPulseUpdates.Clear();
             _batchRenderer?.ClearPulses();
             _batchRenderer?.FlushPendingChanges();
         }

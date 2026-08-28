@@ -114,6 +114,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly Dictionary<int, BatchSurface> _surfacesById = new();
         private readonly List<BatchSurface> _surfaceScratch = new();
         private readonly List<Material> _ownedMaterials = new();
+        private readonly Dictionary<MaterialKey, Material> _materialsByKey = new();
         private readonly Dictionary<LabelGeometryKey, GeometryCacheEntry> _geometryCache =
             new(GeometryCacheCapacity);
 
@@ -124,6 +125,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private SettlementStageLabelView _stageTemplateSource;
         private SettlementStageLabelView _finaleTemplateSource;
         private Material _effectBackgroundMaterial;
+        private MaterialKey _effectBackgroundMaterialKey;
         private GeometryPart _effectBackgroundGeometry;
         private Color _effectDefaultSourceColor;
         private Color _effectDefaultTextColor;
@@ -134,6 +136,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private int _nextSurfaceId;
         private bool _initialized;
         private bool _disposed;
+        private bool _geometryFailureLogged;
 
         internal int ActiveLabelCount
         {
@@ -158,6 +161,8 @@ namespace GourmetProject.Game.Presentation.Battle
         internal int GeometryBakeCount => _geometryBakeCount;
 
         internal int GeometryCacheHitCount => _geometryCacheHitCount;
+
+        internal int RegisteredMaterialCount => _materialsByKey.Count;
 
         internal int RebuildCount
         {
@@ -492,7 +497,21 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void LateUpdate()
         {
+            EnsureLateSpawnedLabelsAreScheduled(Time.time);
             CompleteAndUploadSurfaces();
+        }
+
+        private void OnEnable()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            foreach (BatchSurface surface in _surfacesById.Values)
+            {
+                surface.ForceRebuildAndEvaluation();
+            }
         }
 
         private void OnDisable()
@@ -541,6 +560,20 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        private void EnsureLateSpawnedLabelsAreScheduled(float now)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            CollectSurfaces();
+            for (int i = 0; i < _surfaceScratch.Count; i++)
+            {
+                _surfaceScratch[i].ScheduleIfStructureChanged(now);
+            }
+        }
+
         private SettlementTextBatchHandle AddLabel(
             Transform parent,
             Vector3 worldAnchor,
@@ -554,8 +587,16 @@ namespace GourmetProject.Game.Presentation.Battle
             float startDelay,
             int sortingOrder)
         {
-            if (geometry == null || geometry.VertexCount == 0)
+            if (!IsGeometryValid(geometry))
             {
+                if (!_geometryFailureLogged)
+                {
+                    _geometryFailureLogged = true;
+                    Debug.LogError(
+                        $"{nameof(SettlementTextBatchRenderer)} 无法生成有效的结算文字网格或稳定材质，已拒绝静默丢字。",
+                        this);
+                }
+
                 return default;
             }
 
@@ -587,7 +628,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 _nextSurfaceId = id = 1;
             }
 
-            var surface = new BatchSurface(id, parent);
+            var surface = new BatchSurface(id, parent, ResolveMaterial);
             _surfacesByParent.Add(parent, surface);
             _surfacesById.Add(id, surface);
             return surface;
@@ -673,6 +714,15 @@ namespace GourmetProject.Game.Presentation.Battle
                     body,
                     theme,
                     headerSemanticColor);
+                if (!IsGeometryValid(geometry))
+                {
+                    geometry = BakeStageGeometry(
+                        template,
+                        header,
+                        body,
+                        theme,
+                        headerSemanticColor);
+                }
             }
 
             _geometryBakeCount++;
@@ -699,6 +749,10 @@ namespace GourmetProject.Game.Presentation.Battle
             using (BakeMarker.Auto())
             {
                 geometry = BakeFloatingGeometry(sourceName, effectText, effectColor);
+                if (!IsGeometryValid(geometry))
+                {
+                    geometry = BakeFloatingGeometry(sourceName, effectText, effectColor);
+                }
             }
 
             _geometryBakeCount++;
@@ -716,6 +770,14 @@ namespace GourmetProject.Game.Presentation.Battle
                 return false;
             }
 
+            if (!IsGeometryValid(entry.Geometry))
+            {
+                _geometryCache.Remove(key);
+                _geometryCacheBytes = Math.Max(0L, _geometryCacheBytes - entry.ByteSize);
+                geometry = null;
+                return false;
+            }
+
             entry.LastUse = ++_geometryCacheUseSequence;
             _geometryCache[key] = entry;
             _geometryCacheHitCount++;
@@ -725,7 +787,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void CacheGeometry(LabelGeometryKey key, LabelGeometry geometry)
         {
-            if (geometry == null || geometry.VertexCount == 0)
+            if (!IsGeometryValid(geometry))
             {
                 return;
             }
@@ -750,6 +812,28 @@ namespace GourmetProject.Game.Presentation.Battle
                 ++_geometryCacheUseSequence,
                 byteSize);
             _geometryCacheBytes += byteSize;
+        }
+
+        private bool IsGeometryValid(LabelGeometry geometry)
+        {
+            if (geometry == null || geometry.VertexCount == 0 || geometry.Parts.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < geometry.Parts.Count; i++)
+            {
+                GeometryPart part = geometry.Parts[i];
+                if (part == null
+                    || part.Vertices.Length == 0
+                    || part.Triangles.Length == 0
+                    || ResolveMaterial(part.MaterialKey) == null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private bool EvictLeastRecentlyUsedGeometry()
@@ -779,7 +863,7 @@ namespace GourmetProject.Game.Presentation.Battle
             return true;
         }
 
-        private static void AppendTextGeometry(
+        private void AppendTextGeometry(
             LabelGeometry destination,
             Transform templateRoot,
             TextMeshPro text,
@@ -802,6 +886,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 TMP_MeshInfo meshInfo = meshInfos[meshIndex];
                 int vertexCount = meshInfo.vertexCount;
                 if (vertexCount <= 0 || meshInfo.material == null)
+                {
+                    continue;
+                }
+
+                MaterialKey materialKey = RegisterMaterial(meshInfo.material);
+                if (!materialKey.IsValid)
                 {
                     continue;
                 }
@@ -830,7 +920,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 var triangles = new int[indexCount];
                 Array.Copy(meshInfo.triangles, triangles, indexCount);
                 destination.AddPart(new GeometryPart(
-                    meshInfo.material,
+                    materialKey,
                     vertices,
                     triangles,
                     renderLayer));
@@ -841,11 +931,11 @@ namespace GourmetProject.Game.Presentation.Battle
             LabelGeometry destination,
             Transform templateRoot,
             SpriteRenderer renderer,
-            Material material,
+            MaterialKey materialKey,
             int renderLayer)
         {
             Sprite sprite = renderer != null ? renderer.sprite : null;
-            if (sprite == null || material == null)
+            if (sprite == null || !materialKey.IsValid)
             {
                 return;
             }
@@ -875,7 +965,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 triangles[i] = sourceTriangles[i];
             }
 
-            destination.AddPart(new GeometryPart(material, vertices, triangles, renderLayer));
+            destination.AddPart(new GeometryPart(
+                materialKey,
+                vertices,
+                triangles,
+                renderLayer));
         }
 
         private void PrepareBackgroundMaterial()
@@ -893,13 +987,15 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            _effectBackgroundMaterial = source != null
+            Material candidate = source != null
                 ? new Material(source)
                 : new Material(fallback);
-            _effectBackgroundMaterial.name = "Settlement Effect Background (Batch)";
-            _effectBackgroundMaterial.hideFlags = HideFlags.HideAndDontSave;
-            _effectBackgroundMaterial.mainTexture = renderer.sprite.texture;
-            _ownedMaterials.Add(_effectBackgroundMaterial);
+            candidate.name = "Settlement Effect Background (Batch)";
+            candidate.hideFlags = HideFlags.HideAndDontSave;
+            candidate.mainTexture = renderer.sprite.texture;
+            MaterialKey key = RegisterOwnedMaterial(candidate);
+            _effectBackgroundMaterialKey = key;
+            _effectBackgroundMaterial = ResolveMaterial(key);
         }
 
         private void PrepareSharedEffectBackgroundGeometry()
@@ -917,12 +1013,76 @@ namespace GourmetProject.Game.Presentation.Battle
                 geometry,
                 _effectTemplate.transform,
                 _effectTemplate.Background,
-                _effectBackgroundMaterial,
+                _effectBackgroundMaterialKey,
                 renderLayer: 0);
             if (geometry.Parts.Count > 0)
             {
                 _effectBackgroundGeometry = geometry.Parts[0];
             }
+        }
+
+        private MaterialKey RegisterMaterial(Material source)
+        {
+            if (source == null)
+            {
+                return default;
+            }
+
+            MaterialKey key = MaterialKey.From(source);
+            if (!key.IsValid)
+            {
+                return default;
+            }
+
+            if (_materialsByKey.TryGetValue(key, out Material registered)
+                && registered != null)
+            {
+                return key;
+            }
+
+            var owned = new Material(source)
+            {
+                name = $"{source.name} (Settlement Batch)",
+                hideFlags = HideFlags.HideAndDontSave,
+            };
+            _materialsByKey[key] = owned;
+            _ownedMaterials.Add(owned);
+            return key;
+        }
+
+        private MaterialKey RegisterOwnedMaterial(Material material)
+        {
+            if (material == null)
+            {
+                return default;
+            }
+
+            MaterialKey key = MaterialKey.From(material);
+            if (!key.IsValid)
+            {
+                DestroyUnityObject(material);
+                return default;
+            }
+
+            if (_materialsByKey.TryGetValue(key, out Material registered)
+                && registered != null)
+            {
+                DestroyUnityObject(material);
+                return key;
+            }
+
+            _materialsByKey[key] = material;
+            _ownedMaterials.Add(material);
+            return key;
+        }
+
+        private Material ResolveMaterial(MaterialKey key)
+        {
+            return key.IsValid
+                && _materialsByKey.TryGetValue(key, out Material material)
+                && material != null
+                    ? material
+                    : null;
         }
 
         private bool ValidateTemplate(Component template, string label)
@@ -1104,6 +1264,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _geometryCacheBytes = 0;
             _geometryBakeCount = 0;
             _geometryCacheHitCount = 0;
+            _geometryFailureLogged = false;
             _effectBackgroundGeometry = null;
             DestroyUnityObject(_effectTemplate != null ? _effectTemplate.gameObject : null);
             DestroyUnityObject(_stageTemplate != null ? _stageTemplate.gameObject : null);
@@ -1118,7 +1279,9 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _ownedMaterials.Clear();
+            _materialsByKey.Clear();
             _effectBackgroundMaterial = null;
+            _effectBackgroundMaterialKey = default;
             _effectDefaultSourceColor = default;
             _effectDefaultTextColor = default;
         }
@@ -1158,6 +1321,66 @@ namespace GourmetProject.Game.Presentation.Battle
             Stage = 0,
             Finale = 1,
             Floating = 2,
+        }
+
+        private readonly struct MaterialKey : IEquatable<MaterialKey>
+        {
+            private MaterialKey(
+                int shaderId,
+                int mainTextureId,
+                int materialCrc,
+                int renderQueue)
+            {
+                ShaderId = shaderId;
+                MainTextureId = mainTextureId;
+                MaterialCrc = materialCrc;
+                RenderQueue = renderQueue;
+            }
+
+            private int ShaderId { get; }
+            private int MainTextureId { get; }
+            private int MaterialCrc { get; }
+            private int RenderQueue { get; }
+            public bool IsValid => ShaderId != 0;
+
+            public static MaterialKey From(Material material)
+            {
+                if (material == null || material.shader == null)
+                {
+                    return default;
+                }
+
+                return new MaterialKey(
+                    material.shader.GetInstanceID(),
+                    material.mainTexture != null ? material.mainTexture.GetInstanceID() : 0,
+                    material.ComputeCRC(),
+                    material.renderQueue);
+            }
+
+            public bool Equals(MaterialKey other)
+            {
+                return ShaderId == other.ShaderId
+                    && MainTextureId == other.MainTextureId
+                    && MaterialCrc == other.MaterialCrc
+                    && RenderQueue == other.RenderQueue;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is MaterialKey other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = ShaderId;
+                    hash = hash * 397 ^ MainTextureId;
+                    hash = hash * 397 ^ MaterialCrc;
+                    hash = hash * 397 ^ RenderQueue;
+                    return hash;
+                }
+            }
         }
 
         private readonly struct LabelGeometryKey : IEquatable<LabelGeometryKey>
@@ -1381,7 +1604,7 @@ namespace GourmetProject.Game.Presentation.Battle
             private readonly List<int> _activeSlots = new(InitialLabelCapacity);
             private readonly List<int> _sortedSlots = new(InitialLabelCapacity);
             private readonly Stack<int> _freeSlots = new(InitialLabelCapacity);
-            private readonly Dictionary<Material, MaterialGroup> _materialGroups = new();
+            private readonly Dictionary<MaterialKey, MaterialGroup> _materialGroups = new();
             private readonly List<MaterialGroup> _sortedMaterialGroups = new();
             private readonly List<int> _indexScratch = new(InitialIndexCapacity);
             private readonly List<Material> _materialScratch = new(8);
@@ -1392,6 +1615,7 @@ namespace GourmetProject.Game.Presentation.Battle
             private readonly NativeList<LabelAnimationState> _states;
             private readonly Mesh _mesh;
             private readonly MeshFilter _filter;
+            private readonly Func<MaterialKey, Material> _resolveMaterial;
 
             private JobHandle _jobHandle;
             private bool _jobScheduled;
@@ -1405,12 +1629,17 @@ namespace GourmetProject.Game.Presentation.Battle
             private int _rebuildCount;
             private int _uploadCount;
 
-            public BatchSurface(int id, Transform parent)
+            public BatchSurface(
+                int id,
+                Transform parent,
+                Func<MaterialKey, Material> resolveMaterial)
             {
                 Id = id;
                 Parent = parent;
+                _resolveMaterial = resolveMaterial;
                 var root = new GameObject($"Settlement Text Batch {id}");
                 root.hideFlags = HideFlags.DontSave;
+                root.layer = parent != null ? parent.gameObject.layer : 0;
                 Root = root.transform;
                 Root.SetParent(parent, false);
                 Root.localPosition = Vector3.zero;
@@ -1524,6 +1753,30 @@ namespace GourmetProject.Game.Presentation.Battle
                 _subMeshScratch.Clear();
                 Renderer.enabled = false;
                 Renderer.SetSharedMaterials(_materialScratch);
+                _structureDirty = true;
+                _needsEvaluation = true;
+                _lastEvaluatedTime = float.NaN;
+            }
+
+            public void ForceRebuildAndEvaluation()
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                CompleteJob();
+                _structureDirty = true;
+                _needsEvaluation = true;
+                _lastEvaluatedTime = float.NaN;
+            }
+
+            public void ScheduleIfStructureChanged(float now)
+            {
+                if (!_disposed && !_jobScheduled && _structureDirty)
+                {
+                    Schedule(now);
+                }
             }
 
             public void Schedule(float now)
@@ -1749,15 +2002,17 @@ namespace GourmetProject.Game.Presentation.Battle
                 for (int partIndex = 0; partIndex < record.Geometry.Parts.Count; partIndex++)
                 {
                     GeometryPart part = record.Geometry.Parts[partIndex];
-                    if (part.Material == null || part.Vertices.Length == 0)
+                    Material material = _resolveMaterial?.Invoke(part.MaterialKey);
+                    if (material == null || part.Vertices.Length == 0)
                     {
                         continue;
                     }
 
-                    if (!_materialGroups.TryGetValue(part.Material, out MaterialGroup group))
+                    if (!_materialGroups.TryGetValue(part.MaterialKey, out MaterialGroup group)
+                        || group.Material == null)
                     {
-                        group = new MaterialGroup(part.Material, part.RenderLayer, _materialGroups.Count);
-                        _materialGroups.Add(part.Material, group);
+                        group = new MaterialGroup(material, part.RenderLayer, _materialGroups.Count);
+                        _materialGroups[part.MaterialKey] = group;
                     }
 
                     if (!group.Active)
@@ -1828,8 +2083,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
                 if (_visibleVertexCount == 0 || indexCount == 0)
                 {
-                    // 仅关闭渲染，保留已扩容的 GPU 缓冲、SubMesh 与材质布局。
-                    // 下一波文字会完整覆写有效区域，避免每轮结算反复释放和重建缓冲。
+                    // 保留已扩容的 GPU 缓冲与 SubMesh 容量，但清掉 Renderer 上一波材质，
+                    // 避免禁用/重启或模板重绑后继续引用失效的 TMP 临时材质。
+                    _materialScratch.Clear();
+                    _subMeshScratch.Clear();
+                    Renderer.SetSharedMaterials(_materialScratch);
                     Renderer.enabled = false;
                     return;
                 }
@@ -2025,18 +2283,18 @@ namespace GourmetProject.Game.Presentation.Battle
         private sealed class GeometryPart
         {
             public GeometryPart(
-                Material material,
+                MaterialKey materialKey,
                 SourceVertex[] vertices,
                 int[] triangles,
                 int renderLayer)
             {
-                Material = material;
+                MaterialKey = materialKey;
                 Vertices = vertices ?? Array.Empty<SourceVertex>();
                 Triangles = triangles ?? Array.Empty<int>();
                 RenderLayer = renderLayer;
             }
 
-            public Material Material { get; }
+            public MaterialKey MaterialKey { get; }
             public SourceVertex[] Vertices { get; }
             public int[] Triangles { get; }
             public int RenderLayer { get; }

@@ -6631,8 +6631,7 @@ namespace GourmetProject.Game.UI.Battle
 
         private void SetSettlementScore(BigDouble score)
         {
-            _infoColumn?.SetBattleScoreOverride(score);
-            RefreshPersistent(refreshItems: false);
+            _infoColumn?.SetSettlementScorePresentation(score);
         }
 
         // —— 通知弹窗 ——

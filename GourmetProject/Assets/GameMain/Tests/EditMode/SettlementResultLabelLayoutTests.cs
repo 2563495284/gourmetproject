@@ -18,6 +18,56 @@ namespace GourmetProject.Tests.EditMode
         private const float ViewportPadding = 0.035f;
 
         [Test]
+        public void SettlementScorePresentation_UpdatesOnlyCurrentScoreText()
+        {
+            var root = new GameObject("SettlementScorePresentationTest");
+            var scoreObject = new GameObject(
+                "ScoreCurrent",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+            var tableCountObject = new GameObject(
+                "TableCount",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+            var discardCountObject = new GameObject(
+                "DiscardCount",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(TextMeshProUGUI));
+            try
+            {
+                scoreObject.transform.SetParent(root.transform, false);
+                tableCountObject.transform.SetParent(root.transform, false);
+                discardCountObject.transform.SetParent(root.transform, false);
+
+                var infoColumn = root.AddComponent<BattleInfoColumn>();
+                TMP_Text scoreText = scoreObject.GetComponent<TMP_Text>();
+                TMP_Text tableCountText = tableCountObject.GetComponent<TMP_Text>();
+                TMP_Text discardCountText = discardCountObject.GetComponent<TMP_Text>();
+                SetPrivateField(infoColumn, "_scoreCurrentText", scoreText);
+                SetPrivateField(infoColumn, "_viewTableCountText", tableCountText);
+                SetPrivateField(infoColumn, "_discardCountText", discardCountText);
+
+                scoreText.text = "旧分数";
+                tableCountText.text = "餐桌哨兵";
+                discardCountText.text = "弃置哨兵";
+
+                BigDouble score = 123456;
+                infoColumn.SetSettlementScorePresentation(score);
+
+                Assert.That(scoreText.text, Is.EqualTo(ScoreNumberFormatter.Format(score)));
+                Assert.That(tableCountText.text, Is.EqualTo("餐桌哨兵"));
+                Assert.That(discardCountText.text, Is.EqualTo("弃置哨兵"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
         public void ScoreDeltaBeat_RequiresANonZeroTotalChange()
         {
             var zeroDelta = new SettlementBeatSignal(
@@ -867,6 +917,15 @@ namespace GourmetProject.Tests.EditMode
             camera.aspect = 16f / 9f;
             camera.transform.position = new Vector3(0f, 0f, -10f);
             return camera;
+        }
+
+        private static void SetPrivateField(object owner, string fieldName, object value)
+        {
+            FieldInfo field = owner.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, $"Missing field: {fieldName}");
+            field.SetValue(owner, value);
         }
 
         private static Vector3 ViewportWorld(Camera camera, float x, float y)

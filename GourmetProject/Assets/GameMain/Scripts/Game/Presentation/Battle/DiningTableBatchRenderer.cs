@@ -6,6 +6,18 @@ using UnityEngine.Rendering;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
+    internal readonly struct PulseUpdate
+    {
+        public PulseUpdate(GridPos position, float amount)
+        {
+            Position = position;
+            Amount = amount;
+        }
+
+        public GridPos Position { get; }
+        public float Amount { get; }
+    }
+
     /// <summary>
     /// 把稳定餐桌格合并到一个动态 Mesh。拓扑只在格集合或布局变化时重建；
     /// 颜色、禁用态与结算脉冲通过顶点流更新，并在一帧内合并成一次上传。
@@ -193,6 +205,36 @@ namespace GourmetProject.Game.Presentation.Battle
 
             state.Pulse = next;
             _buffersDirty = true;
+        }
+
+        internal void SetPulseBatch(IReadOnlyList<PulseUpdate> updates)
+        {
+            if (updates == null || updates.Count == 0)
+            {
+                return;
+            }
+
+            bool changed = false;
+            for (int i = 0; i < updates.Count; i++)
+            {
+                PulseUpdate update = updates[i];
+                if (!_cellSet.Contains(update.Position))
+                {
+                    continue;
+                }
+
+                CellState state = EnsureState(update.Position);
+                float next = Mathf.Clamp01(update.Amount);
+                if (Mathf.Approximately(state.Pulse, next))
+                {
+                    continue;
+                }
+
+                state.Pulse = next;
+                changed = true;
+            }
+
+            _buffersDirty |= changed;
         }
 
         internal void ClearPulses()

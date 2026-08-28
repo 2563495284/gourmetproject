@@ -502,6 +502,19 @@ namespace GourmetProject.Game.UI.Battle.View
             _battleScoreOverride = score;
         }
 
+        /// <summary>
+        /// 结算演出热路径：同步记录并直接呈现当前分数，不刷新其余常驻 HUD。
+        /// 分数补间会逐帧调用；餐桌格数、心数等稳定信息不应在这里重算。
+        /// </summary>
+        internal void SetSettlementScorePresentation(BigDouble score)
+        {
+            _battleScoreOverride = score;
+            if (_scoreCurrentText != null)
+            {
+                _scoreCurrentText.text = ScoreNumberFormatter.Format(score);
+            }
+        }
+
         public void BeginSettlementScorePresentation()
         {
             EnsureSettlementDeltaText();
