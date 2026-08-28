@@ -15,9 +15,9 @@ namespace GourmetProject.Tests.EditMode
         private const string PrefabPath =
             "Assets/GameMain/Content/Prefabs/UI/Targeting/TargetArrowView.prefab";
         private const string HeadPath =
-            "Assets/GameMain/Content/Resources/Sprites/UI/target_arrow_head_v3.png";
+            "Assets/GameMain/Content/Resources/Sprites/UI/target_arrow_head_v4.png";
         private const string SegmentPath =
-            "Assets/GameMain/Content/Resources/Sprites/UI/target_arrow_segment_v3.png";
+            "Assets/GameMain/Content/Resources/Sprites/UI/target_arrow_segment_v4.png";
 
         [Test]
         public void Prefab_BuildsNineteenNonBlockingSegmentsFromSerializedTemplate()
