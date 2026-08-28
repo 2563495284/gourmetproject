@@ -62,6 +62,34 @@ namespace GourmetProject.Game.Presentation.Battle
             return Root != null ? Root.TransformPoint(local) : local;
         }
 
+        /// <summary>不依赖 Collider，直接计算一个格子的世界空间 AABB。</summary>
+        public Bounds CellWorldBounds(GridPos cell)
+        {
+            Vector3 center = CellCenterLocal(cell);
+            float half = CellSize * 0.5f;
+            Vector3 bottomLeft = TransformLocalPoint(center + new Vector3(-half, -half, 0f));
+            Vector3 topLeft = TransformLocalPoint(center + new Vector3(-half, half, 0f));
+            Vector3 topRight = TransformLocalPoint(center + new Vector3(half, half, 0f));
+            Vector3 bottomRight = TransformLocalPoint(center + new Vector3(half, -half, 0f));
+            var bounds = new Bounds(bottomLeft, Vector3.zero);
+            bounds.Encapsulate(topLeft);
+            bounds.Encapsulate(topRight);
+            bounds.Encapsulate(bottomRight);
+            return bounds;
+        }
+
+        /// <summary>按格子的完整点击范围判断世界点命中，语义等同原先的 BoxCollider2D。</summary>
+        public bool ContainsWorldPoint(GridPos cell, Vector3 worldPoint)
+        {
+            Vector3 local = Root != null ? Root.InverseTransformPoint(worldPoint) : worldPoint;
+            Vector3 center = CellCenterLocal(cell);
+            float half = CellSize * 0.5f;
+            return local.x >= center.x - half
+                && local.x <= center.x + half
+                && local.y >= center.y - half
+                && local.y <= center.y + half;
+        }
+
         /// <summary>把世界坐标换算到最近的逻辑格（先反变换到局部帧）。</summary>
         public GridPos NearestCell(Vector3 worldPosition)
         {
@@ -71,6 +99,11 @@ namespace GourmetProject.Game.Presentation.Battle
             int x = Mathf.RoundToInt((local.x - left - CellSize * 0.5f) / Pitch);
             int y = Mathf.RoundToInt((top - CellSize * 0.5f - local.y) / Pitch);
             return new GridPos(x, y);
+        }
+
+        private Vector3 TransformLocalPoint(Vector3 local)
+        {
+            return Root != null ? Root.TransformPoint(local) : local;
         }
     }
 }

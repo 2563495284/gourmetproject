@@ -175,7 +175,7 @@ namespace GourmetProject.Tests.EditMode
     public sealed class BattlePoolingReuseTests
     {
         [Test]
-        public void DiningTableBuild_GrowAndShrink_ReusesCellsAndKeepsCountStable()
+        public void DiningTableBuild_IrregularBoard_UsesOneBatchWithoutStableCellViews()
         {
             DiningTableCellView cellPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                     "Assets/GameMain/Content/Prefabs/Battle/Board/DiningTableCell.prefab")
@@ -186,22 +186,37 @@ namespace GourmetProject.Tests.EditMode
             try
             {
                 DiningTableView view = root.AddComponent<DiningTableView>();
-                view.Build(new DiningTable(4, 4), 1f, 0.04f, null, cellPrefab);
-                Dictionary<GridPos, DiningTableCellView> cells = GetPrivateField<
-                    Dictionary<GridPos, DiningTableCellView>>(view, "_cells");
-                DiningTableCellView origin = cells[new GridPos(0, 0)];
-
-                view.Build(new DiningTable(12, 12), 1f, 0.04f, null, cellPrefab);
+                var initialCells = new[]
+                {
+                    new GridPos(4, 5),
+                    new GridPos(5, 5),
+                    new GridPos(5, 6),
+                };
+                view.Build(new DiningTable(36, 36, initialCells), 1f, 0.04f, null, cellPrefab);
+                DiningTableBatchRenderer batch = root.GetComponent<DiningTableBatchRenderer>();
                 GameObjectPool pool = GetPrivateField<GameObjectPool>(view, "_cellPool");
-                Assert.That(cells.Count, Is.EqualTo(144));
-                Assert.That(pool.CountAll, Is.EqualTo(144));
-                Assert.That(cells[new GridPos(0, 0)], Is.SameAs(origin));
+                Mesh mesh = batch.Mesh;
 
-                view.Build(new DiningTable(4, 4), 1f, 0.04f, null, cellPrefab);
-                Assert.That(cells.Count, Is.EqualTo(16));
-                Assert.That(pool.CountAll, Is.EqualTo(144));
-                Assert.That(pool.CountInactive, Is.EqualTo(128));
-                Assert.That(cells[new GridPos(0, 0)], Is.SameAs(origin));
+                Assert.That(batch, Is.Not.Null);
+                Assert.That(batch.CellCount, Is.EqualTo(initialCells.Length));
+                Assert.That(batch.Renderer.enabled, Is.True);
+                Assert.That(batch.VertexCount, Is.GreaterThan(0));
+                Assert.That(root.GetComponentsInChildren<DiningTableCellView>().Length, Is.Zero);
+                Assert.That(pool.CountAll, Is.Zero);
+
+                var expandedCells = new[]
+                {
+                    new GridPos(4, 5),
+                    new GridPos(5, 5),
+                    new GridPos(5, 6),
+                    new GridPos(6, 6),
+                };
+                view.Build(new DiningTable(36, 36, expandedCells), 1f, 0.04f, null, cellPrefab);
+
+                Assert.That(batch.CellCount, Is.EqualTo(expandedCells.Length));
+                Assert.That(batch.Mesh, Is.SameAs(mesh));
+                Assert.That(root.GetComponentsInChildren<DiningTableCellView>().Length, Is.Zero);
+                Assert.That(pool.CountAll, Is.Zero);
             }
             finally
             {
@@ -210,7 +225,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void DiningTableBuild_ReusedCellClearsTransientVisualAndHoverState()
+        public void DiningTableTransientPool_ReusedCellClearsVisualAndHoverState()
         {
             DiningTableCellView cellPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                     "Assets/GameMain/Content/Prefabs/Battle/Board/DiningTableCell.prefab")
@@ -222,20 +237,23 @@ namespace GourmetProject.Tests.EditMode
             {
                 DiningTableView view = root.AddComponent<DiningTableView>();
                 view.Build(new DiningTable(4, 4), 1f, 0.04f, null, cellPrefab);
-                Dictionary<GridPos, DiningTableCellView> cells = GetPrivateField<
-                    Dictionary<GridPos, DiningTableCellView>>(view, "_cells");
-                DiningTableCellView origin = cells[new GridPos(0, 0)];
-                int hoverExitCount = 0;
-                view.SetCellHoverCallbacks(_ => { }, _ => hoverExitCount++);
-                origin.SetHoveredFromTable(true);
-                origin.SetPlateFeedbackColor(Color.red);
+                DiningTableCellView first = view.RentCell(root.transform);
+                first.Configure(
+                    new GridPos(0, 0),
+                    Vector3.zero,
+                    1f,
+                    DiningTableCellSpriteResources.LoadDefault(),
+                    null);
+                first.SetHoverCallbacks(_ => { }, _ => { });
+                first.SetHoveredFromTable(true);
+                first.SetPlateFeedbackColor(Color.red);
 
-                view.Build(new DiningTable(4, 4), 1f, 0.04f, null, cellPrefab);
+                view.ReturnCell(first);
+                DiningTableCellView reused = view.RentCell(root.transform);
 
-                Assert.That(cells[new GridPos(0, 0)], Is.SameAs(origin));
-                Assert.That(GetPrivateField<bool>(origin, "_hovered"), Is.False);
-                Assert.That(GetPrivateField<bool>(origin, "_plateFeedbackActive"), Is.False);
-                Assert.That(hoverExitCount, Is.EqualTo(1));
+                Assert.That(reused, Is.SameAs(first));
+                Assert.That(GetPrivateField<bool>(reused, "_hovered"), Is.False);
+                Assert.That(GetPrivateField<bool>(reused, "_plateFeedbackActive"), Is.False);
             }
             finally
             {
