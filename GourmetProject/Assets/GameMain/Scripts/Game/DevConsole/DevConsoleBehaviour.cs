@@ -58,7 +58,7 @@ namespace GourmetProject.Game.DevConsole
             }
 
             _instance = this;
-            _console = new DevConsole();
+            EnsureRuntimeState();
             Print("GourmetProject 开发者控制台。输入 help 查看命令，按 ` 关闭。");
         }
 
@@ -67,6 +67,21 @@ namespace GourmetProject.Game.DevConsole
             if (_instance == this)
             {
                 _instance = null;
+            }
+        }
+
+        private void OnEnable()
+        {
+            // Static and non-serializable fields are lost during a Unity domain reload,
+            // while this DontDestroyOnLoad object can survive without Awake running again.
+            if (_instance == null)
+            {
+                _instance = this;
+            }
+
+            if (_instance == this)
+            {
+                EnsureRuntimeState();
             }
         }
 
@@ -181,6 +196,11 @@ namespace GourmetProject.Game.DevConsole
                 MoveCursorToEnd();
                 _focusInput = false;
             }
+        }
+
+        private void EnsureRuntimeState()
+        {
+            _console ??= new DevConsole();
         }
 
         private void Submit()
