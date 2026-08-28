@@ -98,6 +98,41 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void Shortcut_LeftClickAfterPickup_DropsAtPointer()
+        {
+            bool active = false;
+            int endCount = 0;
+            Vector2 endPoint = default;
+            var updates = new List<Vector2>();
+            Bind(
+                _ =>
+                {
+                    active = true;
+                    return true;
+                },
+                updates.Add,
+                point =>
+                {
+                    endCount++;
+                    endPoint = point;
+                    active = false;
+                    return true;
+                },
+                () => active);
+            SetReadyForShortcut();
+
+            Vector2 pickup = new Vector2(120f, 240f);
+            Vector2 drop = new Vector2(520f, 310f);
+            HandleShortcut(pressed: true, pickup);
+            HandleShortcut(pressed: false, drop, primaryPressed: true);
+
+            Assert.That(updates, Is.EqualTo(new[] { drop }));
+            Assert.That(endCount, Is.EqualTo(1));
+            Assert.That(endPoint, Is.EqualTo(drop));
+            Assert.That(IsKeyboardDragging(), Is.False);
+        }
+
+        [Test]
         public void Shortcut_RejectedPickup_RemainsIdle()
         {
             int updateCount = 0;
@@ -199,9 +234,14 @@ namespace GourmetProject.Tests.EditMode
             PreparedDishIdField.SetValue(_view, (int?)42);
         }
 
-        private void HandleShortcut(bool pressed, Vector2 screenPoint)
+        private void HandleShortcut(
+            bool pressed,
+            Vector2 screenPoint,
+            bool primaryPressed = false)
         {
-            HandleKeyboardShortcutMethod.Invoke(_view, new object[] { pressed, screenPoint });
+            HandleKeyboardShortcutMethod.Invoke(
+                _view,
+                new object[] { pressed, primaryPressed, screenPoint });
         }
 
         private bool IsKeyboardDragging()
