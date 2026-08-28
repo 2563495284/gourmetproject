@@ -246,6 +246,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public bool IsSettlementPlaying => _settling;
 
+        /// <summary>当前是否有一份出菜口待摆食物正跟随指针。</summary>
+        public bool IsServingOutletDragActive => _outletDragPiece != null;
+
         internal DishPieceView ActiveDragPiece =>
             _discardAnimationPiece != null
                 ? _discardAnimationPiece
@@ -2195,10 +2198,13 @@ namespace GourmetProject.Game.Presentation.Battle
         [Obsolete("Food output is automatic. Use EnsureNextDishPrepared.")]
         public bool TryPrepareServeDish(int slotIndex) => EnsureNextDishPrepared(slotIndex);
 
-        public void BeginServingOutletDrag(Vector2 screenPoint)
+        public bool BeginServingOutletDrag(Vector2 screenPoint)
         {
             if (_session?.PreparedServe == null
+                || _session.IsSettled
+                || _worldMode != WorldMode.Food
                 || _settling
+                || _foodSettlementLayoutBusy
                 || _activeItemTransitioning
                 || _bossPresentationBusy
                 || _outletDragPiece != null
@@ -2206,7 +2212,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 || _temporaryAreaDragPiece != null
                 || _discardAnimationPiece != null)
             {
-                return;
+                return false;
             }
 
             ClearDishScopeHighlights();
@@ -2214,7 +2220,7 @@ namespace GourmetProject.Game.Presentation.Battle
             DishPieceView piece = InstantiateLoosePiece(prepared.Dish, "ServingOutletDragPreview");
             if (piece == null)
             {
-                return;
+                return false;
             }
 
             _outletDragPiece = piece;
@@ -2224,6 +2230,7 @@ namespace GourmetProject.Game.Presentation.Battle
             BeginDragPointerTracking(ScreenToWorld(screenPoint));
             UpdateServingOutletDrag(screenPoint);
             GameApp.Audio.PlayPickup();
+            return true;
         }
 
         public void UpdateServingOutletDrag(Vector2 screenPoint)
@@ -2296,7 +2303,7 @@ namespace GourmetProject.Game.Presentation.Battle
             if (!_outletHoverPlacement.HasValue)
             {
                 ClearOutletDragPreview();
-                SetMessage("请拖到餐桌空位，或拖进可用的垃圾桶。");
+                SetMessage("请放到餐桌空位，或放进可用的垃圾桶。");
                 return false;
             }
 

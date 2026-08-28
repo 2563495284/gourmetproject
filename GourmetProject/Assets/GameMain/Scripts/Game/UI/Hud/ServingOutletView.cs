@@ -1,5 +1,6 @@
 using System;
 using DG.Tweening;
+using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Widgets;
 using GourmetProject.Gameplay.Battle;
 using GourmetProject.Gameplay.Board;
@@ -43,10 +44,12 @@ namespace GourmetProject.Game.UI.Hud
         [SerializeField] private Color _blockedColor = new Color(0.45f, 0.45f, 0.42f, 0.18f);
         [SerializeField] private Image _background;
 
-        private Action<Vector2> _beginDrag;
+        private Func<Vector2, bool> _beginDrag;
         private Action<Vector2> _drag;
         private Func<Vector2, bool> _endDrag;
+        private Func<bool> _isDragActive;
         private bool _dragging;
+        private bool _keyboardDragging;
         private bool _activeItemTargeting;
         private bool _activeItemTargetHighlighted;
         private bool _activeItemTransforming;
@@ -70,6 +73,13 @@ namespace GourmetProject.Game.UI.Hud
         private void Awake()
         {
             EnsureReferences();
+        }
+
+        private void Update()
+        {
+            HandleKeyboardShortcut(
+                WorldInput.ServingOutletShortcutPressedThisFrame,
+                WorldInput.MouseScreen);
         }
 
         public bool IsPreparedDishAtScreenPoint(Vector2 screenPoint)
@@ -122,7 +132,7 @@ namespace GourmetProject.Game.UI.Hud
                 return false;
             }
 
-            _dragging = false;
+            ResetDragState(restoreDishAlpha: true);
             _activeItemTransforming = true;
             _dishHoverTrigger?.CancelHover();
             RefreshInteractionState();
@@ -171,15 +181,18 @@ namespace GourmetProject.Game.UI.Hud
             BattleSession session,
             Func<bool> onDishHoverEntered,
             Action onDishHoverExited,
-            Action<Vector2> beginDrag,
+            Func<Vector2, bool> beginDrag,
             Action<Vector2> drag,
-            Func<Vector2, bool> endDrag)
+            Func<Vector2, bool> endDrag,
+            Func<bool> isDragActive)
         {
             EnsureReferences();
             _beginDrag = beginDrag;
             _drag = drag;
             _endDrag = endDrag;
+            _isDragActive = isDragActive;
             _dragging = false;
+            _keyboardDragging = false;
             if (_dishHoverTrigger == null)
             {
                 Debug.LogError(
@@ -201,7 +214,7 @@ namespace GourmetProject.Game.UI.Hud
                 Present(new OutletPresentation(
                     ServingOutletState.WaitingForDishDrag,
                     session.PreparedServe,
-                    "拖到餐桌，或拖进垃圾桶丢弃"));
+                    "拖拽或空格拿放；拖入垃圾桶"));
             }
             else if (session != null && !session.IsSettled && session.HasPendingTablePlacements)
             {
@@ -270,6 +283,7 @@ namespace GourmetProject.Game.UI.Hud
             _stateTransition?.Kill();
             _stateTransition = null;
             _dragging = false;
+            _keyboardDragging = false;
             _stateTransitioning = true;
             _activeItemTargetHighlighted = false;
             _dishHoverTrigger?.CancelHover();
@@ -444,19 +458,11 @@ namespace GourmetProject.Game.UI.Hud
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (State != ServingOutletState.WaitingForDishDrag
-                || _stateTransitioning
-                || _activeItemTargeting
-                || _activeItemTransforming
-                || eventData == null)
+            if (eventData == null || !TryBeginDrag(eventData.position, keyboard: false))
             {
                 return;
             }
 
-            _dragging = true;
-            _dishHoverTrigger?.CancelHover();
-            SetDishAlpha(0.35f);
-            _beginDrag?.Invoke(eventData.position);
             eventData.Use();
         }
 
@@ -478,14 +484,88 @@ namespace GourmetProject.Game.UI.Hud
                 return;
             }
 
+            if (eventData != null)
+            {
+                CompleteDrag(eventData.position);
+            }
+            else
+            {
+                ResetDragState(restoreDishAlpha: true);
+            }
+            eventData?.Use();
+        }
+
+        private void HandleKeyboardShortcut(bool pressedThisFrame, Vector2 screenPoint)
+        {
+            if (_keyboardDragging)
+            {
+                if (_isDragActive?.Invoke() != true)
+                {
+                    ResetDragState(restoreDishAlpha: true);
+                    return;
+                }
+
+                _drag?.Invoke(screenPoint);
+                if (pressedThisFrame)
+                {
+                    CompleteDrag(screenPoint);
+                }
+
+                return;
+            }
+
+            if (pressedThisFrame && !_dragging)
+            {
+                TryBeginDrag(screenPoint, keyboard: true);
+            }
+        }
+
+        private bool TryBeginDrag(Vector2 screenPoint, bool keyboard)
+        {
+            if (_dragging
+                || State != ServingOutletState.WaitingForDishDrag
+                || _stateTransitioning
+                || _activeItemTargeting
+                || _activeItemTransforming
+                || !_preparedDishId.HasValue
+                || _beginDrag?.Invoke(screenPoint) != true)
+            {
+                return false;
+            }
+
+            _dragging = true;
+            _keyboardDragging = keyboard;
+            _dishHoverTrigger?.CancelHover();
+            SetDishAlpha(0.35f);
+            return true;
+        }
+
+        private bool CompleteDrag(Vector2 screenPoint)
+        {
+            if (!_dragging)
+            {
+                return false;
+            }
+
             _dragging = false;
-            bool placed = eventData != null && _endDrag?.Invoke(eventData.position) == true;
+            _keyboardDragging = false;
+            bool placed = _endDrag?.Invoke(screenPoint) == true;
             if (!placed)
             {
                 SetDishAlpha(1f);
             }
 
-            eventData?.Use();
+            return placed;
+        }
+
+        private void ResetDragState(bool restoreDishAlpha)
+        {
+            _dragging = false;
+            _keyboardDragging = false;
+            if (restoreDishAlpha)
+            {
+                SetDishAlpha(1f);
+            }
         }
 
         private void SetDishAlpha(float alpha)
@@ -602,6 +682,7 @@ namespace GourmetProject.Game.UI.Hud
 
             NormalizeTransitionVisuals();
             _dragging = false;
+            _keyboardDragging = false;
             _activeItemTargeting = false;
             _activeItemTargetHighlighted = false;
             _activeItemTransforming = false;
