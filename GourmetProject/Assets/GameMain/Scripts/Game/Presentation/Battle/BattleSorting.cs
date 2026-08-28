@@ -8,7 +8,7 @@ namespace GourmetProject.Game.Presentation.Battle
     /// <summary>
     /// 经营挑战世界的渲染分层：用命名 Sorting Layer 划分大层级（与 ProjectSettings/TagManager 中的定义一致），
     /// 每层内再用很小的 order 做细分，避免散落的 sortingOrder magic number。
-    /// 层级从后到前：Background → DiningTable → Pieces → WorldUI → Fx → PiecesFlying。
+    /// 层级从后到前：Background → DiningTable → DishShadow → Pieces → WorldUI → Fx → PiecesFlying。
     /// </summary>
     internal static class BattleSorting
     {
@@ -18,7 +18,10 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>餐桌格。</summary>
         public const string DiningTable = "DiningTable";
 
-        /// <summary>已摆放的食物（阴影 + 本体）。</summary>
+        /// <summary>已摆放食物合批后的接触阴影。</summary>
+        public const string DishShadow = "DishShadow";
+
+        /// <summary>已摆放的食物本体。</summary>
         public const string Pieces = "Pieces";
 
         /// <summary>场景内按钮与分数/提示文字等世界 UI。</summary>

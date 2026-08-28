@@ -47,6 +47,9 @@ TagManager:
   - name: DiningTable
     uniqueID: 1633673476
     locked: 0
+  - name: DishShadow
+    uniqueID: 1633673482
+    locked: 0
   - name: Pieces
     uniqueID: 1633673477
     locked: 0

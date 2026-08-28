@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 using TMPro;
 
 namespace GourmetProject.Game.Presentation.Battle
@@ -156,18 +157,69 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ApplySortingOrder()
         {
+            ConfigureDecorationRenderer(_background);
+            ConfigureDecorationRenderer(_valueBacking);
+            ConfigureDecorationRenderer(_icon);
+
             if (_valueText != null)
             {
-                BattleSorting.Apply(_valueText, _sortingLayer, _sortingOrder + 2);
+                BattleSorting.Apply(_valueText, _sortingLayer, _sortingOrder + 1);
             }
             else
             {
-                BattleSorting.Apply(_valueMeshRenderer, _sortingLayer, _sortingOrder + 2);
+                BattleSorting.Apply(_valueMeshRenderer, _sortingLayer, _sortingOrder + 1);
             }
 
+            ConfigureTextRenderers();
+
             BattleSorting.Apply(_background, _sortingLayer, _sortingOrder);
-            BattleSorting.Apply(_valueBacking, _sortingLayer, _sortingOrder + 1);
-            BattleSorting.Apply(_icon, _sortingLayer, _sortingOrder + 3);
+            BattleSorting.Apply(_valueBacking, _sortingLayer, _sortingOrder);
+            BattleSorting.Apply(_icon, _sortingLayer, _sortingOrder);
+        }
+
+        private static void ConfigureDecorationRenderer(SpriteRenderer renderer)
+        {
+            if (renderer == null)
+            {
+                return;
+            }
+
+            SpriteRenderStyle.ApplyUnlitMaterial(renderer);
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.lightProbeUsage = LightProbeUsage.Off;
+            renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            renderer.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
+        }
+
+        private void ConfigureTextRenderers()
+        {
+            if (_valueText != null)
+            {
+                MeshRenderer[] renderers = _valueText.GetComponentsInChildren<MeshRenderer>(true);
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    ConfigureMeshRenderer(renderers[i]);
+                }
+
+                return;
+            }
+
+            ConfigureMeshRenderer(_valueMeshRenderer);
+        }
+
+        private static void ConfigureMeshRenderer(MeshRenderer renderer)
+        {
+            if (renderer == null)
+            {
+                return;
+            }
+
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.lightProbeUsage = LightProbeUsage.Off;
+            renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            renderer.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
         }
 
         private static float SpriteTopExtent(SpriteRenderer renderer)
