@@ -63,17 +63,36 @@ namespace GourmetProject.Tests.EditMode
         [Test]
         public void RepeatedSolver_PathologicalSearchStopsAtHardNodeLimit()
         {
-            DishDef lShape = CreateDish("large_l_shape", new[] { "X.", "XX" });
+            DishDef sparseShape = CreateDish(
+                "pathological_sparse_shape",
+                new[] { "X..", "...", "..X" });
+
+            RepeatedDishPlacementResult result =
+                RepeatedDishPlacementSolver.SolveWithDiagnostics(
+                    new DiningTable(12, 12),
+                    sparseShape);
+
+            Assert.That(result.Truncated, Is.True);
+            Assert.That(result.SearchNodes,
+                Is.EqualTo(RepeatedDishPlacementSolver.SearchNodeLimit));
+            Assert.That(result.Placements, Has.Count.GreaterThan(0));
+            AssertPlacementsDoNotOverlap(result.Placements);
+        }
+
+        [Test]
+        public void RepeatedSolver_FindsExactMaximumForConfiguredLShapeOnMaximumTable()
+        {
+            DishDef lShape = CreateDish(
+                "configured_l_shape",
+                new[] { "XX", ".X", ".X" });
 
             RepeatedDishPlacementResult result =
                 RepeatedDishPlacementSolver.SolveWithDiagnostics(
                     new DiningTable(12, 12),
                     lShape);
 
-            Assert.That(result.Truncated, Is.True);
-            Assert.That(result.SearchNodes,
-                Is.EqualTo(RepeatedDishPlacementSolver.SearchNodeLimit));
-            Assert.That(result.Placements, Has.Count.GreaterThan(0));
+            Assert.That(result.Truncated, Is.False);
+            Assert.That(result.Placements, Has.Count.EqualTo(28));
             AssertPlacementsDoNotOverlap(result.Placements);
         }
 

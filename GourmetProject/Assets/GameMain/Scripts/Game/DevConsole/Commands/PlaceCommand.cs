@@ -272,7 +272,7 @@ namespace GourmetProject.Game.DevConsole.Commands
             {
                 case SpecifiedPlaceStopReason.Completed:
                     string searchNote = result.SearchTruncated
-                        ? "（搜索达到上限，已采用当前找到的最多布局）"
+                        ? "（搜索达到上限，已采用当前找到的最佳布局）"
                         : string.Empty;
                     return CmdResult.Ok(
                         $"已放置 {result.PlacedCount} 个 {identity}{searchNote}。");
