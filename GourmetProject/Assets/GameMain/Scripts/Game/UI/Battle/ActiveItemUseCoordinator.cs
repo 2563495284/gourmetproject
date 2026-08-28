@@ -500,6 +500,7 @@ namespace GourmetProject.Game.UI.Battle
 
             bool hasHover = pointerHasTarget && ContainsTarget(_candidateTargets, hovered);
             ActiveTarget? hoverTarget = hasHover ? hovered : null;
+            _uiArrow?.SetTargetHighlighted(hasHover);
             world.SetActiveItemTargetHighlights(
                 _pendingItem.TargetKind,
                 _candidateTargets,

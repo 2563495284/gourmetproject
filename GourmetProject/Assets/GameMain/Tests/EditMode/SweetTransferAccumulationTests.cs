@@ -110,6 +110,18 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(transferLines.Count(line => line.Trace.SourceLabel == "来源B<甜蜜传递>"), Is.EqualTo(2));
             Assert.That(transferLines.Count(line => line.Trace.SourceLabel == "来源C<甜蜜传递>"), Is.EqualTo(1));
             Assert.That(
+                transferLines.Select(line => line.Trace.SourceLabel),
+                Is.EqualTo(new[]
+                {
+                    "旧来源<甜蜜传递>",
+                    "来源B<甜蜜传递>",
+                    "旧来源<甜蜜传递>",
+                    "来源B<甜蜜传递>",
+                    "来源C<甜蜜传递>",
+                    "旧来源<甜蜜传递>",
+                }),
+                "较早批次必须使用其入队时的技能数量快照，并保持原有明细顺序");
+            Assert.That(
                 transferLines.Where(line => line.Trace.SourceLabel == "旧来源<甜蜜传递>")
                     .All(line => line.Trace.OwnerDishInstanceId == oldOwner.Id),
                 Is.True);
@@ -162,6 +174,163 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(sourceCHandoffs[0].ExecutorDishInstanceId, Is.EqualTo(target.Id));
             Assert.That(sourceCHandoffs[0].HandoffSkillId, Is.EqualTo(sourceCSkill.Id));
             Assert.That(sourceCHandoffs[0].HandoffPayloadCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void HighFanoutSettlement_ExceedsLegacyCommandLimitAndPreservesFullOutput()
+        {
+            const int sourceCount = 16;
+            const int targetCount = 16;
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            var skills = new List<SkillDef>(sourceCount);
+            var dishDefs = new List<DishDef>(sourceCount + targetCount);
+            for (int i = 0; i < sourceCount; i++)
+            {
+                SkillDef skill = CreateTransferSkill($"source_skill_{i}", 1f, targetCount);
+                skills.Add(skill);
+                dishDefs.Add(CreateDish(
+                    $"source_{i}",
+                    $"来源{i}",
+                    shape,
+                    new[] { skill.Id }));
+            }
+
+            for (int i = 0; i < targetCount; i++)
+            {
+                dishDefs.Add(CreateDish(
+                    $"target_{i}",
+                    $"目标{i}",
+                    shape,
+                    Array.Empty<string>()));
+            }
+
+            var database = new GameplayDatabase(
+                dishDefs,
+                skills,
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(sourceCount + targetCount, 1);
+            var targetIds = new HashSet<int>();
+            for (int i = 0; i < dishDefs.Count; i++)
+            {
+                int instanceId = i + 1;
+                board.Place(CreateInstance(instanceId, dishDefs[i], shape, i));
+                if (i >= sourceCount)
+                {
+                    targetIds.Add(instanceId);
+                }
+            }
+
+            IReadOnlyList<int> SelectTargets(IReadOnlyList<int> candidates, int count)
+                => candidates.Where(targetIds.Contains).Take(count).ToArray();
+
+            var calculator = new ScoreCalculator();
+            ScoreResult normal = calculator.Calculate(
+                board,
+                database,
+                transferTargetSelector: SelectTargets);
+            ScoreResult verbose = calculator.Calculate(
+                board,
+                database,
+                transferTargetSelector: SelectTargets,
+                captureCommandEvents: true);
+
+            Assert.That(normal.SkillTransfers, Has.Count.EqualTo(sourceCount * targetCount));
+            Assert.That(
+                normal.DishScores.Where(score => targetIds.Contains(score.DishInstanceId))
+                    .All(score => Math.Abs(Value(score.FlatBonus) - 136d) < 1e-9),
+                Is.True,
+                "每个接收者应按 1+2+...+16 次完整重算累计技能");
+            Assert.That(
+                normal.ScoreLines.Count(line => line.Trace?.Kind == SkillExecutionKind.SweetTransfer),
+                Is.EqualTo(targetCount * sourceCount * (sourceCount + 1) / 2));
+            Assert.That(
+                normal.ScoreEvents.Any(IsLowLevelCommandEvent),
+                Is.False,
+                "默认玩家结算不应创建逐命令事件");
+            Assert.That(
+                verbose.ScoreEvents.Count(IsLowLevelCommandEvent),
+                Is.GreaterThan(2048),
+                "Verbose 模式应证明本夹具的逻辑命令数已经超过旧上限");
+
+            AssertEquivalentResults(normal, verbose);
+        }
+
+        [Test]
+        public void CommandEventCapture_DoesNotChangeRandomTargetsOrFinalRngState()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef sourceSkill = CreateTransferSkill("source_skill", 3f, targetCount: 1);
+            DishDef sourceDef = CreateDish("source", "来源", shape, new[] { sourceSkill.Id });
+            var dishDefs = new List<DishDef> { sourceDef };
+            for (int i = 0; i < 4; i++)
+            {
+                dishDefs.Add(CreateDish($"target_{i}", $"目标{i}", shape, Array.Empty<string>()));
+            }
+
+            var database = new GameplayDatabase(
+                dishDefs,
+                new[] { sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(dishDefs.Count, 1);
+            for (int i = 0; i < dishDefs.Count; i++)
+            {
+                board.Place(CreateInstance(i + 1, dishDefs[i], shape, i));
+            }
+
+            var normalRng = new Xoshiro256SS(20260828UL);
+            var verboseRng = new Xoshiro256SS(20260828UL);
+            ScoreResult normal = CalculateWithRandomSelectors(
+                board,
+                database,
+                normalRng,
+                captureCommandEvents: false);
+            ScoreResult verbose = CalculateWithRandomSelectors(
+                board,
+                database,
+                verboseRng,
+                captureCommandEvents: true);
+
+            Assert.That(normalRng.State, Is.EqualTo(verboseRng.State));
+            Assert.That(
+                normal.SkillTransfers.Select(transfer => transfer.TargetInstanceId),
+                Is.EqualTo(verbose.SkillTransfers.Select(transfer => transfer.TargetInstanceId)));
+            Assert.That(normal.ScoreEvents.Any(IsLowLevelCommandEvent), Is.False);
+            Assert.That(verbose.ScoreEvents.Any(IsLowLevelCommandEvent), Is.True);
+            AssertEquivalentResults(normal, verbose);
+        }
+
+        [Test]
+        public void CommandSafety_RejectsRecursiveChainByDepthButAllowsWideFiniteQueue()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            DishDef dishDef = CreateDish("dish", "食物", shape, Array.Empty<string>());
+            var database = new GameplayDatabase(
+                new[] { dishDef },
+                Array.Empty<SkillDef>(),
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(1, 1);
+            board.Place(CreateInstance(1, dishDef, shape, 0));
+
+            var recursiveContext = new ScoreContext(new ScoreSnapshot(board, database));
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                () => recursiveContext.SubmitCommand(new SelfRequeueCommand()));
+            Assert.That(exception.Message, Does.Contain("depth=129"));
+            Assert.That(exception.Message, Does.Contain("physicalQueue="));
+            Assert.That(exception.Message, Does.Contain("commandType=SelfRequeue"));
+
+            var wideContext = new ScoreContext(new ScoreSnapshot(board, database));
+            Assert.DoesNotThrow(
+                () => wideContext.SubmitCommand(new WideFiniteCommand(5000)));
+
+            var floodedContext = new ScoreContext(new ScoreSnapshot(board, database));
+            InvalidOperationException flooded = Assert.Throws<InvalidOperationException>(
+                () => floodedContext.SubmitCommand(new WideFiniteCommand(65537)));
+            Assert.That(flooded.Message, Does.Contain("physical pending work limit exceeded"));
+            Assert.That(flooded.Message, Does.Contain("physicalQueue=65536"));
+            Assert.That(flooded.Message, Does.Contain("commandType=NoOp"));
         }
 
         [Test]
@@ -1178,6 +1347,158 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(
                 target.TransferredSkills.Select(transferred => transferred.Rule.Id),
                 Is.EqualTo(new[] { "old_payload", "source_skill_payload" }));
+        }
+
+        private static ScoreResult CalculateWithRandomSelectors(
+            DiningTable board,
+            GameplayDatabase database,
+            Xoshiro256SS rng,
+            bool captureCommandEvents)
+        {
+            IReadOnlyList<int> SelectTargets(IReadOnlyList<int> candidates, int count)
+            {
+                var remaining = candidates.ToList();
+                var selected = new List<int>(count);
+                while (selected.Count < count && remaining.Count > 0)
+                {
+                    int index = rng.Range(0, remaining.Count);
+                    selected.Add(remaining[index]);
+                    remaining.RemoveAt(index);
+                }
+
+                return selected;
+            }
+
+            return new ScoreCalculator().Calculate(
+                board,
+                database,
+                transferTargetSelector: SelectTargets,
+                randomIntegerSelector: (min, max) => rng.Range(min, max + 1),
+                sweetTransferExtraTargetRolls: TowerExtraTargetRolls(),
+                captureCommandEvents: captureCommandEvents);
+        }
+
+        private static bool IsLowLevelCommandEvent(ScoreEvent scoreEvent)
+            => scoreEvent != null
+               && scoreEvent.Type == ScoreEventType.CommandExecuted
+               && scoreEvent.Message.StartsWith("执行命令 ", StringComparison.Ordinal);
+
+        private static void AssertEquivalentResults(ScoreResult expected, ScoreResult actual)
+        {
+            Assert.That(Value(actual.Total), Is.EqualTo(Value(expected.Total)).Within(1e-9));
+            Assert.That(Value(actual.RawSum), Is.EqualTo(Value(expected.RawSum)).Within(1e-9));
+            Assert.That(actual.GoldDelta, Is.EqualTo(expected.GoldDelta));
+            Assert.That(actual.HappyCakeLayerDelta, Is.EqualTo(expected.HappyCakeLayerDelta));
+            Assert.That(actual.DishScores.Count, Is.EqualTo(expected.DishScores.Count));
+            for (int i = 0; i < expected.DishScores.Count; i++)
+            {
+                DishScore left = expected.DishScores[i];
+                DishScore right = actual.DishScores[i];
+                Assert.That(right.DishInstanceId, Is.EqualTo(left.DishInstanceId));
+                Assert.That(Value(right.BaseValue), Is.EqualTo(Value(left.BaseValue)).Within(1e-9));
+                Assert.That(Value(right.FlatBonus), Is.EqualTo(Value(left.FlatBonus)).Within(1e-9));
+                Assert.That(Value(right.Multiplier), Is.EqualTo(Value(left.Multiplier)).Within(1e-9));
+                Assert.That(right.EffectiveCountAs, Is.EqualTo(left.EffectiveCountAs));
+            }
+
+            Assert.That(actual.ScoreLines.Count, Is.EqualTo(expected.ScoreLines.Count));
+            for (int i = 0; i < expected.ScoreLines.Count; i++)
+            {
+                ScoreLine left = expected.ScoreLines[i];
+                ScoreLine right = actual.ScoreLines[i];
+                Assert.That(right.Phase, Is.EqualTo(left.Phase), $"ScoreLine[{i}].Phase");
+                Assert.That(right.Kind, Is.EqualTo(left.Kind), $"ScoreLine[{i}].Kind");
+                Assert.That(right.DishInstanceId, Is.EqualTo(left.DishInstanceId), $"ScoreLine[{i}].Dish");
+                Assert.That(Value(right.Value), Is.EqualTo(Value(left.Value)).Within(1e-9), $"ScoreLine[{i}].Value");
+                Assert.That(Value(right.Before), Is.EqualTo(Value(left.Before)).Within(1e-9), $"ScoreLine[{i}].Before");
+                Assert.That(Value(right.After), Is.EqualTo(Value(left.After)).Within(1e-9), $"ScoreLine[{i}].After");
+                Assert.That(right.Message, Is.EqualTo(left.Message), $"ScoreLine[{i}].Message");
+                Assert.That(right.ExecutionGroupId, Is.EqualTo(left.ExecutionGroupId), $"ScoreLine[{i}].Group");
+                Assert.That(right.Trace?.OwnerDishInstanceId, Is.EqualTo(left.Trace?.OwnerDishInstanceId));
+                Assert.That(right.Trace?.RuntimeSelfDishInstanceId, Is.EqualTo(left.Trace?.RuntimeSelfDishInstanceId));
+                Assert.That(right.Trace?.SourceLabel, Is.EqualTo(left.Trace?.SourceLabel));
+                Assert.That(
+                    right.Trace?.SweetTransferHandoffSourceDishInstanceId,
+                    Is.EqualTo(left.Trace?.SweetTransferHandoffSourceDishInstanceId));
+                Assert.That(
+                    right.Trace?.SweetTransferHandoffExecutionGroupId,
+                    Is.EqualTo(left.Trace?.SweetTransferHandoffExecutionGroupId));
+            }
+
+            Assert.That(actual.SkillTransfers.Count, Is.EqualTo(expected.SkillTransfers.Count));
+            for (int i = 0; i < expected.SkillTransfers.Count; i++)
+            {
+                SkillTransferSideEffect left = expected.SkillTransfers[i];
+                SkillTransferSideEffect right = actual.SkillTransfers[i];
+                Assert.That(right.TargetInstanceId, Is.EqualTo(left.TargetInstanceId));
+                Assert.That(right.SourceInstanceId, Is.EqualTo(left.SourceInstanceId));
+                Assert.That(right.SourceName, Is.EqualTo(left.SourceName));
+                Assert.That(right.HandoffExecutionGroupId, Is.EqualTo(left.HandoffExecutionGroupId));
+                Assert.That(right.Effects.Select(effect => effect?.Rule?.Id),
+                    Is.EqualTo(left.Effects.Select(effect => effect?.Rule?.Id)));
+            }
+
+            Assert.That(actual.PermanentFlatDeltas, Is.EqualTo(expected.PermanentFlatDeltas));
+            Assert.That(actual.PermanentMultDeltas, Is.EqualTo(expected.PermanentMultDeltas));
+            Assert.That(actual.CopySkillRequests.Count, Is.EqualTo(expected.CopySkillRequests.Count));
+            Assert.That(actual.TemporaryCategories.Count, Is.EqualTo(expected.TemporaryCategories.Count));
+            Assert.That(actual.RecipeRemovalRequests.Count, Is.EqualTo(expected.RecipeRemovalRequests.Count));
+
+            ScoreEvent[] expectedHighLevelEvents = expected.ScoreEvents
+                .Where(scoreEvent => !IsLowLevelCommandEvent(scoreEvent))
+                .ToArray();
+            ScoreEvent[] actualHighLevelEvents = actual.ScoreEvents
+                .Where(scoreEvent => !IsLowLevelCommandEvent(scoreEvent))
+                .ToArray();
+            Assert.That(actualHighLevelEvents.Length, Is.EqualTo(expectedHighLevelEvents.Length));
+            for (int i = 0; i < expectedHighLevelEvents.Length; i++)
+            {
+                ScoreEvent left = expectedHighLevelEvents[i];
+                ScoreEvent right = actualHighLevelEvents[i];
+                Assert.That(right.Type, Is.EqualTo(left.Type), $"ScoreEvent[{i}].Type");
+                Assert.That(right.Phase, Is.EqualTo(left.Phase), $"ScoreEvent[{i}].Phase");
+                Assert.That(right.DishInstanceId, Is.EqualTo(left.DishInstanceId), $"ScoreEvent[{i}].Dish");
+                Assert.That(right.Message, Is.EqualTo(left.Message), $"ScoreEvent[{i}].Message");
+                Assert.That(right.ExecutionGroupId, Is.EqualTo(left.ExecutionGroupId), $"ScoreEvent[{i}].Group");
+            }
+        }
+
+        private sealed class SelfRequeueCommand : IScoreCommand
+        {
+            public string Name => "SelfRequeue";
+
+            public void Execute(ScoreContext context) => context.SubmitCommand(this);
+        }
+
+        private sealed class WideFiniteCommand : IScoreCommand
+        {
+            private readonly int _count;
+
+            public WideFiniteCommand(int count)
+            {
+                _count = count;
+            }
+
+            public string Name => "WideFinite";
+
+            public void Execute(ScoreContext context)
+            {
+                for (int i = 0; i < _count; i++)
+                {
+                    context.SubmitCommand(NoOpCommand.Instance);
+                }
+            }
+        }
+
+        private sealed class NoOpCommand : IScoreCommand
+        {
+            public static readonly NoOpCommand Instance = new NoOpCommand();
+
+            public string Name => "NoOp";
+
+            public void Execute(ScoreContext context)
+            {
+            }
         }
 
         private static SkillDef CreatePayloadOnlySkill(string skillId, SkillRuleDef payload)

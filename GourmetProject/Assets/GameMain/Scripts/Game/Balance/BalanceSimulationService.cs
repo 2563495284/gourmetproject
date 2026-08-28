@@ -28,7 +28,7 @@ namespace GourmetProject.Game.Balance
                 var random = new Xoshiro256SS(unchecked((ulong)(uint)seed ^ 0x9E3779B97F4A7C15UL));
                 int requiredScore = checkpoint.UseConfiguredRequiredScore ? runtime.Run.RequiredScore : Math.Max(1, checkpoint.RequiredScore);
                 var session = BattleSessionFactory.BuildBalancePreview(runtime.Run, runtime.Board, requiredScore, checkpoint.BossDebuffId, random, checkpoint.HappyCakeLayers);
-                ScoreResult score = session.PreviewScore();
+                ScoreResult score = session.PreviewScore(captureDiagnostics: false);
                 sample.IsValid = true;
                 sample.TotalScore = score.Total;
                 sample.EffectiveRequiredScore = requiredScore;

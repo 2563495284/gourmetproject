@@ -437,13 +437,13 @@ namespace GourmetProject.Gameplay.Scoring
         /// <summary>执行一轮甜蜜传递：每次调用都会重新解析/随机目标。</summary>
         private void ExecuteOneSweetTransfer(ScoreContext ctx)
         {
-            IReadOnlyList<SkillEffect> effects = EffectsToTransfer(ctx.Db, _rule);
+            IReadOnlyList<SkillEffect> effects = ctx.SweetTransferPayloadFor(_rule);
             if (effects.Count == 0)
             {
                 return;
             }
 
-            IReadOnlyList<DishInstance> candidates = TransferCandidates(ctx);
+            TransferCandidateSet candidates = TransferCandidates(ctx);
             if (candidates.Count == 0)
             {
                 ctx.RecordSweetTransferFailed(_self);
@@ -475,10 +475,8 @@ namespace GourmetProject.Gameplay.Scoring
                     sourceName,
                     _self.Id,
                     handoffExecutionGroupId);
-                ResolveTransferredEffects(
-                    ctx,
+                ctx.ResolveTransferredEffectsBatch(
                     target,
-                    ctx.TransferredSkillsForCurrentCalculation(target),
                     _self.Id,
                     handoffExecutionGroupId,
                     _rule.SkillId,
@@ -544,63 +542,21 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            foreach (string skillId in source.SkillIds)
+            foreach (ScoreEffectEntry entry in ctx.SweetTransferEffectsForSource(source))
             {
-                SkillDef skill = ctx.Db.GetSkill(skillId);
-                if (skill == null || !skill.HasRules)
-                {
-                    continue;
-                }
-
-                foreach (SkillRuleDef transferRule in skill.Rules)
-                {
-                    if (transferRule.Trigger == SkillTrigger.OnSettle
-                        && transferRule.ActionType == SkillActionType.TransferSkills)
-                    {
-                        string sourceLabel = source.GetSkillSource(skillId);
-                        SkillExecutionKind skillKind = SkillRuleEffectSource.KindForDishSkill(
-                            source,
-                            skillId,
-                            sourceLabel);
-                        if (skillKind == SkillExecutionKind.NativeSkill)
-                        {
-                            sourceLabel = null;
-                        }
-                        ScoreSource scoreSource = string.IsNullOrEmpty(sourceLabel)
-                            ? ScoreSource.DishSkill(skill, source)
-                            : ScoreSource.TransferredDishSkill(skill, source, sourceLabel);
-                        int boardOrder = source.Placement.Origin.Y * ctx.DiningTable.Width
-                            + source.Placement.Origin.X;
-                        var entry = new ScoreEffectEntry(
-                            ScorePhase.DishSkills,
-                            scoreSource,
-                            new SkillRuleEffect(transferRule, source),
-                            source,
-                            null,
-                            null,
-                            transferRule.Order,
-                            boardOrder,
-                            ctx.CaptureDiagnostics
-                                ? SkillExecutionTrace.Create(
-                                    ctx.Db,
-                                    ctx.DiningTable,
-                                    source,
-                                    source,
-                                    skill,
-                                    transferRule,
-                                    skillKind,
-                                    sourceLabel,
-                                    SkillScopeVisualMode.CandidateScope)
-                                : null,
-                            skillKind);
-                        ctx.ResolveTransferredEffect(entry);
-                    }
-                }
+                ctx.ResolveTransferredEffect(entry);
             }
         }
 
-        private IReadOnlyList<DishInstance> TransferCandidates(ScoreContext ctx)
+        private TransferCandidateSet TransferCandidates(ScoreContext ctx)
         {
+            bool stable = _rule.ActionScope != SkillScope.Category
+                && !HasActionParam(_rule, "cat:");
+            if (stable && ctx.TryGetTransferCandidates(_self, _rule, out TransferCandidateSet cached))
+            {
+                return cached;
+            }
+
             IReadOnlyList<DishInstance> candidates = SkillScopeResolver.ResolveActionTargetDishes(
                 ctx.Db,
                 ctx.DiningTable,
@@ -618,12 +574,18 @@ namespace GourmetProject.Gameplay.Scoring
                 }
             }
 
-            return result;
+            var candidateSet = new TransferCandidateSet(result);
+            if (stable)
+            {
+                ctx.CacheTransferCandidates(_self, _rule, candidateSet);
+            }
+
+            return candidateSet;
         }
 
         private IReadOnlyList<DishInstance> SelectTransferTargets(
             ScoreContext ctx,
-            IReadOnlyList<DishInstance> candidates,
+            TransferCandidateSet candidates,
             int extraTargetCount)
         {
             if (candidates == null || candidates.Count == 0)
@@ -631,7 +593,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return Array.Empty<DishInstance>();
             }
 
-            var candidateIds = candidates.Select(dish => dish.Id).ToList();
+            IReadOnlyList<int> candidateIds = candidates.Ids;
 
             int requested = _rule.ActionCount <= 0
                 ? candidateIds.Count
@@ -646,15 +608,17 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             var result = new List<DishInstance>();
+            var seen = new HashSet<int>();
             foreach (int selectedId in selectedIds)
             {
-                if (selectedId == _self.Id || !candidateIds.Contains(selectedId) || result.Any(d => d.Id == selectedId))
+                if (selectedId == _self.Id
+                    || !candidates.IdSet.Contains(selectedId)
+                    || !seen.Add(selectedId))
                 {
                     continue;
                 }
 
-                DishInstance dish = candidates.FirstOrDefault(d => d.Id == selectedId);
-                if (dish != null)
+                if (candidates.ById.TryGetValue(selectedId, out DishInstance dish))
                 {
                     result.Add(dish);
                 }
@@ -916,86 +880,6 @@ namespace GourmetProject.Gameplay.Scoring
                || HasActionParam(rule, "when:receive-transfer")
                || HasActionParam(rule, "modifier:add-targets");
 
-        private void ResolveTransferredEffects(
-            ScoreContext ctx,
-            DishInstance target,
-            IReadOnlyList<TransferredSkill> transferredSkills,
-            int handoffSourceDishInstanceId,
-            int handoffExecutionGroupId,
-            string handoffSkillId,
-            int handoffPayloadCount)
-        {
-            int boardOrder = target.Placement.Origin.Y * ctx.DiningTable.Width + target.Placement.Origin.X;
-            foreach (TransferredSkill transferred in transferredSkills)
-            {
-                SkillRuleDef rule = transferred?.Rule;
-                if (rule == null || rule.Trigger != SkillTrigger.OnSettle)
-                {
-                    continue;
-                }
-
-                SkillDef parent = ctx.Db.GetSkill(rule.SkillId);
-                string sourceLabel = transferred.SourceLabel;
-                DishInstance owner = ctx.DiningTable.Dishes.FirstOrDefault(
-                    dish => dish.Id == transferred.SourceInstanceId);
-                SkillExecutionTrace trace = null;
-                if (ctx.CaptureDiagnostics)
-                {
-                    trace = owner != null
-                        ? SkillExecutionTrace.Create(
-                            ctx.Db,
-                            ctx.DiningTable,
-                            owner,
-                            target,
-                            parent,
-                            rule,
-                            SkillExecutionKind.SweetTransfer,
-                            sourceLabel,
-                            SkillScopeVisualMode.ResolvedTargets)
-                        : SkillExecutionTrace.CreateWithOwnerFallback(
-                            ctx.Db,
-                            ctx.DiningTable,
-                            transferred.SourceInstanceId,
-                            SourceNameWithoutTag(sourceLabel),
-                            target,
-                            parent,
-                            rule,
-                            SkillExecutionKind.SweetTransfer,
-                            sourceLabel,
-                            SkillScopeVisualMode.ResolvedTargets);
-                    trace = trace?.WithSweetTransferHandoff(
-                        handoffSourceDishInstanceId,
-                        handoffExecutionGroupId,
-                        handoffSkillId,
-                        handoffPayloadCount);
-                }
-
-                var entry = new ScoreEffectEntry(
-                    ScorePhase.DishSkills,
-                    ScoreSource.TransferredDishSkill(parent, target, sourceLabel),
-                    new SkillRuleEffect(rule, target),
-                    target,
-                    null,
-                    null,
-                    rule.Order,
-                    boardOrder,
-                    trace,
-                    SkillExecutionKind.SweetTransfer);
-                ctx.ResolveTransferredEffect(entry);
-            }
-        }
-
-        private static string SourceNameWithoutTag(string sourceLabel)
-        {
-            if (string.IsNullOrEmpty(sourceLabel))
-            {
-                return string.Empty;
-            }
-
-            int index = sourceLabel.IndexOf('<');
-            return index > 0 ? sourceLabel.Substring(0, index) : sourceLabel;
-        }
-
         /// <summary>
         /// 甜蜜传递来源候选：作用域内「带甜蜜传递」的其它食物。
         /// <c>actionCount&gt;0</c> 时均权无放回取 N 个来源；这不是传递接收者选择，
@@ -1003,32 +887,40 @@ namespace GourmetProject.Gameplay.Scoring
         /// </summary>
         private IReadOnlyList<DishInstance> SweetTransferSources(ScoreContext ctx)
         {
-            var qualified = new List<DishInstance>();
-            var seen = new HashSet<int>();
-
-            void TryAdd(DishInstance dish)
+            if (!ctx.TryGetSweetTransferSources(_self, _rule, out IReadOnlyList<DishInstance> ordered))
             {
-                if (dish == null || dish.SkillsDisabled || dish.Id == _self.Id || !seen.Add(dish.Id))
+                var qualified = new List<DishInstance>();
+                var seen = new HashSet<int>();
+
+                void TryAdd(DishInstance dish)
                 {
-                    return;
+                    if (dish == null || dish.SkillsDisabled || dish.Id == _self.Id || !seen.Add(dish.Id))
+                    {
+                        return;
+                    }
+
+                    if (HasSkillOfType(ctx.Db, dish, SkillActionType.TransferSkills))
+                    {
+                        qualified.Add(dish);
+                    }
                 }
 
-                if (HasSkillOfType(ctx.Db, dish, SkillActionType.TransferSkills))
+                foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(
+                             ctx.DiningTable,
+                             _self,
+                             _rule.ActionScope,
+                             includeSelf: false))
                 {
-                    qualified.Add(dish);
+                    TryAdd(dish);
                 }
-            }
 
-            foreach (DishInstance dish in SkillConditionEvaluator.ScopeDishes(ctx.DiningTable, _self, _rule.ActionScope, includeSelf: false))
-            {
-                TryAdd(dish);
+                ordered = qualified
+                    .OrderBy(BoardTop)
+                    .ThenBy(BoardLeft)
+                    .ThenBy(d => d.Id)
+                    .ToArray();
+                ctx.CacheSweetTransferSources(_self, _rule, ordered);
             }
-
-            List<DishInstance> ordered = qualified
-                .OrderBy(BoardTop)
-                .ThenBy(BoardLeft)
-                .ThenBy(d => d.Id)
-                .ToList();
 
             if (_rule.ActionCount <= 0 || ordered.Count <= _rule.ActionCount)
             {
@@ -1215,6 +1107,17 @@ namespace GourmetProject.Gameplay.Scoring
         private IReadOnlyList<DishInstance> Targets(ScoreContext ctx)
         {
             bool randomTargets = HasActionParam(_rule, "target:random");
+            string category = SkillConditionEvaluator.ParseCategoryParam(_rule.ActionParams);
+            bool stableTargets = !randomTargets
+                && _rule.ActionScope != SkillScope.Category
+                && string.IsNullOrEmpty(category);
+            if (stableTargets
+                && ctx.TryGetStableRuleTargets(_self, _rule, out IReadOnlyList<DishInstance> cached))
+            {
+                ctx.UpdateTraceVisualTargets(cached);
+                return cached;
+            }
+
             IEnumerable<DishInstance> targets;
             if (_rule.ActionScope == SkillScope.Category
                 && _rule.ActionType != SkillActionType.AddTemporaryCategory)
@@ -1232,7 +1135,6 @@ namespace GourmetProject.Gameplay.Scoring
                     ctx.IsCategory);
             }
 
-            string category = SkillConditionEvaluator.ParseCategoryParam(_rule.ActionParams);
             if (!string.IsNullOrEmpty(category)
                 && _rule.ActionType != SkillActionType.AddTemporaryCategory)
             {
@@ -1260,6 +1162,11 @@ namespace GourmetProject.Gameplay.Scoring
                 .ToList();
             if (!randomTargets || _rule.ActionCount <= 0 || resolved.Count <= _rule.ActionCount)
             {
+                if (stableTargets)
+                {
+                    ctx.CacheStableRuleTargets(_self, _rule, resolved);
+                }
+
                 ctx.UpdateTraceVisualTargets(resolved);
                 return resolved;
             }

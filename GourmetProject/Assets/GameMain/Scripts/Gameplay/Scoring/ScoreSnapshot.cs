@@ -95,7 +95,8 @@ namespace GourmetProject.Gameplay.Scoring
             float sweetTransferTargetMultiplierFlat = 0f,
             float sweetTransferSourceMultiplierFlat = 0f,
             bool captureDiagnostics = true,
-            IReadOnlyList<SweetTransferExtraTargetRollSpec> sweetTransferExtraTargetRolls = null)
+            IReadOnlyList<SweetTransferExtraTargetRollSpec> sweetTransferExtraTargetRolls = null,
+            bool captureCommandEvents = false)
         {
             DiningTable = board ?? throw new ArgumentNullException(nameof(board));
             Db = db ?? throw new ArgumentNullException(nameof(db));
@@ -120,6 +121,7 @@ namespace GourmetProject.Gameplay.Scoring
             SweetTransferTargetMultiplierFlat = Math.Max(0f, sweetTransferTargetMultiplierFlat);
             SweetTransferSourceMultiplierFlat = Math.Max(0f, sweetTransferSourceMultiplierFlat);
             CaptureDiagnostics = captureDiagnostics;
+            CaptureCommandEvents = captureDiagnostics && captureCommandEvents;
 
             // 结算优先级层级（甜=+1、苦=-1，多风味累加）：层级高者先结算；同层再按棋盘从上到下、从左到右。
             IEnumerable<DishInstance> alive = DiningTable.Dishes.Where(d => !d.ExcludedFromScore);
@@ -249,6 +251,12 @@ namespace GourmetProject.Gameplay.Scoring
         /// 关闭时计分规则、命令及副作用请求仍完整执行。
         /// </summary>
         public bool CaptureDiagnostics { get; }
+
+        /// <summary>
+        /// 是否为每条底层命令生成“执行命令 ...”事件。默认关闭以避免高扇出结算产生大量临时字符串；
+        /// ScoreLine、Trace 与其它生命周期事件仍由 <see cref="CaptureDiagnostics"/> 独立控制。
+        /// </summary>
+        public bool CaptureCommandEvents { get; }
     }
 
     /// <summary>一条未上菜的食谱条目：来源槽、食物 id，以及按获得顺序排列的全部风味。</summary>

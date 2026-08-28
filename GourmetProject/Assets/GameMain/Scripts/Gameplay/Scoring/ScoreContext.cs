@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using BreakInfinity;
@@ -17,7 +18,8 @@ namespace GourmetProject.Gameplay.Scoring
     /// </summary>
     public class ScoreContext
     {
-        private const int MaxCommandsPerCalculation = 2048;
+        private const int MaxCommandChainDepth = 128;
+        private const int MaxQueuedWorkItems = 65536;
 
         private sealed class DishAccumulator
         {
@@ -33,12 +35,27 @@ namespace GourmetProject.Gameplay.Scoring
         private readonly List<DishScore> _dishScores = new List<DishScore>();
         private readonly List<ScoreLine> _lines;
         private readonly List<ScoreEvent> _events;
-        private readonly Queue<PendingScoreCommand> _commands = new Queue<PendingScoreCommand>();
+        private readonly Queue<PendingScoreWork> _commands = new Queue<PendingScoreWork>();
         private int _happyCakeLayerDelta;
         private readonly List<SkillTransferSideEffect> _skillTransfers = new List<SkillTransferSideEffect>();
+        private readonly Dictionary<int, TransferredSkillExecutionView> _transferredSkillViews =
+            new Dictionary<int, TransferredSkillExecutionView>();
+        private readonly Dictionary<int, DishInstance> _dishesById = new Dictionary<int, DishInstance>();
         private readonly List<SweetTransferPermanentFlatRegistration> _sweetTransferPermanentFlats =
             new List<SweetTransferPermanentFlatRegistration>();
         private readonly List<SweetTransferBuffRegistration> _sweetTransferBuffs = new List<SweetTransferBuffRegistration>();
+        private readonly Dictionary<int, List<SweetTransferBuffRegistration>> _sweetTransferBuffsByTarget =
+            new Dictionary<int, List<SweetTransferBuffRegistration>>();
+        private readonly Dictionary<SkillRuleDef, IReadOnlyList<SkillEffect>> _sweetTransferPayloads =
+            new Dictionary<SkillRuleDef, IReadOnlyList<SkillEffect>>();
+        private readonly Dictionary<int, IReadOnlyList<ScoreEffectEntry>> _sweetTransferSourceEffects =
+            new Dictionary<int, IReadOnlyList<ScoreEffectEntry>>();
+        private readonly Dictionary<TransferCandidateCacheKey, TransferCandidateSet> _transferCandidatesBySource =
+            new Dictionary<TransferCandidateCacheKey, TransferCandidateSet>();
+        private readonly Dictionary<TransferCandidateCacheKey, IReadOnlyList<DishInstance>> _stableRuleTargets =
+            new Dictionary<TransferCandidateCacheKey, IReadOnlyList<DishInstance>>();
+        private readonly Dictionary<TransferCandidateCacheKey, IReadOnlyList<DishInstance>> _sweetTransferSources =
+            new Dictionary<TransferCandidateCacheKey, IReadOnlyList<DishInstance>>();
         private readonly List<CopySkillRequest> _copySkillRequests = new List<CopySkillRequest>();
         private readonly Dictionary<int, BigDouble> _permanentFlatDeltas = new Dictionary<int, BigDouble>();
         private readonly Dictionary<int, BigDouble> _permanentMultDeltas = new Dictionary<int, BigDouble>();
@@ -51,7 +68,9 @@ namespace GourmetProject.Gameplay.Scoring
         private bool _initialFinalModifiersRecorded;
         private bool _finalized;
         private bool _isResolvingCommands;
-        private int _commandsExecuted;
+        private bool _hasActiveTransferredBatch;
+        private TransferredReplayBatch _activeTransferredBatch;
+        private int _currentCommandDepth;
         private int _nextExecutionGroupId;
         private int _currentExecutionGroupId;
 
@@ -64,6 +83,7 @@ namespace GourmetProject.Gameplay.Scoring
             FinalMultiplier = snapshot.InitialFinalMultiplier;
             InitialHappyCakeLayers = snapshot.InitialHappyCakeLayers;
             CaptureDiagnostics = snapshot.CaptureDiagnostics;
+            CaptureCommandEvents = snapshot.CaptureCommandEvents;
             if (CaptureDiagnostics)
             {
                 _lines = new List<ScoreLine>();
@@ -71,6 +91,11 @@ namespace GourmetProject.Gameplay.Scoring
             }
 
             // 预建全部菜的累加器，保证「A 改 B 的分」无论 B 是否已开始都有效。
+            foreach (DishInstance dish in DiningTable.Dishes)
+            {
+                _dishesById[dish.Id] = dish;
+            }
+
             foreach (DishInstance dish in snapshot.DishesInDefaultOrder)
             {
                 EnsureAccumulator(dish);
@@ -290,6 +315,9 @@ namespace GourmetProject.Gameplay.Scoring
 
         /// <summary>是否捕获仅供解释和演出的结算诊断数据。</summary>
         public bool CaptureDiagnostics { get; }
+
+        /// <summary>是否捕获每条底层命令的执行事件。</summary>
+        public bool CaptureCommandEvents { get; }
 
         /// <summary>本场经营挑战开始时的全局欢乐蛋糕层数。</summary>
         public int InitialHappyCakeLayers { get; }
@@ -565,6 +593,30 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
+            ApplyEffect(
+                entry.Phase,
+                entry.Source,
+                entry.Effect,
+                entry.Dish,
+                entry.EffectDef,
+                entry.Cell,
+                entry.Trace);
+        }
+
+        private void ApplyEffect(
+            ScorePhase phase,
+            ScoreSource source,
+            IScoreEffect effect,
+            DishInstance dish,
+            IEffectDef effectDef,
+            GridPos? cell,
+            SkillExecutionTrace trace)
+        {
+            if (source == null || effect == null)
+            {
+                return;
+            }
+
             DishInstance previousDish = Dish;
             DishAccumulator previousCurrent = _current;
             ScorePhase previousPhase = Phase;
@@ -573,17 +625,17 @@ namespace GourmetProject.Gameplay.Scoring
             IEffectDef previousEffectDef = EffectDef;
             SkillExecutionTrace previousTrace = Trace;
             int previousExecutionGroupId = _currentExecutionGroupId;
-            if (entry.Dish != null)
+            if (dish != null)
             {
-                Dish = entry.Dish;
-                _current = EnsureAccumulator(entry.Dish);
+                Dish = dish;
+                _current = EnsureAccumulator(dish);
             }
 
-            Phase = entry.Phase;
-            Source = entry.Source;
-            CurrentCell = entry.Cell;
-            EffectDef = entry.EffectDef;
-            Trace = CaptureDiagnostics ? entry.Trace : null;
+            Phase = phase;
+            Source = source;
+            CurrentCell = cell;
+            EffectDef = effectDef;
+            Trace = CaptureDiagnostics ? trace : null;
             _currentExecutionGroupId = ++_nextExecutionGroupId;
             if (CaptureDiagnostics)
             {
@@ -591,7 +643,7 @@ namespace GourmetProject.Gameplay.Scoring
             }
             try
             {
-                entry.Effect.Apply(this);
+                effect.Apply(this);
                 ResolveCommandQueue();
                 if (CaptureDiagnostics)
                 {
@@ -616,13 +668,13 @@ namespace GourmetProject.Gameplay.Scoring
         public void AddFlat(BigDouble value)
         {
             int id = Dish != null ? Dish.Id : 0;
-            SubmitCommand(new AddDishFlatCommand(id, value));
+            SubmitBuiltInCommand(ScoreCommandKind.AddDishFlat, id, value);
         }
 
         public void MultiplyBy(BigDouble value)
         {
             int id = Dish != null ? Dish.Id : 0;
-            SubmitCommand(new MultiplyDishCommand(id, value));
+            SubmitBuiltInCommand(ScoreCommandKind.MultiplyDish, id, value);
         }
 
         // ------- 跨菜 / 副作用 API -------
@@ -634,7 +686,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            SubmitCommand(new AddDishFlatCommand(target.Id, value));
+            SubmitBuiltInCommand(ScoreCommandKind.AddDishFlat, target.Id, value);
         }
 
         public void MultiplyTo(DishInstance target, BigDouble value)
@@ -644,7 +696,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            SubmitCommand(new MultiplyDishCommand(target.Id, value));
+            SubmitBuiltInCommand(ScoreCommandKind.MultiplyDish, target.Id, value);
         }
 
         /// <summary>目标食物「倍率区」加法（倍率+X），区别于乘法的 MultiplyTo。</summary>
@@ -655,7 +707,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            SubmitCommand(new AddDishMultFlatCommand(target.Id, value));
+            SubmitBuiltInCommand(ScoreCommandKind.AddDishMultFlat, target.Id, value);
         }
 
         /// <summary>读取目标食物结算到当前时刻的倍率（含固化倍率与此前已执行的倍率效果）。</summary>
@@ -682,24 +734,28 @@ namespace GourmetProject.Gameplay.Scoring
 
         public void GrantGold(float value)
         {
-            SubmitCommand(new GrantGoldCommand(value));
+            SubmitBuiltInCommand(ScoreCommandKind.GrantGold, floatValue: value);
         }
 
         public void AddFinalFlat(BigDouble value)
         {
-            SubmitCommand(new AddFinalFlatCommand(value));
+            SubmitBuiltInCommand(ScoreCommandKind.AddFinalFlat, bigValue: value);
         }
 
         public void MultiplyFinalBy(BigDouble value)
         {
-            SubmitCommand(new MultiplyFinalCommand(value));
+            SubmitBuiltInCommand(ScoreCommandKind.MultiplyFinal, bigValue: value);
         }
 
         /// <summary>全局「欢乐蛋糕层数」改动（副作用，正式结算后写回经营挑战状态）。
         /// mult=true 时按乘法（可选 floor 表示至少净增 floor 层）。目标食物无关，全局共享一个计数器。</summary>
         public void AddHappyCakeLayers(float value, bool mult, int floor = 0)
         {
-            SubmitCommand(new ChangeHappyCakeLayerCommand(value, mult, floor));
+            SubmitBuiltInCommand(
+                ScoreCommandKind.ChangeHappyCakeLayer,
+                floatValue: value,
+                boolValue: mult,
+                intValue: floor);
         }
 
         /// <summary>
@@ -720,7 +776,11 @@ namespace GourmetProject.Gameplay.Scoring
 
             _permanentFlatDeltas.TryGetValue(target.Id, out BigDouble cur);
             _permanentFlatDeltas[target.Id] = cur + value;
-            SubmitCommand(new AddDishPermanentFlatCommand(target.Id, value), sourceOverride);
+            SubmitBuiltInCommand(
+                ScoreCommandKind.AddDishPermanentFlat,
+                target.Id,
+                value,
+                sourceOverride: sourceOverride);
         }
 
         /// <summary>
@@ -789,7 +849,7 @@ namespace GourmetProject.Gameplay.Scoring
 
             _permanentMultDeltas.TryGetValue(target.Id, out BigDouble cur);
             _permanentMultDeltas[target.Id] = (cur <= BigDouble.Zero ? BigDouble.One : cur) * value;
-            SubmitCommand(new MultiplyDishCommand(target.Id, value));
+            SubmitBuiltInCommand(ScoreCommandKind.MultiplyDish, target.Id, value);
         }
 
         /// <summary>登记技能传递（副作用，正式结算后应用到实例的运行时技能集）。</summary>
@@ -805,12 +865,27 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            _skillTransfers.Add(new SkillTransferSideEffect(
+            var transfer = new SkillTransferSideEffect(
                 target.Id,
                 effects,
                 sourceName,
                 sourceInstanceId,
-                handoffExecutionGroupId));
+                handoffExecutionGroupId);
+            _skillTransfers.Add(transfer);
+
+            TransferredSkillExecutionView view = GetOrCreateTransferredSkillView(target);
+            string sourceLabel = string.IsNullOrEmpty(sourceName)
+                ? string.Empty
+                : $"{sourceName}<甜蜜传递>";
+            foreach (SkillEffect effect in effects)
+            {
+                if (effect?.Rule != null)
+                {
+                    view.Add(CreateTransferredSkillTemplate(
+                        target,
+                        new TransferredSkill(effect, sourceLabel, sourceInstanceId)));
+                }
+            }
             if (CaptureDiagnostics)
             {
                 EmitEvent(ScoreEventType.CommandExecuted, $"技能传递给 {target.Def.Name}（{effects.Count} 个）");
@@ -829,28 +904,296 @@ namespace GourmetProject.Gameplay.Scoring
                 return Array.Empty<TransferredSkill>();
             }
 
-            var result = new List<TransferredSkill>(target.TransferredSkills.Count + _skillTransfers.Count);
-            result.AddRange(target.TransferredSkills);
-            foreach (SkillTransferSideEffect transfer in _skillTransfers)
+            return GetOrCreateTransferredSkillView(target);
+        }
+
+        internal IReadOnlyList<SkillEffect> SweetTransferPayloadFor(SkillRuleDef transferRule)
+        {
+            if (transferRule == null)
             {
-                if (transfer.TargetInstanceId != target.Id)
+                return Array.Empty<SkillEffect>();
+            }
+
+            if (!_sweetTransferPayloads.TryGetValue(
+                    transferRule,
+                    out IReadOnlyList<SkillEffect> payload))
+            {
+                payload = SkillRuleEffect.EffectsToTransfer(Db, transferRule);
+                _sweetTransferPayloads[transferRule] = payload;
+            }
+
+            return payload;
+        }
+
+        internal IReadOnlyList<ScoreEffectEntry> SweetTransferEffectsForSource(DishInstance sourceDish)
+        {
+            if (sourceDish == null || sourceDish.SkillsDisabled)
+            {
+                return Array.Empty<ScoreEffectEntry>();
+            }
+
+            if (_sweetTransferSourceEffects.TryGetValue(
+                    sourceDish.Id,
+                    out IReadOnlyList<ScoreEffectEntry> cached))
+            {
+                return cached;
+            }
+
+            var entries = new List<ScoreEffectEntry>();
+            int boardOrder = sourceDish.Placement.Origin.Y * DiningTable.Width
+                + sourceDish.Placement.Origin.X;
+            foreach (string skillId in sourceDish.SkillIds)
+            {
+                SkillDef skill = Db.GetSkill(skillId);
+                if (skill == null || !skill.HasRules)
                 {
                     continue;
                 }
 
-                string sourceLabel = string.IsNullOrEmpty(transfer.SourceName)
-                    ? string.Empty
-                    : $"{transfer.SourceName}<甜蜜传递>";
-                foreach (SkillEffect effect in transfer.Effects)
+                foreach (SkillRuleDef transferRule in skill.Rules)
                 {
-                    if (effect?.Rule != null)
+                    if (transferRule.Trigger != SkillTrigger.OnSettle
+                        || transferRule.ActionType != SkillActionType.TransferSkills)
                     {
-                        result.Add(new TransferredSkill(effect, sourceLabel, transfer.SourceInstanceId));
+                        continue;
                     }
+
+                    string sourceLabel = sourceDish.GetSkillSource(skillId);
+                    SkillExecutionKind skillKind = SkillRuleEffectSource.KindForDishSkill(
+                        sourceDish,
+                        skillId,
+                        sourceLabel);
+                    if (skillKind == SkillExecutionKind.NativeSkill)
+                    {
+                        sourceLabel = null;
+                    }
+
+                    ScoreSource scoreSource = string.IsNullOrEmpty(sourceLabel)
+                        ? ScoreSource.DishSkill(skill, sourceDish)
+                        : ScoreSource.TransferredDishSkill(skill, sourceDish, sourceLabel);
+                    entries.Add(new ScoreEffectEntry(
+                        ScorePhase.DishSkills,
+                        scoreSource,
+                        new SkillRuleEffect(transferRule, sourceDish),
+                        sourceDish,
+                        null,
+                        null,
+                        transferRule.Order,
+                        boardOrder,
+                        CaptureDiagnostics
+                            ? SkillExecutionTrace.Create(
+                                Db,
+                                DiningTable,
+                                sourceDish,
+                                sourceDish,
+                                skill,
+                                transferRule,
+                                skillKind,
+                                sourceLabel,
+                                SkillScopeVisualMode.CandidateScope)
+                            : null,
+                        skillKind));
                 }
             }
 
-            return result;
+            cached = entries;
+            _sweetTransferSourceEffects[sourceDish.Id] = cached;
+            return cached;
+        }
+
+        internal bool TryGetTransferCandidates(
+            DishInstance source,
+            SkillRuleDef rule,
+            out TransferCandidateSet candidates)
+        {
+            candidates = null;
+            return source != null
+                && rule != null
+                && _transferCandidatesBySource.TryGetValue(
+                    new TransferCandidateCacheKey(source.Id, rule),
+                    out candidates);
+        }
+
+        internal void CacheTransferCandidates(
+            DishInstance source,
+            SkillRuleDef rule,
+            TransferCandidateSet candidates)
+        {
+            if (source == null || rule == null || candidates == null)
+            {
+                return;
+            }
+
+            _transferCandidatesBySource[new TransferCandidateCacheKey(source.Id, rule)] = candidates;
+        }
+
+        internal bool TryGetStableRuleTargets(
+            DishInstance self,
+            SkillRuleDef rule,
+            out IReadOnlyList<DishInstance> targets)
+        {
+            targets = null;
+            return self != null
+                && rule != null
+                && _stableRuleTargets.TryGetValue(
+                    new TransferCandidateCacheKey(self.Id, rule),
+                    out targets);
+        }
+
+        internal void CacheStableRuleTargets(
+            DishInstance self,
+            SkillRuleDef rule,
+            IReadOnlyList<DishInstance> targets)
+        {
+            if (self != null && rule != null && targets != null)
+            {
+                _stableRuleTargets[new TransferCandidateCacheKey(self.Id, rule)] = targets;
+            }
+        }
+
+        internal bool TryGetSweetTransferSources(
+            DishInstance self,
+            SkillRuleDef rule,
+            out IReadOnlyList<DishInstance> sources)
+        {
+            sources = null;
+            return self != null
+                && rule != null
+                && _sweetTransferSources.TryGetValue(
+                    new TransferCandidateCacheKey(self.Id, rule),
+                    out sources);
+        }
+
+        internal void CacheSweetTransferSources(
+            DishInstance self,
+            SkillRuleDef rule,
+            IReadOnlyList<DishInstance> sources)
+        {
+            if (self != null && rule != null && sources != null)
+            {
+                _sweetTransferSources[new TransferCandidateCacheKey(self.Id, rule)] = sources;
+            }
+        }
+
+        /// <summary>
+        /// 将一次“收到新技能后重算当前全部外来技能”压缩为单个物理工作项。
+        /// Count 在入队时冻结，后续传递追加到同一视图也不会被更早批次看到。
+        /// </summary>
+        internal void ResolveTransferredEffectsBatch(
+            DishInstance target,
+            int handoffSourceDishInstanceId,
+            int handoffExecutionGroupId,
+            string handoffSkillId,
+            int handoffPayloadCount)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            TransferredSkillExecutionView view = GetOrCreateTransferredSkillView(target);
+            int countAtEnqueue = view.Count;
+            if (!view.HasExecutableRule(countAtEnqueue))
+            {
+                return;
+            }
+
+            int depth = NextCommandDepth();
+            var batch = new TransferredReplayBatch(
+                view,
+                countAtEnqueue,
+                handoffSourceDishInstanceId,
+                handoffExecutionGroupId,
+                handoffSkillId,
+                handoffPayloadCount,
+                Phase,
+                Source,
+                CurrentCell,
+                EffectDef,
+                Trace,
+                _currentExecutionGroupId,
+                depth,
+                expandBeforeQueuedWork: _isResolvingCommands);
+            EnqueueWork(PendingScoreWork.ForTransferredBatch(batch), depth, "TransferredSkillReplayBatch");
+            ResolveCommandQueue();
+        }
+
+        private TransferredSkillExecutionView GetOrCreateTransferredSkillView(DishInstance target)
+        {
+            if (_transferredSkillViews.TryGetValue(
+                    target.Id,
+                    out TransferredSkillExecutionView view))
+            {
+                return view;
+            }
+
+            view = new TransferredSkillExecutionView();
+            foreach (TransferredSkill transferred in target.TransferredSkills)
+            {
+                view.Add(CreateTransferredSkillTemplate(target, transferred));
+            }
+
+            _transferredSkillViews[target.Id] = view;
+            return view;
+        }
+
+        private TransferredSkillExecutionTemplate CreateTransferredSkillTemplate(
+            DishInstance target,
+            TransferredSkill transferred)
+        {
+            SkillRuleDef rule = transferred?.Rule;
+            if (rule == null || rule.Trigger != SkillTrigger.OnSettle)
+            {
+                return new TransferredSkillExecutionTemplate(transferred, null, null, null, target);
+            }
+
+            SkillDef parent = Db.GetSkill(rule.SkillId);
+            string sourceLabel = transferred.SourceLabel;
+            SkillExecutionTrace trace = null;
+            if (CaptureDiagnostics)
+            {
+                _dishesById.TryGetValue(transferred.SourceInstanceId, out DishInstance owner);
+                trace = owner != null
+                    ? SkillExecutionTrace.Create(
+                        Db,
+                        DiningTable,
+                        owner,
+                        target,
+                        parent,
+                        rule,
+                        SkillExecutionKind.SweetTransfer,
+                        sourceLabel,
+                        SkillScopeVisualMode.ResolvedTargets)
+                    : SkillExecutionTrace.CreateWithOwnerFallback(
+                        Db,
+                        DiningTable,
+                        transferred.SourceInstanceId,
+                        SourceNameWithoutTag(sourceLabel),
+                        target,
+                        parent,
+                        rule,
+                        SkillExecutionKind.SweetTransfer,
+                        sourceLabel,
+                        SkillScopeVisualMode.ResolvedTargets);
+            }
+
+            return new TransferredSkillExecutionTemplate(
+                transferred,
+                ScoreSource.TransferredDishSkill(parent, target, sourceLabel),
+                new SkillRuleEffect(rule, target),
+                trace,
+                target);
+        }
+
+        private static string SourceNameWithoutTag(string sourceLabel)
+        {
+            if (string.IsNullOrEmpty(sourceLabel))
+            {
+                return string.Empty;
+            }
+
+            int index = sourceLabel.IndexOf('<');
+            return index > 0 ? sourceLabel.Substring(0, index) : sourceLabel;
         }
 
         /// <summary>
@@ -897,13 +1240,27 @@ namespace GourmetProject.Gameplay.Scoring
             SkillExecutionTrace trace = CaptureDiagnostics
                 ? Trace?.WithVisualTargets(ids, cells)
                 : null;
-            _sweetTransferBuffs.Add(new SweetTransferBuffRegistration(
+            var registration = new SweetTransferBuffRegistration(
                 owner,
                 rule,
                 conditionCount,
                 ids,
                 Source,
-                trace));
+                trace,
+                _sweetTransferBuffs.Count);
+            _sweetTransferBuffs.Add(registration);
+            foreach (int targetId in ids)
+            {
+                if (!_sweetTransferBuffsByTarget.TryGetValue(
+                        targetId,
+                        out List<SweetTransferBuffRegistration> registrations))
+                {
+                    registrations = new List<SweetTransferBuffRegistration>();
+                    _sweetTransferBuffsByTarget[targetId] = registrations;
+                }
+
+                registrations.Add(registration);
+            }
             if (CaptureDiagnostics)
             {
                 AddLine(
@@ -920,21 +1277,15 @@ namespace GourmetProject.Gameplay.Scoring
 
         public IReadOnlyList<SweetTransferBuffRegistration> SweetTransferBuffsFor(DishInstance source)
         {
-            if (source == null || _sweetTransferBuffs.Count == 0)
+            if (source == null
+                || !_sweetTransferBuffsByTarget.TryGetValue(
+                    source.Id,
+                    out List<SweetTransferBuffRegistration> registrations))
             {
                 return Array.Empty<SweetTransferBuffRegistration>();
             }
 
-            var result = new List<SweetTransferBuffRegistration>();
-            foreach (SweetTransferBuffRegistration registration in _sweetTransferBuffs)
-            {
-                if (registration.TargetDishInstanceIds.Contains(source.Id))
-                {
-                    result.Add(registration);
-                }
-            }
-
-            return result;
+            return registrations;
         }
 
         public IReadOnlyList<SweetTransferBuffRegistration> SweetTransferReceiverBuffsFor(
@@ -945,16 +1296,29 @@ namespace GourmetProject.Gameplay.Scoring
                 return Array.Empty<SweetTransferBuffRegistration>();
             }
 
-            var targetIds = new HashSet<int>(transferTargets.Where(d => d != null).Select(d => d.Id));
-            if (targetIds.Count == 0)
+            var matches = new HashSet<SweetTransferBuffRegistration>();
+            foreach (DishInstance target in transferTargets)
             {
-                return Array.Empty<SweetTransferBuffRegistration>();
+                if (target == null
+                    || !_sweetTransferBuffsByTarget.TryGetValue(
+                        target.Id,
+                        out List<SweetTransferBuffRegistration> registrations))
+                {
+                    continue;
+                }
+
+                foreach (SweetTransferBuffRegistration registration in registrations)
+                {
+                    if (registration?.Rule != null
+                        && HasActionParam(registration.Rule, "when:receive-transfer"))
+                    {
+                        matches.Add(registration);
+                    }
+                }
             }
 
-            return _sweetTransferBuffs
-                .Where(registration => registration?.Rule != null
-                    && HasActionParam(registration.Rule, "when:receive-transfer")
-                    && registration.TargetDishInstanceIds.Any(targetIds.Contains))
+            return matches
+                .OrderBy(registration => registration.RegistrationOrder)
                 .ToArray();
         }
 
@@ -1082,31 +1446,10 @@ namespace GourmetProject.Gameplay.Scoring
 
             ScoreSource source = Source;
             SkillExecutionTrace trace = Trace;
-            foreach (string skillId in sourceDish.SkillIds)
+            foreach (ScoreEffectEntry transferEntry in SweetTransferEffectsForSource(sourceDish))
             {
-                SkillDef skill = Db?.GetSkill(skillId);
-                SkillRuleDef transferRule = skill?.Rules?.FirstOrDefault(rule =>
-                    rule.Trigger == SkillTrigger.OnSettle
-                    && rule.ActionType == SkillActionType.TransferSkills);
-                if (transferRule == null)
-                {
-                    continue;
-                }
-
-                string sourceLabel = sourceDish.GetSkillSource(skillId);
-                source = string.IsNullOrEmpty(sourceLabel)
-                    ? ScoreSource.DishSkill(skill, sourceDish)
-                    : ScoreSource.TransferredDishSkill(skill, sourceDish, sourceLabel);
-                trace = SkillExecutionTrace.Create(
-                    Db,
-                    DiningTable,
-                    sourceDish,
-                    sourceDish,
-                    skill,
-                    transferRule,
-                    SkillRuleEffectSource.TraceKindForSourceLabel(sourceLabel),
-                    sourceLabel,
-                    SkillScopeVisualMode.CandidateScope);
+                source = transferEntry.Source;
+                trace = transferEntry.Trace;
                 break;
             }
 
@@ -1128,7 +1471,7 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            SubmitCommand(new ResolveScoreEffectCommand(entry));
+            SubmitScoreEffect(entry);
         }
 
         /// <summary>登记技能复制请求，并立即触发本次选中的技能效果。</summary>
@@ -1228,7 +1571,7 @@ namespace GourmetProject.Gameplay.Scoring
                                 SkillScopeVisualMode.ResolvedTargets)
                             : null,
                         SkillExecutionKind.CopiedSkill);
-                    SubmitCommand(new ResolveScoreEffectCommand(entry));
+                    SubmitScoreEffect(entry);
                 }
             }
         }
@@ -1243,15 +1586,97 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            _commands.Enqueue(new PendingScoreCommand(
+            int depth = NextCommandDepth();
+            PendingScoreCommand pending = PendingScoreCommand.ForExternal(
                 command,
                 Phase,
                 sourceOverride ?? Source,
                 CurrentCell,
                 EffectDef,
                 Trace,
-                _currentExecutionGroupId));
+                _currentExecutionGroupId,
+                depth);
+            EnqueueWork(PendingScoreWork.ForCommand(pending), depth, command.Name);
             ResolveCommandQueue();
+        }
+
+        private void SubmitBuiltInCommand(
+            ScoreCommandKind kind,
+            int dishId = 0,
+            BigDouble bigValue = default,
+            float floatValue = 0f,
+            bool boolValue = false,
+            int intValue = 0,
+            ScoreSource sourceOverride = null)
+        {
+            int depth = NextCommandDepth();
+            PendingScoreCommand pending = PendingScoreCommand.ForBuiltIn(
+                kind,
+                dishId,
+                bigValue,
+                floatValue,
+                boolValue,
+                intValue,
+                Phase,
+                sourceOverride ?? Source,
+                CurrentCell,
+                EffectDef,
+                Trace,
+                _currentExecutionGroupId,
+                depth);
+            EnqueueWork(PendingScoreWork.ForCommand(pending), depth, pending.Name);
+            ResolveCommandQueue();
+        }
+
+        private void SubmitScoreEffect(ScoreEffectEntry entry)
+        {
+            if (entry == null)
+            {
+                return;
+            }
+
+            int depth = NextCommandDepth();
+            PendingScoreCommand pending = PendingScoreCommand.ForScoreEffect(
+                entry,
+                Phase,
+                Source,
+                CurrentCell,
+                EffectDef,
+                Trace,
+                _currentExecutionGroupId,
+                depth);
+            EnqueueWork(PendingScoreWork.ForCommand(pending), depth, pending.Name);
+            ResolveCommandQueue();
+        }
+
+        private int NextCommandDepth() => _isResolvingCommands ? _currentCommandDepth + 1 : 1;
+
+        private int PhysicalPendingWorkCount => _commands.Count + (_hasActiveTransferredBatch ? 1 : 0);
+
+        private void EnqueueWork(PendingScoreWork work, int depth, string commandType)
+        {
+            int queueSize = PhysicalPendingWorkCount;
+            if (queueSize >= MaxQueuedWorkItems)
+            {
+                throw CreateCommandSafetyException(
+                    "physical pending work limit exceeded",
+                    depth,
+                    queueSize,
+                    commandType);
+            }
+
+            _commands.Enqueue(work);
+        }
+
+        private static InvalidOperationException CreateCommandSafetyException(
+            string reason,
+            int depth,
+            int queueSize,
+            string commandType)
+        {
+            return new InvalidOperationException(
+                $"Score command safety limit: {reason}; depth={depth}; "
+                + $"physicalQueue={queueSize}; commandType={commandType ?? "<unknown>"}.");
         }
 
         /// <summary>逐菜阶段结束（仅发事件；分数定稿延迟到 FinalizeDishes）。</summary>
@@ -1510,33 +1935,38 @@ namespace GourmetProject.Gameplay.Scoring
             _isResolvingCommands = true;
             try
             {
-                while (_commands.Count > 0)
+                while (TryDequeuePendingCommand(out PendingScoreCommand pending))
                 {
-                    if (_commandsExecuted++ >= MaxCommandsPerCalculation)
+                    if (pending.Depth > MaxCommandChainDepth)
                     {
-                        throw new InvalidOperationException("Score command limit exceeded. Check for recursive scoring effects.");
+                        throw CreateCommandSafetyException(
+                            "command chain depth exceeded",
+                            pending.Depth,
+                            PhysicalPendingWorkCount,
+                            pending.Name);
                     }
 
-                    PendingScoreCommand pending = _commands.Dequeue();
                     ScorePhase previousPhase = Phase;
                     ScoreSource previousSource = Source;
                     GridPos? previousCell = CurrentCell;
                     IEffectDef previousEffectDef = EffectDef;
                     SkillExecutionTrace previousTrace = Trace;
                     int previousExecutionGroupId = _currentExecutionGroupId;
+                    int previousCommandDepth = _currentCommandDepth;
                     Phase = pending.Phase;
                     Source = pending.Source;
                     CurrentCell = pending.Cell;
                     EffectDef = pending.EffectDef;
                     Trace = CaptureDiagnostics ? pending.Trace : null;
                     _currentExecutionGroupId = pending.ExecutionGroupId;
+                    _currentCommandDepth = pending.Depth;
                     try
                     {
-                        if (CaptureDiagnostics)
+                        if (CaptureCommandEvents)
                         {
-                            EmitEvent(ScoreEventType.CommandExecuted, $"执行命令 {pending.Command.Name}");
+                            EmitEvent(ScoreEventType.CommandExecuted, $"执行命令 {pending.Name}");
                         }
-                        pending.Command.Execute(this);
+                        ExecutePendingCommand(pending);
                     }
                     finally
                     {
@@ -1546,12 +1976,101 @@ namespace GourmetProject.Gameplay.Scoring
                         EffectDef = previousEffectDef;
                         Trace = previousTrace;
                         _currentExecutionGroupId = previousExecutionGroupId;
+                        _currentCommandDepth = previousCommandDepth;
                     }
                 }
             }
             finally
             {
                 _isResolvingCommands = false;
+            }
+        }
+
+        private bool TryDequeuePendingCommand(out PendingScoreCommand pending)
+        {
+            while (true)
+            {
+                bool shouldExpandActiveBatch = _hasActiveTransferredBatch
+                    && (_activeTransferredBatch.ExpandBeforeQueuedWork || _commands.Count == 0);
+                if (shouldExpandActiveBatch)
+                {
+                    if (_activeTransferredBatch.TryTakeNext(CaptureDiagnostics, out pending))
+                    {
+                        return true;
+                    }
+
+                    _hasActiveTransferredBatch = false;
+                    continue;
+                }
+
+                if (_commands.Count == 0)
+                {
+                    pending = default(PendingScoreCommand);
+                    return false;
+                }
+
+                PendingScoreWork work = _commands.Dequeue();
+                if (work.Kind == PendingScoreWorkKind.Command)
+                {
+                    pending = work.Command;
+                    return true;
+                }
+
+                _activeTransferredBatch = work.TransferredBatch;
+                _hasActiveTransferredBatch = true;
+            }
+        }
+
+        private void ExecutePendingCommand(PendingScoreCommand pending)
+        {
+            switch (pending.Kind)
+            {
+                case ScoreCommandKind.External:
+                    pending.ExternalCommand.Execute(this);
+                    break;
+                case ScoreCommandKind.AddDishFlat:
+                    ApplyDishFlatCommand(pending.DishId, pending.BigValue);
+                    break;
+                case ScoreCommandKind.AddDishPermanentFlat:
+                    ApplyDishPermanentFlatCommand(pending.DishId, pending.BigValue);
+                    break;
+                case ScoreCommandKind.MultiplyDish:
+                    ApplyDishMultiplierCommand(pending.DishId, pending.BigValue);
+                    break;
+                case ScoreCommandKind.AddDishMultFlat:
+                    ApplyDishMultFlatCommand(pending.DishId, pending.BigValue);
+                    break;
+                case ScoreCommandKind.GrantGold:
+                    ApplyGrantGoldCommand(pending.FloatValue);
+                    break;
+                case ScoreCommandKind.ChangeHappyCakeLayer:
+                    ApplyHappyCakeLayerCommand(
+                        pending.FloatValue,
+                        pending.BoolValue,
+                        pending.IntValue);
+                    break;
+                case ScoreCommandKind.AddFinalFlat:
+                    ApplyFinalFlatCommand(pending.BigValue);
+                    break;
+                case ScoreCommandKind.MultiplyFinal:
+                    ApplyFinalMultiplierCommand(pending.BigValue);
+                    break;
+                case ScoreCommandKind.ResolveScoreEffect:
+                    Apply(pending.ScoreEffectEntry);
+                    break;
+                case ScoreCommandKind.ResolveTransferredTemplate:
+                    TransferredSkillExecutionTemplate template = pending.TransferredTemplate;
+                    ApplyEffect(
+                        ScorePhase.DishSkills,
+                        template.Source,
+                        template.Effect,
+                        template.Target,
+                        null,
+                        null,
+                        pending.TransferredTrace);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unknown score command kind: {pending.Kind}.");
             }
         }
 
@@ -1591,27 +2110,117 @@ namespace GourmetProject.Gameplay.Scoring
                 _currentExecutionGroupId));
         }
 
-        private sealed class PendingScoreCommand
+        private enum ScoreCommandKind
         {
-            public PendingScoreCommand(
-                IScoreCommand command,
+            External,
+            AddDishFlat,
+            AddDishPermanentFlat,
+            MultiplyDish,
+            AddDishMultFlat,
+            GrantGold,
+            ChangeHappyCakeLayer,
+            AddFinalFlat,
+            MultiplyFinal,
+            ResolveScoreEffect,
+            ResolveTransferredTemplate,
+        }
+
+        private enum PendingScoreWorkKind
+        {
+            Command,
+            TransferredBatch,
+        }
+
+        private readonly struct PendingScoreWork
+        {
+            private PendingScoreWork(
+                PendingScoreWorkKind kind,
+                PendingScoreCommand command,
+                TransferredReplayBatch transferredBatch)
+            {
+                Kind = kind;
+                Command = command;
+                TransferredBatch = transferredBatch;
+            }
+
+            public PendingScoreWorkKind Kind { get; }
+
+            public PendingScoreCommand Command { get; }
+
+            public TransferredReplayBatch TransferredBatch { get; }
+
+            public static PendingScoreWork ForCommand(PendingScoreCommand command)
+                => new PendingScoreWork(
+                    PendingScoreWorkKind.Command,
+                    command,
+                    default(TransferredReplayBatch));
+
+            public static PendingScoreWork ForTransferredBatch(TransferredReplayBatch batch)
+                => new PendingScoreWork(
+                    PendingScoreWorkKind.TransferredBatch,
+                    default(PendingScoreCommand),
+                    batch);
+        }
+
+        private readonly struct PendingScoreCommand
+        {
+            private PendingScoreCommand(
+                ScoreCommandKind kind,
+                IScoreCommand externalCommand,
+                ScoreEffectEntry scoreEffectEntry,
+                TransferredSkillExecutionTemplate transferredTemplate,
+                SkillExecutionTrace transferredTrace,
+                int dishId,
+                BigDouble bigValue,
+                float floatValue,
+                bool boolValue,
+                int intValue,
                 ScorePhase phase,
                 ScoreSource source,
                 GridPos? cell,
                 IEffectDef effectDef,
                 SkillExecutionTrace trace,
-                int executionGroupId)
+                int executionGroupId,
+                int depth)
             {
-                Command = command;
+                Kind = kind;
+                ExternalCommand = externalCommand;
+                ScoreEffectEntry = scoreEffectEntry;
+                TransferredTemplate = transferredTemplate;
+                TransferredTrace = transferredTrace;
+                DishId = dishId;
+                BigValue = bigValue;
+                FloatValue = floatValue;
+                BoolValue = boolValue;
+                IntValue = intValue;
                 Phase = phase;
                 Source = source;
                 Cell = cell;
                 EffectDef = effectDef;
                 Trace = trace;
                 ExecutionGroupId = executionGroupId;
+                Depth = depth;
             }
 
-            public IScoreCommand Command { get; }
+            public ScoreCommandKind Kind { get; }
+
+            public IScoreCommand ExternalCommand { get; }
+
+            public ScoreEffectEntry ScoreEffectEntry { get; }
+
+            public TransferredSkillExecutionTemplate TransferredTemplate { get; }
+
+            public SkillExecutionTrace TransferredTrace { get; }
+
+            public int DishId { get; }
+
+            public BigDouble BigValue { get; }
+
+            public float FloatValue { get; }
+
+            public bool BoolValue { get; }
+
+            public int IntValue { get; }
 
             public ScorePhase Phase { get; }
 
@@ -1624,7 +2233,378 @@ namespace GourmetProject.Gameplay.Scoring
             public SkillExecutionTrace Trace { get; }
 
             public int ExecutionGroupId { get; }
+
+            public int Depth { get; }
+
+            public string Name
+            {
+                get
+                {
+                    switch (Kind)
+                    {
+                        case ScoreCommandKind.External:
+                            return ExternalCommand?.Name ?? "External";
+                        case ScoreCommandKind.AddDishFlat:
+                            return "AddDishFlat";
+                        case ScoreCommandKind.AddDishPermanentFlat:
+                            return "AddDishPermanentFlat";
+                        case ScoreCommandKind.MultiplyDish:
+                            return "MultiplyDish";
+                        case ScoreCommandKind.AddDishMultFlat:
+                            return "AddDishMultFlat";
+                        case ScoreCommandKind.GrantGold:
+                            return "GrantGold";
+                        case ScoreCommandKind.ChangeHappyCakeLayer:
+                            return "ChangeHappyCakeLayer";
+                        case ScoreCommandKind.AddFinalFlat:
+                            return "AddFinalFlat";
+                        case ScoreCommandKind.MultiplyFinal:
+                            return "MultiplyFinal";
+                        case ScoreCommandKind.ResolveScoreEffect:
+                        case ScoreCommandKind.ResolveTransferredTemplate:
+                            return "ResolveScoreEffect";
+                        default:
+                            return Kind.ToString();
+                    }
+                }
+            }
+
+            public static PendingScoreCommand ForExternal(
+                IScoreCommand command,
+                ScorePhase phase,
+                ScoreSource source,
+                GridPos? cell,
+                IEffectDef effectDef,
+                SkillExecutionTrace trace,
+                int executionGroupId,
+                int depth)
+            {
+                return new PendingScoreCommand(
+                    ScoreCommandKind.External,
+                    command,
+                    null,
+                    null,
+                    null,
+                    0,
+                    default(BigDouble),
+                    0f,
+                    false,
+                    0,
+                    phase,
+                    source,
+                    cell,
+                    effectDef,
+                    trace,
+                    executionGroupId,
+                    depth);
+            }
+
+            public static PendingScoreCommand ForBuiltIn(
+                ScoreCommandKind kind,
+                int dishId,
+                BigDouble bigValue,
+                float floatValue,
+                bool boolValue,
+                int intValue,
+                ScorePhase phase,
+                ScoreSource source,
+                GridPos? cell,
+                IEffectDef effectDef,
+                SkillExecutionTrace trace,
+                int executionGroupId,
+                int depth)
+            {
+                return new PendingScoreCommand(
+                    kind,
+                    null,
+                    null,
+                    null,
+                    null,
+                    dishId,
+                    bigValue,
+                    floatValue,
+                    boolValue,
+                    intValue,
+                    phase,
+                    source,
+                    cell,
+                    effectDef,
+                    trace,
+                    executionGroupId,
+                    depth);
+            }
+
+            public static PendingScoreCommand ForScoreEffect(
+                ScoreEffectEntry entry,
+                ScorePhase phase,
+                ScoreSource source,
+                GridPos? cell,
+                IEffectDef effectDef,
+                SkillExecutionTrace trace,
+                int executionGroupId,
+                int depth)
+            {
+                return new PendingScoreCommand(
+                    ScoreCommandKind.ResolveScoreEffect,
+                    null,
+                    entry,
+                    null,
+                    null,
+                    0,
+                    default(BigDouble),
+                    0f,
+                    false,
+                    0,
+                    phase,
+                    source,
+                    cell,
+                    effectDef,
+                    trace,
+                    executionGroupId,
+                    depth);
+            }
+
+            public static PendingScoreCommand ForTransferredTemplate(
+                TransferredSkillExecutionTemplate template,
+                SkillExecutionTrace transferredTrace,
+                ScorePhase phase,
+                ScoreSource source,
+                GridPos? cell,
+                IEffectDef effectDef,
+                SkillExecutionTrace trace,
+                int executionGroupId,
+                int depth)
+            {
+                return new PendingScoreCommand(
+                    ScoreCommandKind.ResolveTransferredTemplate,
+                    null,
+                    null,
+                    template,
+                    transferredTrace,
+                    0,
+                    default(BigDouble),
+                    0f,
+                    false,
+                    0,
+                    phase,
+                    source,
+                    cell,
+                    effectDef,
+                    trace,
+                    executionGroupId,
+                    depth);
+            }
         }
+
+        private struct TransferredReplayBatch
+        {
+            private readonly TransferredSkillExecutionView _view;
+            private readonly int _countAtEnqueue;
+            private readonly int _handoffSourceDishInstanceId;
+            private readonly int _handoffExecutionGroupId;
+            private readonly string _handoffSkillId;
+            private readonly int _handoffPayloadCount;
+            private readonly ScorePhase _phase;
+            private readonly ScoreSource _source;
+            private readonly GridPos? _cell;
+            private readonly IEffectDef _effectDef;
+            private readonly SkillExecutionTrace _trace;
+            private readonly int _executionGroupId;
+            private readonly int _depth;
+            private int _index;
+
+            public TransferredReplayBatch(
+                TransferredSkillExecutionView view,
+                int countAtEnqueue,
+                int handoffSourceDishInstanceId,
+                int handoffExecutionGroupId,
+                string handoffSkillId,
+                int handoffPayloadCount,
+                ScorePhase phase,
+                ScoreSource source,
+                GridPos? cell,
+                IEffectDef effectDef,
+                SkillExecutionTrace trace,
+                int executionGroupId,
+                int depth,
+                bool expandBeforeQueuedWork)
+            {
+                _view = view;
+                _countAtEnqueue = countAtEnqueue;
+                _handoffSourceDishInstanceId = handoffSourceDishInstanceId;
+                _handoffExecutionGroupId = handoffExecutionGroupId;
+                _handoffSkillId = handoffSkillId;
+                _handoffPayloadCount = handoffPayloadCount;
+                _phase = phase;
+                _source = source;
+                _cell = cell;
+                _effectDef = effectDef;
+                _trace = trace;
+                _executionGroupId = executionGroupId;
+                _depth = depth;
+                _index = 0;
+                ExpandBeforeQueuedWork = expandBeforeQueuedWork;
+            }
+
+            public bool ExpandBeforeQueuedWork { get; }
+
+            public bool TryTakeNext(bool captureDiagnostics, out PendingScoreCommand pending)
+            {
+                while (_index < _countAtEnqueue)
+                {
+                    TransferredSkillExecutionTemplate template = _view.TemplateAt(_index++);
+                    if (template?.Effect == null)
+                    {
+                        continue;
+                    }
+
+                    SkillExecutionTrace replayTrace = captureDiagnostics
+                        ? template.BaseTrace?.WithSweetTransferHandoff(
+                            _handoffSourceDishInstanceId,
+                            _handoffExecutionGroupId,
+                            _handoffSkillId,
+                            _handoffPayloadCount)
+                        : null;
+                    pending = PendingScoreCommand.ForTransferredTemplate(
+                        template,
+                        replayTrace,
+                        _phase,
+                        _source,
+                        _cell,
+                        _effectDef,
+                        _trace,
+                        _executionGroupId,
+                        _depth);
+                    return true;
+                }
+
+                pending = default(PendingScoreCommand);
+                return false;
+            }
+        }
+
+        private sealed class TransferredSkillExecutionView : IReadOnlyList<TransferredSkill>
+        {
+            private readonly List<TransferredSkillExecutionTemplate> _templates =
+                new List<TransferredSkillExecutionTemplate>();
+
+            public int Count => _templates.Count;
+
+            public TransferredSkill this[int index] => _templates[index].Transferred;
+
+            public void Add(TransferredSkillExecutionTemplate template)
+            {
+                _templates.Add(template);
+            }
+
+            public TransferredSkillExecutionTemplate TemplateAt(int index) => _templates[index];
+
+            public bool HasExecutableRule(int count)
+            {
+                int limit = Math.Min(count, _templates.Count);
+                for (int i = 0; i < limit; i++)
+                {
+                    if (_templates[i]?.Effect != null)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            public IEnumerator<TransferredSkill> GetEnumerator()
+            {
+                foreach (TransferredSkillExecutionTemplate template in _templates)
+                {
+                    yield return template.Transferred;
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        private sealed class TransferredSkillExecutionTemplate
+        {
+            public TransferredSkillExecutionTemplate(
+                TransferredSkill transferred,
+                ScoreSource source,
+                IScoreEffect effect,
+                SkillExecutionTrace baseTrace,
+                DishInstance target)
+            {
+                Transferred = transferred;
+                Source = source;
+                Effect = effect;
+                BaseTrace = baseTrace;
+                Target = target;
+            }
+
+            public TransferredSkill Transferred { get; }
+
+            public ScoreSource Source { get; }
+
+            public IScoreEffect Effect { get; }
+
+            public SkillExecutionTrace BaseTrace { get; }
+
+            public DishInstance Target { get; }
+        }
+    }
+
+    internal readonly struct TransferCandidateCacheKey : IEquatable<TransferCandidateCacheKey>
+    {
+        public TransferCandidateCacheKey(int sourceDishInstanceId, SkillRuleDef rule)
+        {
+            SourceDishInstanceId = sourceDishInstanceId;
+            Rule = rule;
+        }
+
+        public int SourceDishInstanceId { get; }
+
+        public SkillRuleDef Rule { get; }
+
+        public bool Equals(TransferCandidateCacheKey other)
+            => SourceDishInstanceId == other.SourceDishInstanceId
+               && ReferenceEquals(Rule, other.Rule);
+
+        public override bool Equals(object obj)
+            => obj is TransferCandidateCacheKey other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (SourceDishInstanceId * 397) ^ (Rule != null ? Rule.GetHashCode() : 0);
+            }
+        }
+    }
+
+    internal sealed class TransferCandidateSet : IReadOnlyList<DishInstance>
+    {
+        private readonly IReadOnlyList<DishInstance> _dishes;
+
+        public TransferCandidateSet(IReadOnlyList<DishInstance> dishes)
+        {
+            _dishes = dishes ?? Array.Empty<DishInstance>();
+            Ids = _dishes.Select(dish => dish.Id).ToArray();
+            IdSet = new HashSet<int>(Ids);
+            ById = _dishes.ToDictionary(dish => dish.Id);
+        }
+
+        public int Count => _dishes.Count;
+
+        public DishInstance this[int index] => _dishes[index];
+
+        public IReadOnlyList<int> Ids { get; }
+
+        public HashSet<int> IdSet { get; }
+
+        public Dictionary<int, DishInstance> ById { get; }
+
+        public IEnumerator<DishInstance> GetEnumerator() => _dishes.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     internal readonly struct SweetTransferPermanentFlatRegistration
@@ -1655,7 +2635,8 @@ namespace GourmetProject.Gameplay.Scoring
             int conditionCount,
             IReadOnlyList<int> targetDishInstanceIds,
             ScoreSource source,
-            SkillExecutionTrace trace)
+            SkillExecutionTrace trace,
+            int registrationOrder = 0)
         {
             Owner = owner;
             Rule = rule;
@@ -1663,6 +2644,7 @@ namespace GourmetProject.Gameplay.Scoring
             TargetDishInstanceIds = targetDishInstanceIds ?? Array.Empty<int>();
             Source = source;
             Trace = trace;
+            RegistrationOrder = registrationOrder;
         }
 
         public DishInstance Owner { get; }
@@ -1676,6 +2658,8 @@ namespace GourmetProject.Gameplay.Scoring
         public ScoreSource Source { get; }
 
         public SkillExecutionTrace Trace { get; }
+
+        internal int RegistrationOrder { get; }
     }
 
     /// <summary>技能传递副作用：把外来子技能(Effects) 追加给某目标实例（可带来源名，用于「源名&lt;甜蜜传递&gt;」展示）。</summary>

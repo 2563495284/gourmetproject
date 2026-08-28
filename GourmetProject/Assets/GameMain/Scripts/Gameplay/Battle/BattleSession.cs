@@ -1645,14 +1645,16 @@ namespace GourmetProject.Gameplay.Battle
         }
 
         /// <summary>计算当前餐桌的预览分数（不标记结算，不产生副作用），供 UI 实时展示。</summary>
-        public ScoreResult PreviewScore()
+        public ScoreResult PreviewScore(
+            bool captureDiagnostics = true,
+            bool captureCommandEvents = false)
         {
             if (MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore)
             {
                 return ZeroScoreResult();
             }
 
-            return CalculatePreviewScore();
+            return CalculatePreviewScore(captureDiagnostics, captureCommandEvents);
         }
 
         /// <summary>
@@ -1683,29 +1685,36 @@ namespace GourmetProject.Gameplay.Battle
             return Math.Max(1, dish.EffectiveCountAs);
         }
 
-        private ScoreResult CalculatePreviewScore()
+        private ScoreResult CalculatePreviewScore(
+            bool captureDiagnostics = true,
+            bool captureCommandEvents = false)
             => CalculatePreviewScore(
                 copySkillSelector: null,
                 transferTargetSelector: null,
-                randomIntegerSelector: null);
+                randomIntegerSelector: null,
+                captureDiagnostics: captureDiagnostics,
+                captureCommandEvents: captureCommandEvents);
 
         private ScoreResult CalculatePreviewScore(
             Func<IReadOnlyList<string>, int, IReadOnlyList<string>> copySkillSelector,
             Func<IReadOnlyList<int>, int, IReadOnlyList<int>> transferTargetSelector,
             Func<int, int, int> randomIntegerSelector,
-            bool captureDiagnostics = true)
+            bool captureDiagnostics = true,
+            bool captureCommandEvents = false)
         {
-            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: copySkillSelector, transferTargetSelector: transferTargetSelector, randomIntegerSelector: randomIntegerSelector, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount, sweetTransferTargetMultiplierFlat: SweetTransferTargetMultiplier, sweetTransferSourceMultiplierFlat: SweetTransferSourceMultiplier, captureDiagnostics: captureDiagnostics, sweetTransferExtraTargetRolls: SweetTransferExtraTargetRolls);
+            return _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: copySkillSelector, transferTargetSelector: transferTargetSelector, randomIntegerSelector: randomIntegerSelector, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount, sweetTransferTargetMultiplierFlat: SweetTransferTargetMultiplier, sweetTransferSourceMultiplierFlat: SweetTransferSourceMultiplier, captureDiagnostics: captureDiagnostics, sweetTransferExtraTargetRolls: SweetTransferExtraTargetRolls, captureCommandEvents: captureCommandEvents);
         }
 
         /// <summary>「吃」：结算、应用副作用（金币/层数/技能传递/历史）并记录结果。</summary>
-        public ScoreResult Settle()
+        public ScoreResult Settle(
+            bool captureDiagnostics = true,
+            bool captureCommandEvents = false)
         {
             ConfirmAllPendingTableDishes();
             _passiveSettlementPresentationOccurrences.Clear();
             ScoreResult result = MinimumServesForScore > 0 && ServesUsed < MinimumServesForScore
                 ? ZeroScoreResult()
-                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets, randomIntegerSelector: SelectRandomInteger, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount, sweetTransferTargetMultiplierFlat: SweetTransferTargetMultiplier, sweetTransferSourceMultiplierFlat: SweetTransferSourceMultiplier, sweetTransferExtraTargetRolls: SweetTransferExtraTargetRolls);
+                : _calculator.Calculate(DiningTable, _db, FinalFlat, FinalMultiplier, extraSources: BuildSettlementExtraSources(), history: BuildHistory(), initialHappyCakeLayers: HappyCakeLayers, extraCountAsPerDish: ExtraCountAsPerDish, cakeLayerThresholdReduction: CakeLayerThresholdReduction, reverseDishOrder: ReverseSettlementOrder, unservedRecipeDishes: BuildUnservedRecipeDishes(), copySkillSelector: SelectCopySkills, transferTargetSelector: SelectTransferTargets, randomIntegerSelector: SelectRandomInteger, passiveItemCount: PassiveItemCount, remainingFoodDiscards: FoodDiscardsRemaining, sweetTransferExtraTargetCount: SweetTransferExtraTargetCount, sweetTransferTargetMultiplierFlat: SweetTransferTargetMultiplier, sweetTransferSourceMultiplierFlat: SweetTransferSourceMultiplier, captureDiagnostics: captureDiagnostics, sweetTransferExtraTargetRolls: SweetTransferExtraTargetRolls, captureCommandEvents: captureCommandEvents);
             _capturesPassiveSettlementPresentation = true;
             try
             {
