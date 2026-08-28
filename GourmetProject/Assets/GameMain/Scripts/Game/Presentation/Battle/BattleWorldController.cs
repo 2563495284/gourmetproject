@@ -140,6 +140,8 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private GameRun _run;
         private BattleSession _session;
+        private GameRun _doodleRun;
+        private BattleSession _doodleSession;
         private bool _settling;
         private bool _foodSettlementLayoutBusy;
         private bool _foodSettlementLayoutActive;
@@ -1211,12 +1213,16 @@ namespace GourmetProject.Game.Presentation.Battle
             Action stateChanged,
             Action<string> activeItemClicked,
             Action<DishInstance> dishClicked,
-            bool resetDoodle = true,
             Action<ServeTriggerCue> serveTriggerCueSink = null,
             Action<int> pendingDishConfirmRequested = null,
             bool prepareNextDish = true)
         {
             SetBattleBackdropVisible(true);
+
+            bool doodleRunChanged = !ReferenceEquals(_doodleRun, run);
+            bool doodleSessionChanged = !ReferenceEquals(_doodleSession, session);
+            _doodleRun = run;
+            _doodleSession = session;
 
             if (_session != null)
             {
@@ -1260,6 +1266,8 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 ApplySettlementLayoutImmediate();
             }
+            ConfigureDoodleForCurrentTable();
+            PrepareDoodleForSession(doodleRunChanged, doodleSessionChanged);
             EnsureSequencer();
             // 装饰品和消耗品（装饰品/消耗品）与右下角食谱仍在屏幕空间 HUD；
             // 出菜口是 World Space Canvas，和餐桌、食物、上菜/结算演出、涂鸦一起由经营挑战世界承载。
@@ -1270,14 +1278,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 EnsureNextDishPrepared();
             }
             RebuildPlacedPieces();
-            if (resetDoodle)
-            {
-                ResetDoodle();
-            }
-            else
-            {
-                _doodle?.SetVisible(true);
-            }
             RefreshAll();
             EnsureCakeLayerFx();
             // 初始/继承层数只更新 HUD，不生成世界蛋糕；世界表现只响应本局实际加层事件。
@@ -1571,10 +1571,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 SetTemporaryAreaVisible(false, animated: false);
             }
 
-            if (!visible)
-            {
-                _doodle?.SetVisible(false);
-            }
+            bool showDoodlePresentation = visible
+                && _worldMode == WorldMode.Food
+                && _session != null
+                && !_session.IsSettled;
+            _doodle?.SetPresentationActive(showDoodlePresentation);
         }
 
         private void RefreshTemporaryAreaVisibility(bool animated)
@@ -4471,18 +4472,63 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        /// <summary>每次进入经营挑战时清空笔迹，并把涂鸦层复位为可见。</summary>
-        public void ResetDoodle()
+        private void ConfigureDoodleForCurrentTable()
+        {
+            _doodle?.ConfigureTable(
+                _boardView?.Mapper,
+                _session?.DiningTable,
+                _camera,
+                PersistentBossRemovedCells());
+        }
+
+        private void PrepareDoodleForSession(bool runChanged, bool sessionChanged)
         {
             if (_doodle == null)
             {
                 return;
             }
 
-            _doodle.Clear();
-            _doodle.SetTool(BattleDoodleTool.None);
-            _doodle.SetVisible(DoodleEnabled);
             _doodle.enabled = DoodleEnabled;
+            if (!DoodleEnabled)
+            {
+                _doodle.Clear();
+                _doodle.SetVisible(false);
+                _doodle.SetPresentationActive(false);
+                return;
+            }
+
+            if (runChanged)
+            {
+                _doodle.Clear();
+            }
+
+            if (sessionChanged)
+            {
+                _doodle.SetTool(BattleDoodleTool.None);
+            }
+
+            if (_session?.IsSettled == true)
+            {
+                _doodle.SetVisible(false);
+            }
+            else if (sessionChanged)
+            {
+                // 同一轮经营的新战斗重新显示，但保留完整逻辑画布上的旧笔迹。
+                _doodle.SetVisible(true);
+            }
+        }
+
+        /// <summary>结算只收起涂鸦并退出工具，内容保留到本轮经营的下一场战斗。</summary>
+        public void HideDoodleForSettlement()
+        {
+            if (_doodle == null)
+            {
+                return;
+            }
+
+            _doodle.SetTool(BattleDoodleTool.None);
+            _doodle.SetVisible(false);
+            _doodle.SetPresentationActive(false);
         }
 
         public void ClearDoodle()

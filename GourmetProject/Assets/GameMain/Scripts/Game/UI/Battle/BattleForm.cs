@@ -2343,7 +2343,6 @@ namespace GourmetProject.Game.UI.Battle
                 RefreshAll,
                 null,
                 OnDishClicked,
-                resetDoodle: false,
                 serveTriggerCueSink: OnServeTriggerCue,
                 pendingDishConfirmRequested: OnPendingDishConfirmRequested);
             _world.SetDishHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
@@ -5675,7 +5674,7 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            world?.ClearDoodle();
+            world?.HideDoodleForSettlement();
             TutorialRuntime.Publish(TutorialSignal.SettleClicked);
 
             // if (_session.DiningTable.DishCount == 0)
