@@ -267,7 +267,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void SettlementStage_WarmsTypedPoolsAndReturnsAllTransientsOnClear()
+        public void SettlementStage_WarmsOnlySpritePoolAndReturnsTransientsOnClear()
         {
             SettlementStageView prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                     "Assets/GameMain/Content/Prefabs/Battle/Settlement/SettlementStage.prefab")
@@ -277,12 +277,23 @@ namespace GourmetProject.Tests.EditMode
             SettlementStageView stage = UnityEngine.Object.Instantiate(prefab);
             try
             {
+                MethodInfo ensurePools = typeof(SettlementStageView).GetMethod(
+                    "EnsurePools",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(ensurePools, Is.Not.Null);
+                ensurePools.Invoke(stage, null);
                 GameObjectPool spritePool = GetPrivateField<GameObjectPool>(stage, "_spritePool");
-                GameObjectPool labelPool = GetPrivateField<GameObjectPool>(stage, "_labelPool");
-                GameObjectPool finalePool = GetPrivateField<GameObjectPool>(stage, "_finaleLabelPool");
                 Assert.That(spritePool.CountInactive, Is.EqualTo(12));
-                Assert.That(labelPool.CountInactive, Is.EqualTo(8));
-                Assert.That(finalePool.CountInactive, Is.EqualTo(1));
+                Assert.That(
+                    typeof(SettlementStageView).GetField(
+                        "_labelPool",
+                        BindingFlags.Instance | BindingFlags.NonPublic),
+                    Is.Null);
+                Assert.That(
+                    typeof(SettlementStageView).GetField(
+                        "_finaleLabelPool",
+                        BindingFlags.Instance | BindingFlags.NonPublic),
+                    Is.Null);
 
                 MethodInfo createSprite = typeof(SettlementStageView).GetMethod(
                     "CreateSprite",

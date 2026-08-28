@@ -1,252 +1,91 @@
-using DG.Tweening;
 using GourmetProject.Game.UI.Common;
-using GourmetProject.Runtime.Pooling;
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
-    /// <summary>结算效果条：来源名在上，效果文字显示在底板内，上浮淡出后自毁。</summary>
+    /// <summary>
+    /// 临时结算效果条的排版模板。运行时可见文字由
+    /// <see cref="SettlementTextBatchRenderer"/> 统一渲染，本组件不再创建逐条动画实例。
+    /// </summary>
     internal sealed class FloatingTextView : MonoBehaviour
     {
         [Header("固定结构（prefab 预拼）")]
         [SerializeField] private SpriteRenderer _background;
         [SerializeField] private TextMeshPro _sourceText;
-
         [SerializeField] private TextMeshPro _effectText;
 
+        // 保留序列化字段，旧 prefab 无需迁移；批渲染不再直接驱动这个 Renderer。
         [SerializeField] private MeshRenderer _effectMeshRenderer;
+
         [Header("飘动")]
         [SerializeField] private float _rise = 0.9f;
         [SerializeField] private float _duration = 0.9f;
 
-        private Tween _tween;
-        private int _sortingOrder = BattleSorting.OrderFloatingText;
-        private GameObjectPool _pool;
-        private Vector3 _defaultLocalScale;
         private Color _defaultBackgroundColor;
         private Color _defaultSourceColor;
         private Color _defaultEffectColor;
         private bool _defaultSourceActive;
+        private bool _defaultsCaptured;
+
+        internal SpriteRenderer Background => _background;
+        internal TextMeshPro SourceText => _sourceText;
+        internal TextMeshPro EffectText => _effectText;
+        internal float DefaultRise => _rise;
+        internal float DefaultDuration => _duration;
 
         private void Awake()
         {
-            _defaultLocalScale = transform.localScale;
+            CaptureDefaults();
+        }
+
+        internal void BindForBatch(
+            string sourceName,
+            string effectText,
+            Color? effectColor)
+        {
+            EnsureDefaults();
+            ResetTemplateState();
+
+            if (_sourceText != null)
+            {
+                bool visible = !string.IsNullOrWhiteSpace(sourceName);
+                _sourceText.gameObject.SetActive(visible);
+                _sourceText.text = visible ? sourceName : string.Empty;
+                _sourceText.ForceMeshUpdate(true, true);
+            }
+
+            if (_effectText != null)
+            {
+                SemanticDescriptionFormatter.Set(_effectText, effectText);
+                if (effectColor.HasValue)
+                {
+                    _effectText.color = effectColor.Value;
+                }
+
+                _effectText.ForceMeshUpdate(true, true);
+            }
+        }
+
+        private void CaptureDefaults()
+        {
             _defaultBackgroundColor = _background != null ? _background.color : Color.white;
             _defaultSourceColor = _sourceText != null ? _sourceText.color : Color.white;
             _defaultEffectColor = _effectText != null ? _effectText.color : Color.white;
             _defaultSourceActive = _sourceText != null && _sourceText.gameObject.activeSelf;
+            _defaultsCaptured = true;
         }
 
-        public static void Spawn(
-            FloatingTextView prefab,
-            Transform parent,
-            Vector3 worldPos,
-            string text,
-            float? rise = null,
-            float? duration = null,
-            float visualScale = 1f,
-            GameObjectPool pool = null)
+        private void EnsureDefaults()
         {
-            SpawnEffect(
-                prefab,
-                parent,
-                worldPos,
-                string.Empty,
-                text,
-                rise,
-                duration,
-                visualScale: visualScale,
-                pool: pool);
-        }
-
-        public static void SpawnEffect(
-            FloatingTextView prefab,
-            Transform parent,
-            Vector3 worldPos,
-            string sourceName,
-            string effectText,
-            float? rise = null,
-            float? duration = null,
-            Color? effectColor = null,
-            float delay = 0f,
-            float visualScale = 1f,
-            GameObjectPool pool = null)
-        {
-            if (prefab == null)
+            if (!_defaultsCaptured)
             {
-                Debug.LogError($"{nameof(FloatingTextView)} 缺少 prefab。");
-                return;
+                CaptureDefaults();
             }
-
-            FloatingTextView view = pool != null
-                ? pool.Get<FloatingTextView>(parent)
-                : Instantiate(prefab, parent);
-            view._pool = pool;
-            view.transform.position = worldPos;
-            float safeScale = Mathf.Max(0.0001f, visualScale);
-            view.transform.localScale *= safeScale;
-            view._sortingOrder = WorldLabelSorting.NextOrder();
-            view.PlayEffect(
-                sourceName,
-                effectText,
-                (rise ?? view._rise) * safeScale,
-                duration,
-                effectColor,
-                delay);
         }
 
-        private void PlayEffect(
-            string sourceName,
-            string effectText,
-            float? rise,
-            float? duration,
-            Color? effectColor,
-            float delay)
+        private void ResetTemplateState()
         {
-            KillAnimation();
-
-            SemanticDescriptionFormatter.Set(_effectText, effectText);
-            if (effectColor.HasValue)
-            {
-                _effectText.color = effectColor.Value;
-            }
-            ConfigureSourceText(sourceName);
-            ApplySortingOrder();
-            Animate(_effectText, transform.position, rise ?? _rise, duration ?? _duration, delay);
-        }
-
-        private void OnDestroy()
-        {
-            KillAnimation();
-        }
-
-        internal void PrepareForReuse()
-        {
-            ResetReusableState();
-        }
-
-        internal void ResetForPool()
-        {
-            ResetReusableState();
-        }
-
-        private void ConfigureSourceText(string sourceName)
-        {
-            if (_sourceText == null)
-            {
-                return;
-            }
-
-            bool visible = !string.IsNullOrWhiteSpace(sourceName);
-            _sourceText.gameObject.SetActive(visible);
-            if (!visible)
-            {
-                return;
-            }
-
-            _sourceText.text = sourceName;
-        }
-
-        private void ApplySortingOrder()
-        {
-            if (_effectText != null)
-            {
-                BattleSorting.Apply(_effectText, BattleSorting.Fx, _sortingOrder + 2);
-            }
-            else
-            {
-                BattleSorting.Apply(_effectMeshRenderer, BattleSorting.Fx, _sortingOrder + 2);
-            }
-
-            BattleSorting.Apply(_background, BattleSorting.Fx, _sortingOrder);
-            BattleSorting.Apply(_sourceText, BattleSorting.Fx, _sortingOrder + 2);
-        }
-
-        private void Animate(TextMeshPro effect, Vector3 start, float rise, float duration, float delay)
-        {
-            Color effectColor = effect.color;
-            Color backgroundColor = _background != null ? _background.color : Color.clear;
-            Color sourceColor = _sourceText != null ? _sourceText.color : Color.clear;
-            if (delay > 0f)
-            {
-                effect.color = WithAlpha(effectColor, 0f);
-                if (_background != null)
-                {
-                    _background.color = WithAlpha(backgroundColor, 0f);
-                }
-
-                if (_sourceText != null)
-                {
-                    _sourceText.color = WithAlpha(sourceColor, 0f);
-                }
-            }
-
-            _tween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), t =>
-                {
-                    if (effect == null)
-                    {
-                        return;
-                    }
-
-                    transform.position = start + new Vector3(0f, rise * t, 0f);
-                    float alpha = 1f - t;
-                    effect.color = WithAlpha(effectColor, alpha);
-                    if (_background != null)
-                    {
-                        _background.color = WithAlpha(backgroundColor, alpha);
-                    }
-
-                    if (_sourceText != null)
-                    {
-                        _sourceText.color = WithAlpha(sourceColor, alpha);
-                    }
-                })
-                .SetDelay(Mathf.Max(0f, delay))
-                .OnStart(() =>
-                {
-                    if (effect != null)
-                    {
-                        effect.color = effectColor;
-                    }
-
-                    if (_background != null)
-                    {
-                        _background.color = backgroundColor;
-                    }
-
-                    if (_sourceText != null)
-                    {
-                        _sourceText.color = sourceColor;
-                    }
-                })
-                .SetEase(Ease.Linear)
-                .SetLink(gameObject)
-                .OnComplete(() =>
-                {
-                    if (this != null)
-                    {
-                        _tween = null;
-                        GameObjectPool pool = _pool;
-                        _pool = null;
-                        if (pool != null)
-                        {
-                            pool.Release(this);
-                        }
-                        else
-                        {
-                            Destroy(gameObject);
-                        }
-                    }
-                });
-        }
-
-        private void ResetReusableState()
-        {
-            KillAnimation();
-            _pool = null;
-            _sortingOrder = BattleSorting.OrderFloatingText;
-            transform.localScale = _defaultLocalScale;
             if (_background != null)
             {
                 _background.color = _defaultBackgroundColor;
@@ -265,22 +104,11 @@ namespace GourmetProject.Game.Presentation.Battle
                 _effectText.color = _defaultEffectColor;
                 _effectText.text = string.Empty;
             }
-        }
 
-        private void KillAnimation()
-        {
-            if (_tween != null && _tween.IsActive())
+            if (_effectMeshRenderer != null)
             {
-                _tween.Kill(false);
+                _effectMeshRenderer.SetPropertyBlock(null);
             }
-
-            _tween = null;
-        }
-
-        private static Color WithAlpha(Color color, float alpha)
-        {
-            color.a *= alpha;
-            return color;
         }
     }
 

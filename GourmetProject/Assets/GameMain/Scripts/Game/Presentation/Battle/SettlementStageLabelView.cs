@@ -1,5 +1,4 @@
 using GourmetProject.Game.UI.Common;
-using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
@@ -59,24 +58,16 @@ namespace GourmetProject.Game.Presentation.Battle
             ResetReusableState();
         }
 
-        internal void ResetForPool()
-        {
-            ResetReusableState();
-        }
-
         private void ResetReusableState()
         {
-            transform.DOKill(false);
             if (_headerText != null)
             {
-                _headerText.DOKill(false);
                 _headerText.text = string.Empty;
                 _headerText.color = _defaultHeaderColor;
             }
 
             if (_bodyText != null)
             {
-                _bodyText.DOKill(false);
                 _bodyText.text = string.Empty;
                 _bodyText.color = _defaultBodyColor;
             }

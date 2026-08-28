@@ -11,7 +11,6 @@ using GourmetProject.Runtime;
 using GourmetProject.Runtime.Pooling;
 using Unity.Profiling;
 using UnityEngine;
-using TMPro;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -24,10 +23,6 @@ namespace GourmetProject.Game.Presentation.Battle
         internal const float DefaultPendingDishBrightness = 0.28f;
         private const int SpritePoolPrewarm = 12;
         private const int SpritePoolMaxInactive = 32;
-        private const int LabelPoolPrewarm = 8;
-        private const int LabelPoolMaxInactive = 24;
-        private const int FinaleLabelPoolPrewarm = 1;
-        private const int FinaleLabelPoolMaxInactive = 2;
         private static readonly ProfilerMarker TransientsMarker =
             new("Gourmet.Settlement.Transients");
 
@@ -63,12 +58,12 @@ namespace GourmetProject.Game.Presentation.Battle
         private GameObject _chapterSpotlight;
         private Tween _chapterSpotlightTween;
         private int _chapterDishInstanceId;
-        private readonly List<GameObject> _heldLabels = new();
+        private readonly List<SettlementTextBatchHandle> _activeLabelHandles = new();
+        private readonly List<SettlementTextBatchHandle> _heldLabels = new();
         private SettlementEffectGroup _resultHitSoundGroup;
         private Camera _worldCamera;
         private GameObjectPool _spritePool;
-        private GameObjectPool _labelPool;
-        private GameObjectPool _finaleLabelPool;
+        private SettlementTextBatchRenderer _textBatchRenderer;
         private int _nextTransientGeneration;
 
         private readonly struct TransientRegistration
@@ -84,6 +79,13 @@ namespace GourmetProject.Game.Presentation.Battle
         }
 
         internal float PendingDishBrightness => _pendingDishBrightness;
+        internal SettlementStageLabelView LabelTemplate => _labelPrefab;
+        internal SettlementStageLabelView FinaleLabelTemplate => _finaleLabelPrefab;
+
+        internal void SetTextBatchRenderer(SettlementTextBatchRenderer renderer)
+        {
+            _textBatchRenderer = renderer;
+        }
 
         private void Awake()
         {
@@ -108,63 +110,6 @@ namespace GourmetProject.Game.Presentation.Battle
             _worldCamera = worldCamera;
             _visualScale = Mathf.Max(0.0001f, visualScale);
             ApplySettlementProgressFocus(0f);
-        }
-
-        internal void PlayTransientEffect(
-            Transform parent,
-            Vector3 anchor,
-            string sourceName,
-            string effectText,
-            Color theme,
-            float duration,
-            float delay,
-            CancellationToken cancellationToken,
-            float visualScale = 1f)
-        {
-            _ = PlayTransientEffectAsync(
-                parent,
-                anchor,
-                sourceName,
-                effectText,
-                theme,
-                duration,
-                delay,
-                cancellationToken,
-                visualScale);
-        }
-
-        private async Awaitable PlayTransientEffectAsync(
-            Transform parent,
-            Vector3 anchor,
-            string sourceName,
-            string effectText,
-            Color theme,
-            float duration,
-            float delay,
-            CancellationToken cancellationToken,
-            float visualScale)
-        {
-            try
-            {
-                if (delay > 0f)
-                {
-                    await Awaitable.WaitForSecondsAsync(delay, cancellationToken);
-                }
-
-                await SpawnLabelAsync(
-                    anchor,
-                    ReadableName(sourceName, "技能触发"),
-                    effectText,
-                    theme,
-                    duration,
-                    cancellationToken,
-                    parentOverride: parent,
-                    visualScaleOverride: visualScale);
-            }
-            catch (OperationCanceledException)
-            {
-                // 页面关闭或新一轮演出开始时，尚未完成的即时提示直接结束。
-            }
         }
 
         public async Awaitable PlayBaseAsync(
@@ -1126,6 +1071,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 ReleaseTransient(transient);
             }
             _transientPools.Clear();
+            ReleaseAllLabels();
         }
 
         private void ApplyFocus(int actorDishInstanceId, IReadOnlyCollection<int> targetDishIds)
@@ -1388,28 +1334,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     onGet: PrepareSpriteForReuse,
                     onRelease: ResetSpriteForPool);
             }
-
-            if (_labelPool == null && _labelPrefab != null)
-            {
-                _labelPool = new GameObjectPool(
-                    _labelPrefab.gameObject,
-                    transform,
-                    LabelPoolPrewarm,
-                    LabelPoolMaxInactive,
-                    onGet: go => go.GetComponent<SettlementStageLabelView>()?.PrepareForReuse(),
-                    onRelease: go => go.GetComponent<SettlementStageLabelView>()?.ResetForPool());
-            }
-
-            if (_finaleLabelPool == null && _finaleLabelPrefab != null)
-            {
-                _finaleLabelPool = new GameObjectPool(
-                    _finaleLabelPrefab.gameObject,
-                    transform,
-                    FinaleLabelPoolPrewarm,
-                    FinaleLabelPoolMaxInactive,
-                    onGet: go => go.GetComponent<SettlementStageLabelView>()?.PrepareForReuse(),
-                    onRelease: go => go.GetComponent<SettlementStageLabelView>()?.ResetForPool());
-            }
         }
 
         private void PrepareSpriteForReuse(GameObject root)
@@ -1489,7 +1413,6 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 DOTween.Kill(root, false);
                 _transients.Remove(root);
-                _heldLabels.Remove(root);
                 registration.Pool.Release(root);
             }
         }
@@ -1589,80 +1512,44 @@ namespace GourmetProject.Game.Presentation.Battle
             float verticalDriftDirection = 1f,
             float impactScale = 1f)
         {
-            SettlementStageLabelView prefab = finalStamp ? _finaleLabelPrefab : _labelPrefab;
-            if (prefab == null)
+            if (_textBatchRenderer == null)
             {
-                Debug.LogError($"{nameof(SettlementStageView)} 缺少结算标签 prefab。", this);
+                Debug.LogError($"{nameof(SettlementStageView)} 缺少结算文字批渲染器。", this);
                 return;
             }
 
-            EnsurePools();
-            GameObjectPool pool = finalStamp ? _finaleLabelPool : _labelPool;
-            SettlementStageLabelView label = pool?.Get<SettlementStageLabelView>(
-                parentOverride != null ? parentOverride : _fxRoot);
-            if (label == null)
-            {
-                return;
-            }
-
-            GameObject root = label.gameObject;
-            root.name = finalStamp ? "SettlementFinaleLabel" : "SettlementStageLabel";
-            root.transform.position = anchor;
-            RegisterTransient(root, pool);
-            int generation = TransientGeneration(root);
-            label.Bind(header, body, theme, headerSemanticColor, sortingOrder);
-
-            TextMeshPro headerText = label.HeaderText;
-            TextMeshPro bodyText = label.BodyText;
-            Color headerColor = headerText.color;
-            Color bodyColor = bodyText.color;
             float visualScale = visualScaleOverride > 0f
                 ? visualScaleOverride
                 : _visualScale;
-            visualScale *= Mathf.Max(0.01f, impactScale);
-            Vector3 targetScale = new Vector3(
+            SettlementTextBatchHandle handle = _textBatchRenderer.SpawnStage(
+                parentOverride != null ? parentOverride : _fxRoot,
+                anchor,
+                header,
+                body,
+                theme,
+                finalStamp,
+                duration,
                 visualScale,
-                visualScale,
-                1f);
-            root.transform.localScale = Vector3.Scale(
-                targetScale,
-                new Vector3(0.80f, 0.80f, 1f));
-            float animationDuration = Mathf.Max(0.0001f, duration);
-            float driftDirection = Mathf.Approximately(verticalDriftDirection, 0f)
-                ? 0f
-                : verticalDriftDirection < 0f ? -1f : 1f;
+                holdUntilCleared,
+                headerSemanticColor,
+                sortingOrder,
+                verticalDriftDirection,
+                impactScale);
+            if (!handle.IsValid)
+            {
+                return;
+            }
 
-            Tween tween = DOVirtual.Float(0f, 1f, animationDuration, t =>
-                {
-                    if (root == null)
-                    {
-                        return;
-                    }
-
-                    float enter = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.28f));
-                    float pulse = Mathf.Sin(Mathf.Clamp01(t / 0.48f) * Mathf.PI) * 0.08f;
-                    root.transform.localScale = Vector3.Scale(
-                        targetScale,
-                        new Vector3(0.80f + enter * 0.20f + pulse, 0.80f + enter * 0.20f + pulse, 1f));
-                    root.transform.position = anchor
-                        + Vector3.up * (
-                            driftDirection * 0.10f * visualScale * enter);
-
-                    float alpha = holdUntilCleared ? 1f : Mathf.Clamp01((1f - t) / 0.24f);
-                    headerText.color = WithAlpha(headerColor, alpha);
-                    bodyText.color = WithAlpha(bodyColor, alpha);
-                })
-                .SetEase(Ease.Linear)
-                .SetId(root)
-                .SetLink(root);
-
+            _activeLabelHandles.Add(handle);
             bool held = false;
             try
             {
-                await PresentationTween.AwaitCompletionAsync(tween, cancellationToken);
-                if (holdUntilCleared && root != null && _transientPools.ContainsKey(root))
+                await Awaitable.WaitForSecondsAsync(
+                    Mathf.Max(0.0001f, duration),
+                    cancellationToken);
+                if (holdUntilCleared && _textBatchRenderer.IsAlive(handle))
                 {
-                    _heldLabels.Add(root);
+                    _heldLabels.Add(handle);
                     held = true;
                 }
             }
@@ -1670,7 +1557,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 if (!held)
                 {
-                    ReleaseTransient(root, generation);
+                    ReleaseLabel(handle);
                 }
             }
         }
@@ -1697,14 +1584,29 @@ namespace GourmetProject.Game.Presentation.Battle
                 while (_heldLabels.Count > 0)
                 {
                     int lastIndex = _heldLabels.Count - 1;
-                    GameObject held = _heldLabels[lastIndex];
+                    SettlementTextBatchHandle held = _heldLabels[lastIndex];
                     _heldLabels.RemoveAt(lastIndex);
-                    if (held != null)
-                    {
-                        ReleaseTransient(held);
-                    }
+                    ReleaseLabel(held);
                 }
             }
+        }
+
+        private void ReleaseLabel(SettlementTextBatchHandle handle)
+        {
+            _textBatchRenderer?.Release(handle);
+            _activeLabelHandles.Remove(handle);
+            _heldLabels.Remove(handle);
+        }
+
+        private void ReleaseAllLabels()
+        {
+            for (int i = _activeLabelHandles.Count - 1; i >= 0; i--)
+            {
+                _textBatchRenderer?.Release(_activeLabelHandles[i]);
+            }
+
+            _activeLabelHandles.Clear();
+            _heldLabels.Clear();
         }
 
         private void DestroyChapterSpotlight()
@@ -2154,8 +2056,6 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             ClearImmediate();
             _spritePool?.Clear();
-            _labelPool?.Clear();
-            _finaleLabelPool?.Clear();
         }
     }
 }

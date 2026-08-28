@@ -96,8 +96,6 @@ namespace GourmetProject.Game.Presentation.Battle
         private const string InitialDishBaseBatchKey = "initial:dish-bases";
         private const int SweetTransferPoolPrewarm = 4;
         private const int SweetTransferPoolMaxInactive = 16;
-        private const int FloatingTextPoolPrewarm = 8;
-        private const int FloatingTextPoolMaxInactive = 24;
 
         [Header("结算常驻三阶段速度")]
         [SerializeField] private float _belowTargetSpeed = 1f;
@@ -135,7 +133,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private SettlementCameraFeedback _cameraFeedback;
         private CakeLayerWorldFx _cakeLayerWorldFx;
         private GameObjectPool _sweetTransferParticlePool;
-        private GameObjectPool _floatingTextPool;
+        private SettlementTextBatchRenderer _settlementTextBatchRenderer;
+        private bool _textBatchInitialized;
         private bool _externalPlaybackPaused;
         private bool _playbackHasSavedTimeScale;
         private float _playbackSavedTimeScale = 1f;
@@ -164,7 +163,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             EnsureSweetTransferParticlePool();
-            EnsureFloatingTextPool();
+            EnsureSettlementTextBatchRenderer();
         }
 
         /// <summary>暂停当前结算演出并保存进入暂停前的世界时间倍率。重复调用不会重复保存。</summary>
@@ -218,15 +217,26 @@ namespace GourmetProject.Game.Presentation.Battle
             float? duration = null,
             float visualScale = 1f)
         {
-            FloatingTextView.Spawn(
-                _settlementEffectLabelPrefab,
+            if (!EnsureSettlementTextBatchRenderer())
+            {
+                return;
+            }
+
+            _settlementTextBatchRenderer.SpawnFloating(
                 parent != null ? parent : transform,
                 worldPos,
+                string.Empty,
                 text,
-                rise,
-                duration,
+                effectColor: null,
+                rise ?? (_settlementEffectLabelPrefab != null
+                    ? _settlementEffectLabelPrefab.DefaultRise
+                    : 0.9f),
+                duration ?? (_settlementEffectLabelPrefab != null
+                    ? _settlementEffectLabelPrefab.DefaultDuration
+                    : 0.9f),
+                delay: 0f,
                 visualScale,
-                _floatingTextPool);
+                WorldLabelSorting.NextOrder());
         }
 
         public void PlayFloatingEffect(
@@ -240,17 +250,24 @@ namespace GourmetProject.Game.Presentation.Battle
             float delay = 0f,
             float visualScale = 1f)
         {
-            EnsureStage();
-            _stage.PlayTransientEffect(
+            if (!EnsureSettlementTextBatchRenderer())
+            {
+                return;
+            }
+
+            _settlementTextBatchRenderer.SpawnFloating(
                 parent != null ? parent : transform,
                 worldPos,
                 sourceName,
                 effectText,
                 effectColor,
+                rise ?? (_settlementEffectLabelPrefab != null
+                    ? _settlementEffectLabelPrefab.DefaultRise
+                    : 0.9f),
                 duration ?? 0.78f,
                 delay,
-                destroyCancellationToken,
-                visualScale);
+                visualScale,
+                WorldLabelSorting.NextOrder());
         }
 
         public async Awaitable PlayAsync(
@@ -277,7 +294,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            if (!EnsureStage())
+            if (!EnsureStage() || !EnsureSettlementTextBatchRenderer())
             {
                 return;
             }
@@ -553,6 +570,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _cakeLayerWorldFx?.ResetBuffBurstVisuals();
             ForceRestorePlaybackTimeScale();
             RestoreSettlementPace();
+            _settlementTextBatchRenderer?.ClearAll();
         }
 
         private void OnDestroy()
@@ -562,7 +580,6 @@ namespace GourmetProject.Game.Presentation.Battle
             RestoreSettlementPace();
             ClearRetainedDishValueBadges();
             _sweetTransferParticlePool?.Clear();
-            _floatingTextPool?.Clear();
         }
 
         private bool EnsureStage()
@@ -580,6 +597,42 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _stage = Instantiate(_settlementStagePrefab, transform, false);
             _stage.name = "SettlementStage";
+            if (_settlementTextBatchRenderer != null)
+            {
+                _stage.SetTextBatchRenderer(_settlementTextBatchRenderer);
+            }
+            return true;
+        }
+
+        private bool EnsureSettlementTextBatchRenderer()
+        {
+            if (_settlementTextBatchRenderer == null)
+            {
+                _settlementTextBatchRenderer = GetComponent<SettlementTextBatchRenderer>();
+                if (_settlementTextBatchRenderer == null)
+                {
+                    _settlementTextBatchRenderer = gameObject.AddComponent<SettlementTextBatchRenderer>();
+                }
+            }
+
+            if (_stage == null && !EnsureStage())
+            {
+                return false;
+            }
+
+            if (!_textBatchInitialized)
+            {
+                _textBatchInitialized = _settlementTextBatchRenderer.Initialize(
+                    _settlementEffectLabelPrefab,
+                    _stage.LabelTemplate,
+                    _stage.FinaleLabelTemplate);
+                if (!_textBatchInitialized)
+                {
+                    return false;
+                }
+            }
+
+            _stage.SetTextBatchRenderer(_settlementTextBatchRenderer);
             return true;
         }
 
@@ -2470,17 +2523,14 @@ namespace GourmetProject.Game.Presentation.Battle
             PlayActorFeedbackIfNeeded(scope, view.Instance != null ? view.Instance.Id : 0, cue.FeedbackKind, dishViews, cancellationToken);
             if (fxRoot != null && cue.ShowEffectLabel)
             {
-                FloatingTextView.SpawnEffect(
-                    _settlementEffectLabelPrefab,
+                SpawnBatchedFloatingEffect(
                     fxRoot,
                     floatingAnchor,
                     cue.SourceName,
                     cue.Text,
                     cue.Rise,
                     ScaleSettlementDuration(cue.Duration),
-                    effectColor: cue.EffectColor,
-                    visualScale: _visualScale,
-                    pool: _floatingTextPool);
+                    cue.EffectColor);
             }
 
             await view.PlaySettlementFeedbackAsync(cue.FeedbackKind, cancellationToken);
@@ -2560,17 +2610,14 @@ namespace GourmetProject.Game.Presentation.Battle
                     triggeredActorIds);
                 if (fxRoot != null && cue.ShowEffectLabel)
                 {
-                    FloatingTextView.SpawnEffect(
-                        _settlementEffectLabelPrefab,
+                    SpawnBatchedFloatingEffect(
                         fxRoot,
                         floatingAnchor,
                         cue.SourceName,
                         cue.Text,
                         cue.Rise,
                         ScaleSettlementDuration(cue.Duration),
-                        effectColor: cue.EffectColor,
-                        visualScale: _visualScale,
-                        pool: _floatingTextPool);
+                        cue.EffectColor);
                 }
 
                 _ = PlayFeedbackSafelyAsync(view, cue.FeedbackKind, cancellationToken);
@@ -2916,22 +2963,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 onRelease: go => go.GetComponent<SweetTransferParticleView>()?.WarmupForPool());
         }
 
-        private void EnsureFloatingTextPool()
-        {
-            if (_floatingTextPool != null || _settlementEffectLabelPrefab == null)
-            {
-                return;
-            }
-
-            _floatingTextPool = new GameObjectPool(
-                _settlementEffectLabelPrefab.gameObject,
-                transform,
-                FloatingTextPoolPrewarm,
-                FloatingTextPoolMaxInactive,
-                onGet: go => go.GetComponent<FloatingTextView>()?.PrepareForReuse(),
-                onRelease: go => go.GetComponent<FloatingTextView>()?.ResetForPool());
-        }
-
         private static void ClearSweetTransferBuffMarkers(
             IReadOnlyDictionary<int, DishPieceView> dishViews)
         {
@@ -3253,8 +3284,7 @@ namespace GourmetProject.Game.Presentation.Battle
             await WaitWhilePlaybackPausedAsync(cancellationToken);
             if (fxRoot != null)
             {
-                FloatingTextView.SpawnEffect(
-                    _settlementEffectLabelPrefab,
+                SpawnBatchedFloatingEffect(
                     fxRoot,
                     center + new Vector3(
                         0f,
@@ -3263,9 +3293,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     "结算",
                     $"总分 {total}",
                     FinalScorePopupRise,
-                    ScaleSettlementDuration(FinalScorePopupDuration),
-                    visualScale: _visualScale,
-                    pool: _floatingTextPool);
+                    ScaleSettlementDuration(FinalScorePopupDuration));
             }
 
             await Awaitable.WaitForSecondsAsync(ScaleSettlementDuration(FinalScorePopupHold), cancellationToken);
@@ -3293,21 +3321,46 @@ namespace GourmetProject.Game.Presentation.Battle
                         0f,
                         (0.52f + SourceCueStackOffset * i) * _visualScale,
                         0f);
-                    FloatingTextView.SpawnEffect(
-                        _settlementEffectLabelPrefab,
+                    SpawnBatchedFloatingEffect(
                         fxRoot,
                         center + offset,
                         cue.SourceName,
                         cue.Text,
                         cue.Rise,
                         ScaleSettlementDuration(cue.Duration),
-                        effectColor: cue.EffectColor,
-                        visualScale: _visualScale,
-                        pool: _floatingTextPool);
+                        cue.EffectColor);
                 }
 
                 await Awaitable.WaitForSecondsAsync(ScaleSettlementDuration(FinalCueInterval), cancellationToken);
             }
+        }
+
+        private void SpawnBatchedFloatingEffect(
+            Transform parent,
+            Vector3 worldPosition,
+            string sourceName,
+            string effectText,
+            float rise,
+            float duration,
+            Color? effectColor = null,
+            float delay = 0f)
+        {
+            if (!EnsureSettlementTextBatchRenderer())
+            {
+                return;
+            }
+
+            _settlementTextBatchRenderer.SpawnFloating(
+                parent != null ? parent : transform,
+                worldPosition,
+                sourceName,
+                effectText,
+                effectColor,
+                rise,
+                duration,
+                delay,
+                _visualScale,
+                WorldLabelSorting.NextOrder());
         }
 
         private float ScaleSettlementDuration(float duration)

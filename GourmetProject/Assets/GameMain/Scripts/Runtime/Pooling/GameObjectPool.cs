@@ -74,7 +74,12 @@ namespace GourmetProject.Runtime.Pooling
                 }
             }
 
-            go ??= CreateNew();
+            // UnityEngine.Object 的“已销毁”状态只会通过重载的 == null 暴露；
+            // C# 的 ??= 仍会把它视作非 null，随后访问 transform 就会抛 MissingReferenceException。
+            if (go == null)
+            {
+                go = CreateNew();
+            }
             Transform targetParent = parent != null ? parent : _root;
             go.transform.SetParent(targetParent, false);
 
