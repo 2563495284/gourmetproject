@@ -61,6 +61,9 @@ namespace GourmetProject.Game.UI.Battle
         private const float RandomizedItemFlyDuration = 0.42f;
         private const float RecipeCopySpriteSize = 250f;
         private const float RecipeCopyCenterMargin = 64f;
+        private const float RecipeCopyHorizontalSpacing = 210f;
+        private const float RecipeCopyVerticalSpacing = 180f;
+        private const int RecipeCopyMaxColumns = 5;
         private const string GoldOnTransferItemId = "item_gold_on_transfer";
         private enum FoodTipsHoverOwner
         {
@@ -1289,8 +1292,10 @@ namespace GourmetProject.Game.UI.Battle
                 bool started = PlayRecipeCopyFlys(
                     dishIds,
                     layer,
+                    _center != null ? _center.transform as RectTransform : null,
                     targetRect.Center,
                     cosmetic,
+                    false,
                     arrived =>
                     {
                         _infoColumn?.SetRecipeCountPresentationOverride(
@@ -5007,7 +5012,6 @@ namespace GourmetProject.Game.UI.Battle
             Canvas.ForceUpdateCanvases();
             if (layer == null
                 || _run == null
-                || GameApp.Random == null
                 || target == null
                 || !TryGetRectInLayer(target, layer, out RectSnapshot recipeInfoButtonRect)
                 || plan.DuplicatedDishIds.Count == 0)
@@ -5015,14 +5019,14 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            IRandomStream cosmetic = GameApp.Random.Cosmetic(
-                $"boss_gluttony_{_activeBattleKey}_{plan.DebuffId}");
             bool finished = false;
             bool started = PlayRecipeCopyFlys(
                 plan.DuplicatedDishIds,
                 layer,
+                _boardArea,
                 recipeInfoButtonRect.Center,
-                cosmetic,
+                null,
+                true,
                 arrived =>
                 {
                     _foodBar?.SetRecipeCountPresentationOverride(
@@ -5046,19 +5050,23 @@ namespace GourmetProject.Game.UI.Battle
         private bool PlayRecipeCopyFlys(
             IReadOnlyList<string> dishIds,
             RectTransform layer,
+            RectTransform sourceArea,
             Vector2 targetCenter,
             IRandomStream cosmetic,
+            bool arrangeStartPoints,
             Action<int> onArrived,
             Action onFinished,
             HashSet<ShopPurchaseFlyView> ownedFlys)
         {
-            RectTransform centerRect = _center != null
-                ? _center.transform as RectTransform
-                : null;
+            RectTransform centerRect = sourceArea != null
+                ? sourceArea
+                : _center != null
+                    ? _center.transform as RectTransform
+                    : null;
             if (dishIds == null
                 || dishIds.Count == 0
                 || layer == null
-                || cosmetic == null
+                || (!arrangeStartPoints && cosmetic == null)
                 || _run == null
                 || centerRect == null
                 || !TryGetRectInLayer(centerRect, layer, out RectSnapshot centerArea))
@@ -5095,8 +5103,9 @@ namespace GourmetProject.Game.UI.Battle
                 }
             }
 
-            foreach (string dishId in dishIds)
+            for (int dishIndex = 0; dishIndex < dishIds.Count; dishIndex++)
             {
+                string dishId = dishIds[dishIndex];
                 ShopPurchaseFlyView fly = CreateShopPurchaseFly(layer);
                 if (fly == null)
                 {
@@ -5132,7 +5141,9 @@ namespace GourmetProject.Game.UI.Battle
                     CompleteFlight(capturedFly);
                 }
 
-                Vector2 start = RandomPointInRecipeCopyCenter(centerArea, cosmetic);
+                Vector2 start = arrangeStartPoints
+                    ? RecipeCopyStartPoint(centerArea, dishIndex, dishIds.Count)
+                    : RandomPointInRecipeCopyArea(centerArea, cosmetic);
                 Sprite sprite = spriteProvider.Get(_run.Database.GetDish(dishId));
                 try
                 {
@@ -5163,22 +5174,54 @@ namespace GourmetProject.Game.UI.Battle
             return true;
         }
 
-        private static Vector2 RandomPointInRecipeCopyCenter(
+        private static Vector2 RecipeCopyStartPoint(
             RectSnapshot centerArea,
+            int index,
+            int total)
+        {
+            int safeTotal = Mathf.Max(1, total);
+            int columns = Mathf.Min(RecipeCopyMaxColumns, safeTotal);
+            int rows = Mathf.CeilToInt(safeTotal / (float)columns);
+            int row = Mathf.Clamp(index / columns, 0, rows - 1);
+            int column = Mathf.Max(0, index % columns);
+            int itemsInRow = Mathf.Min(columns, safeTotal - row * columns);
+
+            float availableHalfWidth = Mathf.Max(
+                0f,
+                centerArea.Size.x * 0.5f - RecipeCopyCenterMargin - RecipeCopySpriteSize * 0.5f);
+            float availableHalfHeight = Mathf.Max(
+                0f,
+                centerArea.Size.y * 0.5f - RecipeCopyCenterMargin - RecipeCopySpriteSize * 0.5f);
+            float horizontalSpacing = itemsInRow > 1
+                ? Mathf.Min(RecipeCopyHorizontalSpacing, availableHalfWidth * 2f / (itemsInRow - 1))
+                : 0f;
+            float verticalSpacing = rows > 1
+                ? Mathf.Min(RecipeCopyVerticalSpacing, availableHalfHeight * 2f / (rows - 1))
+                : 0f;
+
+            float x = centerArea.Center.x
+                + (column - (itemsInRow - 1) * 0.5f) * horizontalSpacing;
+            float y = centerArea.Center.y
+                + ((rows - 1) * 0.5f - row) * verticalSpacing;
+            return new Vector2(x, y);
+        }
+
+        private static Vector2 RandomPointInRecipeCopyArea(
+            RectSnapshot area,
             IRandomStream cosmetic)
         {
             float halfWidth = Mathf.Max(
                 0f,
-                centerArea.Size.x * 0.5f - RecipeCopyCenterMargin);
+                area.Size.x * 0.5f - RecipeCopyCenterMargin);
             float halfHeight = Mathf.Max(
                 0f,
-                centerArea.Size.y * 0.5f - RecipeCopyCenterMargin);
+                area.Size.y * 0.5f - RecipeCopyCenterMargin);
             float x = halfWidth > 0f
-                ? cosmetic.Range(centerArea.Center.x - halfWidth, centerArea.Center.x + halfWidth)
-                : centerArea.Center.x;
+                ? cosmetic.Range(area.Center.x - halfWidth, area.Center.x + halfWidth)
+                : area.Center.x;
             float y = halfHeight > 0f
-                ? cosmetic.Range(centerArea.Center.y - halfHeight, centerArea.Center.y + halfHeight)
-                : centerArea.Center.y;
+                ? cosmetic.Range(area.Center.y - halfHeight, area.Center.y + halfHeight)
+                : area.Center.y;
             return new Vector2(x, y);
         }
 
