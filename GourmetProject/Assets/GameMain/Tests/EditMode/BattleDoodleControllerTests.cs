@@ -178,6 +178,57 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void BattleWorldHide_PreservesDoodlePixelsForNextSession()
+        {
+            var root = new GameObject("DoodleWorldHideRoot");
+            var cameraObject = new GameObject("DoodleWorldHideCamera");
+            var controllerObject = new GameObject("DoodleWorldHideController");
+            Texture2D readback = null;
+            RenderTexture previous = RenderTexture.active;
+            try
+            {
+                Camera camera = cameraObject.AddComponent<Camera>();
+                camera.orthographic = true;
+                cameraObject.transform.position = new Vector3(0f, 0f, -10f);
+                var table = new DiningTable(
+                    2,
+                    2,
+                    new List<GridPos> { new(0, 0), new(1, 0), new(0, 1), new(1, 1) });
+                var mapper = new DiningTableCoordinateMapper(2, 2, 1f, 0f, root.transform);
+                BattleDoodleController controller =
+                    controllerObject.AddComponent<BattleDoodleController>();
+                controller.ConfigureTable(mapper, table, camera);
+
+                RenderTexture canvas = controller.CanvasTexture;
+                RenderTexture.active = canvas;
+                GL.Clear(false, true, Color.magenta);
+
+                BattleWorldController.HideDoodlePreservingContent(controller);
+
+                readback = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+                readback.ReadPixels(new Rect(0f, 0f, 1f, 1f), 0, 0);
+                readback.Apply();
+                Color pixel = readback.GetPixel(0, 0);
+                Assert.That(pixel.r, Is.EqualTo(1f).Within(0.01f));
+                Assert.That(pixel.b, Is.EqualTo(1f).Within(0.01f));
+                Assert.That(pixel.a, Is.EqualTo(1f).Within(0.01f));
+                Assert.That(controller.IsVisible, Is.False);
+                Assert.That(controller.IsPresentationActive, Is.False);
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                if (readback != null)
+                {
+                    Object.DestroyImmediate(readback);
+                }
+                Object.DestroyImmediate(controllerObject);
+                Object.DestroyImmediate(cameraObject);
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
         public void BattleFormPrefab_ContainsDoodleCanvasAndTools()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(BattleFormPrefabPath);
@@ -191,7 +242,7 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(canvas.GetComponent<RawImage>(), Is.Not.Null);
             Assert.That(canvas.GetComponent<RawImage>().raycastTarget, Is.False);
 
-            Transform tools = panel.Find("FoodActions/DoodleTools");
+            Transform tools = panel.Find("BottomUI/DoodleTools");
             Assert.That(tools, Is.Not.Null);
             Assert.That(tools.Find("DoodleDrawButton")?.GetComponent<Button>(), Is.Not.Null);
             Assert.That(tools.Find("DoodleEraseButton")?.GetComponent<Button>(), Is.Not.Null);

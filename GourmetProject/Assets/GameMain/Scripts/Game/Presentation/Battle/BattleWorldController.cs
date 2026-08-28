@@ -1463,7 +1463,7 @@ namespace GourmetProject.Game.Presentation.Battle
             ClearPendingDishActionButtons();
             ClearPlacedPieces();
             SetTemporaryAreaVisible(false, animated: false);
-            _doodle?.Clear();
+            HideDoodlePreservingContent(_doodle);
             ClearPendingRewardPresentation();
         }
 
@@ -4528,14 +4528,22 @@ namespace GourmetProject.Game.Presentation.Battle
         /// <summary>结算只收起涂鸦并退出工具，内容保留到本轮经营的下一场战斗。</summary>
         public void HideDoodleForSettlement()
         {
-            if (_doodle == null)
+            HideDoodlePreservingContent(_doodle);
+        }
+
+        /// <summary>
+        /// 结算和清理本场餐桌都只能收起涂鸦，不能擦除同一轮经营要复用的离屏纹理。
+        /// </summary>
+        internal static void HideDoodlePreservingContent(BattleDoodleController doodle)
+        {
+            if (doodle == null)
             {
                 return;
             }
 
-            _doodle.SetTool(BattleDoodleTool.None);
-            _doodle.SetVisible(false);
-            _doodle.SetPresentationActive(false);
+            doodle.SetTool(BattleDoodleTool.None);
+            doodle.SetVisible(false);
+            doodle.SetPresentationActive(false);
         }
 
         public void ClearDoodle()
