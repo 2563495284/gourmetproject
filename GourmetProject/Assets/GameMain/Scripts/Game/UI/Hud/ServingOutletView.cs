@@ -79,6 +79,7 @@ namespace GourmetProject.Game.UI.Hud
         {
             HandleKeyboardShortcut(
                 WorldInput.ServingOutletShortcutPressedThisFrame,
+                WorldInput.PrimaryPressedThisFrame,
                 WorldInput.MouseScreen);
         }
 
@@ -214,7 +215,7 @@ namespace GourmetProject.Game.UI.Hud
                 Present(new OutletPresentation(
                     ServingOutletState.WaitingForDishDrag,
                     session.PreparedServe,
-                    "拖拽或空格拿放；拖入垃圾桶"));
+                    "空格拿，空格/左键放；拖入垃圾桶"));
             }
             else if (session != null && !session.IsSettled && session.HasPendingTablePlacements)
             {
@@ -495,7 +496,10 @@ namespace GourmetProject.Game.UI.Hud
             eventData?.Use();
         }
 
-        private void HandleKeyboardShortcut(bool pressedThisFrame, Vector2 screenPoint)
+        private void HandleKeyboardShortcut(
+            bool shortcutPressedThisFrame,
+            bool primaryPressedThisFrame,
+            Vector2 screenPoint)
         {
             if (_keyboardDragging)
             {
@@ -506,7 +510,7 @@ namespace GourmetProject.Game.UI.Hud
                 }
 
                 _drag?.Invoke(screenPoint);
-                if (pressedThisFrame)
+                if (shortcutPressedThisFrame || primaryPressedThisFrame)
                 {
                     CompleteDrag(screenPoint);
                 }
@@ -514,7 +518,7 @@ namespace GourmetProject.Game.UI.Hud
                 return;
             }
 
-            if (pressedThisFrame && !_dragging)
+            if (shortcutPressedThisFrame && !_dragging)
             {
                 TryBeginDrag(screenPoint, keyboard: true);
             }
