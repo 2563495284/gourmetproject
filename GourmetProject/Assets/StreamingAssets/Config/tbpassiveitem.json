@@ -1452,7 +1452,7 @@
     "dishHiddenOffset": 0,
     "itemLuckOffset": 0,
     "fragmentHiddenOffset": 0,
-    "termId": "term_food_count_as",
+    "termId": "",
     "price": 100,
     "archetypeTags": [
       1

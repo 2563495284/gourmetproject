@@ -20,8 +20,8 @@ namespace GourmetProject.Game.UI.Meta
         internal const float ReferenceHeight = 1080f;
         internal const float HeadTargetOffset = 88f;
         internal const float SegmentEndOffset = 40f;
-        internal const float HeadDefaultScale = 0.95f;
-        internal const float HeadHoverScale = 1.05f;
+        internal const float HeadDefaultScale = 0.55f;
+        internal const float HeadHoverScale = 0.61f;
 
         internal static readonly Color DefaultColor = new Color32(0x6F, 0xD8, 0xE8, 0xFF);
         internal static readonly Color HighlightColor = new Color32(0x36, 0xC7, 0x8A, 0xFF);
