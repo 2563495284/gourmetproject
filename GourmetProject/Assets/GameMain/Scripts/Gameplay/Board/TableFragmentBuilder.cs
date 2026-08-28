@@ -395,9 +395,22 @@ namespace GourmetProject.Gameplay.Board
         public static HashSet<GridPos> ToExistingSet(DiningTable board)
         {
             var set = new HashSet<GridPos>();
+            FillExistingSet(board, set);
+            return set;
+        }
+
+        /// <summary>把餐桌存在格写入调用方缓冲区，供逐帧放置判定零分配复用。</summary>
+        public static void FillExistingSet(DiningTable board, HashSet<GridPos> target)
+        {
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            target.Clear();
             if (board == null)
             {
-                return set;
+                return;
             }
 
             for (int y = 0; y < board.Height; y++)
@@ -407,12 +420,10 @@ namespace GourmetProject.Gameplay.Board
                     var p = new GridPos(x, y);
                     if (board.Exists(p))
                     {
-                        set.Add(p);
+                        target.Add(p);
                     }
                 }
             }
-
-            return set;
         }
 
         public static bool CanAttachFragment(
@@ -595,8 +606,9 @@ namespace GourmetProject.Gameplay.Board
             PlacementBounds bounds)
         {
             bool touchesExisting = false;
-            foreach (GridPos local in cells)
+            for (int i = 0; i < cells.Count; i++)
             {
+                GridPos local = cells[i];
                 GridPos pos = local.Offset(origin.X, origin.Y);
                 if (!bounds.Contains(pos))
                 {
@@ -617,7 +629,7 @@ namespace GourmetProject.Gameplay.Board
             return touchesExisting ? FragmentPlacementStatus.Valid : FragmentPlacementStatus.Detached;
         }
 
-        private static FragmentPlacementStatus GetPlacementStatusWithinMaxBounds(
+        public static FragmentPlacementStatus GetPlacementStatusWithinMaxBounds(
             HashSet<GridPos> existing,
             IReadOnlyList<GridPos> cells,
             GridPos origin,
@@ -631,8 +643,9 @@ namespace GourmetProject.Gameplay.Board
 
             ExistingBounds(existing, out int minX, out int minY, out int maxX, out int maxY);
             bool touchesExisting = false;
-            foreach (GridPos local in cells)
+            for (int i = 0; i < cells.Count; i++)
             {
+                GridPos local = cells[i];
                 GridPos pos = local.Offset(origin.X, origin.Y);
                 if (existing.Contains(pos))
                 {
@@ -685,6 +698,24 @@ namespace GourmetProject.Gameplay.Board
         public static List<GridPos> FilledCells(TableFragmentDef fragment)
         {
             var cells = new List<GridPos>();
+            FillCells(fragment, cells);
+            return cells;
+        }
+
+        /// <summary>把碎片占格写入调用方缓冲区，避免拖拽期间反复创建 List。</summary>
+        public static void FillCells(TableFragmentDef fragment, List<GridPos> target)
+        {
+            if (fragment == null)
+            {
+                throw new ArgumentNullException(nameof(fragment));
+            }
+
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            target.Clear();
             IReadOnlyList<string> rows = fragment.ShapeRows;
             for (int y = 0; y < rows.Count; y++)
             {
@@ -693,12 +724,10 @@ namespace GourmetProject.Gameplay.Board
                 {
                     if (IsFilled(row[x]))
                     {
-                        cells.Add(new GridPos(x, y));
+                        target.Add(new GridPos(x, y));
                     }
                 }
             }
-
-            return cells;
         }
 
         private static bool IsFilled(char c) => c == 'X' || c == 'x' || c == '1' || c == '#';

@@ -115,6 +115,26 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void DestroyCallback_RunsForOverflowAndClear()
+        {
+            int destroys = 0;
+            var pool = new GameObjectPool(
+                _prefab,
+                _root.transform,
+                maxInactive: 1,
+                onDestroy: _ => destroys++);
+            GameObject first = pool.Get();
+            GameObject second = pool.Get();
+
+            pool.Release(first);
+            pool.Release(second);
+            Assert.That(destroys, Is.EqualTo(1));
+
+            pool.Clear();
+            Assert.That(destroys, Is.EqualTo(2));
+        }
+
+        [Test]
         public void Callbacks_RunForPrewarmGetAndRelease()
         {
             int gets = 0;
@@ -186,6 +206,115 @@ namespace GourmetProject.Tests.EditMode
             finally
             {
                 UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void DiningTableBuild_ReusedCellClearsTransientVisualAndHoverState()
+        {
+            DiningTableCellView cellPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/GameMain/Content/Prefabs/Battle/Board/DiningTableCell.prefab")
+                ?.GetComponent<DiningTableCellView>();
+            Assert.That(cellPrefab, Is.Not.Null);
+
+            var root = new GameObject("DiningTableTransientResetTest");
+            try
+            {
+                DiningTableView view = root.AddComponent<DiningTableView>();
+                view.Build(new DiningTable(4, 4), 1f, 0.04f, null, cellPrefab);
+                Dictionary<GridPos, DiningTableCellView> cells = GetPrivateField<
+                    Dictionary<GridPos, DiningTableCellView>>(view, "_cells");
+                DiningTableCellView origin = cells[new GridPos(0, 0)];
+                int hoverExitCount = 0;
+                view.SetCellHoverCallbacks(_ => { }, _ => hoverExitCount++);
+                origin.SetHoveredFromTable(true);
+                origin.SetPlateFeedbackColor(Color.red);
+
+                view.Build(new DiningTable(4, 4), 1f, 0.04f, null, cellPrefab);
+
+                Assert.That(cells[new GridPos(0, 0)], Is.SameAs(origin));
+                Assert.That(GetPrivateField<bool>(origin, "_hovered"), Is.False);
+                Assert.That(GetPrivateField<bool>(origin, "_plateFeedbackActive"), Is.False);
+                Assert.That(hoverExitCount, Is.EqualTo(1));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void TableFragmentEvaluation_ReusesHotPathCollectionsAndResultObjects()
+        {
+            var mapperRoot = new GameObject("TableFragmentEvaluationBufferTest");
+            try
+            {
+                var table = new DiningTable(4, 4);
+                var mapper = new DiningTableCoordinateMapper(4, 4, 1f, 0.04f, mapperRoot.transform);
+                var fragment = new TableFragmentDef(
+                    "buffer_test",
+                    new[] { "XX", "X." },
+                    0,
+                    0,
+                    1f);
+                var buffer = new TableFragmentPlacementEvaluationBuffer();
+
+                TableFragmentPlacementEvaluation first = TableFragmentPlacementEvaluator.Evaluate(
+                    table,
+                    mapper,
+                    fragment,
+                    mapper.CellCenter(new GridPos(4, 1)),
+                    12,
+                    12,
+                    buffer);
+                GridPlacementFeedback feedback = first.Feedback;
+                IReadOnlyList<GridPlacementFeedbackCell> cells = feedback.Cells;
+
+                TableFragmentPlacementEvaluation second = TableFragmentPlacementEvaluator.Evaluate(
+                    table,
+                    mapper,
+                    fragment,
+                    mapper.CellCenter(new GridPos(4, 2)),
+                    12,
+                    12,
+                    buffer);
+
+                Assert.That(second, Is.SameAs(first));
+                Assert.That(second.Feedback, Is.SameAs(feedback));
+                Assert.That(second.Feedback.Cells, Is.SameAs(cells));
+                Assert.That(second.Feedback.Cells.Count, Is.EqualTo(3));
+
+                Vector3 measuredPosition = mapper.CellCenter(new GridPos(4, 2));
+                for (int i = 0; i < 10; i++)
+                {
+                    TableFragmentPlacementEvaluator.Evaluate(
+                        table,
+                        mapper,
+                        fragment,
+                        measuredPosition,
+                        12,
+                        12,
+                        buffer);
+                }
+
+                long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+                for (int i = 0; i < 100; i++)
+                {
+                    TableFragmentPlacementEvaluator.Evaluate(
+                        table,
+                        mapper,
+                        fragment,
+                        measuredPosition,
+                        12,
+                        12,
+                        buffer);
+                }
+                long allocatedAfter = GC.GetAllocatedBytesForCurrentThread();
+                Assert.That(allocatedAfter - allocatedBefore, Is.Zero);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(mapperRoot);
             }
         }
 

@@ -47,6 +47,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly HashSet<SpriteRenderer> _rentedCakes = new();
         private readonly List<SpriteRenderer> _releaseBuffer = new();
         private readonly Dictionary<SpriteRenderer, Tween> _cakeTweens = new();
+        private readonly Dictionary<SpriteRenderer, Vector3> _cakeLandingPositions = new();
         private readonly Dictionary<SpriteRenderer, MaterialPropertyBlock> _cakePropertyBlocks = new();
         private readonly Dictionary<SpriteRenderer, BuffBurstVisualState> _buffBurstStates = new();
         private readonly List<Tween> _buffBurstTweens = new();
@@ -140,6 +141,8 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             ResetBuffBurstVisuals();
             _cakePool?.Clear();
+            _cakePropertyBlocks.Clear();
+            _cakeLandingPositions.Clear();
         }
 
         public List<CakeLayerVisualState> CaptureState()
@@ -400,6 +403,7 @@ namespace GourmetProject.Game.Presentation.Battle
             cakeObject.transform.rotation = Quaternion.Euler(0f, 0f, rotation);
             BattleSorting.Apply(renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText - 1);
             _cakes.Add(renderer);
+            _cakeLandingPositions[renderer] = landing;
 
             if (!animate || _camera == null)
             {
@@ -546,7 +550,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 CakePoolPrewarm,
                 CakePoolMaxInactive,
                 onGet: PrepareCakeForReuse,
-                onRelease: ResetCakeForPool);
+                onRelease: ResetCakeForPool,
+                onDestroy: ForgetCakeInstance);
         }
 
         private void PrepareCakeForReuse(GameObject cakeObject)
@@ -569,7 +574,33 @@ namespace GourmetProject.Game.Presentation.Battle
 
             _rentedCakes.Remove(renderer);
             _cakes.Remove(renderer);
+            _cakeLandingPositions.Remove(renderer);
             ResetCakeVisual(cakeObject);
+        }
+
+        private void ForgetCakeInstance(GameObject cakeObject)
+        {
+            if (cakeObject == null)
+            {
+                return;
+            }
+
+            SpriteRenderer renderer = cakeObject.GetComponent<SpriteRenderer>();
+            if (renderer == null)
+            {
+                return;
+            }
+
+            if (_cakeTweens.Remove(renderer, out Tween tween))
+            {
+                tween?.Kill(false);
+            }
+
+            _rentedCakes.Remove(renderer);
+            _cakes.Remove(renderer);
+            _cakeLandingPositions.Remove(renderer);
+            _cakePropertyBlocks.Remove(renderer);
+            _buffBurstStates.Remove(renderer);
         }
 
         /// <summary>
@@ -598,6 +629,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 if (_cakeTweens.TryGetValue(cake, out Tween tween))
                 {
                     tween?.Kill(false);
+                }
+
+                if (_cakes.Contains(cake)
+                    && _cakeLandingPositions.TryGetValue(cake, out Vector3 landing))
+                {
+                    cake.transform.position = landing;
                 }
             }
 

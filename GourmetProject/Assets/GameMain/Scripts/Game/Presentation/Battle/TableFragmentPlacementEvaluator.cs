@@ -17,26 +17,21 @@ namespace GourmetProject.Game.Presentation.Battle
             TableFragmentBuilder.PlacementBounds currentBounds,
             TableFragmentBuilder.PlacementBounds projectedBounds)
         {
-            Origin = origin;
-            CenterCell = centerCell;
-            PlacementStatus = placementStatus;
-            Feedback = feedback;
-            CurrentBounds = currentBounds;
-            ProjectedBounds = projectedBounds;
+            Reset(origin, centerCell, placementStatus, feedback, currentBounds, projectedBounds);
         }
 
-        public GridPos Origin { get; }
+        public GridPos Origin { get; private set; }
 
-        public GridPos CenterCell { get; }
+        public GridPos CenterCell { get; private set; }
 
-        public TableFragmentBuilder.FragmentPlacementStatus PlacementStatus { get; }
+        public TableFragmentBuilder.FragmentPlacementStatus PlacementStatus { get; private set; }
 
-        public GridPlacementFeedback Feedback { get; }
+        public GridPlacementFeedback Feedback { get; private set; }
 
-        public TableFragmentBuilder.PlacementBounds CurrentBounds { get; }
+        public TableFragmentBuilder.PlacementBounds CurrentBounds { get; private set; }
 
         /// <summary>当前餐桌与候选碎片合并后的预测包围盒。</summary>
-        public TableFragmentBuilder.PlacementBounds ProjectedBounds { get; }
+        public TableFragmentBuilder.PlacementBounds ProjectedBounds { get; private set; }
 
         /// <summary>逻辑 Y 向下，因此预测最小 Y 变小表示餐桌向屏幕上方扩展。</summary>
         public bool ExtendsAboveExistingTop => ProjectedBounds.MinY < CurrentBounds.MinY;
@@ -49,6 +44,51 @@ namespace GourmetProject.Game.Presentation.Battle
             || ProjectedBounds.MaxY > CurrentBounds.MaxY;
 
         public bool CanCommit => PlacementStatus == TableFragmentBuilder.FragmentPlacementStatus.Valid;
+
+        internal void Reset(
+            GridPos origin,
+            GridPos centerCell,
+            TableFragmentBuilder.FragmentPlacementStatus placementStatus,
+            GridPlacementFeedback feedback,
+            TableFragmentBuilder.PlacementBounds currentBounds,
+            TableFragmentBuilder.PlacementBounds projectedBounds)
+        {
+            Origin = origin;
+            CenterCell = centerCell;
+            PlacementStatus = placementStatus;
+            Feedback = feedback;
+            CurrentBounds = currentBounds;
+            ProjectedBounds = projectedBounds;
+        }
+    }
+
+    /// <summary>餐桌编辑拖拽期间复用的放置计算缓冲；单次交互只创建一份。</summary>
+    internal sealed class TableFragmentPlacementEvaluationBuffer
+    {
+        private const int MaximumTableCells = 12 * 12;
+
+        internal readonly HashSet<GridPos> ExistingCells =
+            new HashSet<GridPos>(MaximumTableCells);
+        internal readonly List<GridPos> LocalCells =
+            new List<GridPos>(MaximumTableCells);
+        internal readonly List<GridPlacementFeedbackCell> FeedbackCells =
+            new List<GridPlacementFeedbackCell>(MaximumTableCells);
+        internal readonly GridPlacementFeedback Feedback = new GridPlacementFeedback(
+            default,
+            GridPlacementFeedbackState.Blocked,
+            Array.Empty<GridPlacementFeedbackCell>());
+        internal readonly TableFragmentPlacementEvaluation Evaluation;
+
+        internal TableFragmentPlacementEvaluationBuffer()
+        {
+            Evaluation = new TableFragmentPlacementEvaluation(
+                default,
+                default,
+                TableFragmentBuilder.FragmentPlacementStatus.Detached,
+                Feedback,
+                default,
+                default);
+        }
     }
 
     /// <summary>
@@ -64,14 +104,44 @@ namespace GourmetProject.Game.Presentation.Battle
             int maxWidth,
             int maxHeight)
         {
+            return Evaluate(
+                table,
+                mapper,
+                fragment,
+                visualCenterWorld,
+                maxWidth,
+                maxHeight,
+                new TableFragmentPlacementEvaluationBuffer());
+        }
+
+        internal static TableFragmentPlacementEvaluation Evaluate(
+            GpTable table,
+            DiningTableCoordinateMapper mapper,
+            TableFragmentDef fragment,
+            Vector3 visualCenterWorld,
+            int maxWidth,
+            int maxHeight,
+            TableFragmentPlacementEvaluationBuffer buffer)
+        {
             if (mapper == null)
             {
                 throw new ArgumentNullException(nameof(mapper));
             }
 
+            ValidateInputs(table, fragment, buffer);
+            TableFragmentBuilder.FillCells(fragment, buffer.LocalCells);
             GridPos centerCell = mapper.NearestCell(visualCenterWorld);
-            GridPos origin = NearestOriginForOccupiedCellCenter(mapper, fragment, visualCenterWorld);
-            return EvaluateAtOrigin(table, fragment, origin, centerCell, maxWidth, maxHeight);
+            GridPos origin = NearestOriginForOccupiedCellCenter(
+                mapper,
+                buffer.LocalCells,
+                visualCenterWorld);
+            return EvaluatePrepared(
+                table,
+                origin,
+                centerCell,
+                maxWidth,
+                maxHeight,
+                buffer);
         }
 
         public static TableFragmentPlacementEvaluation EvaluateAtOrigin(
@@ -81,6 +151,67 @@ namespace GourmetProject.Game.Presentation.Battle
             GridPos centerCell,
             int maxWidth,
             int maxHeight)
+        {
+            var buffer = new TableFragmentPlacementEvaluationBuffer();
+            ValidateInputs(table, fragment, buffer);
+            TableFragmentBuilder.FillCells(fragment, buffer.LocalCells);
+            return EvaluatePrepared(table, origin, centerCell, maxWidth, maxHeight, buffer);
+        }
+
+        private static TableFragmentPlacementEvaluation EvaluatePrepared(
+            GpTable table,
+            GridPos origin,
+            GridPos centerCell,
+            int maxWidth,
+            int maxHeight,
+            TableFragmentPlacementEvaluationBuffer buffer)
+        {
+            TableFragmentBuilder.FillExistingSet(table, buffer.ExistingCells);
+            TableFragmentBuilder.FragmentPlacementStatus status =
+                TableFragmentBuilder.GetPlacementStatusWithinMaxBounds(
+                    buffer.ExistingCells,
+                    buffer.LocalCells,
+                    origin,
+                    maxWidth,
+                    maxHeight);
+            BuildPlacementBounds(
+                table,
+                buffer.LocalCells,
+                origin,
+                out TableFragmentBuilder.PlacementBounds currentBounds,
+                out TableFragmentBuilder.PlacementBounds projectedBounds);
+            GridPlacementFeedbackState feedbackState = ToFeedbackState(status);
+            buffer.FeedbackCells.Clear();
+            foreach (GridPos local in buffer.LocalCells)
+            {
+                GridPos absolute = local.Offset(origin.X, origin.Y);
+                buffer.FeedbackCells.Add(new GridPlacementFeedbackCell(
+                    absolute,
+                    IsCellBlocked(
+                        buffer.ExistingCells,
+                        absolute,
+                        currentBounds,
+                        maxWidth,
+                        maxHeight)
+                        ? GridPlacementFeedbackState.Blocked
+                        : GridPlacementFeedbackState.Valid));
+            }
+
+            buffer.Feedback.Reset(centerCell, feedbackState, buffer.FeedbackCells);
+            buffer.Evaluation.Reset(
+                origin,
+                centerCell,
+                status,
+                buffer.Feedback,
+                currentBounds,
+                projectedBounds);
+            return buffer.Evaluation;
+        }
+
+        private static void ValidateInputs(
+            GpTable table,
+            TableFragmentDef fragment,
+            TableFragmentPlacementEvaluationBuffer buffer)
         {
             if (table == null)
             {
@@ -92,40 +223,16 @@ namespace GourmetProject.Game.Presentation.Battle
                 throw new ArgumentNullException(nameof(fragment));
             }
 
-            TableFragmentBuilder.FragmentPlacementStatus status =
-                TableFragmentBuilder.GetFragmentPlacementStatusWithinMaxBounds(
-                    TableFragmentBuilder.ToExistingSet(table),
-                    fragment,
-                    origin,
-                    maxWidth,
-                    maxHeight);
-            List<GridPos> localCells = TableFragmentBuilder.FilledCells(fragment);
-            HashSet<GridPos> existing = TableFragmentBuilder.ToExistingSet(table);
-            GridPlacementFeedbackState feedbackState = ToFeedbackState(status);
-            var cells = new List<GridPlacementFeedbackCell>(localCells.Count);
-            foreach (GridPos local in localCells)
+            if (buffer == null)
             {
-                GridPos absolute = local.Offset(origin.X, origin.Y);
-                cells.Add(new GridPlacementFeedbackCell(
-                    absolute,
-                    IsCellBlocked(existing, absolute, maxWidth, maxHeight)
-                        ? GridPlacementFeedbackState.Blocked
-                        : GridPlacementFeedbackState.Valid));
+                throw new ArgumentNullException(nameof(buffer));
             }
-
-            BuildPlacementBounds(table, localCells, origin, out TableFragmentBuilder.PlacementBounds currentBounds, out TableFragmentBuilder.PlacementBounds projectedBounds);
-            return new TableFragmentPlacementEvaluation(
-                origin,
-                centerCell,
-                status,
-                new GridPlacementFeedback(centerCell, feedbackState, cells),
-                currentBounds,
-                projectedBounds);
         }
 
         private static bool IsCellBlocked(
             HashSet<GridPos> existing,
             GridPos candidate,
+            TableFragmentBuilder.PlacementBounds currentBounds,
             int maxWidth,
             int maxHeight)
         {
@@ -139,22 +246,10 @@ namespace GourmetProject.Game.Presentation.Battle
                 return true;
             }
 
-            int minX = int.MaxValue;
-            int minY = int.MaxValue;
-            int maxX = int.MinValue;
-            int maxY = int.MinValue;
-            foreach (GridPos cell in existing)
-            {
-                minX = Math.Min(minX, cell.X);
-                minY = Math.Min(minY, cell.Y);
-                maxX = Math.Max(maxX, cell.X);
-                maxY = Math.Max(maxY, cell.Y);
-            }
-
-            int projectedMinX = Math.Min(minX, candidate.X);
-            int projectedMinY = Math.Min(minY, candidate.Y);
-            int projectedMaxX = Math.Max(maxX, candidate.X);
-            int projectedMaxY = Math.Max(maxY, candidate.Y);
+            int projectedMinX = Math.Min(currentBounds.MinX, candidate.X);
+            int projectedMinY = Math.Min(currentBounds.MinY, candidate.Y);
+            int projectedMaxX = Math.Max(currentBounds.MaxX, candidate.X);
+            int projectedMaxY = Math.Max(currentBounds.MaxY, candidate.Y);
             return projectedMaxX - projectedMinX + 1 > maxWidth
                 || projectedMaxY - projectedMinY + 1 > maxHeight;
         }
@@ -191,8 +286,9 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             currentBounds = new TableFragmentBuilder.PlacementBounds(minX, minY, maxX, maxY);
-            foreach (GridPos local in localCells)
+            for (int i = 0; i < localCells.Count; i++)
             {
+                GridPos local = localCells[i];
                 GridPos cell = local.Offset(origin.X, origin.Y);
                 minX = Mathf.Min(minX, cell.X);
                 minY = Mathf.Min(minY, cell.Y);
@@ -205,30 +301,32 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private static GridPos NearestOriginForOccupiedCellCenter(
             DiningTableCoordinateMapper mapper,
-            TableFragmentDef fragment,
+            IReadOnlyList<GridPos> cells,
             Vector3 centerWorld)
         {
             Vector3 localCenter = mapper.Root != null
                 ? mapper.Root.InverseTransformPoint(centerWorld)
                 : centerWorld;
-            Vector3 originCenterLocal = localCenter - OccupiedCellCenterOffsetLocal(fragment, mapper.Pitch);
+            Vector3 originCenterLocal = localCenter - OccupiedCellCenterOffsetLocal(cells, mapper.Pitch);
             Vector3 originCenterWorld = mapper.Root != null
                 ? mapper.Root.TransformPoint(originCenterLocal)
                 : originCenterLocal;
             return mapper.NearestCell(originCenterWorld);
         }
 
-        private static Vector3 OccupiedCellCenterOffsetLocal(TableFragmentDef fragment, float pitch)
+        private static Vector3 OccupiedCellCenterOffsetLocal(
+            IReadOnlyList<GridPos> cells,
+            float pitch)
         {
-            List<GridPos> cells = TableFragmentBuilder.FilledCells(fragment);
-            if (cells.Count == 0)
+            if (cells == null || cells.Count == 0)
             {
                 return Vector3.zero;
             }
 
             Vector3 sum = Vector3.zero;
-            foreach (GridPos cell in cells)
+            for (int i = 0; i < cells.Count; i++)
             {
+                GridPos cell = cells[i];
                 sum += new Vector3(cell.X * pitch, -cell.Y * pitch, 0f);
             }
 

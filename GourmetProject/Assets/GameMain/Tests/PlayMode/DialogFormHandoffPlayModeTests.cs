@@ -325,13 +325,20 @@ namespace GourmetProject.Tests.PlayMode
                 Dictionary<SpriteRenderer, Tween> tweens =
                     GetField<Dictionary<SpriteRenderer, Tween>>(fx, "_cakeTweens");
                 List<SpriteRenderer> cakes = GetField<List<SpriteRenderer>>(fx, "_cakes");
+                Dictionary<SpriteRenderer, Vector3> landingPositions =
+                    GetField<Dictionary<SpriteRenderer, Vector3>>(fx, "_cakeLandingPositions");
                 GameObjectPool pool = GetField<GameObjectPool>(fx, "_cakePool");
                 Assert.That(tweens.Count, Is.EqualTo(1));
+                SpriteRenderer fallingCake = cakes[0];
+                Vector3 landingPosition = landingPositions[fallingCake];
 
                 fxObject.SetActive(false);
                 Assert.That(tweens.Count, Is.Zero);
                 Assert.That(cakes.Count, Is.EqualTo(1));
                 Assert.That(pool.CountActive, Is.EqualTo(1));
+                Assert.That(
+                    Vector3.Distance(fallingCake.transform.position, landingPosition),
+                    Is.LessThan(0.0001f));
 
                 fxObject.SetActive(true);
                 fx.PlayChange(1, 0);
@@ -343,6 +350,26 @@ namespace GourmetProject.Tests.PlayMode
                 Assert.That(tweens.Count, Is.Zero);
                 Assert.That(pool.CountActive, Is.Zero);
                 Assert.That(pool.CountInactive, Is.EqualTo(pool.CountAll));
+
+                fxObject.SetActive(true);
+                fx.PlayChange(0, 40);
+                yield return null;
+                Dictionary<SpriteRenderer, MaterialPropertyBlock> propertyBlocks =
+                    GetField<Dictionary<SpriteRenderer, MaterialPropertyBlock>>(
+                        fx,
+                        "_cakePropertyBlocks");
+                foreach (SpriteRenderer cake in cakes)
+                {
+                    propertyBlocks[cake] = new MaterialPropertyBlock();
+                }
+
+                fx.Clear();
+                Assert.That(pool.CountAll, Is.EqualTo(32));
+                Assert.That(propertyBlocks.Count, Is.EqualTo(32));
+                foreach (SpriteRenderer renderer in propertyBlocks.Keys)
+                {
+                    Assert.That(renderer == null, Is.False);
+                }
             }
             finally
             {

@@ -56,6 +56,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<DiningTableCellView> _cellHoverExited;
         private Action<DiningTableCellView> _cellHoverEnterHandler;
         private Action<DiningTableCellView> _cellHoverExitHandler;
+        private DiningTableCellView _hoveredCell;
+        private Camera _hoverCamera;
 
         public DiningTableCoordinateMapper Mapper { get; private set; }
 
@@ -68,6 +70,7 @@ namespace GourmetProject.Game.Presentation.Battle
             using (BuildMarker.Auto())
             {
                 GpTable nextBoard = board ?? throw new ArgumentNullException(nameof(board));
+                ClearHoveredCell();
                 ReleaseTransientViews();
                 if (cellPrefab != null && cellPrefab != _cellPrefab)
                 {
@@ -131,6 +134,10 @@ namespace GourmetProject.Game.Presentation.Battle
                             }
 
                             _cells[pos] = cell;
+                        }
+                        else
+                        {
+                            cell.ResetTransientStateForBuild();
                         }
 
                         cell.Configure(pos, Mapper.CellCenterLocal(pos), cellSize, _cellSprites, _clicked);
@@ -336,6 +343,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void SetCellHoverCallbacks(Action<DiningTableCellView> entered, Action<DiningTableCellView> exited)
         {
+            ClearHoveredCell();
             _cellHoverEntered = entered;
             _cellHoverExited = exited;
             foreach (DiningTableCellView cell in _cells.Values)
@@ -378,8 +386,10 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _dragFeedbackStates.Clear();
-            foreach (GridPlacementFeedbackCell cell in result.Cells)
+            IReadOnlyList<GridPlacementFeedbackCell> resultCells = result.Cells;
+            for (int i = 0; i < resultCells.Count; i++)
             {
+                GridPlacementFeedbackCell cell = resultCells[i];
                 _dragFeedbackStates[cell.Position] = cell.State;
             }
 
@@ -406,8 +416,13 @@ namespace GourmetProject.Game.Presentation.Battle
                     : GridPlacementFeedbackPalette.ColorFor(entry.Value);
                 overlay.gameObject.SetActive(true);
                 overlay.transform.localRotation = Quaternion.identity;
-                overlay.Configure(entry.Key, Mapper.CellCenterLocal(entry.Key), _cellSize, _cellSprites, null);
-                overlay.name = "DragPlacementFeedback";
+                overlay.Configure(
+                    entry.Key,
+                    Mapper.CellCenterLocal(entry.Key),
+                    _cellSize,
+                    _cellSprites,
+                    null,
+                    updateName: false);
                 overlay.SetInteractionEnabled(false);
                 overlay.SetPlateFeedbackColor(color);
                 overlay.SetSorting(BattleSorting.Fx, DragFeedbackSortingOrder);
@@ -602,14 +617,69 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             _cellHoverEnterHandler = OnCellHoverEntered;
             _cellHoverExitHandler = OnCellHoverExited;
+            _hoverCamera = Camera.main;
             EnsureCellPool();
             EnsureScopeOutlinePool();
         }
 
+        private void Update()
+        {
+            if ((_cellHoverEntered == null && _cellHoverExited == null)
+                || Mapper == null
+                || WorldInput.PointerOverUi)
+            {
+                ClearHoveredCell();
+                return;
+            }
+
+            if (_hoverCamera == null)
+            {
+                _hoverCamera = Camera.main;
+            }
+
+            if (_hoverCamera == null)
+            {
+                ClearHoveredCell();
+                return;
+            }
+
+            Vector3 mouseWorld = WorldInput.MouseWorld(_hoverCamera);
+            GridPos position = Mapper.NearestCell(mouseWorld);
+            DiningTableCellView next = null;
+            if (_cells.TryGetValue(position, out DiningTableCellView candidate)
+                && candidate != null
+                && candidate.ContainsWorldPoint(mouseWorld))
+            {
+                next = candidate;
+            }
+
+            if (!ReferenceEquals(_hoveredCell, next))
+            {
+                _hoveredCell?.SetHoveredFromTable(false);
+                _hoveredCell = next;
+            }
+
+            // 子层级被禁用时格子会自行清 hover；同一个候选再次启用后需要重新进入。
+            _hoveredCell?.SetHoveredFromTable(true);
+        }
+
+        private void OnDisable()
+        {
+            ClearHoveredCell();
+        }
+
         private void OnDestroy()
         {
+            ClearHoveredCell();
             _cellPool?.Clear();
             _scopeOutlinePool?.Clear();
+        }
+
+        private void ClearHoveredCell()
+        {
+            DiningTableCellView hovered = _hoveredCell;
+            _hoveredCell = null;
+            hovered?.SetHoveredFromTable(false);
         }
 
         internal DiningTableCellView RentCell(Transform parent)

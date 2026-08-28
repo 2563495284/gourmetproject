@@ -90,11 +90,12 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 localPosition,
             float size,
             DiningTableCellSprites sprites,
-            Action<GridPos> clicked)
+            Action<GridPos> clicked,
+            bool updateName = true)
         {
             EnsureRefs();
 
-            if (!_hasPosition || !_position.Equals(position))
+            if (updateName && (!_hasPosition || !_position.Equals(position)))
             {
                 gameObject.name = $"Cell_{position.X}_{position.Y}";
             }
@@ -297,6 +298,20 @@ namespace GourmetProject.Game.Presentation.Battle
             ApplyColors();
         }
 
+        /// <summary>同一租约内重新构建餐桌时，清除不能跨 Build 保留的交互与表现状态。</summary>
+        internal void ResetTransientStateForBuild()
+        {
+            EnsureRefs();
+            KillTransformSequence(resetMaterial: true);
+            SetHovered(false);
+            _plateFeedbackActive = false;
+            _plateFeedbackColor = Color.white;
+            transform.localRotation = Quaternion.identity;
+            SetRendererDebuffed(_plateRenderer, false);
+            _collider.enabled = true;
+            ApplyColors();
+        }
+
         internal void ResetForPool()
         {
             EnsureRefs();
@@ -453,28 +468,17 @@ namespace GourmetProject.Game.Presentation.Battle
             _clicked?.Invoke(_position);
         }
 
-        private void Update()
-        {
-            UpdateHover();
-        }
-
-        private void UpdateHover()
+        internal bool ContainsWorldPoint(Vector3 worldPoint)
         {
             EnsureRefs();
-            if (WorldInput.PointerOverUi)
-            {
-                SetHovered(false);
-                return;
-            }
+            return isActiveAndEnabled
+                && _collider.enabled
+                && _collider.OverlapPoint(worldPoint);
+        }
 
-            Camera cam = Camera.main;
-            if (cam == null)
-            {
-                SetHovered(false);
-                return;
-            }
-
-            SetHovered(_collider.OverlapPoint(WorldInput.MouseWorld(cam)));
+        internal void SetHoveredFromTable(bool hovered)
+        {
+            SetHovered(hovered);
         }
 
         private void SetHovered(bool hovered)

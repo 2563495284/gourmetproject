@@ -17,6 +17,7 @@ namespace GourmetProject.Runtime.Pooling
         private readonly HashSet<int> _ownedIds = new HashSet<int>();
         private readonly Action<GameObject> _onGet;
         private readonly Action<GameObject> _onRelease;
+        private readonly Action<GameObject> _onDestroy;
         private readonly Vector3 _prefabLocalPosition;
         private readonly Quaternion _prefabLocalRotation;
         private readonly Vector3 _prefabLocalScale;
@@ -40,13 +41,15 @@ namespace GourmetProject.Runtime.Pooling
             int prewarm = 0,
             int maxInactive = int.MaxValue,
             Action<GameObject> onGet = null,
-            Action<GameObject> onRelease = null)
+            Action<GameObject> onRelease = null,
+            Action<GameObject> onDestroy = null)
         {
             _prefab = prefab != null ? prefab : throw new ArgumentNullException(nameof(prefab));
             _root = root;
             _maxInactive = Mathf.Max(0, maxInactive);
             _onGet = onGet;
             _onRelease = onRelease;
+            _onDestroy = onDestroy;
             Transform prefabTransform = prefab.transform;
             _prefabLocalPosition = prefabTransform.localPosition;
             _prefabLocalRotation = prefabTransform.localRotation;
@@ -132,6 +135,7 @@ namespace GourmetProject.Runtime.Pooling
             if (_inactiveIds.Count >= _maxInactive)
             {
                 _ownedIds.Remove(instanceId);
+                _onDestroy?.Invoke(go);
                 DestroyObject(go);
                 return;
             }
@@ -176,6 +180,7 @@ namespace GourmetProject.Runtime.Pooling
                     _ownedIds.Remove(entry.InstanceId);
                     if (go != null)
                     {
+                        _onDestroy?.Invoke(go);
                         DestroyObject(go);
                     }
                 }

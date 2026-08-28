@@ -297,6 +297,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<TableFragmentHoverInfo> _candidateHoverEntered;
         private Action<TableFragmentHoverInfo> _candidateHoverExited;
         private Action<TableFragmentEditActionState> _editActionStateChanged;
+        private readonly TableFragmentPlacementEvaluationBuffer _placementEvaluationBuffer =
+            new TableFragmentPlacementEvaluationBuffer();
         private TableFragmentPlacementEvaluation _currentPlacementEvaluation;
         private GridPos _stagedOrigin;
         private GridPos _stagedCenterCell;
@@ -800,7 +802,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 def,
                 mouseWorld,
                 _editMaxWidth,
-                _editMaxHeight);
+                _editMaxHeight,
+                _placementEvaluationBuffer);
             if (_currentPlacementEvaluation == null)
             {
                 ClearGhost();
@@ -816,9 +819,9 @@ namespace GourmetProject.Game.Presentation.Battle
             _editDragPointerWorld = mouseWorld;
 
             ShowGhost(_currentPlacementEvaluation);
-            ShowProjection(def, _currentPlacementEvaluation);
+            ShowProjection(_currentPlacementEvaluation);
             UpdateProjectedTableLayout(_currentPlacementEvaluation);
-            if (TryGetBoundsWarning(_currentPlacementEvaluation.Origin, def, out BoundsWarningInfo warning))
+            if (TryGetBoundsWarning(_currentPlacementEvaluation, out BoundsWarningInfo warning))
             {
                 ShowBoundsWarning(warning);
             }
@@ -850,22 +853,21 @@ namespace GourmetProject.Game.Presentation.Battle
             HideBoundsWarning();
             UpdateProjectedTableLayout(evaluation);
 
-            TableFragmentDef fragment = _editCandidates[_editSelected];
             Vector3 localCenter = Vector3.zero;
-            List<GridPos> localCells = TableFragmentBuilder.FilledCells(fragment);
-            foreach (GridPos local in localCells)
+            IReadOnlyList<GridPlacementFeedbackCell> feedbackCells = evaluation.Feedback.Cells;
+            for (int i = 0; i < feedbackCells.Count; i++)
             {
-                GridPos absolute = local.Offset(_stagedOrigin.X, _stagedOrigin.Y);
+                GridPos absolute = feedbackCells[i].Position;
                 localCenter += _boardView.Mapper.CellCenterLocal(absolute);
             }
 
-            if (localCells.Count == 0)
+            if (feedbackCells.Count == 0)
             {
                 ReturnCandidateDrag();
                 return;
             }
 
-            localCenter /= localCells.Count;
+            localCenter /= feedbackCells.Count;
             _editDragRoot.SetParent(_boardView.transform, worldPositionStays: false);
             _editDragRoot.localPosition = localCenter;
             _editDragRoot.localRotation = Quaternion.identity;
@@ -1208,10 +1210,18 @@ namespace GourmetProject.Game.Presentation.Battle
             return _editBoundsWarningLines[index];
         }
 
-        private bool TryGetBoundsWarning(GridPos origin, TableFragmentDef def, out BoundsWarningInfo warning)
+        private bool TryGetBoundsWarning(
+            TableFragmentPlacementEvaluation evaluation,
+            out BoundsWarningInfo warning)
         {
             warning = default;
-            if (def == null || _editTable == null || !_editTable.TryGetExistingBounds(out int minX, out int minY, out int maxX, out int maxY))
+            if (evaluation?.Feedback == null
+                || _editTable == null
+                || !_editTable.TryGetExistingBounds(
+                    out int minX,
+                    out int minY,
+                    out int maxX,
+                    out int maxY))
             {
                 return false;
             }
@@ -1221,9 +1231,10 @@ namespace GourmetProject.Game.Presentation.Battle
             int candidateMaxX = int.MinValue;
             int candidateMaxY = int.MinValue;
             bool touchesExisting = false;
-            foreach (GridPos local in TableFragmentBuilder.FilledCells(def))
+            IReadOnlyList<GridPlacementFeedbackCell> feedbackCells = evaluation.Feedback.Cells;
+            for (int i = 0; i < feedbackCells.Count; i++)
             {
-                GridPos pos = local.Offset(origin.X, origin.Y);
+                GridPos pos = feedbackCells[i].Position;
                 if (_editTable.Exists(pos))
                 {
                     return false;
@@ -1779,12 +1790,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            var feedbackByPosition = new Dictionary<GridPos, GridPlacementFeedbackState>();
-            foreach (GridPlacementFeedbackCell cell in evaluation.Feedback.Cells)
-            {
-                feedbackByPosition[cell.Position] = cell.State;
-            }
-
             foreach (DiningTableCellView ghostCell in _editDragCells)
             {
                 if (ghostCell == null)
@@ -1793,9 +1798,9 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 GridPos absolute = ghostCell.Position.Offset(evaluation.Origin.X, evaluation.Origin.Y);
-                GridPlacementFeedbackState cellState = feedbackByPosition.TryGetValue(absolute, out GridPlacementFeedbackState state)
-                    ? state
-                    : GridPlacementFeedbackState.Blocked;
+                GridPlacementFeedbackState cellState = FeedbackStateAt(
+                    evaluation.Feedback.Cells,
+                    absolute);
                 ghostCell.SetColor(BoardEditGhostPalette.BaseColor);
                 ghostCell.SetPlateFeedbackColor(BoardEditGhostPalette.PlateColor(
                     evaluation.Feedback.OverallState,
@@ -1804,19 +1809,36 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        private void ShowProjection(
-            TableFragmentDef fragment,
-            TableFragmentPlacementEvaluation evaluation)
+        private static GridPlacementFeedbackState FeedbackStateAt(
+            IReadOnlyList<GridPlacementFeedbackCell> feedbackCells,
+            GridPos position)
         {
-            if (fragment == null || evaluation == null || _boardView?.Mapper == null)
+            if (feedbackCells != null)
+            {
+                for (int i = 0; i < feedbackCells.Count; i++)
+                {
+                    GridPlacementFeedbackCell cell = feedbackCells[i];
+                    if (cell.Position.Equals(position))
+                    {
+                        return cell.State;
+                    }
+                }
+            }
+
+            return GridPlacementFeedbackState.Blocked;
+        }
+
+        private void ShowProjection(TableFragmentPlacementEvaluation evaluation)
+        {
+            if (evaluation?.Feedback == null || _boardView?.Mapper == null)
             {
                 HideProjection();
                 return;
             }
 
-            List<GridPos> localCells = TableFragmentBuilder.FilledCells(fragment);
             int index = 0;
-            foreach (GridPos local in localCells)
+            IReadOnlyList<GridPlacementFeedbackCell> feedbackCells = evaluation.Feedback.Cells;
+            for (int i = 0; i < feedbackCells.Count; i++)
             {
                 DiningTableCellView projection = EnsureProjectionCell(index++);
                 if (projection == null)
@@ -1824,7 +1846,7 @@ namespace GourmetProject.Game.Presentation.Battle
                     continue;
                 }
 
-                GridPos absolute = local.Offset(evaluation.Origin.X, evaluation.Origin.Y);
+                GridPos absolute = feedbackCells[i].Position;
                 projection.gameObject.SetActive(true);
                 projection.transform.SetParent(_boardView.transform, worldPositionStays: false);
                 projection.transform.localRotation = Quaternion.identity;
@@ -1833,8 +1855,8 @@ namespace GourmetProject.Game.Presentation.Battle
                     _boardView.Mapper.CellCenterLocal(absolute),
                     _cellSize,
                     _editCellSprites,
-                    null);
-                projection.name = "BoardEditProjection";
+                    null,
+                    updateName: false);
                 projection.SetInteractionEnabled(false);
                 projection.ClearPlateFeedbackColor();
                 projection.SetColor(Color.white);

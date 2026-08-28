@@ -32,16 +32,24 @@ namespace GourmetProject.Game.Presentation.Battle
             GridPlacementFeedbackState overallState,
             IReadOnlyList<GridPlacementFeedbackCell> cells)
         {
+            Reset(centerCell, overallState, cells);
+        }
+
+        public GridPos CenterCell { get; private set; }
+
+        public GridPlacementFeedbackState OverallState { get; private set; }
+
+        public IReadOnlyList<GridPlacementFeedbackCell> Cells { get; private set; }
+
+        internal void Reset(
+            GridPos centerCell,
+            GridPlacementFeedbackState overallState,
+            IReadOnlyList<GridPlacementFeedbackCell> cells)
+        {
             CenterCell = centerCell;
             OverallState = overallState;
             Cells = cells ?? Array.Empty<GridPlacementFeedbackCell>();
         }
-
-        public GridPos CenterCell { get; }
-
-        public GridPlacementFeedbackState OverallState { get; }
-
-        public IReadOnlyList<GridPlacementFeedbackCell> Cells { get; }
     }
 
     public static class GridPlacementFeedbackPalette
