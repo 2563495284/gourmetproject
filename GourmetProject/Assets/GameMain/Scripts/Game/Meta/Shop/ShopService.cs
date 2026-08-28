@@ -128,7 +128,7 @@ namespace GourmetProject.Game.Meta
     /// </summary>
     public static class ShopService
     {
-        private const string FragmentPackRewardSlotId = "fragment_choice_3";
+        private const string FragmentPackRewardSlotId = "fragment_choice_2";
 
         /// <summary>
         /// 按进度刷新一批商品。装饰品和消耗品走 <paramref name="lootRng"/>，
@@ -705,7 +705,7 @@ namespace GourmetProject.Game.Meta
             return hidden + offset;
         }
 
-        /// <summary>开一份商店碎片包：候选数量读取 reward_slot(fragment_choice_3).choiceCount。</summary>
+        /// <summary>开一份商店碎片包：候选数量读取 reward_slot(fragment_choice_2).choiceCount。</summary>
         public static List<string> RollFragmentPack(GameRun run)
         {
             return RollFragmentPack(run, FragmentPackSize(run?.Tables));

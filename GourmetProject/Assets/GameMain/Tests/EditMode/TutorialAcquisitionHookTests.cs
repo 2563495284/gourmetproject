@@ -124,21 +124,50 @@ namespace GourmetProject.Tests.EditMode
         public void TutorialCatalog_UsesCondensedCoreCopyAndInteractions()
         {
             TutorialSequenceDefinition firstAction = TutorialCatalog.Get(TutorialId.FirstAction);
-            Assert.That(firstAction.Steps.Count, Is.EqualTo(2));
+            Assert.That(firstAction.Steps.Count, Is.EqualTo(3));
             Assert.That(
-                new[] { firstAction.Steps[0].Message, firstAction.Steps[1].Message },
+                new[]
+                {
+                    firstAction.Steps[0].Message,
+                    firstAction.Steps[1].Message,
+                    firstAction.Steps[2].Message,
+                },
                 Is.EqualTo(new[]
                 {
+                    "老板好，我是铛铛，咱们学习一下基础的经验知识吧",
                     "这是行动卡，行动会消耗时间，带来收益。",
                     "卡片上的图标，表示行动的额外奖励，点击开始营业吧！",
                 }));
             Assert.That(firstAction.Steps[0].Mode, Is.EqualTo(TutorialAdvanceMode.Continue));
-            Assert.That(firstAction.Steps[1].Mode, Is.EqualTo(TutorialAdvanceMode.Signal));
-            Assert.That(firstAction.Steps[1].Signal, Is.EqualTo(TutorialSignal.ActionPicked));
-            Assert.That(firstAction.Steps[1].AllowTargetInteraction, Is.True);
+            Assert.That(firstAction.Steps[0].Anchors, Is.Empty);
+            Assert.That(firstAction.Steps[1].Mode, Is.EqualTo(TutorialAdvanceMode.Continue));
+            Assert.That(firstAction.Steps[2].Mode, Is.EqualTo(TutorialAdvanceMode.Signal));
+            Assert.That(firstAction.Steps[2].Signal, Is.EqualTo(TutorialSignal.ActionPicked));
+            Assert.That(firstAction.Steps[2].AllowTargetInteraction, Is.True);
             Assert.That(
-                firstAction.Steps[1].Anchors,
+                firstAction.Steps[2].Anchors,
                 Is.EqualTo(new[] { TutorialAnchorId.ActionCard0 }));
+
+            TutorialSequenceDefinition secondAction = TutorialCatalog.Get(TutorialId.SecondAction);
+            Assert.That(secondAction.Steps.Count, Is.EqualTo(2));
+            Assert.That(
+                new[] { secondAction.Steps[0].Message, secondAction.Steps[1].Message },
+                Is.EqualTo(new[]
+                {
+                    "这是火热营业，目标更高，但奖励规格也更高。",
+                    "从两个行动中选择一个进行吧",
+                }));
+            Assert.That(secondAction.Steps[0].Mode, Is.EqualTo(TutorialAdvanceMode.Continue));
+            Assert.That(secondAction.Steps[0].AllowTargetInteraction, Is.False);
+            Assert.That(
+                secondAction.Steps[0].Anchors,
+                Is.EqualTo(new[] { TutorialAnchorId.ActionCard1 }));
+            Assert.That(secondAction.Steps[1].Mode, Is.EqualTo(TutorialAdvanceMode.Signal));
+            Assert.That(secondAction.Steps[1].Signal, Is.EqualTo(TutorialSignal.ActionPicked));
+            Assert.That(secondAction.Steps[1].AllowTargetInteraction, Is.True);
+            Assert.That(
+                secondAction.Steps[1].Anchors,
+                Is.EqualTo(new[] { TutorialAnchorId.ActionCard0, TutorialAnchorId.ActionCard1 }));
 
             TutorialSequenceDefinition firstBattle = TutorialCatalog.Get(TutorialId.FirstBattle);
             Assert.That(firstBattle.Steps.Count, Is.EqualTo(6));
@@ -210,7 +239,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void TutorialCatalog_ContainsTwentyOneStepsAndNoRemovedSequences()
+        public void TutorialCatalog_ContainsTwentyThreeStepsAndNoRemovedSequences()
         {
             string[] activeIds =
             {
@@ -236,11 +265,147 @@ namespace GourmetProject.Tests.EditMode
                 stepCount += sequence.Steps.Count;
             }
 
-            Assert.That(stepCount, Is.EqualTo(21));
+            Assert.That(stepCount, Is.EqualTo(23));
             Assert.That(TutorialCatalog.Get("tutorial.prelude.direction_selection"), Is.Null);
             Assert.That(TutorialCatalog.Get("tutorial.core.reward_summary"), Is.Null);
             Assert.That(TutorialCatalog.Get("tutorial.hook.result_heart"), Is.Null);
             Assert.That(TutorialCatalog.Get(TutorialId.Failure), Is.Null);
+        }
+
+        [Test]
+        public void TutorialActionSchedule_UsesFixedCostsAndFullTargetScores()
+        {
+            GameRun run = CreateRun(isTutorialRun: true);
+
+            Assert.That(
+                TutorialActionScheduleOverride.TryBuildChoices(
+                    run,
+                    coreCompleted: false,
+                    coreStarted: false,
+                    out List<ActionChoice> firstChoices),
+                Is.True);
+            Assert.That(firstChoices, Has.Count.EqualTo(1));
+            Assert.That(firstChoices[0].Action.Id, Is.EqualTo("act_food_gold"));
+            Assert.That(firstChoices[0].CostDays, Is.EqualTo(0.6f));
+
+            ActionExecutionContext firstContext = firstChoices[0].ToExecutionContext();
+            ActionOutcome firstOutcome = ActionExecutor.Execute(run, firstContext, rng: null);
+            Assert.That(firstOutcome.Kind, Is.EqualTo(ActionOutcomeKind.Battle));
+            Assert.That(firstOutcome.RequiredScore, Is.EqualTo(200));
+            Assert.That(
+                TutorialActionScheduleOverride.ModifyTargetScore(run, firstContext, 200),
+                Is.EqualTo(200));
+
+            ActionExecutor.Commit(run, firstContext);
+            Assert.That(run.CurrentDay, Is.EqualTo(0.6f));
+            Assert.That(run.RunActionStepIndex, Is.EqualTo(1));
+
+            Assert.That(
+                TutorialActionScheduleOverride.TryBuildChoices(
+                    run,
+                    coreCompleted: false,
+                    coreStarted: true,
+                    out List<ActionChoice> secondChoices),
+                Is.True);
+            Assert.That(
+                secondChoices.ConvertAll(choice => choice.Action.Id),
+                Is.EqualTo(new[] { "act_food_fragment", "act_food_hard_gold" }));
+            Assert.That(
+                secondChoices.ConvertAll(choice => choice.CostDays),
+                Is.EqualTo(new[] { 0.6f, 0.8f }));
+
+            ActionOutcome fragmentOutcome = ActionExecutor.Execute(
+                run,
+                secondChoices[0].ToExecutionContext(),
+                rng: null);
+            ActionOutcome hardGoldOutcome = ActionExecutor.Execute(
+                run,
+                secondChoices[1].ToExecutionContext(),
+                rng: null);
+            Assert.That(fragmentOutcome.RequiredScore, Is.EqualTo(300));
+            Assert.That(hardGoldOutcome.RequiredScore, Is.EqualTo(400));
+        }
+
+        [Test]
+        public void TutorialActionSchedule_RefreshesLegacyThreeCardSnapshot()
+        {
+            GameRun run = CreateRun(isTutorialRun: true);
+            TimelineService.AdvanceDays(run, 1f);
+            run.AdvanceActionStep();
+            string key = GameRun.BuildActionChoiceKey(
+                run.RunActionStepIndex,
+                run.WeekIndex,
+                run.CurrentDay,
+                run.ActionStepIndex);
+            run.SetPendingActionChoices(key, new[]
+            {
+                new ActionChoice(
+                    _tables.TbAction.GetOrDefault("act_food_fragment"),
+                    "tutorial_second",
+                    run.ActionStepIndex,
+                    run.RunActionStepIndex,
+                    1f),
+                new ActionChoice(
+                    _tables.TbAction.GetOrDefault("act_food_passive"),
+                    "tutorial_second",
+                    run.ActionStepIndex,
+                    run.RunActionStepIndex,
+                    1f),
+                new ActionChoice(
+                    _tables.TbAction.GetOrDefault("act_food_hard_gold"),
+                    "tutorial_second",
+                    run.ActionStepIndex,
+                    run.RunActionStepIndex,
+                    1.2f),
+            });
+
+            List<ActionChoice> refreshed = ActionOfferService.GetOrRoll(run);
+
+            Assert.That(
+                refreshed.ConvertAll(choice => choice.Action.Id),
+                Is.EqualTo(new[] { "act_food_fragment", "act_food_hard_gold" }));
+            Assert.That(
+                refreshed.ConvertAll(choice => choice.CostDays),
+                Is.EqualTo(new[] { 0.6f, 0.8f }));
+            Assert.That(run.GetPendingActionChoices(key), Has.Count.EqualTo(2));
+        }
+
+        [Test]
+        public void TutorialActionSchedule_StillRestoresSecondActionAtLegacyDayOne()
+        {
+            GameRun run = CreateRun(isTutorialRun: true);
+            TimelineService.AdvanceDays(run, 1f);
+            run.AdvanceActionStep();
+
+            Assert.That(
+                TutorialActionScheduleOverride.TryBuildChoices(
+                    run,
+                    coreCompleted: false,
+                    coreStarted: true,
+                    out List<ActionChoice> choices),
+                Is.True);
+            Assert.That(choices, Has.Count.EqualTo(2));
+        }
+
+        [Test]
+        public void TutorialActionSchedule_DoesNotOverrideNormalRuns()
+        {
+            GameRun run = CreateRun();
+
+            Assert.That(
+                TutorialActionScheduleOverride.TryBuildChoices(
+                    run,
+                    coreCompleted: false,
+                    coreStarted: false,
+                    out List<ActionChoice> choices),
+                Is.False);
+            Assert.That(choices, Is.Null);
+            Assert.That(
+                TutorialActionScheduleOverride.ModifyTargetScore(
+                    isTutorialRun: false,
+                    actionGroupId: "tutorial_first",
+                    targetScore: 321),
+                Is.EqualTo(321));
         }
 
         [Test]
@@ -369,14 +534,14 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(presented, Is.Empty);
         }
 
-        private GameRun CreateRun() =>
+        private GameRun CreateRun(bool isTutorialRun = false) =>
             new(
                 _tables,
                 _database,
                 "glutton_dog",
                 "tutorial-acquisition-hook-tests",
                 weekIndex: 1,
-                isTutorialRun: false);
+                isTutorialRun: isTutorialRun);
     }
 }
 #endif

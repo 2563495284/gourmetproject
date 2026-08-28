@@ -25,7 +25,19 @@ namespace GourmetProject.Game.Meta
                 run.ActionStepIndex);
             if (run.HasPendingActionChoices(key))
             {
-                return ApplyRuntimeModifiers(run, run.GetPendingActionChoices(key));
+                List<ActionChoice> pending = run.GetPendingActionChoices(key);
+                if (TutorialActionScheduleOverride.TryRefreshLegacyPendingChoices(
+                        run,
+                        pending,
+                        out List<ActionChoice> refreshed))
+                {
+                    run.ClearPendingActionChoices();
+                    run.SetPendingActionChoices(key, refreshed);
+                    run.RequestSave();
+                    pending = refreshed;
+                }
+
+                return ApplyRuntimeModifiers(run, pending);
             }
 
             List<ActionChoice> choices;
