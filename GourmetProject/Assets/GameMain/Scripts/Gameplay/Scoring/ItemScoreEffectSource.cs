@@ -418,23 +418,15 @@ namespace GourmetProject.Gameplay.Scoring
                         break;
                     }
 
-                    var candidates = new List<DishInstance>(dishes);
-                    int take = Math.Min(pickCount, candidates.Count);
-                    if (ctx.Snapshot.RandomIntegerSelector != null)
-                    {
-                        for (int i = 0; i < take; i++)
-                        {
-                            int swap = ctx.Snapshot.RandomIntegerSelector(i, candidates.Count - 1);
-                            DishInstance tmp = candidates[i];
-                            candidates[i] = candidates[swap];
-                            candidates[swap] = tmp;
-                        }
-                    }
-
-                    for (int i = 0; i < take; i++)
-                    {
-                        ctx.AddLiveCategory(candidates[i], category);
-                    }
+                    List<DishInstance> preferred = dishes
+                        .Where(d => !ctx.IsCategory(d, category))
+                        .ToList();
+                    List<DishInstance> fallback = dishes
+                        .Where(d => ctx.IsCategory(d, category))
+                        .ToList();
+                    int remaining = Math.Min(pickCount, dishes.Count);
+                    remaining -= ApplyRandomCategoryToCandidates(ctx, preferred, remaining, category);
+                    ApplyRandomCategoryToCandidates(ctx, fallback, remaining, category);
 
                     break;
                 }
@@ -458,6 +450,32 @@ namespace GourmetProject.Gameplay.Scoring
                     break;
                 }
             }
+        }
+
+        private static int ApplyRandomCategoryToCandidates(
+            ScoreContext ctx,
+            List<DishInstance> candidates,
+            int requestedCount,
+            string category)
+        {
+            int take = Math.Min(Math.Max(0, requestedCount), candidates.Count);
+            if (ctx.Snapshot.RandomIntegerSelector != null)
+            {
+                for (int i = 0; i < take; i++)
+                {
+                    int swap = ctx.Snapshot.RandomIntegerSelector(i, candidates.Count - 1);
+                    DishInstance tmp = candidates[i];
+                    candidates[i] = candidates[swap];
+                    candidates[swap] = tmp;
+                }
+            }
+
+            for (int i = 0; i < take; i++)
+            {
+                ctx.AddLiveCategory(candidates[i], category);
+            }
+
+            return take;
         }
 
         private static bool MatchesThreshold(int count, string param)

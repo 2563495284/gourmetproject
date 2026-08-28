@@ -85,7 +85,7 @@ namespace GourmetProject.Gameplay.Model
         /// <summary>结算结束时，每道食物倍率加区 +value×自身有效份数。</summary>
         PerDishMultFlatTimesOwnCountAs = 25,
 
-        /// <summary>结算开始时，随机 value 道食物临时视为 param 指定分类。</summary>
+        /// <summary>结算开始时，优先从尚不属于目标分类的食物中随机选择 value 道，临时视为 param 指定分类。</summary>
         RandomDishesTemporaryCategory = 26,
 
         /// <summary>每结算一道当时视为蛋糕的食物，欢乐蛋糕层数 +value。</summary>
