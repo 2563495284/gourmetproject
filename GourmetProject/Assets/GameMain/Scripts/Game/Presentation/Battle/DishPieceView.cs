@@ -218,6 +218,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private bool _flying;
         private int _sortingOrderOffset;
         private bool _dragPresentationActive;
+        private DishShadowBatchRenderer _shadowBatchRenderer;
+        private bool _shadowBatchRegistered;
         private MaterialPropertyBlock _flavorVisualBlock;
         private MaterialPropertyBlock _placementGlowBlock;
         private MaterialPropertyBlock _scopeTargetGlowBlock;
@@ -284,6 +286,73 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishValueBadgePresenter != null
                 ? _dishValueBadgePresenter.WorldPosition
                 : transform.position;
+
+        internal void ConfigureShadowBatch(DishShadowBatchRenderer renderer)
+        {
+            if (_shadowBatchRenderer == renderer)
+            {
+                RefreshShadowBatchRegistration(topologyChanged: true);
+                return;
+            }
+
+            UnregisterFromShadowBatch();
+            _shadowBatchRenderer = renderer;
+            RefreshShadowBatchRegistration(topologyChanged: true);
+        }
+
+        internal bool TryCaptureShadowSnapshot(Transform batchRoot, out DishShadowSnapshot snapshot)
+        {
+            if (batchRoot == null
+                || _shadowRenderer == null
+                || _shadowHaloRenderer == null
+                || _shadowRenderer.sprite == null
+                || _shadowHaloRenderer.sprite == null)
+            {
+                snapshot = default;
+                return false;
+            }
+
+            Matrix4x4 worldToBatch = batchRoot.worldToLocalMatrix;
+            snapshot = new DishShadowSnapshot(
+                _shadowHaloRenderer.sprite,
+                worldToBatch * _shadowHaloRenderer.transform.localToWorldMatrix,
+                _shadowHaloRenderer.color,
+                _shadowHaloRenderer.flipX,
+                _shadowHaloRenderer.flipY,
+                _shadowRenderer.sprite,
+                worldToBatch * _shadowRenderer.transform.localToWorldMatrix,
+                _shadowRenderer.color,
+                _shadowRenderer.flipX,
+                _shadowRenderer.flipY);
+            return true;
+        }
+
+        internal void NotifyShadowBatchRegistered(DishShadowBatchRenderer renderer)
+        {
+            if (_shadowBatchRenderer == renderer)
+            {
+                _shadowBatchRegistered = true;
+            }
+        }
+
+        internal void NotifyShadowBatchVisible(DishShadowBatchRenderer renderer)
+        {
+            if (_shadowBatchRenderer == renderer && _shadowBatchRegistered)
+            {
+                SetFallbackShadowRendering(false);
+            }
+        }
+
+        internal void NotifyShadowBatchReleased(DishShadowBatchRenderer renderer)
+        {
+            if (_shadowBatchRenderer != renderer)
+            {
+                return;
+            }
+
+            _shadowBatchRegistered = false;
+            SetFallbackShadowRendering(true);
+        }
 
         internal void AddSweetTransferBuffMarker(SkillActionType actionType)
         {
@@ -1050,6 +1119,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _dishValueBadgePresenter?.SetSorting(_flying, _sortingOrderOffset);
+            RefreshShadowBatchRegistration(topologyChanged: false);
         }
 
         /// <summary>
@@ -1117,6 +1187,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 ? _spriteRenderer.bounds.center
                 : OccupiedCellCenterWorld();
             transform.position += centerWorld - currentCenter;
+            _shadowBatchRenderer?.MarkStreamDirty(this);
         }
 
         public Vector2 FootprintWorldSize
@@ -1414,6 +1485,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 color.a = haloAlpha * remaining;
                 _shadowHaloRenderer.color = color;
             }
+
+            _shadowBatchRenderer?.MarkStreamDirty(this);
         }
 
         public Awaitable PlayDeliciousnessGainFeedbackAsync(CancellationToken cancellationToken)
@@ -2294,6 +2367,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 _shadowHaloRenderer.flipX = _spriteRenderer.flipX;
                 _shadowHaloRenderer.flipY = _spriteRenderer.flipY;
             }
+
+            RefreshShadowBatchRegistration(topologyChanged: true);
         }
 
         private void ConfigureFootprintSprite(DishShape shape)
@@ -2464,6 +2539,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 hc.a = Mathf.Lerp(0f, _haloAlphaWhenHigh, t);
                 _shadowHaloRenderer.color = hc;
             }
+
+            _shadowBatchRenderer?.MarkStreamDirty(this);
         }
 
         private void ApplyDragPresentation()
@@ -2533,6 +2610,66 @@ namespace GourmetProject.Game.Presentation.Battle
                 {
                     _scopeTargetGlow.sortingOrder = _spriteRenderer.sortingOrder + 3;
                 }
+            }
+
+            _shadowBatchRenderer?.MarkStreamDirty(this);
+        }
+
+        private void RefreshShadowBatchRegistration(bool topologyChanged)
+        {
+            bool eligible = _shadowBatchRenderer != null
+                && isActiveAndEnabled
+                && !_flying
+                && _sortingOrderOffset == 0
+                && _shadowRenderer != null
+                && _shadowHaloRenderer != null
+                && _shadowRenderer.sprite != null
+                && _shadowHaloRenderer.sprite != null;
+            if (!eligible)
+            {
+                UnregisterFromShadowBatch();
+                return;
+            }
+
+            if (!_shadowBatchRegistered && !_shadowBatchRenderer.Register(this))
+            {
+                SetFallbackShadowRendering(true);
+                return;
+            }
+
+            if (topologyChanged)
+            {
+                _shadowBatchRenderer.MarkTopologyDirty(this);
+            }
+            else
+            {
+                _shadowBatchRenderer.MarkStreamDirty(this);
+            }
+        }
+
+        private void UnregisterFromShadowBatch()
+        {
+            if (_shadowBatchRegistered && _shadowBatchRenderer != null)
+            {
+                _shadowBatchRenderer.Unregister(this);
+            }
+            else
+            {
+                _shadowBatchRegistered = false;
+                SetFallbackShadowRendering(true);
+            }
+        }
+
+        private void SetFallbackShadowRendering(bool enabled)
+        {
+            if (_shadowRenderer != null)
+            {
+                _shadowRenderer.forceRenderingOff = !enabled;
+            }
+
+            if (_shadowHaloRenderer != null)
+            {
+                _shadowHaloRenderer.forceRenderingOff = !enabled;
             }
         }
 
@@ -2864,6 +3001,7 @@ namespace GourmetProject.Game.Presentation.Battle
         internal void ResetForPool()
         {
             ResetReusableState(clearInstance: true, clearBadgeBinding: true);
+            UnregisterFromShadowBatch();
         }
 
         private void ResetReusableState(bool clearInstance, bool clearBadgeBinding)
@@ -2919,8 +3057,14 @@ namespace GourmetProject.Game.Presentation.Battle
             _pitch = 0f;
         }
 
+        private void OnEnable()
+        {
+            RefreshShadowBatchRegistration(topologyChanged: true);
+        }
+
         private void OnDisable()
         {
+            UnregisterFromShadowBatch();
             ClearAllScopeTargetGlows();
             ClearSweetTransferBuffMarkers();
             ClearSettlementFocus();

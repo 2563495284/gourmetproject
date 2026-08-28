@@ -127,6 +127,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private GameObjectPool _dishPiecePool;
         private GameObjectPool _pendingDishButtonPool;
         private GameObjectPool _dishDropDustPool;
+        private DishShadowBatchRenderer _dishShadowBatch;
 
         private enum WorldMode
         {
@@ -453,6 +454,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _updateTemporaryDishDragHandler = UpdateTemporaryAreaDishDrag;
             _endTemporaryDishDragHandler = EndTemporaryAreaDishDrag;
             _temporaryPointerHitFilter = IsTemporaryAreaPointerHitAccepted;
+            EnsureDishShadowBatch();
             EnsureDishPiecePool();
             EnsureDishDropDustPool();
 
@@ -3999,8 +4001,58 @@ namespace GourmetProject.Game.Presentation.Battle
                 _piecesRoot != null ? _piecesRoot : transform,
                 DishPoolPrewarm,
                 DishPoolMaxInactive,
-                onGet: go => go.GetComponent<DishPieceView>()?.PrepareForReuse(),
-                onRelease: go => go.GetComponent<DishPieceView>()?.ResetForPool());
+                onGet: PrepareDishPieceForReuse,
+                onRelease: ResetDishPieceForPool);
+        }
+
+        private void EnsureDishShadowBatch()
+        {
+            if (_dishShadowBatch != null)
+            {
+                return;
+            }
+
+            Transform parent = _boardView != null
+                ? _boardView.transform
+                : (_piecesRoot != null && _piecesRoot.parent != null ? _piecesRoot.parent : transform);
+            Transform root = parent.Find("DishShadowRoot");
+            if (root == null)
+            {
+                var rootObject = new GameObject("DishShadowRoot");
+                root = rootObject.transform;
+                root.SetParent(parent, false);
+                if (_piecesRoot != null && _piecesRoot.parent == parent)
+                {
+                    root.SetSiblingIndex(_piecesRoot.GetSiblingIndex());
+                }
+            }
+
+            root.localPosition = Vector3.zero;
+            root.localRotation = Quaternion.identity;
+            root.localScale = Vector3.one;
+            _dishShadowBatch = root.GetComponent<DishShadowBatchRenderer>();
+            if (_dishShadowBatch == null)
+            {
+                _dishShadowBatch = root.gameObject.AddComponent<DishShadowBatchRenderer>();
+            }
+        }
+
+        private void PrepareDishPieceForReuse(GameObject go)
+        {
+            DishPieceView piece = go != null ? go.GetComponent<DishPieceView>() : null;
+            if (piece == null)
+            {
+                return;
+            }
+
+            piece.PrepareForReuse();
+            EnsureDishShadowBatch();
+            piece.ConfigureShadowBatch(_dishShadowBatch);
+        }
+
+        private static void ResetDishPieceForPool(GameObject go)
+        {
+            go?.GetComponent<DishPieceView>()?.ResetForPool();
         }
 
         private void EnsureDishDropDustPool()
@@ -4036,6 +4088,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private DishPieceView RentDishPiece()
         {
+            EnsureDishShadowBatch();
             EnsureDishPiecePool();
             if (_dishPiecePool == null)
             {
@@ -4075,6 +4128,8 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 existing.transform.SetParent(_piecesRoot != null ? _piecesRoot : transform, false);
                 existing.PrepareForReuse();
+                EnsureDishShadowBatch();
+                existing.ConfigureShadowBatch(_dishShadowBatch);
                 existing.gameObject.SetActive(true);
                 return existing;
             }
