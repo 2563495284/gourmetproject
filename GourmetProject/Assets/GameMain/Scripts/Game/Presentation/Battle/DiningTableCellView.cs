@@ -53,6 +53,16 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public GridPos Position => _position;
 
+        /// <summary>批渲染器复用 prefab 作者配置的盘子局部变换，确保合批前后几何一致。</summary>
+        internal Matrix4x4 BatchVisualLocalMatrix
+        {
+            get
+            {
+                EnsureRefs();
+                return transform.worldToLocalMatrix * _plateRenderer.transform.localToWorldMatrix;
+            }
+        }
+
         public Bounds WorldBounds
         {
             get
@@ -333,13 +343,16 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ApplyColors()
         {
-            _plateRenderer.color = _plateFeedbackActive
+            Color color = _plateFeedbackActive
                 ? new Color(
                     _plateFeedbackColor.r,
                     _plateFeedbackColor.g,
                     _plateFeedbackColor.b,
                     _baseColor.a * _plateFeedbackColor.a)
                 : _baseColor;
+            _plateRenderer.color = color;
+            // 透明 SpriteRenderer 在 URP 2D 下仍会进入裁剪/绘制队列。临时格完全透明时直接关闭 Renderer。
+            _plateRenderer.enabled = color.a > 0.001f;
         }
 
         private void ApplySorting(string layer, int baseOrder)

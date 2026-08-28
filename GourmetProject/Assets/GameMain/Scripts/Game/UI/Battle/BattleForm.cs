@@ -218,7 +218,7 @@ namespace GourmetProject.Game.UI.Battle
         private bool _rewardPeekOnly;
         private bool _discardSettlementCallbacks;
         private DishPieceView _hoveredDishPiece;
-        private DiningTableCellView _hoveredCell;
+        private GridPos? _hoveredCell;
         private int _hoveredTableFragmentSession = -1;
         private int _hoveredTableFragmentIndex = -1;
         private FoodTipsHoverOwner _foodTipsHoverOwner;
@@ -5534,24 +5534,24 @@ namespace GourmetProject.Game.UI.Battle
             HideFoodTips();
         }
 
-        private void OnCellHoverEntered(DiningTableCellView cell)
+        private void OnCellHoverEntered(GridPos cell)
         {
             HideCellMaterialTips(cell);
         }
 
-        private void OnCellHoverExited(DiningTableCellView cell)
+        private void OnCellHoverExited(GridPos cell)
         {
             HideCellMaterialTips(cell);
         }
 
-        private void HideCellMaterialTips(DiningTableCellView cell)
+        private void HideCellMaterialTips(GridPos cell)
         {
             if (_foodTipsHoverOwner != FoodTipsHoverOwner.TableCell)
             {
                 return;
             }
 
-            if (_hoveredCell != null && cell != null && _hoveredCell != cell)
+            if (_hoveredCell.HasValue && !_hoveredCell.Value.Equals(cell))
             {
                 return;
             }

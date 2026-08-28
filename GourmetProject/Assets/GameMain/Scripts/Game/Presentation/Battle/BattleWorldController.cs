@@ -188,8 +188,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<Vector2> _updateTemporaryDishDragHandler;
         private Action<Vector2> _endTemporaryDishDragHandler;
         private Func<DishPieceView, Vector2, bool> _temporaryPointerHitFilter;
-        private Action<DiningTableCellView> _cellHoverEntered;
-        private Action<DiningTableCellView> _cellHoverExited;
+        private Action<GridPos> _cellHoverEntered;
+        private Action<GridPos> _cellHoverExited;
         private Action<TableFragmentHoverInfo> _tableFragmentHoverEntered;
         private Action<TableFragmentHoverInfo> _tableFragmentHoverExited;
         private Func<Vector2, bool> _preparedDishDiscardHitTest;
@@ -564,9 +564,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
             foreach (GridPos cell in table.ExistingCells())
             {
-                if (_boardView.TryGetCellView(cell, out DiningTableCellView view) && view != null)
+                if (_boardView.TryGetCellWorldBounds(cell, out Bounds bounds))
                 {
-                    EncapsulateWorldBounds(view.WorldBounds, ref minX, ref maxX, ref minY, ref maxY, ref hasPoint);
+                    EncapsulateWorldBounds(bounds, ref minX, ref maxX, ref minY, ref maxY, ref hasPoint);
                 }
             }
 
@@ -776,12 +776,11 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private bool PointerInsideCell(GridPos cell, Vector3 mouseWorld)
         {
-            if (_boardView == null || !_boardView.TryGetCellView(cell, out DiningTableCellView view) || view == null)
+            if (_boardView == null || !_boardView.TryGetCellWorldBounds(cell, out Bounds bounds))
             {
                 return true;
             }
 
-            Bounds bounds = view.WorldBounds;
             return mouseWorld.x >= bounds.min.x
                 && mouseWorld.x <= bounds.max.x
                 && mouseWorld.y >= bounds.min.y
@@ -1329,7 +1328,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
-        public void SetCellHoverCallbacks(Action<DiningTableCellView> entered, Action<DiningTableCellView> exited)
+        public void SetCellHoverCallbacks(Action<GridPos> entered, Action<GridPos> exited)
         {
             _cellHoverEntered = entered;
             _cellHoverExited = exited;
@@ -4380,12 +4379,12 @@ namespace GourmetProject.Game.Presentation.Battle
             _dishHoverExited?.Invoke(piece);
         }
 
-        private void OnCellHoverEntered(DiningTableCellView cell)
+        private void OnCellHoverEntered(GridPos cell)
         {
             _cellHoverEntered?.Invoke(cell);
         }
 
-        private void OnCellHoverExited(DiningTableCellView cell)
+        private void OnCellHoverExited(GridPos cell)
         {
             _cellHoverExited?.Invoke(cell);
         }

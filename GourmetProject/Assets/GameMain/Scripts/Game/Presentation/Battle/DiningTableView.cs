@@ -17,7 +17,8 @@ namespace GourmetProject.Game.Presentation.Battle
     public sealed class DiningTableView : MonoBehaviour
     {
         private static readonly ProfilerMarker BuildMarker = new("Gourmet.Table.Build");
-        private const int CellPoolPrewarm = 16;
+        // 稳定桌面已由单 Mesh 承载；对象池只服务拖拽/编辑等少量临时格，无需常驻预热对象。
+        private const int CellPoolPrewarm = 0;
         private const int CellPoolMaxInactive = 192;
         private const int OutlinePoolMaxInactive = 8;
         // 空格直接露出格子贴图本色（白色不染色）；虚格压暗。
@@ -31,38 +32,39 @@ namespace GourmetProject.Game.Presentation.Battle
         private const float SettlementOrderPreferredStagger = 0.075f;
         private const float SettlementOrderMaximumStartSpan = 1.35f;
         private const float SettlementOrderPulseDuration = 0.24f;
+        private const float SettlementOrderPulseRiseDuration = 0.09f;
 
         private bool _voidAsPlaceholder;
 
         [SerializeField] private DiningTableCellView _cellPrefab;
         [SerializeField] private BattleScopeRegionOutlineView _scopeRegionOutlinePrefab;
 
-        private readonly Dictionary<GridPos, DiningTableCellView> _cells = new Dictionary<GridPos, DiningTableCellView>();
+        private readonly HashSet<GridPos> _renderedCells = new HashSet<GridPos>();
+        private readonly List<GridPos> _orderedRenderedCells = new List<GridPos>();
         private readonly Dictionary<int, BattleScopeRegionOutlineView> _scopeRegionOutlines = new Dictionary<int, BattleScopeRegionOutlineView>();
         private readonly List<DiningTableCellView> _dragFeedbackCells = new List<DiningTableCellView>();
         private readonly HashSet<GridPos> _presentationHiddenCells = new HashSet<GridPos>();
         private readonly HashSet<GridPos> _presentationSuppressedDisabledCells = new HashSet<GridPos>();
         private readonly HashSet<GridPos> _presentationRemovedTombstones = new HashSet<GridPos>();
         private readonly HashSet<GridPos> _presentationNormalRemovedCells = new HashSet<GridPos>();
-        private readonly List<GridPos> _staleCellPositions = new List<GridPos>();
         private readonly Dictionary<GridPos, GridPlacementFeedbackState> _dragFeedbackStates = new Dictionary<GridPos, GridPlacementFeedbackState>();
+        private readonly List<Tween> _settlementPulseTweens = new List<Tween>();
         private GameObjectPool _cellPool;
         private GameObjectPool _scopeOutlinePool;
+        private DiningTableBatchRenderer _batchRenderer;
         private DiningTableCellSprites _cellSprites;
         private float _cellSize;
         private GpTable _board;
         private Action<GridPos> _clicked;
-        private Action<DiningTableCellView> _cellHoverEntered;
-        private Action<DiningTableCellView> _cellHoverExited;
-        private Action<DiningTableCellView> _cellHoverEnterHandler;
-        private Action<DiningTableCellView> _cellHoverExitHandler;
-        private DiningTableCellView _hoveredCell;
+        private Action<GridPos> _cellHoverEntered;
+        private Action<GridPos> _cellHoverExited;
+        private GridPos? _hoveredCell;
         private Camera _hoverCamera;
 
         public DiningTableCoordinateMapper Mapper { get; private set; }
 
         /// <summary>
-        /// 生成餐桌格。餐桌以本组件 transform 为局部帧（BoardRoot）：格子挂在其下并以 localPosition 摆放，
+        /// 生成餐桌批次。餐桌以本组件 transform 为局部帧（BoardRoot），
         /// 世界摆放/居中/缩放由调用方设置本 transform 的 position/scale 决定。
         /// </summary>
         public void Build(GpTable board, float cellSize, float gap, Action<GridPos> clicked, DiningTableCellView cellPrefab = null)
@@ -74,7 +76,6 @@ namespace GourmetProject.Game.Presentation.Battle
                 ReleaseTransientViews();
                 if (cellPrefab != null && cellPrefab != _cellPrefab)
                 {
-                    ReleaseAllCells();
                     _cellPool?.Clear();
                     _cellPool = null;
                     _cellPrefab = cellPrefab;
@@ -104,47 +105,6 @@ namespace GourmetProject.Game.Presentation.Battle
                     throw new InvalidOperationException("默认餐桌格 Sprite 缺失。");
                 }
 
-                _staleCellPositions.Clear();
-                foreach (GridPos existingPosition in _cells.Keys)
-                {
-                    if (!nextBoard.InBounds(existingPosition))
-                    {
-                        _staleCellPositions.Add(existingPosition);
-                    }
-                }
-
-                for (int i = 0; i < _staleCellPositions.Count; i++)
-                {
-                    GridPos stalePosition = _staleCellPositions[i];
-                    ReturnCell(_cells[stalePosition]);
-                    _cells.Remove(stalePosition);
-                }
-
-                for (int y = 0; y < nextBoard.Height; y++)
-                {
-                    for (int x = 0; x < nextBoard.Width; x++)
-                    {
-                        var pos = new GridPos(x, y);
-                        if (!_cells.TryGetValue(pos, out DiningTableCellView cell) || cell == null)
-                        {
-                            cell = RentCell(transform);
-                            if (cell == null)
-                            {
-                                continue;
-                            }
-
-                            _cells[pos] = cell;
-                        }
-                        else
-                        {
-                            cell.ResetTransientStateForBuild();
-                        }
-
-                        cell.Configure(pos, Mapper.CellCenterLocal(pos), cellSize, _cellSprites, _clicked);
-                        cell.SetHoverCallbacks(_cellHoverEnterHandler, _cellHoverExitHandler);
-                    }
-                }
-
                 Sync();
             }
         }
@@ -168,34 +128,37 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            foreach (KeyValuePair<GridPos, DiningTableCellView> kv in _cells)
+            ReconcileRenderedCells();
+            foreach (GridPos pos in _orderedRenderedCells)
             {
-                GridPos pos = kv.Key;
-                DiningTableCellView view = kv.Value;
-                view.SetSprites(CellSpritesFor(pos), _cellSize);
+                Color color;
+                bool debuffed;
                 if (_presentationHiddenCells.Contains(pos))
                 {
-                    view.SetColor(VoidColor);
-                    view.SetDebuffed(false);
+                    color = VoidColor;
+                    debuffed = false;
                 }
                 else if (_presentationRemovedTombstones.Contains(pos))
                 {
-                    view.SetColor(EmptyColor);
-                    view.SetDebuffed(!_presentationNormalRemovedCells.Contains(pos));
+                    color = EmptyColor;
+                    debuffed = !_presentationNormalRemovedCells.Contains(pos);
                 }
                 else if (!_board.Exists(pos))
                 {
-                    view.SetColor(_voidAsPlaceholder ? VoidPlaceholderColor : VoidColor);
-                    view.SetDebuffed(false);
+                    color = _voidAsPlaceholder ? VoidPlaceholderColor : VoidColor;
+                    debuffed = false;
                 }
                 else
                 {
-                    view.SetColor(EmptyColor);
-                    view.SetDebuffed(
-                        _board.IsDisabled(pos)
-                        && !_presentationSuppressedDisabledCells.Contains(pos));
+                    color = EmptyColor;
+                    debuffed = _board.IsDisabled(pos)
+                        && !_presentationSuppressedDisabledCells.Contains(pos);
                 }
+
+                _batchRenderer.SetCellState(pos, color, debuffed);
             }
+
+            _batchRenderer.FlushPendingChanges();
         }
 
         public void StageBossPresentation(BossDebuffPresentationPlan plan)
@@ -250,31 +213,25 @@ namespace GourmetProject.Game.Presentation.Battle
             CancellationToken cancellationToken)
         {
             List<GridPos> positions = BuildSettlementOrderHintCells(_board, reverseOrder);
-            var views = new List<DiningTableCellView>(positions.Count);
-            foreach (GridPos position in positions)
-            {
-                if (_cells.TryGetValue(position, out DiningTableCellView view) && view != null)
-                {
-                    views.Add(view);
-                }
-            }
+            positions.RemoveAll(position => !_renderedCells.Contains(position));
 
-            if (views.Count == 0)
+            if (positions.Count == 0)
             {
                 return;
             }
 
-            float stagger = views.Count > 1
+            CancelSettlementPulses();
+            float stagger = positions.Count > 1
                 ? Mathf.Min(
                     SettlementOrderPreferredStagger,
-                    SettlementOrderMaximumStartSpan / (views.Count - 1))
+                    SettlementOrderMaximumStartSpan / (positions.Count - 1))
                 : 0f;
-            for (int i = 0; i < views.Count; i++)
+            for (int i = 0; i < positions.Count; i++)
             {
-                views[i].PlaySettlementOrderHintPulse(i * stagger);
+                StartSettlementPulse(positions[i], i * stagger);
             }
 
-            float totalDuration = (views.Count - 1) * stagger + SettlementOrderPulseDuration;
+            float totalDuration = (positions.Count - 1) * stagger + SettlementOrderPulseDuration;
             Tween timer = DOVirtual.DelayedCall(totalDuration, () => { })
                 .SetUpdate(true)
                 .SetLink(gameObject);
@@ -284,10 +241,7 @@ namespace GourmetProject.Game.Presentation.Battle
             }
             finally
             {
-                foreach (DiningTableCellView view in views)
-                {
-                    view?.CancelSettlementOrderHintPulse();
-                }
+                CancelSettlementPulses();
             }
         }
 
@@ -321,9 +275,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public bool TryGetCellWorldPosition(GridPos pos, out Vector3 worldPosition)
         {
-            if (_cells.TryGetValue(pos, out DiningTableCellView view) && view != null)
+            if (Mapper != null && _renderedCells.Contains(pos))
             {
-                worldPosition = view.transform.position;
+                worldPosition = Mapper.CellCenter(pos);
                 return true;
             }
 
@@ -331,37 +285,28 @@ namespace GourmetProject.Game.Presentation.Battle
             return false;
         }
 
-        private DiningTableCellSprites CellSpritesFor(GridPos pos)
+        public bool TryGetCellWorldBounds(GridPos pos, out Bounds worldBounds)
         {
-            return _cellSprites;
+            if (Mapper != null && _renderedCells.Contains(pos))
+            {
+                worldBounds = Mapper.CellWorldBounds(pos);
+                return true;
+            }
+
+            worldBounds = default;
+            return false;
         }
 
-        public bool TryGetCellView(GridPos pos, out DiningTableCellView view)
-        {
-            return _cells.TryGetValue(pos, out view) && view != null;
-        }
-
-        public void SetCellHoverCallbacks(Action<DiningTableCellView> entered, Action<DiningTableCellView> exited)
+        public void SetCellHoverCallbacks(Action<GridPos> entered, Action<GridPos> exited)
         {
             ClearHoveredCell();
             _cellHoverEntered = entered;
             _cellHoverExited = exited;
-            foreach (DiningTableCellView cell in _cells.Values)
-            {
-                if (cell != null)
-                {
-                    cell.SetHoverCallbacks(OnCellHoverEntered, OnCellHoverExited);
-                }
-            }
         }
 
         public void ClearTargetHighlights()
         {
-            foreach (DiningTableCellView view in _cells.Values)
-            {
-                view?.ClearPlateFeedbackColor();
-            }
-
+            _batchRenderer?.ClearAllFeedback();
             Sync();
         }
 
@@ -447,18 +392,18 @@ namespace GourmetProject.Game.Presentation.Battle
 
         public void SetTargetHighlight(GridPos pos, bool selected, bool hovered)
         {
-            if (!TryGetCellView(pos, out DiningTableCellView view))
+            if (_batchRenderer == null || !_renderedCells.Contains(pos))
             {
                 return;
             }
 
             if (!selected && !hovered)
             {
-                view.ClearPlateFeedbackColor();
+                _batchRenderer.ClearCellFeedback(pos);
                 return;
             }
 
-            view.SetPlateFeedbackColor(GridPlacementFeedbackPalette.Valid);
+            _batchRenderer.SetCellFeedback(pos, GridPlacementFeedbackPalette.Valid);
         }
 
         public void ClearScopeHighlights(BattleScopeHighlightChannel channel)
@@ -523,7 +468,7 @@ namespace GourmetProject.Game.Presentation.Battle
             var validCells = new List<GridPos>();
             foreach (GridPos cell in cells)
             {
-                if (!_cells.ContainsKey(cell) || _board == null || !_board.Exists(cell))
+                if (!_renderedCells.Contains(cell) || _board == null || !_board.Exists(cell))
                 {
                     continue;
                 }
@@ -615,17 +560,16 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void Awake()
         {
-            _cellHoverEnterHandler = OnCellHoverEntered;
-            _cellHoverExitHandler = OnCellHoverExited;
             _hoverCamera = Camera.main;
+            EnsureBatchRenderer();
             EnsureCellPool();
             EnsureScopeOutlinePool();
         }
 
         private void Update()
         {
-            if ((_cellHoverEntered == null && _cellHoverExited == null)
-                || Mapper == null
+            if (Mapper == null
+                || _board == null
                 || WorldInput.PointerOverUi)
             {
                 ClearHoveredCell();
@@ -645,41 +589,54 @@ namespace GourmetProject.Game.Presentation.Battle
 
             Vector3 mouseWorld = WorldInput.MouseWorld(_hoverCamera);
             GridPos position = Mapper.NearestCell(mouseWorld);
-            DiningTableCellView next = null;
-            if (_cells.TryGetValue(position, out DiningTableCellView candidate)
-                && candidate != null
-                && candidate.ContainsWorldPoint(mouseWorld))
-            {
-                next = candidate;
-            }
+            GridPos? next = _renderedCells.Contains(position)
+                && _board.Exists(position)
+                && Mapper.ContainsWorldPoint(position, mouseWorld)
+                    ? position
+                    : null;
 
-            if (!ReferenceEquals(_hoveredCell, next))
+            if (!_hoveredCell.Equals(next))
             {
-                _hoveredCell?.SetHoveredFromTable(false);
+                if (_hoveredCell.HasValue)
+                {
+                    _cellHoverExited?.Invoke(_hoveredCell.Value);
+                }
+
                 _hoveredCell = next;
+                if (_hoveredCell.HasValue)
+                {
+                    _cellHoverEntered?.Invoke(_hoveredCell.Value);
+                }
             }
 
-            // 子层级被禁用时格子会自行清 hover；同一个候选再次启用后需要重新进入。
-            _hoveredCell?.SetHoveredFromTable(true);
+            if (next.HasValue && _clicked != null && WorldInput.PrimaryPressedThisFrame)
+            {
+                _clicked.Invoke(next.Value);
+            }
         }
 
         private void OnDisable()
         {
             ClearHoveredCell();
+            CancelSettlementPulses();
         }
 
         private void OnDestroy()
         {
             ClearHoveredCell();
+            CancelSettlementPulses();
             _cellPool?.Clear();
             _scopeOutlinePool?.Clear();
         }
 
         private void ClearHoveredCell()
         {
-            DiningTableCellView hovered = _hoveredCell;
+            GridPos? hovered = _hoveredCell;
             _hoveredCell = null;
-            hovered?.SetHoveredFromTable(false);
+            if (hovered.HasValue)
+            {
+                _cellHoverExited?.Invoke(hovered.Value);
+            }
         }
 
         internal DiningTableCellView RentCell(Transform parent)
@@ -716,6 +673,105 @@ namespace GourmetProject.Game.Presentation.Battle
             }
         }
 
+        private void EnsureBatchRenderer()
+        {
+            if (_batchRenderer == null)
+            {
+                _batchRenderer = GetComponent<DiningTableBatchRenderer>();
+                if (_batchRenderer == null)
+                {
+                    _batchRenderer = gameObject.AddComponent<DiningTableBatchRenderer>();
+                }
+            }
+        }
+
+        private void ReconcileRenderedCells()
+        {
+            _renderedCells.Clear();
+            if (_voidAsPlaceholder)
+            {
+                for (int y = 0; y < _board.Height; y++)
+                {
+                    for (int x = 0; x < _board.Width; x++)
+                    {
+                        _renderedCells.Add(new GridPos(x, y));
+                    }
+                }
+            }
+            else
+            {
+                foreach (GridPos position in _board.ExistingCells())
+                {
+                    _renderedCells.Add(position);
+                }
+            }
+
+            foreach (GridPos position in _presentationRemovedTombstones)
+            {
+                if (_board.InBounds(position))
+                {
+                    _renderedCells.Add(position);
+                }
+            }
+
+            _orderedRenderedCells.Clear();
+            _orderedRenderedCells.AddRange(_renderedCells);
+            _orderedRenderedCells.Sort(CompareGridPositions);
+            EnsureBatchRenderer();
+            Matrix4x4 visualMatrix = _cellPrefab != null
+                ? _cellPrefab.BatchVisualLocalMatrix
+                : Matrix4x4.identity;
+            _batchRenderer.SetLayout(
+                _renderedCells,
+                Mapper,
+                _cellSprites.Plate,
+                visualMatrix);
+        }
+
+        private void StartSettlementPulse(GridPos position, float delaySeconds)
+        {
+            float pulse = 0f;
+            Sequence sequence = DOTween.Sequence()
+                .SetDelay(Mathf.Max(0f, delaySeconds))
+                .SetUpdate(true)
+                .SetLink(gameObject)
+                .Append(DOTween.To(
+                        () => pulse,
+                        value =>
+                        {
+                            pulse = value;
+                            _batchRenderer?.SetPulse(position, value);
+                        },
+                        1f,
+                        SettlementOrderPulseRiseDuration)
+                    .SetEase(Ease.OutCubic))
+                .Append(DOTween.To(
+                        () => pulse,
+                        value =>
+                        {
+                            pulse = value;
+                            _batchRenderer?.SetPulse(position, value);
+                        },
+                        0f,
+                        SettlementOrderPulseDuration - SettlementOrderPulseRiseDuration)
+                    .SetEase(Ease.InOutSine));
+            sequence.OnComplete(() => _batchRenderer?.SetPulse(position, 0f));
+            sequence.OnKill(() => _batchRenderer?.SetPulse(position, 0f));
+            _settlementPulseTweens.Add(sequence);
+        }
+
+        internal void CancelSettlementPulses()
+        {
+            for (int i = 0; i < _settlementPulseTweens.Count; i++)
+            {
+                _settlementPulseTweens[i]?.Kill(false);
+            }
+
+            _settlementPulseTweens.Clear();
+            _batchRenderer?.ClearPulses();
+            _batchRenderer?.FlushPendingChanges();
+        }
+
         private void EnsureCellPool()
         {
             if (_cellPool != null || _cellPrefab == null)
@@ -749,6 +805,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ReleaseTransientViews()
         {
+            CancelSettlementPulses();
             _presentationHiddenCells.Clear();
             _presentationSuppressedDisabledCells.Clear();
             _presentationRemovedTombstones.Clear();
@@ -771,19 +828,9 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             _scopeRegionOutlines.Clear();
-        }
-
-        private void ReleaseAllCells()
-        {
-            foreach (DiningTableCellView cell in _cells.Values)
-            {
-                if (cell != null)
-                {
-                    ReturnCell(cell);
-                }
-            }
-
-            _cells.Clear();
+            _renderedCells.Clear();
+            _orderedRenderedCells.Clear();
+            _batchRenderer?.Clear();
         }
 
         private void EnsureDragFeedbackCount(int count)
@@ -845,14 +892,10 @@ namespace GourmetProject.Game.Presentation.Battle
             return (BattleScopeHighlightChannel)Mathf.Max(0, key / 1000);
         }
 
-        private void OnCellHoverEntered(DiningTableCellView cell)
+        private static int CompareGridPositions(GridPos left, GridPos right)
         {
-            _cellHoverEntered?.Invoke(cell);
-        }
-
-        private void OnCellHoverExited(DiningTableCellView cell)
-        {
-            _cellHoverExited?.Invoke(cell);
+            int row = left.Y.CompareTo(right.Y);
+            return row != 0 ? row : left.X.CompareTo(right.X);
         }
 
     }
