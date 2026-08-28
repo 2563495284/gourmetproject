@@ -9,8 +9,10 @@ using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
 using GourmetProject.Gameplay.Scoring;
 using GourmetProject.Runtime;
+using GourmetProject.Runtime.Pooling;
 using GourmetProject.Runtime.Settings;
 using GourmetProject.Runtime.UI;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -27,6 +29,13 @@ namespace GourmetProject.Game.Presentation.Battle
     /// </summary>
     public sealed class BattleWorldController : MonoBehaviour
     {
+        private static readonly ProfilerMarker RebuildDishesMarker = new("Gourmet.Dishes.Rebuild");
+        private const int DishPoolPrewarm = 8;
+        private const int DishPoolMaxInactive = 48;
+        private const int PendingButtonPoolPrewarm = 2;
+        private const int PendingButtonPoolMaxInactive = 8;
+        private const int DropDustPoolPrewarm = 2;
+        private const int DropDustPoolMaxInactive = 8;
         private const bool DoodleEnabled = true;
         public const float Gap = DiningTableLayout.Gap;
         private const float MaxCellSize = DiningTableLayout.MaxCellSize;
@@ -110,6 +119,14 @@ namespace GourmetProject.Game.Presentation.Battle
         private readonly Dictionary<int, DishPieceView> _temporaryAreaViewsById = new Dictionary<int, DishPieceView>();
         private readonly List<ServeTriggerCue> _pendingServeTriggerCues = new List<ServeTriggerCue>();
         private readonly Dictionary<int, Button> _pendingDishActionButtons = new Dictionary<int, Button>();
+        private readonly Dictionary<int, DishPieceView> _reconcileDishViews = new Dictionary<int, DishPieceView>();
+        private readonly HashSet<int> _livePendingDishIds = new HashSet<int>();
+        private readonly List<int> _stalePendingDishIds = new List<int>();
+        private readonly List<Vector2> _temporaryAreaFootprints = new List<Vector2>();
+        private readonly List<TemporaryAreaStackSlot> _temporaryAreaSlots = new List<TemporaryAreaStackSlot>();
+        private GameObjectPool _dishPiecePool;
+        private GameObjectPool _pendingDishButtonPool;
+        private GameObjectPool _dishDropDustPool;
 
         private enum WorldMode
         {
@@ -160,6 +177,15 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action<int> _pendingDishConfirmRequested;
         private Action<DishPieceView> _dishHoverEntered;
         private Action<DishPieceView> _dishHoverExited;
+        private Action<DishPieceView> _dishHoverEnterHandler;
+        private Action<DishPieceView> _dishHoverExitHandler;
+        private Action<DishPieceView, Vector2> _beginMovableDishDragHandler;
+        private Action<Vector2> _updateMovableDishDragHandler;
+        private Action<Vector2> _endMovableDishDragHandler;
+        private Action<DishPieceView, Vector2> _beginTemporaryDishDragHandler;
+        private Action<Vector2> _updateTemporaryDishDragHandler;
+        private Action<Vector2> _endTemporaryDishDragHandler;
+        private Func<DishPieceView, Vector2, bool> _temporaryPointerHitFilter;
         private Action<DiningTableCellView> _cellHoverEntered;
         private Action<DiningTableCellView> _cellHoverExited;
         private Action<TableFragmentHoverInfo> _tableFragmentHoverEntered;
@@ -416,6 +442,17 @@ namespace GourmetProject.Game.Presentation.Battle
         private void Awake()
         {
             Instance = this;
+            _dishHoverEnterHandler = OnDishHoverEntered;
+            _dishHoverExitHandler = OnDishHoverExited;
+            _beginMovableDishDragHandler = BeginMovableDishDrag;
+            _updateMovableDishDragHandler = UpdateMovableDishDrag;
+            _endMovableDishDragHandler = EndMovableDishDrag;
+            _beginTemporaryDishDragHandler = BeginTemporaryAreaDishDrag;
+            _updateTemporaryDishDragHandler = UpdateTemporaryAreaDishDrag;
+            _endTemporaryDishDragHandler = EndTemporaryAreaDishDrag;
+            _temporaryPointerHitFilter = IsTemporaryAreaPointerHitAccepted;
+            EnsureDishPiecePool();
+            EnsureDishDropDustPool();
 
             if (_backgroundRenderer != null)
             {
@@ -951,9 +988,9 @@ namespace GourmetProject.Game.Presentation.Battle
                     RefreshTemporaryAreaVisibility(animated: true);
                     EnsureTemporaryAreaLayoutReady();
                     int index = TemporaryAreaDishIndex(dishId);
-                    TemporaryAreaStackSlot[] targetSlots = CalculateTemporaryAreaSlots();
+                    IReadOnlyList<TemporaryAreaStackSlot> targetSlots = CalculateTemporaryAreaSlots();
                     LayoutTemporaryAreaPieces(animated: true, slotsOverride: targetSlots);
-                    TemporaryAreaStackSlot targetSlot = index >= 0 && index < targetSlots.Length
+                    TemporaryAreaStackSlot targetSlot = index >= 0 && index < targetSlots.Count
                         ? targetSlots[index]
                         : new TemporaryAreaStackSlot(TemporaryAreaFallbackCenter(), 1f);
 
@@ -1057,12 +1094,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 piece.gameObject.name = $"TemporaryAreaDish_{dish.Id}_{dish.Def.Id}";
                 piece.SetGhost(false);
                 piece.SetPlacementGlow(false, false);
-                piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+                piece.SetHoverCallbacks(_dishHoverEnterHandler, _dishHoverExitHandler);
                 piece.SetMoveCallbacks(
-                    BeginTemporaryAreaDishDrag,
-                    UpdateTemporaryAreaDishDrag,
-                    EndTemporaryAreaDishDrag);
-                piece.SetPointerHitFilter(IsTemporaryAreaPointerHitAccepted);
+                    _beginTemporaryDishDragHandler,
+                    _updateTemporaryDishDragHandler,
+                    _endTemporaryDishDragHandler);
+                piece.SetPointerHitFilter(_temporaryPointerHitFilter);
                 piece.SetFlying(true);
                 piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
                 piece.SetClickEnabled(true);
@@ -1129,6 +1166,9 @@ namespace GourmetProject.Game.Presentation.Battle
             CancelTemporaryAreaFade();
             RestoreFoodLayoutImmediate();
             CancelPresentationTasks();
+            _dishPiecePool?.Clear();
+            _pendingDishButtonPool?.Clear();
+            _dishDropDustPool?.Clear();
         }
 
         public void Initialize(
@@ -1245,7 +1285,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 if (piece != null)
                 {
-                    piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+                    piece.SetHoverCallbacks(_dishHoverEnterHandler, _dishHoverExitHandler);
                 }
             }
 
@@ -1253,7 +1293,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 if (piece != null)
                 {
-                    piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+                    piece.SetHoverCallbacks(_dishHoverEnterHandler, _dishHoverExitHandler);
                 }
             }
         }
@@ -1712,9 +1752,10 @@ namespace GourmetProject.Game.Presentation.Battle
             }
 
             EnsurePendingDishActionsRoot();
+            EnsurePendingDishButtonPool();
             bool visible = _worldMode == WorldMode.Food && !_settling;
             _pendingDishActionsRoot.gameObject.SetActive(visible);
-            var liveDishIds = new HashSet<int>();
+            _livePendingDishIds.Clear();
 
             foreach (PendingDishPlacement pending in _session.PendingDishPlacements)
             {
@@ -1727,10 +1768,17 @@ namespace GourmetProject.Game.Presentation.Battle
                 }
 
                 int dishId = pending.Dish.Id;
-                liveDishIds.Add(dishId);
+                _livePendingDishIds.Add(dishId);
                 if (!_pendingDishActionButtons.TryGetValue(dishId, out Button button) || button == null)
                 {
-                    button = Instantiate(_comButtonPrefab, _pendingDishActionsRoot);
+                    button = _pendingDishButtonPool != null
+                        ? _pendingDishButtonPool.Get<Button>(_pendingDishActionsRoot)
+                        : null;
+                    if (button == null)
+                    {
+                        continue;
+                    }
+
                     button.gameObject.name = $"PendingDishAction_{dishId}";
                     UIButtonSoundFeedback.Install(button);
                     button.onClick.RemoveAllListeners();
@@ -1758,21 +1806,21 @@ namespace GourmetProject.Game.Presentation.Battle
                 button.gameObject.SetActive(visible && piece != _movingPiece);
             }
 
-            var staleDishIds = new List<int>();
+            _stalePendingDishIds.Clear();
             foreach (KeyValuePair<int, Button> entry in _pendingDishActionButtons)
             {
-                if (!liveDishIds.Contains(entry.Key))
+                if (!_livePendingDishIds.Contains(entry.Key))
                 {
                     if (entry.Value != null)
                     {
-                        Destroy(entry.Value.gameObject);
+                        ReleasePendingDishButton(entry.Value);
                     }
 
-                    staleDishIds.Add(entry.Key);
+                    _stalePendingDishIds.Add(entry.Key);
                 }
             }
 
-            foreach (int dishId in staleDishIds)
+            foreach (int dishId in _stalePendingDishIds)
             {
                 _pendingDishActionButtons.Remove(dishId);
             }
@@ -1792,11 +1840,58 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 if (button != null)
                 {
-                    Destroy(button.gameObject);
+                    ReleasePendingDishButton(button);
                 }
             }
 
             _pendingDishActionButtons.Clear();
+        }
+
+        private void EnsurePendingDishButtonPool()
+        {
+            if (_pendingDishButtonPool != null || _comButtonPrefab == null)
+            {
+                return;
+            }
+
+            EnsurePendingDishActionsRoot();
+            _pendingDishButtonPool = new GameObjectPool(
+                _comButtonPrefab.gameObject,
+                _pendingDishActionsRoot,
+                PendingButtonPoolPrewarm,
+                PendingButtonPoolMaxInactive,
+                onRelease: go =>
+                {
+                    Button button = go.GetComponent<Button>();
+                    if (button != null)
+                    {
+                        UIButtonSoundFeedback.Install(button);
+                        button.onClick.RemoveAllListeners();
+                        button.interactable = true;
+                    }
+                });
+        }
+
+        private void ReleasePendingDishButton(Button button)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            EnsurePendingDishButtonPool();
+            if (_pendingDishButtonPool != null)
+            {
+                _pendingDishButtonPool.Release(button);
+            }
+            else if (Application.isPlaying)
+            {
+                Destroy(button.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(button.gameObject);
+            }
         }
 
         private void ConfirmPendingDishFromButton(int dishId)
@@ -2238,7 +2333,12 @@ namespace GourmetProject.Game.Presentation.Battle
                 return null;
             }
 
-            DishPieceView piece = Instantiate(_dishPiecePrefab, _piecesRoot);
+            DishPieceView piece = RentDishPiece();
+            if (piece == null)
+            {
+                return null;
+            }
+
             piece.gameObject.name = objectName;
             BuildHudFood(piece, dish, null);
             piece.SetHoverCallbacks(null, null);
@@ -2267,8 +2367,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SetOutletDiscardHover(false);
             if (_outletDragPiece != null)
             {
-                _outletDragPiece.gameObject.SetActive(false);
-                Destroy(_outletDragPiece.gameObject);
+                ReleaseDishPiece(_outletDragPiece);
             }
 
             _outletDragPiece = null;
@@ -2407,8 +2506,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
             if (piece != null)
             {
-                piece.gameObject.SetActive(false);
-                Destroy(piece.gameObject);
+                ReleaseDishPiece(piece);
             }
 
             completion?.Invoke();
@@ -2425,8 +2523,7 @@ namespace GourmetProject.Game.Presentation.Battle
             animation?.Kill();
             if (piece != null)
             {
-                piece.gameObject.SetActive(false);
-                Destroy(piece.gameObject);
+                ReleaseDishPiece(piece);
             }
 
             if (invokeCompletion)
@@ -2927,7 +3024,7 @@ namespace GourmetProject.Game.Presentation.Battle
             piece.SetPointerHitFilter(null);
             piece.SetGhost(false);
             piece.SetClickEnabled(true);
-            piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+            piece.SetHoverCallbacks(_dishHoverEnterHandler, _dishHoverExitHandler);
             ConfigurePlacedPieceInteraction(piece, dish);
 
             _placedPieces.Add(piece);
@@ -3009,40 +3106,42 @@ namespace GourmetProject.Game.Presentation.Battle
             return 0;
         }
 
-        private TemporaryAreaStackSlot[] CalculateTemporaryAreaSlots()
+        private IReadOnlyList<TemporaryAreaStackSlot> CalculateTemporaryAreaSlots()
         {
+            _temporaryAreaSlots.Clear();
             int count = _session?.TemporaryAreaDishes.Count ?? 0;
             if (count <= 0)
             {
-                return Array.Empty<TemporaryAreaStackSlot>();
+                return _temporaryAreaSlots;
             }
 
             Vector2 fallbackCenter = TemporaryAreaFallbackCenter();
             if (!TryGetTemporaryAreaContentRect(out Rect rect))
             {
-                var fallback = new TemporaryAreaStackSlot[count];
                 for (int i = 0; i < count; i++)
                 {
-                    fallback[i] = new TemporaryAreaStackSlot(fallbackCenter, 1f);
+                    _temporaryAreaSlots.Add(new TemporaryAreaStackSlot(fallbackCenter, 1f));
                 }
 
-                return fallback;
+                return _temporaryAreaSlots;
             }
 
-            var footprints = new Vector2[count];
+            _temporaryAreaFootprints.Clear();
             for (int i = 0; i < count; i++)
             {
                 DishInstance dish = _session.TemporaryAreaDishes[i];
                 // 数据层已在动画开始前写入旋转后的 Placement；始终使用它，
                 // 避免飞入表现仍持有旧 CurrentShape 时算出另一套临时槽位。
-                footprints[i] = TemporaryAreaFootprint(dish);
+                _temporaryAreaFootprints.Add(TemporaryAreaFootprint(dish));
             }
 
-            return TemporaryAreaStackLayout.Calculate(
+            TemporaryAreaStackLayout.Calculate(
                 rect,
-                footprints,
+                _temporaryAreaFootprints,
                 TemporaryAreaPiecePaddingRatio,
-                TemporaryAreaVisibleRatio);
+                TemporaryAreaVisibleRatio,
+                _temporaryAreaSlots);
+            return _temporaryAreaSlots;
         }
 
         private Vector2 TemporaryAreaFootprint(DishInstance dish)
@@ -3236,13 +3335,18 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 centerWorld = mapper.Root != null
                 ? mapper.Root.TransformPoint(centerLocal)
                 : centerLocal;
-            DishDropDustView.Play(
-                _dishDropDustPrefab,
-                _fxRoot != null ? _fxRoot : transform,
+            DishDropDustView view = RentDropDust();
+            if (view == null)
+            {
+                return;
+            }
+
+            view.Play(
                 centerWorld,
                 footprintWorldSize,
                 placement.Orientation.CellCount,
-                pointerVelocityWorld);
+                pointerVelocityWorld,
+                ReleaseDropDust);
         }
 
         private static Vector3 OccupiedCellCenterOffsetLocal(DishShape shape, float pitch)
@@ -3728,60 +3832,59 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void RebuildPlacedPieces()
         {
-            ClearPlacedPieces();
-            if (_session == null)
+            using (RebuildDishesMarker.Auto())
             {
-                return;
-            }
+                _scopeHighlights?.ClearAll();
+                _reconcileDishViews.Clear();
+                CollectReconcileCandidates(_dishViewsById);
+                CollectReconcileCandidates(_temporaryAreaViewsById);
 
-            foreach (DishInstance dish in _session.DiningTable.Dishes)
-            {
-                CreatePlacedPiece(dish);
-            }
+                _placedPieces.Clear();
+                _dishViewsById.Clear();
+                _temporaryAreaPieces.Clear();
+                _temporaryAreaViewsById.Clear();
+                if (_session == null)
+                {
+                    ReleaseUnusedReconcileCandidates();
+                    return;
+                }
 
-            RebuildTemporaryAreaPieces();
+                foreach (DishInstance dish in _session.DiningTable.Dishes)
+                {
+                    CreatePlacedPiece(dish);
+                }
+
+                RebuildTemporaryAreaPieces();
+                ReleaseUnusedReconcileCandidates();
+            }
         }
 
         private void ClearPlacedPieces()
         {
             _scopeHighlights?.ClearAll();
-            foreach (DishPieceView piece in _placedPieces)
-            {
-                if (piece != null)
-                {
-                    Destroy(piece.gameObject);
-                }
-            }
-
+            _reconcileDishViews.Clear();
+            CollectReconcileCandidates(_dishViewsById);
+            CollectReconcileCandidates(_temporaryAreaViewsById);
+            ReleaseUnusedReconcileCandidates();
             _placedPieces.Clear();
             _dishViewsById.Clear();
-
-            foreach (DishPieceView piece in _temporaryAreaPieces)
-            {
-                if (piece != null)
-                {
-                    Destroy(piece.gameObject);
-                }
-            }
-
             _temporaryAreaPieces.Clear();
             _temporaryAreaViewsById.Clear();
         }
 
         private DishPieceView CreatePlacedPiece(DishInstance dish)
         {
-            DishPieceView piece;
-            if (_dishPiecePrefab != null)
+            DishPieceView piece = TakeOrRentDishPiece(dish.Id);
+            if (piece == null)
             {
-                piece = Instantiate(_dishPiecePrefab, _piecesRoot);
-            }
-            else
-            {
-                Debug.LogError($"{nameof(BattleWorldController)} 缺少 DishPiece prefab。", this);
                 return null;
             }
 
-            piece.gameObject.name = $"Dish_{dish.Id}_{dish.Def.Id}";
+            if (!ReferenceEquals(piece.Instance, dish)
+                || !piece.gameObject.name.StartsWith("Dish_", StringComparison.Ordinal))
+            {
+                piece.gameObject.name = $"Dish_{dish.Id}_{dish.Def.Id}";
+            }
             // 食物挂在 BoardRoot 下，用局部坐标贴格（与餐桌共享局部帧）。
             piece.transform.localPosition = _boardView.Mapper.CellCenterLocal(dish.Placement.Origin);
             piece.BuildPlaced(dish, _spriteProvider.Get(dish.Def), _cellSize, _cellSize + Gap, _dishClicked);
@@ -3789,7 +3892,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 piece.SetClickEnabled(false);
             }
-            piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+            piece.SetHoverCallbacks(_dishHoverEnterHandler, _dishHoverExitHandler);
             ConfigurePlacedPieceInteraction(piece, dish);
             _placedPieces.Add(piece);
             _dishViewsById[dish.Id] = piece;
@@ -3801,7 +3904,10 @@ namespace GourmetProject.Game.Presentation.Battle
             PendingDishPlacement pending = _session?.FindPendingDishPlacement(dish.Id);
             if (pending != null && pending.IsOnDiningTable)
             {
-                piece.SetMoveCallbacks(BeginMovableDishDrag, UpdateMovableDishDrag, EndMovableDishDrag);
+                piece.SetMoveCallbacks(
+                    _beginMovableDishDragHandler,
+                    _updateMovableDishDragHandler,
+                    _endMovableDishDragHandler);
                 piece.SetPlacementGlow(true, true);
             }
             else
@@ -3821,21 +3927,163 @@ namespace GourmetProject.Game.Presentation.Battle
             for (int i = 0; i < _session.TemporaryAreaDishes.Count; i++)
             {
                 DishInstance dish = _session.TemporaryAreaDishes[i];
-                DishPieceView piece = Instantiate(_dishPiecePrefab, _piecesRoot);
-                piece.gameObject.name = $"TemporaryAreaDish_{dish.Id}_{dish.Def.Id}";
+                DishPieceView piece = TakeOrRentDishPiece(dish.Id);
+                if (piece == null)
+                {
+                    continue;
+                }
+
+                if (!ReferenceEquals(piece.Instance, dish)
+                    || !piece.gameObject.name.StartsWith(
+                        "TemporaryAreaDish_",
+                        StringComparison.Ordinal))
+                {
+                    piece.gameObject.name = $"TemporaryAreaDish_{dish.Id}_{dish.Def.Id}";
+                }
                 BuildHudFood(piece, dish, _dishClicked);
-                piece.SetHoverCallbacks(OnDishHoverEntered, OnDishHoverExited);
+                piece.SetHoverCallbacks(_dishHoverEnterHandler, _dishHoverExitHandler);
                 piece.SetMoveCallbacks(
-                    BeginTemporaryAreaDishDrag,
-                    UpdateTemporaryAreaDishDrag,
-                    EndTemporaryAreaDishDrag);
-                piece.SetPointerHitFilter(IsTemporaryAreaPointerHitAccepted);
+                    _beginTemporaryDishDragHandler,
+                    _updateTemporaryDishDragHandler,
+                    _endTemporaryDishDragHandler);
+                piece.SetPointerHitFilter(_temporaryPointerHitFilter);
                 piece.SetPlacementGlow(false, false);
                 _temporaryAreaPieces.Add(piece);
                 _temporaryAreaViewsById[dish.Id] = piece;
             }
 
             LayoutTemporaryAreaPieces();
+        }
+
+        private void EnsureDishPiecePool()
+        {
+            if (_dishPiecePool != null || _dishPiecePrefab == null)
+            {
+                return;
+            }
+
+            _dishPiecePool = new GameObjectPool(
+                _dishPiecePrefab.gameObject,
+                _piecesRoot != null ? _piecesRoot : transform,
+                DishPoolPrewarm,
+                DishPoolMaxInactive,
+                onGet: go => go.GetComponent<DishPieceView>()?.PrepareForReuse(),
+                onRelease: go => go.GetComponent<DishPieceView>()?.ResetForPool());
+        }
+
+        private void EnsureDishDropDustPool()
+        {
+            if (_dishDropDustPool != null || _dishDropDustPrefab == null)
+            {
+                return;
+            }
+
+            _dishDropDustPool = new GameObjectPool(
+                _dishDropDustPrefab.gameObject,
+                _fxRoot != null ? _fxRoot : transform,
+                DropDustPoolPrewarm,
+                DropDustPoolMaxInactive,
+                onGet: go => go.GetComponent<DishDropDustView>()?.PrepareForReuse(),
+                onRelease: go => go.GetComponent<DishDropDustView>()?.ResetForPool());
+        }
+
+        private DishDropDustView RentDropDust()
+        {
+            EnsureDishDropDustPool();
+            return _dishDropDustPool?.Get<DishDropDustView>(
+                _fxRoot != null ? _fxRoot : transform);
+        }
+
+        private void ReleaseDropDust(DishDropDustView view)
+        {
+            if (view != null && _dishDropDustPool != null)
+            {
+                _dishDropDustPool.Release(view);
+            }
+        }
+
+        private DishPieceView RentDishPiece()
+        {
+            EnsureDishPiecePool();
+            if (_dishPiecePool == null)
+            {
+                Debug.LogError($"{nameof(BattleWorldController)} 缺少 DishPiece prefab。", this);
+                return null;
+            }
+
+            return _dishPiecePool.Get<DishPieceView>(_piecesRoot != null ? _piecesRoot : transform);
+        }
+
+        private void ReleaseDishPiece(DishPieceView piece)
+        {
+            if (piece == null)
+            {
+                return;
+            }
+
+            EnsureDishPiecePool();
+            if (_dishPiecePool != null)
+            {
+                _dishPiecePool.Release(piece);
+            }
+            else if (Application.isPlaying)
+            {
+                Destroy(piece.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(piece.gameObject);
+            }
+        }
+
+        private DishPieceView TakeOrRentDishPiece(int dishId)
+        {
+            if (_reconcileDishViews.Remove(dishId, out DishPieceView existing)
+                && existing != null)
+            {
+                existing.transform.SetParent(_piecesRoot != null ? _piecesRoot : transform, false);
+                existing.PrepareForReuse();
+                existing.gameObject.SetActive(true);
+                return existing;
+            }
+
+            return RentDishPiece();
+        }
+
+        private void CollectReconcileCandidates(IReadOnlyDictionary<int, DishPieceView> source)
+        {
+            foreach (KeyValuePair<int, DishPieceView> entry in source)
+            {
+                DishPieceView piece = entry.Value;
+                if (piece == null || IsReservedDishPiece(piece))
+                {
+                    continue;
+                }
+
+                _reconcileDishViews[entry.Key] = piece;
+            }
+        }
+
+        private void ReleaseUnusedReconcileCandidates()
+        {
+            foreach (DishPieceView piece in _reconcileDishViews.Values)
+            {
+                if (piece != null && !IsReservedDishPiece(piece))
+                {
+                    ReleaseDishPiece(piece);
+                }
+            }
+
+            _reconcileDishViews.Clear();
+        }
+
+        private bool IsReservedDishPiece(DishPieceView piece)
+        {
+            return ReferenceEquals(piece, _outletDragPiece)
+                || ReferenceEquals(piece, _movingPiece)
+                || ReferenceEquals(piece, _temporaryAreaDragPiece)
+                || ReferenceEquals(piece, _discardAnimationPiece)
+                || ReferenceEquals(piece, _temporaryAreaFlyInPiece);
         }
 
         public void ShowDishScopeHighlights(DishInstance dish)

@@ -1454,8 +1454,13 @@ namespace GourmetProject.Game.Presentation.Battle
                 return;
             }
 
-            _editDragRoot = Instantiate(_editDragRootPrefab, EditRoot);
+            if (_editDragRoot == null)
+            {
+                _editDragRoot = Instantiate(_editDragRootPrefab, EditRoot);
+            }
+
             _editDragRoot.gameObject.name = "BoardEditDrag";
+            _editDragRoot.gameObject.SetActive(true);
             _editDragRoot.position = center;
             _editDragRoot.localRotation = Quaternion.identity;
             _editDragRoot.localScale = scale;
@@ -1861,7 +1866,7 @@ namespace GourmetProject.Game.Presentation.Battle
                 return null;
             }
 
-            projection = Instantiate(_boardCellPrefab, _boardView.transform);
+            projection = _boardView.RentCell(_boardView.transform);
             projection.name = "BoardEditProjection";
             projection.SetInteractionEnabled(false);
             projection.gameObject.SetActive(false);
@@ -2152,9 +2157,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private DiningTableCellView InstantiateDragCell()
         {
-            if (_boardCellPrefab != null)
+            if (_boardCellPrefab != null && _boardView != null)
             {
-                return Instantiate(_boardCellPrefab, _editDragRoot);
+                return _boardView.RentCell(_editDragRoot);
             }
 
             Debug.LogError($"{nameof(DiningTableEditController)} 缺少 DiningTableCell prefab。", this);
@@ -2163,9 +2168,9 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private DiningTableCellView InstantiateTrayCell()
         {
-            if (_boardCellPrefab != null && EditRoot != null)
+            if (_boardCellPrefab != null && EditRoot != null && _boardView != null)
             {
-                return Instantiate(_boardCellPrefab, EditRoot);
+                return _boardView.RentCell(EditRoot);
             }
 
             Debug.LogError($"{nameof(DiningTableEditController)} 缺少 DiningTableCell prefab。", this);
@@ -2196,7 +2201,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 if (cell != null)
                 {
-                    Destroy(cell.gameObject);
+                    _boardView?.ReturnCell(cell);
                 }
             }
 
@@ -2217,7 +2222,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 if (cell != null)
                 {
-                    Destroy(cell.gameObject);
+                    _boardView?.ReturnCell(cell);
                 }
             }
 
@@ -2226,8 +2231,7 @@ namespace GourmetProject.Game.Presentation.Battle
             _boardView?.ClearTransientGridRegionOutline();
             if (_editDragRoot != null)
             {
-                Destroy(_editDragRoot.gameObject);
-                _editDragRoot = null;
+                _editDragRoot.gameObject.SetActive(false);
             }
         }
 

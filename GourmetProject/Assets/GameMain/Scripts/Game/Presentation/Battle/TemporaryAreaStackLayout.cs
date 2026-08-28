@@ -35,15 +35,42 @@ namespace GourmetProject.Game.Presentation.Battle
                 return Array.Empty<TemporaryAreaStackSlot>();
             }
 
+            var results = new List<TemporaryAreaStackSlot>(count);
+            Calculate(
+                contentRect,
+                footprintSizes,
+                piecePaddingRatio,
+                visibleRatio,
+                results);
+            return results.ToArray();
+        }
+
+        public static void Calculate(
+            Rect contentRect,
+            IReadOnlyList<Vector2> footprintSizes,
+            float piecePaddingRatio,
+            float visibleRatio,
+            List<TemporaryAreaStackSlot> results)
+        {
+            if (results == null)
+            {
+                throw new ArgumentNullException(nameof(results));
+            }
+
+            results.Clear();
+            int count = footprintSizes?.Count ?? 0;
+            if (count == 0)
+            {
+                return;
+            }
+
             float maxWidth = 0.0001f;
             float maxHeight = 0.0001f;
-            var safeFootprints = new Vector2[count];
             for (int i = 0; i < count; i++)
             {
                 Vector2 footprint = footprintSizes[i];
                 footprint.x = Mathf.Max(0.0001f, footprint.x);
                 footprint.y = Mathf.Max(0.0001f, footprint.y);
-                safeFootprints[i] = footprint;
                 maxWidth = Mathf.Max(maxWidth, footprint.x);
                 maxHeight = Mathf.Max(maxHeight, footprint.y);
             }
@@ -54,13 +81,15 @@ namespace GourmetProject.Game.Presentation.Battle
             float maxRelativeEdge = float.MinValue;
             for (int i = 0; i < count; i++)
             {
+                Vector2 footprint = footprintSizes[i];
+                footprint.x = Mathf.Max(0.0001f, footprint.x);
                 float centerOffset = i * stepUnscaled;
                 minRelativeEdge = Mathf.Min(
                     minRelativeEdge,
-                    centerOffset - safeFootprints[i].x * 0.5f);
+                    centerOffset - footprint.x * 0.5f);
                 maxRelativeEdge = Mathf.Max(
                     maxRelativeEdge,
-                    centerOffset + safeFootprints[i].x * 0.5f);
+                    centerOffset + footprint.x * 0.5f);
             }
 
             float groupWidthUnscaled = Mathf.Max(0.0001f, maxRelativeEdge - minRelativeEdge);
@@ -75,15 +104,12 @@ namespace GourmetProject.Game.Presentation.Battle
             float step = stepUnscaled * scale;
             float groupCenterOffset = (minRelativeEdge + maxRelativeEdge) * 0.5f * scale;
             float start = contentRect.center.x - groupCenterOffset;
-            var slots = new TemporaryAreaStackSlot[count];
             for (int i = 0; i < count; i++)
             {
-                slots[i] = new TemporaryAreaStackSlot(
+                results.Add(new TemporaryAreaStackSlot(
                     new Vector2(start + i * step, contentRect.center.y),
-                    scale);
+                    scale));
             }
-
-            return slots;
         }
     }
 

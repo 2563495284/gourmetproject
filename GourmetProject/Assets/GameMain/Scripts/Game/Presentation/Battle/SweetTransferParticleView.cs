@@ -3,6 +3,7 @@ using System.Threading;
 using DG.Tweening;
 using UnityEngine;
 using GourmetProject.Game.Visual;
+using GourmetProject.Runtime.Pooling;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
@@ -23,7 +24,16 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private Tween _tween;
         private Transform _afterimageRoot;
+        private readonly List<SpriteRenderer> _afterimages = new();
+        private readonly List<SpriteRenderer> _arrivalDots = new();
+        private readonly List<SpriteRenderer> _failureDots = new();
         private float _visualScale = 1f;
+        private Color _defaultColor;
+
+        private void Awake()
+        {
+            _defaultColor = _color;
+        }
 
         public static async Awaitable PlayAsync(
             SweetTransferParticleView prefab,
@@ -33,7 +43,8 @@ namespace GourmetProject.Game.Presentation.Battle
             float duration,
             CancellationToken cancellationToken,
             Color? colorOverride = null,
-            float visualScale = 1f)
+            float visualScale = 1f,
+            GameObjectPool pool = null)
         {
             SweetTransferParticleView view = Begin(
                 prefab,
@@ -42,7 +53,8 @@ namespace GourmetProject.Game.Presentation.Battle
                 end,
                 duration,
                 colorOverride,
-                visualScale);
+                visualScale,
+                pool);
             if (view == null)
             {
                 return;
@@ -56,7 +68,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 if (view != null)
                 {
-                    Destroy(view.gameObject);
+                    Release(view, pool);
                 }
             }
         }
@@ -72,14 +84,17 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 end,
             float duration,
             Color? colorOverride = null,
-            float visualScale = 1f)
+            float visualScale = 1f,
+            GameObjectPool pool = null)
         {
             if (prefab == null)
             {
                 return null;
             }
 
-            SweetTransferParticleView view = Instantiate(prefab, parent);
+            SweetTransferParticleView view = pool != null
+                ? pool.Get<SweetTransferParticleView>(parent)
+                : Instantiate(prefab, parent);
             if (colorOverride.HasValue)
             {
                 view._color = colorOverride.Value;
@@ -101,14 +116,17 @@ namespace GourmetProject.Game.Presentation.Battle
             Vector3 anchor,
             float duration,
             CancellationToken cancellationToken,
-            float visualScale = 1f)
+            float visualScale = 1f,
+            GameObjectPool pool = null)
         {
             if (prefab == null)
             {
                 return;
             }
 
-            SweetTransferParticleView view = Instantiate(prefab, parent);
+            SweetTransferParticleView view = pool != null
+                ? pool.Get<SweetTransferParticleView>(parent)
+                : Instantiate(prefab, parent);
             try
             {
                 view._visualScale = Mathf.Max(0.0001f, visualScale);
@@ -118,7 +136,7 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 if (view != null)
                 {
-                    Destroy(view.gameObject);
+                    Release(view, pool);
                 }
             }
         }
@@ -140,11 +158,12 @@ namespace GourmetProject.Game.Presentation.Battle
             transform.position = anchor;
             float size = _size * _visualScale;
 
-            var fadingDots = new List<SpriteRenderer>();
-            for (int i = 0; i < Mathf.Max(5, _arrivalDotCount / 2); i++)
-            {
-                fadingDots.Add(CreatePoint($"Failed_{i}", BattleSorting.OrderFloatingText - 2, 0.42f));
-            }
+            EnsurePoints(
+                _failureDots,
+                Mathf.Max(5, _arrivalDotCount / 2),
+                "Failed",
+                BattleSorting.OrderFloatingText - 2,
+                0.42f);
 
             float safeDuration = Mathf.Max(0.0001f, duration);
             _tween = DOVirtual.Float(0f, 1f, safeDuration, progress =>
@@ -157,11 +176,11 @@ namespace GourmetProject.Game.Presentation.Battle
                     core.a *= 1f - t;
                     _renderer.color = core;
 
-                    for (int i = 0; i < fadingDots.Count; i++)
+                    for (int i = 0; i < _failureDots.Count; i++)
                     {
-                        float angle = Mathf.PI * 2f * i / Mathf.Max(1, fadingDots.Count);
+                        float angle = Mathf.PI * 2f * i / Mathf.Max(1, _failureDots.Count);
                         float radius = Mathf.Sin(t * Mathf.PI) * size * 1.25f;
-                        SpriteRenderer dot = fadingDots[i];
+                        SpriteRenderer dot = _failureDots[i];
                         dot.transform.position = anchor
                             + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
                         Color dotColor = _color;
@@ -191,20 +210,13 @@ namespace GourmetProject.Game.Presentation.Battle
             SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
             BattleSorting.Apply(_renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText - 1);
 
-            CreateAfterimageRoot();
-            var afterimages = new List<SpriteRenderer>();
-            for (int i = 0; i < Mathf.Max(0, _afterimageCount); i++)
-            {
-                afterimages.Add(CreateAfterimage($"Afterimage_{i}"));
-            }
-
-            var arrivalDots = new List<SpriteRenderer>();
-            for (int i = 0; i < Mathf.Max(0, _arrivalDotCount); i++)
-            {
-                SpriteRenderer dot = CreatePoint($"Arrival_{i}", BattleSorting.OrderFloatingText - 1, 0.46f);
-                dot.color = Color.clear;
-                arrivalDots.Add(dot);
-            }
+            EnsureAfterimages(Mathf.Max(0, _afterimageCount));
+            EnsurePoints(
+                _arrivalDots,
+                Mathf.Max(0, _arrivalDotCount),
+                "Arrival",
+                BattleSorting.OrderFloatingText - 1,
+                0.46f);
 
             float size = _size * _visualScale;
             transform.position = start;
@@ -236,9 +248,9 @@ namespace GourmetProject.Game.Presentation.Battle
                     _renderer.color = color;
 
                     float safeAfterimageSpacing = Mathf.Max(0.005f, _afterimageSpacing);
-                    for (int i = 0; i < afterimages.Count; i++)
+                    for (int i = 0; i < _afterimages.Count; i++)
                     {
-                        SpriteRenderer afterimage = afterimages[i];
+                        SpriteRenderer afterimage = _afterimages[i];
                         if (afterimage == null)
                         {
                             continue;
@@ -252,7 +264,7 @@ namespace GourmetProject.Game.Presentation.Battle
                             continue;
                         }
 
-                        float age = (i + 1f) / (afterimages.Count + 1f);
+                        float age = (i + 1f) / (_afterimages.Count + 1f);
                         afterimage.transform.position = Bezier(start, control, end, pointT);
 
                         // 每个副本保持它所代表的“过去一帧”的尺寸，再随年龄逐渐缩小、变淡。
@@ -280,15 +292,15 @@ namespace GourmetProject.Game.Presentation.Battle
                         Mathf.Max(size, _arrivalRadius * _visualScale),
                         arrival);
                     float ringAlpha = Mathf.Sin(arrival * Mathf.PI) * 0.82f;
-                    for (int i = 0; i < arrivalDots.Count; i++)
+                    for (int i = 0; i < _arrivalDots.Count; i++)
                     {
-                        SpriteRenderer dot = arrivalDots[i];
+                        SpriteRenderer dot = _arrivalDots[i];
                         if (dot == null)
                         {
                             continue;
                         }
 
-                        float angle = Mathf.PI * 2f * i / Mathf.Max(1, arrivalDots.Count);
+                        float angle = Mathf.PI * 2f * i / Mathf.Max(1, _arrivalDots.Count);
                         dot.transform.position = end + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
                         Color dotColor = new Color(1f, 0.78f, 0.94f, ringAlpha);
                         dot.color = dotColor;
@@ -298,11 +310,82 @@ namespace GourmetProject.Game.Presentation.Battle
                 .SetLink(gameObject);
         }
 
-        private void CreateAfterimageRoot()
+        internal void PrepareForReuse()
         {
-            GameObject root = new("SweetTransferAfterimages");
-            root.transform.SetParent(transform.parent, false);
-            _afterimageRoot = root.transform;
+            ResetVisuals();
+            _color = _defaultColor;
+            _visualScale = 1f;
+        }
+
+        internal void ResetForPool()
+        {
+            ResetVisuals();
+            _color = _defaultColor;
+            _visualScale = 1f;
+        }
+
+        internal void WarmupForPool()
+        {
+            EnsureRenderer();
+            EnsureAfterimages(Mathf.Max(0, _afterimageCount));
+            EnsurePoints(
+                _arrivalDots,
+                Mathf.Max(0, _arrivalDotCount),
+                "Arrival",
+                BattleSorting.OrderFloatingText - 1,
+                0.46f);
+            EnsurePoints(
+                _failureDots,
+                Mathf.Max(5, _arrivalDotCount / 2),
+                "Failed",
+                BattleSorting.OrderFloatingText - 2,
+                0.42f);
+            ResetForPool();
+        }
+
+        private void EnsureAfterimageRoot()
+        {
+            if (_afterimageRoot == null)
+            {
+                GameObject root = new("SweetTransferAfterimages");
+                _afterimageRoot = root.transform;
+            }
+
+            _afterimageRoot.SetParent(transform.parent, false);
+            _afterimageRoot.gameObject.SetActive(true);
+        }
+
+        private void EnsureAfterimages(int count)
+        {
+            EnsureAfterimageRoot();
+            while (_afterimages.Count < count)
+            {
+                _afterimages.Add(CreateAfterimage($"Afterimage_{_afterimages.Count}"));
+            }
+
+            SetRendererRangeActive(_afterimages, count);
+        }
+
+        private void EnsurePoints(
+            List<SpriteRenderer> points,
+            int count,
+            string namePrefix,
+            int sortingOrder,
+            float relativeScale)
+        {
+            while (points.Count < count)
+            {
+                points.Add(CreatePoint(
+                    $"{namePrefix}_{points.Count}",
+                    sortingOrder,
+                    relativeScale));
+            }
+
+            SetRendererRangeActive(points, count);
+            for (int i = 0; i < count; i++)
+            {
+                points[i].color = Color.clear;
+            }
         }
 
         private SpriteRenderer CreateAfterimage(string name)
@@ -328,6 +411,70 @@ namespace GourmetProject.Game.Presentation.Battle
             SpriteRenderStyle.ApplyUnlitMaterial(renderer);
             BattleSorting.Apply(renderer, BattleSorting.Fx, sortingOrder);
             return renderer;
+        }
+
+        private static void SetRendererRangeActive(List<SpriteRenderer> renderers, int activeCount)
+        {
+            for (int i = 0; i < renderers.Count; i++)
+            {
+                SpriteRenderer renderer = renderers[i];
+                if (renderer != null)
+                {
+                    renderer.gameObject.SetActive(i < activeCount);
+                }
+            }
+        }
+
+        private void ResetVisuals()
+        {
+            _tween?.Kill(false);
+            _tween = null;
+            if (_renderer != null)
+            {
+                _renderer.color = Color.clear;
+            }
+
+            ClearRenderers(_afterimages);
+            ClearRenderers(_arrivalDots);
+            ClearRenderers(_failureDots);
+            if (_afterimageRoot != null)
+            {
+                _afterimageRoot.gameObject.SetActive(false);
+            }
+        }
+
+        private static void ClearRenderers(List<SpriteRenderer> renderers)
+        {
+            for (int i = 0; i < renderers.Count; i++)
+            {
+                SpriteRenderer renderer = renderers[i];
+                if (renderer != null)
+                {
+                    renderer.color = Color.clear;
+                    renderer.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        private static void Release(SweetTransferParticleView view, GameObjectPool pool)
+        {
+            if (view == null)
+            {
+                return;
+            }
+
+            if (pool != null)
+            {
+                pool.Release(view);
+            }
+            else if (Application.isPlaying)
+            {
+                Destroy(view.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(view.gameObject);
+            }
         }
 
         private static Vector3 Bezier(Vector3 start, Vector3 control, Vector3 end, float t)

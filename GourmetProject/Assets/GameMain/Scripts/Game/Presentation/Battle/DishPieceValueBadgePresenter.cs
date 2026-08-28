@@ -36,6 +36,30 @@ namespace GourmetProject.Game.Presentation.Battle
             _badge?.SetChapterFocused(false);
         }
 
+        internal void ResetForReuse(bool clearBinding = true)
+        {
+            KillValueFade();
+            _valueOverride = null;
+            if (clearBinding)
+            {
+                _instance = null;
+            }
+            _flying = false;
+            _sortingOrderOffset = 0;
+            _visible = true;
+            _chapterFocused = false;
+            if (_badge == null)
+            {
+                return;
+            }
+
+            _badge.transform.DOKill(false);
+            _badge.SetChapterFocused(false);
+            _badge.SetDimmed(false);
+            _badge.SetAlpha(1f);
+            _badge.gameObject.SetActive(true);
+        }
+
         internal void UpdateLayout(DishShape shape, float cellSize, float pitch)
         {
             if (shape == null || _badgePrefab == null)

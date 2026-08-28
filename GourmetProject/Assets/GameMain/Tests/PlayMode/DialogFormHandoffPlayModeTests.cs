@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Reflection;
 using DG.Tweening;
+using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Game.UI.Meta;
+using GourmetProject.Runtime.Pooling;
 using GourmetProject.Runtime.UI;
 using NUnit.Framework;
 using UnityEngine;
@@ -181,6 +183,125 @@ namespace GourmetProject.Tests.PlayMode
             {
                 UIForm.OnClose(false, null);
             }
+        }
+    }
+
+    public sealed class BattlePoolingLifecyclePlayModeTests
+    {
+        [UnityTest]
+        public IEnumerator DropDust_NaturalStopReturnsToPoolAndReplayKeepsParametersStable()
+        {
+            var root = new GameObject("DropDustPlayModePool");
+            var prefabObject = new GameObject("DropDustPrefab");
+            ParticleSystem particles = prefabObject.AddComponent<ParticleSystem>();
+            DishDropDustView prefab = prefabObject.AddComponent<DishDropDustView>();
+            SetField(prefab, "_particles", particles);
+
+            ParticleSystem.MainModule main = particles.main;
+            main.playOnAwake = false;
+            main.loop = false;
+            main.duration = 0.04f;
+            main.startLifetime = 0.02f;
+            ParticleSystem.EmissionModule emission = particles.emission;
+            emission.rateOverTime = 0f;
+            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 1) });
+            prefabObject.SetActive(false);
+
+            var pool = new GameObjectPool(
+                prefabObject,
+                root.transform,
+                prewarm: 2,
+                maxInactive: 8,
+                onGet: go => go.GetComponent<DishDropDustView>()?.PrepareForReuse(),
+                onRelease: go => go.GetComponent<DishDropDustView>()?.ResetForPool());
+            try
+            {
+                DishDropDustView first = pool.Get<DishDropDustView>();
+                first.Play(Vector3.zero, new Vector2(2f, 3f), 4, Vector2.zero, pool.Release);
+                float firstSize = first.GetComponent<ParticleSystem>().main.startSizeMultiplier;
+                yield return new WaitForSeconds(0.15f);
+                Assert.That(pool.CountInactive, Is.EqualTo(2));
+
+                DishDropDustView second = pool.Get<DishDropDustView>();
+                second.Play(Vector3.zero, new Vector2(2f, 3f), 4, Vector2.zero, pool.Release);
+                Assert.That(
+                    second.GetComponent<ParticleSystem>().main.startSizeMultiplier,
+                    Is.EqualTo(firstSize).Within(0.0001f));
+                yield return new WaitForSeconds(0.15f);
+
+                Assert.That(pool.CountAll, Is.EqualTo(2));
+                Assert.That(pool.CountInactive, Is.EqualTo(2));
+            }
+            finally
+            {
+                pool.Clear();
+                UnityEngine.Object.DestroyImmediate(prefabObject);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator SweetTransfer_ReplayAcrossFramesReusesInstanceAndChildren()
+        {
+            var root = new GameObject("SweetTransferPlayModePool");
+            var prefabObject = new GameObject(
+                "SweetTransferPrefab",
+                typeof(SpriteRenderer),
+                typeof(SweetTransferParticleView));
+            SweetTransferParticleView prefab = prefabObject.GetComponent<SweetTransferParticleView>();
+            prefabObject.SetActive(false);
+            var pool = new GameObjectPool(
+                prefabObject,
+                root.transform,
+                prewarm: 1,
+                maxInactive: 2,
+                onGet: go => go.GetComponent<SweetTransferParticleView>()?.PrepareForReuse(),
+                onRelease: go => go.GetComponent<SweetTransferParticleView>()?.WarmupForPool());
+            try
+            {
+                SweetTransferParticleView first = SweetTransferParticleView.Begin(
+                    prefab,
+                    root.transform,
+                    Vector3.zero,
+                    Vector3.one,
+                    0.05f,
+                    pool: pool);
+                int rendererCount = root.GetComponentsInChildren<SpriteRenderer>(true).Length;
+                yield return new WaitForSeconds(0.08f);
+                pool.Release(first);
+
+                SweetTransferParticleView second = SweetTransferParticleView.Begin(
+                    prefab,
+                    root.transform,
+                    Vector3.zero,
+                    Vector3.one,
+                    0.05f,
+                    pool: pool);
+                yield return new WaitForSeconds(0.08f);
+
+                Assert.That(second, Is.SameAs(first));
+                Assert.That(rendererCount, Is.EqualTo(40));
+                Assert.That(
+                    root.GetComponentsInChildren<SpriteRenderer>(true).Length,
+                    Is.EqualTo(rendererCount));
+                pool.Release(second);
+                Assert.That(pool.CountAll, Is.EqualTo(1));
+            }
+            finally
+            {
+                pool.Clear();
+                UnityEngine.Object.DestroyImmediate(prefabObject);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void SetField(object target, string name, object value)
+        {
+            FieldInfo field = target.GetType().GetField(
+                name,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null);
+            field.SetValue(target, value);
         }
     }
 }
