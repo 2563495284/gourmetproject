@@ -47,6 +47,37 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(result.IsEmpty, Is.False);
             Assert.That(result.RewardKind, Is.EqualTo(cfg.RewardKind.FragmentChoice));
             Assert.That(result.Offer, Is.Not.Null);
+            Assert.That(result.Offer.MainChoices, Has.Count.EqualTo(2));
+            Assert.That(result.Offer.MainRequiredChoiceCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Configuration_AllFragmentRewardsOfferTwoAndRequireOne()
+        {
+            List<cfg.RewardSlot> fragmentSlots = _tables.TbRewardSlot.DataList
+                .Where(slot => slot.Kind == cfg.RewardKind.FragmentChoice)
+                .ToList();
+
+            Assert.That(fragmentSlots, Is.Not.Empty);
+            foreach (cfg.RewardSlot slot in fragmentSlots)
+            {
+                Assert.That(slot.ChoiceCount, Is.EqualTo(2), slot.Id);
+                Assert.That(slot.RequiredPickCount, Is.EqualTo(1), slot.Id);
+            }
+
+            Assert.That(_tables.TbRewardSlot.GetOrDefault("fragment_choice_2"), Is.Not.Null);
+            Assert.That(_tables.TbRewardSlot.GetOrDefault("fragment_choice_3"), Is.Null);
+            Assert.That(
+                _tables.TbPassiveItem.GetOrDefault("item_super_fragment_reward")?.EffectParam,
+                Is.EqualTo("fragment_choice_2"));
+        }
+
+        [Test]
+        public void ShopFragmentPack_RollsTwoCandidates()
+        {
+            List<string> pack = ShopService.RollFragmentPack(CreateRun());
+
+            Assert.That(pack, Has.Count.EqualTo(2));
         }
 
         [Test]
