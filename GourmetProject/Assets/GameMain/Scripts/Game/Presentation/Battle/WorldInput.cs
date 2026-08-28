@@ -40,6 +40,10 @@ namespace GourmetProject.Game.Presentation.Battle
         public static bool RotatePressedThisFrame
             => Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame;
 
+        /// <summary>出菜口待摆食物的拿起/放下快捷键；不受鼠标是否位于 UI 上影响。</summary>
+        public static bool ServingOutletShortcutPressedThisFrame
+            => Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
+
         /// <summary>本帧鼠标滚轮竖直增量（向上为正）。用于餐桌编辑页旋转选中碎片。</summary>
         public static float ScrollDelta
             => Mouse.current != null ? Mouse.current.scroll.ReadValue().y : 0f;

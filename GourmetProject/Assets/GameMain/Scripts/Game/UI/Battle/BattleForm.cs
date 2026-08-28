@@ -2723,7 +2723,8 @@ namespace GourmetProject.Game.UI.Battle
                 OnServingOutletDishHoverExited,
                 world == null ? null : screen => world.BeginServingOutletDrag(screen),
                 world == null ? null : screen => world.UpdateServingOutletDrag(screen),
-                world == null ? null : screen => world.EndServingOutletDrag(screen));
+                world == null ? null : screen => world.EndServingOutletDrag(screen),
+                world == null ? null : () => world.IsServingOutletDragActive);
         }
 
         private ServingOutletView ResolveServingOutlet()
