@@ -313,6 +313,7 @@
       <Asset Guid="65557c86e8a4942ac992b46aff90fd67" ResourceName="prefabs/ui" />
       <Asset Guid="657f757496d8e451b988334a7ac8abf8" ResourceName="sprites/ui" />
       <Asset Guid="6688fd5eb36344779a6f19cc5970d082" ResourceName="sprites/items" />
+      <Asset Guid="669404233fa6f4753bf340881569ec0e" ResourceName="shaders/runtime" />
       <Asset Guid="66a0ffaa576214ae594879e39244ab43" ResourceName="sprites/ui" />
       <Asset Guid="6708aca669b254bc18ec294dba0c59eb" ResourceName="prefabs/ui" />
       <Asset Guid="672a83f07887a48ebb520addb6cb7e4d" ResourceName="sprites/ui" />
