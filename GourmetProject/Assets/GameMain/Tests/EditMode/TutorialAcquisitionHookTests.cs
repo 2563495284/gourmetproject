@@ -79,6 +79,13 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void PendingHooks_CanDrainWheneverNoTutorialIsPlaying()
+        {
+            Assert.That(TutorialRuntime.CanDrainPending(tutorialPlaying: false), Is.True);
+            Assert.That(TutorialRuntime.CanDrainPending(tutorialPlaying: true), Is.False);
+        }
+
+        [Test]
         public void TutorialCatalog_UsesExpectedAcquiredItemCopyAndAnchors()
         {
             TutorialSequenceDefinition passive = TutorialCatalog.Get(TutorialId.PassiveItem);
@@ -308,6 +315,58 @@ namespace GourmetProject.Tests.EditMode
 
             Assert.That(gate.HasPending, Is.False);
             Assert.That(presented, Is.EqualTo(new[] { acquisition }));
+        }
+
+        [Test]
+        public void PresentationGate_PreservesBatchOrderAndCompletesOnlyOnce()
+        {
+            var presented = new List<RunContentAcquisition>();
+            var gate = new TutorialAcquiredItemPresentationGate(presented.Add);
+            var flavor = new RunContentAcquisition
+            {
+                Kind = RunContentAcquisitionKind.Item,
+                ItemId = "item_active_season_sweet",
+                ItemKind = cfg.ItemKind.Active,
+                ItemEffectType = ItemEffectTypes.AddFlavor,
+            };
+            var passive = new RunContentAcquisition
+            {
+                Kind = RunContentAcquisitionKind.Item,
+                ItemId = "item_gold_boss",
+                ItemKind = cfg.ItemKind.Passive,
+            };
+
+            gate.Stage(flavor);
+            gate.Stage(passive);
+
+            Assert.That(gate.HasPending, Is.True);
+            Assert.That(presented, Is.Empty);
+
+            gate.Complete();
+            gate.Complete();
+
+            Assert.That(gate.HasPending, Is.False);
+            Assert.That(presented, Is.EqualTo(new[] { flavor, passive }));
+        }
+
+        [Test]
+        public void PresentationGate_ClearDropsOnlyTransientPresentations()
+        {
+            var presented = new List<RunContentAcquisition>();
+            var gate = new TutorialAcquiredItemPresentationGate(presented.Add);
+            gate.Stage(new RunContentAcquisition
+            {
+                Kind = RunContentAcquisitionKind.Item,
+                ItemId = "item_active_season_sweet",
+                ItemKind = cfg.ItemKind.Active,
+                ItemEffectType = ItemEffectTypes.AddFlavor,
+            });
+
+            gate.Clear();
+            gate.Complete();
+
+            Assert.That(gate.HasPending, Is.False);
+            Assert.That(presented, Is.Empty);
         }
 
         private GameRun CreateRun() =>

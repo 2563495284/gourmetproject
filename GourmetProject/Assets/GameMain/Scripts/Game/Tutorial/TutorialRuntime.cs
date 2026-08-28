@@ -188,8 +188,18 @@ namespace GourmetProject.Game.Tutorial
         public static void EnqueueHook(string id)
         {
             if (string.IsNullOrEmpty(id) || TutorialProgressService.IsCompleted(id)) return;
+            PersistHook(id);
+            if (CanDrainPending(IsPlaying)) DrainPending();
+        }
+
+        /// <summary>
+        /// 在获得表现开始前先持久化教程事件。播放仍由表现完成或稳定页面上的
+        /// <see cref="DrainPending"/> 发起，避免切页时丢失尚未抵达物品栏的教程。
+        /// </summary>
+        internal static void PersistHook(string id)
+        {
+            if (string.IsNullOrEmpty(id) || TutorialProgressService.IsCompleted(id)) return;
             TutorialProgressService.Enqueue(id);
-            if (TutorialProgressService.IsCompleted(TutorialId.CoreComplete) && !IsPlaying) DrainPending();
         }
 
         public static void ObserveContentAcquired(RunContentAcquisition acquisition)
@@ -212,7 +222,7 @@ namespace GourmetProject.Game.Tutorial
 
         public static void DrainPending()
         {
-            if (IsPlaying || !TutorialProgressService.IsCompleted(TutorialId.CoreComplete)) return;
+            if (!CanDrainPending(IsPlaying)) return;
             foreach (string id in TutorialProgressService.Pending())
             {
                 // 已移除的教程只为旧存档兼容保留进度，不再单独播放。
@@ -222,9 +232,11 @@ namespace GourmetProject.Game.Tutorial
                     continue;
                 }
 
-                if (!TutorialId.IsCore(id) && Play(id, DrainPending)) return;
+                if (!TutorialId.IsCore(id) && Play(id)) return;
             }
         }
+
+        internal static bool CanDrainPending(bool tutorialPlaying) => !tutorialPlaying;
 
         internal static bool ShouldRetirePendingTutorial(string id) =>
             string.Equals(id, TutorialId.Failure, StringComparison.Ordinal)
@@ -306,7 +318,8 @@ namespace GourmetProject.Game.Tutorial
             if (string.Equals(completed, TutorialId.TimelineNode, StringComparison.Ordinal))
                 TutorialProgressService.Complete(TutorialId.CoreComplete);
             callback?.Invoke();
-            if (TutorialProgressService.IsCompleted(TutorialId.CoreComplete)) DrainPending();
+            // 回调可能已经启动下一段核心教程；DrainPending 会据 IsPlaying 自动让路。
+            DrainPending();
         }
 
         private static void EnsureOverlay()

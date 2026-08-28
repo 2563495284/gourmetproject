@@ -193,9 +193,10 @@ namespace GourmetProject.Game.UI.Battle
         private readonly HashSet<ShopPurchaseFlyView> _activeShopPurchaseFlys = new();
         private readonly TutorialAcquiredItemPresentationGate _tutorialAcquiredItemPresentation =
             new(TutorialRuntime.ObserveContentAcquired);
-        private string _pendingTutorialAcquiredItemId = string.Empty;
-        private cfg.ItemKind? _pendingTutorialAcquiredItemKind;
-        private RectTransform _tutorialAcquiredItemAnchor;
+        private string _pendingTutorialAcquiredPassiveItemId = string.Empty;
+        private string _pendingTutorialAcquiredActiveItemId = string.Empty;
+        private RectTransform _tutorialAcquiredPassiveItemAnchor;
+        private RectTransform _tutorialAcquiredActiveItemAnchor;
         private int? _battleMusicSerialId;
         private cfg.BossDebuff _currentBossDebuff;
         [SerializeField] private BossDebuffPresentationView _bossPresentation;
@@ -370,7 +371,7 @@ namespace GourmetProject.Game.UI.Battle
             TutorialRuntime.CloseForPageChange();
             UnregisterTutorialCommands();
             UnregisterTutorialAnchors();
-            ClearTutorialAcquiredItemAnchor();
+            ClearTutorialAcquiredItemPresentationState();
             FinalizeSettlementAndEndPassivePresentation();
             if (Active == this)
             {
@@ -2244,9 +2245,22 @@ namespace GourmetProject.Game.UI.Battle
 
         private void PlayRandomizedItemFlys(IReadOnlyList<RandomizedItemResult> results)
         {
+            bool completed = false;
+            void CompletePresentation()
+            {
+                if (completed)
+                {
+                    return;
+                }
+
+                completed = true;
+                RefreshItems();
+                CompleteTutorialAcquiredItemPresentation();
+            }
+
             if (results == null || _randomizedItemsPanel == null || _itemsColumn == null)
             {
-                RefreshItems();
+                CompletePresentation();
                 return;
             }
 
@@ -2254,11 +2268,22 @@ namespace GourmetProject.Game.UI.Battle
             RectTransform layer = canvas != null ? canvas.transform as RectTransform : transform.root as RectTransform;
             if (layer == null)
             {
-                RefreshItems();
+                CompletePresentation();
                 return;
             }
 
             Canvas.ForceUpdateCanvases();
+            // 哨兵保证动画创建失败并同步回调时，也只会在整个批次遍历结束后完成表现。
+            int pendingFlys = 1;
+            void CompleteOneFly()
+            {
+                pendingFlys--;
+                if (pendingFlys <= 0)
+                {
+                    CompletePresentation();
+                }
+            }
+
             for (int i = 0; i < results.Count; i++)
             {
                 RandomizedItemResult result = results[i];
@@ -2278,15 +2303,16 @@ namespace GourmetProject.Game.UI.Battle
                     continue;
                 }
 
+                pendingFlys++;
                 PlayItemFlyTween(
                     new RectSnapshot(startCenter, startSize),
                     new RectSnapshot(targetCenter, targetSize),
                     RunItemSlotView.LoadIcon(item) ?? LoadShopItemFallbackIcon(item.Kind),
                     RunItemSlotView.QualityColor(item.Quality),
-                    null);
+                    CompleteOneFly);
             }
 
-            RefreshItems();
+            CompleteOneFly();
         }
 
         private void RestoreBattleWorld()
@@ -3410,6 +3436,7 @@ namespace GourmetProject.Game.UI.Battle
             RectTransform layer = canvas != null ? canvas.transform as RectTransform : transform.root as RectTransform;
             if (layer == null)
             {
+                onComplete?.Invoke();
                 return;
             }
 
@@ -5918,17 +5945,26 @@ namespace GourmetProject.Game.UI.Battle
 
         private void PlayActionSelectionTutorialIfNeeded()
         {
-            if (_run == null
-                || !_run.IsTutorialRun
-                || TutorialProgressService.IsCompleted(TutorialId.CoreComplete)) return;
-            if (_run.WeekIndex == 1
-                && _run.RunActionStepIndex == 0
-                && _run.CurrentDay <= TimelineMath.Epsilon)
-                TutorialRuntime.Play(TutorialId.FirstAction);
-            else if (_run.WeekIndex == 1
-                && _run.RunActionStepIndex == 1
-                && TutorialProgressService.IsCompleted(TutorialId.FirstAction))
-                TutorialRuntime.Play(TutorialId.SecondAction);
+            if (_run == null)
+            {
+                return;
+            }
+
+            if (_run.IsTutorialRun
+                && !TutorialProgressService.IsCompleted(TutorialId.CoreComplete))
+            {
+                if (_run.WeekIndex == 1
+                    && _run.RunActionStepIndex == 0
+                    && _run.CurrentDay <= TimelineMath.Epsilon)
+                    TutorialRuntime.Play(TutorialId.FirstAction);
+                else if (_run.WeekIndex == 1
+                    && _run.RunActionStepIndex == 1
+                    && TutorialProgressService.IsCompleted(TutorialId.FirstAction))
+                    TutorialRuntime.Play(TutorialId.SecondAction);
+            }
+
+            // 页面与核心教程均已就绪后，恢复旧存档或中断留下的非核心教程。
+            TutorialRuntime.DrainPending();
         }
 
         private void PlayBattleTutorialIfNeeded()
@@ -5936,6 +5972,7 @@ namespace GourmetProject.Game.UI.Battle
             if (IsFirstTutorialBattle())
                 TutorialRuntime.Play(TutorialId.FirstBattle, TryPlayFirstBattleSettleHint);
             if (_activeBattleIsBoss) TutorialRuntime.EnqueueHook(TutorialId.Boss);
+            TutorialRuntime.DrainPending();
         }
 
         private void TryPlayFirstBattleSettleHint()
@@ -6133,6 +6170,9 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
+            // 获得事实先入存档，表现抵达后才允许播放；即使中途切页也不会丢教程。
+            TutorialRuntime.PersistHook(hook);
+
             if (acquisition.Kind != RunContentAcquisitionKind.Item
                 || string.IsNullOrEmpty(acquisition.ItemId))
             {
@@ -6140,10 +6180,8 @@ namespace GourmetProject.Game.UI.Battle
                 return;
             }
 
-            ClearTutorialAcquiredItemAnchor();
             _tutorialAcquiredItemPresentation.Stage(acquisition);
-            _pendingTutorialAcquiredItemId = acquisition.ItemId;
-            _pendingTutorialAcquiredItemKind = acquisition.ItemKind;
+            SetPendingTutorialAcquiredItemAnchor(acquisition.ItemId, acquisition.ItemKind);
         }
 
         internal void CompleteTutorialAcquiredItemPresentation()
@@ -6159,51 +6197,82 @@ namespace GourmetProject.Game.UI.Battle
 
         private void TryRegisterTutorialAcquiredItemAnchor()
         {
-            if (_itemsColumn == null
-                || string.IsNullOrEmpty(_pendingTutorialAcquiredItemId)
-                || !_pendingTutorialAcquiredItemKind.HasValue)
+            if (_itemsColumn == null)
             {
                 return;
             }
 
-            RunItemSlotView slot = _itemsColumn.GetItemSlot(
-                _pendingTutorialAcquiredItemId,
-                _pendingTutorialAcquiredItemKind.Value);
+            TryRegisterTutorialAcquiredItemAnchor(
+                _pendingTutorialAcquiredPassiveItemId,
+                cfg.ItemKind.Passive,
+                TutorialAnchorId.AcquiredPassiveItem,
+                ref _tutorialAcquiredPassiveItemAnchor);
+            TryRegisterTutorialAcquiredItemAnchor(
+                _pendingTutorialAcquiredActiveItemId,
+                cfg.ItemKind.Active,
+                TutorialAnchorId.AcquiredActiveItem,
+                ref _tutorialAcquiredActiveItemAnchor);
+        }
+
+        private void TryRegisterTutorialAcquiredItemAnchor(
+            string itemId,
+            cfg.ItemKind kind,
+            string anchorId,
+            ref RectTransform registeredAnchor)
+        {
+            if (string.IsNullOrEmpty(itemId))
+            {
+                return;
+            }
+
+            RunItemSlotView slot = _itemsColumn.GetItemSlot(itemId, kind);
             RectTransform target = slot?.VisualRectTransform;
             if (target == null)
             {
                 return;
             }
 
-            if (_tutorialAcquiredItemAnchor != null && _tutorialAcquiredItemAnchor != target)
+            if (registeredAnchor != null && registeredAnchor != target)
+            {
+                TutorialAnchorRegistry.Unregister(anchorId, registeredAnchor);
+            }
+
+            TutorialAnchorRegistry.Register(anchorId, target);
+            registeredAnchor = target;
+        }
+
+        private void SetPendingTutorialAcquiredItemAnchor(string itemId, cfg.ItemKind kind)
+        {
+            if (kind == cfg.ItemKind.Passive)
             {
                 TutorialAnchorRegistry.Unregister(
                     TutorialAnchorId.AcquiredPassiveItem,
-                    _tutorialAcquiredItemAnchor);
-                TutorialAnchorRegistry.Unregister(
-                    TutorialAnchorId.AcquiredActiveItem,
-                    _tutorialAcquiredItemAnchor);
+                    _tutorialAcquiredPassiveItemAnchor);
+                _tutorialAcquiredPassiveItemAnchor = null;
+                _pendingTutorialAcquiredPassiveItemId = itemId ?? string.Empty;
+                return;
             }
 
-            string anchorId = _pendingTutorialAcquiredItemKind.Value == cfg.ItemKind.Passive
-                ? TutorialAnchorId.AcquiredPassiveItem
-                : TutorialAnchorId.AcquiredActiveItem;
-            TutorialAnchorRegistry.Register(anchorId, target);
-            _tutorialAcquiredItemAnchor = target;
+            TutorialAnchorRegistry.Unregister(
+                TutorialAnchorId.AcquiredActiveItem,
+                _tutorialAcquiredActiveItemAnchor);
+            _tutorialAcquiredActiveItemAnchor = null;
+            _pendingTutorialAcquiredActiveItemId = itemId ?? string.Empty;
         }
 
-        private void ClearTutorialAcquiredItemAnchor()
+        private void ClearTutorialAcquiredItemPresentationState()
         {
             TutorialAnchorRegistry.Unregister(
                 TutorialAnchorId.AcquiredPassiveItem,
-                _tutorialAcquiredItemAnchor);
+                _tutorialAcquiredPassiveItemAnchor);
             TutorialAnchorRegistry.Unregister(
                 TutorialAnchorId.AcquiredActiveItem,
-                _tutorialAcquiredItemAnchor);
-            _tutorialAcquiredItemAnchor = null;
+                _tutorialAcquiredActiveItemAnchor);
+            _tutorialAcquiredPassiveItemAnchor = null;
+            _tutorialAcquiredActiveItemAnchor = null;
             _tutorialAcquiredItemPresentation.Clear();
-            _pendingTutorialAcquiredItemId = string.Empty;
-            _pendingTutorialAcquiredItemKind = null;
+            _pendingTutorialAcquiredPassiveItemId = string.Empty;
+            _pendingTutorialAcquiredActiveItemId = string.Empty;
         }
 
         private void StartBattleMusic()

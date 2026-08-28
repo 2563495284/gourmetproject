@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using GourmetProject.Game.Run;
 
 namespace GourmetProject.Game.Tutorial
@@ -9,35 +10,34 @@ namespace GourmetProject.Game.Tutorial
     internal sealed class TutorialAcquiredItemPresentationGate
     {
         private readonly Action<RunContentAcquisition> _onPresented;
-        private RunContentAcquisition _pending;
+        private readonly Queue<RunContentAcquisition> _pending = new();
 
         public TutorialAcquiredItemPresentationGate(Action<RunContentAcquisition> onPresented)
         {
             _onPresented = onPresented ?? throw new ArgumentNullException(nameof(onPresented));
         }
 
-        public bool HasPending => _pending != null;
+        public bool HasPending => _pending.Count > 0;
 
         public void Stage(RunContentAcquisition acquisition)
         {
-            _pending = acquisition;
+            if (acquisition != null)
+            {
+                _pending.Enqueue(acquisition);
+            }
         }
 
         public void Complete()
         {
-            RunContentAcquisition acquisition = _pending;
-            if (acquisition == null)
+            while (_pending.Count > 0)
             {
-                return;
+                _onPresented(_pending.Dequeue());
             }
-
-            _pending = null;
-            _onPresented(acquisition);
         }
 
         public void Clear()
         {
-            _pending = null;
+            _pending.Clear();
         }
     }
 }
