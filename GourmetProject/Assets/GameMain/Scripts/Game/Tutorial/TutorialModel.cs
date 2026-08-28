@@ -203,6 +203,7 @@ namespace GourmetProject.Game.Tutorial
             {
                 [TutorialId.FirstAction] = new TutorialSequenceDefinition(
                     TutorialId.FirstAction,
+                    C("老板好，我是铛铛，咱们学习一下基础的经验知识吧"),
                     C("这是行动卡，行动会消耗时间，带来收益。", TutorialAnchorId.ActionCard0),
                     S(
                         "卡片上的图标，表示行动的额外奖励，点击开始营业吧！",
@@ -287,8 +288,13 @@ namespace GourmetProject.Game.Tutorial
 
                 [TutorialId.SecondAction] = new TutorialSequenceDefinition(
                     TutorialId.SecondAction,
-                    // ActionCard2 对应 TutorialActionScheduleOverride 里 tutorial_second 组的 act_food_hard_gold。
-                    C("这是火热营业，目标更高，但奖励规格也更高。", TutorialAnchorId.ActionCard2)),
+                    // ActionCard1 对应 TutorialActionScheduleOverride 里 tutorial_second 组的 act_food_hard_gold。
+                    C("这是火热营业，目标更高，但奖励规格也更高。", TutorialAnchorId.ActionCard1),
+                    S(
+                        "从两个行动中选择一个进行吧",
+                        TutorialSignal.ActionPicked,
+                        TutorialAnchorId.ActionCard0,
+                        TutorialAnchorId.ActionCard1)),
 
                 [TutorialId.TimelineNode] = new TutorialSequenceDefinition(
                     TutorialId.TimelineNode,
@@ -377,7 +383,8 @@ namespace GourmetProject.Game.Tutorial
     {
         private const string FirstActionGroup = "tutorial_first";
         private const string SecondActionGroup = "tutorial_second";
-        private const float TargetScoreMultiplier = 0.5f;
+        private const float NormalActionDays = 0.6f;
+        private const float HardActionDays = 0.8f;
 
         public static bool TryBuildChoices(GameRun run, out List<ActionChoice> choices)
         {
@@ -414,23 +421,22 @@ namespace GourmetProject.Game.Tutorial
 
             if (run.RunActionStepIndex == 0 && run.CurrentDay <= TimelineMath.Epsilon)
             {
-                choices = Build(tables, run, FirstActionGroup, ("act_food_gold", 1f));
+                choices = Build(tables, run, FirstActionGroup, ("act_food_gold", NormalActionDays));
                 return choices.Count == 1;
             }
 
             if (coreStarted
                 && run.RunActionStepIndex == 1
-                && run.CurrentDay >= 1f - TimelineMath.Epsilon
+                && run.CurrentDay >= NormalActionDays - TimelineMath.Epsilon
                 && run.CurrentDay < 2f)
             {
                 choices = Build(
                     tables,
                     run,
                     SecondActionGroup,
-                    ("act_food_fragment", 1f),
-                    ("act_food_passive", 1f),
-                    ("act_food_hard_gold", 1.2f));
-                return choices.Count == 3;
+                    ("act_food_fragment", NormalActionDays),
+                    ("act_food_hard_gold", HardActionDays));
+                return choices.Count == 2;
             }
 
             return false;
@@ -452,16 +458,82 @@ namespace GourmetProject.Game.Tutorial
             string actionGroupId,
             int targetScore)
         {
-            if (!isTutorialRun
-                || (actionGroupId != FirstActionGroup && actionGroupId != SecondActionGroup))
+            // 保留调用边界兼容既有代码；教程行动不再降低目标美味值。
+            return targetScore;
+        }
+
+        /// <summary>
+        /// 旧存档可能保留 1/1/1.2 天的三张教程行动卡。玩家尚未选择时可安全重建，
+        /// 避免新版两步教程高亮与旧卡位不一致。
+        /// </summary>
+        internal static bool TryRefreshLegacyPendingChoices(
+            GameRun run,
+            IReadOnlyList<ActionChoice> pending,
+            out List<ActionChoice> refreshed)
+        {
+            refreshed = null;
+            if (run == null || !run.IsTutorialRun || run.WeekIndex != 1 || pending == null || pending.Count == 0)
             {
-                return targetScore;
+                return false;
             }
 
-            int modified = (int)Math.Round(
-                targetScore * TargetScoreMultiplier,
-                MidpointRounding.AwayFromZero);
-            return Math.Max(1, modified);
+            cfg.Tables tables = run.Tables ?? GameApp.Config?.Tables;
+            if (tables == null)
+            {
+                return false;
+            }
+
+            string group = pending[0]?.ActionGroupId;
+            if (string.Equals(group, FirstActionGroup, StringComparison.Ordinal))
+            {
+                if (MatchesChoice(pending, 0, FirstActionGroup, "act_food_gold", NormalActionDays)
+                    && pending.Count == 1)
+                {
+                    return false;
+                }
+
+                refreshed = Build(tables, run, FirstActionGroup, ("act_food_gold", NormalActionDays));
+                return refreshed.Count == 1;
+            }
+
+            if (!string.Equals(group, SecondActionGroup, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (pending.Count == 2
+                && MatchesChoice(pending, 0, SecondActionGroup, "act_food_fragment", NormalActionDays)
+                && MatchesChoice(pending, 1, SecondActionGroup, "act_food_hard_gold", HardActionDays))
+            {
+                return false;
+            }
+
+            refreshed = Build(
+                tables,
+                run,
+                SecondActionGroup,
+                ("act_food_fragment", NormalActionDays),
+                ("act_food_hard_gold", HardActionDays));
+            return refreshed.Count == 2;
+        }
+
+        private static bool MatchesChoice(
+            IReadOnlyList<ActionChoice> choices,
+            int index,
+            string group,
+            string actionId,
+            float days)
+        {
+            if (choices == null || index < 0 || index >= choices.Count)
+            {
+                return false;
+            }
+
+            ActionChoice choice = choices[index];
+            return choice?.Action != null
+                && string.Equals(choice.ActionGroupId, group, StringComparison.Ordinal)
+                && string.Equals(choice.Action.Id, actionId, StringComparison.Ordinal)
+                && Math.Abs(choice.CostDays - days) <= TimelineMath.Epsilon;
         }
 
         private static List<ActionChoice> Build(

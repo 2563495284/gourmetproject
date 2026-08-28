@@ -71,7 +71,7 @@
     ],
     "fragmentHiddenOffset": [
       0,
-      10
+      5
     ],
     "goldHiddenOffset": [
       0,
@@ -313,7 +313,7 @@
       0
     ],
     "fragmentHiddenOffset": [
-      4,
+      5,
       0
     ],
     "goldHiddenOffset": [
@@ -567,10 +567,10 @@
     "ruleTemplate": "从 {choiceCount} 个[term]消耗品[/term]中选择 {requiredPickCount} 个"
   },
   {
-    "id": "fragment_choice_3",
-    "groupId": "fragment_choice_3",
+    "id": "fragment_choice_2",
+    "groupId": "fragment_choice_2",
     "kind": 5,
-    "choiceCount": 3,
+    "choiceCount": 2,
     "requiredPickCount": 1,
     "weight": 1,
     "poolId": "pool_fragment",
@@ -678,7 +678,7 @@
     "id": "slot_machine_fragment",
     "groupId": "slot_machine_basic",
     "kind": 5,
-    "choiceCount": 3,
+    "choiceCount": 2,
     "requiredPickCount": 1,
     "weight": 5,
     "poolId": "pool_fragment",

@@ -16,7 +16,7 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField, Min(0f)] private float _columnGap = 0.25f;
         [SerializeField, Min(0.01f)] private float _maxCellSize = 0.6f;
         [SerializeField, Min(0f)] private float _hitPadding = 0.15f;
-        [SerializeField, Min(1)] private int _previewColumns = 3;
+        [SerializeField, Min(1)] private int _previewColumns = 2;
         [SerializeField] private Color _gizmoColor = new Color(1f, 0.72f, 0.18f, 0.9f);
 
         public RectTransform RectTransform => (RectTransform)transform;

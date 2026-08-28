@@ -283,7 +283,7 @@ namespace GourmetProject.Game.Meta.Passives
             RewardChoiceGroup fragmentGroup = RewardGranter.BuildConfigChoiceGroup(
                 Run,
                 rng,
-                string.IsNullOrEmpty(Param) ? "fragment_choice_3" : Param,
+                string.IsNullOrEmpty(Param) ? "fragment_choice_2" : Param,
                 Def?.Name ?? "额外餐桌格",
                 actionContext);
             if (fragmentGroup != null && fragmentGroup.HasChoices)

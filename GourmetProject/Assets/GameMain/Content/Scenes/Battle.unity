@@ -893,7 +893,7 @@ MonoBehaviour:
   _columnGap: 0.25
   _maxCellSize: 0.6
   _hitPadding: 0.15
-  _previewColumns: 3
+  _previewColumns: 2
   _gizmoColor: {r: 1, g: 0.72, b: 0.18, a: 0.9}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
