@@ -11,7 +11,7 @@ namespace GourmetProject.Game.DevConsole.Commands
     /// </summary>
     internal static class RepeatedDishPlacementSolver
     {
-        internal const int SearchNodeLimit = 50000;
+        internal const int SearchNodeLimit = 2000000;
 
         public static IReadOnlyList<Placement> Solve(DiningTable table, DishDef dish)
             => SolveWithDiagnostics(table, dish).Placements;
@@ -77,27 +77,29 @@ namespace GourmetProject.Game.DevConsole.Commands
 
         private sealed class Search
         {
+            private const int UnknownCount = -1;
+
             private readonly int _width;
+            private readonly int _height;
             private readonly int _cellCount;
             private readonly int _dishCellCount;
             private readonly bool[] _available;
-            private readonly int[] _availableSuffix;
             private readonly List<Candidate> _allCandidates = new List<Candidate>();
             private readonly List<Candidate>[] _candidatesByFirstCell;
-            private readonly Dictionary<SearchState, int> _bestSeenAtState =
+            private readonly Dictionary<SearchState, int> _bestCountByRowState =
                 new Dictionary<SearchState, int>();
-            private readonly List<Placement> _current = new List<Placement>();
             private List<Placement> _best = new List<Placement>();
+            private int _availableCellCount;
             private int _searchNodes;
             private bool _truncated;
 
             public Search(DiningTable table, DishDef dish)
             {
                 _width = table.Width;
+                _height = table.Height;
                 _cellCount = table.Width * table.Height;
                 _dishCellCount = dish.Shape.CellCount;
                 _available = new bool[_cellCount];
-                _availableSuffix = new int[_cellCount + 1];
                 _candidatesByFirstCell = new List<Candidate>[_cellCount];
 
                 for (int y = 0; y < table.Height; y++)
@@ -106,13 +108,11 @@ namespace GourmetProject.Game.DevConsole.Commands
                     {
                         int index = y * table.Width + x;
                         _available[index] = table.IsEmpty(new GridPos(x, y));
+                        if (_available[index])
+                        {
+                            _availableCellCount++;
+                        }
                     }
-                }
-
-                for (int index = _cellCount - 1; index >= 0; index--)
-                {
-                    _availableSuffix[index] = _availableSuffix[index + 1]
-                        + (_available[index] ? 1 : 0);
                 }
 
                 List<Placement> placements = table.FindValidPlacements(dish);
@@ -138,10 +138,16 @@ namespace GourmetProject.Game.DevConsole.Commands
                 }
 
                 BuildInitialGreedySolution();
-                int absoluteUpperBound = _availableSuffix[0] / _dishCellCount;
+                int absoluteUpperBound = _availableCellCount / _dishCellCount;
                 if (_best.Count < absoluteUpperBound)
                 {
-                    Explore(0, CellMask.Empty);
+                    int exactCount = BestCountFromRow(0, CellMask.Empty);
+                    if (exactCount >= 0)
+                    {
+                        var exact = new List<Placement>(exactCount);
+                        BuildExactFromRow(0, CellMask.Empty, exact);
+                        _best = exact;
+                    }
                 }
 
                 return new RepeatedDishPlacementResult(
@@ -165,38 +171,56 @@ namespace GourmetProject.Game.DevConsole.Commands
                 }
             }
 
-            private void Explore(int cursor, CellMask occupied)
+            /// <summary>
+            /// 只在每一行的入口记忆化。相比逐格缓存完整搜索路径，状态数会小一个数量级，
+            /// 同时仍能覆盖不规则、禁用和已占用的格子。
+            /// </summary>
+            private int BestCountFromRow(int row, CellMask occupied)
+            {
+                if (row >= _height)
+                {
+                    return 0;
+                }
+
+                var state = new SearchState(row, occupied);
+                if (_bestCountByRowState.TryGetValue(state, out int cached))
+                {
+                    return cached;
+                }
+
+                int best = BestCountWithinRow(
+                    row,
+                    row * _width,
+                    (row + 1) * _width,
+                    occupied);
+                if (best >= 0)
+                {
+                    _bestCountByRowState[state] = best;
+                }
+
+                return best;
+            }
+
+            private int BestCountWithinRow(
+                int row,
+                int cursor,
+                int rowEnd,
+                CellMask occupied)
             {
                 if (_searchNodes >= SearchNodeLimit)
                 {
                     _truncated = true;
-                    return;
+                    return UnknownCount;
                 }
 
                 _searchNodes++;
-                Normalize(ref cursor, ref occupied);
-                UpdateBest();
-                if (cursor >= _cellCount)
+                NormalizeWithinRow(ref cursor, rowEnd, ref occupied);
+                if (cursor >= rowEnd)
                 {
-                    return;
+                    return BestCountFromRow(row + 1, occupied);
                 }
 
-                int remainingFreeCells = _availableSuffix[cursor] - occupied.PopCount;
-                int upperBound = _current.Count + remainingFreeCells / _dishCellCount;
-                if (upperBound <= _best.Count)
-                {
-                    return;
-                }
-
-                var state = new SearchState(cursor, occupied);
-                if (_bestSeenAtState.TryGetValue(state, out int bestSeen)
-                    && bestSeen >= _current.Count)
-                {
-                    return;
-                }
-
-                _bestSeenAtState[state] = _current.Count;
-
+                int best = 0;
                 List<Candidate> candidates = _candidatesByFirstCell[cursor];
                 if (candidates != null)
                 {
@@ -207,30 +231,158 @@ namespace GourmetProject.Game.DevConsole.Commands
                             continue;
                         }
 
-                        _current.Add(candidate.Placement);
-                        Explore(
+                        int remainder = BestCountWithinRow(
+                            row,
                             cursor + 1,
+                            rowEnd,
                             occupied.Or(candidate.Mask).Without(cursor));
-                        _current.RemoveAt(_current.Count - 1);
-                        if (_searchNodes >= SearchNodeLimit)
+                        if (remainder < 0)
                         {
-                            _truncated = true;
-                            return;
+                            return UnknownCount;
                         }
+
+                        best = Math.Max(best, 1 + remainder);
                     }
                 }
 
-                Explore(cursor + 1, occupied);
+                int skipped = BestCountWithinRow(row, cursor + 1, rowEnd, occupied);
+                if (skipped < 0)
+                {
+                    return UnknownCount;
+                }
+
+                return Math.Max(best, skipped);
             }
 
-            private void UpdateBest()
+            private void BuildExactFromRow(
+                int row,
+                CellMask occupied,
+                List<Placement> result)
             {
-                if (_current.Count <= _best.Count)
+                if (row >= _height)
                 {
                     return;
                 }
 
-                _best = new List<Placement>(_current);
+                int target = _bestCountByRowState[new SearchState(row, occupied)];
+                BuildExactWithinRow(
+                    row,
+                    row * _width,
+                    (row + 1) * _width,
+                    occupied,
+                    target,
+                    result);
+            }
+
+            private void BuildExactWithinRow(
+                int row,
+                int cursor,
+                int rowEnd,
+                CellMask occupied,
+                int target,
+                List<Placement> result)
+            {
+                NormalizeWithinRow(ref cursor, rowEnd, ref occupied);
+                if (cursor >= rowEnd)
+                {
+                    BuildExactFromRow(row + 1, occupied, result);
+                    return;
+                }
+
+                var evaluationMemo = new Dictionary<SearchState, int>();
+                List<Candidate> candidates = _candidatesByFirstCell[cursor];
+                if (candidates != null)
+                {
+                    foreach (Candidate candidate in candidates)
+                    {
+                        if (occupied.Overlaps(candidate.Mask))
+                        {
+                            continue;
+                        }
+
+                        CellMask nextOccupied =
+                            occupied.Or(candidate.Mask).Without(cursor);
+                        int remainder = EvaluateKnownWithinRow(
+                            row,
+                            cursor + 1,
+                            rowEnd,
+                            nextOccupied,
+                            evaluationMemo);
+                        if (1 + remainder != target)
+                        {
+                            continue;
+                        }
+
+                        result.Add(candidate.Placement);
+                        BuildExactWithinRow(
+                            row,
+                            cursor + 1,
+                            rowEnd,
+                            nextOccupied,
+                            target - 1,
+                            result);
+                        return;
+                    }
+                }
+
+                BuildExactWithinRow(
+                    row,
+                    cursor + 1,
+                    rowEnd,
+                    occupied,
+                    target,
+                    result);
+            }
+
+            private int EvaluateKnownWithinRow(
+                int row,
+                int cursor,
+                int rowEnd,
+                CellMask occupied,
+                Dictionary<SearchState, int> memo)
+            {
+                NormalizeWithinRow(ref cursor, rowEnd, ref occupied);
+                if (cursor >= rowEnd)
+                {
+                    return row + 1 >= _height
+                        ? 0
+                        : _bestCountByRowState[new SearchState(row + 1, occupied)];
+                }
+
+                var state = new SearchState(cursor, occupied);
+                if (memo.TryGetValue(state, out int cached))
+                {
+                    return cached;
+                }
+
+                int best = EvaluateKnownWithinRow(
+                    row,
+                    cursor + 1,
+                    rowEnd,
+                    occupied,
+                    memo);
+                List<Candidate> candidates = _candidatesByFirstCell[cursor];
+                if (candidates != null)
+                {
+                    foreach (Candidate candidate in candidates)
+                    {
+                        if (occupied.Overlaps(candidate.Mask))
+                        {
+                            continue;
+                        }
+
+                        int remainder = EvaluateKnownWithinRow(
+                            row,
+                            cursor + 1,
+                            rowEnd,
+                            occupied.Or(candidate.Mask).Without(cursor),
+                            memo);
+                        best = Math.Max(best, 1 + remainder);
+                    }
+                }
+
+                memo[state] = best;
+                return best;
             }
 
             private Candidate BuildCandidate(Placement placement)
@@ -250,9 +402,12 @@ namespace GourmetProject.Game.DevConsole.Commands
                 return new Candidate(placement, mask, firstCellIndex);
             }
 
-            private void Normalize(ref int cursor, ref CellMask occupied)
+            private void NormalizeWithinRow(
+                ref int cursor,
+                int rowEnd,
+                ref CellMask occupied)
             {
-                while (cursor < _cellCount)
+                while (cursor < rowEnd)
                 {
                     if (!_available[cursor])
                     {
