@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using DG.Tweening;
 using GourmetProject.Game.Presentation.Battle;
 using GourmetProject.Gameplay.Board;
 using GourmetProject.Gameplay.Model;
@@ -318,6 +319,104 @@ namespace GourmetProject.Tests.EditMode
             }
         }
 
+        [Test]
+        public void BattleWorld_ClearDuringTemporaryFlyInInvalidatesOwnershipAndReleasesView()
+        {
+            var worldObject = new GameObject("BattleWorldFlyInPoolTest");
+            worldObject.SetActive(false);
+            BattleWorldController world = worldObject.AddComponent<BattleWorldController>();
+            var pieceObject = new GameObject("TemporaryFlyInPiece");
+            DishPieceView piece = pieceObject.AddComponent<DishPieceView>();
+            Tween tween = DOTween.Sequence()
+                .Append(piece.transform.DOMove(Vector3.one, 10f))
+                .SetLink(pieceObject);
+
+            try
+            {
+                Dictionary<int, DishPieceView> dishViews =
+                    GetPrivateField<Dictionary<int, DishPieceView>>(world, "_dishViewsById");
+                dishViews[42] = piece;
+                SetPrivateField(world, "_temporaryAreaFlyInPiece", piece);
+                SetPrivateField(world, "_temporaryAreaFlyInTween", tween);
+
+                MethodInfo clear = typeof(BattleWorldController).GetMethod(
+                    "ClearPlacedPieces",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(clear, Is.Not.Null);
+                clear.Invoke(world, null);
+
+                Assert.That(piece == null, Is.True);
+                Assert.That(
+                    GetPrivateField<DishPieceView>(world, "_temporaryAreaFlyInPiece"),
+                    Is.Null);
+                Assert.That(
+                    GetPrivateField<Tween>(world, "_temporaryAreaFlyInTween"),
+                    Is.Null);
+                Assert.That(
+                    GetPrivateField<int>(world, "_temporaryAreaFlyInVersion"),
+                    Is.GreaterThan(0));
+                Assert.That(dishViews, Is.Empty);
+            }
+            finally
+            {
+                tween?.Kill(false);
+                if (pieceObject != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(pieceObject);
+                }
+                UnityEngine.Object.DestroyImmediate(worldObject);
+            }
+        }
+
+        [Test]
+        public void DishPiece_ReusedGeometryRefreshesFlavorMaterial()
+        {
+            DishPieceView prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/GameMain/Content/Prefabs/Battle/Dishes/DishPiece.prefab")
+                ?.GetComponent<DishPieceView>();
+            Assert.That(prefab, Is.Not.Null);
+
+            DishPieceView view = UnityEngine.Object.Instantiate(prefab);
+            var texture = new Texture2D(2, 2);
+            Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, 2f, 2f), Vector2.one * 0.5f);
+            try
+            {
+                DishShape shape = DishShape.FromRows(new[] { "X" });
+                var definition = new DishDef(
+                    "pool_refresh_dish",
+                    "Pool Refresh Dish",
+                    10,
+                    shape,
+                    0,
+                    0,
+                    1f,
+                    Array.Empty<string>(),
+                    string.Empty);
+                var dish = new DishInstance(
+                    7,
+                    definition,
+                    new Placement(shape, 0, new GridPos(0, 0)),
+                    Array.Empty<string>(),
+                    Array.Empty<string>());
+
+                view.BuildPlaced(dish, sprite, 1f, 1.04f, null);
+                SpriteRenderer renderer = GetPrivateField<SpriteRenderer>(view, "_spriteRenderer");
+                Assert.That(renderer.sharedMaterial, Is.Not.SameAs(SpriteRenderStyle.SpriteFlavorOrganicMaterial));
+
+                dish.AddFlavor("t_sweet");
+                view.PrepareForReuse();
+                view.BuildPlaced(dish, sprite, 1f, 1.04f, null);
+
+                Assert.That(renderer.sharedMaterial, Is.SameAs(SpriteRenderStyle.SpriteFlavorOrganicMaterial));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(view.gameObject);
+                UnityEngine.Object.DestroyImmediate(sprite);
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
         private static T GetPrivateField<T>(object owner, string fieldName)
         {
             FieldInfo field = owner.GetType().GetField(
@@ -325,6 +424,15 @@ namespace GourmetProject.Tests.EditMode
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(field, Is.Not.Null);
             return (T)field.GetValue(owner);
+        }
+
+        private static void SetPrivateField(object owner, string fieldName, object value)
+        {
+            FieldInfo field = owner.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null);
+            field.SetValue(owner, value);
         }
     }
 }

@@ -133,6 +133,7 @@ namespace GourmetProject.Game.Presentation.Battle
         private void OnDisable()
         {
             ResetBuffBurstVisuals();
+            StopCakeTweensForDisable();
         }
 
         private void OnDestroy()
@@ -569,6 +570,48 @@ namespace GourmetProject.Game.Presentation.Battle
             _rentedCakes.Remove(renderer);
             _cakes.Remove(renderer);
             ResetCakeVisual(cakeObject);
+        }
+
+        /// <summary>
+        /// 页面隐藏时不能让 Tween 在后台继续修改池对象。仍属于当前蛋糕层的对象
+        /// 保留在当前位置以便稍后捕获/恢复；已经进入溶解流程的对象立即归还。
+        /// </summary>
+        private void StopCakeTweensForDisable()
+        {
+            if (_cakeTweens.Count == 0)
+            {
+                return;
+            }
+
+            _releaseBuffer.Clear();
+            foreach (SpriteRenderer cake in _cakeTweens.Keys)
+            {
+                if (cake != null)
+                {
+                    _releaseBuffer.Add(cake);
+                }
+            }
+
+            for (int i = 0; i < _releaseBuffer.Count; i++)
+            {
+                SpriteRenderer cake = _releaseBuffer[i];
+                if (_cakeTweens.TryGetValue(cake, out Tween tween))
+                {
+                    tween?.Kill(false);
+                }
+            }
+
+            _cakeTweens.Clear();
+            for (int i = 0; i < _releaseBuffer.Count; i++)
+            {
+                SpriteRenderer cake = _releaseBuffer[i];
+                if (!_cakes.Contains(cake))
+                {
+                    ReleaseCake(cake);
+                }
+            }
+
+            _releaseBuffer.Clear();
         }
 
         private void ResetCakeVisual(GameObject cakeObject)

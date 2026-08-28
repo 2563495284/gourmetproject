@@ -74,8 +74,8 @@ namespace GourmetProject.Runtime.Pooling
                 }
             }
 
-            // UnityEngine.Object 的“已销毁”状态只会通过重载的 == null 暴露；
-            // C# 的 ??= 仍会把它视作非 null，随后访问 transform 就会抛 MissingReferenceException。
+            // Unity 已销毁对象仍保留托管壳，null-coalescing 不会把它当成 null；
+            // 必须使用 UnityEngine.Object 的重载判断，避免随后访问 transform 抛异常。
             if (go == null)
             {
                 go = CreateNew();

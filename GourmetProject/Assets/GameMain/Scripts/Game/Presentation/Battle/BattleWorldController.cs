@@ -160,6 +160,8 @@ namespace GourmetProject.Game.Presentation.Battle
         private Action _discardAnimationCompletion;
         private Placement? _temporaryAreaHoverPlacement;
         private DishPieceView _temporaryAreaFlyInPiece;
+        private Tween _temporaryAreaFlyInTween;
+        private int _temporaryAreaFlyInVersion;
         private bool _activeItemTransitioning;
         private bool _bossPresentationBusy;
         private Vector3 _dragPointerPreviousWorld;
@@ -1040,10 +1042,12 @@ namespace GourmetProject.Game.Presentation.Battle
             int index,
             Action onComplete)
         {
+            CancelTemporaryAreaFlyInForReconcile();
             Vector3 startCenter = piece.WorldBounds.center;
             float sourceCellSize = piece.CellSize;
             float sourceScale = Mathf.Max(0.0001f, Mathf.Abs(piece.transform.localScale.x));
             _temporaryAreaFlyInPiece = piece;
+            int flyInVersion = ++_temporaryAreaFlyInVersion;
             BuildHudFood(piece, dish, _dishClicked);
             piece.SetFlying(true);
             piece.SetSortingOrderOffset(index * TemporaryAreaSortingStride);
@@ -1063,16 +1067,43 @@ namespace GourmetProject.Game.Presentation.Battle
                 piece,
                 slotCenter,
                 targetSlot.Scale);
-            DOTween.Sequence()
+            Sequence sequence = DOTween.Sequence()
                 .SetLink(piece.gameObject)
                 .Append(piece.transform.DOMove(targetPosition, TemporaryAreaFlyDuration).SetEase(Ease.InOutCubic))
                 .Join(piece.transform
                     .DOScale(Vector3.one * targetSlot.Scale, TemporaryAreaFlyDuration)
-                    .SetEase(Ease.InOutCubic))
-                .OnComplete(() =>
+                    .SetEase(Ease.InOutCubic));
+            _temporaryAreaFlyInTween = sequence;
+            sequence.OnComplete(() =>
                 {
+                    if (flyInVersion != _temporaryAreaFlyInVersion
+                        || !ReferenceEquals(_temporaryAreaFlyInPiece, piece))
+                    {
+                        return;
+                    }
+
+                    _temporaryAreaFlyInTween = null;
                     CompleteTemporaryAreaArrival(piece, dish, index, onComplete);
                 });
+        }
+
+        /// <summary>
+        /// 让飞入中的食物重新参加下一轮视图对账。取消只终止旧动画回调；
+        /// 视图仍保留在当前索引中，由随后的 rebuild/clear 复用或归还。
+        /// </summary>
+        private void CancelTemporaryAreaFlyInForReconcile()
+        {
+            if (_temporaryAreaFlyInPiece == null && _temporaryAreaFlyInTween == null)
+            {
+                return;
+            }
+
+            _temporaryAreaFlyInVersion++;
+            Tween tween = _temporaryAreaFlyInTween;
+            _temporaryAreaFlyInTween = null;
+            _temporaryAreaFlyInPiece = null;
+            tween?.Kill(false);
+            _activeItemTransitioning = false;
         }
 
         private void CompleteTemporaryAreaArrival(
@@ -3834,6 +3865,7 @@ namespace GourmetProject.Game.Presentation.Battle
         {
             using (RebuildDishesMarker.Auto())
             {
+                CancelTemporaryAreaFlyInForReconcile();
                 _scopeHighlights?.ClearAll();
                 _reconcileDishViews.Clear();
                 CollectReconcileCandidates(_dishViewsById);
@@ -3861,6 +3893,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         private void ClearPlacedPieces()
         {
+            CancelTemporaryAreaFlyInForReconcile();
             _scopeHighlights?.ClearAll();
             _reconcileDishViews.Clear();
             CollectReconcileCandidates(_dishViewsById);

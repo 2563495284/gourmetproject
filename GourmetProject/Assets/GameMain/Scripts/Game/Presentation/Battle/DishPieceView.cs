@@ -320,6 +320,14 @@ namespace GourmetProject.Game.Presentation.Battle
             {
                 RebuildCells(CurrentShape);
             }
+            else
+            {
+                // 几何未变时仍要刷新会随战斗状态变化的表现；否则同一实例的
+                // 风味、禁用态与分数会一直保留上一帧的材质/文本状态。
+                ApplyFlavorVisual();
+                ApplyDebuffVisual();
+                _dishValueBadgePresenter?.Refresh();
+            }
             HideScopeTargetGlow();
         }
 
