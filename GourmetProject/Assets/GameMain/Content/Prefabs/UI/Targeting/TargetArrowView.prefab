@@ -35,7 +35,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 42, y: 42}
+  m_SizeDelta: {x: 183, y: 203}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &668282199760678531
 CanvasRenderer:
@@ -58,14 +58,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.43529412, g: 0.84705883, b: 0.9098039, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -1486736674410596525, guid: ddadf52125f1640c99ca650a1f3e96ad, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 324368d204174c36a792024840b80668, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -87,12 +87,12 @@ GameObject:
   - component: {fileID: 439110997185803319}
   - component: {fileID: 5369935306971363895}
   m_Layer: 0
-  m_Name: Line
+  m_Name: SegmentTemplate
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6746789219408295620
 RectTransform:
   m_ObjectHideFlags: 0
@@ -110,8 +110,8 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 120, y: 8}
-  m_Pivot: {x: 0, y: 0.5}
+  m_SizeDelta: {x: 148, y: 148}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &439110997185803319
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -133,16 +133,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.43529412, g: 0.84705883, b: 0.9098039, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 7295a5360413845b8b3c9d468aa1e4e8, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 216badfbb8834a458200d678225d2c46, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -200,7 +200,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da7205e85e3944587a7121ccddb96f39, type: 3}
   m_Name: 
   m_EditorClassIdentifier: GourmetProject.Game::GourmetProject.Game.UI.Meta.TargetArrowView
-  _line: {fileID: 6746789219408295620}
-  _head: {fileID: 2327374495995293047}
-  _lineWidth: 8
-  _headGap: 18
+  _segmentTemplate: {fileID: 5369935306971363895}
+  _head: {fileID: 8469675365101858509}

@@ -431,7 +431,7 @@ namespace GourmetProject.Game.Balance
                 beforePlacement: false,
                 requiredScore,
                 isBoss);
-            ScoreResult settled = session.Settle();
+            ScoreResult settled = session.Settle(captureDiagnostics: false);
             BattleRunSettlement applied = BattleSettlementApplier.ApplyAll(_run, session);
             LastBattleTotal = settled.Total;
 
