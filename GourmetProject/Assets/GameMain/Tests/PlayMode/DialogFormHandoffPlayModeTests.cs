@@ -242,12 +242,11 @@ namespace GourmetProject.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator SweetTransfer_ReplayAcrossFramesReusesInstanceAndChildren()
+        public IEnumerator SweetTransfer_ReplayAcrossFramesReusesSingleBatchMesh()
         {
             var root = new GameObject("SweetTransferPlayModePool");
             var prefabObject = new GameObject(
                 "SweetTransferPrefab",
-                typeof(SpriteRenderer),
                 typeof(SweetTransferParticleView));
             SweetTransferParticleView prefab = prefabObject.GetComponent<SweetTransferParticleView>();
             prefabObject.SetActive(false);
@@ -267,9 +266,15 @@ namespace GourmetProject.Tests.PlayMode
                     Vector3.one,
                     0.05f,
                     pool: pool);
-                int rendererCount = root.GetComponentsInChildren<SpriteRenderer>(true).Length;
+                MeshRenderer firstRenderer = first.GetComponent<MeshRenderer>();
+                Mesh firstMesh = first.GetComponent<MeshFilter>().sharedMesh;
+                Material firstMaterial = firstRenderer.sharedMaterial;
+                Assert.That(root.GetComponentsInChildren<SpriteRenderer>(true), Is.Empty);
+                Assert.That(root.GetComponentsInChildren<MeshRenderer>(true).Length, Is.EqualTo(1));
+                Assert.That(first.transform.childCount, Is.Zero);
                 yield return new WaitForSeconds(0.08f);
                 pool.Release(first);
+                Assert.That(firstRenderer.enabled, Is.False);
 
                 SweetTransferParticleView second = SweetTransferParticleView.Begin(
                     prefab,
@@ -281,10 +286,11 @@ namespace GourmetProject.Tests.PlayMode
                 yield return new WaitForSeconds(0.08f);
 
                 Assert.That(second, Is.SameAs(first));
-                Assert.That(rendererCount, Is.EqualTo(40));
-                Assert.That(
-                    root.GetComponentsInChildren<SpriteRenderer>(true).Length,
-                    Is.EqualTo(rendererCount));
+                Assert.That(second.transform.childCount, Is.Zero);
+                Assert.That(second.GetComponent<MeshFilter>().sharedMesh, Is.SameAs(firstMesh));
+                Assert.That(second.GetComponent<MeshRenderer>().sharedMaterial, Is.SameAs(firstMaterial));
+                Assert.That(root.GetComponentsInChildren<SpriteRenderer>(true), Is.Empty);
+                Assert.That(root.GetComponentsInChildren<MeshRenderer>(true).Length, Is.EqualTo(1));
                 pool.Release(second);
                 Assert.That(pool.CountAll, Is.EqualTo(1));
             }

@@ -1,15 +1,27 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using DG.Tweening;
 using UnityEngine;
-using GourmetProject.Game.Visual;
+using UnityEngine.Rendering;
 using GourmetProject.Runtime.Pooling;
 
 namespace GourmetProject.Game.Presentation.Battle
 {
+    /// <summary>
+    /// 甜蜜传递飞行特效。主体、残影与到达点统一写入一个动态 Mesh，
+    /// 避免一条飞行拆成数十个 SpriteRenderer / draw call。
+    /// </summary>
+    [DisallowMultipleComponent]
+    [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     internal sealed class SweetTransferParticleView : MonoBehaviour
     {
-        [SerializeField] private SpriteRenderer _renderer;
+        private const string ShaderName = "GourmetProject/SweetTransferParticleBatch";
+        private const float ArrivalDotRelativeScale = 0.46f;
+        private const float FailureDotRelativeScale = 0.42f;
+
+        [SerializeField] private MeshFilter _meshFilter;
+        [SerializeField] private MeshRenderer _meshRenderer;
         [SerializeField] private float _size = 0.22f;
         [SerializeField] private float _minimumArcHeight = 0.22f;
         [SerializeField] private float _arcHeightPerUnit = 0.14f;
@@ -22,17 +34,54 @@ namespace GourmetProject.Game.Presentation.Battle
         [SerializeField] private int _arrivalDotCount = 10;
         [SerializeField] private float _arrivalRadius = 0.36f;
 
+        private static Material s_sharedMaterial;
+
+        private readonly List<Vector3> _vertices = new();
+        private readonly List<Color32> _colors = new();
+        private readonly List<Vector2> _uvs = new();
+        private readonly List<int> _triangles = new();
+
         private Tween _tween;
-        private Transform _afterimageRoot;
-        private readonly List<SpriteRenderer> _afterimages = new();
-        private readonly List<SpriteRenderer> _arrivalDots = new();
-        private readonly List<SpriteRenderer> _failureDots = new();
+        private Mesh _mesh;
         private float _visualScale = 1f;
         private Color _defaultColor;
+        private bool _hasDefaultColor;
+        private int _runtimeAfterimageCount;
+        private int _runtimeArrivalDotCount;
+        private int _runtimeFailureDotCount;
+        private int _afterimageSlotStart;
+        private int _failureSlotStart;
+        private int _coreSlot;
+        private int _arrivalSlotStart;
+        private int _quadCount;
+
+        private static Material SharedMaterial
+        {
+            get
+            {
+                if (s_sharedMaterial == null)
+                {
+                    Shader shader = Resources.Load<Shader>("Shaders/SweetTransferParticleBatch")
+                                    ?? Shader.Find(ShaderName);
+                    if (shader == null)
+                    {
+                        throw new InvalidOperationException($"缺少甜蜜传递批渲染 Shader：{ShaderName}");
+                    }
+
+                    s_sharedMaterial = new Material(shader)
+                    {
+                        name = "RuntimeSweetTransferParticleBatch",
+                        hideFlags = HideFlags.DontSave,
+                    };
+                }
+
+                return s_sharedMaterial;
+            }
+        }
 
         private void Awake()
         {
-            _defaultColor = _color;
+            CaptureDefaultColor();
         }
 
         public static async Awaitable PlayAsync(
@@ -95,6 +144,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SweetTransferParticleView view = pool != null
                 ? pool.Get<SweetTransferParticleView>(parent)
                 : Instantiate(prefab, parent);
+            view.CaptureDefaultColor();
             if (colorOverride.HasValue)
             {
                 view._color = colorOverride.Value;
@@ -127,6 +177,7 @@ namespace GourmetProject.Game.Presentation.Battle
             SweetTransferParticleView view = pool != null
                 ? pool.Get<SweetTransferParticleView>(parent)
                 : Instantiate(prefab, parent);
+            view.CaptureDefaultColor();
             try
             {
                 view._visualScale = Mathf.Max(0.0001f, visualScale);
@@ -146,46 +197,15 @@ namespace GourmetProject.Game.Presentation.Battle
             float duration,
             CancellationToken cancellationToken)
         {
-            EnsureRenderer();
-            if (_renderer == null)
-            {
-                return;
-            }
-
-            _renderer.sprite = BattleShadow.SoftShadowSprite;
-            SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
-            BattleSorting.Apply(_renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText - 1);
-            transform.position = anchor;
+            EnsureRuntimeObjects();
             float size = _size * _visualScale;
+            RenderFailureFrame(anchor, size, 0f);
 
-            EnsurePoints(
-                _failureDots,
-                Mathf.Max(5, _arrivalDotCount / 2),
-                "Failed",
-                BattleSorting.OrderFloatingText - 2,
-                0.42f);
-
-            float safeDuration = Mathf.Max(0.0001f, duration);
-            _tween = DOVirtual.Float(0f, 1f, safeDuration, progress =>
+            _tween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), progress =>
                 {
-                    float t = Mathf.Clamp01(progress);
-                    float recoil = Mathf.Sin(t * Mathf.PI * 5f) * (1f - t) * size * 0.22f;
-                    transform.position = anchor + Vector3.right * recoil;
-                    transform.localScale = Vector3.one * size * Mathf.Lerp(1.05f, 0.08f, t * t);
-                    Color core = _color;
-                    core.a *= 1f - t;
-                    _renderer.color = core;
-
-                    for (int i = 0; i < _failureDots.Count; i++)
+                    if (this != null && _meshRenderer != null)
                     {
-                        float angle = Mathf.PI * 2f * i / Mathf.Max(1, _failureDots.Count);
-                        float radius = Mathf.Sin(t * Mathf.PI) * size * 1.25f;
-                        SpriteRenderer dot = _failureDots[i];
-                        dot.transform.position = anchor
-                            + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
-                        Color dotColor = _color;
-                        dotColor.a *= (1f - t) * 0.72f;
-                        dot.color = dotColor;
+                        RenderFailureFrame(anchor, size, Mathf.Clamp01(progress));
                     }
                 })
                 .SetEase(Ease.InCubic)
@@ -194,124 +214,139 @@ namespace GourmetProject.Game.Presentation.Battle
             await PresentationTween.AwaitCompletionAsync(_tween, cancellationToken);
         }
 
-        private void StartFlight(
-            Vector3 start,
-            Vector3 end,
-            float duration)
+        private void StartFlight(Vector3 start, Vector3 end, float duration)
         {
-            EnsureRenderer();
-            if (_renderer == null)
-            {
-                return;
-            }
-
-            _renderer.sprite = BattleShadow.SoftShadowSprite;
-            _renderer.color = _color;
-            SpriteRenderStyle.ApplyUnlitMaterial(_renderer);
-            BattleSorting.Apply(_renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText - 1);
-
-            EnsureAfterimages(Mathf.Max(0, _afterimageCount));
-            EnsurePoints(
-                _arrivalDots,
-                Mathf.Max(0, _arrivalDotCount),
-                "Arrival",
-                BattleSorting.OrderFloatingText - 1,
-                0.46f);
+            EnsureRuntimeObjects();
 
             float size = _size * _visualScale;
-            transform.position = start;
-            transform.localScale = Vector3.one * (size * 0.55f);
             float distance = Vector2.Distance(start, end);
             Vector3 control = (start + end) * 0.5f
                 + Vector3.up * Mathf.Max(
                     _minimumArcHeight * _visualScale,
                     distance * _arcHeightPerUnit);
+            RenderFlightFrame(start, control, end, size, 0f);
 
             _tween = DOVirtual.Float(0f, 1f, Mathf.Max(0.0001f, duration), progress =>
                 {
-                    if (this == null || _renderer == null)
+                    if (this != null && _meshRenderer != null)
                     {
-                        return;
-                    }
-
-                    float t = Mathf.Clamp01(progress);
-                    float travel = Mathf.Clamp01(t / 0.80f);
-                    transform.position = Bezier(start, control, end, travel);
-
-                    float pulse = Mathf.Sin(travel * Mathf.PI);
-                    transform.localScale = Vector3.one * (size * Mathf.Lerp(0.55f, 1.22f, pulse));
-
-                    float fadeIn = Mathf.Clamp01(travel / 0.12f);
-                    float fadeOut = Mathf.Clamp01((0.88f - t) / 0.10f);
-                    Color color = _color;
-                    color.a *= Mathf.Min(fadeIn, fadeOut);
-                    _renderer.color = color;
-
-                    float safeAfterimageSpacing = Mathf.Max(0.005f, _afterimageSpacing);
-                    for (int i = 0; i < _afterimages.Count; i++)
-                    {
-                        SpriteRenderer afterimage = _afterimages[i];
-                        if (afterimage == null)
-                        {
-                            continue;
-                        }
-
-                        float delay = (i + 1) * safeAfterimageSpacing;
-                        float pointT = travel - delay;
-                        if (pointT <= 0f || t >= 0.95f)
-                        {
-                            afterimage.color = Color.clear;
-                            continue;
-                        }
-
-                        float age = (i + 1f) / (_afterimages.Count + 1f);
-                        afterimage.transform.position = Bezier(start, control, end, pointT);
-
-                        // 每个副本保持它所代表的“过去一帧”的尺寸，再随年龄逐渐缩小、变淡。
-                        // 这会读成粒子本体的残影，而不是一条连接起终点的实体色带。
-                        float echoPulse = Mathf.Sin(pointT * Mathf.PI);
-                        float echoSize = size * Mathf.Lerp(0.55f, 1.22f, echoPulse);
-                        float ageScale = Mathf.Lerp(1f, _afterimageTailScale, age);
-                        afterimage.transform.localScale = Vector3.one * (echoSize * ageScale);
-
-                        float spawnFade = Mathf.Clamp01(pointT / (safeAfterimageSpacing * 1.5f));
-                        float arrivalFade = Mathf.Clamp01((0.95f - t) / 0.12f);
-                        float ageFade = Mathf.Pow(1f - age, 0.9f);
-                        Color afterimageColor = Color.Lerp(_color, Color.white, (1f - age) * 0.16f);
-                        afterimageColor.a = _color.a
-                            * _afterimageHeadAlpha
-                            * ageFade
-                            * spawnFade
-                            * arrivalFade;
-                        afterimage.color = afterimageColor;
-                    }
-
-                    float arrival = Mathf.Clamp01((t - 0.70f) / 0.30f);
-                    float radius = Mathf.Lerp(
-                        size * 0.18f,
-                        Mathf.Max(size, _arrivalRadius * _visualScale),
-                        arrival);
-                    float ringAlpha = Mathf.Sin(arrival * Mathf.PI) * 0.82f;
-                    for (int i = 0; i < _arrivalDots.Count; i++)
-                    {
-                        SpriteRenderer dot = _arrivalDots[i];
-                        if (dot == null)
-                        {
-                            continue;
-                        }
-
-                        float angle = Mathf.PI * 2f * i / Mathf.Max(1, _arrivalDots.Count);
-                        dot.transform.position = end + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
-                        Color dotColor = new Color(1f, 0.78f, 0.94f, ringAlpha);
-                        dot.color = dotColor;
+                        RenderFlightFrame(
+                            start,
+                            control,
+                            end,
+                            size,
+                            Mathf.Clamp01(progress));
                     }
                 })
                 .SetEase(Ease.InOutSine)
                 .SetLink(gameObject);
         }
 
+        private void RenderFlightFrame(
+            Vector3 start,
+            Vector3 control,
+            Vector3 end,
+            float size,
+            float progress)
+        {
+            float travel = Mathf.Clamp01(progress / 0.80f);
+            Vector3 corePosition = Bezier(start, control, end, travel);
+            float pulse = Mathf.Sin(travel * Mathf.PI);
+            float coreSize = size * Mathf.Lerp(0.55f, 1.22f, pulse);
+            PrepareFrame(corePosition);
+
+            float safeAfterimageSpacing = Mathf.Max(0.005f, _afterimageSpacing);
+            for (int i = 0; i < _runtimeAfterimageCount; i++)
+            {
+                float delay = (i + 1) * safeAfterimageSpacing;
+                float pointT = travel - delay;
+                if (pointT <= 0f || progress >= 0.95f)
+                {
+                    continue;
+                }
+
+                float age = (i + 1f) / (_runtimeAfterimageCount + 1f);
+                float echoPulse = Mathf.Sin(pointT * Mathf.PI);
+                float echoSize = size * Mathf.Lerp(0.55f, 1.22f, echoPulse);
+                float ageScale = Mathf.Lerp(1f, _afterimageTailScale, age);
+                float spawnFade = Mathf.Clamp01(pointT / (safeAfterimageSpacing * 1.5f));
+                float arrivalFade = Mathf.Clamp01((0.95f - progress) / 0.12f);
+                float ageFade = Mathf.Pow(1f - age, 0.9f);
+                Color afterimageColor = Color.Lerp(_color, Color.white, (1f - age) * 0.16f);
+                afterimageColor.a = _color.a
+                    * _afterimageHeadAlpha
+                    * ageFade
+                    * spawnFade
+                    * arrivalFade;
+                WriteQuad(
+                    _afterimageSlotStart + i,
+                    Bezier(start, control, end, pointT),
+                    echoSize * ageScale,
+                    afterimageColor);
+            }
+
+            float fadeIn = Mathf.Clamp01(travel / 0.12f);
+            float fadeOut = Mathf.Clamp01((0.88f - progress) / 0.10f);
+            Color coreColor = _color;
+            coreColor.a *= Mathf.Min(fadeIn, fadeOut);
+            WriteQuad(_coreSlot, corePosition, coreSize, coreColor);
+
+            float arrival = Mathf.Clamp01((progress - 0.70f) / 0.30f);
+            float radius = Mathf.Lerp(
+                size * 0.18f,
+                Mathf.Max(size, _arrivalRadius * _visualScale),
+                arrival);
+            float ringAlpha = Mathf.Sin(arrival * Mathf.PI) * 0.82f;
+            Color dotColor = new(1f, 0.78f, 0.94f, ringAlpha);
+            for (int i = 0; i < _runtimeArrivalDotCount; i++)
+            {
+                float angle = Mathf.PI * 2f * i / Mathf.Max(1, _runtimeArrivalDotCount);
+                Vector3 dotPosition = end
+                    + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
+                WriteQuad(
+                    _arrivalSlotStart + i,
+                    dotPosition,
+                    coreSize * ArrivalDotRelativeScale,
+                    dotColor);
+            }
+
+            UploadFrame();
+        }
+
+        private void RenderFailureFrame(Vector3 anchor, float size, float progress)
+        {
+            float recoil = Mathf.Sin(progress * Mathf.PI * 5f)
+                * (1f - progress)
+                * size
+                * 0.22f;
+            Vector3 corePosition = anchor + Vector3.right * recoil;
+            float coreSize = size * Mathf.Lerp(1.05f, 0.08f, progress * progress);
+            PrepareFrame(corePosition);
+
+            float radius = Mathf.Sin(progress * Mathf.PI) * size * 1.25f;
+            Color dotColor = _color;
+            dotColor.a *= (1f - progress) * 0.72f;
+            for (int i = 0; i < _runtimeFailureDotCount; i++)
+            {
+                float angle = Mathf.PI * 2f * i / Mathf.Max(1, _runtimeFailureDotCount);
+                Vector3 dotPosition = anchor
+                    + new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius;
+                WriteQuad(
+                    _failureSlotStart + i,
+                    dotPosition,
+                    coreSize * FailureDotRelativeScale,
+                    dotColor);
+            }
+
+            Color coreColor = _color;
+            coreColor.a *= 1f - progress;
+            WriteQuad(_coreSlot, corePosition, coreSize, coreColor);
+            UploadFrame();
+        }
+
         internal void PrepareForReuse()
         {
+            CaptureDefaultColor();
             ResetVisuals();
             _color = _defaultColor;
             _visualScale = 1f;
@@ -319,6 +354,7 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal void ResetForPool()
         {
+            CaptureDefaultColor();
             ResetVisuals();
             _color = _defaultColor;
             _visualScale = 1f;
@@ -326,133 +362,173 @@ namespace GourmetProject.Game.Presentation.Battle
 
         internal void WarmupForPool()
         {
-            EnsureRenderer();
-            EnsureAfterimages(Mathf.Max(0, _afterimageCount));
-            EnsurePoints(
-                _arrivalDots,
-                Mathf.Max(0, _arrivalDotCount),
-                "Arrival",
-                BattleSorting.OrderFloatingText - 1,
-                0.46f);
-            EnsurePoints(
-                _failureDots,
-                Mathf.Max(5, _arrivalDotCount / 2),
-                "Failed",
-                BattleSorting.OrderFloatingText - 2,
-                0.42f);
+            CaptureDefaultColor();
+            EnsureRuntimeObjects();
             ResetForPool();
         }
 
-        private void EnsureAfterimageRoot()
+        private void CaptureDefaultColor()
         {
-            if (_afterimageRoot == null)
+            if (_hasDefaultColor)
             {
-                GameObject root = new("SweetTransferAfterimages");
-                _afterimageRoot = root.transform;
+                return;
             }
 
-            _afterimageRoot.SetParent(transform.parent, false);
-            _afterimageRoot.gameObject.SetActive(true);
+            _defaultColor = _color;
+            _hasDefaultColor = true;
         }
 
-        private void EnsureAfterimages(int count)
+        private void EnsureRuntimeObjects()
         {
-            EnsureAfterimageRoot();
-            while (_afterimages.Count < count)
+            if (_meshFilter == null)
             {
-                _afterimages.Add(CreateAfterimage($"Afterimage_{_afterimages.Count}"));
+                _meshFilter = GetComponent<MeshFilter>() ?? gameObject.AddComponent<MeshFilter>();
             }
 
-            SetRendererRangeActive(_afterimages, count);
-        }
-
-        private void EnsurePoints(
-            List<SpriteRenderer> points,
-            int count,
-            string namePrefix,
-            int sortingOrder,
-            float relativeScale)
-        {
-            while (points.Count < count)
+            if (_meshRenderer == null)
             {
-                points.Add(CreatePoint(
-                    $"{namePrefix}_{points.Count}",
-                    sortingOrder,
-                    relativeScale));
+                _meshRenderer = GetComponent<MeshRenderer>() ?? gameObject.AddComponent<MeshRenderer>();
             }
 
-            SetRendererRangeActive(points, count);
-            for (int i = 0; i < count; i++)
+            _meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            _meshRenderer.receiveShadows = false;
+            _meshRenderer.lightProbeUsage = LightProbeUsage.Off;
+            _meshRenderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            _meshRenderer.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
+            _meshRenderer.sharedMaterial = SharedMaterial;
+            BattleSorting.Apply(
+                _meshRenderer,
+                BattleSorting.Fx,
+                BattleSorting.OrderFloatingText - 1);
+
+            if (_mesh == null)
             {
-                points[i].color = Color.clear;
-            }
-        }
-
-        private SpriteRenderer CreateAfterimage(string name)
-        {
-            GameObject echo = new(name);
-            echo.transform.SetParent(_afterimageRoot, false);
-            SpriteRenderer renderer = echo.AddComponent<SpriteRenderer>();
-            renderer.sprite = BattleShadow.SoftShadowSprite;
-            renderer.color = Color.clear;
-            SpriteRenderStyle.ApplyUnlitMaterial(renderer);
-            BattleSorting.Apply(renderer, BattleSorting.Fx, BattleSorting.OrderFloatingText - 2);
-            return renderer;
-        }
-
-        private SpriteRenderer CreatePoint(string name, int sortingOrder, float relativeScale)
-        {
-            GameObject point = new(name);
-            point.transform.SetParent(transform, false);
-            point.transform.localScale = Vector3.one * Mathf.Max(0.01f, relativeScale);
-            SpriteRenderer renderer = point.AddComponent<SpriteRenderer>();
-            renderer.sprite = BattleShadow.SoftShadowSprite;
-            renderer.color = _color;
-            SpriteRenderStyle.ApplyUnlitMaterial(renderer);
-            BattleSorting.Apply(renderer, BattleSorting.Fx, sortingOrder);
-            return renderer;
-        }
-
-        private static void SetRendererRangeActive(List<SpriteRenderer> renderers, int activeCount)
-        {
-            for (int i = 0; i < renderers.Count; i++)
-            {
-                SpriteRenderer renderer = renderers[i];
-                if (renderer != null)
+                _mesh = new Mesh
                 {
-                    renderer.gameObject.SetActive(i < activeCount);
-                }
+                    name = "RuntimeSweetTransferParticleBatch",
+                    hideFlags = HideFlags.DontSave,
+                };
+                _mesh.MarkDynamic();
+                _meshFilter.sharedMesh = _mesh;
             }
+            else if (_meshFilter.sharedMesh != _mesh)
+            {
+                _meshFilter.sharedMesh = _mesh;
+            }
+
+            int afterimageCount = Mathf.Max(0, _afterimageCount);
+            int arrivalCount = Mathf.Max(0, _arrivalDotCount);
+            int failureCount = Mathf.Max(5, arrivalCount / 2);
+            if (_quadCount == 0
+                || afterimageCount != _runtimeAfterimageCount
+                || arrivalCount != _runtimeArrivalDotCount
+                || failureCount != _runtimeFailureDotCount)
+            {
+                BuildTopology(afterimageCount, arrivalCount, failureCount);
+            }
+        }
+
+        private void BuildTopology(int afterimageCount, int arrivalCount, int failureCount)
+        {
+            _runtimeAfterimageCount = afterimageCount;
+            _runtimeArrivalDotCount = arrivalCount;
+            _runtimeFailureDotCount = failureCount;
+            _afterimageSlotStart = 0;
+            _failureSlotStart = _afterimageSlotStart + afterimageCount;
+            _coreSlot = _failureSlotStart + failureCount;
+            _arrivalSlotStart = _coreSlot + 1;
+            _quadCount = afterimageCount + failureCount + 1 + arrivalCount;
+
+            _vertices.Clear();
+            _colors.Clear();
+            _uvs.Clear();
+            _triangles.Clear();
+            EnsureListCapacity(_vertices, _quadCount * 4);
+            EnsureListCapacity(_colors, _quadCount * 4);
+            EnsureListCapacity(_uvs, _quadCount * 4);
+            EnsureListCapacity(_triangles, _quadCount * 6);
+
+            for (int slot = 0; slot < _quadCount; slot++)
+            {
+                int vertexStart = _vertices.Count;
+                _vertices.Add(Vector3.zero);
+                _vertices.Add(Vector3.zero);
+                _vertices.Add(Vector3.zero);
+                _vertices.Add(Vector3.zero);
+                _colors.Add(default);
+                _colors.Add(default);
+                _colors.Add(default);
+                _colors.Add(default);
+                _uvs.Add(new Vector2(0f, 0f));
+                _uvs.Add(new Vector2(0f, 1f));
+                _uvs.Add(new Vector2(1f, 1f));
+                _uvs.Add(new Vector2(1f, 0f));
+                _triangles.Add(vertexStart);
+                _triangles.Add(vertexStart + 1);
+                _triangles.Add(vertexStart + 2);
+                _triangles.Add(vertexStart + 2);
+                _triangles.Add(vertexStart + 3);
+                _triangles.Add(vertexStart);
+            }
+
+            _mesh.Clear();
+            _mesh.SetVertices(_vertices);
+            _mesh.SetColors(_colors);
+            _mesh.SetUVs(0, _uvs);
+            _mesh.SetTriangles(_triangles, 0, true);
+            _mesh.RecalculateBounds();
+        }
+
+        private void PrepareFrame(Vector3 corePosition)
+        {
+            transform.position = corePosition;
+            transform.localRotation = Quaternion.identity;
+            transform.localScale = Vector3.one;
+            for (int i = 0; i < _colors.Count; i++)
+            {
+                _vertices[i] = Vector3.zero;
+                _colors[i] = default;
+            }
+        }
+
+        private void WriteQuad(int slot, Vector3 worldCenter, float localSize, Color color)
+        {
+            if (slot < 0 || slot >= _quadCount || color.a <= 0f || localSize <= 0f)
+            {
+                return;
+            }
+
+            int vertexStart = slot * 4;
+            Vector3 center = transform.InverseTransformPoint(worldCenter);
+            float halfSize = localSize * 0.5f;
+            Vector3 right = Vector3.right * halfSize;
+            Vector3 up = Vector3.up * halfSize;
+            _vertices[vertexStart] = center - right - up;
+            _vertices[vertexStart + 1] = center - right + up;
+            _vertices[vertexStart + 2] = center + right + up;
+            _vertices[vertexStart + 3] = center + right - up;
+            Color32 color32 = color;
+            _colors[vertexStart] = color32;
+            _colors[vertexStart + 1] = color32;
+            _colors[vertexStart + 2] = color32;
+            _colors[vertexStart + 3] = color32;
+        }
+
+        private void UploadFrame()
+        {
+            _mesh.SetVertices(_vertices);
+            _mesh.SetColors(_colors);
+            _mesh.RecalculateBounds();
+            _meshRenderer.enabled = true;
         }
 
         private void ResetVisuals()
         {
             _tween?.Kill(false);
             _tween = null;
-            if (_renderer != null)
+            if (_meshRenderer != null)
             {
-                _renderer.color = Color.clear;
-            }
-
-            ClearRenderers(_afterimages);
-            ClearRenderers(_arrivalDots);
-            ClearRenderers(_failureDots);
-            if (_afterimageRoot != null)
-            {
-                _afterimageRoot.gameObject.SetActive(false);
-            }
-        }
-
-        private static void ClearRenderers(List<SpriteRenderer> renderers)
-        {
-            for (int i = 0; i < renderers.Count; i++)
-            {
-                SpriteRenderer renderer = renderers[i];
-                if (renderer != null)
-                {
-                    renderer.color = Color.clear;
-                    renderer.gameObject.SetActive(false);
-                }
+                _meshRenderer.enabled = false;
             }
         }
 
@@ -486,36 +562,38 @@ namespace GourmetProject.Game.Presentation.Battle
                 + clamped * clamped * end;
         }
 
-        private void EnsureRenderer()
-        {
-            if (_renderer == null)
-            {
-                _renderer = GetComponent<SpriteRenderer>();
-            }
-
-            if (_renderer == null)
-            {
-                Debug.LogError($"{nameof(SweetTransferParticleView)} prefab 缺少 SpriteRenderer。", this);
-            }
-        }
-
         private void OnDestroy()
         {
             _tween?.Kill();
             _tween = null;
 
-            if (_afterimageRoot != null)
+            Mesh ownedMesh = _mesh;
+            _mesh = null;
+            if (_meshFilter != null)
             {
-                GameObject root = _afterimageRoot.gameObject;
-                _afterimageRoot = null;
-                if (Application.isPlaying)
-                {
-                    Destroy(root);
-                }
-                else
-                {
-                    DestroyImmediate(root);
-                }
+                _meshFilter.sharedMesh = null;
+            }
+
+            if (ownedMesh == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(ownedMesh);
+            }
+            else
+            {
+                DestroyImmediate(ownedMesh);
+            }
+        }
+
+        private static void EnsureListCapacity<T>(List<T> list, int capacity)
+        {
+            if (list.Capacity < capacity)
+            {
+                list.Capacity = capacity;
             }
         }
     }

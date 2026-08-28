@@ -337,7 +337,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void SweetTransfer_RepeatedFlight_DoesNotCreateMoreChildSprites()
+        public void SweetTransfer_RepeatedFlight_ReusesSingleBatchMesh()
         {
             SweetTransferParticleView prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                     "Assets/GameMain/Content/Prefabs/Battle/Effects/SweetTransferParticle.prefab")
@@ -361,8 +361,18 @@ namespace GourmetProject.Tests.EditMode
                     Vector3.one,
                     0.1f,
                     pool: pool);
-                int firstRendererCount = root.GetComponentsInChildren<SpriteRenderer>(true).Length;
+                MeshRenderer firstRenderer = first.GetComponent<MeshRenderer>();
+                Mesh firstMesh = first.GetComponent<MeshFilter>().sharedMesh;
+                Material firstMaterial = firstRenderer.sharedMaterial;
+
+                Assert.That(root.GetComponentsInChildren<SpriteRenderer>(true), Is.Empty);
+                Assert.That(root.GetComponentsInChildren<MeshRenderer>(true).Length, Is.EqualTo(1));
+                Assert.That(first.transform.childCount, Is.Zero);
+                Assert.That(firstMesh, Is.Not.Null);
+                Assert.That(firstMesh.vertexCount, Is.EqualTo(160));
+                Assert.That((int)firstMesh.GetIndexCount(0), Is.EqualTo(240));
                 pool.Release(first);
+                Assert.That(firstRenderer.enabled, Is.False);
 
                 SweetTransferParticleView second = SweetTransferParticleView.Begin(
                     prefab,
@@ -371,12 +381,73 @@ namespace GourmetProject.Tests.EditMode
                     Vector3.one,
                     0.1f,
                     pool: pool);
-                int secondRendererCount = root.GetComponentsInChildren<SpriteRenderer>(true).Length;
-
-                Assert.That(firstRendererCount, Is.EqualTo(40));
-                Assert.That(secondRendererCount, Is.EqualTo(firstRendererCount));
                 Assert.That(second, Is.SameAs(first));
+                Assert.That(second.transform.childCount, Is.Zero);
+                Assert.That(second.GetComponent<MeshFilter>().sharedMesh, Is.SameAs(firstMesh));
+                Assert.That(second.GetComponent<MeshRenderer>().sharedMaterial, Is.SameAs(firstMaterial));
+                Assert.That(root.GetComponentsInChildren<SpriteRenderer>(true), Is.Empty);
+                Assert.That(root.GetComponentsInChildren<MeshRenderer>(true).Length, Is.EqualTo(1));
                 pool.Release(second);
+            }
+            finally
+            {
+                pool.Clear();
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void SweetTransfer_EightConcurrentFlights_UseEightSharedMaterialRenderers()
+        {
+            SweetTransferParticleView prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/GameMain/Content/Prefabs/Battle/Effects/SweetTransferParticle.prefab")
+                ?.GetComponent<SweetTransferParticleView>();
+            Assert.That(prefab, Is.Not.Null);
+
+            var root = new GameObject("SweetTransferConcurrencyTest");
+            var pool = new GameObjectPool(
+                prefab.gameObject,
+                root.transform,
+                prewarm: 8,
+                maxInactive: 8,
+                onGet: go => go.GetComponent<SweetTransferParticleView>()?.PrepareForReuse(),
+                onRelease: go => go.GetComponent<SweetTransferParticleView>()?.WarmupForPool());
+            var flights = new List<SweetTransferParticleView>(8);
+            try
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    flights.Add(SweetTransferParticleView.Begin(
+                        prefab,
+                        root.transform,
+                        new Vector3(-1f, i * 0.1f, 0f),
+                        new Vector3(1f, i * 0.1f, 0f),
+                        0.5f,
+                        pool: pool));
+                }
+
+                MeshRenderer[] renderers = root.GetComponentsInChildren<MeshRenderer>();
+                Assert.That(pool.CountActive, Is.EqualTo(8));
+                Assert.That(pool.PeakActive, Is.EqualTo(8));
+                Assert.That(renderers.Length, Is.EqualTo(8));
+                Assert.That(root.GetComponentsInChildren<SpriteRenderer>(true), Is.Empty);
+                Material shared = renderers[0].sharedMaterial;
+                Assert.That(shared, Is.Not.Null);
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    Assert.That(renderers[i].enabled, Is.True);
+                    Assert.That(renderers[i].sharedMaterial, Is.SameAs(shared));
+                }
+
+                for (int i = 0; i < flights.Count; i++)
+                {
+                    pool.Release(flights[i]);
+                }
+
+                Assert.That(pool.CountActive, Is.Zero);
+                MeshRenderer[] released = root.GetComponentsInChildren<MeshRenderer>(true);
+                Assert.That(released.Length, Is.EqualTo(8));
+                Assert.That(released, Has.All.Matches<MeshRenderer>(renderer => !renderer.enabled));
             }
             finally
             {
