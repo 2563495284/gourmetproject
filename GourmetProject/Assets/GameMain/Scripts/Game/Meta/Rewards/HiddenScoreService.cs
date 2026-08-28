@@ -43,7 +43,11 @@ namespace GourmetProject.Game.Meta
 
         public static int FragmentHiddenScore(GameRun run, ActionExecutionContext context = null)
         {
-            return EvaluateLinear(cfg.HiddenScorePurpose.Fragment, run, HiddenOffset(run, context, HiddenScorePurpose.Fragment));
+            return EvaluateLinear(
+                cfg.HiddenScorePurpose.Fragment,
+                run,
+                HiddenOffset(run, context, HiddenScorePurpose.Fragment),
+                roundDown: true);
         }
 
         public static GoldRange GoldRewardRange(GameRun run, ActionExecutionContext context = null)
@@ -83,7 +87,11 @@ namespace GourmetProject.Game.Meta
             return Math.Max(1, (int)Math.Round(value, MidpointRounding.AwayFromZero));
         }
 
-        private static int EvaluateLinear(cfg.HiddenScorePurpose purpose, GameRun run, float hiddenOffset)
+        private static int EvaluateLinear(
+            cfg.HiddenScorePurpose purpose,
+            GameRun run,
+            float hiddenOffset,
+            bool roundDown = false)
         {
             cfg.HiddenScoreCurve curve = ResolveCurve(run?.Tables, purpose, run);
             if (curve == null || run == null)
@@ -95,7 +103,9 @@ namespace GourmetProject.Game.Meta
             value += run.WeekIndex * curve.WeekCoeff;
             value += run.CurrentDay * curve.DayCoeff;
             value += hiddenOffset;
-            return RoundCurveValue(curve, value);
+            return roundDown
+                ? FloorCurveValue(curve, value)
+                : RoundCurveValue(curve, value);
         }
 
         private static int EvaluateTargetScore(GameRun run, float hiddenOffset, float? dayOverride)
@@ -126,6 +136,23 @@ namespace GourmetProject.Game.Meta
             long roundTo = curve.RoundTo > 0 ? curve.RoundTo : 1;
             rounded = ((rounded + roundTo - 1) / roundTo) * roundTo;
             return (int)Math.Min(rounded, int.MaxValue);
+        }
+
+        private static int FloorCurveValue(cfg.HiddenScoreCurve curve, double value)
+        {
+            if (double.IsNaN(value))
+            {
+                return 0;
+            }
+
+            double bounded = double.IsPositiveInfinity(value)
+                ? int.MaxValue
+                : double.IsNegativeInfinity(value)
+                    ? int.MinValue
+                    : Math.Max(int.MinValue, Math.Min(value, int.MaxValue));
+            long roundTo = curve.RoundTo > 0 ? curve.RoundTo : 1;
+            double floored = Math.Floor(bounded / roundTo) * roundTo;
+            return (int)Math.Max(int.MinValue, Math.Min(floored, int.MaxValue));
         }
 
         private static cfg.HiddenScoreCurve ResolveCurve(cfg.Tables tables, cfg.HiddenScorePurpose purpose, GameRun run)
