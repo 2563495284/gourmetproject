@@ -2721,7 +2721,11 @@ namespace GourmetProject.Game.UI.Battle
                 _session,
                 () => OnServingOutletDishHoverEntered(servingOutlet),
                 OnServingOutletDishHoverExited,
-                world == null ? null : screen => world.BeginServingOutletDrag(screen),
+                world == null
+                    ? null
+                    : screen => !IsViewToggleTransitioning()
+                        && _current == GameplayView.Food
+                        && world.BeginServingOutletDrag(screen),
                 world == null ? null : screen => world.UpdateServingOutletDrag(screen),
                 world == null ? null : screen => world.EndServingOutletDrag(screen),
                 world == null ? null : () => world.IsServingOutletDragActive);

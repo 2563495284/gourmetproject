@@ -161,20 +161,20 @@ namespace GourmetProject.Game.Presentation.Battle
             ConfigureDecorationRenderer(_valueBacking);
             ConfigureDecorationRenderer(_icon);
 
+            BattleSorting.Apply(_background, _sortingLayer, _sortingOrder);
+            BattleSorting.Apply(_valueBacking, _sortingLayer, _sortingOrder);
+            BattleSorting.Apply(_icon, _sortingLayer, _sortingOrder + 1);
+
             if (_valueText != null)
             {
-                BattleSorting.Apply(_valueText, _sortingLayer, _sortingOrder + 1);
+                BattleSorting.Apply(_valueText, _sortingLayer, _sortingOrder + 2);
             }
             else
             {
-                BattleSorting.Apply(_valueMeshRenderer, _sortingLayer, _sortingOrder + 1);
+                BattleSorting.Apply(_valueMeshRenderer, _sortingLayer, _sortingOrder + 2);
             }
 
             ConfigureTextRenderers();
-
-            BattleSorting.Apply(_background, _sortingLayer, _sortingOrder);
-            BattleSorting.Apply(_valueBacking, _sortingLayer, _sortingOrder);
-            BattleSorting.Apply(_icon, _sortingLayer, _sortingOrder);
         }
 
         private static void ConfigureDecorationRenderer(SpriteRenderer renderer)

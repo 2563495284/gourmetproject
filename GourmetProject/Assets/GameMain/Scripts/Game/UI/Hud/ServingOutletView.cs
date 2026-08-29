@@ -188,12 +188,16 @@ namespace GourmetProject.Game.UI.Hud
             Func<bool> isDragActive)
         {
             EnsureReferences();
+            // RefreshAll 会在入场演出结束等时机重新绑定 HUD。若世界层的同一场拖拽仍然有效，
+            // 这里不能只清 UI 标记，否则会留下无法由键盘结束的世界拖拽预览。
+            bool preserveDrag = _dragging && isDragActive?.Invoke() == true;
+            bool preserveKeyboardDrag = preserveDrag && _keyboardDragging;
             _beginDrag = beginDrag;
             _drag = drag;
             _endDrag = endDrag;
             _isDragActive = isDragActive;
-            _dragging = false;
-            _keyboardDragging = false;
+            _dragging = preserveDrag;
+            _keyboardDragging = preserveKeyboardDrag;
             if (_dishHoverTrigger == null)
             {
                 Debug.LogError(

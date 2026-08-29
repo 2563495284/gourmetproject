@@ -212,6 +212,44 @@ namespace GourmetProject.Tests.EditMode
             Assert.That(CurrentDishAlpha(), Is.EqualTo(1f).Within(0.001f));
         }
 
+        [Test]
+        public void Shortcut_RebindWhileCarrying_PreservesDragLifecycle()
+        {
+            bool active = false;
+            int beginCount = 0;
+            int endCount = 0;
+            var updates = new List<Vector2>();
+            Func<Vector2, bool> begin = _ =>
+            {
+                beginCount++;
+                active = true;
+                return true;
+            };
+            Action<Vector2> update = updates.Add;
+            Func<Vector2, bool> end = _ =>
+            {
+                endCount++;
+                active = false;
+                return true;
+            };
+            Func<bool> isActive = () => active;
+            Bind(begin, update, end, isActive);
+            SetReadyForShortcut();
+
+            HandleShortcut(pressed: true, new Vector2(100f, 100f));
+            Bind(begin, update, end, isActive);
+
+            Vector2 follow = new Vector2(220f, 260f);
+            Vector2 drop = new Vector2(340f, 380f);
+            HandleShortcut(pressed: false, follow);
+            HandleShortcut(pressed: true, drop);
+
+            Assert.That(beginCount, Is.EqualTo(1));
+            Assert.That(updates, Is.EqualTo(new[] { follow, drop }));
+            Assert.That(endCount, Is.EqualTo(1));
+            Assert.That(IsKeyboardDragging(), Is.False);
+        }
+
         private void Bind(
             Func<Vector2, bool> begin,
             Action<Vector2> update,

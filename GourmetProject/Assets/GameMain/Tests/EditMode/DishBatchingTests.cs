@@ -134,7 +134,7 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
-        public void Badge_DecorationsShareV2AtlasMaterialAndOrder_TextIsAbove()
+        public void Badge_DecorationsShareV2AtlasMaterial_AndRenderInExplicitOrder()
         {
             SpriteAtlasAsset atlas = SpriteAtlasAsset.Load(BadgeAtlasPath);
             Assert.That(atlas, Is.Not.Null);
@@ -157,13 +157,20 @@ namespace GourmetProject.Tests.EditMode
             badge.ConfigureSorting(BattleSorting.WorldUi, BattleSorting.OrderDishBadge);
 
             SpriteRenderer[] decorations = instance.GetComponentsInChildren<SpriteRenderer>(true);
+            Transform valueBackingTransform = instance.transform.Find("ValueBacking");
+            Transform iconTransform = instance.transform.Find("DishValueIcon");
             TextMeshPro valueText = instance.GetComponentInChildren<TextMeshPro>(true);
             Assert.That(decorations, Has.Length.EqualTo(2));
+            Assert.That(valueBackingTransform, Is.Not.Null);
+            Assert.That(iconTransform, Is.Not.Null);
+            SpriteRenderer valueBacking = valueBackingTransform.GetComponent<SpriteRenderer>();
+            SpriteRenderer icon = iconTransform.GetComponent<SpriteRenderer>();
+            Assert.That(valueBacking, Is.Not.Null);
+            Assert.That(icon, Is.Not.Null);
             Assert.That(valueText, Is.Not.Null);
             for (int i = 0; i < decorations.Length; i++)
             {
                 Assert.That(decorations[i].sharedMaterial, Is.SameAs(decorations[0].sharedMaterial));
-                Assert.That(decorations[i].sortingOrder, Is.EqualTo(BattleSorting.OrderDishBadge));
                 Assert.That(decorations[i].shadowCastingMode, Is.EqualTo(ShadowCastingMode.Off));
                 Assert.That(decorations[i].receiveShadows, Is.False);
                 Assert.That(decorations[i].lightProbeUsage, Is.EqualTo(LightProbeUsage.Off));
@@ -173,7 +180,9 @@ namespace GourmetProject.Tests.EditMode
                     Is.EqualTo(MotionVectorGenerationMode.ForceNoMotion));
             }
 
-            Assert.That(valueText.renderer.sortingOrder, Is.EqualTo(BattleSorting.OrderDishBadge + 1));
+            Assert.That(valueBacking.sortingOrder, Is.EqualTo(BattleSorting.OrderDishBadge));
+            Assert.That(icon.sortingOrder, Is.EqualTo(BattleSorting.OrderDishBadge + 1));
+            Assert.That(valueText.renderer.sortingOrder, Is.EqualTo(BattleSorting.OrderDishBadge + 2));
             var textRenderer = valueText.renderer as MeshRenderer;
             Assert.That(textRenderer, Is.Not.Null);
             Assert.That(textRenderer.shadowCastingMode, Is.EqualTo(ShadowCastingMode.Off));
