@@ -462,7 +462,12 @@ namespace GourmetProject.Gameplay.Scoring
                 return;
             }
 
-            ApplyRegisteredSweetTransferBuffs(ctx, buffs, targets, resolvedBuffExtraTargets);
+            ApplyRegisteredSweetTransferBuffs(
+                ctx,
+                buffs,
+                targets,
+                resolvedBuffExtraTargets,
+                effects.Count);
             ApplyItemSweetTransferMultiplierBonuses(ctx, targets);
 
             string sourceName = CurrentSkillSourceName(ctx);
@@ -687,7 +692,8 @@ namespace GourmetProject.Gameplay.Scoring
             ScoreContext ctx,
             IReadOnlyList<SweetTransferBuffRegistration> buffs,
             IReadOnlyList<DishInstance> transferTargets,
-            IReadOnlyDictionary<SweetTransferBuffRegistration, int> resolvedBuffExtraTargets)
+            IReadOnlyDictionary<SweetTransferBuffRegistration, int> resolvedBuffExtraTargets,
+            int handoffPayloadCount)
         {
             buffs ??= Array.Empty<SweetTransferBuffRegistration>();
 
@@ -711,7 +717,13 @@ namespace GourmetProject.Gameplay.Scoring
                     continue;
                 }
 
-                ResolveSweetTransferBuffTrigger(ctx, buff, transferTargets, extra, SkillActionType.None);
+                ResolveSweetTransferBuffTrigger(
+                    ctx,
+                    buff,
+                    transferTargets,
+                    extra,
+                    SkillActionType.None,
+                    handoffPayloadCount);
             }
 
             foreach (SweetTransferBuffRegistration buff in buffs)
@@ -758,7 +770,13 @@ namespace GourmetProject.Gameplay.Scoring
                     : HasActionParam(rule, "linear")
                         ? 1f + rule.ActionValue * scaledConditionCount
                         : (float)Math.Pow(rule.ActionValue, scaledConditionCount);
-                ResolveSweetTransferBuffTrigger(ctx, buff, resultTargets, value, rule.ActionType);
+                ResolveSweetTransferBuffTrigger(
+                    ctx,
+                    buff,
+                    resultTargets,
+                    value,
+                    rule.ActionType,
+                    handoffPayloadCount);
             }
 
             foreach (SweetTransferBuffRegistration buff in ctx.SweetTransferReceiverBuffsFor(transferTargets))
@@ -787,7 +805,8 @@ namespace GourmetProject.Gameplay.Scoring
                     buff,
                     resultTargets,
                     rule.ActionValue * buff.ConditionCount * (applyToBuffTargets ? receivedCount : 1),
-                    SkillActionType.AddFlat);
+                    SkillActionType.AddFlat,
+                    handoffPayloadCount);
             }
         }
 
@@ -818,7 +837,8 @@ namespace GourmetProject.Gameplay.Scoring
             SweetTransferBuffRegistration buff,
             IReadOnlyList<DishInstance> targets,
             float value,
-            SkillActionType applyType)
+            SkillActionType applyType,
+            int handoffPayloadCount)
         {
             if (ctx == null || buff?.Owner == null || buff.Rule == null)
             {
@@ -832,6 +852,17 @@ namespace GourmetProject.Gameplay.Scoring
             SkillExecutionTrace trace = ctx.CaptureDiagnostics
                 ? buff.Trace?.WithRuntimeContext(buff.Owner, _self, ids, cells)
                 : null;
+            if (trace != null && ctx.CurrentExecutionGroupId > 0)
+            {
+                // Buff 的数值必须先落地，接收方外来技能才能读取正确状态；但演出上它属于
+                // 当前 TransferSkills 根效果，必须等同一交接的飞行与结果播完再响应。
+                // 显式携带 handoff group，避免表现层再从 ScoreLine 的偶然相邻关系猜因果。
+                trace = trace.WithSweetTransferHandoff(
+                    _self.Id,
+                    ctx.CurrentExecutionGroupId,
+                    _rule.SkillId,
+                    Math.Max(0, handoffPayloadCount));
+            }
             int boardOrder = buff.Owner.Placement.Origin.Y * ctx.DiningTable.Width
                 + buff.Owner.Placement.Origin.X;
             var entry = new ScoreEffectEntry(

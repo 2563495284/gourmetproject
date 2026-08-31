@@ -1357,7 +1357,10 @@ namespace GourmetProject.Gameplay.Scoring
                 }
             }
 
-            SkillExecutionTrace trace = registration.Trace?.WithRuntimeContext(
+            // ResolveSweetTransferBuffTrigger 会在进入嵌套响应效果前，把本次真实交接的
+            // handoff group 写入当前 Trace。优先继承它；回退到 registration.Trace 仅用于
+            // 兼容没有经过标准响应效果入口的旧调用。否则这里重建 trace 会丢掉波次关联。
+            SkillExecutionTrace trace = (Trace ?? registration.Trace)?.WithRuntimeContext(
                 registration.Owner,
                 transferSource,
                 ids,

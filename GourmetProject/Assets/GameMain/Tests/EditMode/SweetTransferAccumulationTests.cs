@@ -397,6 +397,33 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void PresentationWave_StopsBeforeNextExplicitHandoff()
+        {
+            var groups = new[]
+            {
+                new SettlementEffectGroup(CreatePresentationLine(1, 3, "skill_a", 1, 101)),
+                new SettlementEffectGroup(CreatePresentationLine(1, 4, "skill_a", 1, 101)),
+                new SettlementEffectGroup(CreatePresentationLine(2, 3, "skill_b", 2, 102)),
+            };
+
+            Assert.That(SettlementSequencer.CountSweetTransferWaveLength(groups, 0), Is.EqualTo(2));
+            Assert.That(SettlementSequencer.CountSweetTransferWaveLength(groups, 2), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TriggerSweetTransferPresentation_RemainsAnUmbrellaForMultipleHandoffs()
+        {
+            var groups = new[]
+            {
+                new SettlementEffectGroup(CreateTriggerPresentationLine()),
+                new SettlementEffectGroup(CreatePresentationLine(1, 3, "skill_a", 1, 101)),
+                new SettlementEffectGroup(CreatePresentationLine(2, 3, "skill_b", 2, 102)),
+            };
+
+            Assert.That(SettlementSequencer.CountSweetTransferWaveLength(groups, 0), Is.EqualTo(3));
+        }
+
+        [Test]
         public void PassivePresentationLedger_ConsumesExactTransfersAndBatchesEachWave()
         {
             const string itemId = "item_gold_on_transfer";
@@ -1056,6 +1083,103 @@ namespace GourmetProject.Tests.EditMode
         }
 
         [Test]
+        public void ReceiverBuffResponse_IsBoundToHandoffAndPresentedAfterTransferResults()
+        {
+            DishShape shape = DishShape.FromRows(new[] { "X" });
+            SkillDef receiverBuffSkill = CreateTransferReceiverFlatModifierSkill("receiver_buff");
+            SkillDef sourceSkill = CreateTransferSkill("source_skill", value: 10f, targetCount: 1);
+            DishDef receiverBuffDef = CreateDish(
+                "receiver_buff_owner",
+                "跳跳糖",
+                shape,
+                new[] { receiverBuffSkill.Id });
+            DishDef sourceDef = CreateDish("source", "来源", shape, new[] { sourceSkill.Id });
+            DishDef targetDef = CreateDish("target", "目标", shape, Array.Empty<string>());
+            var database = new GameplayDatabase(
+                new[] { receiverBuffDef, sourceDef, targetDef },
+                new[] { receiverBuffSkill, sourceSkill },
+                Array.Empty<FlavorDef>(),
+                Array.Empty<RecipeDef>());
+            var board = new DiningTable(3, 1);
+            DishInstance receiverBuffOwner = CreateInstance(1, receiverBuffDef, shape, 0);
+            DishInstance source = CreateInstance(2, sourceDef, shape, 1);
+            DishInstance target = CreateInstance(3, targetDef, shape, 2);
+            board.Place(receiverBuffOwner);
+            board.Place(source);
+            board.Place(target);
+
+            ScoreResult result = new ScoreCalculator().Calculate(
+                board,
+                database,
+                transferTargetSelector: (candidates, count) => new[] { target.Id },
+                sweetTransferTargetMultiplierFlat: 0.4f);
+
+            SkillTransferSideEffect transfer = result.SkillTransfers.Single();
+            ScoreLine response = result.ScoreLines.Single(line =>
+                line.Kind == ScoreLineKind.SweetTransferBuffTriggered);
+            ScoreLine transferRootResult = result.ScoreLines.Single(line =>
+                line.Trace?.ActionType == SkillActionType.TransferSkills
+                && line.ExecutionGroupId == transfer.HandoffExecutionGroupId);
+            ScoreLine transferredResult = result.ScoreLines.First(line =>
+                line.Trace?.Kind == SkillExecutionKind.SweetTransfer
+                && line.Trace.SweetTransferHandoffExecutionGroupId
+                    == transfer.HandoffExecutionGroupId);
+
+            Assert.That(
+                response.Trace.SweetTransferHandoffSourceDishInstanceId,
+                Is.EqualTo(source.Id));
+            Assert.That(
+                response.Trace.SweetTransferHandoffExecutionGroupId,
+                Is.EqualTo(transfer.HandoffExecutionGroupId));
+            Assert.That(
+                response.Trace.SweetTransferHandoffSkillId,
+                Is.EqualTo(sourceSkill.Id));
+            Assert.That(response.Trace.SweetTransferHandoffPayloadCount, Is.EqualTo(1));
+            List<ScoreLine> recordedLines = result.ScoreLines.ToList();
+            Assert.That(
+                recordedLines.IndexOf(response),
+                Is.LessThan(recordedLines.IndexOf(transferRootResult)));
+            Assert.That(
+                recordedLines.IndexOf(response),
+                Is.LessThan(recordedLines.IndexOf(transferredResult)));
+
+            SettlementPresentationPlan plan = SettlementPresentationPlan.Build(result);
+            SettlementDishChapter sourceChapter = plan.DishChapters.Single(chapter =>
+                chapter.DishInstanceId == source.Id);
+            int responseGroupIndex = sourceChapter.Groups.FindIndex(group =>
+                group.Lines.Contains(response));
+            Assert.That(responseGroupIndex, Is.GreaterThanOrEqualTo(0));
+
+            int waveLength = SettlementSequencer.CountSweetTransferWaveLength(
+                sourceChapter.Groups,
+                responseGroupIndex);
+            IReadOnlyList<SettlementEffectGroup> waveGroups = sourceChapter.Groups
+                .Skip(responseGroupIndex)
+                .Take(waveLength)
+                .ToArray();
+            Assert.That(waveGroups.Any(group => group.Lines.Contains(transferRootResult)), Is.True);
+            Assert.That(waveGroups.Any(group => group.Lines.Contains(transferredResult)), Is.True);
+
+            var announceLines = new List<ScoreLine>();
+            var settleLines = new List<ScoreLine>();
+            var responseLines = new List<ScoreLine>();
+            SettlementSequencer.ClassifySweetTransferWaveLines(
+                sourceChapter.Groups,
+                responseGroupIndex,
+                waveLength,
+                announceLines,
+                settleLines,
+                responseLines);
+
+            Assert.That(announceLines, Is.Empty);
+            Assert.That(settleLines, Does.Contain(transferRootResult));
+            Assert.That(settleLines, Does.Contain(transferredResult));
+            Assert.That(responseLines, Does.Contain(response));
+            Assert.That(responseLines.Contains(transferRootResult), Is.False);
+            Assert.That(responseLines.Contains(transferredResult), Is.False);
+        }
+
+        [Test]
         public void TransferMultiplierModifier_UsesSanitizedTargetsInsteadOfConfiguredCount()
         {
             TransferMultiplierFixture fixture = CreateTransferMultiplierFixture(
@@ -1709,6 +1833,32 @@ namespace GourmetProject.Tests.EditMode
                 new[] { modifier.Id });
         }
 
+        private static SkillDef CreateTransferReceiverFlatModifierSkill(string skillId)
+        {
+            var modifier = new SkillRuleDef(
+                $"{skillId}_modifier",
+                skillId,
+                order: 0,
+                SkillTrigger.OnSettle,
+                SkillConditionType.None,
+                SkillScope.Self,
+                CountUnit.Instances,
+                CountMode.Per,
+                string.Empty,
+                SkillActionType.AddFlat,
+                SkillScope.All,
+                actionCount: 0,
+                new[] { 10f },
+                new[] { "when:receive-transfer;resultscope:BuffTargets" });
+            return new SkillDef(
+                skillId,
+                skillId,
+                string.Empty,
+                Array.Empty<string>(),
+                new[] { modifier },
+                new[] { modifier.Id });
+        }
+
         private static TransferMultiplierFixture CreateTransferMultiplierFixture(
             bool scaleByTransferTargetCount,
             int configuredTargetCount,
@@ -1856,6 +2006,41 @@ namespace GourmetProject.Tests.EditMode
                 skillId,
                 trace,
                 executionGroupId: handoffGroupId + ownerId);
+        }
+
+        private static ScoreLine CreateTriggerPresentationLine()
+        {
+            var trace = new SkillExecutionTrace(
+                SkillExecutionKind.NativeSkill,
+                9,
+                "activator",
+                "代触发者",
+                9,
+                "activator",
+                "代触发者",
+                "trigger_skill",
+                "trigger_skill",
+                "trigger_rule",
+                0,
+                SkillTrigger.OnSettle,
+                SkillActionType.TriggerSweetTransfer,
+                SkillConditionType.None,
+                SkillScope.Self,
+                SkillScope.All,
+                string.Empty);
+            return new ScoreLine(
+                ScorePhase.DishSkills,
+                ScoreLineKind.TriggerSweetTransfer,
+                ScoreSource.FinalModifier("trigger_skill", "代触发者"),
+                9,
+                "activator",
+                null,
+                2f,
+                0f,
+                2f,
+                "代触发甜蜜传递 ×2",
+                trace,
+                executionGroupId: 90);
         }
 
         private static SkillRuleDef CreateAddFlatRule(string id, string skillId, float value)

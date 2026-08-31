@@ -958,31 +958,108 @@ namespace GourmetProject.Game.Presentation.Battle
                     : null;
         }
 
-        internal static bool IsSweetTransferRelatedGroup(SettlementEffectGroup group)
+        internal readonly struct SweetTransferWaveMembership
+        {
+            public SweetTransferWaveMembership(
+                bool isRelated,
+                bool isTriggerUmbrella,
+                int handoffExecutionGroupId)
+            {
+                IsRelated = isRelated;
+                IsTriggerUmbrella = isTriggerUmbrella;
+                HandoffExecutionGroupId = Mathf.Max(0, handoffExecutionGroupId);
+            }
+
+            public bool IsRelated { get; }
+            public bool IsTriggerUmbrella { get; }
+            public int HandoffExecutionGroupId { get; }
+        }
+
+        /// <summary>
+        /// 解析一个效果组属于哪次真实甜蜜传递。
+        /// 真实交接使用 TransferSkills 根效果的 execution group 作为稳定键；Buff 响应和
+        /// 接收方重放都通过 trace 上的 handoff group 回指它。TriggerSweetTransfer 是可包含
+        /// 多个真实来源的上层编排，因此保留 umbrella 语义，不强行压成单个 handoff key。
+        /// </summary>
+        internal static SweetTransferWaveMembership ResolveSweetTransferWaveMembership(
+            SettlementEffectGroup group)
         {
             if (group == null)
             {
-                return false;
+                return default;
             }
 
-            if (group.Trace?.Kind == SkillExecutionKind.SweetTransfer)
-            {
-                return true;
-            }
+            bool isRelated = false;
+            bool isTriggerUmbrella = false;
+            bool hasConflictingHandoffIds = false;
+            int explicitHandoffId = 0;
+            int transferRootId = 0;
 
             for (int i = 0; i < group.Lines.Count; i++)
             {
-                switch (group.Lines[i].Kind)
+                ScoreLine line = group.Lines[i];
+                if (line == null)
+                {
+                    continue;
+                }
+
+                SkillExecutionTrace trace = line.Trace;
+                if (trace?.SweetTransferHandoffExecutionGroupId > 0)
+                {
+                    isRelated = true;
+                    int candidate = trace.SweetTransferHandoffExecutionGroupId;
+                    if (explicitHandoffId == 0)
+                    {
+                        explicitHandoffId = candidate;
+                    }
+                    else if (explicitHandoffId != candidate)
+                    {
+                        hasConflictingHandoffIds = true;
+                    }
+                }
+
+                if (trace?.Kind == SkillExecutionKind.SweetTransfer)
+                {
+                    isRelated = true;
+                }
+
+                if (trace?.ActionType == SkillActionType.TransferSkills)
+                {
+                    isRelated = true;
+                    if (line.ExecutionGroupId > 0)
+                    {
+                        transferRootId = line.ExecutionGroupId;
+                    }
+                }
+
+                switch (line.Kind)
                 {
                     case ScoreLineKind.TriggerSweetTransfer:
+                        isRelated = true;
+                        isTriggerUmbrella = true;
+                        break;
                     case ScoreLineKind.TriggeredSweetTransferSource:
                     case ScoreLineKind.SweetTransferBuffTriggered:
                     case ScoreLineKind.SweetTransferFailed:
-                        return true;
+                        isRelated = true;
+                        break;
                 }
             }
 
-            return false;
+            int handoffExecutionGroupId = isTriggerUmbrella || hasConflictingHandoffIds
+                ? 0
+                : explicitHandoffId > 0
+                    ? explicitHandoffId
+                    : transferRootId;
+            return new SweetTransferWaveMembership(
+                isRelated,
+                isTriggerUmbrella,
+                handoffExecutionGroupId);
+        }
+
+        internal static bool IsSweetTransferRelatedGroup(SettlementEffectGroup group)
+        {
+            return ResolveSweetTransferWaveMembership(group).IsRelated;
         }
 
         internal static int CountSweetTransferWaveLength(
@@ -994,17 +1071,40 @@ namespace GourmetProject.Game.Presentation.Battle
                 return 0;
             }
 
-            if (!IsSweetTransferRelatedGroup(groups[startIndex]))
+            SweetTransferWaveMembership first =
+                ResolveSweetTransferWaveMembership(groups[startIndex]);
+            if (!first.IsRelated)
             {
                 return 0;
             }
 
             int count = 1;
+            int handoffExecutionGroupId = first.HandoffExecutionGroupId;
             for (int i = startIndex + 1; i < groups.Count; i++)
             {
-                if (!IsSweetTransferRelatedGroup(groups[i]))
+                SweetTransferWaveMembership next =
+                    ResolveSweetTransferWaveMembership(groups[i]);
+                if (!next.IsRelated)
                 {
                     break;
+                }
+
+                // 代触发技能是多来源的上层波次，沿用连续相关组的聚合语义。
+                if (!first.IsTriggerUmbrella)
+                {
+                    if (handoffExecutionGroupId > 0)
+                    {
+                        if (next.HandoffExecutionGroupId != handoffExecutionGroupId)
+                        {
+                            break;
+                        }
+                    }
+                    else if (next.HandoffExecutionGroupId > 0)
+                    {
+                        // 兼容缺少新 metadata 的首组：一旦遇到第一个显式 handoff，
+                        // 后续就只接纳同一次交接，避免相邻的独立传递被误合并。
+                        handoffExecutionGroupId = next.HandoffExecutionGroupId;
+                    }
                 }
 
                 count++;
